@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: model.languageModel(selectedModel),
-    system: "You are a helpful assistant.",
+    system: "You are a helpful general assistant.",
     messages,
     experimental_telemetry: {
       isEnabled: true,
