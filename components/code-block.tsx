@@ -15,6 +15,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ className, children, ...props }) 
     return (
       <div className="animate-fade">
         <SyntaxHighlighter
+          wrapLongLines={false}
           style={tomorrow}
           language={match[1]}
           PreTag="div"
