@@ -13,7 +13,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ className, children, ...props }) 
 
   if (match) {
     return (
-      <div className="animate-in fade-in duration-300">
+      <div className="animate-fade">
         <SyntaxHighlighter
           style={tomorrow}
           language={match[1]}

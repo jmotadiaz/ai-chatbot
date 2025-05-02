@@ -38,7 +38,7 @@ const components: Partial<Components> = {
   },
   strong: ({ node, children, ...props }) => {
     return (
-      <span className="animate-fade inline-block font-semibold" {...props}>
+      <span className="font-semibold" {...props}>
         {children}
       </span>
     );
@@ -54,7 +54,7 @@ const components: Partial<Components> = {
     return (
       // @ts-expect-error error
       <Link
-        className="animate-fade inline-block text-blue-500 hover:underline"
+        className="text-blue-500 hover:underline"
         target="_blank"
         rel="noreferrer"
         {...props}
