@@ -3,42 +3,58 @@ import Link from "next/link";
 import React, { memo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import CodeBlock from "./code-block";
 
 const components: Partial<Components> = {
   pre: ({ children }) => <>{children}</>,
+  code: CodeBlock,
+  div: ({ node, children, ...props }) => {
+    return (
+      <div className="animate-fade" {...props}>
+        {children}
+      </div>
+    );
+  },
   ol: ({ node, children, ...props }) => {
     return (
-      <ol className="list-decimal list-outside ml-4" {...props}>
+      <ol className="animate-fade list-decimal list-outside ml-4" {...props}>
         {children}
       </ol>
     );
   },
   li: ({ node, children, ...props }) => {
     return (
-      <li className="py-1" {...props}>
+      <li className="animate-fade py-1" {...props}>
         {children}
       </li>
     );
   },
   ul: ({ node, children, ...props }) => {
     return (
-      <ul className="list-decimal list-outside ml-4" {...props}>
+      <ul className="animate-fade list-decimal list-outside ml-4" {...props}>
         {children}
       </ul>
     );
   },
   strong: ({ node, children, ...props }) => {
     return (
-      <span className="font-semibold" {...props}>
+      <span className="animate-fade inline-block font-semibold" {...props}>
         {children}
       </span>
+    );
+  },
+  p: ({ node, children, ...props }) => {
+    return (
+      <p className="animate-fade" {...props}>
+        {children}
+      </p>
     );
   },
   a: ({ node, children, ...props }) => {
     return (
       // @ts-expect-error error
       <Link
-        className="text-blue-500 hover:underline"
+        className="animate-fade inline-block text-blue-500 hover:underline"
         target="_blank"
         rel="noreferrer"
         {...props}
@@ -49,42 +65,42 @@ const components: Partial<Components> = {
   },
   h1: ({ node, children, ...props }) => {
     return (
-      <h1 className="text-3xl font-semibold mt-6 mb-2" {...props}>
+      <h1 className="animate-fade text-3xl font-semibold mt-6 mb-2" {...props}>
         {children}
       </h1>
     );
   },
   h2: ({ node, children, ...props }) => {
     return (
-      <h2 className="text-2xl font-semibold mt-6 mb-2" {...props}>
+      <h2 className="animate-fade text-2xl font-semibold mt-6 mb-2" {...props}>
         {children}
       </h2>
     );
   },
   h3: ({ node, children, ...props }) => {
     return (
-      <h3 className="text-xl font-semibold mt-6 mb-2" {...props}>
+      <h3 className="animate-fade text-xl font-semibold mt-6 mb-2" {...props}>
         {children}
       </h3>
     );
   },
   h4: ({ node, children, ...props }) => {
     return (
-      <h4 className="text-lg font-semibold mt-6 mb-2" {...props}>
+      <h4 className="animate-fade text-lg font-semibold mt-6 mb-2" {...props}>
         {children}
       </h4>
     );
   },
   h5: ({ node, children, ...props }) => {
     return (
-      <h5 className="text-base font-semibold mt-6 mb-2" {...props}>
+      <h5 className="animate-fade text-base font-semibold mt-6 mb-2" {...props}>
         {children}
       </h5>
     );
   },
   h6: ({ node, children, ...props }) => {
     return (
-      <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
+      <h6 className="animate-fade text-sm font-semibold mt-6 mb-2" {...props}>
         {children}
       </h6>
     );
