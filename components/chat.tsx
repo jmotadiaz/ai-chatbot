@@ -8,6 +8,8 @@ import { ProjectOverview } from "./project-overview";
 import { Messages } from "./messages";
 import { Header } from "./header";
 import { toast } from "sonner";
+import { Providers } from "@/app/providers";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function Chat() {
   const [selectedModel, setSelectedModel] = useState<modelID>(defaultModel);
@@ -30,7 +32,8 @@ export default function Chat() {
   const isLoading = status === "streaming" || status === "submitted";
 
   return (
-    <div className="h-dvh flex flex-col justify-center w-full stretch">
+    <Providers>
+      <div className="h-dvh flex flex-col justify-center w-full stretch">
       <Header />
       {messages.length === 0 ? (
         <div className="max-w-xl mx-auto w-full">
@@ -53,6 +56,8 @@ export default function Chat() {
           stop={stop}
         />
       </form>
-    </div>
+      </div>
+      <Toaster />
+    </Providers>
   );
 }
