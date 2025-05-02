@@ -13,7 +13,6 @@ import {
   ChevronUpIcon,
   Loader2,
   PocketKnife,
-  SparklesIcon,
   StopCircle,
 } from "lucide-react";
 import { SpinnerIcon } from "./icons";
@@ -140,6 +139,7 @@ const PurePreviewMessage = ({
             "group-data-[role=user]/message:w-fit",
           )}
         >
+
           <div className="flex flex-col w-full space-y-4">
             {message.parts?.map((part, i) => {
               switch (part.type) {
