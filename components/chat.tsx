@@ -16,6 +16,7 @@ export default function Chat() {
   const { messages, input, handleInputChange, handleSubmit, status, stop } =
     useChat({
       maxSteps: 5,
+      experimental_throttle: 100,
       body: {
         selectedModel,
       },
