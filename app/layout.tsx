@@ -24,8 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // @ts-expect-error error
-    <html lang="en" className="dark" style={{"color-scheme":"dark"}}>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>

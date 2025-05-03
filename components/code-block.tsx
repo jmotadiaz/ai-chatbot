@@ -1,6 +1,7 @@
+import { useTheme } from "next-themes";
 import { ReactNode } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { tomorrow, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface CodeBlockProps {
   className?: string;
@@ -8,6 +9,8 @@ interface CodeBlockProps {
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({ className, children, ...props }) => {
+  const { theme } = useTheme();
+  const codeTheme = theme === "light" ? oneLight: tomorrow;
   const codeString = Array.isArray(children) ? children.join("") : String(children);
   const match = /language-(\w+)/.exec(className || "");
 
@@ -16,9 +19,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ className, children, ...props }) 
       <div className="animate-fade">
         <SyntaxHighlighter
           wrapLongLines={false}
-          style={tomorrow}
+          style={codeTheme}
           language={match[1]}
           PreTag="div"
+          customStyle={{
+            borderRadius: 10
+          }}
           {...props}
         >
           {codeString.replace(/\n$/, "")}
