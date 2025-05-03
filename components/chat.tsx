@@ -32,7 +32,7 @@ export default function Chat() {
 
   return (
     <div className="h-dvh flex flex-col justify-center w-full stretch">
-      <Header />
+      <Header selectedModel={selectedModel} setSelectedModel={setSelectedModel} />
       {messages.length === 0 ? (
         <div className="max-w-xl mx-auto w-full">
           <ProjectOverview />
@@ -45,8 +45,6 @@ export default function Chat() {
         className="pb-8 bg-(--background) w-full max-w-xl mx-auto px-4 sm:px-0"
       >
         <Textarea
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
           handleInputChange={handleInputChange}
           input={input}
           isLoading={isLoading}

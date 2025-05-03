@@ -1,13 +1,21 @@
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
+import { modelID } from "@/ai/providers";
+import { ModelPicker } from "./model-picker";
 import { GroqIcon } from "./icons";
 
-export const Header = () => {
+interface HeaderProps {
+  selectedModel: modelID;
+  setSelectedModel: (model: modelID) => void;
+}
+
+export const Header = ({ selectedModel, setSelectedModel }: HeaderProps) => {
   return (
     <div className="fixed right-0 left-0 w-full top-0 bg-(--background)">
       <div className="flex justify-between items-center p-4">
-        <div className="flex flex-row items-center gap-2 shrink-0 ">
-          <span className="jsx-e3e12cc6f9ad5a71 flex flex-row items-center gap-2 home-links">
+        {/* Left: Logo and model picker */}
+        <div className="flex flex-row items-center gap-4 shrink-0">
+          <span className="flex flex-row items-center gap-2 home-links">
             <Link
               className="text-zinc-800 dark:text-zinc-100 -translate-y-[.5px]"
               rel="noopener"
@@ -30,7 +38,7 @@ export const Header = () => {
                 />
               </svg>
             </Link>
-            <div className="jsx-e3e12cc6f9ad5a71 w-4 text-lg text-center text-zinc-300 dark:text-zinc-600">
+            <div className="w-4 text-lg text-center text-zinc-300 dark:text-zinc-600">
               <svg
                 data-testid="geist-icon"
                 height={16}
@@ -47,13 +55,22 @@ export const Header = () => {
                 />
               </svg>
             </div>
-            <div className="jsx-e3e12cc6f9ad5a71 flex flex-row items-center gap-4">
-              <Link className="flex flex-row items-end gap-2" target="_blank" href="https://groq.com">
-                <GroqIcon size={32} />
-              </Link>
-            </div>
+            <Link
+              className="flex flex-row items-end gap-2"
+              target="_blank"
+              href="https://groq.com"
+            >
+              <GroqIcon size={32} />
+            </Link>
           </span>
+          {/* Model picker aligned to the right of logo */}
+          <ModelPicker
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            triggerClassName="h-8 px-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-sm"
+          />
         </div>
+        {/* Right: Theme toggle only */}
         <div className="flex flex-row items-center gap-2 shrink-0">
           <ThemeToggle />
         </div>

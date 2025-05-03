@@ -10,18 +10,34 @@ import {
 } from "./ui/select";
 
 interface ModelPickerProps {
+  /**
+   * Currently selected model identifier.
+   */
   selectedModel: modelID;
+  /**
+   * Callback to change the selected model.
+   */
   setSelectedModel: (model: modelID) => void;
+  /**
+   * Optional className for the wrapper container.
+   */
+  className?: string;
+  /**
+   * Optional className for the SelectTrigger element to style the dropdown button.
+   */
+  triggerClassName?: string;
 }
 
 export const ModelPicker = ({
   selectedModel,
   setSelectedModel,
+  className = "",
+  triggerClassName = "",
 }: ModelPickerProps) => {
   return (
-    <div className="absolute bottom-2 left-2 flex flex-col gap-2">
+    <div className={className}>
       <Select value={selectedModel} onValueChange={setSelectedModel}>
-        <SelectTrigger className="">
+        <SelectTrigger className={triggerClassName}>
           <SelectValue placeholder="Select a model" />
         </SelectTrigger>
         <SelectContent>
