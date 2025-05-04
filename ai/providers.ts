@@ -6,17 +6,14 @@ import {
 } from "ai";
 
 const languageModels = {
-  "meta-llama/llama-4-scout-17b-16e-instruct": groq(
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-  ),
-  "llama-3.1-8b-instant": groq("llama-3.1-8b-instant"),
-  "deepseek-r1-distill-llama-70b": wrapLanguageModel({
+  "Llama 4 Scout": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+  "Llama 3.3 Versatile": groq("llama-3.3-70b-versatile"),
+  "Deepseek R1": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  "llama-3.3-70b-versatile": groq("llama-3.3-70b-versatile"),
 };
 
 export const model = customProvider({
