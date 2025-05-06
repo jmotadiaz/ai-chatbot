@@ -1,8 +1,8 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
-import { ArrowUp, Settings, Plus, Minus } from "lucide-react";
+import { ArrowUp, Settings } from "lucide-react";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { InputNumber } from "@/components/ui/input-number";
 
 interface TextareaProps {
   input: string;
@@ -17,11 +17,6 @@ interface TextareaProps {
   setTopP: (value: number) => void;
   setTopK: (value: number) => void;
 }
-
-const inRange =
-  (min: number, max: number) =>
-  (val: number): boolean =>
-    !isNaN(val) && val >= min && val <= max;
 
 export const Textarea = ({
   input,
@@ -73,126 +68,39 @@ export const Textarea = ({
             onClick={() => setShowSettings(false)}
           />
           {/* Settings dropdown panel */}
-          <div className="absolute left-2 bottom-32 w-64 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg z-20">
+          <div className="absolute left-2 bottom-32 w-72 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg z-20">
             <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="temperature">Temperatura</Label>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newVal = parseFloat((temperature - 0.1).toFixed(1));
-                    setTemperature(Math.max(0, newVal));
-                  }}
-                  className="p-1 bg-gray-200 dark:bg-zinc-700 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
-                  aria-label="Decrease temperature"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <Input
-                  id="temperature"
-                  type="number"
-                  step="0.1"
-                  value={temperature}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (inRange(0, 1)(val)) {
-                      setTemperature(val);
-                    }
-                  }}
-                  className="w-16 text-center"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newVal = parseFloat((temperature + 0.1).toFixed(1));
-                    setTemperature(Math.min(1, newVal));
-                  }}
-                  className="p-1 bg-gray-200 dark:bg-zinc-700 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
-                  aria-label="Increase temperature"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
+              <Label htmlFor="temperature">Temperature</Label>
+              <InputNumber
+                id="temperature"
+                value={temperature}
+                min={0}
+                max={1}
+                step={0.1}
+                onChange={setTemperature}
+              />
             </div>
             <div className="flex items-center justify-between mb-2">
               <Label htmlFor="topP">Top P</Label>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newVal = parseFloat((topP - 0.01).toFixed(2));
-                    setTopP(Math.max(0, newVal));
-                  }}
-                  className="p-1 bg-gray-200 dark:bg-zinc-700 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
-                  aria-label="Decrease top P"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <Input
-                  id="topP"
-                  type="number"
-                  step="0.01"
-                  value={topP}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (inRange(0, 1)(val)) {
-                      setTopP(val);
-                    }
-                  }}
-                  className="w-16 text-center"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newVal = parseFloat((topP + 0.01).toFixed(2));
-                    setTopP(Math.min(1, newVal));
-                  }}
-                  className="p-1 bg-gray-200 dark:bg-zinc-700 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
-                  aria-label="Increase top P"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
+              <InputNumber
+                id="topP"
+                value={topP}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={setTopP}
+              />
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="topK">Top K</Label>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newVal = topK - 10;
-                    setTopK(Math.max(0, newVal));
-                  }}
-                  className="p-1 bg-gray-200 dark:bg-zinc-700 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
-                  aria-label="Decrease top K"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <Input
-                  id="topK"
-                  type="number"
-                  step="10"
-                  value={topK}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (inRange(0, 100)(val)) {
-                      setTopK(val);
-                    }
-                  }}
-                  className="w-16 text-center"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newVal = topK + 10;
-                    setTopK(Math.min(100, newVal));
-                  }}
-                  className="p-1 bg-gray-200 dark:bg-zinc-700 rounded text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
-                  aria-label="Increase top K"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
+              <InputNumber
+                id="topK"
+                value={topK}
+                min={0}
+                max={100}
+                step={10}
+                onChange={setTopK}
+              />
             </div>
           </div>
         </>
