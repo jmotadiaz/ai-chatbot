@@ -1,5 +1,8 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Settings } from "lucide-react";
+import { useState, ChangeEventHandler } from "react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface TextareaProps {
   input: string;
@@ -7,6 +10,12 @@ interface TextareaProps {
   isLoading: boolean;
   status: string;
   stop: () => void;
+  temperature: number;
+  topP: number;
+  topK: number;
+  setTemperature: (value: number) => void;
+  setTopP: (value: number) => void;
+  setTopK: (value: number) => void;
 }
 
 export const Textarea = ({
@@ -15,7 +24,14 @@ export const Textarea = ({
   isLoading,
   status,
   stop,
+  temperature,
+  topP,
+  topK,
+  setTemperature,
+  setTopP,
+  setTopK,
 }: TextareaProps) => {
+  const [showSettings, setShowSettings] = useState(false);
   return (
     <div className="relative w-full pt-4">
       <ShadcnTextarea
@@ -37,6 +53,74 @@ export const Textarea = ({
         }}
       />
 
+      {/* Settings icon and dropdown */}
+      <button
+        type="button"
+        onClick={() => setShowSettings(!showSettings)}
+        className="absolute left-4 bottom-4 cursor-pointer"
+      >
+        <Settings className="h-5 w-5 text-gray-800 dark:text-white" />
+      </button>
+      {showSettings && (
+        <>
+          {/* Overlay to close settings on outside click */}
+          <div
+            className="fixed inset-0 z-10 bg-transparent"
+            onClick={() => setShowSettings(false)}
+          />
+          {/* Settings dropdown panel */}
+          <div className="absolute left-2 bottom-32 w-52 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg z-20">
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="temperature">Temperatura</Label>
+              <Input
+                id="temperature"
+                type="number"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= 0 && val <= 1) {
+                    setTemperature(val);
+                  }
+                }}
+                className="w-20"
+              />
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="topP">Top P</Label>
+              <Input
+                id="topP"
+                type="number"
+                step="0.01"
+                value={topP}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= 0 && val <= 1) {
+                    setTopP(val);
+                  }
+                }}
+                className="w-20"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="topK">Top K</Label>
+              <Input
+                id="topK"
+                type="number"
+                step="10"
+                value={topK}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 0 && val <= 100) {
+                    setTopK(val);
+                  }
+                }}
+                className="w-20"
+              />
+            </div>
+          </div>
+        </>
+      )}
       {status === "streaming" || status === "submitted" ? (
         <button
           type="button"

@@ -8,13 +8,25 @@ export async function POST(req: Request) {
   const {
     messages,
     selectedModel,
-  }: { messages: UIMessage[]; selectedModel: modelID } = await req.json();
+    temperature,
+    topP,
+    topK,
+  }: {
+    messages: UIMessage[];
+    selectedModel: modelID;
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+  } = await req.json();
 
   const result = streamText({
     model: model.languageModel(selectedModel),
     system:
       "You are a helpful assistant. Respond to the user in Markdown format. When writing code, specify the language in the backticks, e.g. ```javascript`code here```. The default language is javascript",
     messages,
+    temperature,
+    topP,
+    topK,
     experimental_transform: smoothStream({ chunking: "word" }),
     experimental_telemetry: {
       isEnabled: true,
