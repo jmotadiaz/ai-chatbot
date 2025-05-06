@@ -1,6 +1,6 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 import { ArrowUp, Settings } from "lucide-react";
-import { useState, ChangeEventHandler } from "react";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -17,6 +17,11 @@ interface TextareaProps {
   setTopP: (value: number) => void;
   setTopK: (value: number) => void;
 }
+
+const inRange =
+  (min: number, max: number) =>
+  (val: number): boolean =>
+    !isNaN(val) && val >= min && val <= max;
 
 export const Textarea = ({
   input,
@@ -79,7 +84,7 @@ export const Textarea = ({
                 value={temperature}
                 onChange={(e) => {
                   const val = parseFloat(e.target.value);
-                  if (!isNaN(val) && val >= 0 && val <= 1) {
+                  if (inRange(0, 1)(val)) {
                     setTemperature(val);
                   }
                 }}
@@ -95,7 +100,7 @@ export const Textarea = ({
                 value={topP}
                 onChange={(e) => {
                   const val = parseFloat(e.target.value);
-                  if (!isNaN(val) && val >= 0 && val <= 1) {
+                  if (!inRange(0, 1)(val)) {
                     setTopP(val);
                   }
                 }}
@@ -111,7 +116,7 @@ export const Textarea = ({
                 value={topK}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val) && val >= 0 && val <= 100) {
+                  if (inRange(0, 100)(val)) {
                     setTopK(val);
                   }
                 }}
