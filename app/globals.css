@@ -45,6 +45,17 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Hide native number input spinners for consistent UX */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
