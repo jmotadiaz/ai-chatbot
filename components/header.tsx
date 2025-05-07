@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
+import { Button } from "./ui/button";
 import { modelID } from "@/ai/providers";
 import { ModelPicker } from "./model-picker";
+import { Edit } from "lucide-react";
 
 interface HeaderProps {
   selectedModel: modelID;
   setSelectedModel: (model: modelID) => void;
+  /** Clear the current conversation and start a new chat */
+  onNewChat: () => void;
 }
 
-export const Header = ({ selectedModel, setSelectedModel }: HeaderProps) => {
+export const Header = ({
+  selectedModel,
+  setSelectedModel,
+  onNewChat,
+}: HeaderProps) => {
   return (
     <div className="fixed right-0 left-0 w-full top-0 bg-(--background) z-10">
       <div className="flex justify-between items-center p-4">
@@ -38,7 +46,14 @@ export const Header = ({ selectedModel, setSelectedModel }: HeaderProps) => {
               </svg>
             </Link>
           </span>
-          {/* Model picker aligned to the right of logo */}
+          <Button
+            onClick={onNewChat}
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-zinc-700 dark:text-zinc-200 border-none cursor-pointer"
+          >
+            <Edit />
+          </Button>
           <ModelPicker
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
