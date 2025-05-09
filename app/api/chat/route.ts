@@ -17,8 +17,6 @@ export async function POST(req: Request) {
     topP?: number;
   } = await req.json();
 
-  console.log(temperature);
-
   const result = streamText({
     model: model.languageModel(selectedModel),
     system:

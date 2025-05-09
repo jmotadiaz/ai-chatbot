@@ -4,6 +4,11 @@ import {
   extractReasoningMiddleware,
   wrapLanguageModel,
 } from "ai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 const languageModels = {
   "Llama 4 Scout": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
@@ -16,13 +21,7 @@ const languageModels = {
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  Qwen: wrapLanguageModel({
-    middleware: extractReasoningMiddleware({
-      tagName: "think",
-      startWithReasoning: true,
-    }),
-    model: groq("qwen-qwq-32b"),
-  }),
+  Qwen3: openrouter.chat("qwen/qwen3-30b-a3b:free"),
 };
 
 export const model = customProvider({
@@ -43,5 +42,5 @@ export const modelCapabilities: Record<
   "Llama 3.3 Versatile": { img: false, pdf: false },
   "Gemma 2 - Eng": { img: false, pdf: false },
   "Deepseek R1": { img: false, pdf: false },
-  Qwen: { img: false, pdf: false },
+  Qwen3: { img: false, pdf: false },
 };
