@@ -19,18 +19,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public routes that don't require authentication
-  if (pathname === "/login" || pathname === "/register") {
-    return NextResponse.next();
-  }
-
   // Check for a valid session token
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (!token) {
+  if (!token && pathname !== "/login" && pathname !== "/register") {
     // Redirect to login page with callback URL
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
