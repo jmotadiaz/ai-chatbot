@@ -38,7 +38,10 @@ export const {
   ...authConfig,
   providers: [
     Credentials({
-      credentials: {},
+      credentials: {
+        email: {},
+        password: {},
+      },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async authorize({ email, password }: any) {
         const users = await getUser(email);
@@ -77,6 +80,10 @@ export const {
       }
 
       return session;
+    },
+    async authorized({ auth }) {
+      // Logged in users are authenticated, otherwise redirect to login page
+      return !!auth;
     },
   },
 });
