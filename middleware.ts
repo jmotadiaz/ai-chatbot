@@ -29,13 +29,17 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
-  console.log("Token:", token);
+
   if (!token) {
     // Redirect to login page with callback URL
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (token && ["/login", "/register"].includes(pathname)) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();
