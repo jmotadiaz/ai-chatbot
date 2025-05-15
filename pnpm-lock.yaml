@@ -50,6 +50,9 @@ dependencies:
   bcrypt:
     specifier: ^6.0.0
     version: 6.0.0
+  bcrypt-ts:
+    specifier: ^7.0.0
+    version: 7.0.0
   braintrust:
     specifier: ^0.0.195
     version: 0.0.195(react@19.1.0)(svelte@5.28.2)(vue@3.5.13)(zod@3.24.2)
@@ -2882,6 +2885,11 @@ packages:
 
   /balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  /bcrypt-ts@7.0.0:
+    resolution: {integrity: sha512-JMr30sbKPwF+2TccaNOYJuDx+nCmnTvHGB2rwkj+To/xZhBTX9f8zpTqGy3kpkS26KWOEYPsQlOJ5MVD00RHQQ==}
+    engines: {node: '>=20'}
+    dev: false
 
   /bcrypt@6.0.0:
     resolution: {integrity: sha512-cU8v/EGSrnH+HnxV2z0J7/blxH8gq7Xh2JFT6Aroax7UohdmiJJlxApMxtKfuI7z68NvvVcmR78k2LbT6efhRg==}
