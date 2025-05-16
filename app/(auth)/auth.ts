@@ -1,8 +1,9 @@
+"use server";
+
 import { compare } from "bcrypt-ts";
 import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { getUser } from "@/lib/db/queries";
-import { authConfig } from "./auth.config";
 import type { DefaultJWT } from "next-auth/jwt";
 
 export type UserType = "regular";
@@ -35,7 +36,9 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
-  ...authConfig,
+  pages: {
+    signIn: "/login",
+  },
   providers: [
     Credentials({
       credentials: {

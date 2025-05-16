@@ -12,8 +12,7 @@ const openrouter = createOpenRouter({
 
 const languageModels = {
   "Llama 4 Scout": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
-  "Llama 3.3 Versatile": groq("llama-3.3-70b-versatile"),
-  "Gemma 2 - Eng": groq("gemma2-9b-it"),
+  "Gemma 3": openrouter("google/gemma-3-27b-it:free"),
   "Deepseek R1": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
@@ -39,8 +38,7 @@ export const modelCapabilities: Record<
   { img: boolean; pdf: boolean }
 > = {
   "Llama 4 Scout": { img: true, pdf: false },
-  "Llama 3.3 Versatile": { img: false, pdf: false },
-  "Gemma 2 - Eng": { img: false, pdf: false },
+  "Gemma 3": { img: true, pdf: false },
   "Deepseek R1": { img: false, pdf: false },
   Qwen3: { img: false, pdf: false },
 };
