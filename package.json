@@ -12,7 +12,6 @@
     "lint:fix": "next lint --fix"
   },
   "dependencies": {
-    "@ai-sdk/google": "^1.2.18",
     "@ai-sdk/groq": "^1.2.5",
     "@ai-sdk/react": "^1.2.6",
     "@neondatabase/serverless": "^1.0.0",

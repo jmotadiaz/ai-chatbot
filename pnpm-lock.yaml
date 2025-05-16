@@ -5,9 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  '@ai-sdk/google':
-    specifier: ^1.2.18
-    version: 1.2.18(zod@3.24.2)
   '@ai-sdk/groq':
     specifier: ^1.2.5
     version: 1.2.5(zod@3.24.2)
@@ -172,17 +169,6 @@ devDependencies:
 
 packages:
 
-  /@ai-sdk/google@1.2.18(zod@3.24.2):
-    resolution: {integrity: sha512-8B70+i+uB12Ae6Sn6B9Oc6W0W/XorGgc88Nx0pyUrcxFOdytHBaAVhTPqYsO3LLClfjYN8pQ9GMxd5cpGEnUcA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.0.0
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.24.2)
-      zod: 3.24.2
-    dev: false
-
   /@ai-sdk/groq@1.2.5(zod@3.24.2):
     resolution: {integrity: sha512-GLQQ6U5W7IVU6L/4LNMhfB6RxMNvXYHMqspnJ+PIB6iiCdQ1nMVLxzTsxZibsvOEIgiawmaOQCKiwGwxtAxAlw==}
     engines: {node: '>=18'}
@@ -233,18 +219,6 @@ packages:
       zod: ^3.23.8
     dependencies:
       '@ai-sdk/provider': 1.1.0
-      nanoid: 3.3.11
-      secure-json-parse: 2.7.0
-      zod: 3.24.2
-    dev: false
-
-  /@ai-sdk/provider-utils@2.2.8(zod@3.24.2):
-    resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.23.8
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
       zod: 3.24.2
