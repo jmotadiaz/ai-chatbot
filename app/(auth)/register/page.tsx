@@ -1,17 +1,8 @@
-import Link from "next/link";
-
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { register } from "../actions";
-import { auth } from "../auth";
-import { redirect } from "next/navigation";
 
 export default async function Page() {
-  const session = await auth();
-  if (session) {
-    redirect("/");
-  }
-
   return (
     <div className="relative flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
       <div className="absolute top-4 right-4 z-10">
@@ -25,16 +16,6 @@ export default async function Page() {
           </p>
         </div>
         <AuthForm action={register}>Sign Up</AuthForm>
-        <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
-          {"Already have an account? "}
-          <Link
-            href="/login"
-            className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
-          >
-            Sign in
-          </Link>
-          {" instead."}
-        </p>
       </div>
     </div>
   );
