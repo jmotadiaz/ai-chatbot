@@ -6,6 +6,8 @@ import {
 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
+console.log("OPEN_ROUTER_API_KEY", process.env.OPENROUTER_API_KEY);
+
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
