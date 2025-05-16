@@ -1,8 +1,8 @@
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { login } from "@/auth/actions";
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { login } from "../actions";
 
 export default async function Page() {
   const session = await auth();

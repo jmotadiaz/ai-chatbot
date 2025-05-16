@@ -1,4 +1,4 @@
-import { model, modelID } from "@/ai/providers";
+import { model, modelID } from "@/app/(chat)/providers";
 import { streamText, UIMessage, smoothStream } from "ai";
 
 // Allow streaming responses up to 30 seconds

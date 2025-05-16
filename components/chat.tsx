@@ -1,6 +1,6 @@
 "use client";
 
-import { defaultModel, modelID } from "@/ai/providers";
+import { defaultModel, modelID } from "@/app/(chat)/providers";
 import { Message, useChat } from "@ai-sdk/react";
 import { useState, useEffect } from "react";
 import { Textarea } from "./textarea";

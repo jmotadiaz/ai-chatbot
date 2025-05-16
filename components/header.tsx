@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
-import { modelID } from "@/ai/providers";
+import { modelID } from "@/app/(chat)/providers";
 import { ModelPicker } from "./model-picker";
 import { Edit } from "lucide-react";
 

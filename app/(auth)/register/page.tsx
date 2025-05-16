@@ -1,6 +1,6 @@
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { register } from "@/auth/actions";
+import { register } from "../actions";
 
 export default async function Page() {
   return (

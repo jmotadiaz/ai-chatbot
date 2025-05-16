@@ -22,9 +22,7 @@
     "paths": {
       "@/*": ["./*"],
       "@/db/*": ["./lib/db/*"],
-      "@/ai/*": ["./lib/ai/*"],
-      "@/auth/*": ["./lib/auth/*"],
-      "@/auth": ["./lib/auth/index.ts"],
+      "@/auth": ["./app/(auth)/auth.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
