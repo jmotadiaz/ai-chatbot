@@ -1,12 +1,17 @@
-"use client";
-
 import Link from "next/link";
 
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { register } from "../actions";
+import { auth } from "../auth";
+import { redirect } from "next/navigation";
 
-export default function Page() {
+export default async function Page() {
+  const session = await auth();
+  if (session) {
+    redirect("/");
+  }
+
   return (
     <div className="relative flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
       <div className="absolute top-4 right-4 z-10">

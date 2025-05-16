@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createUser, getUser } from "@/lib/db/queries";
 import { signIn } from "./auth";
+import { redirect } from "next/navigation";
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -10,20 +11,56 @@ const authFormSchema = z.object({
 });
 
 export interface LoginActionState {
-  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
+  status:
+    | "idle"
+    | "in_progress"
+    | "success"
+    | "invalid_credentials"
+    | "invalid_data";
 }
 
-export const login = async (formData: FormData): Promise<void> => {
-  const validatedData = authFormSchema.parse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
+const redirectAfterLogin = (signInUrl: string) => {
+  const callbackUrl = `${signInUrl}`.split("callbackUrl=")[1];
 
-  await signIn("credentials", {
-    email: validatedData.email,
-    password: validatedData.password,
-    redirectTo: "/",
-  });
+  if (callbackUrl) {
+    redirect(decodeURIComponent(callbackUrl));
+  }
+
+  redirect("/");
+};
+
+export const login = async (
+  _: unknown,
+  formData: FormData
+): Promise<LoginActionState> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let signInUrl: any;
+  let signInStatus: LoginActionState = { status: "idle" };
+  try {
+    const validatedData = authFormSchema.parse({
+      email: formData.get("email"),
+      password: formData.get("password"),
+    });
+
+    signInUrl = await signIn("credentials", {
+      email: validatedData.email,
+      password: validatedData.password,
+      redirect: false,
+    });
+    signInStatus = { status: "success" };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      signInStatus = { status: "invalid_data" };
+    } else {
+      signInStatus = { status: "invalid_credentials" };
+    }
+  }
+
+  if (signInStatus.status === "success") {
+    redirectAfterLogin(signInUrl);
+  }
+
+  return signInStatus;
 };
 
 export interface RegisterActionState {
@@ -31,12 +68,18 @@ export interface RegisterActionState {
     | "idle"
     | "in_progress"
     | "success"
-    | "failed"
+    | "signup_failed"
     | "user_exists"
     | "invalid_data";
 }
 
-export const register = async (formData: FormData): Promise<void> => {
+export const register = async (
+  _: unknown,
+  formData: FormData
+): Promise<RegisterActionState> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let signInUrl: any;
+  let signInStatus: RegisterActionState = { status: "idle" };
   try {
     const validatedData = authFormSchema.parse({
       email: formData.get("email"),
@@ -47,11 +90,26 @@ export const register = async (formData: FormData): Promise<void> => {
 
     if (!user) {
       await createUser(validatedData.email, validatedData.password);
-      await signIn("credentials", {
+      signInUrl = await signIn("credentials", {
         email: validatedData.email,
         password: validatedData.password,
-        redirectTo: "/",
+        redirect: false,
       });
+      signInStatus = { status: "success" };
+    } else {
+      signInStatus = { status: "user_exists" };
     }
-  } catch {}
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      signInStatus = { status: "invalid_data" };
+    } else {
+      signInStatus = { status: "signup_failed" };
+    }
+  }
+
+  if (signInStatus.status === "success") {
+    redirectAfterLogin(signInUrl);
+  }
+
+  return signInStatus;
 };
