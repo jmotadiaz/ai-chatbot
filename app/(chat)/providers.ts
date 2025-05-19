@@ -9,7 +9,7 @@ import { createXai } from "@ai-sdk/xai";
 
 export const xai = createXai();
 
-const openrouter = createOpenRouter({
+export const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 

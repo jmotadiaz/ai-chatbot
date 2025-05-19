@@ -1,4 +1,4 @@
-import { model } from "@/app/(chat)/providers";
+import { xai } from "@/app/(chat)/providers";
 import { generateText, UIMessage } from "ai";
 
 // Allow streaming responses up to 30 seconds
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     : "";
 
   const { text } = await generateText({
-    model: model.languageModel("Qwen3"),
+    model: xai("grok-3"),
     system,
     prompt: chatHistoryPrompt + originalPrompt,
     temperature: 0.2,
