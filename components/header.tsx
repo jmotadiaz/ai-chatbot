@@ -19,7 +19,7 @@ export const Header = ({
   onClickLogo,
 }: HeaderProps) => {
   return (
-    <div className="fixed right-0 left-0 w-full top-0 bg-(--background) z-10 shadow-md">
+    <div className="fixed right-0 left-0 w-full top-0 bg-(--background) z-30 shadow-md">
       <div className="flex justify-between items-center py-4 px-10">
         {/* Left: Logo and model picker */}
         <div className="flex flex-row items-center gap-6 shrink-0">

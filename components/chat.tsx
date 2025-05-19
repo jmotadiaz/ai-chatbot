@@ -74,7 +74,7 @@ export default function Chat() {
 
   return (
     <>
-      <Sidebar open={showSidebar} />
+      <Sidebar open={showSidebar} onClose={() => setShowSidebar(false)} />
       <div className="h-dvh flex flex-col justify-center w-full stretch">
         <Header
           selectedModel={selectedModel}
