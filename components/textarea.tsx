@@ -1,5 +1,5 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
-import { ArrowUp, Edit, Settings } from "lucide-react";
+import { ArrowUp, Pencil, Settings } from "lucide-react";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
@@ -179,7 +179,7 @@ export const Textarea = ({
                 : "bg-zinc-300 dark:bg-zinc-700 dark:opacity-80 cursor-not-allowed"
             )}
           >
-            <Edit className="h-4 w-4 text-white" />
+            <Pencil className="h-4 w-4 text-white" />
           </span>
 
           <button
