@@ -14,7 +14,7 @@ const openrouter = createOpenRouter({
 });
 
 const languageModels = {
-  "Llama 4 Scout": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+  "Llama 4 Maverick": groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
   "Gemma 3": openrouter("google/gemma-3-27b-it"),
   "Deepseek R1": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
@@ -24,7 +24,7 @@ const languageModels = {
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
   "Grok 3 Mini": xai("grok-3-mini"),
-  Qwen3: openrouter.chat("qwen/qwen3-235b-a22b"),
+  Qwen3: openrouter.chat("qwen/qwen3-235b-a22b:free"),
 };
 
 export const model = customProvider({
@@ -35,13 +35,13 @@ export type modelID = keyof typeof languageModels;
 
 export const MODELS = Object.keys(languageModels);
 
-export const defaultModel: modelID = "Llama 4 Scout";
+export const defaultModel: modelID = "Llama 4 Maverick";
 
 export const modelCapabilities: Record<
   modelID,
   { img: boolean; pdf: boolean }
 > = {
-  "Llama 4 Scout": { img: true, pdf: false },
+  "Llama 4 Maverick": { img: true, pdf: false },
   "Gemma 3": { img: true, pdf: false },
   "Grok 3 Mini": { img: true, pdf: false },
   "Deepseek R1": { img: false, pdf: false },
