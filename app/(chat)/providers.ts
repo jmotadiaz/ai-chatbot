@@ -7,7 +7,7 @@ import {
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
 
-const xai = createXai();
+export const xai = createXai();
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,

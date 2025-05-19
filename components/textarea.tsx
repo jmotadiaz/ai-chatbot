@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
 import { cn } from "../lib/utils";
+import { UIMessage } from "ai";
 
 interface TextareaProps {
+  messages: UIMessage[];
   input: string;
   setInput: (value: string) => void;
   handleInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -21,6 +23,7 @@ interface TextareaProps {
 }
 
 export const Textarea = ({
+  messages,
   input,
   setInput,
   handleInputChange,
@@ -41,10 +44,11 @@ export const Textarea = ({
   const handleRefinePrompt = () => {
     if (!isRefinePromptEnabled) return;
     setIsLoadingRefinedPrompt(true);
-    fetch("/api/meta-prompt", {
+    fetch("/api/refine-prompt", {
       method: "POST",
       body: JSON.stringify({
         prompt: input,
+        messages,
       }),
     }).then((response) => {
       response.json().then(({ text }) => {

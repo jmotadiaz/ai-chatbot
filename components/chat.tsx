@@ -90,6 +90,7 @@ export default function Chat() {
         >
           <Textarea
             handleInputChange={handleInputChange}
+            messages={messages}
             input={input}
             setInput={setInput}
             isLoading={isLoading}
