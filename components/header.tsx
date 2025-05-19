@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 import { modelID } from "@/app/(chat)/providers";
@@ -10,24 +9,24 @@ interface HeaderProps {
   setSelectedModel: (model: modelID) => void;
   /** Clear the current conversation and start a new chat */
   onNewChat: () => void;
+  onClickLogo?: () => void;
 }
 
 export const Header = ({
   selectedModel,
   setSelectedModel,
   onNewChat,
+  onClickLogo,
 }: HeaderProps) => {
   return (
-    <div className="fixed right-0 left-0 w-full top-0 bg-(--background) z-10">
-      <div className="flex justify-between items-center p-4">
+    <div className="fixed right-0 left-0 w-full top-0 bg-(--background) z-10 shadow-md">
+      <div className="flex justify-between items-center py-4 px-10">
         {/* Left: Logo and model picker */}
         <div className="flex flex-row items-center gap-6 shrink-0">
           <span className="flex flex-row items-center gap-2 home-links">
-            <Link
-              className="text-zinc-800 dark:text-zinc-100 -translate-y-[.5px]"
-              rel="noopener"
-              target="_blank"
-              href="https://vercel.com/"
+            <div
+              className="text-zinc-800 dark:text-zinc-100 -translate-y-[.5px] cursor-pointer"
+              onClick={onClickLogo}
             >
               <svg
                 data-testid="geist-icon"
@@ -44,7 +43,7 @@ export const Header = ({
                   fill="currentColor"
                 />
               </svg>
-            </Link>
+            </div>
           </span>
           <Button
             onClick={onNewChat}

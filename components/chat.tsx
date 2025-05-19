@@ -8,9 +8,11 @@ import { ProjectOverview } from "./project-overview";
 import { Messages } from "./messages";
 import { Header } from "./header";
 import { toast } from "sonner";
+import Sidebar from "./sidebar";
 
 export default function Chat() {
   const [selectedModel, setSelectedModel] = useState<modelID>(defaultModel);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [temperature, setTemperature] = useState<number>(0.2);
   const [topP, setTopP] = useState<number>(0.95);
   const [topK, setTopK] = useState<number>(30);
@@ -71,37 +73,41 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-dvh flex flex-col justify-center w-full stretch">
-      <Header
-        selectedModel={selectedModel}
-        setSelectedModel={setSelectedModel}
-        onNewChat={handleNewChat}
-      />
-      {messages.length === 0 ? (
-        <div className="max-w-xl mx-auto w-full">
-          <ProjectOverview />
-        </div>
-      ) : (
-        <Messages messages={messages} isLoading={isLoading} status={status} />
-      )}
-      <form
-        onSubmit={handleSubmit}
-        className="pb-8 bg-(--background) w-full max-w-xl mx-auto px-4 sm:px-0"
-      >
-        <Textarea
-          handleInputChange={handleInputChange}
-          input={input}
-          isLoading={isLoading}
-          status={status}
-          stop={stop}
-          temperature={temperature}
-          topP={topP}
-          topK={topK}
-          setTemperature={setTemperature}
-          setTopP={setTopP}
-          setTopK={setTopK}
+    <>
+      <Sidebar open={showSidebar} />
+      <div className="h-dvh flex flex-col justify-center w-full stretch">
+        <Header
+          selectedModel={selectedModel}
+          setSelectedModel={setSelectedModel}
+          onNewChat={handleNewChat}
+          onClickLogo={() => setShowSidebar((prev) => !prev)}
         />
-      </form>
-    </div>
+        {messages.length === 0 ? (
+          <div className="max-w-xl mx-auto w-full">
+            <ProjectOverview />
+          </div>
+        ) : (
+          <Messages messages={messages} isLoading={isLoading} status={status} />
+        )}
+        <form
+          onSubmit={handleSubmit}
+          className="pb-8 bg-(--background) w-full max-w-xl mx-auto px-4 sm:px-0"
+        >
+          <Textarea
+            handleInputChange={handleInputChange}
+            input={input}
+            isLoading={isLoading}
+            status={status}
+            stop={stop}
+            temperature={temperature}
+            topP={topP}
+            topK={topK}
+            setTemperature={setTemperature}
+            setTopP={setTopP}
+            setTopK={setTopK}
+          />
+        </form>
+      </div>
+    </>
   );
 }
