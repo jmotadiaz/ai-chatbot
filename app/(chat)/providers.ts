@@ -15,8 +15,7 @@ const openrouter = createOpenRouter({
 
 const languageModels = {
   "Llama 4 Scout": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
-  "Gemma 3": openrouter("google/gemma-3-27b-it:free"),
-  "Grok 3 Mini": xai("grok-3-mini"),
+  "Gemma 3": openrouter("google/gemma-3-27b-it"),
   "Deepseek R1": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
@@ -24,7 +23,8 @@ const languageModels = {
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  Qwen3: openrouter.chat("qwen/qwen3-30b-a3b:free"),
+  "Grok 3 Mini": xai("grok-3-mini"),
+  Qwen3: openrouter.chat("qwen/qwen3-235b-a22b"),
 };
 
 export const model = customProvider({

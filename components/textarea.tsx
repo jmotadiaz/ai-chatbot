@@ -53,7 +53,9 @@ export const Textarea = ({
     }).then((response) => {
       response.json().then(({ text }) => {
         setIsLoadingRefinedPrompt(false);
-        setInput(text);
+        if (text) {
+          setInput(text.trim());
+        }
       });
     });
   };

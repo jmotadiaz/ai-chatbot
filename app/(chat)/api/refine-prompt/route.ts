@@ -27,6 +27,7 @@ Your refinement process must strictly adhere to these directives:
 - Sharpen Objective: Ensure the refined prompt possesses a singular, clearly defined goal. Remove any elements that dilute its primary purpose or introduce ambiguity.
 - Preserve Intent, Mandate Assertive Tone: The core meaning and purpose of the original prompt must be strictly maintained. However, you MUST rephrase the prompt to convey an assertive and direct tone, suitable for commanding action or eliciting a precise response.
 - Maximize Conciseness & Directness: The refined prompt must be succinct, clear, and directly address the objective without superfluous language or conversational filler.
+- Maintain Original Language
 
 Your output MUST be the refined prompt ONLY. Do NOT include any explanations, apologies, or any other conversational text before or after the refined prompt. DO NOT include the refined prompt inside xml tags
 `;
