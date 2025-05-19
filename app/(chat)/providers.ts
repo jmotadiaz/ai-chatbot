@@ -15,7 +15,7 @@ const openrouter = createOpenRouter({
 
 const languageModels = {
   "Llama 4 Maverick": groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
-  "Gemma 3": openrouter("google/gemma-3-27b-it"),
+  "Deepseek v3 Chat": openrouter("deepseek/deepseek-chat-v3-0324:free"),
   "Deepseek R1": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
@@ -42,7 +42,7 @@ export const modelCapabilities: Record<
   { img: boolean; pdf: boolean }
 > = {
   "Llama 4 Maverick": { img: true, pdf: false },
-  "Gemma 3": { img: true, pdf: false },
+  "Deepseek v3 Chat": { img: true, pdf: false },
   "Grok 3 Mini": { img: true, pdf: false },
   "Deepseek R1": { img: false, pdf: false },
   Qwen3: { img: false, pdf: false },
