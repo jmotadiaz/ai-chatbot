@@ -5,6 +5,9 @@ import {
   wrapLanguageModel,
 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createXai } from "@ai-sdk/xai";
+
+const xai = createXai();
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -13,6 +16,7 @@ const openrouter = createOpenRouter({
 const languageModels = {
   "Llama 4 Scout": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
   "Gemma 3": openrouter("google/gemma-3-27b-it:free"),
+  "Grok 3 Mini": xai("grok-3-mini"),
   "Deepseek R1": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
@@ -39,6 +43,7 @@ export const modelCapabilities: Record<
 > = {
   "Llama 4 Scout": { img: true, pdf: false },
   "Gemma 3": { img: true, pdf: false },
+  "Grok 3 Mini": { img: true, pdf: false },
   "Deepseek R1": { img: false, pdf: false },
   Qwen3: { img: false, pdf: false },
 };

@@ -9,19 +9,26 @@ import { Messages } from "./messages";
 import { Header } from "./header";
 import { toast } from "sonner";
 import Sidebar from "./sidebar";
+import { useSessionStorageState } from "@/lib/hooks/use-session-storage-state";
 
 export default function Chat() {
-  const [selectedModel, setSelectedModel] = useState<modelID>(defaultModel);
+  const [selectedModel, setSelectedModel] = useSessionStorageState<modelID>(
+    "selectedModel",
+    defaultModel
+  );
   const [showSidebar, setShowSidebar] = useState(false);
   const [temperature, setTemperature] = useState<number>(0.2);
   const [topP, setTopP] = useState<number>(0.95);
   const [topK, setTopK] = useState<number>(30);
-  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
+  const [initialMessages, setInitialMessages] = useSessionStorageState<
+    Message[]
+  >("messages", []);
 
   const {
     messages,
     setMessages,
     input,
+    setInput,
     handleInputChange,
     handleSubmit,
     status,
@@ -40,7 +47,7 @@ export default function Chat() {
       toast.error(
         error.message.length > 0
           ? error.message
-          : "An error occured, please try again later.",
+          : "An error happened, please try again later.",
         { position: "top-center", richColors: true }
       );
     },
@@ -48,23 +55,11 @@ export default function Chat() {
 
   const isLoading = status === "streaming" || status === "submitted";
 
-  // Persist conversation to sessionStorage whenever it changes
   useEffect(() => {
     if (messages.length) {
-      try {
-        sessionStorage.setItem("chat", JSON.stringify({ messages }));
-      } catch {
-        // ignore write errors
-      }
-    } else {
-      try {
-        const parsed = JSON.parse(sessionStorage.getItem("chat") || "{}");
-        setInitialMessages((parsed?.messages as Message[]) || []);
-      } catch {
-        // ignore read errors
-      }
+      setInitialMessages(messages);
     }
-  }, [messages]);
+  }, [messages, setInitialMessages]);
 
   const handleNewChat = () => {
     sessionStorage.removeItem("chat");
@@ -96,6 +91,7 @@ export default function Chat() {
           <Textarea
             handleInputChange={handleInputChange}
             input={input}
+            setInput={setInput}
             isLoading={isLoading}
             status={status}
             stop={stop}

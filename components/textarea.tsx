@@ -1,11 +1,13 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
-import { ArrowUp, Settings } from "lucide-react";
+import { ArrowUp, Edit, Settings } from "lucide-react";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
+import { cn } from "../lib/utils";
 
 interface TextareaProps {
   input: string;
+  setInput: (value: string) => void;
   handleInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isLoading: boolean;
   status: string;
@@ -20,6 +22,7 @@ interface TextareaProps {
 
 export const Textarea = ({
   input,
+  setInput,
   handleInputChange,
   isLoading,
   status,
@@ -32,10 +35,41 @@ export const Textarea = ({
   setTopK,
 }: TextareaProps) => {
   const [showSettings, setShowSettings] = useState(false);
+  const [isLoadingRefinedPrompt, setIsLoadingRefinedPrompt] = useState(false);
+  const isRefinePromptEnabled = !!input.length && !isLoadingRefinedPrompt;
+
+  const handleRefinePrompt = () => {
+    if (!isRefinePromptEnabled) return;
+    setIsLoadingRefinedPrompt(true);
+    fetch("/api/meta-prompt", {
+      method: "POST",
+      body: JSON.stringify({
+        prompt: input,
+      }),
+    }).then((response) => {
+      response.json().then(({ text }) => {
+        setIsLoadingRefinedPrompt(false);
+        setInput(text);
+      });
+    });
+  };
+
   return (
-    <div className="relative w-full pt-4">
+    <div className="relative bg-secondary w-full rounded-2xl">
+      <div
+        className={cn(
+          "absolute z-2 top-0 bottom-16 pt-4 pr-4 pl-6 left-0 w-full",
+          isLoadingRefinedPrompt ? "block" : "hidden"
+        )}
+      >
+        <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
+        <div className="w-2/5 bg-gray-200 dark:bg-zinc-700 rounded-2xl mt-2 py-2 animate-pulse" />
+      </div>
       <ShadcnTextarea
-        className="resize-none bg-secondary w-full rounded-2xl pr-12 pt-4 pb-16"
+        className={cn(
+          "resize-none relative bg-secondary w-full rounded-2xl z-1 pr-12 pt-4 pb-16",
+          isLoadingRefinedPrompt ? "opacity-0" : "opacity-100"
+        )}
         value={input}
         placeholder={"Say something..."}
         // @ts-expect-error err
@@ -56,7 +90,7 @@ export const Textarea = ({
       <button
         type="button"
         onClick={() => setShowSettings(!showSettings)}
-        className="absolute left-1 bottom-1 p-3 cursor-pointer"
+        className="absolute z-3 left-1 bottom-1 p-3 cursor-pointer"
       >
         <Settings className="h-5 w-5 text-gray-800 dark:text-white" />
       </button>
@@ -109,7 +143,7 @@ export const Textarea = ({
         <button
           type="button"
           onClick={stop}
-          className="cursor-pointer absolute right-2 bottom-2 rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:cursor-not-allowed transition-colors"
+          className="cursor-pointer z-3 absolute right-2 bottom-2 rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:cursor-not-allowed transition-colors"
         >
           <div className="animate-spin h-4 w-4">
             <svg className="h-4 w-4 text-white" viewBox="0 0 24 24">
@@ -131,13 +165,27 @@ export const Textarea = ({
           </div>
         </button>
       ) : (
-        <button
-          type="submit"
-          disabled={isLoading || !input.trim()}
-          className="absolute right-2 bottom-2 rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-80 disabled:cursor-not-allowed transition-colors"
-        >
-          <ArrowUp className="h-4 w-4 text-white" />
-        </button>
+        <>
+          <span
+            onClick={handleRefinePrompt}
+            className={cn(
+              "absolute z-3 right-12 bottom-2 rounded-full p-2  transition-colors",
+              isRefinePromptEnabled
+                ? "bg-black hover:bg-zinc-800"
+                : "bg-zinc-300 dark:bg-zinc-700 dark:opacity-80 cursor-not-allowed"
+            )}
+          >
+            <Edit className="h-4 w-4 text-white" />
+          </span>
+
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="absolute z-3 right-2 bottom-2 rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-80 disabled:cursor-not-allowed transition-colors"
+          >
+            <ArrowUp className="h-4 w-4 text-white" />
+          </button>
+        </>
       )}
     </div>
   );
