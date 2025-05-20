@@ -68,8 +68,10 @@ export const Textarea = ({
           isLoadingRefinedPrompt ? "block" : "hidden"
         )}
       >
-        <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
-        <div className="w-2/5 bg-gray-200 dark:bg-zinc-700 rounded-2xl mt-2 py-2 animate-pulse" />
+        <div className="flex flex-col justify-around h-full w-full">
+          <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
+          <div className="w-2/5 bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
+        </div>
       </div>
       <ShadcnTextarea
         className={cn(
