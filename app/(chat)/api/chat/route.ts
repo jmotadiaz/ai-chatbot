@@ -2,7 +2,7 @@ import { model, modelID } from "@/app/(chat)/providers";
 import { streamText, UIMessage, smoothStream } from "ai";
 
 // Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const {

@@ -1,4 +1,4 @@
-import { xai } from "@/app/(chat)/providers";
+import { openrouter } from "../../providers";
 import { generateText, UIMessage } from "ai";
 
 // Allow streaming responses up to 30 seconds
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     : "";
 
   const { text } = await generateText({
-    model: xai("grok-3"),
+    model: openrouter("openai/o4-mini"),
     system,
     prompt: chatHistoryPrompt + originalPrompt,
     temperature: 0.2,
