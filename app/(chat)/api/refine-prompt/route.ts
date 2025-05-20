@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     : "";
 
   const { text } = await generateText({
-    model: openrouter("openai/o4-mini"),
+    model: openrouter.chat("openai/o4-mini"),
     system,
     prompt: chatHistoryPrompt + originalPrompt,
     temperature: 0.2,
