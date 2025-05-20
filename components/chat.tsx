@@ -36,7 +36,7 @@ export default function Chat() {
   } = useChat({
     initialMessages,
     maxSteps: 5,
-    experimental_throttle: 100,
+    experimental_throttle: 400,
     body: {
       selectedModel,
       temperature,
