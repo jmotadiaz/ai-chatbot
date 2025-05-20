@@ -64,13 +64,13 @@ export const Textarea = ({
     <div className="relative bg-secondary w-full rounded-2xl">
       <div
         className={cn(
-          "absolute z-2 top-0 bottom-16 pt-4 pr-4 pl-6 left-0 w-full",
+          "absolute z-2 top-0 bottom-16 pt-4 px-4 left-0 w-full",
           isLoadingRefinedPrompt ? "block" : "hidden"
         )}
       >
         <div className="flex flex-col justify-around h-full w-full">
           <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
-          <div className="w-2/5 bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
+          <div className="w-2/5 bg-gray-200 dark:bg-zinc-700 rounded-2xl mt-2 py-2 animate-pulse" />
         </div>
       </div>
       <ShadcnTextarea
