@@ -70,20 +70,26 @@ export async function POST(req: Request) {
     </original_prompt>
   `;
 
-  const chatHistoryPrompt = chatHistory
-    ? `
-    First, review the chat history:
+  const rolePrompt = `
+    begin the refined prompt you generate with a specific role-prompting instruction. This instruction directs the subsequent AI to adopt a persona optimally suited to execute the prompt's core task. The role should be contextually derived from the original prompt's request.
+    - For instance, if the original prompt pertains to software development, the refined prompt should commence with: 'Assume the role of an expert software engineer.'
+    - If the original prompt concerns interview preparation or conduct, the refined prompt should commence with: 'Assume the role of a seasoned job interviewer.'
+    This initial role assignment must be immediately followed by the main body of the refined prompt.
+  `;
+
+  const initialPrompt = chatHistory
+    ? `First, review the chat history:
     <chat_history>
       ${chatHistory}
     </chat_history>
 
     Now`
-    : "";
+    : rolePrompt;
 
   const { text } = await generateText({
-    model: openrouter.chat("openai/o4-mini"),
+    model: openrouter.chat("openai/o4-mini-high"),
     system,
-    prompt: chatHistoryPrompt + originalPrompt,
+    prompt: initialPrompt + originalPrompt,
     temperature: 0.2,
   });
 
