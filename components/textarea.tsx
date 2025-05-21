@@ -50,14 +50,17 @@ export const Textarea = ({
         prompt: input,
         messages,
       }),
-    }).then((response) => {
-      response.json().then(({ text }) => {
+    })
+      .then((response) => {
+        response.json().then(({ text }) => {
+          if (text) {
+            setInput(text.trim());
+          }
+        });
+      })
+      .finally(() => {
         setIsLoadingRefinedPrompt(false);
-        if (text) {
-          setInput(text.trim());
-        }
       });
-    });
   };
 
   return (
@@ -76,7 +79,7 @@ export const Textarea = ({
       <ShadcnTextarea
         className={cn(
           "resize-none relative bg-secondary w-full rounded-2xl z-1 pr-12 pt-4 pb-16",
-          isLoadingRefinedPrompt ? "opacity-0" : "opacity-100"
+          isLoadingRefinedPrompt ? "opacity-0 max-h-32" : "opacity-100"
         )}
         value={input}
         placeholder={"Say something..."}
@@ -188,7 +191,7 @@ export const Textarea = ({
 
           <button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || isLoadingRefinedPrompt || !input.trim()}
             className="absolute z-3 right-2 bottom-2 rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-80 disabled:cursor-not-allowed transition-colors"
           >
             <ArrowUp className="h-4 w-4 text-white" />
