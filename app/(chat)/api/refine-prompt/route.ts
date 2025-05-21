@@ -28,16 +28,16 @@ Follow these steps to complete the task:
    - Note any potential weaknesses or areas for improvement
 
 2. Select the most appropriate prompt engineering technique based on the prompt's objective:
-   - Zero-shot: For straightforward tasks that don't require examples
-   - Few-shot: For tasks that benefit from examples to guide the model
-   - Chain of Thought (CoT): For complex reasoning tasks that require step-by-step thinking
-   - Role-prompting: For tasks that benefit from the model assuming a specific persona or role. Do NOT use this technique when chat_history is provided.
+   - Zero-shot: Suited for straightforward tasks that the model can understand and perform correctly without needing explicit examples in the prompt.
+   - Few-shot: Ideal for tasks where providing a few illustrative examples within the prompt helps to clarify the expected output format, style, or how to handle nuanced instructions.
+   - Chain of Thought (CoT): Apply to complex reasoning tasks where eliciting a step-by-step thought process from the model is crucial for arriving at an accurate solution (e.g., arithmetic, symbolic reasoning, or multi-hop question answering).
+   - Role-prompting: For tasks benefiting from the model assuming a specific persona or role. This is especially useful for content creation or engagement-focused interactions to align the model's response with the desired tone and style. Do NOT use this technique when chat_history is provided.
 
 3. Refine the prompt using the selected technique and incorporating best practices:
    - Provide clear and specific instructions
    - Break down complex tasks into smaller steps
    - Include relevant context or background information
-   - Use appropriate formatting (e.g., bullet points) for clarity. Do NOT use numbering to allow edit the prompt easily
+   - Use appropriate formatting for clarity. For any listed items, avoid numbering to facilitate easier editing and reordering.
    - Maintain the original language of the prompt
 
 4. Review and adjust the refined prompt to ensure it:
