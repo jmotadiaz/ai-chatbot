@@ -25,8 +25,9 @@ const languageModels = {
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  "Grok 3 Mini": xai("grok-3-mini"),
   Qwen3: openrouter.chat("qwen/qwen3-235b-a22b:free"),
+  "Grok 3 Mini": xai("grok-3-mini"),
+  "Grok 3": xai("grok-3"),
 };
 
 export const model = customProvider({
@@ -46,6 +47,7 @@ export const modelCapabilities: Record<
   "Llama 4 Maverick": { img: true, pdf: false },
   "Mistral 3 Small": { img: true, pdf: false },
   "Grok 3 Mini": { img: true, pdf: false },
+  "Grok 3": { img: true, pdf: false },
   "Deepseek R1": { img: false, pdf: false },
   Qwen3: { img: false, pdf: false },
 };

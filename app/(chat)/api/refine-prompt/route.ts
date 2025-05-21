@@ -1,11 +1,11 @@
-import { openrouter } from "../../providers";
+import { xai } from "../../providers";
 import { generateText, UIMessage } from "ai";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 const system = `
-You are an expert AI prompt engineer. Your sole function is to refine input prompts. Your mission is to meticulously analyze and transform a given prompt, significantly boosting its precision, clarity, and effectiveness, ensuring it is primed for optimal performance.
+You are an expert prompt engineer tasked with refining and improving prompts to adhere to best practices in prompt engineering. Your goal is to analyze the given prompt, select the most appropriate technique, and refine it to be more effective while maintaining its original language.
 
 You will be provided with the original prompt in the following XML structure:
 
@@ -20,14 +20,30 @@ Optionally, current chat history will be provided for context in this XML struct
   <assistant>{{ASSISTANT_MESSAGE}}</assistant>
 </chat_history>
 
-Your refinement process must strictly adhere to these directives:
+Follow these steps to complete the task:
 
-- Eliminate Ambiguity: Scrutinize the input prompt for any vague terms or phrases. Replace them with precise, unequivocal language.
-- Inject Specificity & Context: If the input prompt lacks necessary detail or context, enrich it. If chat history is provided, leverage it to incorporate relevant background information that enhances focus.
-- Sharpen Objective: Ensure the refined prompt possesses a singular, clearly defined goal. Remove any elements that dilute its primary purpose or introduce ambiguity.
-- Preserve Intent, Mandate Assertive Tone: The core meaning and purpose of the original prompt must be strictly maintained. However, you MUST rephrase the prompt to convey an assertive and direct tone, suitable for commanding action or eliciting a precise response.
-- Maximize Conciseness & Directness: The refined prompt must be succinct, clear, and directly address the objective without superfluous language or conversational filler.
-- Maintain Original Language with Flexibility for Key Concepts: The refined prompt you generate MUST primarily be in the same language as the <original_prompt> you processed. However, if the user introduces key concepts or terminology in a different language within their input, you MAY incorporate these specific key concepts (and closely related concepts) in that language within the refined prompt to maintain precision and user intent.
+1. Analyze the original prompt:
+   - Identify the main objective or task
+   - Determine the current structure and approach
+   - Note any potential weaknesses or areas for improvement
+
+2. Select the most appropriate prompt engineering technique based on the prompt's objective:
+   - Zero-shot: For straightforward tasks that don't require examples
+   - Few-shot: For tasks that benefit from examples to guide the model
+   - Chain of Thought (CoT): For complex reasoning tasks that require step-by-step thinking
+   - Role-prompting: For tasks that benefit from the model assuming a specific persona or role. Do NOT use this technique when chat_history is provided.
+
+3. Refine the prompt using the selected technique and incorporating best practices:
+   - Provide clear and specific instructions
+   - Break down complex tasks into smaller steps
+   - Include relevant context or background information
+   - Use appropriate formatting (e.g., bullet points) for clarity. Do NOT use numbering to allow edit the prompt easily
+   - Maintain the original language of the prompt
+
+4. Review and adjust the refined prompt to ensure it:
+   - Adheres to the chosen prompt engineering technique
+   - Maintains the original objective
+   - Is clear, concise, and effective
 
 Your output MUST be the refined prompt ONLY. Do NOT include any explanations, apologies, or any other conversational text before or after the refined prompt. DO NOT include the refined prompt inside xml tags
 `;
@@ -70,14 +86,6 @@ export async function POST(req: Request) {
     </original_prompt>
   `;
 
-  /*
-  const rolePrompt = `
-    Begin the refined prompt you generate with an expert role prompting instruction.
-    Determine the most appropriate expert role that would be best suited to address this task or subject.
-    This initial role assignment must be immediately followed by the main body of the refined prompt.
-  `;
-  */
-
   const initialPrompt = chatHistory
     ? `First, review the chat history:
     <chat_history>
@@ -88,7 +96,7 @@ export async function POST(req: Request) {
     : "";
 
   const { text } = await generateText({
-    model: openrouter.chat("openai/o4-mini-high"),
+    model: xai("grok-3"),
     system,
     prompt: initialPrompt + originalPrompt,
     temperature: 0.2,
