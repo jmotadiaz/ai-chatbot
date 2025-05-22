@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx tsx lib/db/migrate.ts && next dev",
-    "build": "next build",
+    "dev": "next dev",
+    "build": "npx tsx lib/db/migrate.ts && next build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/db/migrate.ts",
