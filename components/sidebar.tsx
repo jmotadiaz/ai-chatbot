@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebarContext } from "../app/providers";
 
 interface SidebarProps {
   children?: React.ReactNode;
-  onClose: () => void;
-  open: boolean;
 }
 
-export default function Sidebar({ children, open, onClose }: SidebarProps) {
+export default function Sidebar({ children }: SidebarProps) {
+  const { showSidebar, setShowSidebar } = useSidebarContext();
   const [menuOpen, setMenuOpen] = useState(false);
   const { data: session, update } = useSession();
   const [mounted, setMounted] = useState(false);
@@ -28,17 +28,17 @@ export default function Sidebar({ children, open, onClose }: SidebarProps) {
   return (
     <>
       <div
-        onClick={onClose}
+        onClick={() => setShowSidebar(false)}
         className={cn(
           "fixed h-screen z-10 top-0 left-0",
-          open ? "w-full" : "w-0"
+          showSidebar ? "w-full" : "w-0"
         )}
       />
       <div className="fixed h-screen z-20 top-0 left-0">
         <div
           className={cn(
             "flex flex-col justify-between h-full pt-24 bg-gray-50 dark:bg-zinc-800 transition-all duration-300 overflow-hidden shadow",
-            open ? "w-72" : "w-0"
+            showSidebar ? "w-72" : "w-0"
           )}
         >
           <div className="flex-1 overflow-auto">{children}</div>

@@ -1,5 +1,6 @@
 import { model, modelID } from "@/app/(chat)/providers";
 import { streamText, UIMessage, smoothStream } from "ai";
+import { generateUUID } from "@/lib/utils";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 60;
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
     temperature,
     topP,
     topK,
+    experimental_generateMessageId: generateUUID,
     experimental_transform: smoothStream({ chunking: "word" }),
     experimental_telemetry: {
       isEnabled: true,

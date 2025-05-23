@@ -51,7 +51,8 @@ export const chat = pgTable("Chat", {
   userId: uuid("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }),
+  title: varchar("title", { length: 255 }),
+  defaultModel: varchar("defaultModel", { length: 100 }),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

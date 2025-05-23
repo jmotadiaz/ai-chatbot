@@ -2,6 +2,24 @@ import Link from "next/link";
 import * as React from "react";
 import type { SVGProps } from "react";
 
+export const LogoIcon = ({ width = 18 }) => (
+  <svg
+    data-testid="geist-icon"
+    height={18}
+    strokeLinejoin="round"
+    viewBox="0 0 16 16"
+    width={width}
+    style={{ color: "currentcolor" }}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M8 1L16 15H0L8 1Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export const VercelIcon = ({ size = 17 }) => {
   return (
     <svg
@@ -131,11 +149,11 @@ export const GroqIcon = ({ size = 16 }) => {
       viewBox="0 0 160 59"
       width={size * (160 / 120)}
       className="pt-1"
-      style={{ color: 'currentcolor' }}
+      style={{ color: "currentcolor" }}
     >
       <mask
         id="mask0_4345_1846"
-        style={{ maskType: 'luminance' }}
+        style={{ maskType: "luminance" }}
         maskUnits="userSpaceOnUse"
         x="0"
         y="0"

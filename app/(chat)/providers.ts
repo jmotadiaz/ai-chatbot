@@ -30,6 +30,9 @@ const languageModels = {
   "Grok 3": xai("grok-3"),
 };
 
+export const refinePromptModel = openrouter.chat("openai/o4-mini-high");
+export const titleModel = groq("llama-3.1-8b-instant");
+
 export const model = customProvider({
   languageModels,
 });

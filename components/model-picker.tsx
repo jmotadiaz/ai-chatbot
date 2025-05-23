@@ -8,16 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { useChatContext } from "../app/providers";
 
 interface ModelPickerProps {
-  /**
-   * Currently selected model identifier.
-   */
-  selectedModel: modelID;
-  /**
-   * Callback to change the selected model.
-   */
-  setSelectedModel: (model: modelID) => void;
   /**
    * Optional className for the wrapper container.
    */
@@ -29,14 +22,18 @@ interface ModelPickerProps {
 }
 
 export const ModelPicker = ({
-  selectedModel,
-  setSelectedModel,
   className = "",
-  triggerClassName = "",
+  triggerClassName = "h-8 px-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-sm",
 }: ModelPickerProps) => {
+  const { selectedModel, setConfig } = useChatContext();
   return (
     <div className={className}>
-      <Select value={selectedModel} onValueChange={setSelectedModel}>
+      <Select
+        value={selectedModel}
+        onValueChange={(value) =>
+          setConfig({ selectedModel: value as modelID })
+        }
+      >
         <SelectTrigger className={triggerClassName}>
           <SelectValue placeholder="Select a model" />
         </SelectTrigger>
