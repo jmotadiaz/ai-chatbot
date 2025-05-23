@@ -8,7 +8,7 @@ import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Attachment, UIMessage } from "ai";
 import { Message } from "../../../lib/db/schema";
 import { NewChat } from "../../../components/new-chat";
@@ -27,7 +27,7 @@ export default async function ChatPage({
   const chat = await getChatById({ id });
 
   if (!chat) {
-    notFound();
+    redirect("/");
   }
 
   if (chat.userId !== session.user.id) {

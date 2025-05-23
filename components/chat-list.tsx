@@ -30,7 +30,7 @@ export async function ChatList({ limit = 10 }: { limit?: number }) {
                 type="submit"
                 variant="ghost"
                 size="icon"
-                className="opacity-0 group-hover:opacity-100 cursor-pointer"
+                className="cursor-pointer"
                 aria-label="Delete chat"
               >
                 <Trash2 className="h-4 w-4" />

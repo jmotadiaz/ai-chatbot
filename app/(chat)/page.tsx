@@ -26,7 +26,7 @@ export default async function Page() {
               <ThemeToggle />
             </div>
           </Header>
-          <Chat />;
+          <Chat />
         </div>
       </SidebarProvider>
     </ChatProvider>
