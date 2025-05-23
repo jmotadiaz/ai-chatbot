@@ -49,8 +49,8 @@ export default async function ChatPage({
           <Header>
             <div className="flex flex-row items-center gap-6 shrink-0">
               <Logo />
-              <ModelPicker />
               <NewChat />
+              <ModelPicker />
             </div>
             <div className="flex flex-row items-center gap-2 shrink-0">
               <ThemeToggle />
