@@ -23,20 +23,23 @@ export function Providers({ children }: ProvidersProps) {
 }
 
 interface ChatConfig {
-  selectedModel?: modelID;
-  temperature?: number;
-  topP?: number;
-  topK?: number;
+  selectedModel: modelID;
+  temperature: number;
+  topP: number;
+  topK: number;
 }
 
 interface SetChatConfig {
-  setConfig: (config: ChatConfig) => void;
+  setConfig: (config: Partial<ChatConfig>) => void;
 }
 
 const chatContext = React.createContext<
   UseChatHelpers & SetChatConfig & ChatConfig & { selectedModel: modelID }
 >({
   selectedModel: defaultModel,
+  temperature: 0.2,
+  topP: 0.95,
+  topK: 30,
   setConfig: () => {},
   id: "",
   messages: [],
@@ -60,9 +63,14 @@ const chatContext = React.createContext<
 
 export interface ChatProviderProps extends ProvidersProps {
   initialMessages?: UIMessage[];
+  chatId?: string;
 }
 
-export function ChatProvider({ children, initialMessages }: ChatProviderProps) {
+export function ChatProvider({
+  children,
+  initialMessages,
+  chatId,
+}: ChatProviderProps) {
   const [chatConfig, setChatConfig] = useState<ChatConfig>({
     selectedModel: defaultModel,
     temperature: 0.2,
@@ -75,7 +83,10 @@ export function ChatProvider({ children, initialMessages }: ChatProviderProps) {
     sendExtraMessageFields: true,
     maxSteps: 5,
     experimental_throttle: 400,
-    body: chatConfig,
+    body: {
+      chatId,
+      ...chatConfig,
+    },
     onError: (error) => {
       toast.error(
         error.message.length > 0
@@ -97,7 +108,6 @@ export function ChatProvider({ children, initialMessages }: ChatProviderProps) {
     <chatContext.Provider
       value={{
         setConfig,
-        selectedModel: defaultModel,
         ...chatResult,
         ...chatConfig,
       }}
