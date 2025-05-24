@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Textarea } from "./textarea";
 import { ProjectOverview } from "./project-overview";
 import { Messages } from "./messages";
 import { useChatContext } from "../app/providers";
+import { ChatControl } from "./chat-control";
+import { ArrowUp } from "lucide-react";
+import { ChatSettingsButton } from "./chat-settings-button";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
 }
 
 export default function Chat({ saveChat }: ChatProps) {
-  const [temperature, setTemperature] = useState<number>(0.2);
-  const [topP, setTopP] = useState<number>(0.95);
-  const [topK, setTopK] = useState<number>(30);
-
   const {
     messages,
     input,
@@ -23,18 +21,9 @@ export default function Chat({ saveChat }: ChatProps) {
     handleSubmit,
     status,
     stop,
-    setConfig,
   } = useChatContext();
 
   const isLoading = status === "streaming" || status === "submitted";
-
-  useEffect(() => {
-    setConfig({
-      temperature,
-      topP,
-      topK,
-    });
-  }, [temperature, topP, topK, setConfig]);
 
   return (
     <>
@@ -57,14 +46,17 @@ export default function Chat({ saveChat }: ChatProps) {
           isLoading={isLoading}
           status={status}
           stop={stop}
-          temperature={temperature}
-          topP={topP}
-          topK={topK}
-          setTemperature={setTemperature}
-          setTopP={setTopP}
-          setTopK={setTopK}
         />
-        <div className="absolute z-20 left-10 bottom-1">{saveChat}</div>
+        <ChatSettingsButton className="absolute z-1 left-3 bottom-1" />
+        <div className="absolute left-13 z-1 bottom-1">{saveChat}</div>
+        <ChatControl
+          type="submit"
+          className="absolute z-1 right-3 bottom-2"
+          disabled={!input.trim()}
+          isLoading={status === "streaming" || status === "submitted"}
+        >
+          <ArrowUp className="h-4 w-4 text-white" />
+        </ChatControl>
       </form>
     </>
   );
