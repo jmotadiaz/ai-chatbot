@@ -36,27 +36,29 @@ export default function Chat({ saveChat }: ChatProps) {
       )}
       <form
         onSubmit={handleSubmit}
-        className="bg-(--background) w-full max-w-xl mx-auto px-4 sm:px-0 relative"
+        className="bg-(--background) w-full max-w-xl mx-auto pb-4 px-4 sm:px-0"
       >
-        <Textarea
-          handleInputChange={handleInputChange}
-          messages={messages}
-          input={input}
-          setInput={setInput}
-          isLoading={isLoading}
-          status={status}
-          stop={stop}
-        />
-        <ChatSettingsButton className="absolute z-1 left-3 bottom-1" />
-        <div className="absolute left-13 z-1 bottom-1">{saveChat}</div>
-        <ChatControl
-          type="submit"
-          className="absolute z-1 right-3 bottom-2"
-          disabled={!input.trim()}
-          isLoading={status === "streaming" || status === "submitted"}
-        >
-          <ArrowUp className="h-4 w-4 text-white" />
-        </ChatControl>
+        <div className="relative w-full">
+          <Textarea
+            handleInputChange={handleInputChange}
+            messages={messages}
+            input={input}
+            setInput={setInput}
+            isLoading={isLoading}
+            status={status}
+            stop={stop}
+          />
+          <ChatSettingsButton className="absolute z-1 left-3 bottom-1" />
+          <div className="absolute left-13 z-1 bottom-1">{saveChat}</div>
+          <ChatControl
+            type="submit"
+            className="absolute z-1 right-3 bottom-2"
+            disabled={!input.trim()}
+            isLoading={status === "streaming" || status === "submitted"}
+          >
+            <ArrowUp className="h-4 w-4 text-white" />
+          </ChatControl>
+        </div>
       </form>
     </>
   );
