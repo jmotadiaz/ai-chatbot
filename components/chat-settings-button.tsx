@@ -4,6 +4,7 @@ import { ClassValue } from "clsx";
 import { Label } from "./ui/label";
 import { InputNumber } from "./ui/input-number";
 import { useChatContext } from "../app/providers";
+import { Settings } from "lucide-react";
 
 export interface ChatSettingsButtonProps {
   className?: ClassValue;
@@ -26,7 +27,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   return (
     <>
       <ChatControl
-        icon="settings"
+        Icon={Settings}
         type="button"
         onClick={() => setShowSettings(!showSettings)}
         className={className}

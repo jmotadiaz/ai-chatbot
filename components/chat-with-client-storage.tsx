@@ -7,6 +7,7 @@ import { useChatContext } from "../app/providers";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ChatControl } from "./chat-control";
+import { SaveIcon } from "lucide-react";
 
 const SESSION_STORAGE_KEY = "messages";
 
@@ -62,7 +63,7 @@ export default function ChatWithClientStorage() {
     <Chat
       saveChat={
         <ChatControl
-          icon="save"
+          Icon={SaveIcon}
           disabled={!messages.length}
           isLoading={isSavingChat}
           onClick={onSaveChat}

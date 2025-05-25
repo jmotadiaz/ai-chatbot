@@ -7,6 +7,7 @@ import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
 import { ChatSettingsButton } from "./chat-settings-button";
 import { useRefinePrompt } from "../lib/hooks/use-refine-prompt";
+import { ArrowUp, Pencil } from "lucide-react";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -57,14 +58,14 @@ export default function Chat({ saveChat }: ChatProps) {
           <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
           <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
           <ChatControl
-            icon="pencil"
+            Icon={Pencil}
             className="absolute z-1 right-13 bottom-2"
             onClick={refinePrompt}
             disabled={!input.length}
             isLoading={isLoadingRefinedPrompt}
           />
           <ChatControl
-            icon="arrow-up"
+            Icon={ArrowUp}
             type="submit"
             className="absolute z-1 right-3 bottom-2"
             disabled={!input.trim()}
