@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { Attachment, UIMessage } from "ai";
 import { Message } from "../../../lib/db/schema";
 import { NewChat } from "../../../components/new-chat";
+import { modelID } from "../providers";
 
 export default async function ChatPage({
   params,
@@ -40,7 +41,11 @@ export default async function ChatPage({
   const initialMessages = convertToUIMessages(messages);
 
   return (
-    <ChatProvider initialMessages={initialMessages}>
+    <ChatProvider
+      selectedModel={chat.defaultModel as modelID}
+      chatId={id}
+      initialMessages={initialMessages}
+    >
       <SidebarProvider>
         <Sidebar>
           <ChatList />

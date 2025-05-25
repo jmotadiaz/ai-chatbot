@@ -64,15 +64,17 @@ const chatContext = React.createContext<
 export interface ChatProviderProps extends ProvidersProps {
   initialMessages?: UIMessage[];
   chatId?: string;
+  selectedModel?: modelID;
 }
 
 export function ChatProvider({
   children,
   initialMessages,
+  selectedModel = defaultModel,
   chatId,
 }: ChatProviderProps) {
   const [chatConfig, setChatConfig] = useState<ChatConfig>({
-    selectedModel: defaultModel,
+    selectedModel,
     temperature: 0.2,
     topP: 0.95,
     topK: 30,

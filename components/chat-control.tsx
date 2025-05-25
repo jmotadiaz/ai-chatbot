@@ -1,15 +1,20 @@
 import { cn } from "@/lib/utils";
 import { ClassValue } from "clsx";
+import { DynamicIcon, IconName } from "lucide-react/dynamic";
 
 export interface ChatControlProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className"> {
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    "className" | "children"
+  > {
+  icon: IconName;
   isLoading?: boolean;
   onLoadingClick?: () => void;
   className?: ClassValue;
 }
 
 export const ChatControl = ({
-  children,
+  icon,
   className,
   isLoading = false,
   disabled,
@@ -54,12 +59,12 @@ export const ChatControl = ({
           type={type}
           disabled={disabled}
           className={cn(
-            "rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-80 disabled:cursor-not-allowed transition-colors cursor-pointer",
+            "rounded-full p-2 bg-black disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer",
             className
           )}
           {...buttonProps}
         >
-          {children}
+          <DynamicIcon className="h-4 w-4 text-white" name={icon} />
         </button>
       )}
     </>

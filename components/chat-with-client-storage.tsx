@@ -3,8 +3,6 @@
 import { Message } from "ai";
 import { useEffect, useRef, useState } from "react";
 import Chat from "./chat";
-import { SaveIcon } from "lucide-react";
-import { cn } from "../lib/utils";
 import { useChatContext } from "../app/providers";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -64,13 +62,11 @@ export default function ChatWithClientStorage() {
     <Chat
       saveChat={
         <ChatControl
-          className={cn(messages.length ? "opacity-100" : "opacity-0")}
+          icon="save"
           disabled={!messages.length}
           isLoading={isSavingChat}
           onClick={onSaveChat}
-        >
-          <SaveIcon className="h-4 w-4 text-white" />
-        </ChatControl>
+        />
       }
     />
   );

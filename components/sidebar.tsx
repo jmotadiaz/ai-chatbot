@@ -41,9 +41,9 @@ export default function Sidebar({ children }: SidebarProps) {
             showSidebar ? "w-72" : "w-0"
           )}
         >
-          <div className="flex-1 overflow-auto">{children}</div>
+          <div className="flex-1 w-72 overflow-auto">{children}</div>
           {email && (
-            <div className="relative p-4">
+            <div className="relative w-72 p-4">
               <button
                 className="w-full flex items-center justify-between text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 shadow-md"
                 onClick={() => setMenuOpen(!menuOpen)}

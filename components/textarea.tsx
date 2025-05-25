@@ -1,9 +1,6 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
-import { Pencil } from "lucide-react";
-import { useState } from "react";
 import { cn } from "../lib/utils";
 import { UIMessage } from "ai";
-import { ChatControl } from "./chat-control";
 
 interface TextareaProps {
   messages: UIMessage[];
@@ -11,42 +8,17 @@ interface TextareaProps {
   setInput: (value: string) => void;
   handleInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isLoading: boolean;
+  isLoadingRefinedPrompt?: boolean;
   status: string;
   stop: () => void;
 }
 
 export const Textarea = ({
-  messages,
   input,
-  setInput,
   handleInputChange,
+  isLoadingRefinedPrompt,
   isLoading,
 }: TextareaProps) => {
-  const [isLoadingRefinedPrompt, setIsLoadingRefinedPrompt] = useState(false);
-  const isRefinePromptEnabled = !!input.length && !isLoadingRefinedPrompt;
-
-  const handleRefinePrompt = () => {
-    if (!isRefinePromptEnabled) return;
-    setIsLoadingRefinedPrompt(true);
-    fetch("/api/refine-prompt", {
-      method: "POST",
-      body: JSON.stringify({
-        prompt: input,
-        messages,
-      }),
-    })
-      .then((response) => {
-        response.json().then(({ text }) => {
-          if (text) {
-            setInput(text.trim());
-          }
-        });
-      })
-      .finally(() => {
-        setIsLoadingRefinedPrompt(false);
-      });
-  };
-
   return (
     <div className="bg-secondary w-full rounded-2xl">
       <div
@@ -80,14 +52,6 @@ export const Textarea = ({
           }
         }}
       />
-      <ChatControl
-        className="absolute z-1 right-13 bottom-2"
-        onClick={handleRefinePrompt}
-        disabled={!input.length || isRefinePromptEnabled}
-        isLoading={isLoadingRefinedPrompt}
-      >
-        <Pencil className="h-4 w-4 text-white" />
-      </ChatControl>
     </div>
   );
 };

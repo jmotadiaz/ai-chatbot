@@ -5,8 +5,8 @@ import { ProjectOverview } from "./project-overview";
 import { Messages } from "./messages";
 import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
-import { ArrowUp } from "lucide-react";
 import { ChatSettingsButton } from "./chat-settings-button";
+import { useRefinePrompt } from "../lib/hooks/use-refine-prompt";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -22,6 +22,11 @@ export default function Chat({ saveChat }: ChatProps) {
     status,
     stop,
   } = useChatContext();
+  const { isLoadingRefinedPrompt, refinePrompt } = useRefinePrompt({
+    input,
+    setInput,
+    messages,
+  });
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -45,19 +50,26 @@ export default function Chat({ saveChat }: ChatProps) {
             input={input}
             setInput={setInput}
             isLoading={isLoading}
+            isLoadingRefinedPrompt={isLoadingRefinedPrompt}
             status={status}
             stop={stop}
           />
-          <ChatSettingsButton className="absolute z-1 left-3 bottom-1" />
-          <div className="absolute left-13 z-1 bottom-1">{saveChat}</div>
+          <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
+          <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
           <ChatControl
+            icon="pencil"
+            className="absolute z-1 right-13 bottom-2"
+            onClick={refinePrompt}
+            disabled={!input.length}
+            isLoading={isLoadingRefinedPrompt}
+          />
+          <ChatControl
+            icon="arrow-up"
             type="submit"
             className="absolute z-1 right-3 bottom-2"
             disabled={!input.trim()}
-            isLoading={status === "streaming" || status === "submitted"}
-          >
-            <ArrowUp className="h-4 w-4 text-white" />
-          </ChatControl>
+            isLoading={isLoading}
+          />
         </div>
       </form>
     </>

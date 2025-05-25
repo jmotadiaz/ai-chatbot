@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChatControl } from "./chat-control";
 import { ClassValue } from "clsx";
-import { Settings } from "lucide-react";
 import { Label } from "./ui/label";
 import { InputNumber } from "./ui/input-number";
 import { useChatContext } from "../app/providers";
@@ -27,12 +26,11 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   return (
     <>
       <ChatControl
+        icon="settings"
         type="button"
         onClick={() => setShowSettings(!showSettings)}
         className={className}
-      >
-        <Settings className="h-4 w-4 text-white" />
-      </ChatControl>
+      />
       {showSettings && (
         <>
           {/* Overlay to close settings on outside click */}
