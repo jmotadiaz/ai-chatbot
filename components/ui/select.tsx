@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import { CheckIcon, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ClassValue } from "clsx";
 
 interface SelectContextValue {
   open: boolean;
@@ -32,6 +33,7 @@ export function Select({
   value?: string;
   onValueChange?(value: string): void;
   children: React.ReactNode;
+  className?: ClassValue;
 }) {
   const [open, setOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -132,14 +134,20 @@ export const SelectTrigger = React.forwardRef(
         type="button"
         ref={ref}
         className={cn(
-          className,
-          "flex items-center cursor-pointer h-8 px-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-sm"
+          "flex items-center justify-between cursor-pointer h-8 px-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-sm",
+          className
         )}
         onClick={() => setOpen(!open)}
         {...props}
       >
         {children}
-        <ChevronDownIcon className="ml-2 size-4 opacity-50" />
+        <ChevronUp
+          size={16}
+          className={cn(
+            "transition-transform duration-300",
+            open ? "rotate-0" : "rotate-180"
+          )}
+        />
       </button>
     );
   }
@@ -181,7 +189,7 @@ export const SelectContent = React.forwardRef(
         ref={ref}
         data-slot="select-content"
         className={cn(
-          "absolute z-50 mt-1 max-h-60 overflow-auto rounded-md border bg-secondary text-secondary-foreground shadow-md",
+          "absolute z-50 top-full mt-2 max-h-60 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md",
           className
         )}
         {...props}
@@ -230,7 +238,7 @@ export function SelectItem({
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center p-3 py-1.5 text-sm whitespace-nowrap",
         "hover:bg-zinc-300 dark:hover:bg-zinc-500",
-        selected && "bg-accent text-accent-foreground",
+        selected && "bg-zinc-200 dark:bg-zinc-600",
         className
       )}
       onClick={() => {
@@ -239,9 +247,9 @@ export function SelectItem({
       }}
       {...props}
     >
-      <span className="flex items-center justify-center">
+      <span className="flex items-center justify-between w-full">
         {children}
-        {selected && <CheckIcon className="ml-2 size-4" />}
+        {selected && <CheckIcon className="size-4" />}
       </span>
     </div>
   );
