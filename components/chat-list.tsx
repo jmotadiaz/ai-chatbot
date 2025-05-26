@@ -20,7 +20,7 @@ export async function ChatList({ limit = 10 }: { limit?: number }) {
         {chatData.chats.map((chat) => (
           <div
             key={chat.id}
-            className="flex items-center justify-between rounded-lg border dark:border-zinc-300 p-3 text-sm transition-colors hover:bg-accent group"
+            className="flex items-center justify-between rounded-lg border dark:border-zinc-600 p-3 text-sm transition-colors hover:bg-accent group"
           >
             <Link href={`/${chat.id}`} className="flex-1">
               <div className="font-medium">{chat.title || "Untitled Chat"}</div>
