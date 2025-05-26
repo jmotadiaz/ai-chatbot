@@ -47,7 +47,7 @@ export default async function ChatPage({
       initialMessages={initialMessages}
     >
       <SidebarProvider>
-        <div className="h-dvh flex flex-col justify-center w-full stretch">
+        <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
             <ChatList />
           </Sidebar>

@@ -12,7 +12,7 @@ export default async function Page() {
   return (
     <ChatProvider>
       <SidebarProvider>
-        <div className="h-dvh flex flex-col justify-center w-full stretch">
+        <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
             <ChatList />
           </Sidebar>
