@@ -15,7 +15,7 @@ export default function ChatWithClientStorage() {
   const { messages, setMessages, id: chatId, selectedModel } = useChatContext();
   const [isSavingChat, setIsSavingChat] = useState(false);
   const initialized = useRef(false);
-  const { push } = useRouter();
+  const { push, refresh } = useRouter();
 
   const onSaveChat = () => {
     setIsSavingChat(true);
@@ -25,6 +25,8 @@ export default function ChatWithClientStorage() {
     })
       .then(() => {
         window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify([]));
+        // Refresh the router cache before navigating to ensure ChatList is refreshed
+        refresh();
         push(`/${chatId}`);
       })
       .catch((error) => {
