@@ -2,7 +2,7 @@ import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { login } from "../actions";
+import { login } from "@/lib/auth/actions";
 
 export default async function Page() {
   const session = await auth();

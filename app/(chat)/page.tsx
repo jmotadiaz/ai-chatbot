@@ -2,11 +2,11 @@ import Chat from "@/components/chat-with-client-storage";
 import Sidebar from "@/components/sidebar";
 import { ChatList } from "@/components/chat-list";
 import { Header } from "@/components/header";
+import { Logo } from "@/components/logo";
+import { NewChatHome } from "@/components/new-chat-home";
+import { ModelPicker } from "@/components/model-picker";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { ChatProvider, SidebarProvider } from "../providers";
-import { Logo } from "../../components/logo";
-import { NewChatHome } from "../../components/new-chat-home";
-import { ModelPicker } from "../../components/model-picker";
-import { ThemeToggle } from "../../components/theme-toggle";
 
 export default async function Page() {
   return (

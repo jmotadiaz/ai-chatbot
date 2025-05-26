@@ -3,7 +3,7 @@ import { getChats } from "@/lib/db/queries";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { auth } from "@/auth";
-import { deleteChat } from "@/app/(chat)/actions";
+import { deleteChat } from "@/lib/ai/actions";
 
 export async function ChatList({ limit = 10 }: { limit?: number }) {
   const session = await auth();

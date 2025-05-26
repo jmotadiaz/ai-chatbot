@@ -5,7 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { generateUUID } from "@/lib/utils";
 import { toast } from "sonner";
-import { defaultModel, modelID } from "./(chat)/providers";
+import { defaultModel, modelID } from "../lib/ai/providers";
 import { UIMessage } from "ai";
 
 interface ProvidersProps {

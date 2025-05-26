@@ -1,4 +1,4 @@
-import { openrouter } from "../../providers";
+import { openrouter } from "../../../../lib/ai/providers";
 import { generateText, UIMessage } from "ai";
 
 const system = `

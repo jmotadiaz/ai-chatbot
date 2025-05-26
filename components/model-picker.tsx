@@ -1,5 +1,5 @@
 "use client";
-import { modelID, MODELS } from "@/app/(chat)/providers";
+import { modelID, MODELS } from "@/lib/ai/providers";
 import {
   Select,
   SelectContent,

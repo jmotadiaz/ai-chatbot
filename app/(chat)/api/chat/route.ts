@@ -1,4 +1,4 @@
-import { model, modelID } from "@/app/(chat)/providers";
+import { model, modelID } from "@/lib/ai/providers";
 import {
   streamText,
   UIMessage,

@@ -1,8 +1,8 @@
 import { saveChat, saveMessages } from "@/lib/db/queries";
-import { modelID } from "../../providers";
+import { modelID } from "../../../../lib/ai/providers";
 import { UIMessage } from "ai";
 import { auth } from "@/auth";
-import { generateTitleFromUserMessage } from "../../utils";
+import { generateTitleFromUserMessage } from "../../../../lib/ai/utils";
 
 export async function POST(req: Request) {
   const session = await auth();

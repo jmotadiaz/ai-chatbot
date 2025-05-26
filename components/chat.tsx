@@ -6,7 +6,7 @@ import { Messages } from "./messages";
 import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
 import { ChatSettingsButton } from "./chat-settings-button";
-import { useRefinePrompt } from "../lib/hooks/use-refine-prompt";
+import { useRefinePrompt } from "@/lib/ai/hooks";
 import { ArrowUp, Pencil } from "lucide-react";
 
 export interface ChatProps {

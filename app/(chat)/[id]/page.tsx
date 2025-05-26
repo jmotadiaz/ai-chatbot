@@ -2,17 +2,17 @@ import Chat from "@/components/chat";
 import Sidebar from "@/components/sidebar";
 import { ChatList } from "@/components/chat-list";
 import { Header } from "@/components/header";
-import { ChatProvider, SidebarProvider } from "../../providers";
 import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NewChat } from "@/components/new-chat";
+import { Message } from "@/lib/db/schema";
+import { modelID } from "@/lib/ai/providers";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Attachment, UIMessage } from "ai";
-import { Message } from "../../../lib/db/schema";
-import { NewChat } from "../../../components/new-chat";
-import { modelID } from "../providers";
+import { ChatProvider, SidebarProvider } from "../../providers";
 
 export default async function ChatPage({
   params,
