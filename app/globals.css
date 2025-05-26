@@ -46,7 +46,7 @@
 }
 
 html, body {
-  height: 100svh;
+  height: 100dvh;
 }
 
 /* Hide native number input spinners for consistent UX */
