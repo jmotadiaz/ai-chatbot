@@ -20,6 +20,10 @@ export const metadata: Metadata = {
     "This starter project uses Groq with the AI SDK via the Vercel Marketplace",
 };
 
+export const viewport = {
+  maximumScale: 1, // Disable auto-zoom on mobile Safari
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,10 +31,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <Providers>
-         {children}
-         <Toaster />
+          {children}
+          <Toaster />
         </Providers>
       </body>
     </html>
