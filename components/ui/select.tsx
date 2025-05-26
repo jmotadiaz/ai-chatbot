@@ -189,7 +189,7 @@ export const SelectContent = React.forwardRef(
         ref={ref}
         data-slot="select-content"
         className={cn(
-          "absolute z-50 top-full mt-2 max-h-72 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md",
+          "absolute z-50 top-full mt-2 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md",
           className
         )}
         {...props}

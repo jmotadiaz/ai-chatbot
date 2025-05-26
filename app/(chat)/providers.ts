@@ -6,6 +6,11 @@ import {
 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const openai = createOpenAI({
+  compatibility: "strict",
+});
 
 export const xai = createXai();
 
@@ -15,17 +20,18 @@ export const openrouter = createOpenRouter({
 
 const languageModels = {
   "Llama 4 Maverick": groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
-  "Mistral 3 Small": openrouter.chat(
-    "mistralai/mistral-small-3.1-24b-instruct:free"
-  ),
-  "Deepseek R1": wrapLanguageModel({
+  "Deepseek V3": openrouter.chat("deepseek/deepseek-chat-v3-0324:free"),
+  "Mistral 3 Medium": openrouter.chat("mistralai/mistral-medium-3"),
+  "GPT 4.1 Mini": openai("gpt-4.1-mini"),
+  "Deepseek R1 Distill": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
       startWithReasoning: true,
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  Qwen3: openrouter.chat("qwen/qwen3-235b-a22b:free"),
+  "Qwen 3": openrouter.chat("qwen/qwen3-235b-a22b:free"),
+  "o4 Mini": openai("o4-mini"),
   "Grok 3 Mini": xai("grok-3-mini"),
   "Grok 3": xai("grok-3"),
 };
@@ -47,10 +53,13 @@ export const modelCapabilities: Record<
   modelID,
   { img: boolean; pdf: boolean }
 > = {
-  "Llama 4 Maverick": { img: true, pdf: false },
-  "Mistral 3 Small": { img: true, pdf: false },
-  "Grok 3 Mini": { img: true, pdf: false },
-  "Grok 3": { img: true, pdf: false },
-  "Deepseek R1": { img: false, pdf: false },
-  Qwen3: { img: false, pdf: false },
+  "Llama 4 Maverick": { img: false, pdf: false },
+  "Mistral 3 Small": { img: false, pdf: false },
+  "Deepseek V3": { img: false, pdf: false },
+  "GPT 4.1 Mini": { img: false, pdf: false },
+  "Deepseek R1 Distill": { img: false, pdf: false },
+  "Qwen 3": { img: false, pdf: false },
+  "o4 Mini": { img: false, pdf: false },
+  "Grok 3 Mini": { img: false, pdf: false },
+  "Grok 3": { img: false, pdf: false },
 };
