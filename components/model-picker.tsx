@@ -15,16 +15,9 @@ interface ModelPickerProps {
    * Optional className for the wrapper container.
    */
   className?: string;
-  /**
-   * Optional className for the SelectTrigger element to style the dropdown button.
-   */
-  triggerClassName?: string;
 }
 
-export const ModelPicker = ({
-  className = "",
-  triggerClassName = "h-8 px-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-sm",
-}: ModelPickerProps) => {
+export const ModelPicker = ({ className = "" }: ModelPickerProps) => {
   const { selectedModel, setConfig } = useChatContext();
   return (
     <div className={className}>
@@ -34,7 +27,7 @@ export const ModelPicker = ({
           setConfig({ selectedModel: value as modelID })
         }
       >
-        <SelectTrigger className={triggerClassName}>
+        <SelectTrigger>
           <SelectValue placeholder="Select a model" />
         </SelectTrigger>
         <SelectContent>
