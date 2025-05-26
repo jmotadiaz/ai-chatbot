@@ -17,11 +17,11 @@ export const ModelPicker = () => {
       value={selectedModel}
       onValueChange={(value) => setConfig({ selectedModel: value as modelID })}
     >
-      <SelectTrigger className="w-44">
+      <SelectTrigger className="w-44 xl:w-48">
         <SelectValue placeholder="Select a model" />
       </SelectTrigger>
       <SelectContent>
-        <SelectGroup className="w-44">
+        <SelectGroup className="w-44 xl:w-48">
           {MODELS.map((modelId) => (
             <SelectItem key={modelId} value={modelId}>
               {modelId}

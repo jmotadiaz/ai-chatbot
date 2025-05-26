@@ -83,7 +83,7 @@ export function Select({
         contentRef,
       }}
     >
-      <div className="relative">{children}</div>
+      <div className="relative text-sm">{children}</div>
     </SelectContext.Provider>
   );
 }
@@ -96,7 +96,7 @@ export function SelectGroup({
   return (
     <div
       data-slot="select-group"
-      className={cn("py-1 flex flex-col", className)}
+      className={cn("flex flex-col", className)}
       {...props}
     >
       {children}
@@ -189,7 +189,7 @@ export const SelectContent = React.forwardRef(
         ref={ref}
         data-slot="select-content"
         className={cn(
-          "absolute z-50 top-full mt-2 max-h-60 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md",
+          "absolute z-50 top-full mt-2 max-h-72 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md",
           className
         )}
         {...props}
@@ -236,7 +236,7 @@ export function SelectItem({
       role="option"
       aria-selected={selected}
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center p-3 py-1.5 text-sm whitespace-nowrap",
+        "relative flex w-full cursor-pointer select-none items-center p-3 whitespace-nowrap",
         "hover:bg-zinc-300 dark:hover:bg-zinc-500",
         selected && "bg-zinc-200 dark:bg-zinc-600",
         className
