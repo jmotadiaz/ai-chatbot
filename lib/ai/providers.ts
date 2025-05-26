@@ -30,7 +30,11 @@ const languageModels = {
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  "Qwen 3": openrouter.chat("qwen/qwen3-235b-a22b"),
+  "Qwen 3": openrouter.chat("qwen/qwen3-30b-a3b", {
+    reasoning: {
+      effort: "low",
+    },
+  }),
   "o4 Mini": openai("o4-mini"),
   "Grok 3 Mini": xai("grok-3-mini"),
   "Grok 3": xai("grok-3"),

@@ -9,7 +9,7 @@ import { generateUUID } from "@/lib/utils";
 import { saveMessages } from "@/lib/db/queries";
 
 // Allow streaming responses up to 30 seconds
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   const {
