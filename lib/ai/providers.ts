@@ -20,7 +20,7 @@ export const openrouter = createOpenRouter({
 
 const languageModels = {
   "Llama 4 Maverick": groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
-  "Deepseek V3": openrouter.chat("deepseek/deepseek-chat-v3-0324:free"),
+  "Deepseek V3": openrouter.chat("deepseek/deepseek-chat-v3-0324"),
   "Mistral 3 Medium": openrouter.chat("mistralai/mistral-medium-3"),
   "GPT 4.1 Mini": openai("gpt-4.1-mini"),
   "Deepseek R1 Distill": wrapLanguageModel({
@@ -30,7 +30,7 @@ const languageModels = {
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
-  "Qwen 3": openrouter.chat("qwen/qwen3-235b-a22b:free"),
+  "Qwen 3": openrouter.chat("qwen/qwen3-235b-a22b"),
   "o4 Mini": openai("o4-mini"),
   "Grok 3 Mini": xai("grok-3-mini"),
   "Grok 3": xai("grok-3"),
