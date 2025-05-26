@@ -54,7 +54,7 @@ export const modelCapabilities: Record<
   { img: boolean; pdf: boolean }
 > = {
   "Llama 4 Maverick": { img: false, pdf: false },
-  "Mistral 3 Small": { img: false, pdf: false },
+  "Mistral 3 Medium": { img: false, pdf: false },
   "Deepseek V3": { img: false, pdf: false },
   "GPT 4.1 Mini": { img: false, pdf: false },
   "Deepseek R1 Distill": { img: false, pdf: false },
