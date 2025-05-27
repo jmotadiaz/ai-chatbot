@@ -22,6 +22,11 @@ export default function ChatWithClientStorage() {
   const [isSavingChat, setIsSavingChat] = useState(false);
   const initialized = useRef(false);
   const { push, refresh } = useRouter();
+  const isSaveChatEnabled =
+    messages.length > 1 &&
+    status !== "streaming" &&
+    status !== "submitted" &&
+    !isSavingChat;
 
   const onSaveChat = () => {
     setIsSavingChat(true);
@@ -72,7 +77,7 @@ export default function ChatWithClientStorage() {
       saveChat={
         <ChatControl
           Icon={SaveIcon}
-          disabled={status !== "ready" || isSavingChat}
+          disabled={!isSaveChatEnabled}
           isLoading={isSavingChat}
           onClick={onSaveChat}
         />
