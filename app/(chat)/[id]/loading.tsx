@@ -33,7 +33,7 @@ export default function Loading() {
             </div>
           ))}
         </div>
-        <div className="absolute bottom-0 left-0 right-0 z-2 py-4 bg-background">
+        <div className="absolute bottom-0 left-0 right-0 z-2 p-4 bg-background">
           <div className="w-full h-[102px] bg-gray-200 dark:bg-zinc-700 rounded-md py-2 animate-pulse" />
         </div>
       </div>
