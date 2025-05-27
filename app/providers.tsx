@@ -34,7 +34,9 @@ interface SetChatConfig {
 }
 
 const chatContext = React.createContext<
-  UseChatHelpers & SetChatConfig & ChatConfig & { selectedModel: modelID }
+  UseChatHelpers &
+    SetChatConfig &
+    ChatConfig & { selectedModel: modelID; chatId?: string }
 >({
   selectedModel: defaultModel,
   temperature: 0.2,
@@ -109,6 +111,7 @@ export function ChatProvider({
   return (
     <chatContext.Provider
       value={{
+        chatId,
         setConfig,
         ...chatResult,
         ...chatConfig,

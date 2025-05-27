@@ -1,5 +1,6 @@
 import Chat from "@/components/chat";
-import Sidebar from "@/components/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
+import { UserMenu } from "@/components/user-menu";
 import { ChatList } from "@/components/chat-list";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
@@ -49,7 +50,12 @@ export default async function ChatPage({
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
-            <ChatList />
+            <SidebarContent>
+              <ChatList chatId={id} />
+            </SidebarContent>
+            <SidebarFooter>
+              <UserMenu />
+            </SidebarFooter>
           </Sidebar>
           <Header>
             <div className="flex flex-row items-center gap-6 shrink-0">

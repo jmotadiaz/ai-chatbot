@@ -12,7 +12,13 @@ import { SaveIcon } from "lucide-react";
 const SESSION_STORAGE_KEY = "messages";
 
 export default function ChatWithClientStorage() {
-  const { messages, setMessages, id: chatId, selectedModel } = useChatContext();
+  const {
+    messages,
+    setMessages,
+    id: chatId,
+    selectedModel,
+    status,
+  } = useChatContext();
   const [isSavingChat, setIsSavingChat] = useState(false);
   const initialized = useRef(false);
   const { push, refresh } = useRouter();
@@ -66,7 +72,7 @@ export default function ChatWithClientStorage() {
       saveChat={
         <ChatControl
           Icon={SaveIcon}
-          disabled={!messages.length}
+          disabled={status !== "ready" || isSavingChat}
           isLoading={isSavingChat}
           onClick={onSaveChat}
         />

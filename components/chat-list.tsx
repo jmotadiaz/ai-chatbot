@@ -5,7 +5,12 @@ import { Trash2 } from "lucide-react";
 import { auth } from "@/auth";
 import { deleteChat } from "@/lib/ai/actions";
 
-export async function ChatList({ limit = 10 }: { limit?: number }) {
+export interface ChatListProps {
+  limit?: number;
+  chatId?: string;
+}
+
+export async function ChatList({ limit = 10, chatId = "" }: ChatListProps) {
   const session = await auth();
   if (!session?.user) return null;
 
@@ -17,27 +22,31 @@ export async function ChatList({ limit = 10 }: { limit?: number }) {
   return (
     <div className="space-y-4 p-4">
       <div className="space-y-2">
-        {chatData.chats.map((chat) => (
-          <div
-            key={chat.id}
-            className="flex items-center justify-between rounded-lg border dark:border-zinc-600 p-3 text-sm transition-colors hover:bg-accent group"
-          >
-            <Link href={`/${chat.id}`} className="flex-1">
-              <div className="font-medium">{chat.title || "Untitled Chat"}</div>
-            </Link>
-            <form action={deleteChat.bind(null, chat.id)}>
-              <Button
-                type="submit"
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer"
-                aria-label="Delete chat"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </form>
-          </div>
-        ))}
+        {chatData.chats
+          .filter(({ id }) => id !== chatId)
+          .map((chat) => (
+            <div
+              key={chat.id}
+              className="flex items-center justify-between rounded-lg border dark:border-zinc-600 p-3 text-sm transition-colors hover:bg-accent group"
+            >
+              <Link href={`/${chat.id}`} className="flex-1">
+                <div className="font-medium">
+                  {chat.title || "Untitled Chat"}
+                </div>
+              </Link>
+              <form action={deleteChat.bind(null, chat.id)}>
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="icon"
+                  className="cursor-pointer"
+                  aria-label="Delete chat"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </form>
+            </div>
+          ))}
       </div>
     </div>
   );

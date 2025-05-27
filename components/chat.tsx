@@ -7,7 +7,8 @@ import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
 import { ChatSettingsButton } from "./chat-settings-button";
 import { useRefinePrompt } from "@/lib/ai/hooks";
-import { ArrowUp, Pencil } from "lucide-react";
+import { ArrowUp, Pencil, RefreshCcw } from "lucide-react";
+import { cn } from "../lib/utils";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -22,6 +23,8 @@ export default function Chat({ saveChat }: ChatProps) {
     handleSubmit,
     status,
     stop,
+    reload,
+    chatId,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt } = useRefinePrompt({
     input,
@@ -33,16 +36,41 @@ export default function Chat({ saveChat }: ChatProps) {
 
   return (
     <>
-      {messages.length === 0 ? (
-        <div className="max-w-xl mx-auto w-full pt-16">
-          <ProjectOverview />
+      <div
+        className={cn(
+          "w-full py-8 pt-16 overflow-hidden",
+          messages.length && "h-full"
+        )}
+      >
+        <div className="h-full overflow-y-auto">
+          <div className="w-full max-w-2xl mx-auto">
+            {messages.length === 0 ? (
+              <ProjectOverview />
+            ) : (
+              <>
+                <Messages
+                  messages={messages}
+                  isLoading={isLoading}
+                  status={status}
+                />
+                {!chatId && status === "ready" && (
+                  <div className="flex mt-1 ml-3">
+                    <div
+                      className="p-2 border dark:border-zinc-500 rounded-full cursor-pointer"
+                      onClick={() => reload()}
+                    >
+                      <RefreshCcw size={16} className="dark:text-white" />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      ) : (
-        <Messages messages={messages} isLoading={isLoading} status={status} />
-      )}
+      </div>
       <form
         onSubmit={handleSubmit}
-        className="bg-(--background) w-full max-w-xl mx-auto pb-4 px-4 sm:px-0"
+        className="bg-(--background) w-full max-w-2xl mx-auto pb-4 px-4 sm:px-0"
       >
         <div className="relative w-full">
           <Textarea

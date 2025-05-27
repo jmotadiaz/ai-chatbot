@@ -16,12 +16,9 @@ export const Messages = ({
   const lastComponentRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="relative overflow-hidden h-full pt-16">
-      <div
-        className="flex-1 h-full space-y-4 overflow-y-auto py-8"
-        ref={scrollContainerRef}
-      >
-        <div className="max-w-xl mx-auto pt-8">
+    <>
+      <div className="" ref={scrollContainerRef}>
+        <div className="pt-8">
           {messages.map((m, i) => (
             <Message
               key={i}
@@ -39,6 +36,6 @@ export const Messages = ({
         scrollContainerRef={scrollContainerRef}
         observeRef={lastComponentRef}
       />
-    </div>
+    </>
   );
 };

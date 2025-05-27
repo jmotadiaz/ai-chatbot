@@ -7,11 +7,17 @@ import {
 } from "ai";
 import { generateUUID } from "@/lib/utils";
 import { saveMessages } from "@/lib/db/queries";
+import { auth } from "@/auth";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const {
     messages,
     selectedModel,

@@ -1,8 +1,4 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarContext } from "../app/providers";
 
@@ -10,20 +6,8 @@ interface SidebarProps {
   children?: React.ReactNode;
 }
 
-export default function Sidebar({ children }: SidebarProps) {
+export const Sidebar = ({ children }: SidebarProps) => {
   const { showSidebar, setShowSidebar } = useSidebarContext();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { data: session, update } = useSession();
-  const [mounted, setMounted] = useState(false);
-
-  const email = session?.user?.email;
-
-  useEffect(() => {
-    if (!mounted) {
-      setMounted(true);
-      update();
-    }
-  }, [update, mounted]);
 
   return (
     <>
@@ -41,36 +25,25 @@ export default function Sidebar({ children }: SidebarProps) {
             showSidebar ? "w-72" : "w-0"
           )}
         >
-          <div className="flex-1 w-72 overflow-auto">{children}</div>
-          {email && (
-            <div className="relative w-72 p-4">
-              <button
-                className="w-full flex items-center justify-between p-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md cursor-pointer"
-                onClick={() => setMenuOpen(!menuOpen)}
-              >
-                <span className="truncate">{email}</span>
-                <ChevronUp
-                  size={16}
-                  className={cn(
-                    "transition-transform duration-300",
-                    menuOpen ? "rotate-0" : "rotate-180"
-                  )}
-                />
-              </button>
-              {menuOpen && (
-                <div className="absolute bottom-full left-4 right-4 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md whitespace-nowrap">
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
-                    onClick={() => signOut()}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          {children}
         </div>
       </div>
     </>
   );
+};
+
+interface SidebarContentProps {
+  children: React.ReactNode;
 }
+
+export const SidebarContent = ({ children }: SidebarContentProps) => {
+  return <div className="flex-1 w-72 overflow-auto">{children}</div>;
+};
+
+export interface SidebarFooterProps {
+  children: React.ReactNode;
+}
+
+export const SidebarFooter = ({ children }: SidebarFooterProps) => {
+  return <div className="relative w-72 p-4">{children}</div>;
+};

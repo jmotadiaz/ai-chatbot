@@ -1,5 +1,6 @@
 import { openrouter } from "../../../../lib/ai/providers";
 import { generateText, UIMessage } from "ai";
+import { auth } from "@/auth";
 
 const system = `
 You are an expert prompt engineer tasked with refining and improving prompts to adhere to best practices in prompt engineering. Your goal is to analyze the given prompt, select the most appropriate technique, and refine it to be more effective while maintaining its original language.
@@ -59,6 +60,11 @@ function scapeXML(str: string): string {
 }
 
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const {
     prompt,
     messages,
