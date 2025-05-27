@@ -7,15 +7,18 @@ import { NewChatHome } from "@/components/new-chat-home";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ChatProvider, SidebarProvider } from "../providers";
+import { Suspense } from "react";
 
 export default async function Page() {
   return (
     <ChatProvider>
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar>
-            <ChatList />
-          </Sidebar>
+          <Suspense fallback={null}>
+            <Sidebar>
+              <ChatList />
+            </Sidebar>
+          </Suspense>
           <Header>
             <div className="flex flex-row items-center gap-6 shrink-0">
               <Logo />
