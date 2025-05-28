@@ -5,7 +5,6 @@ import {
   varchar,
   json,
   timestamp,
-  integer,
   real,
   text,
 } from "drizzle-orm/pg-core";
@@ -31,7 +30,6 @@ export const project = pgTable("Project", {
   defaultModel: varchar("defaultModel", { length: 100 }),
   defaultTemperature: real("defaultTemperature"),
   defaultTopP: real("defaultTopP"),
-  defaultTopK: integer("defaultTopK"),
   systemPrompt: text("systemPrompt").notNull(),
   metaPrompt: text("metaPrompt"),
   tools: text("tools").array(),
@@ -53,6 +51,8 @@ export const chat = pgTable("Chat", {
     .references(() => user.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 255 }),
   defaultModel: varchar("defaultModel", { length: 100 }),
+  defaultTemperature: real("defaultTemperature"),
+  defaultTopP: real("defaultTopP"),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

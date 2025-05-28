@@ -15,10 +15,14 @@ export async function POST(req: Request) {
     chatId,
     messages,
     selectedModel,
+    temperature,
+    topP,
   }: {
     messages: UIMessage[];
     selectedModel: modelID;
     chatId: string;
+    temperature: number;
+    topP: number;
   } = await req.json();
 
   try {
@@ -26,6 +30,8 @@ export async function POST(req: Request) {
       userId: session.user.id,
       id: chatId,
       defaultModel: selectedModel,
+      defaultTemperature: temperature,
+      defaultTopP: topP,
       title: await generateTitleFromUserMessage(messages[0]),
     });
 

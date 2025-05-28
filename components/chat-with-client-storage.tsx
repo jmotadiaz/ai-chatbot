@@ -1,6 +1,5 @@
 "use client";
 
-import { Message } from "ai";
 import { useEffect, useRef, useState } from "react";
 import Chat from "./chat";
 import { useChatContext } from "../app/providers";
@@ -8,8 +7,11 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ChatControl } from "./chat-control";
 import { SaveIcon } from "lucide-react";
-
-const SESSION_STORAGE_KEY = "messages";
+import {
+  clearSessionMessages,
+  getSessionMessages,
+  setMessagesInSession,
+} from "@/lib/ai/session";
 
 export default function ChatWithClientStorage() {
   const {
@@ -17,6 +19,8 @@ export default function ChatWithClientStorage() {
     setMessages,
     id: chatId,
     selectedModel,
+    temperature,
+    topP,
     status,
   } = useChatContext();
   const [isSavingChat, setIsSavingChat] = useState(false);
@@ -32,10 +36,16 @@ export default function ChatWithClientStorage() {
     setIsSavingChat(true);
     fetch("/api/save-chat", {
       method: "POST",
-      body: JSON.stringify({ messages, chatId, selectedModel }),
+      body: JSON.stringify({
+        messages,
+        chatId,
+        selectedModel,
+        temperature,
+        topP,
+      }),
     })
       .then(() => {
-        window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify([]));
+        clearSessionMessages();
         // Refresh the router cache before navigating to ensure ChatList is refreshed
         refresh();
         push(`/${chatId}`);
@@ -51,24 +61,16 @@ export default function ChatWithClientStorage() {
 
   useEffect(() => {
     if (messages.length && initialized.current) {
-      window.sessionStorage.setItem(
-        SESSION_STORAGE_KEY,
-        JSON.stringify(messages)
-      );
+      setMessagesInSession(messages);
     }
 
     if (!messages.length && initialized.current) {
-      window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify([]));
+      clearSessionMessages();
     }
 
     if (!messages.length && !initialized.current) {
       initialized.current = true;
-      try {
-        const storedMessages = JSON.parse(
-          window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "[]"
-        ) as Message[];
-        setMessages(storedMessages || []);
-      } catch {}
+      setMessages(getSessionMessages());
     }
   }, [messages, setMessages]);
 

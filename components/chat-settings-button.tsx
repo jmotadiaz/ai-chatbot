@@ -12,16 +12,13 @@ export interface ChatSettingsButtonProps {
 
 export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const { temperature, topP, topK, setConfig } = useChatContext();
+  const { temperature, topP, setConfig } = useChatContext();
 
   const setTemperature = (value: number) => {
     setConfig({ temperature: value });
   };
   const setTopP = (value: number) => {
     setConfig({ topP: value });
-  };
-  const setTopK = (value: number) => {
-    setConfig({ topK: value });
   };
 
   return (
@@ -47,7 +44,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
                 id="temperature"
                 value={temperature}
                 min={0}
-                max={1}
+                max={2}
                 step={0.1}
                 onChange={setTemperature}
               />
@@ -61,17 +58,6 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
                 max={1}
                 step={0.01}
                 onChange={setTopP}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="topK">Top K</Label>
-              <InputNumber
-                id="topK"
-                value={topK}
-                min={0}
-                max={100}
-                step={10}
-                onChange={setTopK}
               />
             </div>
           </div>

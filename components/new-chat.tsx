@@ -1,10 +1,17 @@
+"use client";
 import { Edit } from "lucide-react";
 import { Button } from "./ui/button";
 import Link from "next/link";
+import { clearSessionMessages } from "../lib/ai/session";
 
 export const NewChat = () => {
   return (
-    <Link href="/">
+    <Link
+      href="/"
+      onClick={() => {
+        clearSessionMessages();
+      }}
+    >
       <Button
         variant="outline"
         size="sm"

@@ -41,12 +41,16 @@ export async function saveChat({
   projectId,
   title,
   defaultModel,
+  defaultTemperature,
+  defaultTopP,
 }: {
   id: string;
   userId: string;
   defaultModel: string;
   title: string;
   projectId?: string;
+  defaultTemperature?: number;
+  defaultTopP?: number;
 }) {
   try {
     return await db.insert(chat).values({
@@ -55,6 +59,8 @@ export async function saveChat({
       projectId,
       title,
       defaultModel,
+      defaultTemperature,
+      defaultTopP,
       createdAt: new Date(),
     });
   } catch (error) {

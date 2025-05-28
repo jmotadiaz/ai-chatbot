@@ -8,7 +8,7 @@ import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
 import { Message } from "@/lib/db/schema";
-import { modelID } from "@/lib/ai/providers";
+import { defaultTemperature, defaultTopP, modelID } from "@/lib/ai/providers";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -44,6 +44,8 @@ export default async function ChatPage({
   return (
     <ChatProvider
       selectedModel={chat.defaultModel as modelID}
+      temperature={chat.defaultTemperature ?? defaultTemperature}
+      topP={chat.defaultTopP ?? defaultTopP}
       chatId={id}
       initialMessages={initialMessages}
     >

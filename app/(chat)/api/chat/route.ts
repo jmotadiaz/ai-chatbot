@@ -23,14 +23,12 @@ export async function POST(req: Request) {
     selectedModel,
     temperature,
     topP,
-    topK,
     chatId,
   }: {
     messages: UIMessage[];
     selectedModel: modelID;
     temperature?: number;
     topP?: number;
-    topK?: number;
     chatId?: string;
   } = await req.json();
 
@@ -41,7 +39,6 @@ export async function POST(req: Request) {
     messages,
     temperature,
     topP,
-    topK,
     experimental_generateMessageId: generateUUID,
     experimental_transform: smoothStream({ chunking: "word" }),
     experimental_telemetry: {

@@ -15,6 +15,13 @@
       "when": 1747946522208,
       "tag": "0001_thick_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748417987979,
+      "tag": "0002_free_warhawk",
+      "breakpoints": true
     }
   ]
 }

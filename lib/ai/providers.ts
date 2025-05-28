@@ -52,6 +52,8 @@ export type modelID = keyof typeof languageModels;
 export const MODELS = Object.keys(languageModels);
 
 export const defaultModel: modelID = "Llama 4 Maverick";
+export const defaultTemperature = 0.2;
+export const defaultTopP = 0.95;
 
 export const modelCapabilities: Record<
   modelID,
