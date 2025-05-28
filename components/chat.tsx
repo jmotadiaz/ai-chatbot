@@ -9,6 +9,8 @@ import { ChatSettingsButton } from "./chat-settings-button";
 import { useRefinePrompt } from "@/lib/ai/hooks";
 import { ArrowUp, Pencil, RefreshCcw } from "lucide-react";
 import { cn } from "../lib/utils";
+import { ScrollToBottomButton } from "./scroll-to-bottom-btn";
+import { useRef } from "react";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -31,6 +33,8 @@ export default function Chat({ saveChat }: ChatProps) {
     setInput,
     messages,
   });
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const observeRef = useRef<HTMLDivElement>(null);
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -38,11 +42,11 @@ export default function Chat({ saveChat }: ChatProps) {
     <>
       <div
         className={cn(
-          "w-full py-8 pt-16 overflow-hidden",
+          "w-full pt-16 overflow-hidden relative",
           messages.length && "h-full"
         )}
       >
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto py-8" ref={scrollContainerRef}>
           <div className="w-full max-w-2xl mx-auto">
             {messages.length === 0 ? (
               <ProjectOverview />
@@ -65,8 +69,14 @@ export default function Chat({ saveChat }: ChatProps) {
                 )}
               </>
             )}
+
+            <div className="h1" ref={observeRef}></div>
           </div>
         </div>
+        <ScrollToBottomButton
+          scrollContainerRef={scrollContainerRef}
+          observeRef={observeRef}
+        />
       </div>
       <form
         onSubmit={handleSubmit}

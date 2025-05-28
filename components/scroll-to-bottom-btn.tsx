@@ -5,7 +5,7 @@ import { cn } from "../lib/utils";
 
 interface ScrollToBottomButtonProps {
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  observeRef: React.RefObject<HTMLElement | null>;
+  observeRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ScrollToBottomButton = ({
