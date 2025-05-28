@@ -13,7 +13,6 @@ export const ScrollToBottomButton = ({
   observeRef,
 }: ScrollToBottomButtonProps) => {
   const [showButton, setShowButton] = useState(false);
-  const observedElement = observeRef.current;
 
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
@@ -25,6 +24,8 @@ export const ScrollToBottomButton = ({
   };
 
   useEffect(() => {
+    const observedElement = observeRef.current;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setShowButton(!entry.isIntersecting);
@@ -33,6 +34,7 @@ export const ScrollToBottomButton = ({
     );
 
     if (observedElement) {
+      setShowButton(!inViewport(observedElement));
       observer.observe(observedElement);
     }
 
@@ -41,7 +43,7 @@ export const ScrollToBottomButton = ({
         observer.unobserve(observedElement);
       }
     };
-  }, [observedElement]);
+  }, [observeRef]);
 
   return (
     <div
@@ -62,3 +64,15 @@ export const ScrollToBottomButton = ({
     </div>
   );
 };
+
+function inViewport(element: HTMLElement): boolean {
+  if (!element) return false;
+  const rect = element.getBoundingClientRect();
+  return (
+    rect.top >= 0 &&
+    rect.left >= 0 &&
+    rect.bottom <=
+      (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+  );
+}
