@@ -7,6 +7,11 @@ import {
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+
+const google = createGoogleGenerativeAI({
+  // custom settings
+});
 
 const openai = createOpenAI({
   compatibility: "strict",
@@ -23,6 +28,7 @@ const languageModels = {
   "Deepseek V3": openrouter.chat("deepseek/deepseek-chat-v3-0324"),
   "Mistral 3 Medium": openrouter.chat("mistralai/mistral-medium-3"),
   "GPT 4.1 Mini": openai("gpt-4.1-mini"),
+  "Gemini 2.5 Flash": google("gemini-2.5-flash-preview-05-20"),
   "Deepseek R1 Distill": wrapLanguageModel({
     middleware: extractReasoningMiddleware({
       tagName: "think",
@@ -36,11 +42,12 @@ const languageModels = {
     },
   }),
   "o4 Mini": openai("o4-mini"),
+  "Gemini 2.5 Pro": google("gemini-2.5-pro-preview-05-06"),
   "Grok 3 Mini": xai("grok-3-mini"),
   "Grok 3": xai("grok-3"),
 };
 
-export const refinePromptModel = openrouter.chat("openai/o4-mini-high");
+export const refinePromptModel = google("gemini-2.5-pro-preview-05-06");
 export const titleModel = groq("llama-3.1-8b-instant");
 
 export const model = customProvider({
@@ -63,9 +70,11 @@ export const modelCapabilities: Record<
   "Mistral 3 Medium": { img: false, pdf: false },
   "Deepseek V3": { img: false, pdf: false },
   "GPT 4.1 Mini": { img: false, pdf: false },
+  "Gemini 2.5 Flash": { img: false, pdf: false },
   "Deepseek R1 Distill": { img: false, pdf: false },
   "Qwen 3": { img: false, pdf: false },
   "o4 Mini": { img: false, pdf: false },
+  "Gemini 2.5 Pro": { img: false, pdf: false },
   "Grok 3 Mini": { img: false, pdf: false },
   "Grok 3": { img: false, pdf: false },
 };
