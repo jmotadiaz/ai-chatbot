@@ -7,7 +7,7 @@ import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
 import { ChatSettingsButton } from "./chat-settings-button";
 import { useRefinePrompt } from "@/lib/ai/hooks";
-import { ArrowUp, Pencil, RefreshCcw } from "lucide-react";
+import { ArrowUp, Pencil, RefreshCcw, Circle } from "lucide-react";
 import { cn } from "../lib/utils";
 import { ScrollToBottomButton } from "./scroll-to-bottom-btn";
 import { useRef } from "react";
@@ -57,6 +57,22 @@ export default function Chat({ saveChat }: ChatProps) {
                   isLoading={isLoading}
                   status={status}
                 />
+                {status === "submitted" && (
+                  <div className="flex items-center gap-2 ml-5 mt-2">
+                    <Circle
+                      size={2}
+                      className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite]"
+                    />
+                    <Circle
+                      size={2}
+                      className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.2s]"
+                    />
+                    <Circle
+                      size={2}
+                      className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.4s]"
+                    />
+                  </div>
+                )}
                 {!chatId && status === "ready" && (
                   <div className="flex mt-1 ml-3">
                     <div

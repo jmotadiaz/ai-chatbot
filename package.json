@@ -18,7 +18,7 @@
     "@ai-sdk/react": "^1.2.6",
     "@ai-sdk/xai": "^1.2.16",
     "@neondatabase/serverless": "^1.0.0",
-    "@openrouter/ai-sdk-provider": "^0.4.5",
+    "@openrouter/ai-sdk-provider": "^0.6.0",
     "@opentelemetry/api-logs": "^0.200.0",
     "@opentelemetry/instrumentation": "^0.200.0",
     "@opentelemetry/sdk-logs": "^0.200.0",
