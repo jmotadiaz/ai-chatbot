@@ -1,10 +1,13 @@
+import React from 'react';
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { login } from "@/lib/auth/actions";
 
-export default async function Page() {
+interface PageProps {}
+
+const Page: React.FC<PageProps> = async () => {
   const session = await auth();
   if (session) {
     redirect("/");
@@ -22,4 +25,6 @@ export default async function Page() {
       </div>
     </div>
   );
-}
+};
+
+export default Page;
