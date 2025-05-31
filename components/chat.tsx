@@ -16,7 +16,7 @@ export interface ChatProps {
   saveChat?: React.ReactNode;
 }
 
-export default function Chat({ saveChat }: ChatProps) {
+const Chat: React.FC<ChatProps> = ({ saveChat }) => {
   const {
     messages,
     input,
@@ -129,4 +129,6 @@ export default function Chat({ saveChat }: ChatProps) {
       </form>
     </>
   );
-}
+};
+
+export default Chat;

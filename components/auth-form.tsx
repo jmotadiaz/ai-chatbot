@@ -22,7 +22,7 @@ interface AuthFormProps {
  * AuthForm renders a form with email and password fields,
  * and invokes the provided action on submit.
  */
-export function AuthForm({ action, children }: AuthFormProps) {
+export const AuthForm: React.FC<AuthFormProps> = ({ action, children }) => {
   const [state, formAction, pending] = React.useActionState(action, {
     status: "idle",
   });
