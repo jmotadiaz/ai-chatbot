@@ -34,8 +34,11 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: model.languageModel(selectedModel),
-    system:
-      "You are a helpful assistant. Respond to the user in Markdown format. When writing code, specify the language in the backticks, e.g. ```javascript`code here```. The default language is javascript",
+    system: `You are a helpful assistant.
+Respond to the user in Markdown format.
+When writing code, specify the language in the backticks, e.g. \`\`\`javascript\`code here\`\`\`.
+The default language is javascript.
+Avoid repeating information previously stated in the conversation and keep your answers concise.`,
     messages,
     temperature,
     topP,
