@@ -10,7 +10,10 @@ export interface ChatListProps {
   chatId?: string;
 }
 
-export async function ChatList({ limit = 10, chatId = "" }: ChatListProps) {
+export const ChatList: React.FC<ChatListProps> = async ({
+  limit = 10,
+  chatId = "",
+}) => {
   const session = await auth();
   if (!session?.user) return null;
 

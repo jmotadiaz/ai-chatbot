@@ -13,7 +13,7 @@ import {
   setMessagesInSession,
 } from "@/lib/ai/session";
 
-export default function ChatWithClientStorage() {
+const ChatWithClientStorage: React.FC = () => {
   const {
     messages,
     setMessages,
@@ -86,4 +86,6 @@ export default function ChatWithClientStorage() {
       }
     />
   );
-}
+};
+
+export default ChatWithClientStorage;
