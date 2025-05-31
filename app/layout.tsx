@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -28,11 +29,11 @@ export const viewport = {
   interactiveWidget: "resizes-visual",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+interface RootLayoutProps {
   children: React.ReactNode;
-}>) {
+}
+
+const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -45,4 +46,6 @@ export default function RootLayout({
       </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

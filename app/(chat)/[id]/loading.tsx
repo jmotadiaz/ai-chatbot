@@ -4,7 +4,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "../../../components/new-chat";
 import React from "react";
 
-export default function Loading() {
+interface LoadingProps {}
+
+const Loading: React.FC<LoadingProps> = () => {
   return (
     <div className="h-svh flex flex-col justify-center w-full stretch">
       <Header>
@@ -39,4 +41,6 @@ export default function Loading() {
       </div>
     </div>
   );
-}
+};
+
+export default Loading;
