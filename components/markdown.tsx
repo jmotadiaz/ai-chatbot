@@ -48,7 +48,7 @@ const components: Partial<Components> = {
   th: ({ node, children, ...props }) => {
     return (
       <th
-        className="whitespace-nowrap p-2 border-b border-gray-700  break-word"
+        className="whitespace-nowrap animate-fade text-left p-2 border-b border-zinc-400 dark:border-zinc-700  break-word"
         {...props}
       >
         {children}
@@ -57,7 +57,10 @@ const components: Partial<Components> = {
   },
   td: ({ node, children, ...props }) => {
     return (
-      <td className=" p-2 border-b border-gray-700 wrap-break-word" {...props}>
+      <td
+        className="p-2 border-b border-zinc-400 dark:border-zinc-700 wrap-break-word"
+        {...props}
+      >
         {children}
       </td>
     );
@@ -71,7 +74,7 @@ const components: Partial<Components> = {
   },
   p: ({ node, children, ...props }) => {
     return (
-      <p className="animate-fade" {...props}>
+      <p className="animate-fade my-2" {...props}>
         {children}
       </p>
     );
@@ -98,35 +101,35 @@ const components: Partial<Components> = {
   },
   h2: ({ node, children, ...props }) => {
     return (
-      <h2 className="animate-fade text-2xl font-semibold mt-6 mb-2" {...props}>
+      <h2 className="animate-fade text-2xl font-semibold mt-4 mb-2" {...props}>
         {children}
       </h2>
     );
   },
   h3: ({ node, children, ...props }) => {
     return (
-      <h3 className="animate-fade text-xl font-semibold mt-6 mb-2" {...props}>
+      <h3 className="animate-fade text-xl font-semibold mt-4 mb-2" {...props}>
         {children}
       </h3>
     );
   },
   h4: ({ node, children, ...props }) => {
     return (
-      <h4 className="animate-fade text-lg font-semibold mt-6 mb-2" {...props}>
+      <h4 className="animate-fade text-lg font-semibold mt-4 mb-2" {...props}>
         {children}
       </h4>
     );
   },
   h5: ({ node, children, ...props }) => {
     return (
-      <h5 className="animate-fade text-base font-semibold mt-6 mb-2" {...props}>
+      <h5 className="animate-fade text-base font-semibold mt-2 mb-2" {...props}>
         {children}
       </h5>
     );
   },
   h6: ({ node, children, ...props }) => {
     return (
-      <h6 className="animate-fade text-sm font-semibold mt-6 mb-2" {...props}>
+      <h6 className="animate-fade text-sm font-semibold mt-2 mb-2" {...props}>
         {children}
       </h6>
     );

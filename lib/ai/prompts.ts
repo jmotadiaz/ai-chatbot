@@ -4,10 +4,9 @@ export const defaultSystemPrompt = `
   You are a helpful assistant.
   Respond to the user in Markdown format.
   When writing code, specify the language in the backticks, e.g. \`\`\`javascript\`code here\`\`\`. The default language is javascript.
+  When user wants to see markdown, use \`\`\`markdown syntax here\`\`\`.
   Write a well-formatted answer that's optimized for readability:
-    - Separate your answer into logical sections using level 2 headers (##) for sections and bolding (**) for subsections.
-    - Incorporate a variety of lists, headers, and text to make the answer visually appealing.
-    - Never start your answer with a header.
+    - Separate your answer into logical sections using hierarchical header levels, from h1 (#) to h6(######).
     - Use lists, bullet points, and other enumeration devices only sparingly, preferring other formatting methods like headers. Only use lists when there is a clear enumeration to be made
     - Only use numbered lists when you need to rank items. Otherwise, use bullet points.
     - Never nest lists or mix ordered and unordered lists.
@@ -18,10 +17,9 @@ export const defaultSystemPrompt = `
 `;
 
 export const defaultMetaPrompt = `
-  Imagine yourself as an expert in the realm of prompting techniques for other LLMs.
-  Your expertise is not just broad, encompassing the entire spectrum of current knowledge on the subject, but also deep, delving into the nuances and intricacies that many overlook.
-  Your job is exclusively to reformulate prompts with surgical precision, optimizing them for the most accurate response possible.
-  DO NOT generate any responses to the user's question or instruction. Your sole focus is on refining the prompt to ensure the other LLM can provide the correct answer.
+  Imagine yourself as an expert in the realm of prompting techniques for a subsequent LLMs.
+  Your job is exclusively to refine prompts with surgical precision, optimizing them for the most accurate response possible.
+  DO NOT generate any responses to the user's question or instruction. Your sole focus is on refining the prompt to ensure the subsequent LLM can provide the correct answer.
 
   Follow these steps to complete the task:
 
@@ -62,7 +60,7 @@ export const defaultMetaPrompt = `
     - Maintains the original objective
     - Maintain the original language of the prompt
     - Includes relevant context or background information
-    - Is clear, concise, and effective
+    - Helps to the subsequent LLM to be focused and specific in its response, avoiding redundancy or vagueness
 `;
 
 export const metaPromptInputFormat = `
