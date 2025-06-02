@@ -17,7 +17,7 @@ interface ProvidersProps {
   children: React.ReactNode;
 }
 
-export function Providers({ children }: ProvidersProps) {
+export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
     <SessionProvider>
       <ThemeProvider attribute="class" enableSystem defaultTheme="system">
@@ -25,7 +25,7 @@ export function Providers({ children }: ProvidersProps) {
       </ThemeProvider>
     </SessionProvider>
   );
-}
+};
 
 interface ChatConfig {
   selectedModel: modelID;
@@ -74,14 +74,14 @@ export interface ChatProviderProps extends ProvidersProps {
   topP?: number;
 }
 
-export function ChatProvider({
+export const ChatProvider: React.FC<ChatProviderProps> = ({
   children,
   initialMessages,
   selectedModel = defaultModel,
   temperature = defaultTemperature,
   topP = defaultTopP,
   chatId,
-}: ChatProviderProps) {
+}) => {
   const [chatConfig, setChatConfig] = useState<ChatConfig>({
     selectedModel,
     temperature,
@@ -126,7 +126,7 @@ export function ChatProvider({
       {children}
     </chatContext.Provider>
   );
-}
+};
 
 export interface SidebarContext {
   showSidebar: boolean;
@@ -140,7 +140,7 @@ const sidebarContext = React.createContext<SidebarContext>({
   toggleSidebar: () => {},
 });
 
-export function SidebarProvider({ children }: ProvidersProps) {
+export const SidebarProvider: React.FC<ProvidersProps> = ({ children }) => {
   const [showSidebar, setShowSidebar] = useState(false);
   const toggleSidebar = useCallback(() => {
     setShowSidebar((prev) => !prev);
@@ -152,7 +152,7 @@ export function SidebarProvider({ children }: ProvidersProps) {
       {children}
     </sidebarContext.Provider>
   );
-}
+};
 
 export const useSidebarContext = () => useContext(sidebarContext);
 export const useChatContext = () => useContext(chatContext);

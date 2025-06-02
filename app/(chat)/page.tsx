@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import Chat from "@/components/chat-with-client-storage";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
 import { ChatList } from "@/components/chat-list";
@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { ChatProvider, SidebarProvider } from "../providers";
 
-export default async function Page() {
+const Page: React.FC = async () => {
   return (
     <ChatProvider>
       <SidebarProvider>
@@ -42,4 +42,6 @@ export default async function Page() {
       </SidebarProvider>
     </ChatProvider>
   );
-}
+};
+
+export default Page;

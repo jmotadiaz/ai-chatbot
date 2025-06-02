@@ -1,3 +1,4 @@
+import React from 'react';
 import Chat from "@/components/chat";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
 import { UserMenu } from "@/components/user-menu";
@@ -15,11 +16,11 @@ import { redirect } from "next/navigation";
 import { Attachment, UIMessage } from "ai";
 import { ChatProvider, SidebarProvider } from "../../providers";
 
-export default async function ChatPage({
-  params,
-}: {
+interface ChatPageProps {
   params: Promise<{ id: string }>;
-}) {
+}
+
+const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
   const { id } = await params;
   const session = await auth();
   if (!session?.user) {
@@ -74,7 +75,9 @@ export default async function ChatPage({
       </SidebarProvider>
     </ChatProvider>
   );
-}
+};
+
+export default ChatPage;
 
 function convertToUIMessages(messages: Array<Message>): Array<UIMessage> {
   return messages.map((message) => ({
