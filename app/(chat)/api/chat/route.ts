@@ -1,10 +1,11 @@
-import { model, modelID } from "@/lib/ai/providers";
 import {
   streamText,
   UIMessage,
   smoothStream,
   appendResponseMessages,
 } from "ai";
+import { model, modelID } from "@/lib/ai/providers";
+import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { generateUUID } from "@/lib/utils";
 import { saveMessages } from "@/lib/db/queries";
 import { auth } from "@/auth";
@@ -34,11 +35,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: model.languageModel(selectedModel),
-    system: `You are a helpful assistant.
-Respond to the user in Markdown format.
-When writing code, specify the language in the backticks, e.g. \`\`\`javascript\`code here\`\`\`.
-The default language is javascript.
-Avoid repeating information previously stated in the conversation and keep your answers concise.`,
+    system: defaultSystemPrompt,
     messages,
     temperature,
     topP,

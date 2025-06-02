@@ -12,3 +12,15 @@ export function generateUUID(): string {
     return v.toString(16);
   });
 }
+
+export function scapeXML(str: string): string {
+  if (!str) return "";
+
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;")
+    .trim();
+}
