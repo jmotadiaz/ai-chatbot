@@ -4,9 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "../../../components/new-chat";
 import React from "react";
 
-interface LoadingProps {}
-
-const Loading: React.FC<LoadingProps> = () => {
+const Loading: React.FC = () => {
   return (
     <div className="h-svh flex flex-col justify-center w-full stretch">
       <Header>

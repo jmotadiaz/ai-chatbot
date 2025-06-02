@@ -10,9 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { ChatProvider, SidebarProvider } from "../providers";
 
-interface PageProps {}
-
-const Page: React.FC<PageProps> = async () => {
+const Page: React.FC = async () => {
   return (
     <ChatProvider>
       <SidebarProvider>
