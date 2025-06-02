@@ -78,8 +78,7 @@
   "lint-staged": {
     "*.{ts,tsx}": [
       "next lint --fix",
-      "tsc --noEmit",
-      "git add"
+      "tsc --noEmit"
     ]
   }
 }
