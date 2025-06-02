@@ -11,7 +11,7 @@ export const Messages = ({
   status: "error" | "submitted" | "streaming" | "ready";
 }) => {
   return (
-    <div className="pt-8">
+    <>
       {messages.map((m, i) => (
         <Message
           key={i}
@@ -21,6 +21,6 @@ export const Messages = ({
           status={status}
         />
       ))}
-    </div>
+    </>
   );
 };
