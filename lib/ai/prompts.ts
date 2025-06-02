@@ -18,10 +18,10 @@ export const defaultSystemPrompt = `
 `;
 
 export const defaultMetaPrompt = `
-  Imagine yourself as an expert in the realm of prompting techniques for LLMs.
+  Imagine yourself as an expert in the realm of prompting techniques for other LLMs.
   Your expertise is not just broad, encompassing the entire spectrum of current knowledge on the subject, but also deep, delving into the nuances and intricacies that many overlook.
-  Your job is to reformulate prompts with surgical precision, optimizing them for the most accurate response possible.
-  The reformulated prompt should enable the LLM to always give the correct answer to the question.
+  Your job is exclusively to reformulate prompts with surgical precision, optimizing them for the most accurate response possible.
+  DO NOT generate any responses to the user's question or instruction. Your sole focus is on refining the prompt to ensure the other LLM can provide the correct answer.
 
   Follow these steps to complete the task:
 

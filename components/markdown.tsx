@@ -36,6 +36,32 @@ const components: Partial<Components> = {
       </ul>
     );
   },
+  table: ({ node, children, ...props }) => {
+    return (
+      <div className="animate-fade w-full overflow-x-auto">
+        <table className="table-auto w-auto" {...props}>
+          {children}
+        </table>
+      </div>
+    );
+  },
+  th: ({ node, children, ...props }) => {
+    return (
+      <th
+        className="whitespace-nowrap p-2 border-b border-gray-700  break-word"
+        {...props}
+      >
+        {children}
+      </th>
+    );
+  },
+  td: ({ node, children, ...props }) => {
+    return (
+      <td className=" p-2 border-b border-gray-700 wrap-break-word" {...props}>
+        {children}
+      </td>
+    );
+  },
   strong: ({ node, children, ...props }) => {
     return (
       <span className="font-semibold" {...props}>
