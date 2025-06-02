@@ -56,4 +56,4 @@ export const AuthForm: React.FC<AuthFormProps> = ({ action, children }) => {
       </div>
     </form>
   );
-}
+};

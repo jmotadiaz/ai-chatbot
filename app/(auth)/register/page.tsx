@@ -1,8 +1,9 @@
+import React from "react";
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { register } from "@/lib/auth/actions";
 
-export default async function Page() {
+const Page: React.FC = async () => {
   return (
     <div className="relative flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
       <div className="absolute top-4 right-4 z-10">
@@ -19,4 +20,6 @@ export default async function Page() {
       </div>
     </div>
   );
-}
+};
+
+export default Page;
