@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Chat from "@/components/chat";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
 import { UserMenu } from "@/components/user-menu";
@@ -54,7 +54,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
             <SidebarContent>
-              <ChatList chatId={id} />
+              <ChatList />
             </SidebarContent>
             <SidebarFooter>
               <UserMenu />

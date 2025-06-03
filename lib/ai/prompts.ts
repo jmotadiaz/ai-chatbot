@@ -1,6 +1,6 @@
 import { scapeXML } from "../utils";
 
-export const defaultSystemPrompt = `
+export const defaultSystemPrompt = `\n
   You are a helpful assistant.
   Respond to the user in Markdown format.
   When writing code, specify the language in the backticks, e.g. \`\`\`javascript\`code here\`\`\`. The default language is javascript.
@@ -13,10 +13,10 @@ export const defaultSystemPrompt = `
     - When comparing items, use a markdown table instead of a list.
     - Bold specific words for emphasis.
   Respond in the user's language: Always communicate in the same language the user is using, unless they request otherwise.
-  Give concise responses to very simple questions, but provide thorough responses to more complex and open-ended questions.
+  Give concise responses to very simple questions, but provide thorough responses to more complex and open-ended questions.\n
 `;
 
-export const defaultMetaPrompt = `
+export const defaultMetaPrompt = `\n
   Imagine yourself as an expert in the realm of prompting techniques for a subsequent LLMs.
   Your job is exclusively to refine prompts with surgical precision, optimizing them for the most accurate response possible.
   DO NOT generate any responses to the user's question or instruction. Your sole focus is on refining the prompt to ensure the subsequent LLM can provide the correct answer.
@@ -60,10 +60,10 @@ export const defaultMetaPrompt = `
     - Maintains the original objective
     - Maintain the original language of the prompt
     - Includes relevant context or background information
-    - Helps to the subsequent LLM to be focused and specific in its response, avoiding redundancy or vagueness
+    - Helps to the subsequent LLM to be focused and specific in its response, avoiding redundancy or vagueness\n
 `;
 
-export const metaPromptInputFormat = `
+export const metaPromptInputFormat = `\n
   ## Input instructions:
   """"
   You will be provided with the original prompt in the following XML structure:
@@ -78,10 +78,10 @@ export const metaPromptInputFormat = `
     <user>{{USER_MESSAGE}}</user>
     <assistant>{{ASSISTANT_MESSAGE}}</assistant>
   </chat_history>
-  """"
+  """"\n
 `;
 
-export const metaPromptOutputFormat = `
+export const metaPromptOutputFormat = `\n
   ## Output instructions:
   """"
   Your output MUST be the refined prompt ONLY.
@@ -89,14 +89,14 @@ export const metaPromptOutputFormat = `
   Use bulled points for any listed items, avoid numbering to facilitate easier editing and reordering.
   Do NOT include any explanations, apologies, or any other conversational text before or after the refined prompt.
   DO NOT include the refined prompt inside xml tags.
-  """"
+  """"\n
 `;
 
 export const originalPrompt = (prompt: string): string => `
   Here is the original prompt to refine:
   <original_prompt>
     ${scapeXML(prompt)}
-  </original_prompt>
+  </original_prompt>\n
 `;
 
 export const chatHistoryPrompt = (chatHistory: string): string => `
@@ -105,7 +105,14 @@ export const chatHistoryPrompt = (chatHistory: string): string => `
     ${chatHistory}
   </chat_history>
 
-  Now
+  Now\n
+`;
+
+export const titlePrompt = `\n
+  - you will generate a short title based on the first message a user begins a conversation with
+  - ensure it is not more than 40 characters long
+  - the title should be a summary of the user's message
+  - do not use quotes or colons\n
 `;
 
 export const concatenatePrompts = `\n`;
