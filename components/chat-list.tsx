@@ -28,29 +28,37 @@ export const ChatList: React.FC<ChatListProps> = async ({
         {chatData.chats
           .filter(({ id }) => id !== chatId)
           .map((chat) => (
-            <div
-              key={chat.id}
-              className="flex items-center justify-between rounded-lg border dark:border-zinc-600 p-3 text-sm transition-colors hover:bg-accent group"
-            >
-              <Link href={`/${chat.id}`} className="flex-1 overflow-hidden">
-                <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                  {chat.title || "Untitled Chat"}
-                </div>
-              </Link>
-              <form action={deleteChat.bind(null, chat.id)}>
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  className="cursor-pointer"
-                  aria-label="Delete chat"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
+            <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
           ))}
       </div>
     </div>
   );
+};
+
+interface ChatListItemProps {
+  id: string;
+  title?: string | null;
 }
+
+const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
+  return (
+    <div className="flex items-center justify-between rounded-lg border dark:border-zinc-600 p-3 text-sm transition-colors hover:bg-accent group">
+      <Link href={`/${id}`} className="flex-1 overflow-hidden">
+        <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+          {title || "Untitled Chat"}
+        </div>
+      </Link>
+      <form action={deleteChat.bind(null, id)}>
+        <Button
+          type="submit"
+          variant="ghost"
+          size="icon"
+          className="cursor-pointer"
+          aria-label="Delete chat"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </form>
+    </div>
+  );
+};
