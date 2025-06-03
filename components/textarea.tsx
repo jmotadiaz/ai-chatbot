@@ -20,7 +20,7 @@ export const Textarea = ({
   isLoading,
 }: TextareaProps) => {
   return (
-    <div className="bg-secondary w-full rounded-2xl overflow-hidden">
+    <div className="bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden transition-all duration-200">
       <div
         className={cn(
           "absolute z-2 top-0 bottom-16 pt-4 px-4 left-0 w-full",
@@ -34,7 +34,7 @@ export const Textarea = ({
       </div>
       <ShadcnTextarea
         className={cn(
-          "resize-none relative bg-secondary w-full max-h-[500px] overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
+          "resize-none relative bg-transparent w-full max-h-[500px] overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
           isLoadingRefinedPrompt ? "opacity-0 max-h-32" : "opacity-100"
         )}
         value={input}
