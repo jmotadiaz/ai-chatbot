@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getChats } from "@/lib/db/queries";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X as XIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { deleteChat } from "@/lib/ai/actions";
 
@@ -56,7 +56,7 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
           className="cursor-pointer"
           aria-label="Delete chat"
         >
-          <X className="h-4 w-4" />
+          <XIcon className="h-4 w-4" />
         </Button>
       </form>
     </div>
