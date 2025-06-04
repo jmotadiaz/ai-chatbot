@@ -37,6 +37,7 @@ export const Textarea = ({
           "resize-none relative bg-transparent w-full max-h-[500px] overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
           isLoadingRefinedPrompt ? "opacity-0 max-h-32" : "opacity-100"
         )}
+        theme="outline"
         value={input}
         placeholder={"Say something..."}
         // @ts-expect-error err

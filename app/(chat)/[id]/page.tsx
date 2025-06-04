@@ -8,6 +8,7 @@ import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
+import { ProjectList } from "@/components/project-list";
 import { Message } from "@/lib/db/schema";
 import { defaultTemperature, defaultTopP, modelID } from "@/lib/ai/providers";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
@@ -54,6 +55,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
             <SidebarContent>
+              <ProjectList />
               <ChatList />
             </SidebarContent>
             <SidebarFooter>

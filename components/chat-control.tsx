@@ -30,8 +30,8 @@ export const ChatControl = ({
           onClick={onLoadingClick}
           disabled={disabled}
           className={cn(
-            "rounded-full p-2 bg-black hover:bg-zinc-800 disabled:bg-zinc-300 disabled:cursor-not-allowed transition-colors",
-            onLoadingClick ?? "cursor-pointer",
+            "rounded-full p-2 bg-black disabled:bg-zinc-300 disabled:cursor-not-allowed transition-colors",
+            onLoadingClick ? "cursor-pointer" : "cursor-not-allowed",
             className
           )}
         >

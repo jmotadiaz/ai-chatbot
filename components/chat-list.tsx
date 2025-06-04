@@ -19,7 +19,10 @@ export const ChatList: React.FC<ChatListProps> = async ({ limit = 10 }) => {
   if (!chatData.chats.length) return null;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="p-4">
+      <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300 mb-2">
+        Chats
+      </h3>
       <div className="space-y-3">
         {chatData.chats.map((chat) => (
           <ChatListItem key={chat.id} id={chat.id} title={chat.title} />

@@ -4,7 +4,8 @@ import { useState } from "react";
 export interface UseRefinePromptParams {
   input: string;
   setInput: (value: string) => void;
-  messages: UIMessage[];
+  messages?: UIMessage[];
+  api?: string;
 }
 
 export interface RefinePromptReturn {
@@ -16,6 +17,7 @@ export const useRefinePrompt = ({
   input,
   setInput,
   messages,
+  api = "refine-prompt",
 }: UseRefinePromptParams): RefinePromptReturn => {
   const [isLoadingRefinedPrompt, setIsLoadingRefinedPrompt] = useState(false);
   const isRefinePromptEnabled = !!input.length && !isLoadingRefinedPrompt;
@@ -23,7 +25,7 @@ export const useRefinePrompt = ({
   const refinePrompt = () => {
     if (!isRefinePromptEnabled) return;
     setIsLoadingRefinedPrompt(true);
-    fetch("/api/refine-prompt", {
+    fetch(`/api/${api}`, {
       method: "POST",
       body: JSON.stringify({
         prompt: input,

@@ -1,49 +1,52 @@
-import React, { Suspense } from "react";
-import Chat from "@/components/chat-with-client-storage";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { NewProject } from "@/components/new-project";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
 import { ChatList } from "@/components/chat-list";
+import { UserMenu } from "@/components/user-menu";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
-import { NewChatHome } from "@/components/new-chat-home";
-import { ModelPicker } from "@/components/model-picker";
+import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { UserMenu } from "@/components/user-menu";
-import { ChatProvider, SidebarProvider } from "../providers";
 import { ProjectList } from "@/components/project-list";
+import { SidebarProvider } from "../../../providers";
 
-const Page: React.FC = async () => {
+const NewProjectPage: React.FC = async () => {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   return (
-    <ChatProvider>
+    <>
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
-            <SidebarContent>
-              <Suspense fallback={null}>
+            <Suspense fallback={null}>
+              <SidebarContent>
                 <ProjectList />
                 <ChatList />
-              </Suspense>
-            </SidebarContent>
-            <SidebarFooter>
-              <Suspense fallback={null}>
+              </SidebarContent>
+              <SidebarFooter>
                 <UserMenu />
-              </Suspense>
-            </SidebarFooter>
+              </SidebarFooter>
+            </Suspense>
           </Sidebar>
           <Header>
             <div className="flex flex-row items-center gap-6 shrink-0">
               <Logo />
-              <NewChatHome />
-              <ModelPicker />
+              <NewChat />
             </div>
             <div className="flex flex-row items-center gap-2 shrink-0">
               <ThemeToggle />
             </div>
           </Header>
-          <Chat />
+          <NewProject userId={session.user.id} />
         </div>
       </SidebarProvider>
-    </ChatProvider>
+    </>
   );
 };
 
-export default Page;
+export default NewProjectPage;
