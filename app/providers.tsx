@@ -20,7 +20,11 @@ interface ProvidersProps {
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" enableSystem defaultTheme="system">
+      <ThemeProvider
+        attribute="data-color-mode"
+        enableSystem
+        defaultTheme="system"
+      >
         {children}
       </ThemeProvider>
     </SessionProvider>
