@@ -188,6 +188,7 @@ export const NewProject: React.FC<NewProjectProps> = ({ userId }) => {
             topP={topP}
             selectedModel={model}
             systemPrompt={systemPrompt}
+            title={title}
           >
             <Chat />
           </ChatProvider>
