@@ -183,7 +183,12 @@ export const NewProject: React.FC<NewProjectProps> = ({ userId }) => {
 
       {activeTab === "testChat" && (
         <div>
-          <ChatProvider temperature={temperature} topP={topP}>
+          <ChatProvider
+            temperature={temperature}
+            topP={topP}
+            selectedModel={model}
+            systemPrompt={systemPrompt}
+          >
             <Chat />
           </ChatProvider>
         </div>

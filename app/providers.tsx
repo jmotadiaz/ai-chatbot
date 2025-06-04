@@ -35,6 +35,7 @@ interface ChatConfig {
   selectedModel: modelID;
   temperature: number;
   topP: number;
+  systemPrompt?: string;
 }
 
 interface SetChatConfig {
@@ -44,7 +45,7 @@ interface SetChatConfig {
 const chatContext = React.createContext<
   UseChatHelpers &
     SetChatConfig &
-    ChatConfig & { selectedModel: modelID; chatId?: string }
+    ChatConfig & { selectedModel: modelID; chatId?: string; title?: string }
 >({
   selectedModel: defaultModel,
   temperature: 0.2,
@@ -76,6 +77,8 @@ export interface ChatProviderProps extends ProvidersProps {
   selectedModel?: modelID;
   temperature?: number;
   topP?: number;
+  systemPrompt?: string;
+  title?: string;
 }
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({
@@ -84,12 +87,15 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   selectedModel = defaultModel,
   temperature = defaultTemperature,
   topP = defaultTopP,
+  systemPrompt,
   chatId,
+  title,
 }) => {
   const [chatConfig, setChatConfig] = useState<ChatConfig>({
     selectedModel,
     temperature,
     topP,
+    systemPrompt,
   });
   const chatResult = useChat({
     initialMessages,
@@ -125,6 +131,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         setConfig,
         ...chatResult,
         ...chatConfig,
+    title,
       }}
     >
       {children}
