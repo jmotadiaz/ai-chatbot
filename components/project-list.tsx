@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ClassNameValue } from "tailwind-merge";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Edit } from "lucide-react";
+import { Button } from "./ui/button";
 
 export interface ProjectListProps {
   limit?: number;
@@ -17,15 +18,14 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
 
   return (
     <div className={cn("p-4", className)}>
-      <Link
-        href="/project/new"
-        className="text-base flex items-center font-semibold text-zinc-600 dark:text-zinc-200 mb-4"
-      >
-        Create new project <Plus className="ml-2 h-4 w-4" />
-      </Link>
       <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300 mb-2">
         Projects
       </h3>
+      <Link href="/project/new">
+        <Button variant="outline">
+          Create new project <Edit className="ml-2 h-4 w-4" />
+        </Button>
+      </Link>
       {/* <div className="space-y-3"></div> */}
     </div>
   );
