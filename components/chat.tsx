@@ -7,7 +7,7 @@ import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
 import { ChatSettingsButton } from "./chat-settings-button";
 import { useRefinePrompt } from "@/lib/ai/hooks";
-import { ArrowUp, Pencil, RefreshCcw, Circle } from "lucide-react";
+import { ArrowUp, RefreshCcw, Circle, WandSparkles } from "lucide-react";
 import { cn } from "../lib/utils";
 import { ScrollToBottomButton } from "./scroll-to-bottom-btn";
 import { useRef } from "react";
@@ -42,7 +42,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     <>
       <div
         className={cn(
-          "w-full pt-16 overflow-hidden relative",
+          "w-full pt-16 overflow-hidden relative text-lg",
           messages.length && "h-full"
         )}
       >
@@ -112,7 +112,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
           <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
           <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
           <ChatControl
-            Icon={Pencil}
+            Icon={WandSparkles}
             className="absolute z-1 right-13 bottom-2"
             onClick={refinePrompt}
             disabled={!input.length}

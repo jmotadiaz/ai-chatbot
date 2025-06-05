@@ -20,9 +20,11 @@ export async function POST(req: Request) {
   const {
     prompt,
     messages,
+    metaPrompt = defaultMetaPrompt,
   }: {
     prompt: string;
     messages?: UIMessage[];
+    metaPrompt?: string;
   } = await req.json();
 
   const chatHistory = (messages || []).reduce((acc, message) => {
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
   const { text } = await generateText({
     model: refinePromptModel,
     system:
-      defaultMetaPrompt +
+      metaPrompt +
       concatenatePrompts +
       metaPromptInputFormat +
       concatenatePrompts +

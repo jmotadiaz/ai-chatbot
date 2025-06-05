@@ -2,7 +2,7 @@
 
 @plugin "tailwindcss-animate";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-color-mode=dark], [data-color-mode=dark] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -96,7 +96,7 @@ input[type=number] {
   --sidebar-ring: oklch(0.705 0.015 286.067);
 }
 
-.dark {
+[data-color-mode='dark'] {
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.141 0.005 285.823);
@@ -164,5 +164,69 @@ input[type=number] {
       transform: scale(1.6);
       opacity: 1;
     }
+  }
+}
+
+::view-transition-group(.slide-in) {
+  overflow: hidden;
+}
+::view-transition-old(.slide-in) {
+  animation: slide-out-left 300ms ease-in-out both;
+}
+::view-transition-new(.slide-in) {
+  animation: slide-in-right 300ms ease-in-out both;
+}
+
+::view-transition-group(.slide-out) {
+  overflow: hidden;
+}
+::view-transition-old(.slide-out) {
+  animation: slide-out-right 300ms ease-in-out both;
+}
+::view-transition-new(.slide-out) {
+  animation: slide-in-left 300ms ease-in-out both;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(20%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-20%);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-20%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(20%);
+    opacity: 0;
   }
 }

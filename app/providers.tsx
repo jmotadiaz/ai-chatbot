@@ -20,7 +20,11 @@ interface ProvidersProps {
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" enableSystem defaultTheme="system">
+      <ThemeProvider
+        attribute="data-color-mode"
+        enableSystem
+        defaultTheme="system"
+      >
         {children}
       </ThemeProvider>
     </SessionProvider>
@@ -31,6 +35,7 @@ interface ChatConfig {
   selectedModel: modelID;
   temperature: number;
   topP: number;
+  systemPrompt?: string;
 }
 
 interface SetChatConfig {
@@ -40,7 +45,12 @@ interface SetChatConfig {
 const chatContext = React.createContext<
   UseChatHelpers &
     SetChatConfig &
-    ChatConfig & { selectedModel: modelID; chatId?: string }
+    ChatConfig & {
+      selectedModel: modelID;
+      chatId?: string;
+      title?: string;
+      projectId?: string;
+    }
 >({
   selectedModel: defaultModel,
   temperature: 0.2,
@@ -68,10 +78,13 @@ const chatContext = React.createContext<
 
 export interface ChatProviderProps extends ProvidersProps {
   initialMessages?: UIMessage[];
+  projectId?: string;
   chatId?: string;
   selectedModel?: modelID;
   temperature?: number;
   topP?: number;
+  systemPrompt?: string;
+  title?: string;
 }
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({
@@ -80,12 +93,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   selectedModel = defaultModel,
   temperature = defaultTemperature,
   topP = defaultTopP,
+  systemPrompt,
   chatId,
+  projectId,
+  title,
 }) => {
   const [chatConfig, setChatConfig] = useState<ChatConfig>({
     selectedModel,
     temperature,
     topP,
+    systemPrompt,
   });
   const chatResult = useChat({
     initialMessages,
@@ -117,10 +134,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   return (
     <chatContext.Provider
       value={{
+        projectId,
         chatId,
         setConfig,
         ...chatResult,
         ...chatConfig,
+        title,
       }}
     >
       {children}

@@ -25,17 +25,19 @@ export async function POST(req: Request) {
     temperature,
     topP,
     chatId,
+    systemPrompt,
   }: {
     messages: UIMessage[];
     selectedModel: modelID;
     temperature?: number;
     topP?: number;
     chatId?: string;
+    systemPrompt?: string;
   } = await req.json();
 
   const result = streamText({
     model: model.languageModel(selectedModel),
-    system: defaultSystemPrompt,
+    system: systemPrompt || defaultSystemPrompt,
     messages,
     temperature,
     topP,
