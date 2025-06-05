@@ -38,6 +38,7 @@ const languageModels = {
     }),
     model: groq("deepseek-r1-distill-llama-70b"),
   }),
+  "Deepseek R1 0528": openrouter.chat("deepseek/deepseek-r1-0528"),
   "Qwen 3": openrouter.chat("qwen/qwen3-30b-a3b", {
     reasoning: {
       effort: "low",
@@ -77,6 +78,7 @@ export const modelCapabilities: Record<
   "Gemini 2.5 Flash": { img: false, pdf: false },
   "Claude Sonnet 4": { img: false, pdf: false },
   "Deepseek R1 Distill": { img: false, pdf: false },
+  "Deepseek R1 0528": { img: false, pdf: false },
   "Qwen 3": { img: false, pdf: false },
   "o4 Mini": { img: false, pdf: false },
   "Gemini 2.5 Pro": { img: false, pdf: false },
