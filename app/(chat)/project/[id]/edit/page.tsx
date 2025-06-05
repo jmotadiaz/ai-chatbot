@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProjectForm } from "@/components/project-form";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
@@ -10,18 +10,32 @@ import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProjectList } from "@/components/project-list";
-import { SidebarProvider } from "../../../providers";
-import { getChats } from "../../../../lib/db/queries";
+import { getChats, getProjectById } from "@/lib/db/queries";
+import { SidebarProvider } from "../../../../providers";
 
-const NewProjectPage: React.FC = async () => {
+interface EditProjectPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
+  const { id } = await params;
+  const project = await getProjectById({ id });
+
+  if (!project) {
+    notFound();
+  }
+
   const { chats } = await getChats({
     userId: session.user.id,
     limit: 10,
+    projectId: project.id,
   });
 
   return (
@@ -47,10 +61,10 @@ const NewProjectPage: React.FC = async () => {
             <ThemeToggle />
           </div>
         </Header>
-        <ProjectForm />
+        <ProjectForm project={project} />
       </div>
     </SidebarProvider>
   );
 };
 
-export default NewProjectPage;
+export default EditProjectPage;
