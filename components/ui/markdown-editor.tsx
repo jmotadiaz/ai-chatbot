@@ -1,6 +1,7 @@
 "use client";
 import MDEditor, { commands } from "@uiw/react-md-editor";
-import { cn } from "@/lib/utils";
+import { cn, handleCopy } from "@/lib/utils";
+import { Copy } from "lucide-react";
 
 export interface MarkdownEditorProps {
   value: string;
@@ -26,7 +27,18 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         preview: isLoading ? LoadingComponent : undefined,
       }}
       extraCommands={[
-        ...(extraCommands || []),
+        ...(extraCommands ? [...extraCommands, commands.divider] : []),
+        {
+          name: "copy",
+          icon: (
+            <div
+              className="flex items-center px-1 py-1 cursor-pointer"
+              onClick={handleCopy(value)}
+            >
+              <Copy size={12} />
+            </div>
+          ),
+        },
         commands.divider,
         commands.codeEdit,
         commands.codeLive,

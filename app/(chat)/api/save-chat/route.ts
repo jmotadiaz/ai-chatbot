@@ -12,6 +12,7 @@ export async function POST(req: Request) {
   }
 
   const {
+    projectId,
     chatId,
     messages,
     selectedModel,
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
   }: {
     messages: UIMessage[];
     selectedModel: modelID;
+    projectId?: string;
     chatId: string;
     temperature: number;
     topP: number;
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
     await saveChat({
       userId: session.user.id,
       id: chatId,
+      projectId,
       defaultModel: selectedModel,
       defaultTemperature: temperature,
       defaultTopP: topP,
