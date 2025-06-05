@@ -2,36 +2,36 @@
 import { useTheme } from "next-themes";
 import React, { ReactNode } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { tomorrow, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  tomorrow,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy } from "lucide-react";
-import { toast } from "sonner";
+import { handleCopy } from "@/lib/utils";
 
 interface CodeBlockProps {
   className?: string;
   children?: ReactNode;
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ className, children, ...props }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({
+  className,
+  children,
+  ...props
+}) => {
   const { theme } = useTheme();
   const codeTheme = theme === "light" ? oneLight : tomorrow;
-  const codeString = (Array.isArray(children) ? children.join("") : String(children)).replace(/\n$/m, "");
+  const codeString = (
+    Array.isArray(children) ? children.join("") : String(children)
+  ).replace(/\n$/m, "");
   const match = /language-(\w+)/.exec(className || "");
 
   if (match) {
-    const handleCopy = async () => {
-      try {
-        await navigator.clipboard.writeText(codeString);
-        toast.success("Code copied to clipboard");
-      } catch {
-        toast.error("Failed to copy code");
-      }
-    };
-
     return (
       <div className="relative animate-fade">
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={handleCopy(codeString)}
           className="absolute top-3 right-2 p-1 cursor-pointer text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
           aria-label={"Copy code"}
         >

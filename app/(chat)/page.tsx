@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React from "react";
 import Chat from "@/components/chat-with-client-storage";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
 import { ChatList } from "@/components/chat-list";
@@ -9,22 +9,33 @@ import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { ChatProvider, SidebarProvider } from "../providers";
+import { ProjectList } from "@/components/project-list";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { getChats } from "../../lib/db/queries";
 
 const Page: React.FC = async () => {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const { chats } = await getChats({
+    userId: session.user.id,
+    limit: 10,
+  });
+
   return (
     <ChatProvider>
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
             <SidebarContent>
-              <Suspense fallback={null}>
-                <ChatList />
-              </Suspense>
+              <ProjectList />
+              <ChatList chats={chats} />
             </SidebarContent>
             <SidebarFooter>
-              <Suspense fallback={null}>
-                <UserMenu />
-              </Suspense>
+              <UserMenu />
             </SidebarFooter>
           </Sidebar>
           <Header>

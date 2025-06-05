@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -24,3 +25,12 @@ export function scapeXML(str: string): string {
     .replace(/'/g, "&apos;")
     .trim();
 }
+
+export const handleCopy = (value: string) => async () => {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success("Text copied to clipboard");
+  } catch {
+    toast.error("Failed to copy text");
+  }
+};

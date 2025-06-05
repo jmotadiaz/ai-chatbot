@@ -22,6 +22,7 @@ const ChatWithClientStorage: React.FC = () => {
     temperature,
     topP,
     status,
+    projectId,
   } = useChatContext();
   const [isSavingChat, setIsSavingChat] = useState(false);
   const initialized = useRef(false);
@@ -38,6 +39,7 @@ const ChatWithClientStorage: React.FC = () => {
       method: "POST",
       body: JSON.stringify({
         messages,
+        projectId,
         chatId,
         selectedModel,
         temperature,

@@ -50,7 +50,7 @@ const languageModels = {
   "Grok 3": xai("grok-3"),
 };
 
-export const refinePromptModel = anthropic("claude-sonnet-4-20250514");
+export const refinePromptModel = xai("grok-3");
 export const titleModel = groq("llama-3.1-8b-instant");
 
 export const model = customProvider({

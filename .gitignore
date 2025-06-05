@@ -12,6 +12,7 @@
 
 # codex tasks
 /tasks
+/claude
 
 # testing
 /coverage

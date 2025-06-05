@@ -1,27 +1,22 @@
 import Link from "next/link";
-import { getChats } from "@/lib/db/queries";
-import { Button } from "@/components/ui/button";
 import { X as XIcon } from "lucide-react";
-import { auth } from "@/auth";
 import { deleteChat } from "@/lib/ai/actions";
+import { Chat } from "@/lib/db/schema";
 
 export interface ChatListProps {
-  limit?: number;
+  chats: Chat[];
 }
 
-export const ChatList: React.FC<ChatListProps> = async ({ limit = 10 }) => {
-  const session = await auth();
-  if (!session?.user) return null;
-
-  const userId = session.user.id;
-  const chatData = await getChats({ userId, limit });
-
-  if (!chatData.chats.length) return null;
+export const ChatList: React.FC<ChatListProps> = async ({ chats }) => {
+  if (!chats.length) return null;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="p-4">
+      <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300 mb-4">
+        Chats
+      </h3>
       <div className="space-y-3">
-        {chatData.chats.map((chat) => (
+        {chats.map((chat) => (
           <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
         ))}
       </div>
@@ -43,15 +38,9 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
         </div>
       </Link>
       <form action={deleteChat.bind(null, id)}>
-        <Button
-          type="submit"
-          variant="ghost"
-          size="icon"
-          className="cursor-pointer py-2 px-1"
-          aria-label="Delete chat"
-        >
+        <button className="cursor-pointer py-2 pr-3" aria-label="Delete chat">
           <XIcon className="h-4 w-4" />
-        </Button>
+        </button>
       </form>
     </div>
   );

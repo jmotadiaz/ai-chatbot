@@ -8,9 +8,10 @@ import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
+import { ProjectList } from "@/components/project-list";
 import { Message } from "@/lib/db/schema";
 import { defaultTemperature, defaultTopP, modelID } from "@/lib/ai/providers";
-import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
+import { getChatById, getChats, getMessagesByChatId } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Attachment, UIMessage } from "ai";
@@ -39,6 +40,14 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
 
   const messages = await getMessagesByChatId({ id });
 
+  const { chats } = await getChats({
+    userId: session.user.id,
+    limit: 10,
+    ...(chat.projectId !== null && {
+      projectId: chat.projectId,
+    }),
+  });
+
   // Convert to UI messages format
   const initialMessages = convertToUIMessages(messages);
 
@@ -54,7 +63,8 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>
             <SidebarContent>
-              <ChatList />
+              <ProjectList />
+              <ChatList chats={chats} />
             </SidebarContent>
             <SidebarFooter>
               <UserMenu />
