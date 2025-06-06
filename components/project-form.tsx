@@ -69,7 +69,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             defaultTemperature: temperature,
             defaultTopP: topP,
             systemPrompt,
-            metaPrompt: metaPrompt || undefined,
+            metaPrompt: metaPrompt,
           }),
         }
       );
