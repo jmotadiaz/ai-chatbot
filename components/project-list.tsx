@@ -24,12 +24,12 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
 
   return (
     <div className={cn("p-4", className)}>
-      <h3 className="text-base flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4">
-        Projects{" "}
-        <Link href="/project/new" className="ml-3">
-          <Edit className="h-5 w-5" />
-        </Link>
-      </h3>
+      <Link
+        href="/project/new"
+        className="text-base flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4"
+      >
+        Projects <Edit className="h-5 w-5 ml-2" />
+      </Link>
       {projects.length > 0 && (
         <div className="space-y-2">
           {projects.map((project) => (
