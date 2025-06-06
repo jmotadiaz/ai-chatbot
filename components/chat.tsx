@@ -27,11 +27,13 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     stop,
     reload,
     chatId,
+    metaPrompt,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt } = useRefinePrompt({
     input,
     setInput,
     messages,
+    metaPrompt,
   });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observeRef = useRef<HTMLDivElement>(null);
@@ -111,13 +113,15 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
           />
           <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
           <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
-          <ChatControl
-            Icon={WandSparkles}
-            className="absolute z-1 right-13 bottom-2"
-            onClick={refinePrompt}
-            disabled={!input.length}
-            isLoading={isLoadingRefinedPrompt}
-          />
+          {metaPrompt && (
+            <ChatControl
+              Icon={WandSparkles}
+              className="absolute z-1 right-13 bottom-2"
+              onClick={refinePrompt}
+              disabled={!input.length}
+              isLoading={isLoadingRefinedPrompt}
+            />
+          )}
           <ChatControl
             Icon={ArrowUp}
             type="submit"

@@ -12,7 +12,8 @@ import { ChatProvider, SidebarProvider } from "../providers";
 import { ProjectList } from "@/components/project-list";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getChats } from "../../lib/db/queries";
+import { getChats } from "@/lib/db/queries";
+import { defaultMetaPrompt } from "@/lib/ai/prompts";
 
 const Page: React.FC = async () => {
   const session = await auth();
@@ -26,7 +27,7 @@ const Page: React.FC = async () => {
   });
 
   return (
-    <ChatProvider>
+    <ChatProvider metaPrompt={defaultMetaPrompt}>
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
           <Sidebar>

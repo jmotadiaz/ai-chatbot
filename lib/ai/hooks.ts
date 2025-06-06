@@ -5,7 +5,7 @@ export interface UseRefinePromptParams {
   input: string;
   setInput: (value: string) => void;
   messages?: UIMessage[];
-  metaPrompt?: string;
+  metaPrompt?: string | null;
 }
 
 export interface RefinePromptReturn {
