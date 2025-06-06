@@ -95,7 +95,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   };
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-x-hidden h-full">
       <div className="flex w-full max-w-4xl mx-auto lg:fixed lg:z-100 lg:left-0 lg:right-0 top-0 border-b pt-16 lg:pt-0 px-6 my-4">
         <button
           type="button"
