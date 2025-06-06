@@ -52,6 +52,7 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
       temperature={project.defaultTemperature || undefined}
       topP={project.defaultTopP || undefined}
       systemPrompt={project.systemPrompt}
+      metaPrompt={project.metaPrompt}
       title={project.name}
     >
       <SidebarProvider>

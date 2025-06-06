@@ -47,6 +47,7 @@ const chatContext = React.createContext<
     SetChatConfig &
     ChatConfig & {
       selectedModel: modelID;
+      metaPrompt?: string | null;
       chatId?: string;
       title?: string;
       projectId?: string;
@@ -84,6 +85,7 @@ export interface ChatProviderProps extends ProvidersProps {
   temperature?: number;
   topP?: number;
   systemPrompt?: string;
+  metaPrompt?: string | null;
   title?: string;
 }
 
@@ -94,6 +96,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   temperature = defaultTemperature,
   topP = defaultTopP,
   systemPrompt,
+  metaPrompt,
   chatId,
   projectId,
   title,
@@ -135,6 +138,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     <chatContext.Provider
       value={{
         projectId,
+        metaPrompt,
         chatId,
         setConfig,
         ...chatResult,

@@ -11,11 +11,17 @@ import { NewChat } from "@/components/new-chat";
 import { ProjectList } from "@/components/project-list";
 import { Message } from "@/lib/db/schema";
 import { defaultTemperature, defaultTopP, modelID } from "@/lib/ai/providers";
-import { getChatById, getChats, getMessagesByChatId } from "@/lib/db/queries";
+import {
+  getChatById,
+  getChats,
+  getMessagesByChatId,
+  getProjectById,
+} from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Attachment, UIMessage } from "ai";
 import { ChatProvider, SidebarProvider } from "../../providers";
+import { defaultMetaPrompt } from "../../../lib/ai/prompts";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -48,6 +54,14 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
     }),
   });
 
+  const project = chat.projectId
+    ? await getProjectById({
+        id: chat.projectId ?? "",
+      })
+    : null;
+
+  const metaPrompt = project ? project.metaPrompt : defaultMetaPrompt;
+
   // Convert to UI messages format
   const initialMessages = convertToUIMessages(messages);
 
@@ -57,6 +71,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
       temperature={chat.defaultTemperature ?? defaultTemperature}
       topP={chat.defaultTopP ?? defaultTopP}
       chatId={id}
+      metaPrompt={metaPrompt}
       initialMessages={initialMessages}
     >
       <SidebarProvider>
