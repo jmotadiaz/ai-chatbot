@@ -96,7 +96,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
 
   return (
     <div className="overflow-x-hidden">
-      <div className="flex w-full max-w-4xl mx-auto fixed z-100 left-0 right-0 top-0 border-b px-6 my-4">
+      <div className="flex w-full max-w-4xl mx-auto lg:fixed lg:z-100 lg:left-0 lg:right-0 top-0 border-b pt-16 lg:pt-0 px-6 my-4">
         <button
           type="button"
           className={`px-4 py-2 border-b-2 font-medium transition[color,border] duration-300  ${
@@ -128,7 +128,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
           Test Chat
         </button>
       </div>
-      <div className="w-full max-w-4xl mx-auto pt-18 px-6">
+      <div className="w-full max-w-4xl mx-auto pt-2 lg:pt-18 px-6">
         {activeTab === "configuration" && (
           <ViewTransition enter="slide-in" exit="slide-out">
             <div className="flex flex-col gap-6 pb-8">
