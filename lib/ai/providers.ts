@@ -51,7 +51,7 @@ const languageModels = {
   "Grok 3": xai("grok-3"),
 };
 
-export const refinePromptModel = openrouter.chat("deepseek/deepseek-r1-0528");
+export const refinePromptModel = google("gemini-2.5-pro-preview-05-06");
 export const titleModel = groq("llama-3.1-8b-instant");
 
 export const model = customProvider({
