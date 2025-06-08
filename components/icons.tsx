@@ -1,17 +1,17 @@
-export const LogoIcon = ({ width = 18 }) => (
+export const LogoIcon = ({ size = 20 }) => (
   <svg
     data-testid="geist-icon"
-    height={18}
+    height={size}
     strokeLinejoin="round"
     viewBox="0 0 16 16"
-    width={width}
+    width={size}
     style={{ color: "currentcolor" }}
   >
     <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M8 1L16 15H0L8 1Z"
-      fill="currentColor"
+      d="M8 2L14 14H2L8 2Z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
     />
   </svg>
 );
