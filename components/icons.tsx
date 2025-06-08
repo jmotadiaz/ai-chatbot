@@ -14,7 +14,7 @@ export const LogoIcon = ({ size = 20 }) => (
       strokeWidth="1.5"
     />
     <path
-      d="M14 14L14 2"
+      d="M8 2L8 14"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"
