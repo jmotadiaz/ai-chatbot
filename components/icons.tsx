@@ -7,12 +7,9 @@ export const LogoIcon = ({ width = 18 }) => (
     width={width}
     style={{ color: "currentcolor" }}
   >
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M8 1L16 15H0L8 1Z"
-      fill="currentColor"
-    />
+    <line x1="8" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="12" y1="12" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" />
+    <line x1="4" y1="12" x2="8" y2="4" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 );
 
