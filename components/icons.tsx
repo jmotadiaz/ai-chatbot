@@ -13,6 +13,12 @@ export const LogoIcon = ({ size = 20 }) => (
       stroke="currentColor"
       strokeWidth="2"
     />
+    <path
+      d="M14 14L14 4.4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
   </svg>
 );
 
