@@ -1,10 +1,10 @@
-export const LogoIcon = ({ width = 18 }) => (
+export const LogoIcon = ({ size = 20 }) => (
   <svg
     data-testid="geist-icon"
-    height={18}
+    height={size}
     strokeLinejoin="round"
     viewBox="0 0 16 16"
-    width={width}
+    width={size}
     style={{ color: "currentcolor" }}
   >
     <path
