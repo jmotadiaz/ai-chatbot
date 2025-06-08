@@ -11,13 +11,13 @@ export const LogoIcon = ({ size = 20 }) => (
       d="M8 2L14 14H2L8 2Z"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.5"
     />
     <path
-      d="M14 14L14 4.4"
+      d="M14 14L14 2"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.5"
     />
   </svg>
 );
