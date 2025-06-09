@@ -10,7 +10,14 @@
       stroke-width="2"
     />
     <path
-      d="M 19 5 L 19 17"
+      d="M 19 5 L 19 5"
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-width="2"
+    />
+    <path
+      d="M 19 10 L 19 17"
       fill="none"
       stroke="currentColor"
       stroke-linecap="round"

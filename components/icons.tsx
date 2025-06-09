@@ -9,14 +9,21 @@ export const LogoIcon = ({ size = 24, className = "", strokeWidth = 2.5 }) => (
     style={{ color: "currentcolor" }}
   >
     <path
-      d="M 9 2 L 15 14 H 3 L 9 2 Z"
+      d="M 8 1 L 14 13 H 2 L 8 1 Z"
       fill="none"
       stroke="currentColor"
       strokeLinejoin="round"
       strokeWidth={strokeWidth}
     />
     <path
-      d="M 20 2 L 20 14"
+      d="M 19 1 L 19 1"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth={strokeWidth}
+    />
+    <path
+      d="M 19 6 L 19 13"
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
