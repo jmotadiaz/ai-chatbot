@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Chatbot",
+  title: "Chatbot",
   description:
     "Project to use different AI models to create a chatbot with Next.js and Vercel AI SDK",
 };
