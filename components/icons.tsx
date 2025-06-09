@@ -1,17 +1,25 @@
 export const LogoIcon = ({ size = 20 }) => (
   <svg
+    xmlns="http://www.w3.org/2000/svg"
     data-testid="geist-icon"
     height={size}
-    strokeLinejoin="round"
-    viewBox="0 0 16 16"
+    viewBox="0 0 22 16"
     width={size}
     style={{ color: "currentcolor" }}
   >
     <path
-      d="M8 2L14 14H2L8 2Z"
+      d="M 8 2 L 14 14 H 2 L 8 2 Z"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeLinejoin="round"
+      strokeWidth="3"
+    />
+    <path
+      d="M 20 2 L 20 14"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="3"
     />
   </svg>
 );
