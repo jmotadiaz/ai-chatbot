@@ -1,6 +1,6 @@
 "use client";
 import { useTheme } from "next-themes";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   tomorrow,
@@ -19,7 +19,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   ...props
 }) => {
+  const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   const codeTheme = theme === "light" ? oneLight : tomorrow;
   const codeString = (
     Array.isArray(children) ? children.join("") : String(children)
@@ -38,7 +48,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           <Copy size={16} />
         </button>
         <SyntaxHighlighter
-          suppressHydrationWarning
           wrapLongLines={false}
           style={codeTheme}
           language={match[1]}
