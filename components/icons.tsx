@@ -1,4 +1,4 @@
-export const LogoIcon = ({ size = 20 }) => (
+export const LogoIcon = ({ size = 22 }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     data-testid="geist-icon"
