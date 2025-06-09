@@ -10,7 +10,7 @@ export const ProjectOverview = () => {
           title
         ) : (
           <div className="flex items-center gap-2">
-            <LogoIcon size={36} /> Chatbot
+            <LogoIcon className="mr-1" strokeWidth={2} size={42} /> Chatbot
           </div>
         )}
       </h1>
