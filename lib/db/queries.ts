@@ -4,7 +4,16 @@ import { and, asc, desc, eq, gt, isNull, lt, SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { Chat, chat, Message, message, user, type User, project, type Project } from "./schema";
+import {
+  Chat,
+  chat,
+  Message,
+  message,
+  user,
+  type User,
+  project,
+  type Project,
+} from "./schema";
 import { generateHashedPassword } from "./utils";
 
 // Optionally, if not using email/pass login, you can
@@ -68,6 +77,38 @@ export async function saveChat({
     throw error;
   }
 }
+
+export const updateChat = async (
+  id: string,
+  {
+    title,
+    defaultModel,
+    defaultTemperature,
+    defaultTopP,
+  }: Partial<
+    Pick<Chat, "defaultModel" | "title" | "defaultTemperature" | "defaultTopP">
+  >
+) => {
+  try {
+    const updateData: Partial<Chat> = {
+      updatedAt: new Date(),
+      title,
+      defaultModel,
+      defaultTemperature,
+      defaultTopP,
+    };
+
+    const [updatedChat] = await db
+      .update(chat)
+      .set(updateData)
+      .where(and(eq(chat.id, id)))
+      .returning();
+    return updatedChat;
+  } catch (error) {
+    console.error("Failed to update chat in database");
+    throw error;
+  }
+};
 
 export async function getChatById({ id }: { id: string }) {
   try {
@@ -185,7 +226,75 @@ export async function saveMessages({ messages }: { messages: Array<Message> }) {
   }
 }
 
-export async function getMessagesByChatId({ id }: { id: string }) {
+export async function updateMessage(
+  id: string,
+  { role, parts, attachments }: Partial<Omit<Message, "id">>
+) {
+  try {
+    return await db
+      .update(message)
+      .set({
+        role,
+        parts,
+        attachments,
+      })
+      .where(eq(message.id, id))
+      .returning();
+  } catch (error) {
+    console.error("Failed to update message in database", error);
+    throw error;
+  }
+}
+
+export async function updateMessages({
+  messages,
+}: {
+  messages: Array<Message>;
+}) {
+  try {
+    return await db.transaction(async (tx) => {
+      const updatedMessages = [];
+
+      for (const msg of messages) {
+        const [updatedMessage] = await tx
+          .update(message)
+          .set({
+            role: msg.role,
+            parts: msg.parts,
+            attachments: msg.attachments,
+          })
+          .where(eq(message.id, msg.id))
+          .returning();
+
+        updatedMessages.push(updatedMessage);
+      }
+
+      return updatedMessages;
+    });
+  } catch (error) {
+    console.error("Failed to update messages in database", error);
+    throw error;
+  }
+}
+
+export async function deleteMessagesById({
+  id,
+}: {
+  id: string;
+}): Promise<Array<Message>> {
+  try {
+    return await db.delete(message).where(eq(message.id, id)).returning();
+  } catch (error) {
+    console.error("Failed to delete message by id from database", error);
+    throw error;
+  }
+}
+
+export async function getMessagesByChatId({
+  id,
+}: {
+  id: string;
+}): Promise<Array<Message>> {
   try {
     return await db
       .select()
@@ -218,18 +327,21 @@ export async function createProject({
   tools?: string[];
 }) {
   try {
-    const [newProject] = await db.insert(project).values({
-      userId,
-      name,
-      defaultModel,
-      defaultTemperature,
-      defaultTopP,
-      systemPrompt,
-      metaPrompt,
-      tools,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).returning();
+    const [newProject] = await db
+      .insert(project)
+      .values({
+        userId,
+        name,
+        defaultModel,
+        defaultTemperature,
+        defaultTopP,
+        systemPrompt,
+        metaPrompt,
+        tools,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
     return newProject;
   } catch (error) {
     console.error("Failed to create project in database");
@@ -239,7 +351,10 @@ export async function createProject({
 
 export async function getProjectById({ id }: { id: string }) {
   try {
-    const [selectedProject] = await db.select().from(project).where(eq(project.id, id));
+    const [selectedProject] = await db
+      .select()
+      .from(project)
+      .where(eq(project.id, id));
     return selectedProject;
   } catch (error) {
     console.error("Failed to get project by id from database");
@@ -247,14 +362,14 @@ export async function getProjectById({ id }: { id: string }) {
   }
 }
 
-export async function getProjectsByUserId({ 
-  userId, 
-  limit = 50, 
-  offset = 0 
-}: { 
-  userId: string; 
-  limit?: number; 
-  offset?: number; 
+export async function getProjectsByUserId({
+  userId,
+  limit = 50,
+  offset = 0,
+}: {
+  userId: string;
+  limit?: number;
+  offset?: number;
 }) {
   try {
     const projects = await db
@@ -296,10 +411,11 @@ export async function updateProject({
     const updateData: Partial<Project> = {
       updatedAt: new Date(),
     };
-    
+
     if (name !== undefined) updateData.name = name;
     if (defaultModel !== undefined) updateData.defaultModel = defaultModel;
-    if (defaultTemperature !== undefined) updateData.defaultTemperature = defaultTemperature;
+    if (defaultTemperature !== undefined)
+      updateData.defaultTemperature = defaultTemperature;
     if (defaultTopP !== undefined) updateData.defaultTopP = defaultTopP;
     if (systemPrompt !== undefined) updateData.systemPrompt = systemPrompt;
     if (metaPrompt !== undefined) updateData.metaPrompt = metaPrompt;
@@ -317,7 +433,13 @@ export async function updateProject({
   }
 }
 
-export async function deleteProject({ id, userId }: { id: string; userId: string }) {
+export async function deleteProject({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}) {
   try {
     const [deletedProject] = await db
       .delete(project)

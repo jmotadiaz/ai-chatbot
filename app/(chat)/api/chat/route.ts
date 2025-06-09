@@ -7,10 +7,9 @@ import {
 import { model, modelID } from "@/lib/ai/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { generateUUID } from "@/lib/utils";
-import { saveMessages } from "@/lib/db/queries";
+import { deleteMessagesById, saveMessages, updateChat } from "@/lib/db/queries";
 import { auth } from "@/auth";
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
@@ -26,6 +25,7 @@ export async function POST(req: Request) {
     topP,
     chatId,
     systemPrompt,
+    reloadedMessageId,
   }: {
     messages: UIMessage[];
     selectedModel: modelID;
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     topP?: number;
     chatId?: string;
     systemPrompt?: string;
+    reloadedMessageId?: string;
   } = await req.json();
 
   const result = streamText({
@@ -49,6 +50,12 @@ export async function POST(req: Request) {
     onFinish: async ({ response }) => {
       if (chatId) {
         try {
+          updateChat(chatId, {
+            defaultModel: selectedModel,
+            defaultTemperature: temperature,
+            defaultTopP: topP,
+          });
+
           const allMessages = appendResponseMessages({
             messages,
             responseMessages: response.messages,
@@ -61,26 +68,46 @@ export async function POST(req: Request) {
             userMessage?.role === "user" &&
             assistantMessage?.role === "assistant"
           ) {
-            saveMessages({
-              messages: [
-                {
-                  chatId,
-                  id: userMessage.id,
-                  role: userMessage.role,
-                  parts: userMessage.parts,
-                  attachments: userMessage.experimental_attachments ?? [],
-                  createdAt: new Date(),
-                },
-                {
-                  chatId,
-                  id: assistantMessage.id,
-                  role: assistantMessage.role,
-                  parts: assistantMessage.parts,
-                  attachments: assistantMessage.experimental_attachments ?? [],
-                  createdAt: new Date(),
-                },
-              ],
-            });
+            if (reloadedMessageId) {
+              deleteMessagesById({
+                id: reloadedMessageId,
+              });
+              saveMessages({
+                messages: [
+                  {
+                    chatId,
+                    id: assistantMessage.id,
+                    role: assistantMessage.role,
+                    parts: assistantMessage.parts,
+                    attachments:
+                      assistantMessage.experimental_attachments ?? [],
+                    createdAt: new Date(),
+                  },
+                ],
+              });
+            } else {
+              saveMessages({
+                messages: [
+                  {
+                    chatId,
+                    id: userMessage.id,
+                    role: userMessage.role,
+                    parts: userMessage.parts,
+                    attachments: userMessage.experimental_attachments ?? [],
+                    createdAt: new Date(),
+                  },
+                  {
+                    chatId,
+                    id: assistantMessage.id,
+                    role: assistantMessage.role,
+                    parts: assistantMessage.parts,
+                    attachments:
+                      assistantMessage.experimental_attachments ?? [],
+                    createdAt: new Date(),
+                  },
+                ],
+              });
+            }
           }
         } catch (error) {
           console.error("Error saving message:", error);

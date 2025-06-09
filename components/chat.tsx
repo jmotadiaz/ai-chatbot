@@ -26,7 +26,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     status,
     stop,
     reload,
-    chatId,
     metaPrompt,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt } = useRefinePrompt({
@@ -75,11 +74,15 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
                     />
                   </div>
                 )}
-                {!chatId && status === "ready" && (
+                {status === "ready" && (
                   <div className="flex mt-1 ml-3">
                     <div
                       className="p-2 border dark:border-zinc-500 rounded-full cursor-pointer"
-                      onClick={() => reload()}
+                      onClick={() =>
+                        reload({
+                          body: { reloadedMessageId: messages.at(-1)?.id },
+                        })
+                      }
                     >
                       <RefreshCcw size={16} className="dark:text-white" />
                     </div>

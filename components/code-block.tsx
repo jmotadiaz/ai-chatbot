@@ -38,6 +38,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           <Copy size={16} />
         </button>
         <SyntaxHighlighter
+          suppressHydrationWarning
           wrapLongLines={false}
           style={codeTheme}
           language={match[1]}
