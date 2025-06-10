@@ -1,7 +1,17 @@
 import "server-only";
 
-import { and, asc, desc, eq, gt, isNull, lt, SQL } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ExtractTablesWithRelations,
+  gt,
+  isNull,
+  lt,
+  SQL,
+} from "drizzle-orm";
+import { drizzle, PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import {
@@ -15,6 +25,7 @@ import {
   type Project,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
+import { PgTransaction } from "drizzle-orm/pg-core";
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -23,6 +34,25 @@ import { generateHashedPassword } from "./utils";
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
+
+export type Transactional<T = unknown> = (
+  tx: PgTransaction<
+    PostgresJsQueryResultHKT,
+    Record<string, never>,
+    ExtractTablesWithRelations<Record<string, never>>
+  >
+) => Promise<T>;
+
+export function transaction<T>(fns: Transactional<T>[]): void {
+  try {
+    db.transaction(async (tx) => {
+      return fns.map(async (fn) => await fn(tx));
+    });
+  } catch (error) {
+    console.error("Failed to execute transaction", error);
+    throw error;
+  }
+}
 
 export async function getUser(email: string): Promise<Array<User>> {
   try {
@@ -78,18 +108,22 @@ export async function saveChat({
   }
 }
 
-export const updateChat = async (
-  id: string,
-  {
-    title,
-    defaultModel,
-    defaultTemperature,
-    defaultTopP,
-  }: Partial<
-    Pick<Chat, "defaultModel" | "title" | "defaultTemperature" | "defaultTopP">
-  >
-) => {
-  try {
+export const updateChat =
+  (
+    id: string,
+    {
+      title,
+      defaultModel,
+      defaultTemperature,
+      defaultTopP,
+    }: Partial<
+      Pick<
+        Chat,
+        "defaultModel" | "title" | "defaultTemperature" | "defaultTopP"
+      >
+    >
+  ): Transactional =>
+  (tx) => {
     const updateData: Partial<Chat> = {
       updatedAt: new Date(),
       title,
@@ -98,17 +132,12 @@ export const updateChat = async (
       defaultTopP,
     };
 
-    const [updatedChat] = await db
+    return tx
       .update(chat)
       .set(updateData)
       .where(and(eq(chat.id, id)))
       .returning();
-    return updatedChat;
-  } catch (error) {
-    console.error("Failed to update chat in database");
-    throw error;
-  }
-};
+  };
 
 export async function getChatById({ id }: { id: string }) {
   try {
@@ -217,14 +246,11 @@ export async function getChats({
   }
 }
 
-export async function saveMessages({ messages }: { messages: Array<Message> }) {
-  try {
-    return await db.insert(message).values(messages);
-  } catch (error) {
-    console.error("Failed to save messages in database", error);
-    throw error;
-  }
-}
+export const saveMessages =
+  ({ messages }: { messages: Array<Message> }): Transactional =>
+  (tx) => {
+    return tx.insert(message).values(messages);
+  };
 
 export async function updateMessage(
   id: string,
@@ -277,18 +303,11 @@ export async function updateMessages({
   }
 }
 
-export async function deleteMessagesById({
-  id,
-}: {
-  id: string;
-}): Promise<Array<Message>> {
-  try {
-    return await db.delete(message).where(eq(message.id, id)).returning();
-  } catch (error) {
-    console.error("Failed to delete message by id from database", error);
-    throw error;
-  }
-}
+export const deleteMessagesById =
+  ({ id }: { id: string }): Transactional =>
+  (tx): Promise<Array<Message>> => {
+    return tx.delete(message).where(eq(message.id, id)).returning();
+  };
 
 export async function getMessagesByChatId({
   id,
