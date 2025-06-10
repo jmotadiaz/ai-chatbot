@@ -82,7 +82,9 @@ export async function POST(req: Request) {
                           id: reloadedMessageId,
                         }),
                         saveMessages({
-                          messages: [messageToDbMessage(chatId)(userMessage)],
+                          messages: [
+                            messageToDbMessage(chatId)(assistantMessage),
+                          ],
                         }),
                       ]
                     : [
