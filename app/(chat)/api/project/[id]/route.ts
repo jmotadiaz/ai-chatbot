@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth-config";
-import { getProjectById, updateProject, deleteProject } from "@/lib/db/queries";
+import {
+  getProjectById,
+  updateProject,
+  deleteProject,
+  transaction,
+} from "@/lib/db/queries";
 import { z } from "zod";
 
 const updateProjectSchema = z.object({
@@ -24,7 +29,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const project = await getProjectById({ id });
+    const project = await getProjectById(id);
 
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -55,7 +60,7 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const existingProject = await getProjectById({ id });
+    const existingProject = await getProjectById(id);
 
     if (!existingProject) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -75,11 +80,14 @@ export async function PUT(
       );
     }
 
-    const updatedProject = await updateProject({
-      id,
-      userId: session.user.id,
-      ...validation.data,
-    });
+    const updatedProject = await transaction(
+      updateProject(
+        { id, userId: session.user.id },
+        {
+          ...validation.data,
+        }
+      )
+    );
 
     if (!updatedProject) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -106,7 +114,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const existingProject = await getProjectById({ id });
+    const existingProject = await getProjectById(id);
 
     if (!existingProject) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -116,10 +124,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const deletedProject = await deleteProject({
-      id,
-      userId: session.user.id,
-    });
+    const deletedProject = await transaction(
+      deleteProject({
+        id,
+        userId: session.user.id,
+      })
+    );
 
     if (!deletedProject) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });

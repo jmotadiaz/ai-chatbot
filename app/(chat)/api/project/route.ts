@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth-config";
-import { createProject, getProjectsByUserId } from "@/lib/db/queries";
+import {
+  createProject,
+  getProjectsByUserId,
+  transaction,
+} from "@/lib/db/queries";
 import { z } from "zod";
 
 const createProjectSchema = z.object({
@@ -14,7 +18,11 @@ const createProjectSchema = z.object({
 });
 
 const getProjectsSchema = z.object({
-  limit: z.string().transform(Number).pipe(z.number().min(1).max(100)).optional(),
+  limit: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().min(1).max(100))
+    .optional(),
   offset: z.string().transform(Number).pipe(z.number().min(0)).optional(),
 });
 
@@ -73,10 +81,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const project = await createProject({
-      userId: session.user.id,
-      ...validation.data,
-    });
+    const project = await transaction(
+      createProject({
+        userId: session.user.id,
+        ...validation.data,
+      })
+    );
 
     return NextResponse.json({ project }, { status: 201 });
   } catch (error) {

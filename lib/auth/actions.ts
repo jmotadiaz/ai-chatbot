@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { createUser, getUser } from "@/lib/db/queries";
+import { createUser, getUser, transaction } from "@/lib/db/queries";
 import { signIn } from "./auth-config";
 import { redirect } from "next/navigation";
 
@@ -86,10 +86,11 @@ export const register = async (
       password: formData.get("password"),
     });
 
-    const [user] = await getUser(validatedData.email);
+    const users = await getUser(validatedData.email);
+    const [user] = users;
 
     if (!user) {
-      await createUser(validatedData.email, validatedData.password);
+      await transaction(createUser(validatedData.email, validatedData.password));
       signInUrl = await signIn("credentials", {
         email: validatedData.email,
         password: validatedData.password,

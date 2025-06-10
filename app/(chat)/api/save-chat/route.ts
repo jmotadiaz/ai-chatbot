@@ -41,9 +41,7 @@ export async function POST(req: Request) {
         defaultTopP: topP,
         title: await generateTitleFromUserMessage(messages[0]),
       }),
-      saveMessages({
-        messages: messages.map(messageToDbMessage(chatId)),
-      }),
+      saveMessages(messages.map(messageToDbMessage(chatId))),
     ]);
     return new Response("Chat Saved", { status: 200 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,6 +1,6 @@
 "use server";
 
-import { deleteChatById, deleteProject } from "@/lib/db/queries";
+import { deleteChat as deleteDBChat, deleteProject } from "@/lib/db/queries";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 
@@ -11,7 +11,7 @@ export async function deleteChat(id: string) {
   }
 
   try {
-    await deleteChatById({ id });
+    await deleteDBChat({ id, userId: session.user.id });
     revalidatePath("/");
   } catch (error) {
     console.error("Failed to delete chat:", error);

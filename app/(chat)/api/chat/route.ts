@@ -9,7 +9,7 @@ import { model, modelID } from "@/lib/ai/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { generateUUID } from "@/lib/utils";
 import {
-  deleteMessagesById,
+  deleteMessageById,
   saveMessages,
   transaction,
   updateChat,
@@ -71,28 +71,27 @@ export async function POST(req: Request) {
                 assistantMessage?.role === "assistant"
               ) {
                 await transaction([
-                  updateChat(chatId, {
-                    defaultModel: selectedModel,
-                    defaultTemperature: temperature,
-                    defaultTopP: topP,
-                  }),
+                  updateChat(
+                    { id: chatId, userId: session.user.id },
+                    {
+                      defaultModel: selectedModel,
+                      defaultTemperature: temperature,
+                      defaultTopP: topP,
+                    }
+                  ),
                   ...(reloadedMessageId
                     ? [
-                        deleteMessagesById({
-                          id: reloadedMessageId,
-                        }),
-                        saveMessages({
-                          messages: [
-                            messageToDbMessage(chatId)(assistantMessage),
-                          ],
-                        }),
+                        deleteMessageById(reloadedMessageId),
+                        saveMessages([
+                          messageToDbMessage(chatId)(assistantMessage),
+                        ]),
                       ]
                     : [
-                        saveMessages({
-                          messages: [userMessage, assistantMessage].map(
+                        saveMessages(
+                          [userMessage, assistantMessage].map(
                             messageToDbMessage(chatId)
-                          ),
-                        }),
+                          )
+                        ),
                       ]),
                 ]);
               }

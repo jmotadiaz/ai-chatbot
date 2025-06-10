@@ -23,6 +23,9 @@ import {
   type User,
   project,
   type Project,
+  InsertMessage,
+  InsertChat,
+  InsertProject,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 import { PgTransaction } from "drizzle-orm/pg-core";
@@ -32,24 +35,57 @@ import { PgTransaction } from "drizzle-orm/pg-core";
 // https://authjs.dev/reference/adapter/drizzle
 
 // biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!, {
-  max: 10, // Adjust the pool size as needed
-  idle_timeout: 30000, // Optional: set idle timeout for connections
-});
-const db = drizzle(client);
+const client = postgres(process.env.POSTGRES_URL!);
+
+// Define the schema for drizzle
+const schema = {
+  user,
+  chat,
+  message,
+  project,
+} as const;
+
+const db = drizzle(client, { schema });
+
+interface SafeTransaction {
+  id: string;
+  userId: string;
+}
 
 export type Transactional<T = unknown> = (
   tx: PgTransaction<
     PostgresJsQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
+    typeof schema,
+    ExtractTablesWithRelations<typeof schema>
   >
 ) => Promise<T>;
 
-export function transaction<T>(fns: Transactional<T>[]): Promise<unknown> {
+const isTransactionalArray = (
+  fnOrFns: Transactional<unknown> | readonly Transactional<unknown>[]
+): fnOrFns is readonly Transactional<unknown>[] => Array.isArray(fnOrFns);
+
+// Helper type to extract the return type from a Transactional
+type ExtractTransactionalType<T> = T extends Transactional<infer U> ? U : never;
+
+// Overload for single transactional function
+export function transaction<T>(fn: Transactional<T>): Promise<T>;
+
+// Overload for array of transactional functions with tuple return type
+export function transaction<
+  T extends readonly [Transactional<unknown>, ...Transactional<unknown>[]]
+>(fns: T): Promise<{ [K in keyof T]: ExtractTransactionalType<T[K]> }>;
+
+// Implementation
+export function transaction(
+  fnOrFns: Transactional<unknown> | readonly Transactional<unknown>[]
+): Promise<unknown> {
   try {
     return db.transaction(async (tx) => {
-      return fns.map(async (fn) => await fn(tx));
+      if (isTransactionalArray(fnOrFns)) {
+        return Promise.all(fnOrFns.map((fn) => fn(tx)));
+      } else {
+        return fnOrFns(tx);
+      }
     });
   } catch (error) {
     console.error("Failed to execute transaction", error);
@@ -57,87 +93,83 @@ export function transaction<T>(fns: Transactional<T>[]): Promise<unknown> {
   }
 }
 
-export async function getUser(email: string): Promise<Array<User>> {
+export function getUser(email: string): Promise<Array<User>> {
   try {
-    return await db.select().from(user).where(eq(user.email, email));
+    return db.select().from(user).where(eq(user.email, email));
   } catch (error) {
     console.error("Failed to get user from database");
     throw error;
   }
 }
 
-export async function createUser(email: string, password: string) {
-  const hashedPassword = generateHashedPassword(password);
-
-  try {
-    return await db.insert(user).values({ email, password: hashedPassword });
-  } catch (error) {
-    console.error("Failed to create user in database");
-    throw error;
-  }
-}
+export const createUser =
+  (email: string, password: string): Transactional<Array<User>> =>
+  (tx) => {
+    const hashedPassword = generateHashedPassword(password);
+    return tx
+      .insert(user)
+      .values({ email, password: hashedPassword })
+      .returning();
+  };
 
 export const saveChat =
   ({
     id,
     userId,
-    projectId,
     title,
     defaultModel,
     defaultTemperature,
     defaultTopP,
-  }: {
-    id: string;
-    userId: string;
-    defaultModel: string;
-    title: string;
-    projectId?: string;
-    defaultTemperature?: number;
-    defaultTopP?: number;
-  }): Transactional =>
-  (tx) => {
-    return tx.insert(chat).values({
-      id,
-      userId,
-      projectId,
-      title,
-      defaultModel,
-      defaultTemperature,
-      defaultTopP,
-      createdAt: new Date(),
-    });
+    projectId,
+  }: InsertChat): Transactional<Chat> =>
+  async (tx) => {
+    try {
+      const [createdChat] = await tx
+        .insert(chat)
+        .values({
+          id,
+          userId,
+          title,
+          defaultModel,
+          defaultTemperature,
+          defaultTopP,
+          projectId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      return createdChat;
+    } catch (error) {
+      console.error("Failed to save chat to database");
+      throw error;
+    }
   };
 
 export const updateChat =
   (
-    id: string,
-    {
-      title,
-      defaultModel,
-      defaultTemperature,
-      defaultTopP,
-    }: Partial<
+    { id, userId }: SafeTransaction,
+    partialChat: Partial<
       Pick<
         Chat,
         "defaultModel" | "title" | "defaultTemperature" | "defaultTopP"
       >
     >
-  ): Transactional =>
-  (tx) => {
-    return tx
+  ): Transactional<Chat> =>
+  async (tx) => {
+    const [updatedChat] = await tx
       .update(chat)
       .set({
+        ...partialChat,
         updatedAt: new Date(),
-        title,
-        defaultModel,
-        defaultTemperature,
-        defaultTopP,
       })
-      .where(and(eq(chat.id, id)))
+      .where(and(eq(chat.id, id), eq(chat.userId, userId)))
       .returning();
+
+    return updatedChat;
   };
 
-export async function getChatById({ id }: { id: string }) {
+export async function getChatById(id: string): Promise<Chat | undefined> {
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
     return selectedChat;
@@ -147,20 +179,16 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function deleteChatById({ id }: { id: string }) {
-  try {
-    await db.delete(message).where(eq(message.chatId, id));
-
-    const [chatsDeleted] = await db
+export const deleteChat =
+  ({ id, userId }: SafeTransaction): Transactional<Chat | undefined> =>
+  async (tx) => {
+    await tx.delete(message).where(eq(message.chatId, id));
+    const [chatsDeleted] = await tx
       .delete(chat)
-      .where(eq(chat.id, id))
+      .where(and(eq(chat.id, id), eq(chat.userId, userId)))
       .returning();
     return chatsDeleted;
-  } catch (error) {
-    console.error("Failed to delete chat by id from database");
-    throw error;
-  }
-}
+  };
 
 export async function getChats({
   userId,
@@ -174,7 +202,7 @@ export async function getChats({
   startingAfter?: string | null;
   endingBefore?: string | null;
   projectId?: string | null;
-}) {
+}): Promise<{ chats: Array<Chat>; hasMore: boolean }> {
   try {
     const extendedLimit = limit + 1;
 
@@ -245,85 +273,39 @@ export async function getChats({
 }
 
 export const saveMessages =
-  ({
-    messages,
-  }: {
-    messages: Array<Omit<Message, "createdAt">>;
-  }): Transactional =>
+  (messages: InsertMessage[]): Transactional<Array<Message>> =>
   (tx) => {
-    return tx
-      .insert(message)
-      .values(
-        messages.map((msg) => ({
-          ...msg,
-          createdAt: new Date(),
-        }))
-      )
-      .returning();
+    try {
+      return tx
+        .insert(message)
+        .values(
+          messages.map(({ id, chatId, role, parts, attachments }) => ({
+            id,
+            chatId,
+            role,
+            parts,
+            attachments,
+            createdAt: new Date(),
+          }))
+        )
+        .returning();
+    } catch (error) {
+      console.error("Failed to save messages");
+      throw error;
+    }
   };
 
-export async function updateMessage(
-  id: string,
-  { role, parts, attachments }: Partial<Omit<Message, "id">>
-) {
-  try {
-    return await db
-      .update(message)
-      .set({
-        role,
-        parts,
-        attachments,
-      })
+export const deleteMessageById =
+  (id: string): Transactional<Message | undefined> =>
+  async (tx) => {
+    const [deletedMessage] = await tx
+      .delete(message)
       .where(eq(message.id, id))
       .returning();
-  } catch (error) {
-    console.error("Failed to update message in database", error);
-    throw error;
-  }
-}
-
-export async function updateMessages({
-  messages,
-}: {
-  messages: Array<Message>;
-}) {
-  try {
-    return await db.transaction(async (tx) => {
-      const updatedMessages = [];
-
-      for (const msg of messages) {
-        const [updatedMessage] = await tx
-          .update(message)
-          .set({
-            role: msg.role,
-            parts: msg.parts,
-            attachments: msg.attachments,
-          })
-          .where(eq(message.id, msg.id))
-          .returning();
-
-        updatedMessages.push(updatedMessage);
-      }
-
-      return updatedMessages;
-    });
-  } catch (error) {
-    console.error("Failed to update messages in database", error);
-    throw error;
-  }
-}
-
-export const deleteMessagesById =
-  ({ id }: { id: string }): Transactional =>
-  (tx): Promise<Array<Message>> => {
-    return tx.delete(message).where(eq(message.id, id)).returning();
+    return deletedMessage;
   };
 
-export async function getMessagesByChatId({
-  id,
-}: {
-  id: string;
-}): Promise<Array<Message>> {
+export async function getMessagesByChatId(id: string): Promise<Array<Message>> {
   try {
     return await db
       .select()
@@ -336,27 +318,19 @@ export async function getMessagesByChatId({
   }
 }
 
-export async function createProject({
-  userId,
-  name,
-  defaultModel,
-  defaultTemperature,
-  defaultTopP,
-  systemPrompt,
-  metaPrompt,
-  tools,
-}: {
-  userId: string;
-  name: string;
-  defaultModel?: string;
-  defaultTemperature?: number;
-  defaultTopP?: number;
-  systemPrompt: string;
-  metaPrompt?: string;
-  tools?: string[];
-}) {
-  try {
-    const [newProject] = await db
+export const createProject =
+  ({
+    userId,
+    name,
+    defaultModel,
+    defaultTemperature,
+    defaultTopP,
+    systemPrompt,
+    metaPrompt,
+    tools,
+  }: InsertProject): Transactional<Project> =>
+  (tx) => {
+    return tx
       .insert(project)
       .values({
         userId,
@@ -370,15 +344,11 @@ export async function createProject({
         createdAt: new Date(),
         updatedAt: new Date(),
       })
-      .returning();
-    return newProject;
-  } catch (error) {
-    console.error("Failed to create project in database");
-    throw error;
-  }
-}
+      .returning()
+      .then(([newProject]) => newProject);
+  };
 
-export async function getProjectById({ id }: { id: string }) {
+export async function getProjectById(id: string): Promise<Project | undefined> {
   try {
     const [selectedProject] = await db
       .select()
@@ -399,7 +369,7 @@ export async function getProjectsByUserId({
   userId: string;
   limit?: number;
   offset?: number;
-}) {
+}): Promise<Array<Project>> {
   try {
     const projects = await db
       .select()
@@ -415,68 +385,29 @@ export async function getProjectsByUserId({
   }
 }
 
-export async function updateProject({
-  id,
-  userId,
-  name,
-  defaultModel,
-  defaultTemperature,
-  defaultTopP,
-  systemPrompt,
-  metaPrompt,
-  tools,
-}: {
-  id: string;
-  userId: string;
-  name?: string;
-  defaultModel?: string;
-  defaultTemperature?: number;
-  defaultTopP?: number;
-  systemPrompt?: string;
-  metaPrompt?: string;
-  tools?: string[];
-}) {
-  try {
-    const updateData: Partial<Project> = {
-      updatedAt: new Date(),
-    };
-
-    if (name !== undefined) updateData.name = name;
-    if (defaultModel !== undefined) updateData.defaultModel = defaultModel;
-    if (defaultTemperature !== undefined)
-      updateData.defaultTemperature = defaultTemperature;
-    if (defaultTopP !== undefined) updateData.defaultTopP = defaultTopP;
-    if (systemPrompt !== undefined) updateData.systemPrompt = systemPrompt;
-    if (metaPrompt !== undefined) updateData.metaPrompt = metaPrompt;
-    if (tools !== undefined) updateData.tools = tools;
-
-    const [updatedProject] = await db
+export const updateProject =
+  (
+    { id, userId }: SafeTransaction,
+    updateProjectData: Partial<Omit<InsertProject, "userId">>
+  ): Transactional<Project | undefined> =>
+  (tx) => {
+    return tx
       .update(project)
-      .set(updateData)
+      .set({
+        ...updateProjectData,
+        updatedAt: new Date(),
+      })
       .where(and(eq(project.id, id), eq(project.userId, userId)))
-      .returning();
-    return updatedProject;
-  } catch (error) {
-    console.error("Failed to update project in database");
-    throw error;
-  }
-}
+      .returning()
+      .then(([updatedProject]) => updatedProject);
+  };
 
-export async function deleteProject({
-  id,
-  userId,
-}: {
-  id: string;
-  userId: string;
-}) {
-  try {
-    const [deletedProject] = await db
+export const deleteProject =
+  ({ id, userId }: SafeTransaction): Transactional<Project | undefined> =>
+  (tx) => {
+    return tx
       .delete(project)
       .where(and(eq(project.id, id), eq(project.userId, userId)))
-      .returning();
-    return deletedProject;
-  } catch (error) {
-    console.error("Failed to delete project from database");
-    throw error;
-  }
-}
+      .returning()
+      .then(([deletedProject]) => deletedProject);
+  };

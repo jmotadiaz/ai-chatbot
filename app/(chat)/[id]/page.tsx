@@ -34,7 +34,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
     redirect("/login");
   }
 
-  const chat = await getChatById({ id });
+  const chat = await getChatById(id);
 
   if (!chat) {
     redirect("/");
@@ -44,7 +44,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
     redirect("/");
   }
 
-  const messages = await getMessagesByChatId({ id });
+  const messages = await getMessagesByChatId(id);
 
   const { chats } = await getChats({
     userId: session.user.id,
@@ -55,9 +55,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
   });
 
   const project = chat.projectId
-    ? await getProjectById({
-        id: chat.projectId ?? "",
-      })
+    ? await getProjectById(chat.projectId ?? "")
     : null;
 
   const metaPrompt = project ? project.metaPrompt : defaultMetaPrompt;

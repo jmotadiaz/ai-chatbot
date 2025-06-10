@@ -1,4 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -76,5 +76,19 @@ export const message = pgTable("Message", {
 
 export type User = InferSelectModel<typeof user>;
 export type Project = InferSelectModel<typeof project>;
+export type InsertProject = Omit<
+  InferInsertModel<typeof project>,
+  "createdAt" | "updatedAt" | "id"
+>;
 export type Chat = InferSelectModel<typeof chat>;
+export type InsertChat = Omit<
+  InferSelectModel<typeof chat>,
+  "createdAt" | "updatedAt" | "projectId"
+> & {
+  projectId?: string;
+};
 export type Message = InferSelectModel<typeof message>;
+export type InsertMessage = Omit<
+  InferSelectModel<typeof message>,
+  "createdAt" | "updatedAt"
+>;

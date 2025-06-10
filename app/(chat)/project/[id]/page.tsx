@@ -29,7 +29,7 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
   }
 
   const { id } = await params;
-  const project = await getProjectById({ id });
+  const project = await getProjectById(id);
 
   if (!project) {
     notFound();
