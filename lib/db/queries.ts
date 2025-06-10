@@ -77,25 +77,26 @@ export async function createUser(email: string, password: string) {
   }
 }
 
-export async function saveChat({
-  id,
-  userId,
-  projectId,
-  title,
-  defaultModel,
-  defaultTemperature,
-  defaultTopP,
-}: {
-  id: string;
-  userId: string;
-  defaultModel: string;
-  title: string;
-  projectId?: string;
-  defaultTemperature?: number;
-  defaultTopP?: number;
-}) {
-  try {
-    return await db.insert(chat).values({
+export const saveChat =
+  ({
+    id,
+    userId,
+    projectId,
+    title,
+    defaultModel,
+    defaultTemperature,
+    defaultTopP,
+  }: {
+    id: string;
+    userId: string;
+    defaultModel: string;
+    title: string;
+    projectId?: string;
+    defaultTemperature?: number;
+    defaultTopP?: number;
+  }): Transactional =>
+  (tx) => {
+    return tx.insert(chat).values({
       id,
       userId,
       projectId,
@@ -105,11 +106,7 @@ export async function saveChat({
       defaultTopP,
       createdAt: new Date(),
     });
-  } catch (error) {
-    console.error("Failed to save chat in database");
-    throw error;
-  }
-}
+  };
 
 export const updateChat =
   (
@@ -127,17 +124,15 @@ export const updateChat =
     >
   ): Transactional =>
   (tx) => {
-    const updateData: Partial<Chat> = {
-      updatedAt: new Date(),
-      title,
-      defaultModel,
-      defaultTemperature,
-      defaultTopP,
-    };
-
     return tx
       .update(chat)
-      .set(updateData)
+      .set({
+        updatedAt: new Date(),
+        title,
+        defaultModel,
+        defaultTemperature,
+        defaultTopP,
+      })
       .where(and(eq(chat.id, id)))
       .returning();
   };
@@ -250,9 +245,21 @@ export async function getChats({
 }
 
 export const saveMessages =
-  ({ messages }: { messages: Array<Message> }): Transactional =>
+  ({
+    messages,
+  }: {
+    messages: Array<Omit<Message, "createdAt">>;
+  }): Transactional =>
   (tx) => {
-    return tx.insert(message).values(messages);
+    return tx
+      .insert(message)
+      .values(
+        messages.map((msg) => ({
+          ...msg,
+          createdAt: new Date(),
+        }))
+      )
+      .returning();
   };
 
 export async function updateMessage(

@@ -1,4 +1,5 @@
-import { generateText, UIMessage } from "ai";
+import { generateText, Message, UIMessage } from "ai";
+import { Message as DBMessage } from "@/lib/db/schema";
 import { titleModel } from "./providers";
 
 export async function generateTitleFromUserMessage(
@@ -18,3 +19,15 @@ export async function generateTitleFromUserMessage(
 
   return title;
 }
+
+export const messageToDbMessage =
+  (chatId: string) =>
+  (message: Message): Omit<DBMessage, "createdAt"> => {
+    return {
+      chatId,
+      id: message.id,
+      role: message.role,
+      parts: message.parts,
+      attachments: message.experimental_attachments ?? [],
+    };
+  };

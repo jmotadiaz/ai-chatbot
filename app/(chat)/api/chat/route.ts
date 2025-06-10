@@ -15,6 +15,7 @@ import {
   updateChat,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
+import { messageToDbMessage } from "@/lib/ai/utils";
 
 export const maxDuration = 60;
 
@@ -81,41 +82,14 @@ export async function POST(req: Request) {
                           id: reloadedMessageId,
                         }),
                         saveMessages({
-                          messages: [
-                            {
-                              chatId,
-                              id: assistantMessage.id,
-                              role: assistantMessage.role,
-                              parts: assistantMessage.parts,
-                              attachments:
-                                assistantMessage.experimental_attachments ?? [],
-                              createdAt: new Date(),
-                            },
-                          ],
+                          messages: [messageToDbMessage(chatId)(userMessage)],
                         }),
                       ]
                     : [
                         saveMessages({
-                          messages: [
-                            {
-                              chatId,
-                              id: userMessage.id,
-                              role: userMessage.role,
-                              parts: userMessage.parts,
-                              attachments:
-                                userMessage.experimental_attachments ?? [],
-                              createdAt: new Date(),
-                            },
-                            {
-                              chatId,
-                              id: assistantMessage.id,
-                              role: assistantMessage.role,
-                              parts: assistantMessage.parts,
-                              attachments:
-                                assistantMessage.experimental_attachments ?? [],
-                              createdAt: new Date(),
-                            },
-                          ],
+                          messages: [userMessage, assistantMessage].map(
+                            messageToDbMessage(chatId)
+                          ),
                         }),
                       ]),
                 ]);
