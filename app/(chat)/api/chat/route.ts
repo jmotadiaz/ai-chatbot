@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             userMessage?.role === "user" &&
             assistantMessage?.role === "assistant"
           ) {
-            transaction([
+            await transaction([
               updateChat(chatId, {
                 defaultModel: selectedModel,
                 defaultTemperature: temperature,
