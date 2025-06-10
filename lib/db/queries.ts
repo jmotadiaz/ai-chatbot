@@ -46,9 +46,9 @@ export type Transactional<T = unknown> = (
   >
 ) => Promise<T>;
 
-export function transaction<T>(fns: Transactional<T>[]): void {
+export function transaction<T>(fns: Transactional<T>[]): Promise<unknown> {
   try {
-    db.transaction(async (tx) => {
+    return db.transaction(async (tx) => {
       return fns.map(async (fn) => await fn(tx));
     });
   } catch (error) {
