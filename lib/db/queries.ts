@@ -32,7 +32,10 @@ import { PgTransaction } from "drizzle-orm/pg-core";
 // https://authjs.dev/reference/adapter/drizzle
 
 // biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
+const client = postgres(process.env.POSTGRES_URL!, {
+  max: 10, // Adjust the pool size as needed
+  idle_timeout: 30000, // Optional: set idle timeout for connections
+});
 const db = drizzle(client);
 
 export type Transactional<T = unknown> = (

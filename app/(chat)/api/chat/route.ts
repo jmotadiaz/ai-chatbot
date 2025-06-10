@@ -3,6 +3,7 @@ import {
   UIMessage,
   smoothStream,
   appendResponseMessages,
+  createDataStreamResponse,
 } from "ai";
 import { model, modelID } from "@/lib/ai/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
@@ -41,99 +42,96 @@ export async function POST(req: Request) {
     reloadedMessageId?: string;
   } = await req.json();
 
-  const result = streamText({
-    model: model.languageModel(selectedModel),
-    system: systemPrompt || defaultSystemPrompt,
-    messages,
-    temperature,
-    topP,
-    experimental_generateMessageId: generateUUID,
-    experimental_transform: smoothStream({ chunking: "word" }),
-    experimental_telemetry: {
-      isEnabled: true,
-    },
-    onFinish: async ({ response }) => {
-      if (chatId) {
-        try {
-          const allMessages = appendResponseMessages({
-            messages,
-            responseMessages: response.messages,
-          });
-          const userMessage = allMessages.at(-2);
-          const assistantMessage = allMessages.at(-1);
+  return createDataStreamResponse({
+    execute: (dataStream) => {
+      const result = streamText({
+        model: model.languageModel(selectedModel),
+        system: systemPrompt || defaultSystemPrompt,
+        messages,
+        temperature,
+        topP,
+        experimental_generateMessageId: generateUUID,
+        experimental_transform: smoothStream({ chunking: "word" }),
+        experimental_telemetry: {
+          isEnabled: true,
+        },
+        onFinish: async ({ response }) => {
+          if (chatId) {
+            try {
+              const allMessages = appendResponseMessages({
+                messages,
+                responseMessages: response.messages,
+              });
+              const userMessage = allMessages.at(-2);
+              const assistantMessage = allMessages.at(-1);
 
-          if (
-            userMessage?.role === "user" &&
-            assistantMessage?.role === "assistant"
-          ) {
-            await transaction([
-              updateChat(chatId, {
-                defaultModel: selectedModel,
-                defaultTemperature: temperature,
-                defaultTopP: topP,
-              }),
-              ...(reloadedMessageId
-                ? [
-                    deleteMessagesById({
-                      id: reloadedMessageId,
-                    }),
-                    saveMessages({
-                      messages: [
-                        {
-                          chatId,
-                          id: assistantMessage.id,
-                          role: assistantMessage.role,
-                          parts: assistantMessage.parts,
-                          attachments:
-                            assistantMessage.experimental_attachments ?? [],
-                          createdAt: new Date(),
-                        },
-                      ],
-                    }),
-                  ]
-                : [
-                    saveMessages({
-                      messages: [
-                        {
-                          chatId,
-                          id: userMessage.id,
-                          role: userMessage.role,
-                          parts: userMessage.parts,
-                          attachments:
-                            userMessage.experimental_attachments ?? [],
-                          createdAt: new Date(),
-                        },
-                        {
-                          chatId,
-                          id: assistantMessage.id,
-                          role: assistantMessage.role,
-                          parts: assistantMessage.parts,
-                          attachments:
-                            assistantMessage.experimental_attachments ?? [],
-                          createdAt: new Date(),
-                        },
-                      ],
-                    }),
-                  ]),
-            ]);
+              if (
+                userMessage?.role === "user" &&
+                assistantMessage?.role === "assistant"
+              ) {
+                await transaction([
+                  updateChat(chatId, {
+                    defaultModel: selectedModel,
+                    defaultTemperature: temperature,
+                    defaultTopP: topP,
+                  }),
+                  ...(reloadedMessageId
+                    ? [
+                        deleteMessagesById({
+                          id: reloadedMessageId,
+                        }),
+                        saveMessages({
+                          messages: [
+                            {
+                              chatId,
+                              id: assistantMessage.id,
+                              role: assistantMessage.role,
+                              parts: assistantMessage.parts,
+                              attachments:
+                                assistantMessage.experimental_attachments ?? [],
+                              createdAt: new Date(),
+                            },
+                          ],
+                        }),
+                      ]
+                    : [
+                        saveMessages({
+                          messages: [
+                            {
+                              chatId,
+                              id: userMessage.id,
+                              role: userMessage.role,
+                              parts: userMessage.parts,
+                              attachments:
+                                userMessage.experimental_attachments ?? [],
+                              createdAt: new Date(),
+                            },
+                            {
+                              chatId,
+                              id: assistantMessage.id,
+                              role: assistantMessage.role,
+                              parts: assistantMessage.parts,
+                              attachments:
+                                assistantMessage.experimental_attachments ?? [],
+                              createdAt: new Date(),
+                            },
+                          ],
+                        }),
+                      ]),
+                ]);
+              }
+            } catch (error) {
+              console.error("Error saving message:", error);
+            }
           }
-        } catch (error) {
-          console.error("Error saving message:", error);
-        }
-      }
-    },
-  });
+        },
+      });
 
-  return result.toDataStreamResponse({
-    sendReasoning: true,
-    getErrorMessage: (error) => {
-      if (error instanceof Error) {
-        if (error.message.includes("Rate limit")) {
-          return "Rate limit exceeded. Please try again later.";
-        }
-      }
-      console.error(error);
-      return "An error occurred.";
+      result.consumeStream();
+
+      result.mergeIntoDataStream(dataStream, {
+        sendReasoning: true,
+      });
     },
   });
 }
