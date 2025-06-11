@@ -26,7 +26,7 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
         "translation",
         "summarization",
       ]),
-      complexity: z.enum(["simple", "complex"]),
+      complexity: z.enum(["simple", "moderate", "complex"]),
     }),
     prompt: `\n
       # Query Classification for LLM Routing
@@ -49,73 +49,137 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
 
       ### 2. Complexity Level
       Determine complexity:
-      - **simple** - Can be answered quickly with basic knowledge or single-step process
-      - **complex** - Requires deep analysis, multi-step reasoning, or specialized expertise
+      - *simple**: Requires a straightforward answer, minimal reasoning, a small amount of information, or a very common task.
+      - **moderate**: Requires some level of interpretation, multi-step processing, synthesis of a few pieces of information, or a moderately common task.
+      - **complex**: Requires deep reasoning, synthesis of multiple diverse information sources, handling ambiguity, generating extensive or highly structured output, or addressing a niche/specialized task.
       ### 3. Reasoning
       Brief reasoning for classification\n
     `,
   });
 
+  console.log("Classification Result:", classification);
+
   const { queryType, complexity } = classification;
-  switch (queryType) {
-    case "simple_question":
-      return {
-        modelConfig: getModelConfiguration("Llama 4 Maverick"),
-        temperature: defaultTemperature,
-      };
-    case "general_knowledge":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity === "simple" ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
-        ),
-        temperature: defaultTemperature,
-      };
-    case "reasoning":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity === "simple" ? "Deepseek R1 Distill" : "o3"
-        ),
-        temperature: defaultTemperature,
-      };
-    case "code":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity === "simple" ? "GPT 4.1 Mini" : "Claude Sonnet 4"
-        ),
-        temperature: defaultTemperature,
-      };
-    case "creative":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
-        ),
-        temperature: 1,
-      };
-    case "conversational":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
-        ),
-        temperature: 0.8,
-      };
-    case "translation":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
-        ),
-        temperature: defaultTemperature,
-      };
-    case "summarization":
-      return {
-        modelConfig: getModelConfiguration(
-          complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
-        ),
-        temperature: defaultTemperature,
-      };
-    default:
-      return {
-        modelConfig: getModelConfiguration("Llama 4 Maverick"),
-        temperature: defaultTemperature,
-      };
-  }
+
+  return (
+    decisionTree[queryType]?.[complexity] ?? {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: defaultTemperature,
+    }
+  );
 }
+
+const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
+  simple_question: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      temperature: defaultTemperature,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: defaultTemperature,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: defaultTemperature,
+    },
+  },
+  general_knowledge: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      temperature: defaultTemperature,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: defaultTemperature,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      temperature: defaultTemperature,
+    },
+  },
+  reasoning: {
+    simple: {
+      modelConfig: getModelConfiguration("Deepseek R1 Distill"),
+      temperature: defaultTemperature,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Deepseek R1 0528"),
+      temperature: defaultTemperature,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("o3"),
+      temperature: defaultTemperature,
+    },
+  },
+  code: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      temperature: defaultTemperature,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("GPT 4.1 Mini"),
+      temperature: defaultTemperature,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Claude Sonnet 4"),
+      temperature: defaultTemperature,
+    },
+  },
+  creative: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      temperature: 1,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: 1,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      temperature: 1,
+    },
+  },
+  conversational: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      temperature: 0.8,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: 0.8,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      temperature: 0.8,
+    },
+  },
+  translation: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: defaultTemperature,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      temperature: defaultTemperature,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("o4 Mini"),
+      temperature: defaultTemperature,
+    },
+  },
+  summarization: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      temperature: defaultTemperature,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: defaultTemperature,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      temperature: defaultTemperature,
+    },
+  },
+};

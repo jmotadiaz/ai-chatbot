@@ -36,11 +36,15 @@ export interface ModelConfiguration {
 export type ModelConfigurations = Record<string, ModelConfiguration>;
 
 const modelConfigurationFactory =
-  (languageModels: ModelConfigurations) => (modelName: string) => {
+  (languageModels: ModelConfigurations) =>
+  (modelName: string): ModelConfiguration => {
     return languageModels[modelName] ?? languageModels["Llama 4 Maverick"];
   };
 
 const languageModels: ModelConfigurations = {
+  "Llama 3.1 Instant": {
+    model: groq("llama-3.1-8b-instant"),
+  },
   "Llama 4 Maverick": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
   },
@@ -58,6 +62,13 @@ const languageModels: ModelConfigurations = {
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash-preview-05-20"),
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      } satisfies GoogleGenerativeAIProviderOptions,
+    },
   },
   "Deepseek R1 Distill": {
     model: wrapLanguageModel({
