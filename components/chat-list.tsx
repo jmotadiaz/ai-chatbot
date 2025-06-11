@@ -2,16 +2,22 @@ import Link from "next/link";
 import { X as XIcon } from "lucide-react";
 import { deleteChat } from "@/lib/ai/actions";
 import { Chat } from "@/lib/db/schema";
+import { ClassValue } from "clsx";
+import { cn } from "../lib/utils";
 
 export interface ChatListProps {
   chats: Chat[];
+  className?: ClassValue;
 }
 
-export const ChatList: React.FC<ChatListProps> = async ({ chats }) => {
+export const ChatList: React.FC<ChatListProps> = async ({
+  chats,
+  className,
+}) => {
   if (!chats.length) return null;
 
   return (
-    <div className="p-4">
+    <div className={cn("my-4", className)}>
       <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300 mb-4">
         Chats
       </h3>

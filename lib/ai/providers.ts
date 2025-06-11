@@ -36,12 +36,12 @@ export interface ModelConfiguration {
 export type ModelConfigurations = Record<string, ModelConfiguration>;
 
 const modelConfigurationFactory =
-  (languageModels: ModelConfigurations) =>
-  (modelName: string): ModelConfiguration => {
+  <T extends ModelConfigurations>(languageModels: T) =>
+  (modelName: keyof T): ModelConfiguration => {
     return languageModels[modelName] ?? languageModels["Llama 4 Maverick"];
   };
 
-const languageModels: ModelConfigurations = {
+const languageModels = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
   },
@@ -115,18 +115,18 @@ const languageModels: ModelConfigurations = {
   "Grok 3": {
     model: xai("grok-3"),
   },
-};
+} satisfies ModelConfigurations;
 
 export const refinePromptModel = openai("o3");
 export const titleModel = groq("llama-3.1-8b-instant");
 
 export const getModelConfiguration = modelConfigurationFactory(languageModels);
 
-export type modelID = "Auto" | keyof typeof languageModels;
+export type modelID = keyof typeof languageModels;
 
-export const MODELS = Object.keys(languageModels);
+export const MODELS = ["Auto", ...Object.keys(languageModels)];
 
-export const defaultModel: modelID = "Auto";
+export const defaultModel = "Auto";
 export const defaultTemperature = 0.2;
 export const defaultTopP = 0.95;
 

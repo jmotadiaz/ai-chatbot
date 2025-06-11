@@ -1,4 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -73,6 +74,25 @@ export const message = pgTable("Message", {
     .defaultNow()
     .notNull(),
 });
+
+export const projectRelations = relations(project, ({ many }) => ({
+  chats: many(chat),
+}));
+
+export const chatRelations = relations(chat, ({ one, many }) => ({
+  project: one(project, {
+    fields: [chat.projectId],
+    references: [project.id],
+  }),
+  messages: many(message),
+}));
+
+export const messageRelations = relations(message, ({ one }) => ({
+  chat: one(chat, {
+    fields: [message.chatId],
+    references: [chat.id],
+  }),
+}));
 
 export type User = InferSelectModel<typeof user>;
 export type Project = InferSelectModel<typeof project>;

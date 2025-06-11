@@ -37,7 +37,7 @@ interface SidebarContentProps {
 }
 
 export const SidebarContent = ({ children }: SidebarContentProps) => {
-  return <div className="flex-1 w-80 overflow-auto">{children}</div>;
+  return <div className="flex-1 px-4 w-80 overflow-auto">{children}</div>;
 };
 
 export interface SidebarFooterProps {
@@ -45,5 +45,5 @@ export interface SidebarFooterProps {
 }
 
 export const SidebarFooter = ({ children }: SidebarFooterProps) => {
-  return <div className="relative w-80 p-4">{children}</div>;
+  return <div className="relative px-4 w-80 p-4">{children}</div>;
 };

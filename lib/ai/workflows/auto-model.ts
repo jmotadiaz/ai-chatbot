@@ -13,7 +13,7 @@ export interface AutoModelCalculated {
 
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   const { object: classification } = await generateObject({
-    ...getModelConfiguration("Llama 4 Maverick"),
+    ...getModelConfiguration("Llama 3.1 Instant"),
     schema: z.object({
       reasoning: z.string(),
       queryType: z.enum([

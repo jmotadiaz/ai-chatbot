@@ -2,8 +2,10 @@ import Link from "next/link";
 import { ClassNameValue } from "tailwind-merge";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
-import { Edit, Edit2 } from "lucide-react";
+import { Edit } from "lucide-react";
 import { getProjectsByUserId } from "@/lib/db/queries";
+import { ProjectListItem } from "./project-list-item";
+import { ChatList } from "./chat-list";
 
 export interface ProjectListProps {
   limit?: number;
@@ -19,11 +21,17 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
 
   const projects = await getProjectsByUserId({
     userId: session.user.id,
+    joinChats: true,
     limit,
   });
 
+  console.log(
+    "Projects fetched:",
+    projects.map((p) => p.id)
+  );
+
   return (
-    <div className={cn("p-4", className)}>
+    <div className={cn("my-4", className)}>
       <Link
         href="/project/new"
         className="text-base flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4"
@@ -37,30 +45,11 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
               key={project.id}
               id={project.id}
               name={project.name}
+              chatList={<ChatList chats={project.chats} />}
             />
           ))}
         </div>
       )}
-    </div>
-  );
-};
-
-interface ProjectListItemProps {
-  id: string;
-  name: string;
-}
-
-const ProjectListItem: React.FC<ProjectListItemProps> = ({ id, name }) => {
-  return (
-    <div className="flex items-center justify-between rounded-lg border dark:border-zinc-600 text-sm transition-colors hover:bg-accent group">
-      <Link href={`/project/${id}`} className="flex-1 overflow-hidden">
-        <div className="p-2 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-          {name}
-        </div>
-      </Link>
-      <Link href={`/project/${id}/edit`} className="cursor-pointer p-2">
-        <Edit2 className="h-4 w-4" />
-      </Link>
     </div>
   );
 };

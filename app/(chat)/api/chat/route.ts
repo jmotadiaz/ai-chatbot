@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     reloadedMessageId,
   }: {
     messages: UIMessage[];
-    selectedModel: modelID;
+    selectedModel: modelID & "Auto";
     temperature?: number;
     topP?: number;
     chatId?: string;

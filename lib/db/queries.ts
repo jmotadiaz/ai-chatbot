@@ -26,6 +26,9 @@ import {
   InsertMessage,
   InsertChat,
   InsertProject,
+  projectRelations,
+  chatRelations,
+  messageRelations,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 import { PgTransaction } from "drizzle-orm/pg-core";
@@ -43,6 +46,9 @@ const schema = {
   chat,
   message,
   project,
+  projectRelations,
+  chatRelations,
+  messageRelations,
 } as const;
 
 const db = drizzle(client, { schema });
@@ -361,24 +367,46 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
   }
 }
 
-export async function getProjectsByUserId({
-  userId,
-  limit = 50,
-  offset = 0,
-}: {
+interface GetProjectByUserIdParams {
   userId: string;
   limit?: number;
   offset?: number;
-}): Promise<Array<Project>> {
+}
+
+export async function getProjectsByUserId(
+  params: GetProjectByUserIdParams & { joinChats?: false }
+): Promise<Array<Project>>;
+export async function getProjectsByUserId(
+  params: GetProjectByUserIdParams & { joinChats: true }
+): Promise<Array<Project & { chats: Array<Chat> }>>;
+export async function getProjectsByUserId({
+  userId,
+  joinChats = false,
+  limit = 50,
+  offset = 0,
+}: GetProjectByUserIdParams & { joinChats?: boolean }): Promise<
+  Array<Project> | Array<Project & { chats: Array<Chat> }>
+> {
   try {
-    const projects = await db
-      .select()
-      .from(project)
-      .where(eq(project.userId, userId))
-      .orderBy(desc(project.updatedAt))
-      .limit(limit)
-      .offset(offset);
-    return projects;
+    if (joinChats) {
+      return await db.query.project.findMany({
+        where: eq(project.userId, userId),
+        with: {
+          chats: true,
+        },
+        orderBy: desc(project.updatedAt),
+        limit,
+        offset,
+      });
+    } else {
+      return await db
+        .select()
+        .from(project)
+        .where(eq(project.userId, userId))
+        .orderBy(desc(project.updatedAt))
+        .limit(limit)
+        .offset(offset);
+    }
   } catch (error) {
     console.error("Failed to get projects by user id from database");
     throw error;

@@ -49,9 +49,6 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
   const { chats } = await getChats({
     userId: session.user.id,
     limit: 10,
-    ...(chat.projectId !== null && {
-      projectId: chat.projectId,
-    }),
   });
 
   const project = chat.projectId
