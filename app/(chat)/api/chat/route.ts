@@ -5,7 +5,7 @@ import {
   appendResponseMessages,
   createDataStreamResponse,
 } from "ai";
-import { model, modelID } from "@/lib/ai/providers";
+import { getModelConfiguration, modelID } from "@/lib/ai/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { generateUUID } from "@/lib/utils";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { messageToDbMessage } from "@/lib/ai/utils";
+import { autoModel, AutoModelCalculated } from "@/lib/ai/workflows/auto-model";
 
 export const maxDuration = 60;
 
@@ -43,14 +44,23 @@ export async function POST(req: Request) {
     reloadedMessageId?: string;
   } = await req.json();
 
+  let autoModelCalculated: AutoModelCalculated | null = null;
+
+  if (selectedModel === "Auto") {
+    const query = messages.at(-1)?.content || "";
+    autoModelCalculated = await autoModel(query);
+  }
+
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
-        model: model.languageModel(selectedModel),
+        ...(autoModelCalculated?.model ?? getModelConfiguration(selectedModel)),
         system: systemPrompt || defaultSystemPrompt,
         messages,
-        temperature,
-        topP,
+        temperature: autoModelCalculated
+          ? autoModelCalculated.temperature
+          : temperature,
+        topP: autoModelCalculated ? undefined : topP,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         experimental_telemetry: {
@@ -70,6 +80,7 @@ export async function POST(req: Request) {
                 userMessage?.role === "user" &&
                 assistantMessage?.role === "assistant"
               ) {
+                // Save the user and assistant messages to the database
                 await transaction([
                   updateChat(
                     { id: chatId, userId: session.user.id },
