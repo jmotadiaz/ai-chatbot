@@ -129,8 +129,9 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             Icon={ArrowUp}
             type="submit"
             className="absolute z-1 right-3 bottom-2"
-            disabled={!input.trim() || isLoadingRefinedPrompt || isLoading}
+            disabled={!input.trim() || isLoadingRefinedPrompt}
             isLoading={isLoading}
+            onLoadingClick={stop}
           />
         </div>
       </form>

@@ -13,7 +13,7 @@ export interface AutoModelCalculated {
 
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   const { object: classification } = await generateObject({
-    ...getModelConfiguration("Llama 3.1 Instant"),
+    ...getModelConfiguration("Llama 4 Maverick"),
     schema: z.object({
       reasoning: z.string(),
       queryType: z.enum([
@@ -40,7 +40,7 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
       Classify into one of these categories:
       - **simple_question** - Direct factual questions with straightforward answers
       - **general_knowledge** - Broad informational queries requiring general understanding
-      - **reasoning** - Logic problems, analysis, ai prompt refinement or multi-step thinking required
+      - **reasoning** - Logic puzzles, multi-step analysis, AI prompt design or refinement, or any task requiring deeper problem-solving
       - **code** - Programming, debugging, or technical implementation requests
       - **creative** - Writing, brainstorming, or artistic content generation
       - **conversational** - Casual chat, personal advice, or social interaction
@@ -49,9 +49,21 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
 
       ### 2. Complexity Level
       Determine complexity:
-      - *simple**: Requires a straightforward answer, minimal reasoning, a small amount of information, or a very common task.
-      - **moderate**: Requires some level of interpretation, multi-step processing, synthesis of a few pieces of information, or a moderately common task.
-      - **complex**: Requires deep reasoning, synthesis of multiple diverse information sources, handling ambiguity, generating extensive or highly structured output, or addressing a niche/specialized task.
+      - **simple**:
+        - Straightforward tasks needing minimal reasoning.
+        - Small information volume or very common tasks.
+        - **Includes detailed prompts** that pre-structure the solution (e.g., rigid templates/formats).
+
+      - **moderate**:
+        - Requires interpretation, multi-step processing, or synthesizing few information sources.
+        - Moderately common tasks with mild ambiguity.
+        - **Detailed prompts** here simplify steps but retain moderate synthesis needs.
+
+      - **complex**:
+        - Demands deep reasoning, synthesis of diverse sources, ambiguity resolution, or niche tasks.
+        - Generates extensive/structured outputs (e.g., reports, code architectures).
+        - **Excludes detailed prompts** unless they involve significant abstraction, creativity, or unresolved ambiguity.
+
       ### 3. Reasoning
       Brief reasoning for classification\n
     `,
