@@ -37,7 +37,7 @@ export type ModelConfigurations = Record<string, ModelConfiguration>;
 
 const modelConfigurationFactory =
   <T extends ModelConfigurations>(languageModels: T) =>
-  (modelName: keyof T): ModelConfiguration => {
+  (modelName: keyof T | "Auto"): ModelConfiguration => {
     return languageModels[modelName] ?? languageModels["Llama 4 Maverick"];
   };
 
@@ -122,9 +122,9 @@ export const titleModel = groq("llama-3.1-8b-instant");
 
 export const getModelConfiguration = modelConfigurationFactory(languageModels);
 
-export type modelID = keyof typeof languageModels;
+export type modelID = keyof typeof languageModels | "Auto";
 
-export const MODELS = ["Auto", ...Object.keys(languageModels)];
+export const MODELS = ["Auto", ...Object.keys(languageModels)] as modelID[];
 
 export const defaultModel = "Auto";
 export const defaultTemperature = 0.2;
