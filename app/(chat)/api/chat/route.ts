@@ -54,7 +54,8 @@ export async function POST(req: Request) {
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
-        ...(autoModelCalculated?.model ?? getModelConfiguration(selectedModel)),
+        ...(autoModelCalculated?.modelConfig ??
+          getModelConfiguration(selectedModel)),
         system: systemPrompt || defaultSystemPrompt,
         messages,
         temperature: autoModelCalculated

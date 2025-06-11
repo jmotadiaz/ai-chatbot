@@ -7,7 +7,7 @@ import {
 import { z } from "zod";
 
 export interface AutoModelCalculated {
-  model: ModelConfiguration;
+  modelConfig: ModelConfiguration;
   temperature: number;
 }
 
@@ -60,61 +60,61 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
   switch (queryType) {
     case "simple_question":
       return {
-        model: getModelConfiguration("Llama 4 Maverick"),
+        modelConfig: getModelConfiguration("Llama 4 Maverick"),
         temperature: defaultTemperature,
       };
     case "general_knowledge":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity === "simple" ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
         ),
         temperature: defaultTemperature,
       };
     case "reasoning":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity === "simple" ? "Deepseek R1 Distill" : "o3"
         ),
         temperature: defaultTemperature,
       };
     case "code":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity === "simple" ? "GPT 4.1 Mini" : "Claude Sonnet 4"
         ),
         temperature: defaultTemperature,
       };
     case "creative":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
         ),
         temperature: 1,
       };
     case "conversational":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
         ),
         temperature: 0.8,
       };
     case "translation":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
         ),
         temperature: defaultTemperature,
       };
     case "summarization":
       return {
-        model: getModelConfiguration(
+        modelConfig: getModelConfiguration(
           complexity ? "Llama 4 Maverick" : "Gemini 2.5 Flash"
         ),
         temperature: defaultTemperature,
       };
     default:
       return {
-        model: getModelConfiguration("Llama 4 Maverick"),
+        modelConfig: getModelConfiguration("Llama 4 Maverick"),
         temperature: defaultTemperature,
       };
   }
