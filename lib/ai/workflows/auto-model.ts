@@ -52,17 +52,17 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
       - **simple**:
         - Straightforward tasks needing minimal reasoning.
         - Small information volume or very common tasks.
-        - **Includes detailed prompts** that pre-structure the solution (e.g., rigid templates/formats).
+        - **Includes highly detailed prompts** that pre-structure the solution (e.g., rigid templates/formats).
 
       - **moderate**:
         - Requires interpretation, multi-step processing, or synthesizing few information sources.
         - Moderately common tasks with mild ambiguity.
-        - **Detailed prompts** here simplify steps but retain moderate synthesis needs.
+        - **Highly detailed prompts** here simplify steps but retain moderate synthesis needs.
 
       - **complex**:
         - Demands deep reasoning, synthesis of diverse sources, ambiguity resolution, or niche tasks.
         - Generates extensive/structured outputs (e.g., reports, code architectures).
-        - **Excludes detailed prompts** unless they involve significant abstraction, creativity, or unresolved ambiguity.
+        - **Excludes highly detailed prompts** unless they involve significant abstraction, creativity, or unresolved ambiguity.
 
       ### 3. Reasoning
       Brief reasoning for classification\n
