@@ -10,11 +10,13 @@ import { ChatList } from "./chat-list";
 export interface ProjectListProps {
   limit?: number;
   className?: ClassNameValue;
+  currentProjectId?: string;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = async ({
   className,
   limit = 10,
+  currentProjectId,
 }) => {
   const session = await auth();
   if (!session?.user) return null;
@@ -40,6 +42,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
               key={project.id}
               id={project.id}
               name={project.name}
+              currentProjectId={currentProjectId}
               chatList={<ChatList chats={project.chats} />}
             />
           ))}

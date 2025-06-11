@@ -59,7 +59,7 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
           <Sidebar>
             <Suspense fallback={null}>
               <SidebarContent>
-                <ProjectList />
+                <ProjectList currentProjectId={project.id} />
                 <ChatList chats={chats} />
               </SidebarContent>
               <SidebarFooter>

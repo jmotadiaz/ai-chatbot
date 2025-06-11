@@ -113,6 +113,9 @@ dependencies:
   react:
     specifier: ^19.1.0
     version: 19.1.0
+  react-collapsed:
+    specifier: ^4.2.0
+    version: 4.2.0(react-dom@19.1.0)(react@19.1.0)
   react-dom:
     specifier: ^19.1.0
     version: 19.1.0(react@19.1.0)
@@ -6419,6 +6422,17 @@ packages:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
     dev: true
 
+  /react-collapsed@4.2.0(react-dom@19.1.0)(react@19.1.0):
+    resolution: {integrity: sha512-8rQuV3wGTjBI4M1WzD5DpqCBRliHNDKEEFeC6tAQEVrRDic46xBOtySgMGjVVacIobEaMf7AiYlI5APCZIZtkg==}
+    peerDependencies:
+      react: ^16.9.0 || ^17 || ^18 || ^19
+      react-dom: ^16.9.0 || ^17 || ^18 || ^19
+    dependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      tiny-warning: 1.0.3
+    dev: false
+
   /react-dom@19.1.0(react@19.1.0):
     resolution: {integrity: sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==}
     peerDependencies:
@@ -7296,6 +7310,10 @@ packages:
   /throttleit@2.1.0:
     resolution: {integrity: sha512-nt6AMGKW1p/70DF/hGBdJB57B8Tspmbp5gfJ8ilhLnt7kkr2ye7hzD6NVG8GGErk2HWF34igrL2CXmNIkzKqKw==}
     engines: {node: '>=18'}
+    dev: false
+
+  /tiny-warning@1.0.3:
+    resolution: {integrity: sha512-lBN9zLN/oAf68o3zNXYrdCt1kP8WsiGW8Oo2ka41b2IM5JL/S1CTyX1rW0mb/zSuJun0ZUrDxx4sqvYS2FWzPA==}
     dev: false
 
   /tinyglobby@0.2.13:
