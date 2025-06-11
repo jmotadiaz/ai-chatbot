@@ -40,7 +40,7 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
       Classify into one of these categories:
       - **simple_question** - Direct factual questions with straightforward answers
       - **general_knowledge** - Broad informational queries requiring general understanding
-      - **reasoning** - Logic problems, analysis, or multi-step thinking required
+      - **reasoning** - Logic problems, analysis, ai prompt refinement or multi-step thinking required
       - **code** - Programming, debugging, or technical implementation requests
       - **creative** - Writing, brainstorming, or artistic content generation
       - **conversational** - Casual chat, personal advice, or social interaction
