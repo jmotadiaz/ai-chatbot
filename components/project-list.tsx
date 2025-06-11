@@ -25,11 +25,6 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
     limit,
   });
 
-  console.log(
-    "Projects fetched:",
-    projects.map((p) => p.id)
-  );
-
   return (
     <div className={cn("my-4", className)}>
       <Link
