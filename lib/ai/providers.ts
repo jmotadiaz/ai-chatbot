@@ -127,7 +127,7 @@ export type modelID = keyof typeof languageModels | "Auto";
 export const MODELS = ["Auto", ...Object.keys(languageModels)] as modelID[];
 
 export const defaultModel = "Auto";
-export const defaultTemperature = 0.2;
+export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 
 // export const modelCapabilities: Record<

@@ -11,22 +11,25 @@ export interface AutoModelCalculated {
   temperature: number;
 }
 
+const CATEGORIES = [
+  "factual",
+  "analytical",
+  "technical",
+  "creative",
+  "instructional",
+  "conversational",
+  "processing",
+] as const;
+
+const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
+
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   const { object: classification } = await generateObject({
     ...getModelConfiguration("Llama 4 Maverick"),
     schema: z.object({
       reasoning: z.string(),
-      queryType: z.enum([
-        "simple_question",
-        "general_knowledge",
-        "reasoning",
-        "code",
-        "creative",
-        "conversational",
-        "translation",
-        "summarization",
-      ]),
-      complexity: z.enum(["simple", "moderate", "complex"]),
+      category: z.enum(CATEGORIES),
+      complexity: z.enum(COMPLEXITY_LEVELS),
     }),
     prompt: `\n
       # Query Classification for LLM Routing
@@ -36,53 +39,78 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
 
       ## Classification Requirements
 
-      ### 1. Query Type
-      Classify into one of these categories:
-      - **simple_question** - Direct factual questions with straightforward answers
-      - **general_knowledge** - Broad informational queries requiring general understanding
-      - **reasoning** - Logic puzzles, multi-step analysis, AI prompt design or refinement, or any task requiring deeper problem-solving
-      - **code** - Programming, debugging, or technical implementation requests
-      - **creative** - Writing, brainstorming, or artistic content generation
-      - **conversational** - Casual chat, personal advice, or social interaction
-      - **translation** - Language translation or linguistic analysis
-      - **summarization** - Content condensation or key point extraction
+      ### 1. Categories
 
-      ### 2. Complexity Level
-      Determine complexity:
-      - **simple**:
-        - Straightforward tasks needing minimal reasoning.
-        - Small information volume or very common tasks.
-        - **Includes highly detailed prompts** that pre-structure the solution (e.g., rigid templates/formats).
+      #### factual
+      - Direct questions seeking specific information
+      - Examples: "What is the capital of France?", "When was Python created?"
 
-      - **moderate**:
-        - Requires interpretation, multi-step processing, or synthesizing few information sources.
-        - Moderately common tasks with mild ambiguity.
-        - **Highly detailed prompts** here simplify steps but retain moderate synthesis needs.
+      #### analytical
+      - Multi-step reasoning, problem-solving, logical analysis
+      - Examples: "Compare pros/cons of X vs Y", "Analyze this data trend"
 
-      - **complex**:
-        - Demands deep reasoning, synthesis of diverse sources, ambiguity resolution, or niche tasks.
-        - Generates extensive/structured outputs (e.g., reports, code architectures).
-        - **Excludes highly detailed prompts** unless they involve significant abstraction, creativity, or unresolved ambiguity.
+      #### technical
+      - Programming, debugging, system design, technical implementation
+      - Examples: "Fix this code bug", "Design a REST API"
+
+      #### creative
+      - Artistic content generation, open-ended writing, brainstorming
+      - Examples: "Write a story", "Create a poem", "Generate creative marketing slogans"
+
+      #### instructional
+      - Creating structured content, prompts, templates, educational materials
+      - Examples: "Design a prompt for X", "Create a lesson plan", "Write documentation template"
+
+      #### conversational
+      - Casual chat, personal advice, social interaction
+      - Examples: "How was your day?", "What should I wear?"
+
+      #### processing
+      - Text transformation, translation, summarization
+      - Examples: "Translate this text", "Summarize this article"
+
+      ### 2. Complexity Levels
+
+      #### simple
+      - Single-step task, common knowledge, minimal context needed
+      - Processing time: < 30 seconds
+      - Examples: "Define machine learning", "Convert 100°F to Celsius"
+
+      #### moderate
+      - Multi-step process, some domain knowledge, moderate context
+      - Processing time: 30 seconds - 2 minutes
+      - Examples: "Explain how OAuth works", "Debug this 20-line function"
+
+      #### complex
+      - Deep expertise required, extensive context, multi-faceted analysis
+      - Processing time: > 2 minutes
+      - Examples: "Design microservices architecture", "Write comprehensive market analysis"
 
       ### 3. Reasoning
-      Brief reasoning for classification\n
+      Brief reasoning for classification.
+
+      ### Classification Guidelines
+
+      1. **Choose the most specific category** that fits the primary intent
+      2. **Base complexity on required expertise and processing depth**, not query length
+      3. **Provide brief reasoning** - focus on the key deciding factors. 1-2 sentence explanation\n
     `,
   });
 
   console.log("Classification Result:", classification);
 
-  const { queryType, complexity } = classification;
+  const { category, complexity } = classification;
 
   return (
-    decisionTree[queryType]?.[complexity] ?? {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+    decisionTree[category]?.[complexity] ?? {
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
       temperature: defaultTemperature,
     }
   );
 }
 
 const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
-  simple_question: {
+  factual: {
     simple: {
       modelConfig: getModelConfiguration("Llama 3.1 Instant"),
       temperature: defaultTemperature,
@@ -92,41 +120,27 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: getModelConfiguration("Deepseek R1 0528"),
       temperature: defaultTemperature,
     },
   },
-  general_knowledge: {
-    simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
-      temperature: defaultTemperature,
-    },
-    moderate: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
-      temperature: defaultTemperature,
-    },
-    complex: {
-      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
-      temperature: defaultTemperature,
-    },
-  },
-  reasoning: {
+  analytical: {
     simple: {
       modelConfig: getModelConfiguration("Deepseek R1 Distill"),
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Deepseek R1 0528"),
+      modelConfig: getModelConfiguration("Qwen 3"),
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("o3"),
+      modelConfig: getModelConfiguration("Deepseek R1 0528"),
       temperature: defaultTemperature,
     },
   },
-  code: {
+  technical: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
       temperature: defaultTemperature,
     },
     moderate: {
@@ -152,6 +166,20 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: 1,
     },
   },
+  instructional: {
+    simple: {
+      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      temperature: 0.5,
+    },
+    moderate: {
+      modelConfig: getModelConfiguration("Deepseek R1 Distill"),
+      temperature: 0.5,
+    },
+    complex: {
+      modelConfig: getModelConfiguration("Gemini 2.5 Pro"),
+      temperature: 0.5,
+    },
+  },
   conversational: {
     simple: {
       modelConfig: getModelConfiguration("Llama 3.1 Instant"),
@@ -166,27 +194,13 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: 0.8,
     },
   },
-  translation: {
-    simple: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
-      temperature: defaultTemperature,
-    },
-    moderate: {
-      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
-      temperature: defaultTemperature,
-    },
-    complex: {
-      modelConfig: getModelConfiguration("o4 Mini"),
-      temperature: defaultTemperature,
-    },
-  },
-  summarization: {
+  processing: {
     simple: {
       modelConfig: getModelConfiguration("Llama 3.1 Instant"),
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: getModelConfiguration("Deepseek R1 Distill"),
       temperature: defaultTemperature,
     },
     complex: {
@@ -194,4 +208,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
   },
-};
+} satisfies Record<
+  (typeof CATEGORIES)[number],
+  Record<(typeof COMPLEXITY_LEVELS)[number], AutoModelCalculated>
+>;
