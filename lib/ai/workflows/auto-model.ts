@@ -5,6 +5,7 @@ import {
   ModelConfiguration,
 } from "../providers";
 import { z } from "zod";
+import { groq } from "@ai-sdk/groq";
 
 export interface AutoModelCalculated {
   modelConfig: ModelConfiguration;
@@ -25,7 +26,7 @@ const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   const { object: classification } = await generateObject({
-    ...getModelConfiguration("Llama 4 Maverick"),
+    model: groq("gemma2-9b-it"),
     schema: z.object({
       reasoning: z.string(),
       category: z.enum(CATEGORIES),
@@ -134,17 +135,17 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("Deepseek R1 0528"),
+      modelConfig: getModelConfiguration("o3"),
       temperature: defaultTemperature,
     },
   },
   technical: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("GPT 4.1 Mini"),
+      modelConfig: getModelConfiguration("Qwen 3"),
       temperature: defaultTemperature,
     },
     complex: {

@@ -83,11 +83,9 @@ const languageModels = {
     model: openrouter.chat("deepseek/deepseek-r1-0528"),
   },
   "Qwen 3": {
-    model: openrouter.chat("qwen/qwen3-30b-a3b"),
+    model: groq("qwen/qwen3-32b"),
     providerOptions: {
-      reasoning: {
-        effort: "low",
-      },
+      groq: { reasoningFormat: "parsed" },
     },
   },
   "Claude Sonnet 4": {
@@ -117,7 +115,12 @@ const languageModels = {
   },
 } satisfies ModelConfigurations;
 
-export const refinePromptModel = openai("o3");
+export const refinePromptModel = {
+  model: groq("qwen/qwen3-32b"),
+  providerOptions: {
+    groq: { reasoningFormat: "parsed" },
+  },
+};
 export const titleModel = groq("llama-3.1-8b-instant");
 
 export const getModelConfiguration = modelConfigurationFactory(languageModels);

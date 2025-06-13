@@ -47,7 +47,7 @@ export async function POST(req: Request) {
   let autoModelCalculated: AutoModelCalculated | null = null;
 
   if (selectedModel === "Auto") {
-    const query = messages.at(-1)?.content || "";
+    const query = messages[0]?.content || "";
     autoModelCalculated = await autoModel(query);
   }
 

@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
 
   const { text } = await generateText({
-    model: refinePromptModel,
+    ...refinePromptModel,
     system:
       metaPrompt +
       concatenatePrompts +
