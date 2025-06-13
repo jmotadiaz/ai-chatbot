@@ -5,6 +5,7 @@ import {
   ModelConfiguration,
 } from "../providers";
 import { z } from "zod";
+import { scapeXML } from "../../utils";
 
 export interface AutoModelCalculated {
   modelConfig: ModelConfiguration;
@@ -24,6 +25,13 @@ const CATEGORIES = [
 const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
+  if (!query || query.trim() === "") {
+    return {
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
+      temperature: defaultTemperature,
+    };
+  }
+
   const { object: classification } = await generateObject({
     ...languageModelConfigurations["Gemma 2"],
     schema: z.object({
@@ -31,82 +39,14 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
       category: z.enum(CATEGORIES),
       complexity: z.enum(COMPLEXITY_LEVELS),
     }),
-    prompt: `\n
-      # Query Classification for LLM Routing
-      Analyze the following user query and classify it to determine the most appropriate LLM routing:
-
-      **Query:** ${query}
-
-      ## Classification Requirements
-
-      ### 1. Categories
-
-      #### factual
-      - Direct questions seeking specific information
-      - Examples: "What is the capital of France?", "When was Python created?"
-
-      #### analytical
-      - Multi-step reasoning, problem-solving, logical analysis
-      - Examples: "Compare pros/cons of X vs Y", "Analyze this data trend"
-
-      #### technical
-      - Programming, debugging, system design, technical implementation
-      - Examples: "Fix this code bug", "Design a REST API"
-
-      #### creative
-      - Artistic content generation, open-ended writing, brainstorming
-      - Examples: "Write a story", "Create a poem", "Generate creative marketing slogans"
-
-      #### instructional
-      - Creating structured content, prompts, templates, educational materials
-      - Examples: "Design a prompt for X", "Create a lesson plan", "Write documentation template"
-
-      #### conversational
-      - Casual chat, personal advice, social interaction
-      - Examples: "How was your day?", "What should I wear?"
-
-      #### processing
-      - Text transformation, translation, summarization
-      - Examples: "Translate this text", "Summarize this article"
-
-      ### 2. Complexity Levels
-
-      #### simple
-      - Single-step task, common knowledge, minimal context needed
-      - Processing time: < 30 seconds
-      - Examples: "Define machine learning", "Convert 100°F to Celsius"
-
-      #### moderate
-      - Multi-step process, some domain knowledge, moderate context
-      - Processing time: 30 seconds - 2 minutes
-      - Examples: "Explain how OAuth works", "Debug this 20-line function"
-
-      #### complex
-      - Deep expertise required, extensive context, multi-faceted analysis
-      - Processing time: > 2 minutes
-      - Examples: "Design microservices architecture", "Write comprehensive market analysis"
-
-      ### 3. Reasoning
-      Brief reasoning for classification.
-
-      ### Classification Guidelines
-
-      1. **Choose the most specific category** that fits the primary intent
-      2. **Base complexity on required expertise and processing depth**, not query length
-      3. **Provide brief reasoning** - focus on the key deciding factors. 1-2 sentence explanation\n
-    `,
+    prompt: getPrompt(query),
   });
 
   console.log("Classification Result:", classification);
 
   const { category, complexity } = classification;
 
-  return (
-    decisionTree[category]?.[complexity] ?? {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
-      temperature: defaultTemperature,
-    }
-  );
+  return decisionTree[category][complexity];
 }
 
 const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
@@ -212,3 +152,71 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
   (typeof CATEGORIES)[number],
   Record<(typeof COMPLEXITY_LEVELS)[number], AutoModelCalculated>
 >;
+
+const getPrompt = (query: string): string => `\n
+  # Query Classification for LLM Routing
+  Analyze the following user query, included in a xml tag <query>, and classify it to determine the most appropriate LLM routing:
+
+  **Query:**
+  <query>
+    ${scapeXML(query)}
+  </query>
+
+  ## Classification Requirements
+
+  ### 1. Categories
+
+  #### factual
+  - Direct questions seeking specific information
+  - Examples: "What is the capital of France?", "When was Python created?"
+
+  #### analytical
+  - Multi-step reasoning, problem-solving, logical analysis
+  - Examples: "Compare pros/cons of X vs Y", "Analyze this data trend"
+
+  #### technical
+  - Programming, debugging, system design, technical implementation
+  - Examples: "Fix this code bug", "Design a REST API"
+
+  #### creative
+  - Artistic content generation, open-ended writing, brainstorming
+  - Examples: "Write a story", "Create a poem", "Generate creative marketing slogans"
+
+  #### instructional
+  - Creating structured content, prompts, templates, educational materials
+  - Examples: "Design a prompt for X", "Create a lesson plan", "Write documentation template"
+
+  #### conversational
+  - Casual chat, personal advice, social interaction
+  - Examples: "How was your day?", "What should I wear?"
+
+  #### processing
+  - Text transformation, translation, summarization
+  - Examples: "Translate this text", "Summarize this article"
+
+  ### 2. Complexity Levels
+
+  #### simple
+  - Single-step task, common knowledge, minimal context needed
+  - Processing time: < 30 seconds
+  - Examples: "Define machine learning", "Convert 100°F to Celsius"
+
+  #### moderate
+  - Multi-step process, some domain knowledge, moderate context
+  - Processing time: 30 seconds - 2 minutes
+  - Examples: "Explain how OAuth works", "Debug this 20-line function"
+
+  #### complex
+  - Deep expertise required, extensive context, multi-faceted analysis
+  - Processing time: > 2 minutes
+  - Examples: "Design microservices architecture", "Write comprehensive market analysis"
+
+  ### 3. Reasoning
+  Brief reasoning for classification.
+
+  ### Classification Guidelines
+
+  1. **Choose the most specific category** that fits the primary intent
+  2. **Base complexity on required expertise and processing depth**, not query length
+  3. **Provide brief reasoning** - focus on the key deciding factors. 1-2 sentence explanation\n
+`;

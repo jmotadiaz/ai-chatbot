@@ -9,17 +9,12 @@ import {
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 
-const google = createGoogleGenerativeAI({
-  // custom settings
-});
-
+const google = createGoogleGenerativeAI();
 const openai = createOpenAI({
   compatibility: "strict",
 });
-
-export const xai = createXai();
-
-export const openrouter = createOpenRouter({
+const xai = createXai();
+const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
@@ -121,10 +116,16 @@ const pickModelConfigurations = <
   return models;
 };
 
-export const refinePromptModelConfiguration =
-  languageModelConfigurations["Qwen 3"];
-export const titleModelConfiguration =
-  languageModelConfigurations["Llama 3.1 Instant"];
+export const refinePromptModelConfigurations = pickModelConfigurations([
+  "Qwen 3",
+  "o3",
+  "Deepseek R1 0528",
+  "Gemini 2.5 Pro",
+]);
+export const titleModelConfiguration = pickModelConfigurations([
+  "Llama 3.1 Instant",
+  "Gemma 2",
+]);
 
 const chatModelKeys = [
   "Llama 4 Maverick",
