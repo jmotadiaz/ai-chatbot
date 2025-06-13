@@ -1,10 +1,5 @@
 import { groq } from "@ai-sdk/groq";
-import {
-  extractReasoningMiddleware,
-  JSONValue,
-  LanguageModelV1,
-  wrapLanguageModel,
-} from "ai";
+import { JSONValue, LanguageModelV1 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -71,13 +66,10 @@ const languageModels = {
     },
   },
   "Deepseek R1 Distill": {
-    model: wrapLanguageModel({
-      middleware: extractReasoningMiddleware({
-        tagName: "think",
-        startWithReasoning: true,
-      }),
-      model: groq("deepseek-r1-distill-llama-70b"),
-    }),
+    model: groq("deepseek-r1-distill-llama-70b"),
+    providerOptions: {
+      groq: { reasoningFormat: "parsed" },
+    },
   },
   "Deepseek R1 0528": {
     model: openrouter.chat("deepseek/deepseek-r1-0528"),
@@ -115,13 +107,8 @@ const languageModels = {
   },
 } satisfies ModelConfigurations;
 
-export const refinePromptModel = {
-  model: groq("qwen/qwen3-32b"),
-  providerOptions: {
-    groq: { reasoningFormat: "parsed" },
-  },
-};
-export const titleModel = groq("llama-3.1-8b-instant");
+export const refinePromptModel = languageModels["Qwen 3"];
+export const titleModel = languageModels["Llama 3.1 Instant"];
 
 export const getModelConfiguration = modelConfigurationFactory(languageModels);
 

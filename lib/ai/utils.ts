@@ -8,7 +8,7 @@ export async function generateTitleFromUserMessage(
   if (!message) return "Unknown";
 
   const { text: title } = await generateText({
-    model: titleModel,
+    ...titleModel,
     system: `\n
     - you will generate a short title based on the first message a user begins a conversation with
     - ensure it is not more than 60 characters long
@@ -22,12 +22,10 @@ export async function generateTitleFromUserMessage(
 
 export const messageToDbMessage =
   (chatId: string) =>
-  (message: Message): InsertMessage => {
-    return {
-      chatId,
-      id: message.id,
-      role: message.role,
-      parts: message.parts,
-      attachments: message.experimental_attachments ?? [],
-    };
-  };
+  (message: Message): InsertMessage => ({
+    chatId,
+    id: message.id,
+    role: message.role,
+    parts: message.parts,
+    attachments: message.experimental_attachments ?? [],
+  });
