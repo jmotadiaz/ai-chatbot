@@ -1,5 +1,5 @@
 "use client";
-import { modelID, MODELS } from "@/lib/ai/providers";
+import { chatModelId, CHAT_MODELS } from "@/lib/ai/providers";
 import {
   Select,
   SelectContent,
@@ -17,8 +17,8 @@ export const ModelPicker = () => {
 };
 
 export interface ModelPickerSelectorProps {
-  selectedModel: modelID;
-  setSelectedModel: (model: modelID) => void;
+  selectedModel: chatModelId;
+  setSelectedModel: (model: chatModelId) => void;
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
@@ -31,7 +31,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
     </SelectTrigger>
     <SelectContent>
       <SelectGroup className="w-44 xl:w-48">
-        {MODELS.map((modelId) => (
+        {CHAT_MODELS.map((modelId) => (
           <SelectItem key={modelId} value={modelId}>
             {modelId}
           </SelectItem>
@@ -44,7 +44,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
 export const useModelPicker = (): ModelPickerSelectorProps => {
   const { selectedModel, setConfig } = useChatContext();
 
-  const setSelectedModel = (model: modelID) => {
+  const setSelectedModel = (model: chatModelId) => {
     setConfig({ selectedModel: model });
   };
 

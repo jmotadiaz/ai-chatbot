@@ -10,7 +10,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
 import { ProjectList } from "@/components/project-list";
 import { Message } from "@/lib/db/schema";
-import { defaultTemperature, defaultTopP, modelID } from "@/lib/ai/providers";
+import {
+  defaultTemperature,
+  defaultTopP,
+  chatModelId,
+} from "@/lib/ai/providers";
 import {
   getChatById,
   getChats,
@@ -62,7 +66,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
 
   return (
     <ChatProvider
-      selectedModel={chat.defaultModel as modelID}
+      selectedModel={chat.defaultModel as chatModelId}
       temperature={chat.defaultTemperature ?? defaultTemperature}
       topP={chat.defaultTopP ?? defaultTopP}
       chatId={id}

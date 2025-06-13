@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ProjectList } from "@/components/project-list";
 import { SidebarProvider } from "../../../providers";
 import Chat from "@/components/chat-with-client-storage";
-import { modelID } from "@/lib/ai/providers";
+import { chatModelId } from "@/lib/ai/providers";
 import { ModelPicker } from "@/components/model-picker";
 
 interface ProjectPageProps {
@@ -47,7 +47,7 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
   return (
     <ChatProvider
       projectId={project.id}
-      selectedModel={(project.defaultModel as modelID) || undefined}
+      selectedModel={(project.defaultModel as chatModelId) || undefined}
       temperature={project.defaultTemperature || undefined}
       topP={project.defaultTopP || undefined}
       systemPrompt={project.systemPrompt}

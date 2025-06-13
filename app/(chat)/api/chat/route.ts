@@ -5,7 +5,11 @@ import {
   appendResponseMessages,
   createDataStreamResponse,
 } from "ai";
-import { getModelConfiguration, modelID } from "@/lib/ai/providers";
+import {
+  chatModelConfigurations,
+  chatModelId,
+  ModelConfiguration,
+} from "@/lib/ai/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { generateUUID } from "@/lib/utils";
 import {
@@ -36,7 +40,7 @@ export async function POST(req: Request) {
     reloadedMessageId,
   }: {
     messages: UIMessage[];
-    selectedModel: modelID & "Auto";
+    selectedModel: chatModelId;
     temperature?: number;
     topP?: number;
     chatId?: string;
@@ -45,17 +49,22 @@ export async function POST(req: Request) {
   } = await req.json();
 
   let autoModelCalculated: AutoModelCalculated | null = null;
+  let chatModelConfiguration: ModelConfiguration | null = null;
 
   if (selectedModel === "Auto") {
     const query = messages[0]?.content || "";
     autoModelCalculated = await autoModel(query);
+    chatModelConfiguration = autoModelCalculated.modelConfig;
+  } else {
+    chatModelConfiguration =
+      chatModelConfigurations[selectedModel] ||
+      chatModelConfigurations["Llama 4 Maverick"];
   }
 
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
-        ...(autoModelCalculated?.modelConfig ??
-          getModelConfiguration(selectedModel)),
+        ...chatModelConfiguration,
         system: systemPrompt || defaultSystemPrompt,
         messages,
         temperature: autoModelCalculated

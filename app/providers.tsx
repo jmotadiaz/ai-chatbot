@@ -9,7 +9,7 @@ import {
   defaultModel,
   defaultTemperature,
   defaultTopP,
-  modelID,
+  chatModelId,
 } from "../lib/ai/providers";
 import { UIMessage } from "ai";
 
@@ -32,7 +32,7 @@ export const Providers: React.FC<ProvidersProps> = ({ children }) => {
 };
 
 interface ChatConfig {
-  selectedModel: modelID;
+  selectedModel: chatModelId;
   temperature: number;
   topP: number;
   systemPrompt?: string;
@@ -46,7 +46,7 @@ const chatContext = React.createContext<
   UseChatHelpers &
     SetChatConfig &
     ChatConfig & {
-      selectedModel: modelID;
+      selectedModel: chatModelId;
       metaPrompt?: string | null;
       chatId?: string;
       title?: string;
@@ -81,7 +81,7 @@ export interface ChatProviderProps extends ProvidersProps {
   initialMessages?: UIMessage[];
   projectId?: string;
   chatId?: string;
-  selectedModel?: modelID;
+  selectedModel?: chatModelId;
   temperature?: number;
   topP?: number;
   systemPrompt?: string;

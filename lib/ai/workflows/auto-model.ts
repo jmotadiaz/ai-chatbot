@@ -1,11 +1,10 @@
 import { generateObject } from "ai";
 import {
   defaultTemperature,
-  getModelConfiguration,
+  languageModelConfigurations,
   ModelConfiguration,
 } from "../providers";
 import { z } from "zod";
-import { groq } from "@ai-sdk/groq";
 
 export interface AutoModelCalculated {
   modelConfig: ModelConfiguration;
@@ -26,7 +25,7 @@ const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   const { object: classification } = await generateObject({
-    model: groq("gemma2-9b-it"),
+    ...languageModelConfigurations["Gemma 2"],
     schema: z.object({
       reasoning: z.string(),
       category: z.enum(CATEGORIES),
@@ -104,7 +103,7 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
 
   return (
     decisionTree[category]?.[complexity] ?? {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: defaultTemperature,
     }
   );
@@ -113,99 +112,99 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
 const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
   factual: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("Deepseek R1 0528"),
+      modelConfig: languageModelConfigurations["Deepseek R1 0528"],
       temperature: defaultTemperature,
     },
   },
   analytical: {
     simple: {
-      modelConfig: getModelConfiguration("Deepseek R1 Distill"),
+      modelConfig: languageModelConfigurations["Deepseek R1 Distill"],
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Qwen 3"),
+      modelConfig: languageModelConfigurations["Qwen 3"],
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("o3"),
+      modelConfig: languageModelConfigurations["o3"],
       temperature: defaultTemperature,
     },
   },
   technical: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Qwen 3"),
+      modelConfig: languageModelConfigurations["Qwen 3"],
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("Claude Sonnet 4"),
+      modelConfig: languageModelConfigurations["Claude Sonnet 4"],
       temperature: defaultTemperature,
     },
   },
   creative: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: 1,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
       temperature: 1,
     },
     complex: {
-      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 1,
     },
   },
   instructional: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
       temperature: 0.5,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Deepseek R1 Distill"),
+      modelConfig: languageModelConfigurations["Deepseek R1 Distill"],
       temperature: 0.5,
     },
     complex: {
-      modelConfig: getModelConfiguration("Gemini 2.5 Pro"),
+      modelConfig: languageModelConfigurations["Gemini 2.5 Pro"],
       temperature: 0.5,
     },
   },
   conversational: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: 0.8,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Llama 4 Maverick"),
+      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
       temperature: 0.8,
     },
     complex: {
-      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 0.8,
     },
   },
   processing: {
     simple: {
-      modelConfig: getModelConfiguration("Llama 3.1 Instant"),
+      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: getModelConfiguration("Deepseek R1 Distill"),
+      modelConfig: languageModelConfigurations["Deepseek R1 Distill"],
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: getModelConfiguration("Gemini 2.5 Flash"),
+      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: defaultTemperature,
     },
   },

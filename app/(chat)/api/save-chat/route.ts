@@ -1,7 +1,7 @@
 import { saveChat, saveMessages, transaction } from "@/lib/db/queries";
 import { UIMessage } from "ai";
 import { auth } from "@/auth";
-import { modelID } from "@/lib/ai/providers";
+import { chatModelId } from "@/lib/ai/providers";
 import {
   generateTitleFromUserMessage,
   messageToDbMessage,
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     topP,
   }: {
     messages: UIMessage[];
-    selectedModel: modelID;
+    selectedModel: chatModelId;
     projectId?: string;
     chatId: string;
     temperature: number;

@@ -1,6 +1,6 @@
 import { generateText, UIMessage } from "ai";
 import { auth } from "@/auth";
-import { refinePromptModel } from "@/lib/ai/providers";
+import { refinePromptModelConfiguration } from "@/lib/ai/providers";
 import {
   chatHistoryPrompt,
   concatenatePrompts,
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
 
   const { text } = await generateText({
-    ...refinePromptModel,
+    ...refinePromptModelConfiguration,
     system:
       metaPrompt +
       concatenatePrompts +

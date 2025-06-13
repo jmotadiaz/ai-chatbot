@@ -6,7 +6,7 @@ import React, {
   startTransition,
 } from "react";
 import { ChatProvider } from "@/app/providers";
-import { defaultModel, modelID } from "@/lib/ai/providers";
+import { defaultModel, chatModelId } from "@/lib/ai/providers";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { InputNumber } from "./ui/input-number";
@@ -32,8 +32,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   const [title, setTitle] = useState(project?.name || "");
   const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
   const [metaPrompt, setMetaPrompt] = useState(project?.metaPrompt || "");
-  const [model, setModel] = useState<modelID>(
-    (project?.defaultModel as modelID) || defaultModel
+  const [model, setModel] = useState<chatModelId>(
+    (project?.defaultModel as chatModelId) || defaultModel
   );
   const [temperature, setTemperature] = useState(
     project?.defaultTemperature || 0.2

@@ -30,18 +30,15 @@ export interface ModelConfiguration {
 
 export type ModelConfigurations = Record<string, ModelConfiguration>;
 
-const modelConfigurationFactory =
-  <T extends ModelConfigurations>(languageModels: T) =>
-  (modelName: keyof T | "Auto"): ModelConfiguration => {
-    return languageModels[modelName] ?? languageModels["Llama 4 Maverick"];
-  };
-
-const languageModels = {
+export const languageModelConfigurations = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
   },
   "Llama 4 Maverick": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+  },
+  "Gemma 2": {
+    model: groq("gemma2-9b-it"),
   },
   "Deepseek V3": {
     model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
@@ -107,16 +104,50 @@ const languageModels = {
   },
 } satisfies ModelConfigurations;
 
-export const refinePromptModel = languageModels["Qwen 3"];
-export const titleModel = languageModels["Llama 3.1 Instant"];
+const pickModelConfigurations = <
+  T extends keyof typeof languageModelConfigurations
+>(
+  modelKeys: T[]
+): Record<T, ModelConfiguration> => {
+  const models: Record<T, ModelConfiguration> = {} as Record<
+    T,
+    ModelConfiguration
+  >;
+  modelKeys.forEach((key) => {
+    if (languageModelConfigurations[key]) {
+      models[key] = languageModelConfigurations[key];
+    }
+  });
+  return models;
+};
 
-export const getModelConfiguration = modelConfigurationFactory(languageModels);
+export const refinePromptModelConfiguration =
+  languageModelConfigurations["Qwen 3"];
+export const titleModelConfiguration =
+  languageModelConfigurations["Llama 3.1 Instant"];
 
-export type modelID = keyof typeof languageModels | "Auto";
+const chatModelKeys = [
+  "Llama 4 Maverick",
+  "Claude 3.5 Haiku",
+  "GPT 4.1 Mini",
+  "Gemini 2.5 Flash",
+  "Deepseek R1 0528",
+  "Qwen 3",
+  "Claude Sonnet 4",
+  "o4 Mini",
+  "o3",
+  "Gemini 2.5 Pro",
+  "Grok 3 Mini",
+  "Grok 3",
+] satisfies (keyof typeof languageModelConfigurations)[];
 
-export const MODELS = ["Auto", ...Object.keys(languageModels)] as modelID[];
+export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
 
-export const defaultModel = "Auto";
+export type chatModelId = (typeof chatModelKeys)[number] | "Auto";
+
+export const CHAT_MODELS: chatModelId[] = ["Auto", ...chatModelKeys];
+
+export const defaultModel: chatModelId = "Auto";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 
