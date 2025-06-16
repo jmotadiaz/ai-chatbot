@@ -11,7 +11,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { InputNumber } from "./ui/input-number";
 import { Button } from "./ui/button";
-import Chat from "./chat-with-client-storage";
+import Chat from "./chat";
 import { ModelPickerSelector } from "./model-picker";
 import { WandSparkles } from "lucide-react";
 import { markdownCommandStyle, MarkdownEditor } from "./ui/markdown-editor";
