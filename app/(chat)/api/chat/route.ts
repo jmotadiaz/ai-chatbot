@@ -19,7 +19,7 @@ import {
   updateChat,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { messageToDbMessage } from "@/lib/ai/utils";
+import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel, AutoModelCalculated } from "@/lib/ai/workflows/auto-model";
 
 export const maxDuration = 60;
@@ -52,8 +52,11 @@ export async function POST(req: Request) {
   let chatModelConfiguration: ModelConfiguration | null = null;
 
   if (selectedModel === "Auto") {
-    const query = messages[0]?.content || "";
-    autoModelCalculated = await autoModel(query);
+    const firstMessage = messages[0];
+
+    autoModelCalculated = await autoModel(
+      firstMessage?.content || messagePartsToText(firstMessage)
+    );
     chatModelConfiguration = autoModelCalculated.modelConfig;
   } else {
     chatModelConfiguration =

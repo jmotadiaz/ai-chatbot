@@ -29,3 +29,12 @@ export const messageToDbMessage =
     parts: message.parts,
     attachments: message.experimental_attachments ?? [],
   });
+
+export const messagePartsToText = (message: UIMessage): string => {
+  return message.parts?.reduce((content, part) => {
+    if (part.type === "text") {
+      return `${content}${part.text}`;
+    }
+    return content;
+  }, "");
+};

@@ -26,6 +26,9 @@ const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   if (!query || query.trim() === "") {
+    console.warn(
+      "Empty query provided to autoModel. Defaulting to Llama 3.1 Instant."
+    );
     return {
       modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
       temperature: defaultTemperature,
