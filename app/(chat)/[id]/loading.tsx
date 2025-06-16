@@ -7,16 +7,16 @@ import React from "react";
 const Loading: React.FC = () => {
   return (
     <div className="h-svh flex flex-col justify-center w-full stretch">
-      <Header>
-        <div className="flex flex-row items-center gap-6 shrink-0">
+      <Header.Container>
+        <Header.Left>
           <Logo />
           <NewChat />
           <div className="w-44 xl:w-48 h-[32px] bg-gray-200 dark:bg-zinc-700 rounded-md py-2 animate-pulse" />
-        </div>
-        <div className="flex flex-row items-center gap-2 shrink-0">
+        </Header.Left>
+        <Header.Right>
           <ThemeToggle />
-        </div>
-      </Header>
+        </Header.Right>
+      </Header.Container>
       <div className="h-svh w-full max-w-2xl mx-auto pt-24 relative px-4 overflow-hidden">
         <div className="relative z-1 pr-4">
           {Array.from({ length: 3 }).map((_, index) => (

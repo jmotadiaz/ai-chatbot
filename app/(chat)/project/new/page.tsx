@@ -38,15 +38,15 @@ const NewProjectPage: React.FC = async () => {
             </SidebarFooter>
           </Suspense>
         </Sidebar>
-        <Header>
-          <div className="flex flex-row items-center gap-6 shrink-0">
+        <Header.Container>
+          <Header.Left>
             <Logo />
             <NewChat />
-          </div>
-          <div className="flex flex-row items-center gap-2 shrink-0">
+          </Header.Left>
+          <Header.Right>
             <ThemeToggle />
-          </div>
-        </Header>
+          </Header.Right>
+        </Header.Container>
         <ProjectForm />
       </div>
     </SidebarProvider>

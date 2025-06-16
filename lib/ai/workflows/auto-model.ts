@@ -112,7 +112,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: 0.5,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Deepseek R1 Distill"],
+      modelConfig: languageModelConfigurations["Qwen 3"],
       temperature: 0.5,
     },
     complex: {

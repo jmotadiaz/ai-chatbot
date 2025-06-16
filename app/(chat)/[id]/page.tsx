@@ -84,16 +84,16 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
               <UserMenu />
             </SidebarFooter>
           </Sidebar>
-          <Header>
-            <div className="flex flex-row items-center gap-6 shrink-0">
+          <Header.Container>
+            <Header.Left>
               <Logo />
               <NewChat />
               <ModelPicker />
-            </div>
-            <div className="flex flex-row items-center gap-2 shrink-0">
+            </Header.Left>
+            <Header.Right>
               <ThemeToggle />
-            </div>
-          </Header>
+            </Header.Right>
+          </Header.Container>
           <Chat />
         </div>
       </SidebarProvider>

@@ -11,16 +11,16 @@ const Loading: React.FC = async () => {
   return (
     <ChatProvider>
       <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Header>
-          <div className="flex flex-row items-center gap-6 shrink-0">
+        <Header.Container>
+          <Header.Left>
             <Logo />
             <NewChatHome />
             <ModelPicker />
-          </div>
-          <div className="flex flex-row items-center gap-2 shrink-0">
+          </Header.Left>
+          <Header.Right>
             <ThemeToggle />
-          </div>
-        </Header>
+          </Header.Right>
+        </Header.Container>
         <Chat />
       </div>
     </ChatProvider>
