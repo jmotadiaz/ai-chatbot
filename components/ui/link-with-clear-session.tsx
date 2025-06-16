@@ -5,14 +5,14 @@ import { clearSessionMessages } from "@/lib/ai/session";
 
 type LinkProps = ComponentProps<typeof NextLink>;
 
-const Link: React.FC<LinkProps> = ({ onClick, ...props }) => {
-  const handleClick: LinkProps["onClick"] = (...clickArgs) => {
+const Link: React.FC<LinkProps> = ({ onNavigate, ...props }) => {
+  const handleNavigate: LinkProps["onNavigate"] = (...onNavigateArgs) => {
     // Clear session messages or any other session-related data
     clearSessionMessages();
-    onClick?.(...clickArgs);
+    onNavigate?.(...onNavigateArgs);
   };
 
-  return <NextLink {...props} onClick={handleClick} />;
+  return <NextLink {...props} onNavigate={handleNavigate} />;
 };
 
 export default Link;
