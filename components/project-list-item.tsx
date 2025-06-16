@@ -25,7 +25,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <div
-        className="flex items-center justify-between text-sm font-medium cursor-pointer select-none"
+        className="flex items-center justify-between p-2 text-sm leading-1 font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600  hover:bg-accent transition-colors"
         {...getToggleProps()}
       >
         <span>{name}</span>
