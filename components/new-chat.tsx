@@ -1,6 +1,6 @@
 "use client";
 import { Edit } from "lucide-react";
-import Link from "./ui/link-with-clear-session";
+import Link from "./ui/link";
 
 export const NewChat = () => {
   return (

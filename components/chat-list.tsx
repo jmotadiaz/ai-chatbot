@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/link";
 import { X as XIcon } from "lucide-react";
 import { deleteChat } from "@/lib/ai/actions";
 import { Chat } from "@/lib/db/schema";

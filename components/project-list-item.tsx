@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
-import Link from "./ui/link-with-clear-session";
+import Link from "./ui/link";
 import { Button } from "./ui/button";
 import { useCollapse } from "react-collapsed";
 
