@@ -2,10 +2,9 @@
 
 import { ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
-import Link from "next/link";
+import Link from "./ui/link-with-clear-session";
 import { Button } from "./ui/button";
 import { useCollapse } from "react-collapsed";
-import { clearSessionMessages } from "../lib/ai/session";
 
 export interface ProjectListItemProps {
   id: string;
@@ -40,12 +39,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex">
-            <Link
-              href={`/project/${id}`}
-              onClick={() => {
-                clearSessionMessages();
-              }}
-            >
+            <Link href={`/project/${id}`}>
               <Button variant="outline">New Chat</Button>
             </Link>
             <Link href={`/project/${id}/edit`} className="ml-2">

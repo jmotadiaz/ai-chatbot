@@ -28,7 +28,7 @@ export interface ProjectFormProps {
 }
 
 export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
-  const [activeTab, setActiveTab] = useState<TabKey>("configuration");
+  const [activeTab, setActiveTab] = useState<TabKey>(() => "configuration");
   const [title, setTitle] = useState(project?.name || "");
   const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
   const [metaPrompt, setMetaPrompt] = useState(project?.metaPrompt || "");
@@ -96,7 +96,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
 
   return (
     <div className="overflow-x-hidden h-full">
-      <div className="flex w-full max-w-4xl mx-auto lg:fixed lg:z-100 lg:left-0 lg:right-0 top-0 border-b pt-16 lg:pt-0 px-6 my-4">
+      <div className="flex w-full max-w-4xl mx-auto border-b pt-18 px-6 my-4">
         <button
           type="button"
           className={`px-4 py-2 border-b-2 font-medium transition[color,border] duration-300  ${
@@ -128,7 +128,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
           Test Chat
         </button>
       </div>
-      <div className="w-full max-w-4xl mx-auto pt-2 lg:pt-18 px-6">
+      <div className="w-full max-w-4xl mx-auto pt-6 px-6">
         {activeTab === "configuration" && (
           <ViewTransition enter="slide-in" exit="slide-out">
             <div className="flex flex-col gap-6 pb-8">

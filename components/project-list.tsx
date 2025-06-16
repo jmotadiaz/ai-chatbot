@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "./ui/link-with-clear-session";
 import { ClassNameValue } from "tailwind-merge";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
