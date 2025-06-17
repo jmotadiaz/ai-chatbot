@@ -13,6 +13,7 @@ interface ConfirmModalProps {
   confirmButtonVariant?: ButtonProps["variant"];
   title?: string;
   message?: string;
+  confirmButtonText?: string;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -22,6 +23,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   title = "Confirm Deletion",
   message = "Are you sure you want to delete this item?",
   confirmButtonVariant = "destructive",
+  confirmButtonText = "Delete",
 }) => {
   if (!isOpen) {
     return null;
@@ -61,7 +63,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 Cancel
               </Button>
               <Button variant={confirmButtonVariant} onClick={handleConfirm}>
-                Confirm
+                {confirmButtonText}
               </Button>
             </div>
           </div>

@@ -51,7 +51,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
               <Button variant="outline">Edit</Button>
             </Link>
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={() =>
                 startTransition(() => {
                   setIsModalOpen(true);
