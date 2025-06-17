@@ -45,23 +45,25 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         }
       ></div>
       <ViewTransition enter="slide-up" exit="slide-up">
-        <div className="fixed z-60 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] bg-background text-foreground p-6 rounded-lg shadow-xl w-full max-w-md m-4">
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-sm text-muted-foreground mb-4">{message}</p>
-          <div className="flex justify-end gap-2 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                startTransition(() => {
-                  onClose();
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant={confirmButtonVariant} onClick={handleConfirm}>
-              Confirm
-            </Button>
+        <div className="fixed z-60 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] w-full max-w-md px-4">
+          <div className="bg-background text-foreground p-6 rounded-lg shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">{title}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{message}</p>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  startTransition(() => {
+                    onClose();
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button variant={confirmButtonVariant} onClick={handleConfirm}>
+                Confirm
+              </Button>
+            </div>
           </div>
         </div>
       </ViewTransition>
