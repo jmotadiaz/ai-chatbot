@@ -2,8 +2,10 @@
 
 import { Textarea } from "./textarea";
 import { ArrowDown } from "lucide-react";
-import { experimental_useObject as useObject } from "@ai-sdk/react";
-import { useGeneratedText } from "@/lib/ai/hooks";
+import {
+  useCompletion,
+  experimental_useObject as useObject,
+} from "@ai-sdk/react";
 import { grammarSchema } from "@/lib/ai/schemas/grammar";
 import { cn } from "@/lib/utils";
 import { Tabs, useTabs } from "./ui/tabs";
@@ -38,8 +40,8 @@ const EnglishHelperChat: React.FC = () => {
 };
 
 export const EnglishTranslateChat: React.FC = () => {
-  const { generate, input, handleInputChange, text, isLoading } =
-    useGeneratedText({
+  const { complete, input, handleInputChange, completion, isLoading } =
+    useCompletion({
       api: "/api/english/translate",
     });
 
@@ -59,7 +61,7 @@ export const EnglishTranslateChat: React.FC = () => {
             disabled={!input.trim()}
             isLoading={isLoading}
             onClick={() => {
-              generate();
+              complete(input);
             }}
           />
         </div>
@@ -70,11 +72,11 @@ export const EnglishTranslateChat: React.FC = () => {
         )}
       >
         <>
-          {text && (
+          {completion && (
             <>
               <div className="font-semibold mb-2">Translation:</div>
-              <CopyBlock className="p-3" text={text}>
-                {text}
+              <CopyBlock className="p-3" text={completion}>
+                {completion}
               </CopyBlock>
             </>
           )}

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
   const { prompt }: { prompt: string } = await req.json();
 
-  const { translation } = await translate(prompt);
+  const result = await translate(prompt);
 
-  return Response.json({ text: translation });
+  return result.toDataStreamResponse();
 }
