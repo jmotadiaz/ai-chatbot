@@ -1,16 +1,11 @@
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 import { cn } from "../lib/utils";
-import { UIMessage } from "ai";
 
 interface TextareaProps {
-  messages: UIMessage[];
   input: string;
-  setInput: (value: string) => void;
   handleInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isLoading: boolean;
   isLoadingRefinedPrompt?: boolean;
-  status: string;
-  stop: () => void;
 }
 
 export const Textarea = ({

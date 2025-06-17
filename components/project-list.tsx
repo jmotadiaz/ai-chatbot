@@ -35,19 +35,27 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
       >
         Projects <Edit className="h-5 w-5 ml-2" />
       </Link>
-      {projects.length > 0 && (
-        <div className="space-y-2">
-          {projects.map((project) => (
-            <ProjectListItem
-              key={project.id}
-              id={project.id}
-              name={project.name}
-              currentProjectId={currentProjectId}
-              chatList={<ChatList chats={project.chats} />}
-            />
-          ))}
-        </div>
-      )}
+      <div className="space-y-2">
+        <Link
+          href="/english-helper"
+          className="block p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600  hover:bg-accent transition-colors"
+        >
+          English Helper
+        </Link>
+        {projects.length > 0 && (
+          <>
+            {projects.map((project) => (
+              <ProjectListItem
+                key={project.id}
+                id={project.id}
+                name={project.name}
+                currentProjectId={currentProjectId}
+                chatList={<ChatList chats={project.chats} />}
+              />
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 };

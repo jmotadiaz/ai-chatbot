@@ -1,5 +1,5 @@
 import { UIMessage } from "ai";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 export interface UseRefinePromptParams {
   input: string;
@@ -48,5 +48,50 @@ export const useRefinePrompt = ({
   return {
     isLoadingRefinedPrompt,
     refinePrompt,
+  };
+};
+
+export interface UseGenerateTextParams {
+  api: string;
+}
+
+export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
+  const [text, setText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [input, setInput] = useState("");
+
+  const generate = useCallback(
+    async ({ prompt }: { prompt?: string } = {}) => {
+      setIsLoading(true);
+      setText("");
+
+      await fetch(api, {
+        method: "POST",
+        body: JSON.stringify({
+          prompt: prompt || input,
+        }),
+      }).then((response) => {
+        response.json().then((json) => {
+          setText(json.text);
+          setIsLoading(false);
+        });
+      });
+    },
+    [api, input]
+  );
+
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setInput(event.target.value);
+    },
+    []
+  );
+
+  return {
+    text,
+    isLoading,
+    generate,
+    input,
+    handleInputChange,
   };
 };

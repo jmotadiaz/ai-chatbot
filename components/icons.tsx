@@ -1,3 +1,5 @@
+import { Circle } from "lucide-react";
+
 export const LogoIcon = ({ size = 24, className = "", strokeWidth = 2.5 }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -104,3 +106,22 @@ export const SpinnerIcon = ({ size = 16 }: { size?: number }) => (
     </defs>
   </svg>
 );
+
+export const LoadingAssistantMessageIcon: React.FC = () => {
+  return (
+    <div className="flex items-center gap-2">
+      <Circle
+        size={2}
+        className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite]"
+      />
+      <Circle
+        size={2}
+        className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.2s]"
+      />
+      <Circle
+        size={2}
+        className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.4s]"
+      />
+    </div>
+  );
+};

@@ -37,7 +37,7 @@ interface ChatListItemProps {
 
 const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
   return (
-    <div className="flex items-center justify-between rounded-lg border dark:border-zinc-600 text-sm  leading-1 transition-colors hover:bg-accent select-none">
+    <div className="flex items-center justify-between rounded-lg border dark:border-zinc-600 text-sm transition-colors hover:bg-accent select-none">
       <Link href={`/${id}`} className="flex-1 overflow-hidden">
         <div className="p-2 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
           {title || "Untitled Chat"}

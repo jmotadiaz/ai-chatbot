@@ -1,8 +1,10 @@
-import { useChatContext } from "@/app/providers";
 import { LogoIcon } from "./icons";
 
-export const ProjectOverview = () => {
-  const { title } = useChatContext();
+export interface ProjectOverviewProps {
+  title?: string;
+}
+
+export const ProjectOverview = ({ title }: ProjectOverviewProps) => {
   return (
     <div className="h-full flex flex-col items-center justify-end px-4">
       <h1 className="text-3xl text-center font-semibold mb-4">

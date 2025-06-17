@@ -1,10 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  unstable_ViewTransition as ViewTransition,
-  startTransition,
-} from "react";
+import React, { useState } from "react";
 import { ChatProvider } from "@/app/providers";
 import { defaultModel, chatModelId } from "@/lib/ai/providers";
 import { Input } from "./ui/input";
@@ -20,15 +16,16 @@ import { systemMetaPrompt } from "../lib/ai/prompts";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Project } from "@/lib/db/schema";
+import { Tabs, useTabs } from "./ui/tabs";
 
-type TabKey = "configuration" | "testChat";
+const tabs = ["configuration", "testChat"] as const;
 
 export interface ProjectFormProps {
   project?: Project;
 }
 
 export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
-  const [activeTab, setActiveTab] = useState<TabKey>(() => "configuration");
+  const { getPanelProps, getTabProps } = useTabs({ tabs });
   const [title, setTitle] = useState(project?.name || "");
   const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
   const [metaPrompt, setMetaPrompt] = useState(project?.metaPrompt || "");
@@ -96,146 +93,111 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
 
   return (
     <div className="overflow-x-hidden h-full">
-      <div className="flex w-full max-w-4xl mx-auto border-b pt-18 px-6 my-4">
-        <button
-          type="button"
-          className={`px-4 py-2 border-b-2 font-medium transition[color,border] duration-300  ${
-            activeTab === "configuration"
-              ? "border-primary text-primary"
-              : "border-transparent text-gray-500 cursor-pointer"
-          }`}
-          onClick={() => {
-            startTransition(() => {
-              setActiveTab("configuration");
-            });
-          }}
-        >
-          Configuration
-        </button>
-        <button
-          type="button"
-          className={`px-4 py-2 border-b-2 font-medium transition[color,border] duration-300 ${
-            activeTab === "testChat"
-              ? "border-primary text-primary"
-              : "border-transparent text-gray-500 cursor-pointer"
-          }`}
-          onClick={() => {
-            startTransition(() => {
-              setActiveTab("testChat");
-            });
-          }}
-        >
-          Test Chat
-        </button>
-      </div>
+      <Tabs.Container className="max-w-4xl mx-auto pt-18 my-4">
+        <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
+        <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
+      </Tabs.Container>
       <div className="w-full max-w-4xl mx-auto pt-6 px-6">
-        {activeTab === "configuration" && (
-          <ViewTransition enter="slide-in" exit="slide-out">
-            <div className="flex flex-col gap-6 pb-8">
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2" htmlFor="title">
-                  Title
-                </Label>
-                <Input
-                  id="title"
-                  placeholder="Project title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2">Model</Label>
-                <ModelPickerSelector
-                  selectedModel={model}
-                  setSelectedModel={setModel}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2" htmlFor="systemPrompt">
-                  System Prompt
-                </Label>
-                <MarkdownEditor
-                  value={systemPrompt}
-                  onChange={setSystemPrompt}
-                  isLoading={isLoadingRefinedPrompt}
-                  extraCommands={[
-                    {
-                      name: "refine",
-                      keyCommand: "refine",
-                      icon: (
-                        <div
-                          className={markdownCommandStyle}
-                          onClick={refinePrompt}
-                        >
-                          <WandSparkles size={12} />
-                        </div>
-                      ),
-                    },
-                  ]}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2" htmlFor="metaPrompt">
-                  Meta Prompt
-                </Label>
-                <MarkdownEditor value={metaPrompt} onChange={setMetaPrompt} />
-              </div>
-              <div className="flex flex-row gap-6 justify-between lg:justify-start lg:gap-12">
-                <div className="flex flex-col gap-2">
-                  <Label className="text-lg mb-2" htmlFor="temperature">
-                    Temperature
-                  </Label>
-                  <InputNumber
-                    id="temperature"
-                    value={temperature}
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    onChange={setTemperature}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label className="text-lg mb-2" htmlFor="topP">
-                    Top P
-                  </Label>
-                  <InputNumber
-                    id="topP"
-                    value={topP}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    onChange={setTopP}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 text-right">
-                <Button onClick={handleSaveProject} disabled={isCreating}>
-                  {isCreating ? "Saving..." : "Save Project"}
-                </Button>
-              </div>
+        <Tabs.Panel {...getPanelProps("configuration")}>
+          <div className="flex flex-col gap-6 pb-8">
+            <div className="flex flex-col gap-2">
+              <Label className="text-lg mb-2" htmlFor="title">
+                Title
+              </Label>
+              <Input
+                id="title"
+                placeholder="Project title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </div>
-          </ViewTransition>
-        )}
 
-        {activeTab === "testChat" && (
-          <ViewTransition enter="slide-in" exit="slide-out">
-            <div>
-              <ChatProvider
-                temperature={temperature}
-                topP={topP}
+            <div className="flex flex-col gap-2">
+              <Label className="text-lg mb-2">Model</Label>
+              <ModelPickerSelector
                 selectedModel={model}
-                systemPrompt={systemPrompt}
-                title={title}
-              >
-                <Chat />
-              </ChatProvider>
+                setSelectedModel={setModel}
+              />
             </div>
-          </ViewTransition>
-        )}
+
+            <div className="flex flex-col gap-2">
+              <Label className="text-lg mb-2" htmlFor="systemPrompt">
+                System Prompt
+              </Label>
+              <MarkdownEditor
+                value={systemPrompt}
+                onChange={setSystemPrompt}
+                isLoading={isLoadingRefinedPrompt}
+                extraCommands={[
+                  {
+                    name: "refine",
+                    keyCommand: "refine",
+                    icon: (
+                      <div
+                        className={markdownCommandStyle}
+                        onClick={refinePrompt}
+                      >
+                        <WandSparkles size={12} />
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label className="text-lg mb-2" htmlFor="metaPrompt">
+                Meta Prompt
+              </Label>
+              <MarkdownEditor value={metaPrompt} onChange={setMetaPrompt} />
+            </div>
+            <div className="flex flex-row gap-6 justify-between lg:justify-start lg:gap-12">
+              <div className="flex flex-col gap-2">
+                <Label className="text-lg mb-2" htmlFor="temperature">
+                  Temperature
+                </Label>
+                <InputNumber
+                  id="temperature"
+                  value={temperature}
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  onChange={setTemperature}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label className="text-lg mb-2" htmlFor="topP">
+                  Top P
+                </Label>
+                <InputNumber
+                  id="topP"
+                  value={topP}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onChange={setTopP}
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 text-right">
+              <Button onClick={handleSaveProject} disabled={isCreating}>
+                {isCreating ? "Saving..." : "Save Project"}
+              </Button>
+            </div>
+          </div>
+        </Tabs.Panel>
+        <Tabs.Panel {...getPanelProps("testChat")}>
+          <ChatProvider
+            temperature={temperature}
+            topP={topP}
+            selectedModel={model}
+            systemPrompt={systemPrompt}
+            title={title}
+          >
+            <Chat />
+          </ChatProvider>
+        </Tabs.Panel>
       </div>
     </div>
   );

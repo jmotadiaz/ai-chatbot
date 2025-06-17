@@ -23,6 +23,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     setInput,
     handleInputChange,
     handleSubmit,
+    title,
     status,
     stop,
     reload,
@@ -50,7 +51,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
         <div className="h-full overflow-y-auto py-8" ref={scrollContainerRef}>
           <div className="w-full max-w-2xl mx-auto">
             {messages.length === 0 ? (
-              <ProjectOverview />
+              <ProjectOverview title={title} />
             ) : (
               <>
                 <Messages
@@ -106,13 +107,9 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
         <div className="relative w-full">
           <Textarea
             handleInputChange={handleInputChange}
-            messages={messages}
             input={input}
-            setInput={setInput}
             isLoading={isLoading}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
-            status={status}
-            stop={stop}
           />
           <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
           <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
