@@ -187,9 +187,6 @@ input[type=number] {
   animation: slide-in-left 300ms ease-in-out both;
 }
 
-::view-transition-group(.slide-up) {
-  overflow: hidden;
-}
 ::view-transition-old(.slide-up) {
   animation: slide-out-up 300ms ease-in-out both;
 }
