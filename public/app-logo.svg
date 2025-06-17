@@ -4,24 +4,24 @@
   >
     <rect width="22" height="22" fill="black"/>
     <path
-      d="M 8 5 L 14 17 H 2 L 8 5 Z"
+      d="M 8.5 5 L 14 16 H 3 L 8.5 5 Z"
       fill="none"
-      stroke="#fff"
+      stroke="#ffffff"
       stroke-linejoin="round"
-      stroke-width="2"
+      stroke-width="1.5"
     />
     <path
-      d="M 19 5 L 19 5"
+      d="M 18 5 L 18 5"
       fill="none"
-      stroke="#fff"
+      stroke="#ffffff"
       stroke-linecap="round"
-      stroke-width="2"
+      stroke-width="1.5"
     />
     <path
-      d="M 19 10 L 19 17"
+      d="M 18 10 L 18 16"
       fill="none"
-      stroke="#fff"
+      stroke="#ffffff"
       stroke-linecap="round"
-      stroke-width="2"
+      stroke-width="1.5"
     />
   </svg>

@@ -19,34 +19,27 @@ export const useRefinePrompt = ({
   messages,
   metaPrompt,
 }: UseRefinePromptParams): RefinePromptReturn => {
-  const [isLoadingRefinedPrompt, setIsLoadingRefinedPrompt] = useState(false);
-  const isRefinePromptEnabled = !!input.length && !isLoadingRefinedPrompt;
+  const { generate, isLoading } = useGeneratedText({
+    api: "/api/refine-prompt",
+  });
+  const isRefinePromptEnabled = !!input.length && !isLoading;
 
   const refinePrompt = () => {
     if (!isRefinePromptEnabled) return;
-    setIsLoadingRefinedPrompt(true);
-    fetch("/api/refine-prompt", {
-      method: "POST",
-      body: JSON.stringify({
-        prompt: input,
-        messages,
-        metaPrompt,
-      }),
-    })
-      .then((response) => {
-        response.json().then(({ text }) => {
-          if (text) {
-            setInput(text.trim());
-          }
-        });
-      })
-      .finally(() => {
-        setIsLoadingRefinedPrompt(false);
-      });
+    generate({
+      prompt: input,
+      body: {
+        messages: messages || null,
+        metaPrompt: metaPrompt || null,
+      },
+      onFinish: (generatedText) => {
+        setInput(generatedText);
+      },
+    });
   };
 
   return {
-    isLoadingRefinedPrompt,
+    isLoadingRefinedPrompt: isLoading,
     refinePrompt,
   };
 };
@@ -55,13 +48,29 @@ export interface UseGenerateTextParams {
   api: string;
 }
 
+interface GenerateTextParams {
+  prompt?: string;
+  onFinish?: (generatedText: string) => void;
+  body?: Record<string, unknown>;
+}
+
+export interface UseGenerateTextReturn {
+  text: string;
+  isLoading: boolean;
+  generate: (params?: GenerateTextParams) => Promise<void>;
+  input: string;
+  handleInputChange: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
+}
+
 export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
 
   const generate = useCallback(
-    async ({ prompt }: { prompt?: string } = {}) => {
+    async ({ prompt, onFinish, body }: GenerateTextParams = {}) => {
       setIsLoading(true);
       setText("");
 
@@ -69,10 +78,12 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
         method: "POST",
         body: JSON.stringify({
           prompt: prompt || input,
+          ...body,
         }),
       }).then((response) => {
         response.json().then((json) => {
           setText(json.text);
+          onFinish?.(json.text);
           setIsLoading(false);
         });
       });
