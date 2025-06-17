@@ -1,0 +1,70 @@
+"use client";
+
+import React, {
+  unstable_ViewTransition as ViewTransition,
+  startTransition,
+} from "react";
+import { Button, ButtonProps } from "./button"; // Assuming button component exists
+
+interface ConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  confirmButtonVariant?: ButtonProps["variant"];
+  title?: string;
+  message?: string;
+}
+
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Confirm Deletion",
+  message = "Are you sure you want to delete this item?",
+  confirmButtonVariant = "destructive",
+}) => {
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleConfirm = () => {
+    startTransition(() => {
+      onConfirm();
+      onClose();
+    });
+  };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        onClick={() =>
+          startTransition(() => {
+            onClose();
+          })
+        }
+      ></div>
+      <ViewTransition enter="slide-up" exit="slide-up">
+        <div className="fixed z-60 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] bg-background text-foreground p-6 rounded-lg shadow-xl w-full max-w-md m-4">
+          <h3 className="text-lg font-semibold mb-2">{title}</h3>
+          <p className="text-sm text-muted-foreground mb-4">{message}</p>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                startTransition(() => {
+                  onClose();
+                });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant={confirmButtonVariant} onClick={handleConfirm}>
+              Confirm
+            </Button>
+          </div>
+        </div>
+      </ViewTransition>
+    </>
+  );
+};

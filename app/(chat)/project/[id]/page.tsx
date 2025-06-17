@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getProjectById, getChats } from "@/lib/db/queries";
 import { ChatProvider } from "@/app/providers";
@@ -32,7 +32,7 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
   const project = await getProjectById(id);
 
   if (!project) {
-    notFound();
+    redirect("/project/new");
   }
 
   if (project.userId !== session.user.id) {

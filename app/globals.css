@@ -187,6 +187,16 @@ input[type=number] {
   animation: slide-in-left 300ms ease-in-out both;
 }
 
+::view-transition-group(.slide-up) {
+  overflow: hidden;
+}
+::view-transition-old(.slide-up) {
+  animation: slide-out-up 300ms ease-in-out both;
+}
+::view-transition-new(.slide-up) {
+  animation: slide-in-up 300ms ease-in-out both;
+}
+
 @keyframes slide-in-right {
   from {
     transform: translateX(20%);
@@ -227,6 +237,28 @@ input[type=number] {
   }
   to {
     transform: translateX(20%);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    transform: translateY(-20%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-up {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-20%);
     opacity: 0;
   }
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
 import Link from "./ui/link";
 import { Button } from "./ui/button";
-import { ConfirmDeleteModal } from "./ui/confirm-delete-modal";
+import { ConfirmModal } from "./ui/confirm-modal";
 import { useCollapse } from "react-collapsed";
 
 export interface ProjectListItemProps {
@@ -45,24 +45,30 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">
             <Link href={`/project/${id}`}>
-              <Button variant="outline">New Chat</Button>
+              <Button variant="outline">Chat</Button>
             </Link>
             <Link href={`/project/${id}/edit`}>
               <Button variant="outline">Edit</Button>
             </Link>
-            <Button variant="destructive" onClick={() => setIsModalOpen(true)}>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                startTransition(() => {
+                  setIsModalOpen(true);
+                })
+              }
+            >
               Delete
             </Button>
           </div>
           {chatList}
         </div>
       </div>
-      <ConfirmDeleteModal
+      <ConfirmModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={() => {
           deleteProject();
-          setIsModalOpen(false);
         }}
         title="Delete Project"
         message={`Are you sure you want to delete the project "${name}"? This action cannot be undone.`}
