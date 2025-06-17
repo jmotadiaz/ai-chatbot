@@ -6,8 +6,7 @@ import {
   tomorrow,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Copy } from "lucide-react";
-import { handleCopy } from "@/lib/utils";
+import { CopyBlock } from "./copy-block";
 
 interface CodeBlockProps {
   className?: string;
@@ -38,28 +37,22 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
   if (match) {
     return (
-      <div className="relative animate-fade">
-        <button
-          type="button"
-          onClick={handleCopy(codeString)}
-          className="absolute top-3 right-2 p-1 cursor-pointer text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
-          aria-label={"Copy code"}
-        >
-          <Copy size={16} />
-        </button>
-        <SyntaxHighlighter
-          wrapLongLines={false}
-          style={codeTheme}
-          language={match[1]}
-          PreTag="div"
-          customStyle={{
-            borderRadius: 10,
-            padding: "1.25rem 1rem",
-          }}
-          {...props}
-        >
-          {codeString}
-        </SyntaxHighlighter>
+      <div className="animate-fade">
+        <CopyBlock text={codeString}>
+          <SyntaxHighlighter
+            wrapLongLines={false}
+            style={codeTheme}
+            language={match[1]}
+            PreTag="div"
+            customStyle={{
+              borderRadius: 10,
+              padding: "1.25rem 1rem",
+            }}
+            {...props}
+          >
+            {codeString}
+          </SyntaxHighlighter>
+        </CopyBlock>
       </div>
     );
   }

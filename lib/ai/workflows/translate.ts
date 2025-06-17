@@ -7,10 +7,11 @@ export default async function translate(text: string) {
   let iterations = 0;
   const MAX_ITERATIONS = 3;
 
+  // Determine target language
   const {
     object: { targetLanguage },
   } = await generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"], // use a larger model to determine target language
+    ...languageModelConfigurations["Llama 3.1 Instant"],
     schema: z.object({
       targetLanguage: z.enum(["Spanish", "English"]),
     }),
@@ -89,7 +90,7 @@ export default async function translate(text: string) {
   }
 
   return {
-    finalTranslation: currentTranslation,
+    translation: currentTranslation,
     iterationsRequired: iterations,
   };
 }

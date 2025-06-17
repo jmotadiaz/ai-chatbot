@@ -26,7 +26,11 @@ export function scapeXML(str: string): string {
     .trim();
 }
 
-export const handleCopy = (value: string) => async () => {
+export const handleCopy = (value: string | null | undefined) => async () => {
+  if (!value) {
+    toast.error("Nothing to copy");
+    return;
+  }
   try {
     await navigator.clipboard.writeText(value);
     toast.success("Text copied to clipboard");

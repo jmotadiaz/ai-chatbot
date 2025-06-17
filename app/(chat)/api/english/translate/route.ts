@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import translate from "../../../../lib/ai/workflows/translate";
+import translate from "@/lib/ai/workflows/translate";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
   const { prompt }: { prompt: string } = await req.json();
 
-  const { finalTranslation } = await translate(prompt);
+  const { translation } = await translate(prompt);
 
-  return Response.json({ text: finalTranslation });
+  return Response.json({ text: translation });
 }
