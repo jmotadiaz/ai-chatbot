@@ -11,6 +11,7 @@ export interface ProjectListItemProps {
   currentProjectId?: string;
   name: string;
   chatList: React.ReactNode;
+  deleteProject: () => void;
 }
 
 export const ProjectListItem: React.FC<ProjectListItemProps> = ({
@@ -18,6 +19,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
   name,
   chatList,
   currentProjectId,
+  deleteProject,
 }) => {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
     defaultExpanded: id === currentProjectId,
@@ -38,13 +40,16 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
       </div>
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
-          <div className="flex">
+          <div className="flex space-x-2">
             <Link href={`/project/${id}`}>
               <Button variant="outline">New Chat</Button>
             </Link>
-            <Link href={`/project/${id}/edit`} className="ml-2">
+            <Link href={`/project/${id}/edit`}>
               <Button variant="outline">Edit</Button>
             </Link>
+            <Button variant="destructive" onClick={deleteProject}>
+              Delete
+            </Button>
           </div>
           {chatList}
         </div>

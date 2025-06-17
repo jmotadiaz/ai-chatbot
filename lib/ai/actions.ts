@@ -2,7 +2,7 @@
 
 import {
   deleteChat as deleteDBChat,
-  deleteProject,
+  deleteProject as deleteDBProject,
   transaction,
 } from "@/lib/db/queries";
 import { revalidatePath } from "next/cache";
@@ -22,14 +22,14 @@ export async function deleteChat(id: string) {
   }
 }
 
-export async function deleteProjectAction(id: string) {
+export async function deleteProject(id: string) {
   const session = await auth();
   if (!session?.user) {
     return;
   }
 
   try {
-    await deleteProject({ id, userId: session.user.id });
+    await transaction(deleteDBProject({ id, userId: session.user.id }));
     revalidatePath("/");
     revalidatePath("/project/new");
   } catch (error) {

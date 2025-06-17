@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { Edit } from "lucide-react";
 import { getProjectsByUserId } from "@/lib/db/queries";
+import { deleteProject } from "@/lib/ai/actions";
 import { ProjectListItem } from "./project-list-item";
 import { ChatList } from "./chat-list";
 
@@ -50,6 +51,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
                 id={project.id}
                 name={project.name}
                 currentProjectId={currentProjectId}
+                deleteProject={deleteProject.bind(null, project.id)}
                 chatList={<ChatList chats={project.chats} />}
               />
             ))}

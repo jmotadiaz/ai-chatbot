@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProjectForm } from "@/components/project-form";
 import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
@@ -29,7 +29,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
   const project = await getProjectById(id);
 
   if (!project) {
-    notFound();
+    redirect("/project/new");
   }
 
   const { chats } = await getChats({
