@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
 import Link from "./ui/link";
 import { Button } from "./ui/button";
+import { ConfirmDeleteModal } from "./ui/confirm-delete-modal";
 import { useCollapse } from "react-collapsed";
 
 export interface ProjectListItemProps {
@@ -21,6 +23,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
   currentProjectId,
   deleteProject,
 }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
     defaultExpanded: id === currentProjectId,
   });
@@ -47,13 +50,23 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
             <Link href={`/project/${id}/edit`}>
               <Button variant="outline">Edit</Button>
             </Link>
-            <Button variant="destructive" onClick={deleteProject}>
+            <Button variant="destructive" onClick={() => setIsModalOpen(true)}>
               Delete
             </Button>
           </div>
           {chatList}
         </div>
       </div>
+      <ConfirmDeleteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={() => {
+          deleteProject();
+          setIsModalOpen(false);
+        }}
+        title="Delete Project"
+        message={`Are you sure you want to delete the project "${name}"? This action cannot be undone.`}
+      />
     </div>
   );
 };
