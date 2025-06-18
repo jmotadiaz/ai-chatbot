@@ -11,7 +11,7 @@ import { ChatList } from "./chat-list";
 export interface ProjectListProps {
   limit?: number;
   className?: ClassNameValue;
-  currentProjectId?: string;
+  currentProjectId?: string | null | undefined;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = async ({
@@ -57,6 +57,31 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
             ))}
           </>
         )}
+      </div>
+    </div>
+  );
+};
+
+export const ProjectListLoading: React.FC<{ className?: ClassNameValue }> = ({
+  className,
+}) => {
+  return (
+    <div className={cn("my-4", className)}>
+      <div className="text-base flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4">
+        Projects <Edit className="h-5 w-5 ml-2" />
+      </div>
+      <div className="space-y-2">
+        <div className="block p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600 hover:bg-accent transition-colors">
+          English Helper
+        </div>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600 hover:bg-accent transition-colors">
+              <div className="h-5 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse flex-1 mr-3" />
+              <div className="h-4 w-4 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

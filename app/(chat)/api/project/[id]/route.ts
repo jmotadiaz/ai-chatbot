@@ -7,6 +7,7 @@ import {
   transaction,
 } from "@/lib/db/queries";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -38,6 +39,8 @@ export async function GET(
     if (project.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    revalidatePath("/");
 
     return NextResponse.json({ project });
   } catch (error) {

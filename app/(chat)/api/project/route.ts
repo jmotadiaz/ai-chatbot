@@ -6,6 +6,7 @@ import {
   transaction,
 } from "@/lib/db/queries";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 const createProjectSchema = z.object({
   name: z.string().min(1).max(255),
@@ -53,6 +54,8 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
     });
+
+    revalidatePath("/");
 
     return NextResponse.json({ projects });
   } catch (error) {

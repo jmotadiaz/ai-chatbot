@@ -1,20 +1,16 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getProjectById, getChats } from "@/lib/db/queries";
+import { getProjectById } from "@/lib/db/queries";
 import { ChatProvider } from "@/app/providers";
-import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
-import { ChatList } from "@/components/chat-list";
-import { UserMenu } from "@/components/user-menu";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ProjectList } from "@/components/project-list";
 import { SidebarProvider } from "../../../providers";
 import Chat from "@/components/chat-with-client-storage";
 import { chatModelId } from "@/lib/ai/providers";
 import { ModelPicker } from "@/components/model-picker";
+import { Sidebar } from "../../sidebar";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -39,11 +35,6 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
     redirect("/");
   }
 
-  const { chats } = await getChats({
-    userId: session.user.id,
-    limit: 10,
-  });
-
   return (
     <ChatProvider
       projectId={project.id}
@@ -56,17 +47,7 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
     >
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar>
-            <Suspense fallback={null}>
-              <SidebarContent>
-                <ProjectList currentProjectId={project.id} />
-                <ChatList chats={chats} />
-              </SidebarContent>
-              <SidebarFooter>
-                <UserMenu />
-              </SidebarFooter>
-            </Suspense>
-          </Sidebar>
+          <Sidebar projectId={id} />
           <Header.Container>
             <Header.Left>
               <Logo />

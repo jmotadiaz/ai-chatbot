@@ -1,14 +1,11 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import Chat from "@/components/chat";
-import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
-import { UserMenu } from "@/components/user-menu";
-import { ChatList } from "@/components/chat-list";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
-import { ProjectList } from "@/components/project-list";
 import { Message } from "@/lib/db/schema";
 import {
   defaultTemperature,
@@ -17,15 +14,14 @@ import {
 } from "@/lib/ai/providers";
 import {
   getChatById,
-  getChats,
   getMessagesByChatId,
   getProjectById,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { Attachment, UIMessage } from "ai";
 import { ChatProvider, SidebarProvider } from "../../providers";
-import { defaultMetaPrompt } from "../../../lib/ai/prompts";
+import { Sidebar } from "../sidebar";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -50,11 +46,6 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
 
   const messages = await getMessagesByChatId(id);
 
-  const { chats } = await getChats({
-    userId: session.user.id,
-    limit: 10,
-  });
-
   const project = chat.projectId
     ? await getProjectById(chat.projectId ?? "")
     : null;
@@ -75,15 +66,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
     >
       <SidebarProvider>
         <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar>
-            <SidebarContent>
-              <ProjectList />
-              <ChatList chats={chats} />
-            </SidebarContent>
-            <SidebarFooter>
-              <UserMenu />
-            </SidebarFooter>
-          </Sidebar>
+          <Sidebar projectId={chat.projectId} />
           <Header.Container>
             <Header.Left>
               <Logo />

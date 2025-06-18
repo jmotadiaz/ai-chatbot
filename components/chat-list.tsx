@@ -51,3 +51,26 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
     </div>
   );
 };
+
+export const ChatListLoading: React.FC<{ className?: ClassValue }> = ({
+  className,
+}) => {
+  return (
+    <div className={cn("my-4", className)}>
+      <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300 mb-4">
+        Chats
+      </h3>
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between rounded-lg border dark:border-zinc-600 p-2"
+          >
+            <div className="h-5 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse flex-1 mr-3" />
+            <div className="h-4 w-4 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};

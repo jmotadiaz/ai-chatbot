@@ -6,6 +6,7 @@ import {
   generateTitleFromUserMessage,
   messageToDbMessage,
 } from "@/lib/ai/utils";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
       }),
       saveMessages(messages.map(messageToDbMessage(chatId))),
     ]);
+    revalidatePath("/");
     return new Response("Chat Saved", { status: 200 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

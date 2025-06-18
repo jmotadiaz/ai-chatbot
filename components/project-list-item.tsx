@@ -10,7 +10,7 @@ import { useCollapse } from "react-collapsed";
 
 export interface ProjectListItemProps {
   id: string;
-  currentProjectId?: string;
+  currentProjectId?: string | null | undefined;
   name: string;
   chatList: React.ReactNode;
   deleteProject: () => void;
