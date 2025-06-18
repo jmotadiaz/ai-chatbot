@@ -3,7 +3,7 @@ import { Sidebar, SidebarContent, SidebarFooter } from "@/components/sidebar";
 import { ChatList } from "@/components/chat-list";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
-import { NewChatHome as NewChat } from "@/components/new-chat-home";
+import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { SidebarProvider } from "../../providers";

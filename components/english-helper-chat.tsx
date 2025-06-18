@@ -40,7 +40,7 @@ const EnglishHelperChat: React.FC = () => {
 };
 
 export const EnglishTranslateChat: React.FC = () => {
-  const { complete, input, handleInputChange, completion, isLoading } =
+  const { handleSubmit, input, handleInputChange, completion, isLoading } =
     useCompletion({
       api: "/api/english/translate",
     });
@@ -48,7 +48,7 @@ export const EnglishTranslateChat: React.FC = () => {
   return (
     <>
       <div className="bg-(--background) w-full mb-9 pb-4">
-        <div className="relative w-full">
+        <form onSubmit={handleSubmit} className="relative w-full">
           <Textarea
             handleInputChange={handleInputChange}
             input={input}
@@ -60,11 +60,8 @@ export const EnglishTranslateChat: React.FC = () => {
             className="absolute z-1 right-3 bottom-2"
             disabled={!input.trim()}
             isLoading={isLoading}
-            onClick={() => {
-              complete(input);
-            }}
           />
-        </div>
+        </form>
       </div>
       <div
         className={cn(

@@ -2,13 +2,6 @@ import { languageModelConfigurations } from "../providers";
 import { generateObject, streamText } from "ai";
 import { z } from "zod";
 
-const examples = {
-  Spanish:
-    "Hola, ¿cómo estás? Espero que todo esté bien por tu lado. Quería contarte que ayer fui a una fiesta increíble con amigos. ¡Nos divertimos mucho! Si tienes tiempo este fin de semana, me encantaría verte.",
-  English:
-    "Hey, how are you? I hope everything's going well on your end. I wanted to tell you that I went to an amazing party with friends yesterday. We had a blast! If you're free this weekend, I'd love to meet up.",
-} as const;
-
 export default async function translate(prompt: string) {
   // Determine target language
   const {
@@ -51,18 +44,51 @@ export default async function translate(prompt: string) {
 
       ## Example Translation
 
-      To guide your translation style, refer to the following example:
+      To guide your translation style, refer to the following examples:
 
-      **Source Text (${sourceLanguage}):**
-      ${examples[sourceLanguage]}
+      ${examples.reduce((acc, example) => {
+        return `${acc}\n
+        ### ${example.exampleType}
 
-      **Translated Text (${targetLanguage}):**
-      ${examples[targetLanguage]}
+        **Source Text (${sourceLanguage}):** ${example[sourceLanguage]}
+        **Translated Text (${targetLanguage}):** ${example[targetLanguage]}\n
+        `;
+      }, "")}
 
       ## Final Instructions
 
       The output should consist *ONLY* of the translated text.`,
-    prompt: `Translate the following text from ${sourceLanguage} to ${targetLanguage}:
-    ${prompt}`,
+    prompt: `Translate the following text from ${sourceLanguage} to ${targetLanguage}: ${prompt}`,
   });
 }
+
+const examples = [
+  {
+    exampleType: "Sentence with Compound Verb and Preposition",
+    English: "She has been studying for the exam since last week.",
+    Spanish: "Ella ha estado estudiando para el examen desde la semana pasada.",
+  },
+  {
+    exampleType: "Idiomatic Expression and Common Vocabulary",
+    English: "It rained cats and dogs, so we had to cancel the picnic.",
+    Spanish: "Llovió a cántaros, así que tuvimos que cancelar el picnic.",
+  },
+  {
+    exampleType: "Technical Term (Do Not Translate) and Passive Structure",
+    English: "The router must be configured with the static IP address.",
+    Spanish: "El router debe ser configurado con la dirección IP estática.",
+  },
+  {
+    exampleType: "Pronominal Verb and Future Tense Context",
+    English:
+      "We will see each other at the conference next month, if all goes well.",
+    Spanish: "Nos veremos en la conferencia el próximo mes, si todo sale bien.",
+  },
+  {
+    exampleType: "Comparison and Adjectives",
+    English:
+      "This software is much more efficient than the previous one, but also more complex to use.",
+    Spanish:
+      "Este software es mucho más eficiente que el anterior, pero también más complejo de usar.",
+  },
+] as const;
