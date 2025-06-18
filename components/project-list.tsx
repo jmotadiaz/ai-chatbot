@@ -1,12 +1,12 @@
-import Link from "./ui/link";
 import { ClassNameValue } from "tailwind-merge";
-import { auth } from "@/auth";
-import { cn } from "@/lib/utils";
 import { Edit } from "lucide-react";
-import { getProjectsByUserId } from "@/lib/db/queries";
-import { deleteProject } from "@/lib/ai/actions";
+import Link from "./ui/link";
 import { ProjectListItem } from "./project-list-item";
 import { ChatList } from "./chat-list";
+import { auth } from "@/auth";
+import { cn } from "@/lib/utils";
+import { getProjectsByUserId } from "@/lib/db/queries";
+import { deleteProject } from "@/lib/ai/actions";
 
 export interface ProjectListProps {
   limit?: number;

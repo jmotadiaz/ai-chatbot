@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { ChatControl } from "./chat-control";
 import { ClassValue } from "clsx";
+import { Settings } from "lucide-react";
+import { useChatContext } from "../app/providers";
+import { ChatControl } from "./chat-control";
 import { Label } from "./ui/label";
 import { InputNumber } from "./ui/input-number";
-import { useChatContext } from "../app/providers";
-import { Settings } from "lucide-react";
 
 export interface ChatSettingsButtonProps {
   className?: ClassValue;

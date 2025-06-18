@@ -1,11 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   deleteChat as deleteDBChat,
   deleteProject as deleteDBProject,
   transaction,
 } from "@/lib/db/queries";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 
 export async function deleteChat(id: string) {

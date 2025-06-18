@@ -1,6 +1,6 @@
 "use client";
-import { useSidebarContext } from "@/app/providers";
 import { LogoIcon } from "./icons";
+import { useSidebarContext } from "@/app/providers";
 
 export const Logo = () => {
   const { toggleSidebar } = useSidebarContext();

@@ -5,8 +5,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { memo, useCallback, useEffect, useState } from "react";
 import equal from "fast-deep-equal";
 
-import { Markdown } from "./markdown";
-import { cn } from "@/lib/utils";
 import {
   CheckCircle,
   ChevronDownIcon,
@@ -15,7 +13,9 @@ import {
   PocketKnife,
   StopCircle,
 } from "lucide-react";
+import { Markdown } from "./markdown";
 import { SpinnerIcon } from "./icons";
+import { cn } from "@/lib/utils";
 
 interface ReasoningPart {
   type: "reasoning";

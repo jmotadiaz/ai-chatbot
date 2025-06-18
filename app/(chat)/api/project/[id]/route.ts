@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth-config";
 import {
   getProjectById,
@@ -6,8 +8,6 @@ import {
   deleteProject,
   transaction,
 } from "@/lib/db/queries";
-import { z } from "zod";
-import { revalidatePath } from "next/cache";
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(255).optional(),

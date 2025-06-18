@@ -1,6 +1,6 @@
 import { ComponentProps, useMemo, useRef, useState } from "react";
-import { Input } from "./input";
 import { Plus, Minus } from "lucide-react";
+import { Input } from "./input";
 import { cn } from "@/lib/utils";
 
 interface InputNumberProps

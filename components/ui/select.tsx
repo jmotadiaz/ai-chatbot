@@ -3,8 +3,8 @@
 import * as React from "react";
 import { CheckIcon, ChevronUp } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { ClassValue } from "clsx";
+import { cn } from "@/lib/utils";
 
 interface SelectContextValue {
   open: boolean;

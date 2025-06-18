@@ -1,5 +1,5 @@
-import { auth } from "../lib/auth/auth-config";
 import { redirect } from "next/navigation";
+import { auth } from "../lib/auth/auth-config";
 import { UserDropdown } from "./user-dropdown";
 export const UserMenu = async () => {
   const session = await auth();

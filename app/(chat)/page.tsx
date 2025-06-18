@@ -1,13 +1,13 @@
 import React from "react";
+import { redirect } from "next/navigation";
+import { ChatProvider, SidebarProvider } from "../providers";
 import Chat from "@/components/chat-with-client-storage";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChatHome as NewChat } from "@/components/new-chat-home";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ChatProvider, SidebarProvider } from "../providers";
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { Sidebar } from "@/app/(chat)/sidebar";
 

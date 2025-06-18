@@ -1,6 +1,6 @@
 "use client";
-import { cn } from "@/lib/utils";
 import { useSidebarContext } from "../app/providers";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   children?: React.ReactNode;

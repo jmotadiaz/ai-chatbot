@@ -1,17 +1,17 @@
 "use client";
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useState, createContext } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
-import { generateUUID } from "@/lib/utils";
 import { toast } from "sonner";
+import { UIMessage } from "ai";
 import {
   defaultModel,
   defaultTemperature,
   defaultTopP,
   chatModelId,
 } from "../lib/ai/providers";
-import { UIMessage } from "ai";
+import { generateUUID } from "@/lib/utils";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -42,7 +42,7 @@ interface SetChatConfig {
   setConfig: (config: Partial<ChatConfig>) => void;
 }
 
-const chatContext = React.createContext<
+const chatContext = createContext<
   UseChatHelpers &
     SetChatConfig &
     ChatConfig & {
@@ -157,7 +157,7 @@ export interface SidebarContext {
   toggleSidebar: () => void;
 }
 
-const sidebarContext = React.createContext<SidebarContext>({
+const sidebarContext = createContext<SidebarContext>({
   showSidebar: false,
   setShowSidebar: () => {},
   toggleSidebar: () => {},

@@ -1,3 +1,4 @@
+// eslint-disable import-x/no-unresolved
 import "server-only";
 
 import {
@@ -14,6 +15,7 @@ import {
 import { drizzle, PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { PgTransaction } from "drizzle-orm/pg-core";
 import {
   Chat,
   chat,
@@ -31,7 +33,6 @@ import {
   messageRelations,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
-import { PgTransaction } from "drizzle-orm/pg-core";
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth

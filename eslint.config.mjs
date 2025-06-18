@@ -1,6 +1,8 @@
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
+import { importX } from 'eslint-plugin-import-x'
+import tsParser from '@typescript-eslint/parser'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -16,6 +18,20 @@ const eslintConfig = [
     "next/typescript",
     "prettier"
   ),
+  importX.flatConfigs.recommended,
+  importX.flatConfigs.typescript,
+  {
+    files: ["**/*.{js,mjs,cjs,jsx,mjsx,ts,tsx,mtsx}"],
+    languageOptions: {
+      parser: tsParser,
+      ecmaVersion: "latest",
+      sourceType: "module",
+    },
+    rules: {
+      "import-x/no-unresolved": "off",
+      "import-x/order": "error"
+    },
+  },
 ];
 
 export default eslintConfig;

@@ -1,18 +1,18 @@
 "use client";
 
-import { Textarea } from "./textarea";
 import { ArrowDown } from "lucide-react";
 import {
   useCompletion,
   experimental_useObject as useObject,
 } from "@ai-sdk/react";
-import { grammarSchema } from "@/lib/ai/schemas/grammar";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { Tabs, useTabs } from "./ui/tabs";
 import { ChatControl } from "./chat-control";
 import { LoadingAssistantMessageIcon } from "./icons";
-import { useState } from "react";
+import { Textarea } from "./textarea";
 import { CopyBlock } from "./copy-block";
+import { cn } from "@/lib/utils";
+import { grammarSchema } from "@/lib/ai/schemas/grammar";
 
 const tabs = ["translate", "grammar"] as const;
 

@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
+import { SidebarProvider } from "../../../providers";
+import { Sidebar } from "../../sidebar";
 import { auth } from "@/auth";
 import { ProjectForm } from "@/components/project-form";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SidebarProvider } from "../../../providers";
-import { Sidebar } from "../../sidebar";
 
 const NewProjectPage: React.FC = async () => {
   const session = await auth();

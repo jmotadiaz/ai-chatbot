@@ -1,10 +1,10 @@
 import { generateObject } from "ai";
+import { z } from "zod";
 import {
   defaultTemperature,
   languageModelConfigurations,
   ModelConfiguration,
 } from "../providers";
-import { z } from "zod";
 import { scapeXML } from "../../utils";
 
 export interface AutoModelCalculated {

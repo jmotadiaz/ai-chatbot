@@ -1,9 +1,9 @@
-import Link from "@/components/ui/link";
 import { X as XIcon } from "lucide-react";
-import { deleteChat } from "@/lib/ai/actions";
-import { Chat } from "@/lib/db/schema";
 import { ClassValue } from "clsx";
 import { cn } from "../lib/utils";
+import Link from "@/components/ui/link";
+import { deleteChat } from "@/lib/ai/actions";
+import { Chat } from "@/lib/db/schema";
 
 export interface ChatListProps {
   chats: Chat[];

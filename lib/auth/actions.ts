@@ -1,9 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { createUser, getUser, transaction } from "@/lib/db/queries";
-import { signIn } from "./auth-config";
 import { redirect } from "next/navigation";
+import { signIn } from "./auth-config";
+import { createUser, getUser, transaction } from "@/lib/db/queries";
 
 const authFormSchema = z.object({
   email: z.string().email(),

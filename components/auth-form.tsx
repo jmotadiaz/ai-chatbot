@@ -1,10 +1,10 @@
 "use client";
 import * as React from "react";
+import { toast } from "sonner";
+import { Button } from "./ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "./ui/button";
 import { LoginActionState, RegisterActionState } from "@/lib/auth/actions";
-import { toast } from "sonner";
 
 interface AuthFormProps {
   /** Function to handle form submission, receives FormData */

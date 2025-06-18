@@ -1,8 +1,8 @@
+import React from "react";
+import { NewChat } from "../../../components/new-chat";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NewChat } from "../../../components/new-chat";
-import React from "react";
 
 const Loading: React.FC = () => {
   return (

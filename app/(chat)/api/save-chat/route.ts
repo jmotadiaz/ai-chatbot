@@ -1,12 +1,12 @@
-import { saveChat, saveMessages, transaction } from "@/lib/db/queries";
 import { UIMessage } from "ai";
+import { revalidatePath } from "next/cache";
+import { saveChat, saveMessages, transaction } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { chatModelId } from "@/lib/ai/providers";
 import {
   generateTitleFromUserMessage,
   messageToDbMessage,
 } from "@/lib/ai/utils";
-import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   const session = await auth();

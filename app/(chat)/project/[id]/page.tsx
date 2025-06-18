@@ -1,16 +1,15 @@
 import { redirect } from "next/navigation";
+import { Sidebar } from "../../sidebar";
 import { auth } from "@/auth";
 import { getProjectById } from "@/lib/db/queries";
-import { ChatProvider } from "@/app/providers";
+import { ChatProvider, SidebarProvider  } from "@/app/providers";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SidebarProvider } from "../../../providers";
 import Chat from "@/components/chat-with-client-storage";
 import { chatModelId } from "@/lib/ai/providers";
 import { ModelPicker } from "@/components/model-picker";
-import { Sidebar } from "../../sidebar";
 
 interface ProjectPageProps {
   params: Promise<{

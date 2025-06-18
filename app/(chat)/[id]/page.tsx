@@ -1,5 +1,8 @@
 import React from "react";
 import { redirect } from "next/navigation";
+import { Attachment, UIMessage } from "ai";
+import { ChatProvider, SidebarProvider } from "../../providers";
+import { Sidebar } from "../sidebar";
 import Chat from "@/components/chat";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
@@ -19,9 +22,6 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
-import { Attachment, UIMessage } from "ai";
-import { ChatProvider, SidebarProvider } from "../../providers";
-import { Sidebar } from "../sidebar";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;

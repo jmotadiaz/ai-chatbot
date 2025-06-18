@@ -1,11 +1,11 @@
 import React from "react";
+import { ChatProvider } from "../providers";
 import Chat from "@/components/chat-with-client-storage";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChatHome } from "@/components/new-chat-home";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ChatProvider } from "../providers";
 
 const Loading: React.FC = async () => {
   return (

@@ -1,5 +1,5 @@
 "use client";
-import { chatModelId, CHAT_MODELS } from "@/lib/ai/providers";
+import { useChatContext } from "../app/providers";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { useChatContext } from "../app/providers";
+import { chatModelId, CHAT_MODELS } from "@/lib/ai/providers";
 
 export const ModelPicker = () => {
   const modelPickerProps = useModelPicker();

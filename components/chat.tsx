@@ -1,16 +1,16 @@
 "use client";
 
+import { ArrowUp, RefreshCcw, Circle, WandSparkles } from "lucide-react";
+import { useRef } from "react";
+import { useChatContext } from "../app/providers";
+import { cn } from "../lib/utils";
 import { Textarea } from "./textarea";
 import { ProjectOverview } from "./project-overview";
 import { Messages } from "./messages";
-import { useChatContext } from "../app/providers";
 import { ChatControl } from "./chat-control";
 import { ChatSettingsButton } from "./chat-settings-button";
-import { useRefinePrompt } from "@/lib/ai/hooks";
-import { ArrowUp, RefreshCcw, Circle, WandSparkles } from "lucide-react";
-import { cn } from "../lib/utils";
 import { ScrollToBottomButton } from "./scroll-to-bottom-btn";
-import { useRef } from "react";
+import { useRefinePrompt } from "@/lib/ai/hooks";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;

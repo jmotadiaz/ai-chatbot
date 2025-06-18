@@ -1,13 +1,13 @@
 import React from "react";
+import { redirect } from "next/navigation";
+import { SidebarProvider } from "../../providers";
+import { Sidebar } from "../sidebar";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SidebarProvider } from "../../providers";
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import EnglishHelperChat from "@/components/english-helper-chat";
-import { Sidebar } from "../sidebar";
 
 const Page: React.FC = async () => {
   const session = await auth();

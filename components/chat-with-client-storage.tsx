@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Chat from "./chat";
-import { useChatContext } from "../app/providers";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { ChatControl } from "./chat-control";
 import { SaveIcon } from "lucide-react";
+import { useChatContext } from "../app/providers";
+import { ChatControl } from "./chat-control";
+import Chat from "./chat";
 import {
   clearSessionMessages,
   getSessionMessages,

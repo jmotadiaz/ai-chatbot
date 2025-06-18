@@ -1,5 +1,5 @@
-import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 import { cn } from "../lib/utils";
+import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 
 interface TextareaProps {
   input: string;

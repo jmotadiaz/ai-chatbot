@@ -1,22 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChatProvider } from "@/app/providers";
-import { defaultModel, chatModelId } from "@/lib/ai/providers";
+import { WandSparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useRefinePrompt } from "../lib/ai/hooks";
+import { systemMetaPrompt } from "../lib/ai/prompts";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { InputNumber } from "./ui/input-number";
 import { Button } from "./ui/button";
 import Chat from "./chat";
 import { ModelPickerSelector } from "./model-picker";
-import { WandSparkles } from "lucide-react";
 import { markdownCommandStyle, MarkdownEditor } from "./ui/markdown-editor";
-import { useRefinePrompt } from "../lib/ai/hooks";
-import { systemMetaPrompt } from "../lib/ai/prompts";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Project } from "@/lib/db/schema";
 import { Tabs, useTabs } from "./ui/tabs";
+import { Project } from "@/lib/db/schema";
+import { defaultModel, chatModelId } from "@/lib/ai/providers";
+import { ChatProvider } from "@/app/providers";
 
 const tabs = ["configuration", "testChat"] as const;
 

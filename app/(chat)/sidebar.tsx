@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   SidebarContent,
@@ -9,7 +10,6 @@ import { ProjectList, ProjectListLoading } from "@/components/project-list";
 import { ChatList, ChatListLoading } from "@/components/chat-list";
 import { UserMenu } from "@/components/user-menu";
 import { getChats } from "@/lib/db/queries";
-import { redirect } from "next/navigation";
 
 export interface SidebarProps {
   projectId?: string | null | undefined;
