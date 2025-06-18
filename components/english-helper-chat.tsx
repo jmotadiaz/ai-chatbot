@@ -43,6 +43,7 @@ export const EnglishTranslateChat: React.FC = () => {
   const { handleSubmit, input, handleInputChange, completion, isLoading } =
     useCompletion({
       api: "/api/english/translate",
+      experimental_throttle: 100,
     });
 
   return (
@@ -71,14 +72,16 @@ export const EnglishTranslateChat: React.FC = () => {
         <>
           {completion && (
             <>
-              <div className="font-semibold mb-2">Translation:</div>
-              <CopyBlock className="p-3" text={completion}>
+              <div className="font-semibold mb-2 animate-fade">
+                Translation:
+              </div>
+              <CopyBlock className="p-3 animate-fade" text={completion}>
                 {completion}
               </CopyBlock>
             </>
           )}
           {isLoading && (
-            <div className="ml-5 mt-2">
+            <div className="ml-5 mt-2 pb-4">
               <LoadingAssistantMessageIcon />
             </div>
           )}
@@ -102,7 +105,14 @@ const EnglishGrammarChat: React.FC = () => {
   return (
     <>
       <div className="bg-(--background) w-full mb-9 pb-4">
-        <div className="relative w-full">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!input.trim()) return;
+            submit(input);
+          }}
+          className="relative w-full"
+        >
           <Textarea
             handleInputChange={handleInputChange}
             input={input}
@@ -114,11 +124,8 @@ const EnglishGrammarChat: React.FC = () => {
             className="absolute z-1 right-3 bottom-2"
             disabled={!input.trim()}
             isLoading={isLoading}
-            onClick={() => {
-              submit(input);
-            }}
           />
-        </div>
+        </form>
       </div>
       <div
         className={cn(
@@ -129,16 +136,23 @@ const EnglishGrammarChat: React.FC = () => {
           <>
             <div className="flex flex-col gap-2">
               <div>
-                <div className="font-semibold mb-2">Corrected Text:</div>
-                <CopyBlock className="p-3" text={object.textCorrected}>
+                <div className="font-semibold mb-2 animate-fade">
+                  Corrected Text:
+                </div>
+                <CopyBlock
+                  className="p-3 animate-fade"
+                  text={object.textCorrected}
+                >
                   {object.textCorrected}
                 </CopyBlock>
               </div>
               <div>
-                <div className="font-semibold mb-2">Reasons:</div>
-                <ul className="list-disc pl-5 text-gray-800 dark:text-gray-200">
+                <div className="font-semibold mb-2 animate-fade">Reasons:</div>
+                <ul className="list-disc pl-5 text-gray-800 dark:text-gray-200 animate-fade">
                   {object.reasons?.map((reason, index) => (
-                    <li key={index}>{reason}</li>
+                    <li className="animate-fade" key={index}>
+                      {reason}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -146,7 +160,7 @@ const EnglishGrammarChat: React.FC = () => {
           </>
         )}
         {isLoading && (
-          <div className="ml-5 mt-2">
+          <div className="ml-5 mt-2 pb-4">
             <LoadingAssistantMessageIcon />
           </div>
         )}
