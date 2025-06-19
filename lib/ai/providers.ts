@@ -29,6 +29,9 @@ export const languageModelConfigurations = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
   },
+  "Llama 3.3 Versatile": {
+    model: groq("llama-3.3-70b-versatile"),
+  },
   "Llama 4 Maverick": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
   },
