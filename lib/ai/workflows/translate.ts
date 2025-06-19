@@ -69,9 +69,18 @@ const systemPrompt = (targetLanguage: Languages, sourceLanguage: Languages) => `
 
 const examples = [
   {
-    exampleType: "Sentence with Compound Verb and Preposition",
-    English: "She has been studying for the exam since last week.",
-    Spanish: "Ella ha estado estudiando para el examen desde la semana pasada.",
+    exampleType: "Formal passive request",
+    English:
+      "You are kindly requested to review the attached proposal at your earliest convenience.",
+    Spanish:
+      "Se le solicita amablemente que revise la propuesta adjunta a la mayor brevedad posible.",
+  },
+  {
+    exampleType: "Informal comparative chat",
+    English:
+      "This new series is way better than the last one—you should totally binge-watch it!",
+    Spanish:
+      "Esta nueva serie es muchísimo mejor que la anterior; ¡deberías verla de corrido!",
   },
   {
     exampleType: "Idiomatic Expression and Common Vocabulary",
@@ -79,9 +88,11 @@ const examples = [
     Spanish: "Llovió a cántaros, así que tuvimos que cancelar el picnic.",
   },
   {
-    exampleType: "Technical Term (Do Not Translate) and Passive Structure",
-    English: "The router must be configured with the static IP address.",
-    Spanish: "El router debe ser configurado con la dirección IP estática.",
+    exampleType: "Technical instruction with non-translated terms",
+    English:
+      "Before restarting the server, flush the DNS cache, then call the /reboot API endpoint using a POST request.",
+    Spanish:
+      "Antes de reiniciar el servidor, vacíe la cache de DNS y luego llame al endpoint /reboot de la API mediante una petición POST.",
   },
   {
     exampleType: "Pronominal Verb and Future Tense Context",
@@ -90,10 +101,10 @@ const examples = [
     Spanish: "Nos veremos en la conferencia el próximo mes, si todo sale bien.",
   },
   {
-    exampleType: "Comparison and Adjectives",
+    exampleType: "Scheduling with passive voice",
     English:
-      "This software is much more efficient than the previous one, but also more complex to use.",
+      "The meeting has been postponed until April 10th, 2024 at 11:00 AM.",
     Spanish:
-      "Este software es mucho más eficiente que el anterior, pero también más complejo de usar.",
+      "La reunión ha sido aplazada hasta el 10 de abril de 2024 a las 11:00.",
   },
 ] as const;

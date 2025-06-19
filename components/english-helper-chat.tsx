@@ -1,11 +1,7 @@
 "use client";
 
 import { ArrowDown } from "lucide-react";
-import {
-  useCompletion,
-  experimental_useObject as useObject,
-} from "@ai-sdk/react";
-import { useState } from "react";
+import { useCompletion, UseCompletionHelpers } from "@ai-sdk/react";
 import { Tabs, useTabs } from "./ui/tabs";
 import { ChatControl } from "./chat-control";
 import { LoadingAssistantMessageIcon } from "./icons";
@@ -13,11 +9,20 @@ import { Textarea } from "./textarea";
 import { CopyBlock } from "./copy-block";
 import { cn } from "@/lib/utils";
 import { grammarSchema } from "@/lib/ai/schemas/grammar";
+import { useObject, UseObjectReturn } from "@/lib/ai/hooks";
 
 const tabs = ["translate", "grammar"] as const;
 
 const EnglishHelperChat: React.FC = () => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
+  const completionResult = useCompletion({
+    api: "/api/english/translate",
+    experimental_throttle: 100,
+  });
+  const objectResult = useObject({
+    api: "/api/english/grammar",
+    schema: grammarSchema,
+  });
 
   return (
     <div className="h-full pt-16 overflow-auto overflow-x-hidden px-4 sm:px-0">
@@ -28,10 +33,10 @@ const EnglishHelperChat: React.FC = () => {
         </Tabs.Container>
         <div className="px-0 sm:px-8">
           <Tabs.Panel {...getPanelProps("translate")}>
-            <EnglishTranslateChat />
+            <EnglishTranslateChat {...completionResult} />
           </Tabs.Panel>
           <Tabs.Panel {...getPanelProps("grammar")}>
-            <EnglishGrammarChat />
+            <EnglishGrammarChat {...objectResult} />
           </Tabs.Panel>
         </div>
       </div>
@@ -39,13 +44,18 @@ const EnglishHelperChat: React.FC = () => {
   );
 };
 
-export const EnglishTranslateChat: React.FC = () => {
-  const { handleSubmit, input, handleInputChange, completion, isLoading } =
-    useCompletion({
-      api: "/api/english/translate",
-      experimental_throttle: 100,
-    });
+type TranslateChatProps = Pick<
+  UseCompletionHelpers,
+  "handleSubmit" | "input" | "handleInputChange" | "completion" | "isLoading"
+>;
 
+export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
+  handleSubmit,
+  input,
+  handleInputChange,
+  completion,
+  isLoading,
+}) => {
   return (
     <>
       <div className="bg-(--background) w-full mb-9 pb-4">
@@ -91,28 +101,22 @@ export const EnglishTranslateChat: React.FC = () => {
   );
 };
 
-const EnglishGrammarChat: React.FC = () => {
-  const [input, setInput] = useState("");
-  const { object, submit, isLoading } = useObject({
-    api: "/api/english/grammar",
-    schema: grammarSchema,
-  });
+type GrammarChatProps = Pick<
+  UseObjectReturn<typeof grammarSchema>,
+  "object" | "handleSubmit" | "isLoading" | "input" | "handleInputChange"
+>;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
-
+const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
+  object,
+  isLoading,
+  input,
+  handleInputChange,
+  handleSubmit,
+}) => {
   return (
     <>
       <div className="bg-(--background) w-full mb-9 pb-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!input.trim()) return;
-            submit(input);
-          }}
-          className="relative w-full"
-        >
+        <form onSubmit={handleSubmit} className="relative w-full">
           <Textarea
             handleInputChange={handleInputChange}
             input={input}

@@ -16,6 +16,7 @@ import {
 import { Markdown } from "./markdown";
 import { SpinnerIcon } from "./icons";
 import { cn } from "@/lib/utils";
+import { CopyBlock } from "@/components/copy-block";
 
 interface ReasoningPart {
   type: "reasoning";
@@ -150,14 +151,20 @@ const PurePreviewMessage = ({
                       key={`message-${message.id}-part-${i}`}
                       className="flex flex-row gap-2 items-start w-full pb-4"
                     >
-                      <div
-                        className={cn("flex flex-col max-w-full", {
-                          "bg-secondary text-secondary-foreground px-3 py-2 rounded-tl-xl rounded-tr-xl rounded-bl-xl":
-                            message.role === "user",
-                        })}
-                      >
-                        <Markdown>{part.text}</Markdown>
-                      </div>
+                      {message.role === "user" ? (
+                        <CopyBlock
+                          text={part.text}
+                          className={cn(
+                            "flex flex-col max-w-full bg-secondary text-secondary-foreground px-3 py-2 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                          )}
+                        >
+                          <Markdown>{part.text}</Markdown>
+                        </CopyBlock>
+                      ) : (
+                        <div className={cn("flex flex-col max-w-full")}>
+                          <Markdown>{part.text}</Markdown>
+                        </div>
+                      )}
                     </motion.div>
                   );
                 case "tool-invocation":
