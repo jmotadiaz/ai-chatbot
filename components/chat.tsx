@@ -1,15 +1,15 @@
 "use client";
 
-import { ArrowUp, RefreshCcw, Circle, WandSparkles } from "lucide-react";
+import { ArrowUp, RefreshCcw, Circle, WandSparkles, Undo } from "lucide-react";
 import { useRef } from "react";
-import { useChatContext } from "../app/providers";
-import { cn } from "../lib/utils";
-import { Textarea } from "./textarea";
-import { ProjectOverview } from "./project-overview";
-import { Messages } from "./messages";
-import { ChatControl } from "./chat-control";
-import { ChatSettingsButton } from "./chat-settings-button";
-import { ScrollToBottomButton } from "./scroll-to-bottom-btn";
+import { Textarea } from "@/components/textarea";
+import { ProjectOverview } from "@/components/project-overview";
+import { Messages } from "@/components/messages";
+import { ChatControl } from "@/components/chat-control";
+import { ChatSettingsButton } from "@/components/chat-settings-button";
+import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
+import { cn } from "@/lib/utils";
+import { useChatContext } from "@/app/providers";
 import { useRefinePrompt } from "@/lib/ai/hooks";
 
 export interface ChatProps {
@@ -29,12 +29,14 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     reload,
     metaPrompt,
   } = useChatContext();
-  const { isLoadingRefinedPrompt, refinePrompt } = useRefinePrompt({
-    input,
-    setInput,
-    messages,
-    metaPrompt,
-  });
+  const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
+    useRefinePrompt({
+      input,
+      setInput,
+      messages,
+      metaPrompt,
+      status,
+    });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observeRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +115,13 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
           />
           <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
           <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
+          {hasPreviousMessage && (
+            <ChatControl
+              Icon={Undo}
+              className="absolute z-1 right-23 bottom-2"
+              onClick={undo}
+            />
+          )}
           {metaPrompt && (
             <ChatControl
               Icon={WandSparkles}

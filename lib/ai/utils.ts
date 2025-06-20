@@ -1,5 +1,5 @@
 import { generateText, Message, UIMessage } from "ai";
-import { titleModelConfiguration } from "./providers";
+import { titleModelConfiguration } from "@/lib/ai/providers";
 import { InsertMessage } from "@/lib/db/schema";
 
 export async function generateTitleFromUserMessage(

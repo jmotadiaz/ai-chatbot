@@ -10,7 +10,7 @@ import {
   defaultTemperature,
   defaultTopP,
   chatModelId,
-} from "../lib/ai/providers";
+} from "@/lib/ai/providers";
 import { generateUUID } from "@/lib/utils";
 
 interface ProvidersProps {

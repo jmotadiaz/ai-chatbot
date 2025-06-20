@@ -1,4 +1,4 @@
-import { scapeXML } from "../utils";
+import { scapeXML } from "@/lib/utils";
 
 const badExampleBackticks = "```markdown`\njson format ```json` \n```\n";
 const goodExampleBackticks = "```markdown`\njson format \\`\\`\\`json` \n```\n";

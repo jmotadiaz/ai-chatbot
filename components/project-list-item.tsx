@@ -3,10 +3,10 @@
 import { startTransition, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useCollapse } from "react-collapsed";
-import { cn } from "../lib/utils";
-import Link from "./ui/link";
-import { Button } from "./ui/button";
-import { ConfirmModal } from "./ui/confirm-modal";
+import { cn } from "@/lib/utils";
+import Link from "@/components/ui/link";
+import { Button } from "@/components/ui/button";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 export interface ProjectListItemProps {
   id: string;

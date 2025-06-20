@@ -1,6 +1,6 @@
 import { generateObject, streamText } from "ai";
 import { z } from "zod";
-import { languageModelConfigurations } from "../providers";
+import { languageModelConfigurations } from "@/lib/ai/providers";
 
 const languages = ["Spanish", "English"] as const;
 type Languages = (typeof languages)[number];

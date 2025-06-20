@@ -1,8 +1,8 @@
 import { ClassNameValue } from "tailwind-merge";
 import { Edit } from "lucide-react";
-import Link from "./ui/link";
-import { ProjectListItem } from "./project-list-item";
-import { ChatList } from "./chat-list";
+import Link from "@/components/ui/link";
+import { ProjectListItem } from "@/components/project-list-item";
+import { ChatList } from "@/components/chat-list";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { getProjectsByUserId } from "@/lib/db/queries";

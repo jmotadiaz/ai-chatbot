@@ -4,7 +4,7 @@ import React, {
   unstable_ViewTransition as ViewTransition,
   startTransition,
 } from "react";
-import { Button, ButtonProps } from "./button"; // Assuming button component exists
+import { Button, ButtonProps } from "@/components/ui/button"; // Assuming button component exists
 
 interface ConfirmModalProps {
   isOpen: boolean;

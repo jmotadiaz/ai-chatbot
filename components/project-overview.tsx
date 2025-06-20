@@ -1,4 +1,4 @@
-import { LogoIcon } from "./icons";
+import { LogoIcon } from "@/components/icons";
 
 export interface ProjectOverviewProps {
   title?: string;

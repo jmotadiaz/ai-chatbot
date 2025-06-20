@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { SaveIcon } from "lucide-react";
-import { useChatContext } from "../app/providers";
-import { ChatControl } from "./chat-control";
-import Chat from "./chat";
+import { useChatContext } from "@/app/providers";
+import { ChatControl } from "@/components/chat-control";
+import Chat from "@/components/chat";
 import {
   clearSessionMessages,
   getSessionMessages,

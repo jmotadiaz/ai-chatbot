@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { ChatProvider, SidebarProvider } from "../providers";
+import { ChatProvider, SidebarProvider } from "@/app/providers";
 import Chat from "@/components/chat-with-client-storage";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";

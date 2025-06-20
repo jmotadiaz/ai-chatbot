@@ -29,6 +29,7 @@ const eslintConfig = [
     },
     rules: {
       "import-x/no-unresolved": [2, {ignore: ["^server-only$"]}],
+      "import-x/order": "error",
     },
   },
 ];

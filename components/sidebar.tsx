@@ -1,5 +1,5 @@
 "use client";
-import { useSidebarContext } from "../app/providers";
+import { useSidebarContext } from "@/app/providers";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {

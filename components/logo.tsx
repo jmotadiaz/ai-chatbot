@@ -1,5 +1,5 @@
 "use client";
-import { LogoIcon } from "./icons";
+import { LogoIcon } from "@/components/icons";
 import { useSidebarContext } from "@/app/providers";
 
 export const Logo = () => {

@@ -1,5 +1,5 @@
 import type { Message as TMessage } from "ai";
-import { Message } from "./message";
+import { Message } from "@/components/message";
 
 export const Messages = ({
   messages,

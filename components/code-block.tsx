@@ -6,7 +6,7 @@ import {
   tomorrow,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { CopyBlock } from "./copy-block";
+import { CopyBlock } from "@/components/copy-block";
 
 interface CodeBlockProps {
   className?: string;

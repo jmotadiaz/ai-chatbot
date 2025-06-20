@@ -4,8 +4,8 @@ import {
   defaultTemperature,
   languageModelConfigurations,
   ModelConfiguration,
-} from "../providers";
-import { scapeXML } from "../../utils";
+} from "@/lib/ai/providers";
+import { scapeXML } from "@/lib/utils";
 
 export interface AutoModelCalculated {
   modelConfig: ModelConfiguration;

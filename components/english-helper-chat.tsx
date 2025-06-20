@@ -2,11 +2,12 @@
 
 import { ArrowDown } from "lucide-react";
 import { useCompletion, UseCompletionHelpers } from "@ai-sdk/react";
-import { Tabs, useTabs } from "./ui/tabs";
-import { ChatControl } from "./chat-control";
-import { LoadingAssistantMessageIcon } from "./icons";
-import { Textarea } from "./textarea";
-import { CopyBlock } from "./copy-block";
+import { Tabs, useTabs } from "@/components/ui/tabs";
+import { ChatControl } from "@/components/chat-control";
+import { LoadingAssistantMessageIcon } from "@/components/icons";
+import { Textarea } from "@/components/textarea";
+import { CopyBlock } from "@/components/copy-block";
+import { Markdown } from "@/components/markdown";
 import { cn } from "@/lib/utils";
 import { grammarSchema } from "@/lib/ai/schemas/grammar";
 import { useObject, UseObjectReturn } from "@/lib/ai/hooks";
@@ -86,7 +87,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
                 Translation:
               </div>
               <CopyBlock className="p-3 animate-fade" text={completion}>
-                {completion}
+                <Markdown>{completion}</Markdown>
               </CopyBlock>
             </>
           )}
@@ -147,7 +148,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
                   className="p-3 animate-fade"
                   text={object.textCorrected}
                 >
-                  {object.textCorrected}
+                  <Markdown>{object.textCorrected || ""}</Markdown>
                 </CopyBlock>
               </div>
               <div>

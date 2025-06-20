@@ -3,10 +3,10 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build Commands
-- Development: `pnpm dev` or `npm run dev`
-- Build: `pnpm build` or `npm run build`
-- Start: `pnpm start` or `npm run start`
-- Lint: `pnpm lint` or `npm run lint`
+- Development: `pnpm dev`
+- Build: `pnpm build`
+- Start: `pnpm start`
+- Lint: `pnpm lint`
 
 ## Code Style Guidelines
 - TypeScript with strict type checking

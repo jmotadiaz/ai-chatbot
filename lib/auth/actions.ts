@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { signIn } from "./auth-config";
+import { signIn } from "@/lib/auth/auth-config";
 import { createUser, getUser, transaction } from "@/lib/db/queries";
 
 const authFormSchema = z.object({

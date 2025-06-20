@@ -1,6 +1,6 @@
 "use client";
 import { Edit } from "lucide-react";
-import { useChatContext } from "../app/providers";
+import { useChatContext } from "@/app/providers";
 
 export const NewChatHome = () => {
   const { setMessages } = useChatContext();

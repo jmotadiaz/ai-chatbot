@@ -13,8 +13,8 @@ import {
   PocketKnife,
   StopCircle,
 } from "lucide-react";
-import { Markdown } from "./markdown";
-import { SpinnerIcon } from "./icons";
+import { Markdown } from "@/components/markdown";
+import { SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 

@@ -2,20 +2,24 @@ import {
   experimental_useObject,
   Experimental_UseObjectHelpers,
   Experimental_UseObjectOptions,
+  UseChatHelpers,
 } from "@ai-sdk/react";
 import { UIMessage } from "ai";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface UseRefinePromptParams {
   input: string;
   setInput: (value: string) => void;
   messages?: UIMessage[];
   metaPrompt?: string | null;
+  status?: UseChatHelpers["status"];
 }
 
 export interface RefinePromptReturn {
   isLoadingRefinedPrompt: boolean;
   refinePrompt: () => void;
+  undo: () => void;
+  hasPreviousMessage: boolean;
 }
 
 export const useRefinePrompt = ({
@@ -23,7 +27,9 @@ export const useRefinePrompt = ({
   setInput,
   messages,
   metaPrompt,
+  status,
 }: UseRefinePromptParams): RefinePromptReturn => {
+  const [previousMessage, setPreviousMessage] = useState<string | null>(null);
   const { generate, isLoading } = useGeneratedText({
     api: "/api/refine-prompt",
   });
@@ -38,14 +44,30 @@ export const useRefinePrompt = ({
         metaPrompt: metaPrompt || null,
       },
       onFinish: (generatedText) => {
+        setPreviousMessage(input);
         setInput(generatedText);
       },
     });
   };
 
+  const undo = () => {
+    if (previousMessage) {
+      setInput(previousMessage);
+      setPreviousMessage(null);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "submitted") {
+      setPreviousMessage(null);
+    }
+  }, [status]);
+
   return {
     isLoadingRefinedPrompt: isLoading,
     refinePrompt,
+    undo,
+    hasPreviousMessage: !!previousMessage,
   };
 };
 

@@ -1,6 +1,6 @@
 import { X as XIcon } from "lucide-react";
 import { ClassValue } from "clsx";
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
 import Link from "@/components/ui/link";
 import { deleteChat } from "@/lib/ai/actions";
 import { Chat } from "@/lib/db/schema";

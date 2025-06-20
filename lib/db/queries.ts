@@ -31,8 +31,8 @@ import {
   projectRelations,
   chatRelations,
   messageRelations,
-} from "./schema";
-import { generateHashedPassword } from "./utils";
+} from "@/lib/db/schema";
+import { generateHashedPassword } from "@/lib/db/utils";
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
