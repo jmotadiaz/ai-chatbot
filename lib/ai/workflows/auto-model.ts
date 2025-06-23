@@ -119,7 +119,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: 0.5,
     },
     complex: {
-      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
+      modelConfig: languageModelConfigurations["o4 Mini"],
       temperature: 0.5,
     },
   },
