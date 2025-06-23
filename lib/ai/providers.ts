@@ -121,17 +121,17 @@ export const titleModelConfiguration = pickModelConfigurations([
 ]);
 
 const chatModelKeys = [
-  "Llama 3.3 Versatile",
   "Llama 4 Maverick",
+  "Gemini 2.5 Flash Lite",
+  "Gemini 2.5 Flash",
   "GPT 4.1 Mini",
   "GPT 4.1",
-  "Gemini 2.5 Flash",
-  "Deepseek R1 0528",
   "Qwen 3",
+  "Deepseek R1 0528",
+  "Gemini 2.5 Pro",
   "Claude Sonnet 4",
   "o4 Mini",
   "o3",
-  "Gemini 2.5 Pro",
   "Grok 3 Mini",
   "Grok 3",
 ] satisfies (keyof typeof languageModelConfigurations)[];

@@ -5,14 +5,15 @@ export const codeBlockPrompt = `\n
   When providing code blocks, follow these guidelines:
 
   ### Basic Code Blocks
-  Specify the language in the backticks, e.g., \`\`\`javascript
+  Specify the language in the backticks. Example:
+  \`\`\`javascript
+    console.log("Hello, world!");
+  \`\`\`
 
-  ### For markdown code blocks, use the following format:
-  \`\`\`markdown
+  ### For markdown code blocks, use tilde (\`~\`) instead of backticks to avoid conflicts with markdown rendering:
+  ~~~markdown
     [Markdown content here]
-  markdown_ends\`\`\`
-
-  **Notice:** The closing tag must be \`markdown_ends\`\`\` to ensure proper post processing.
+  ~~~
 `;
 
 export const defaultSystemPrompt = `\n

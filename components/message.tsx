@@ -10,7 +10,6 @@ import { Markdown } from "@/components/markdown";
 import { SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
-import { CodeBlockV2 } from "@/components/code-block";
 
 interface ReasoningPart {
   type: "reasoning";
@@ -155,9 +154,7 @@ const PurePreviewMessage = ({
                         </CopyBlock>
                       ) : (
                         <div className={cn("flex flex-col max-w-full")}>
-                          <Markdown>
-                            {escapeBackticksInMarkdownBlocks(part.text)}
-                          </Markdown>
+                          <Markdown>{part.text}</Markdown>
                         </div>
                       )}
                     </motion.div>
@@ -167,23 +164,6 @@ const PurePreviewMessage = ({
                   console.log(
                     `Rendering tool invocation: ${toolName} with state: ${state}`
                   );
-
-                  if (state === "result") {
-                    switch (toolName) {
-                      case "codeSnippet":
-                        const { language, code } = part.toolInvocation.result;
-                        return (
-                          <div key={`message-${message.id}-part-${i}`}>
-                            <CodeBlockV2
-                              language={language}
-                              codeString={code}
-                            />
-                          </div>
-                        );
-                      default:
-                        return null;
-                    }
-                  }
 
                   return null;
                 case "reasoning":
@@ -210,16 +190,6 @@ const PurePreviewMessage = ({
     </AnimatePresence>
   );
 };
-
-function escapeBackticksInMarkdownBlocks(text: string): string {
-  const markdownBlockRegex = /```markdown([\s\S]*?)markdown_ends```/g;
-  const replacer = (_: unknown, content: string) => {
-    const escapedContent = content.replace(/`/g, "\\`");
-    return `\`\`\`markdown${escapedContent}\`\`\``;
-  };
-
-  return text.replace(markdownBlockRegex, replacer);
-}
 
 export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;

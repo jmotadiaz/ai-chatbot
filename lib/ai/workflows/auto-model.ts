@@ -111,7 +111,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
   },
   instructional: {
     simple: {
-      modelConfig: languageModelConfigurations["Gemini 2.5 Flash Lite"],
+      modelConfig: languageModelConfigurations["Llama 3.3 Versatile"],
       temperature: 0.5,
     },
     moderate: {
