@@ -54,7 +54,7 @@ export const languageModelConfigurations = {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
   "Gemini 2.5 Flash": {
-    model: google("gemini-2.5-flash-preview-05-20"),
+    model: google("gemini-2.5-flash"),
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
@@ -81,7 +81,7 @@ export const languageModelConfigurations = {
     model: openai("o3"),
   },
   "Gemini 2.5 Pro": {
-    model: google("gemini-2.5-pro-preview-05-06"),
+    model: google("gemini-2.5-pro"),
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -119,6 +119,7 @@ export const refinePromptModelConfigurations = pickModelConfigurations([
   "Qwen 3",
   "o3",
   "Deepseek R1 0528",
+  "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",
 ]);
 export const titleModelConfiguration = pickModelConfigurations([
