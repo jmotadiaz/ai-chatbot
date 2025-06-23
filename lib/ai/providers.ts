@@ -3,10 +3,7 @@ import { JSONValue, LanguageModelV1 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
-import {
-  createGoogleGenerativeAI,
-  GoogleGenerativeAIProviderOptions,
-} from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 
 const google = createGoogleGenerativeAI();
@@ -35,9 +32,6 @@ export const languageModelConfigurations = {
   "Llama 4 Maverick": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
   },
-  "Gemma 2": {
-    model: groq("gemma2-9b-it"),
-  },
   "Deepseek V3": {
     model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
   },
@@ -49,6 +43,12 @@ export const languageModelConfigurations = {
   },
   "GPT 4.1 Mini": {
     model: openai("gpt-4.1-mini"),
+  },
+  "GPT 4.1": {
+    model: openai("gpt-4.1"),
+  },
+  "Gemma 2": {
+    model: groq("gemma2-9b-it"),
   },
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
@@ -82,13 +82,6 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Pro": {
     model: google("gemini-2.5-pro"),
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 2048,
-        },
-      } satisfies GoogleGenerativeAIProviderOptions,
-    },
   },
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
@@ -128,9 +121,10 @@ export const titleModelConfiguration = pickModelConfigurations([
 ]);
 
 const chatModelKeys = [
+  "Llama 3.3 Versatile",
   "Llama 4 Maverick",
-  "Claude 3.5 Haiku",
   "GPT 4.1 Mini",
+  "GPT 4.1",
   "Gemini 2.5 Flash",
   "Deepseek R1 0528",
   "Qwen 3",

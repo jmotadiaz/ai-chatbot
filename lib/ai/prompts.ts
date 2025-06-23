@@ -7,18 +7,12 @@ export const codeBlockPrompt = `\n
   ### Basic Code Blocks
   Specify the language in the backticks, e.g., \`\`\`javascript
 
-  ### Markdown Code Blocks
-  For markdown code blocks, use the following format:
+  ### For markdown code blocks, use the following format:
   \`\`\`markdown
     [Markdown content here]
-  \`\`\`
+  markdown_ends\`\`\`
 
-  **CRITICAL REQUIREMENT:** ALL backticks inside the content MUST be escaped with backslashes:
-  \`\`\`markdown
-    Here a code block \\\`\\\`\\\`json [json code block here] \\\`\\\`\\\`
-    Here a inline code \\\` [inline code here] \\\`
-    Here a quoted text \\\` [quoted text] \\\`
-  \`\`\`
+  **Notice:** The closing tag must be \`markdown_ends\`\`\` to ensure proper post processing.
 `;
 
 export const defaultSystemPrompt = `\n
@@ -36,8 +30,7 @@ export const defaultSystemPrompt = `\n
   ## Language and Tone
   - Respond in the user's language unless they request otherwise.
   - Be concise for simple questions. Provide comprehensive, well-reasoned answers for complex and open-ended questions.
-  - Maintain a helpful, expert tone.
-`;
+  - Maintain a helpful, expert tone.`;
 
 export const defaultMetaPrompt = `\n
   Imagine yourself as a "Prompt Architect." Your role is analogous to a code compiler: you take a user's initial idea (source code) and translate it into a perfectly structured, optimized prompt (machine code) for a subsequent LLM to execute.

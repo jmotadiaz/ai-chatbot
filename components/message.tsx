@@ -155,7 +155,9 @@ const PurePreviewMessage = ({
                         </CopyBlock>
                       ) : (
                         <div className={cn("flex flex-col max-w-full")}>
-                          <Markdown>{part.text}</Markdown>
+                          <Markdown>
+                            {escapeBackticksInMarkdownBlocks(part.text)}
+                          </Markdown>
                         </div>
                       )}
                     </motion.div>
@@ -208,6 +210,16 @@ const PurePreviewMessage = ({
     </AnimatePresence>
   );
 };
+
+function escapeBackticksInMarkdownBlocks(text: string): string {
+  const markdownBlockRegex = /```markdown([\s\S]*?)markdown_ends```/g;
+  const replacer = (_: unknown, content: string) => {
+    const escapedContent = content.replace(/`/g, "\\`");
+    return `\`\`\`markdown${escapedContent}\`\`\``;
+  };
+
+  return text.replace(markdownBlockRegex, replacer);
+}
 
 export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;

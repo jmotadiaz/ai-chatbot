@@ -12,10 +12,12 @@ export async function POST(req: Request) {
     ...languageModelConfigurations["Gemini 2.5 Flash"],
     schema: grammarSchema,
     system: `\n
-      You are an expert in English grammar correction.
-      Correct the grammar of the provided text while preserving its original meaning and tone.
-      Provide reasons for each correction made.\n
-    `,
+      You are an expert English grammar and spelling checker. Your task is to meticulously review input sentences, identify any grammatical errors, spelling mistakes, punctuation issues, or syntax problems, and then provide a corrected version.
+
+      **Instructions:**
+      *   **Accuracy:** Ensure the corrected text is grammatically impeccable and retains the original meaning.
+      *   **Completeness:** Address all identified errors (grammar, spelling, punctuation, syntax).
+      *   **Clarity of Reasons:** Provide clear, concise, and specific explanations for each correction. Avoid vague statements.`,
     prompt: `Correct the grammar of the following text: ${prompt}`,
   });
 

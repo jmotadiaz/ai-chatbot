@@ -146,20 +146,26 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
                 </div>
                 <CopyBlock
                   className="p-3 animate-fade"
-                  text={object.textCorrected}
+                  text={object.correctedText}
                 >
-                  <Markdown>{object.textCorrected || ""}</Markdown>
+                  <Markdown>{object.correctedText || ""}</Markdown>
                 </CopyBlock>
               </div>
               <div>
-                <div className="font-semibold mb-2 animate-fade">Reasons:</div>
-                <ul className="list-disc pl-5 text-gray-800 dark:text-gray-200 animate-fade">
-                  {object.reasons?.map((reason, index) => (
-                    <li className="animate-fade" key={index}>
-                      {reason}
-                    </li>
-                  ))}
-                </ul>
+                {!!object.reasons?.length && (
+                  <>
+                    <div className="font-semibold mb-2 animate-fade">
+                      Reasons:
+                    </div>
+                    <ul className="list-disc pl-5 text-gray-800 dark:text-gray-200 animate-fade">
+                      {object.reasons?.map((reason, index) => (
+                        <li className="animate-fade" key={index}>
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
             </div>
           </>
