@@ -50,15 +50,11 @@ export const languageModelConfigurations = {
   "GPT 4.1 Mini": {
     model: openai("gpt-4.1-mini"),
   },
+  "Gemini 2.5 Flash Lite": {
+    model: google("gemini-2.5-flash-lite-preview-06-17"),
+  },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash-preview-05-20"),
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
-      } satisfies GoogleGenerativeAIProviderOptions,
-    },
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),

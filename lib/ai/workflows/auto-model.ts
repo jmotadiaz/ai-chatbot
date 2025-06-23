@@ -59,11 +59,11 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
+      modelConfig: languageModelConfigurations["Llama 3.3 Versatile"],
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: languageModelConfigurations["Deepseek R1 0528"],
+      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
       temperature: defaultTemperature,
     },
   },
@@ -111,11 +111,11 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
   },
   instructional: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
+      modelConfig: languageModelConfigurations["Gemini 2.5 Flash Lite"],
       temperature: 0.5,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Qwen 3"],
+      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 0.5,
     },
     complex: {
@@ -143,7 +143,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Deepseek R1 Distill"],
+      modelConfig: languageModelConfigurations["Gemini 2.5 Flash Lite"],
       temperature: defaultTemperature,
     },
     complex: {

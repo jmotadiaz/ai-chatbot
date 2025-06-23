@@ -76,6 +76,7 @@ export async function POST(req: Request) {
         topP: autoModelCalculated ? undefined : topP,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
+        maxSteps: 5,
         experimental_telemetry: {
           isEnabled: true,
         },

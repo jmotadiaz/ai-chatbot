@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const prompt = await req.json();
 
   const result = streamObject({
-    ...languageModelConfigurations["Qwen 3"],
+    ...languageModelConfigurations["Gemini 2.5 Flash"],
     schema: grammarSchema,
     system: `\n
       You are an expert in English grammar correction.

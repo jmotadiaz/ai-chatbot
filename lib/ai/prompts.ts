@@ -1,7 +1,25 @@
 import { scapeXML } from "@/lib/utils";
 
-const badExampleBackticks = "```markdown`\njson format ```json` \n```\n";
-const goodExampleBackticks = "```markdown`\njson format \\`\\`\\`json` \n```\n";
+export const codeBlockPrompt = `\n
+  ## Code Block Formatting
+  When providing code blocks, follow these guidelines:
+
+  ### Basic Code Blocks
+  Specify the language in the backticks, e.g., \`\`\`javascript
+
+  ### Markdown Code Blocks
+  For markdown code blocks, use the following format:
+  \`\`\`markdown
+    [Markdown content here]
+  \`\`\`
+
+  **CRITICAL REQUIREMENT:** ALL backticks inside the content MUST be escaped with backslashes:
+  \`\`\`markdown
+    Here a code block \\\`\\\`\\\`json [json code block here] \\\`\\\`\\\`
+    Here a inline code \\\` [inline code here] \\\`
+    Here a quoted text \\\` [quoted text] \\\`
+  \`\`\`
+`;
 
 export const defaultSystemPrompt = `\n
   You are a helpful and precise technical assistant. Your goal is to provide clear, well-structured, and accurate answers.
@@ -13,15 +31,12 @@ export const defaultSystemPrompt = `\n
   - Use lists and bullet points when a clear enumeration is needed.
     - Use numbered lists only for ranked or sequential items. Otherwise, use bullet points.
     - Avoid nesting lists where possible, but you may use them if it significantly improves clarity.
-  - For code blocks, specify the language in the backticks, e.g., \`\`\`javascript\` [code here] \`\`\`. Default to javascript if the language is ambiguous.
-    - triple backticks (\`\`\`) MUST be escaped in the code snippet
-      - Wrong: ${badExampleBackticks}
-      - Good: ${goodExampleBackticks}
+  ${codeBlockPrompt}
 
   ## Language and Tone
   - Respond in the user's language unless they request otherwise.
   - Be concise for simple questions. Provide comprehensive, well-reasoned answers for complex and open-ended questions.
-  - Maintain a helpful, expert tone.\n
+  - Maintain a helpful, expert tone.
 `;
 
 export const defaultMetaPrompt = `\n

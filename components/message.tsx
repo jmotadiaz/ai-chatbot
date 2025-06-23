@@ -5,18 +5,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { memo, useCallback, useEffect, useState } from "react";
 import equal from "fast-deep-equal";
 
-import {
-  CheckCircle,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  Loader2,
-  PocketKnife,
-  StopCircle,
-} from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Markdown } from "@/components/markdown";
 import { SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
+import { CodeBlockV2 } from "@/components/code-block";
 
 interface ReasoningPart {
   type: "reasoning";
@@ -117,7 +111,6 @@ export function ReasoningMessagePart({
 
 const PurePreviewMessage = ({
   message,
-  isLatestMessage,
   status,
 }: {
   message: TMessage;
@@ -169,40 +162,28 @@ const PurePreviewMessage = ({
                   );
                 case "tool-invocation":
                   const { toolName, state } = part.toolInvocation;
-
-                  return (
-                    <motion.div
-                      initial={{ y: 5, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      key={`message-${message.id}-part-${i}`}
-                      className="flex flex-col gap-2 p-2 mb-3 text-sm bg-zinc-50 dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800"
-                    >
-                      <div className="flex-1 flex items-center justify-center">
-                        <div className="flex items-center justify-center w-8 h-8 bg-zinc-50 dark:bg-zinc-800 rounded-full">
-                          <PocketKnife className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium flex items-baseline gap-2">
-                            {state === "call" ? "Calling" : "Called"}{" "}
-                            <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
-                              {toolName}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-5 h-5 flex items-center justify-center">
-                          {state === "call" ? (
-                            isLatestMessage && status !== "ready" ? (
-                              <Loader2 className="animate-spin h-4 w-4 text-zinc-500" />
-                            ) : (
-                              <StopCircle className="h-4 w-4 text-red-500" />
-                            )
-                          ) : state === "result" ? (
-                            <CheckCircle size={14} className="text-green-600" />
-                          ) : null}
-                        </div>
-                      </div>
-                    </motion.div>
+                  console.log(
+                    `Rendering tool invocation: ${toolName} with state: ${state}`
                   );
+
+                  if (state === "result") {
+                    switch (toolName) {
+                      case "codeSnippet":
+                        const { language, code } = part.toolInvocation.result;
+                        return (
+                          <div key={`message-${message.id}-part-${i}`}>
+                            <CodeBlockV2
+                              language={language}
+                              codeString={code}
+                            />
+                          </div>
+                        );
+                      default:
+                        return null;
+                    }
+                  }
+
+                  return null;
                 case "reasoning":
                   return (
                     <ReasoningMessagePart

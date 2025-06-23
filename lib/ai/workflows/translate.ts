@@ -23,7 +23,7 @@ export default async function translate(prompt: string) {
 
   // Translation
   return streamText({
-    ...languageModelConfigurations["Llama 3.3 Versatile"],
+    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     system: systemPrompt(targetLanguage, sourceLanguage),
     prompt: `Translate the following text from ${sourceLanguage} to ${targetLanguage}: ${prompt}`,
   });
