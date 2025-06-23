@@ -10,23 +10,18 @@ export const codeBlockPrompt = `\n
     console.log("Hello, world!");
   \`\`\`
 
-  ### For markdown code blocks, use tilde (\`~\`) instead of backticks.
-  **Correct**:
-  ~~~markdown
-    ## Heading Example
-    Here a json snippet inside a markdown code block:
-    \`\`\`json
-      { "key": "value" }
-    \`\`\`
-  ~~~
-  **Wrong**:
-  \`\`\`markdown
-    ## Heading Example
-    Here a json snippet inside a markdown code block:
-    \`\`\`json
-      { "key": "value" }
-    \`\`\`
-  \`\`\`
+  ### Markdown Code Blocks
+  For markdown code blocks, follow this instructions:
+  - Use triple tilde (~~~) to start and end the block.
+  - Specify the language immediately after the opening tilde.
+  - Example:
+    ~~~markdown
+      ## Heading Example
+      Here a json snippet inside a markdown code block:
+      \`\`\`json
+        { "key": "value" }
+      \`\`\`
+    ~~~
 `;
 
 export const defaultSystemPrompt = `\n
