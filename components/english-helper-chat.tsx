@@ -84,9 +84,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
         <>
           {completion && (
             <>
-              <div className="font-semibold mb-2 animate-fade">
-                Translation:
-              </div>
+              <div className="font-semibold animate-fade">Translation:</div>
               <CopyBlock className="p-3 animate-fade" text={completion}>
                 <Markdown>{completion}</Markdown>
               </CopyBlock>
@@ -143,7 +141,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
           <>
             <div className="flex flex-col gap-2">
               <div>
-                <div className="font-semibold mb-2 animate-fade">
+                <div className="font-semibold animate-fade">
                   Corrected Text:
                 </div>
                 <CopyBlock
@@ -207,7 +205,7 @@ const SpeechControl: React.FC<{ input: string; className: string }> = ({
         ) : (
           <Button
             variant="secondary"
-            className="min-w-18 animate-fade"
+            className="min-w-18 flex items-center animate-fade"
             onClick={generateSpeech}
           >
             {isGenerating ? (
