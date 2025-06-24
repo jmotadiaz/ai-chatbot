@@ -8,10 +8,10 @@ export async function POST(req: Request) {
     const result = await generateSpeech({
       model: openai.speech("tts-1"),
       speed: 0.85,
+      voice: "nova",
       text: input,
     });
 
-    // Retornar el stream de audio directamente
     return new Response(result.audio.uint8Array, {
       headers: {
         "Content-Type": "audio/mpeg",
