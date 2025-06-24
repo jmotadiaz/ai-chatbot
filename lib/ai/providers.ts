@@ -9,12 +9,12 @@ import {
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 
-const google = createGoogleGenerativeAI();
-const openai = createOpenAI({
+export const google = createGoogleGenerativeAI();
+export const openai = createOpenAI({
   compatibility: "strict",
 });
-const xai = createXai();
-const openrouter = createOpenRouter({
+export const xai = createXai();
+export const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
