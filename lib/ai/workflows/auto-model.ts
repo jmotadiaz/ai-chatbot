@@ -77,7 +77,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
     complex: {
-      modelConfig: languageModelConfigurations["o3"],
+      modelConfig: languageModelConfigurations["Deepseek R1 0528"],
       temperature: defaultTemperature,
     },
   },
@@ -119,7 +119,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: 0.5,
     },
     complex: {
-      modelConfig: languageModelConfigurations["o4 Mini"],
+      modelConfig: languageModelConfigurations["Deepseek R1 0528"],
       temperature: 0.5,
     },
   },

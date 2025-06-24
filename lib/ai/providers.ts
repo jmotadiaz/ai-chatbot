@@ -50,6 +50,9 @@ export const languageModelConfigurations = {
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
   },
+  "Gemma 3": {
+    model: openrouter("google/gemma-3-27b-it"),
+  },
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
@@ -122,6 +125,7 @@ export const titleModelConfiguration = pickModelConfigurations([
 
 const chatModelKeys = [
   "Llama 4 Maverick",
+  "Deepseek V3",
   "Gemini 2.5 Flash Lite",
   "Gemini 2.5 Flash",
   "GPT 4.1 Mini",

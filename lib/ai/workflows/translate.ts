@@ -1,15 +1,22 @@
-import { generateObject, streamText } from "ai";
+import { generateObject, GenerateObjectResult, streamText } from "ai";
 import { z } from "zod";
 import { languageModelConfigurations } from "@/lib/ai/providers";
 
-const languages = ["Spanish", "English"] as const;
-type Languages = (typeof languages)[number];
+const languages = ["Spanish (Spain)", "English"] as const;
+const audiences = [
+  "general_public",
+  "internal_stakeholders",
+  "internal_team",
+  "customers",
+  "partners",
+  "executives_or_investors",
+] as const;
+
+const getObject = <T>({ object }: GenerateObjectResult<T>) => object;
 
 export default async function translate(prompt: string) {
   // Determine target language
-  const {
-    object: { targetLanguage, sourceLanguage },
-  } = await generateObject({
+  const translationDirectionResult = generateObject({
     ...languageModelConfigurations["Llama 3.1 Instant"],
     schema: z.object({
       sourceLanguage: z.enum(languages),
@@ -19,92 +26,78 @@ export default async function translate(prompt: string) {
       "You are an expert detecting the language of a text. You should determine the target language for translation based on the content provided. If the text is already in English, translate it to Spanish. If it's in Spanish, translate it to English.",
     prompt: `Determine the target language for translation based on the following text:
     ${prompt}`,
+  }).then(getObject);
+
+  const audienceResult = generateObject({
+    ...languageModelConfigurations["Llama 3.1 Instant"],
+    schema: z.object({
+      audience: z.enum(audiences),
+    }),
+    system: "You are an expert detecting the audience of a text.",
+    prompt: `Identify the most likely target audience for the following text:
+    ${prompt}`,
+  }).then(getObject);
+
+  const domainResult = generateObject({
+    ...languageModelConfigurations["Llama 3.1 Instant"],
+    schema: z.object({
+      domain: z.string(),
+      subdomain: z.string(),
+    }),
+    system: `You are an expert detecting the main domain or context of a text. Be as specific as possible.
+      Respond with the keys "domain" (e.g., "legal", "medical", "technology", "marketing", "academic") and "subdomain" (e.g., "contracts", "cardiology", "web_development", "seo", "quantum_physics")`,
+    prompt: `Identify the main domain or context for the following text:
+    ${prompt}`,
+  }).then(getObject);
+
+  const [
+    { sourceLanguage, targetLanguage },
+    { audience },
+    { domain, subdomain },
+  ] = await Promise.all([
+    translationDirectionResult,
+    audienceResult,
+    domainResult,
+  ]);
+
+  console.log("translation context", {
+    sourceLanguage,
+    targetLanguage,
+    audience,
+    domain,
+    subdomain,
   });
 
   // Translation
   return streamText({
     ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-    system: systemPrompt(targetLanguage, sourceLanguage),
+    system: `
+      You are an expert ${sourceLanguage} to ${targetLanguage} translator with native-level proficiency in both languages. Your task is to translate the user's text with the highest fidelity to the original, while adapting it to the specific context provided below.
+
+      == TRANSLATION CONTEXT ==
+      1.  **Domain and Terminology:** The text belongs to the **${domain}** domain, specifically concerning **${subdomain}**. It is crucial that you use standard and precise ${targetLanguage} terminology for this field. Avoid literal translations of technical terms.
+      2.  **Target Audience:** The translation is intended for **${audience}**. Adapt the language to be clear, appropriate, and effective for this group. ${audienceInstructions[audience]}
+
+      == ADDITIONAL RULES ==
+      - Do not add information that is not present in the original text.
+      - Do a grammatical and spelling check of the translation.
+      - Preserve the original formatting (paragraphs, lists, etc.) whenever possible.
+    `,
     prompt: `Translate the following text from ${sourceLanguage} to ${targetLanguage}: ${prompt}`,
   });
 }
 
-const systemPrompt = (targetLanguage: Languages, sourceLanguage: Languages) => `
-  You are a highly skilled translator specializing in converting text from ${sourceLanguage} to ${targetLanguage}. Your primary goal is to produce translations that are accurate, natural, and contextually appropriate. Follow these guidelines for every translation task:
-
-  ## Translation Guidelines
-
-  1. **Preserve the Original Meaning**: Ensure that the translation captures the intended meaning of the source text, rather than providing a word-for-word literal translation. Focus on conveying the essence and nuances of the original message.
-  2. **Prioritize Natural and Fluent ${targetLanguage}**: Use idiomatic and conversational ${targetLanguage} to make the translation sound as if it were originally written by a native speaker. Avoid awkward phrasing or overly formal constructions unless the context demands it.
-  3. **Adapt to Context**: Adjust the tone and style based on the context of the input text:
-    - For **formal** texts (e.g., business emails, academic papers), use professional and precise language.
-    - For **informal** texts (e.g., casual conversations, social media posts), adopt a relaxed and friendly tone.
-    - For **technical** texts (e.g., manuals, scientific content), prioritize accuracy and use domain-specific terminology while ensuring clarity for the target audience.
-  4. **Avoid Ambiguity**: If the source text contains ambiguous phrases or cultural references, make an informed interpretation based on the broader context. If ambiguity cannot be resolved, include a brief translator's note in brackets [like this] to clarify your choice.
-  5. **Maintain Original Formatting**: Preserve the structure of the source text, including paragraphs, bullet points, numbered lists, and other formatting elements, unless explicitly instructed otherwise. Ensure the translated text mirrors the layout of the original for readability.
-  6. **Cultural Sensitivity**: Replace culturally specific references or idioms with equivalent ${targetLanguage} expressions where possible. If no direct equivalent exists, provide a brief explanation in brackets to ensure understanding.
-
-  ## Restrictions
-
-  - Do not add or omit significant content unless it is necessary for clarity or cultural adaptation. Any additions or omissions must be minimal and justified.
-  - Avoid personal opinions or creative liberties that deviate from the original intent of the text.
-  - Refrain from using outdated or regional slang unless it matches the tone and context of the source material.
-
-  ## Example Translation
-
-  To guide your translation style, refer to the following examples:
-
-  ${examples.reduce((acc, example) => {
-    return `${acc}
-    ### ${example.exampleType}
-
-    **Source Text (${sourceLanguage}):** ${example[sourceLanguage]}
-    **Translated Text (${targetLanguage}):** ${example[targetLanguage]}\n
-    `;
-  }, "")}
-
-  ## Final Instructions
-
-  The output should consist *ONLY* of the translated text.`;
-
-const examples = [
-  {
-    exampleType: "Formal passive request",
-    English:
-      "You are kindly requested to review the attached proposal at your earliest convenience.",
-    Spanish:
-      "Se le solicita amablemente que revise la propuesta adjunta a la mayor brevedad posible.",
-  },
-  {
-    exampleType: "Informal comparative chat",
-    English:
-      "This new series is way better than the last one—you should totally binge-watch it!",
-    Spanish:
-      "Esta nueva serie es muchísimo mejor que la anterior; ¡deberías verla de corrido!",
-  },
-  {
-    exampleType: "Idiomatic Expression and Common Vocabulary",
-    English: "It rained cats and dogs, so we had to cancel the picnic.",
-    Spanish: "Llovió a cántaros, así que tuvimos que cancelar el picnic.",
-  },
-  {
-    exampleType: "Technical instruction with non-translated terms",
-    English:
-      "Before restarting the server, flush the DNS cache, then call the /reboot API endpoint using a POST request.",
-    Spanish:
-      "Antes de reiniciar el servidor, vacíe la cache de DNS y luego llame al endpoint /reboot de la API mediante una petición POST.",
-  },
-  {
-    exampleType: "Pronominal Verb and Future Tense Context",
-    English:
-      "We will see each other at the conference next month, if all goes well.",
-    Spanish: "Nos veremos en la conferencia el próximo mes, si todo sale bien.",
-  },
-  {
-    exampleType: "Scheduling with passive voice",
-    English:
-      "The meeting has been postponed until April 10th, 2024 at 11:00 AM.",
-    Spanish:
-      "La reunión ha sido aplazada hasta el 10 de abril de 2024 a las 11:00.",
-  },
-] as const;
+const audienceInstructions = {
+  internal_stakeholders:
+    "The translation must be professional, clear, and respectful. While it's an internal communication, maintain a higher level of formality than when speaking to direct peers. Provide necessary context clearly. Contractions (e.g., 'it's', 'we're') are acceptable for a natural flow, but avoid slang. The goal is to inform efficiently and build cross-functional alignment.",
+  internal_team:
+    "The translation is for direct team members. A more direct, conversational, and efficient tone is preferred. It's acceptable to use well-known internal acronyms and technical jargon if the knowledge level is 'technical' or 'expert'. The goal is operational clarity and speed.",
+  executives_or_investors:
+    "The translation must be formal, professional, and concise. The language should be polished and focused on business impact, metrics, and outcomes. Avoid colloquialisms, slang, and overly detailed technical jargon. Use a respectful and confident tone.",
+  general_public:
+    "Use simple, clear, and engaging language. Avoid technical jargon, acronyms, and complex sentence structures. The goal is maximum readability and public understanding.",
+  customers:
+    "Use a friendly, helpful, and clear tone. The translation should be positive and aligned with our brand voice. If the audience's knowledge level is 'non_technical', simplify complex concepts. Focus on user benefits and solutions.",
+  partners:
+    "Use a professional, collaborative, and clear tone. Assume a good understanding of the business context but provide specific details where necessary. The language should foster a strong working relationship.",
+} as const satisfies Record<(typeof audiences)[number], string>;
