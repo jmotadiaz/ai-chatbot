@@ -26,11 +26,11 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   setSelectedModel,
 }) => (
   <Select value={selectedModel} onValueChange={setSelectedModel}>
-    <SelectTrigger className="w-44 xl:w-48">
+    <SelectTrigger className="w-48 xl:w-52">
       <SelectValue placeholder="Select a model" />
     </SelectTrigger>
     <SelectContent>
-      <SelectGroup className="w-44 xl:w-48">
+      <SelectGroup className="w-48 xl:w-52">
         {CHAT_MODELS.map((modelId) => (
           <SelectItem key={modelId} value={modelId}>
             {modelId}

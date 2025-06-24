@@ -1,5 +1,5 @@
 import { generateText, Message, UIMessage } from "ai";
-import { titleModelConfiguration } from "@/lib/ai/providers";
+import { languageModelConfigurations } from "@/lib/ai/providers";
 import { InsertMessage } from "@/lib/db/schema";
 
 export async function generateTitleFromUserMessage(
@@ -8,7 +8,7 @@ export async function generateTitleFromUserMessage(
   if (!message) return "Unknown";
 
   const { text: title } = await generateText({
-    ...titleModelConfiguration["Llama 3.1 Instant"],
+    ...languageModelConfigurations["Llama 3.1 Instant"],
     system: `\n
     - you will generate a short title based on the first message a user begins a conversation with
     - ensure it is not more than 60 characters long

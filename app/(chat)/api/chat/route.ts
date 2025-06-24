@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   let autoModelCalculated: AutoModelCalculated | null = null;
   let chatModelConfiguration: ModelConfiguration | null = null;
 
-  if (selectedModel === "Auto") {
+  if (selectedModel === "Auto Model Workflow") {
     const firstMessage = messages[0];
 
     autoModelCalculated = await autoModel(

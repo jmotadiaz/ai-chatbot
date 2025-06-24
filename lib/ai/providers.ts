@@ -3,7 +3,10 @@ import { JSONValue, LanguageModelV1 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import {
+  createGoogleGenerativeAI,
+  GoogleGenerativeAIProviderOptions,
+} from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 
 const google = createGoogleGenerativeAI();
@@ -56,6 +59,16 @@ export const languageModelConfigurations = {
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
+  "Gemini 2.5 Flash No Think": {
+    model: google("gemini-2.5-flash"),
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      } as GoogleGenerativeAIProviderOptions,
+    },
+  },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
   },
@@ -76,6 +89,9 @@ export const languageModelConfigurations = {
   },
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
+  },
+  "Claude Opus 4": {
+    model: anthropic("claude-opus-4-20250514"),
   },
   "o4 Mini": {
     model: openai("o4-mini"),
@@ -111,19 +127,8 @@ const pickModelConfigurations = <
   return models;
 };
 
-export const refinePromptModelConfigurations = pickModelConfigurations([
-  "Qwen 3",
-  "o3",
-  "Deepseek R1 0528",
-  "Gemini 2.5 Flash",
-  "Gemini 2.5 Pro",
-]);
-export const titleModelConfiguration = pickModelConfigurations([
-  "Llama 3.1 Instant",
-  "Gemma 2",
-]);
-
 const chatModelKeys = [
+  "Llama 3.3 Versatile",
   "Llama 4 Maverick",
   "Deepseek V3",
   "Gemini 2.5 Flash Lite",
@@ -134,6 +139,7 @@ const chatModelKeys = [
   "Deepseek R1 0528",
   "Gemini 2.5 Pro",
   "Claude Sonnet 4",
+  "Claude Opus 4",
   "o4 Mini",
   "o3",
   "Grok 3 Mini",
@@ -142,11 +148,16 @@ const chatModelKeys = [
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
 
-export type chatModelId = (typeof chatModelKeys)[number] | "Auto";
+export type chatModelId =
+  | (typeof chatModelKeys)[number]
+  | "Auto Model Workflow";
 
-export const CHAT_MODELS: chatModelId[] = ["Auto", ...chatModelKeys];
+export const CHAT_MODELS: chatModelId[] = [
+  "Auto Model Workflow",
+  ...chatModelKeys,
+];
 
-export const defaultModel: chatModelId = "Auto";
+export const defaultModel: chatModelId = "Auto Model Workflow";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 
