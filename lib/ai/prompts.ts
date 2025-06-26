@@ -4,16 +4,10 @@ export const codeBlockPrompt = `\n
   ## Code Block Formatting
   When providing code blocks, follow these guidelines:
 
-  ### Basic Code Blocks
-  Specify the language in the backticks. Example:
-  \`\`\`javascript
-    console.log("Hello, world!");
-  \`\`\`
-
   ### Markdown Code Blocks
   For markdown code blocks, follow this instructions:
   - Use triple tilde (~~~) to start and end the block.
-  - Specify the language immediately after the opening tilde.
+  - Specify the language markdown immediately after the opening tilde.
   - Example:
     ~~~markdown
       ## Heading Example
@@ -22,6 +16,14 @@ export const codeBlockPrompt = `\n
         { "key": "value" }
       \`\`\`
     ~~~
+
+  ### All Language Code Blocks (except markdown)
+  - Use triple backtick (\`\`\`) to start and end the block.
+  - Specify the language immediately after the opening backtick.
+  - Example:
+  \`\`\`javascript
+    console.log("Hello, world!");
+  \`\`\`
 `;
 
 export const defaultSystemPrompt = `\n

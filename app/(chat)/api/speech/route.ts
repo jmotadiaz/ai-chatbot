@@ -9,8 +9,10 @@ export async function POST(req: Request) {
       model: openai.speech("gpt-4o-mini-tts"),
       speed: 0.9,
       voice: "shimmer",
-      instructions: `When language is spanish, the pronunciation should be spanish (spain).
-        When language is english, the pronunciation should be english (uk).`,
+      instructions: `
+        When language is spanish, the pronunciation should be spanish (spain).
+        When language is english, the pronunciation should be english (uk).
+      `,
       text: input,
     });
 
