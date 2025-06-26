@@ -24,25 +24,30 @@ const CATEGORIES = [
 
 const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 
+const schema = z.object({
+  reasoning: z.string(),
+  category: z.enum(CATEGORIES),
+  complexity: z.enum(COMPLEXITY_LEVELS),
+});
+
 export async function autoModel(query: string): Promise<AutoModelCalculated> {
   if (!query || query.trim() === "") {
-    console.warn(
-      "Empty query provided to autoModel. Defaulting to Llama 3.1 Instant."
-    );
-    return {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
-      temperature: defaultTemperature,
-    };
+    throw new Error("Query cannot be empty");
   }
 
   const { object: classification } = await generateObject({
-    ...languageModelConfigurations["Gemma 2"],
-    schema: z.object({
-      reasoning: z.string(),
-      category: z.enum(CATEGORIES),
-      complexity: z.enum(COMPLEXITY_LEVELS),
-    }),
+    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+    schema,
     prompt: getPrompt(query),
+  }).catch((error) => {
+    console.error("Error during model generation:", error);
+    return {
+      object: {
+        category: "factual",
+        complexity: "simple",
+        reasoning: "Default classification due to error",
+      } satisfies z.infer<typeof schema>,
+    } as const;
   });
 
   console.log("Classification Result:", classification);
@@ -87,7 +92,7 @@ const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
       temperature: defaultTemperature,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Qwen 3"],
+      modelConfig: languageModelConfigurations["GPT 4.1 Mini"],
       temperature: defaultTemperature,
     },
     complex: {
