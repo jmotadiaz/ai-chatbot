@@ -12,7 +12,7 @@ export interface ChatSettingsButtonProps {
 
 export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const { temperature, topP, setConfig } = useChatContext();
+  const { temperature, topP, setConfig, selectedModel } = useChatContext();
 
   const setTemperature = (value: number) => {
     setConfig({ temperature: value });
@@ -20,6 +20,8 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const setTopP = (value: number) => {
     setConfig({ topP: value });
   };
+
+  if (selectedModel === "Auto Model Workflow") return null;
 
   return (
     <>

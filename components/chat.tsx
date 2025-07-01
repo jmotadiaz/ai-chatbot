@@ -113,32 +113,29 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             isLoading={isLoading}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
           />
-          <ChatSettingsButton className="absolute z-1 left-3 bottom-2" />
-          <div className="absolute left-13 z-1 bottom-2">{saveChat}</div>
-          {hasPreviousMessage && (
+          <div className="absolute z-1 left-3 bottom-2 flex items-center space-x-2">
+            <ChatSettingsButton />
+            <div>{saveChat}</div>
+          </div>
+
+          <div className="absolute z-1 right-3 bottom-2 flex items-center space-x-2">
+            {hasPreviousMessage && <ChatControl Icon={Undo} onClick={undo} />}
+            {metaPrompt && (
+              <ChatControl
+                Icon={WandSparkles}
+                onClick={refinePrompt}
+                disabled={!input.length}
+                isLoading={isLoadingRefinedPrompt}
+              />
+            )}
             <ChatControl
-              Icon={Undo}
-              className="absolute z-1 right-23 bottom-2"
-              onClick={undo}
+              Icon={ArrowUp}
+              type="submit"
+              disabled={!input.trim() || isLoadingRefinedPrompt}
+              isLoading={isLoading}
+              onLoadingClick={stop}
             />
-          )}
-          {metaPrompt && (
-            <ChatControl
-              Icon={WandSparkles}
-              className="absolute z-1 right-13 bottom-2"
-              onClick={refinePrompt}
-              disabled={!input.length}
-              isLoading={isLoadingRefinedPrompt}
-            />
-          )}
-          <ChatControl
-            Icon={ArrowUp}
-            type="submit"
-            className="absolute z-1 right-3 bottom-2"
-            disabled={!input.trim() || isLoadingRefinedPrompt}
-            isLoading={isLoading}
-            onLoadingClick={stop}
-          />
+          </div>
         </div>
       </form>
     </>

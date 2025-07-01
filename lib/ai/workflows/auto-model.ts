@@ -1,16 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import {
-  defaultTemperature,
   languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/providers";
 import { scapeXML } from "@/lib/utils";
-
-export interface AutoModelCalculated {
-  modelConfig: ModelConfiguration;
-  temperature: number;
-}
 
 const CATEGORIES = [
   "factual",
@@ -30,7 +24,7 @@ const schema = z.object({
   complexity: z.enum(COMPLEXITY_LEVELS),
 });
 
-export async function autoModel(query: string): Promise<AutoModelCalculated> {
+export async function autoModel(query: string): Promise<ModelConfiguration> {
   if (!query || query.trim() === "") {
     throw new Error("Query cannot be empty");
   }
@@ -57,118 +51,101 @@ export async function autoModel(query: string): Promise<AutoModelCalculated> {
   return decisionTree[category][complexity];
 }
 
-const decisionTree: Record<string, Record<string, AutoModelCalculated>> = {
+const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   factual: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Llama 3.3 Versatile"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
     },
     complex: {
-      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Llama 4 Maverick"],
     },
   },
   analytical: {
     simple: {
-      modelConfig: languageModelConfigurations["Deepseek R1 Distill"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Deepseek R1 Distill"],
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Qwen 3"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Qwen 3"],
     },
     complex: {
-      modelConfig: languageModelConfigurations["Deepseek R1 0528"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Deepseek R1 0528"],
     },
   },
   technical: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     moderate: {
-      modelConfig: languageModelConfigurations["GPT 4.1 Mini"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["GPT 4.1 Mini"],
     },
     complex: {
-      modelConfig: languageModelConfigurations["Claude Sonnet 4"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Claude Sonnet 4"],
     },
   },
   creative: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations["Llama 3.1 Instant"],
       temperature: 1,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 1,
     },
     complex: {
-      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
+      ...languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 1,
     },
   },
   instructional: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
       temperature: 0.5,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["GPT 4.1 Mini"],
+      ...languageModelConfigurations["GPT 4.1 Mini"],
       temperature: 0.5,
     },
     complex: {
-      modelConfig: languageModelConfigurations["Deepseek R1 0528"],
+      ...languageModelConfigurations["Deepseek R1 0528"],
       temperature: 0.5,
     },
   },
   conversational: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations["Llama 3.1 Instant"],
       temperature: 0.8,
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 0.8,
     },
     complex: {
-      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
+      ...languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 0.8,
     },
   },
   processing: {
     simple: {
-      modelConfig: languageModelConfigurations["Llama 3.1 Instant"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     moderate: {
-      modelConfig: languageModelConfigurations["Gemini 2.5 Flash Lite"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     complex: {
-      modelConfig: languageModelConfigurations["Gemini 2.5 Flash"],
-      temperature: defaultTemperature,
+      ...languageModelConfigurations["Gemini 2.5 Flash"],
     },
   },
 } satisfies Record<
   (typeof CATEGORIES)[number],
-  Record<(typeof COMPLEXITY_LEVELS)[number], AutoModelCalculated>
+  Record<(typeof COMPLEXITY_LEVELS)[number], ModelConfiguration>
 >;
 
 const getPrompt = (query: string): string => `\n
   # Query Classification for LLM Routing
   Analyze the following user query, included in a xml tag <query>, and classify it to determine the most appropriate LLM routing:
-
-  **Query:**
-  <query>
-    ${scapeXML(query)}
-  </query>
 
   ## Classification Requirements
 
@@ -226,5 +203,10 @@ const getPrompt = (query: string): string => `\n
 
   1. **Choose the most specific category** that fits the primary intent
   2. **Base complexity on required expertise and processing depth**, not query length
-  3. **Provide brief reasoning** - focus on the key deciding factors. 1-2 sentence explanation\n
+  3. **Provide brief reasoning** - focus on the key deciding factors. 1-2 sentence explanation
+
+  ## User Query
+  <query>
+    ${scapeXML(query)}
+  </query>
 `;

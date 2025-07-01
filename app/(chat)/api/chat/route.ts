@@ -20,7 +20,7 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
-import { autoModel, AutoModelCalculated } from "@/lib/ai/workflows/auto-model";
+import { autoModel } from "@/lib/ai/workflows/auto-model";
 
 export const maxDuration = 60;
 
@@ -50,23 +50,23 @@ export async function POST(req: Request) {
     reloadedMessageId?: string;
   } = await req.json();
 
-  let autoModelCalculated: AutoModelCalculated | null = null;
   let chatModelConfiguration: ModelConfiguration | null = null;
 
   if (selectedModel === "Auto Model Workflow") {
     const firstMessage = messages[0];
 
-    autoModelCalculated = await autoModel(
+    chatModelConfiguration = await autoModel(
       firstMessage?.content || messagePartsToText(firstMessage)
     );
-    chatModelConfiguration = autoModelCalculated.modelConfig;
   } else {
-    chatModelConfiguration =
-      chatModelConfigurations[selectedModel] ||
-      chatModelConfigurations["Llama 4 Maverick"];
+    chatModelConfiguration = {
+      ...(chatModelConfigurations[selectedModel] ||
+        chatModelConfigurations["Llama 4 Maverick"]),
+      temperature,
+      topK,
+      topP,
+    };
   }
-
-  console.log("config", { temperature, topP, topK });
 
   return createDataStreamResponse({
     execute: (dataStream) => {
@@ -74,11 +74,6 @@ export async function POST(req: Request) {
         ...chatModelConfiguration,
         system: systemPrompt || defaultSystemPrompt,
         messages,
-        temperature: autoModelCalculated
-          ? autoModelCalculated.temperature
-          : temperature,
-        topP: autoModelCalculated ? undefined : topP,
-        topK: autoModelCalculated ? undefined : topK,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,
