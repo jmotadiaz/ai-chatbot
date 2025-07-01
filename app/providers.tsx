@@ -10,6 +10,8 @@ import {
   defaultTemperature,
   defaultTopP,
   chatModelId,
+  defaultTopK,
+  getChatConfigurationByModelId,
 } from "@/lib/ai/providers";
 import { generateUUID } from "@/lib/utils";
 
@@ -36,6 +38,7 @@ interface ChatConfig {
   temperature: number;
   topP: number;
   systemPrompt?: string;
+  topK: number;
 }
 
 interface SetChatConfig {
@@ -54,8 +57,9 @@ const chatContext = createContext<
     }
 >({
   selectedModel: defaultModel,
-  temperature: 0.2,
-  topP: 0.95,
+  temperature: defaultTemperature,
+  topP: defaultTopP,
+  topK: defaultTopK,
   setConfig: () => {},
   id: "",
   messages: [],
@@ -84,6 +88,7 @@ export interface ChatProviderProps extends ProvidersProps {
   selectedModel?: chatModelId;
   temperature?: number;
   topP?: number;
+  topK?: number;
   systemPrompt?: string;
   metaPrompt?: string | null;
   title?: string;
@@ -93,20 +98,29 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   children,
   initialMessages,
   selectedModel = defaultModel,
-  temperature = defaultTemperature,
-  topP = defaultTopP,
+  temperature,
+  topP,
+  topK,
   systemPrompt,
   metaPrompt,
   chatId,
   projectId,
   title,
 }) => {
-  const [chatConfig, setChatConfig] = useState<ChatConfig>({
-    selectedModel,
-    temperature,
-    topP,
-    systemPrompt,
-  });
+  const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
+    Object.assign(
+      getChatConfigurationByModelId(selectedModel),
+      Object.fromEntries(
+        Object.entries({
+          temperature,
+          topP,
+          topK,
+          systemPrompt,
+        }).filter(([, value]) => value !== undefined && value !== null)
+      ),
+      { selectedModel }
+    )
+  );
   const chatResult = useChat({
     initialMessages,
     generateId: generateUUID,

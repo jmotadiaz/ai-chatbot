@@ -35,6 +35,7 @@ export async function POST(req: Request) {
     selectedModel,
     temperature,
     topP,
+    topK,
     chatId,
     systemPrompt,
     reloadedMessageId,
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
     selectedModel: chatModelId;
     temperature?: number;
     topP?: number;
+    topK?: number;
     chatId?: string;
     systemPrompt?: string;
     reloadedMessageId?: string;
@@ -64,6 +66,8 @@ export async function POST(req: Request) {
       chatModelConfigurations["Llama 4 Maverick"];
   }
 
+  console.log("config", { temperature, topP, topK });
+
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
@@ -74,6 +78,7 @@ export async function POST(req: Request) {
           ? autoModelCalculated.temperature
           : temperature,
         topP: autoModelCalculated ? undefined : topP,
+        topK: autoModelCalculated ? undefined : topK,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,

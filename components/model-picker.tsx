@@ -8,7 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { chatModelId, CHAT_MODELS } from "@/lib/ai/providers";
+import {
+  chatModelId,
+  CHAT_MODELS,
+  getChatConfigurationByModelId,
+} from "@/lib/ai/providers";
 
 export const ModelPicker = () => {
   const modelPickerProps = useModelPicker();
@@ -45,7 +49,10 @@ export const useModelPicker = (): ModelPickerSelectorProps => {
   const { selectedModel, setConfig } = useChatContext();
 
   const setSelectedModel = (model: chatModelId) => {
-    setConfig({ selectedModel: model });
+    setConfig({
+      selectedModel: model,
+      ...getChatConfigurationByModelId(model),
+    });
   };
 
   return {

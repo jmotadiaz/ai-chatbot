@@ -8,6 +8,7 @@ import {
   GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
+import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 export const google = createGoogleGenerativeAI();
 export const openai = createOpenAI({
@@ -21,6 +22,10 @@ export const openrouter = createOpenRouter({
 export interface ModelConfiguration {
   model: LanguageModelV1;
   providerOptions?: Record<string, Record<string, JSONValue>>;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  systemPrompt?: string;
 }
 
 export type ModelConfigurations = Record<string, ModelConfiguration>;
@@ -31,12 +36,17 @@ export const languageModelConfigurations = {
   },
   "Llama 3.3 Versatile": {
     model: groq("llama-3.3-70b-versatile"),
+    temperature: 0.6,
+    topP: 0.9,
   },
   "Llama 4 Maverick": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+    temperature: 0.6,
+    topP: 0.9,
   },
   "Deepseek V3": {
     model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
+    temperature: 0.3,
   },
   "Mistral 3 Medium": {
     model: openrouter.chat("mistralai/mistral-medium-3"),
@@ -74,15 +84,22 @@ export const languageModelConfigurations = {
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
+    temperature: 0.6,
+    topP: 0.95,
     providerOptions: {
       groq: { reasoningFormat: "parsed" },
     },
   },
   "Deepseek R1 0528": {
     model: openrouter.chat("deepseek/deepseek-r1-0528"),
+    temperature: 0.6,
+    topP: 0.95,
   },
   "Qwen 3": {
     model: groq("qwen/qwen3-32b"),
+    temperature: 0.6,
+    topP: 0.95,
+    topK: 20,
     providerOptions: {
       groq: { reasoningFormat: "parsed" },
     },
@@ -160,6 +177,23 @@ export const CHAT_MODELS: chatModelId[] = [
 export const defaultModel: chatModelId = "Auto Model Workflow";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
+export const defaultTopK = 40;
+
+export const getChatConfigurationByModelId = (
+  modelId: chatModelId
+): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
+  const { temperature, topK, topP, systemPrompt } = Object.assign(
+    {
+      temperature: defaultTemperature,
+      topP: defaultTopP,
+      topK: defaultTopK,
+      systemPrompt: defaultSystemPrompt,
+    },
+    modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
+  );
+
+  return { temperature, topK, topP, systemPrompt };
+};
 
 // export const modelCapabilities: Record<
 //   modelID,
