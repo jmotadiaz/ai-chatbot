@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { Sidebar } from "lucide-react";
 import { auth } from "@/lib/auth/auth-config";
 import { RAGUploadForm } from "@/components/rag-upload-form";
 import { SidebarProvider } from "@/app/providers";
@@ -8,6 +7,7 @@ import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Sidebar } from "@/app/(chat)/sidebar";
 
 export default async function RAGUploadPage() {
   const session = await auth();

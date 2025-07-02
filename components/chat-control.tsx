@@ -12,6 +12,7 @@ export interface ChatControlProps
   isLoading?: boolean;
   onLoadingClick?: () => void;
   className?: ClassValue;
+  isActive?: boolean;
 }
 
 export const ChatControl = ({
@@ -20,6 +21,7 @@ export const ChatControl = ({
   isLoading = false,
   disabled,
   onLoadingClick,
+  isActive,
   type = "button",
   ...buttonProps
 }: ChatControlProps) => {
@@ -47,6 +49,7 @@ export const ChatControl = ({
           disabled={disabled}
           className={cn(
             "rounded-full p-2 bg-black disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer",
+            isActive && "bg-blue-600",
             className
           )}
           {...buttonProps}

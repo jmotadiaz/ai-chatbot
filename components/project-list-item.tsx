@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import Link from "@/components/ui/link";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { Item } from "@/components/ui/item";
 
 export interface ProjectListItemProps {
   id: string;
@@ -29,18 +30,15 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
   });
   return (
     <div className="flex flex-col gap-2">
-      <div
-        className="flex items-center justify-between p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600  hover:bg-accent transition-colors"
-        {...getToggleProps()}
-      >
-        <span>{name}</span>
+      <Item className="cursor-pointer" {...getToggleProps()}>
+        <div className="flex-1">{name}</div>
         <ChevronDown
           className={cn(
             "h-4 w-4 transition-transform duration-300",
             isExpanded && "rotate-180"
           )}
         />
-      </div>
+      </Item>
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Upload, FileText } from "lucide-react";
-import { uploadRAGResources } from "@/lib/ai/rag-actions";
+import { uploadRAGResources } from "@/lib/ai/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

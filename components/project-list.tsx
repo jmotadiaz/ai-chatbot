@@ -1,5 +1,6 @@
 import { ClassNameValue } from "tailwind-merge";
 import { Edit } from "lucide-react";
+import { Item } from "@/components/ui/item";
 import Link from "@/components/ui/link";
 import { ProjectListItem } from "@/components/project-list-item";
 import { ChatList } from "@/components/chat-list";
@@ -32,16 +33,13 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
     <div className={cn("my-4", className)}>
       <Link
         href="/project/new"
-        className="text-base flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4"
+        className="text-sm uppercase flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4 tracking-wider"
       >
         Projects <Edit className="h-5 w-5 ml-2" />
       </Link>
       <div className="space-y-2">
-        <Link
-          href="/english-helper"
-          className="block p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600  hover:bg-accent transition-colors"
-        >
-          English Helper
+        <Link href="/english-helper">
+          <Item>English Helper</Item>
         </Link>
         {projects.length > 0 && (
           <>
@@ -75,11 +73,9 @@ export const ProjectListLoading: React.FC<{ className?: ClassNameValue }> = ({
           English Helper
         </div>
         {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="flex flex-col gap-2">
-            <div className="flex items-center justify-between p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600 hover:bg-accent transition-colors">
-              <div className="h-5 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse flex-1 mr-3" />
-              <div className="h-4 w-4 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse" />
-            </div>
+          <div key={index} className="flex">
+            <div className="h-5 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse flex-1 mr-3" />
+            <div className="h-4 w-4 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse" />
           </div>
         ))}
       </div>
