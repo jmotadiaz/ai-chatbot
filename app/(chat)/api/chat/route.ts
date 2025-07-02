@@ -21,6 +21,7 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
+import { retrieve } from "@/lib/ai/retrieve";
 
 export const maxDuration = 60;
 
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
     chatId,
     systemPrompt,
     reloadedMessageId,
+    useRAG,
   }: {
     messages: UIMessage[];
     selectedModel: chatModelId;
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
     chatId?: string;
     systemPrompt?: string;
     reloadedMessageId?: string;
+    useRAG?: boolean;
   } = await req.json();
 
   let chatModelConfiguration: ModelConfiguration | null = null;
@@ -68,11 +71,41 @@ export async function POST(req: Request) {
     };
   }
 
+  // Handle RAG if enabled
+  let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
+
+  if (useRAG && messages.length > 0) {
+    const lastUserMessage = messages.findLast((msg) => msg.role === "user");
+    if (lastUserMessage) {
+      const userQuery =
+        typeof lastUserMessage.content === "string"
+          ? lastUserMessage.content
+          : messagePartsToText(lastUserMessage);
+
+      console.log(
+        "RAG enabled, retrieving context for query:",
+        userQuery.substring(0, 100)
+      );
+
+      const retrieveResult = await retrieve(userQuery);
+
+      if (retrieveResult.success && retrieveResult.contextPrompt) {
+        enhancedSystemPrompt = `${retrieveResult.contextPrompt}\n\n---\n\n${enhancedSystemPrompt}`;
+        console.log(
+          "RAG context added to system prompt",
+          retrieveResult.resources
+        );
+      } else {
+        console.warn("RAG retrieve failed:", retrieveResult.error);
+      }
+    }
+  }
+
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
         ...chatModelConfiguration,
-        system: systemPrompt || defaultSystemPrompt,
+        system: enhancedSystemPrompt,
         messages,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),

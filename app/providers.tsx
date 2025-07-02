@@ -39,6 +39,7 @@ interface ChatConfig {
   topP: number;
   systemPrompt?: string;
   topK: number;
+  useRAG?: boolean;
 }
 
 interface SetChatConfig {
@@ -60,6 +61,7 @@ const chatContext = createContext<
   temperature: defaultTemperature,
   topP: defaultTopP,
   topK: defaultTopK,
+  useRAG: false,
   setConfig: () => {},
   id: "",
   messages: [],

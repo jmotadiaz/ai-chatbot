@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowUp, RefreshCcw, Circle, WandSparkles, Undo } from "lucide-react";
+import {
+  ArrowUp,
+  RefreshCcw,
+  Circle,
+  WandSparkles,
+  Undo,
+  Database,
+} from "lucide-react";
 import { useRef } from "react";
 import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
@@ -28,6 +35,8 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     stop,
     reload,
     metaPrompt,
+    useRAG,
+    setConfig,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     useRefinePrompt({
@@ -120,6 +129,11 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
 
           <div className="absolute z-1 right-3 bottom-2 flex items-center space-x-2">
             {hasPreviousMessage && <ChatControl Icon={Undo} onClick={undo} />}
+            <ChatControl
+              Icon={Database}
+              onClick={() => setConfig({ useRAG: !useRAG })}
+              className={cn({ "bg-blue-600 hover:bg-blue-700": useRAG })}
+            />
             {metaPrompt && (
               <ChatControl
                 Icon={WandSparkles}

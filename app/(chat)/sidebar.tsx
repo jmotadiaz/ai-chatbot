@@ -9,6 +9,7 @@ import {
 import { ProjectList, ProjectListLoading } from "@/components/project-list";
 import { ChatList, ChatListLoading } from "@/components/chat-list";
 import { UserMenu } from "@/components/user-menu";
+import { RAGNav } from "@/components/rag-nav";
 import { getChats } from "@/lib/db/queries";
 
 export interface SidebarProps {
@@ -19,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ projectId }) => {
   return (
     <SidebarComponent>
       <SidebarContent>
+        <RAGNav />
         <Suspense fallback={<ProjectListLoading />}>
           <ProjectList currentProjectId={projectId} />
         </Suspense>

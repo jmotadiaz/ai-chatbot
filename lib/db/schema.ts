@@ -8,6 +8,8 @@ import {
   timestamp,
   real,
   text,
+  vector,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
@@ -75,6 +77,35 @@ export const message = pgTable("Message", {
     .notNull(),
 });
 
+export const resources = pgTable("resources", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  title: text("title").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const embeddings = pgTable(
+  "embeddings",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    resourceId: uuid("resourceId")
+      .notNull()
+      .references(() => resources.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+  },
+  (table) => ({
+    embeddingIndex: index("embeddingIndex").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops")
+    ),
+  })
+);
+
 export const projectRelations = relations(project, ({ many }) => ({
   chats: many(chat),
 }));
@@ -91,6 +122,17 @@ export const messageRelations = relations(message, ({ one }) => ({
   chat: one(chat, {
     fields: [message.chatId],
     references: [chat.id],
+  }),
+}));
+
+export const resourcesRelations = relations(resources, ({ many }) => ({
+  embeddings: many(embeddings),
+}));
+
+export const embeddingsRelations = relations(embeddings, ({ one }) => ({
+  resource: one(resources, {
+    fields: [embeddings.resourceId],
+    references: [resources.id],
   }),
 }));
 
@@ -111,4 +153,14 @@ export type Message = InferSelectModel<typeof message>;
 export type InsertMessage = Omit<
   InferSelectModel<typeof message>,
   "createdAt" | "updatedAt"
+>;
+export type Resource = InferSelectModel<typeof resources>;
+export type InsertResource = Omit<
+  InferInsertModel<typeof resources>,
+  "createdAt" | "updatedAt" | "id"
+>;
+export type Embedding = InferSelectModel<typeof embeddings>;
+export type InsertEmbedding = Omit<
+  InferInsertModel<typeof embeddings>,
+  "id"
 >;

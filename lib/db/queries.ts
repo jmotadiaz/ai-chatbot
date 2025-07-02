@@ -11,6 +11,7 @@ import {
   isNull,
   lt,
   SQL,
+  sql,
 } from "drizzle-orm";
 import { drizzle, PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -31,6 +32,14 @@ import {
   projectRelations,
   chatRelations,
   messageRelations,
+  resources,
+  embeddings,
+  type Resource,
+  type Embedding,
+  type InsertResource,
+  type InsertEmbedding,
+  resourcesRelations,
+  embeddingsRelations,
 } from "@/lib/db/schema";
 import { generateHashedPassword } from "@/lib/db/utils";
 
@@ -47,9 +56,13 @@ const schema = {
   chat,
   message,
   project,
+  resources,
+  embeddings,
   projectRelations,
   chatRelations,
   messageRelations,
+  resourcesRelations,
+  embeddingsRelations,
 } as const;
 
 const db = drizzle(client, { schema });
@@ -440,3 +453,64 @@ export const deleteProject =
       .returning()
       .then(([deletedProject]) => deletedProject);
   };
+
+// RAG Database Operations
+
+export const createResource =
+  (data: InsertResource): Transactional<Resource> =>
+  async (tx) => {
+    try {
+      const [newResource] = await tx
+        .insert(resources)
+        .values({
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+      return newResource;
+    } catch (error) {
+      console.error("Failed to create resource");
+      throw error;
+    }
+  };
+
+export const createEmbeddings =
+  (data: InsertEmbedding[]): Transactional<Embedding[]> =>
+  async (tx) => {
+    try {
+      return await tx.insert(embeddings).values(data).returning();
+    } catch (error) {
+      console.error("Failed to create embeddings");
+      throw error;
+    }
+  };
+
+export async function findSimilarChunks(
+  embedding: number[],
+  limit: number = 5
+): Promise<Array<Embedding & { similarity: number; resourceTitle: string }>> {
+  try {
+    const similarity = sql<number>`1 - (${
+      embeddings.embedding
+    } <=> ${JSON.stringify(embedding)}::vector)`;
+
+    return await db
+      .select({
+        id: embeddings.id,
+        resourceId: embeddings.resourceId,
+        content: embeddings.content,
+        embedding: embeddings.embedding,
+        similarity,
+        resourceTitle: resources.title,
+      })
+      .from(embeddings)
+      .innerJoin(resources, eq(embeddings.resourceId, resources.id))
+      .where(gt(similarity, 0.5))
+      .orderBy(desc(similarity))
+      .limit(limit);
+  } catch (error) {
+    console.error("Failed to find similar chunks");
+    throw error;
+  }
+}
