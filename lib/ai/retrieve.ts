@@ -17,8 +17,8 @@ async function translateToEnglish(text: string): Promise<string> {
   try {
     const { text: translatedText } = await generateText({
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-      prompt: `Translate the following text to English. If it's already in English, return it unchanged. Only return the translation, no explanations: ${text}`,
-      maxTokens: 1000,
+      system: `You are an expert from any language to English translator. Only return the translation, no explanations`,
+      prompt: `Translate the following text to English: ${text}`,
     });
     return translatedText.trim();
   } catch (error) {

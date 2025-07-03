@@ -506,7 +506,7 @@ export async function findSimilarChunks(
       })
       .from(embeddings)
       .innerJoin(resources, eq(embeddings.resourceId, resources.id))
-      .where(gt(similarity, 0.5))
+      .where(gt(similarity, 0.7))
       .orderBy(desc(similarity))
       .limit(limit);
   } catch (error) {
