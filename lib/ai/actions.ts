@@ -93,7 +93,7 @@ export async function uploadRAGResources(
     console.log(`Processing ${urls.length} URLs...`);
 
     // Fetch and convert URLs in parallel (with concurrency limit)
-    const BATCH_SIZE = 5; // Process 5 URLs at a time to avoid overwhelming servers
+    const BATCH_SIZE = 10; // Process 5 URLs at a time to avoid overwhelming servers
     const resources: URLResource[] = [];
 
     for (let i = 0; i < urls.length; i += BATCH_SIZE) {
