@@ -21,7 +21,7 @@ export const Sidebar = ({ children }: SidebarProps) => {
       <div className="fixed h-screen z-20 top-0 left-0">
         <div
           className={cn(
-            "flex flex-col justify-between h-full pt-24 bg-gray-50 dark:bg-zinc-800 transition-all duration-300 overflow-hidden shadow",
+            "flex flex-col justify-between h-full pt-24 bg-gray-50 dark:bg-secondary transition-all duration-300 overflow-hidden shadow-lg",
             showSidebar ? "w-80" : "w-0"
           )}
         >

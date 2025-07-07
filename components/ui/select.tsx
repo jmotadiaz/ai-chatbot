@@ -134,7 +134,7 @@ export const SelectTrigger = React.forwardRef(
         type="button"
         ref={ref}
         className={cn(
-          "flex items-center justify-between cursor-pointer h-8 px-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-sm",
+          "flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer",
           className
         )}
         onClick={() => setOpen(!open)}
@@ -237,8 +237,8 @@ export function SelectItem({
       aria-selected={selected}
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center p-3 whitespace-nowrap",
-        "hover:bg-zinc-300 dark:hover:bg-zinc-500",
-        selected && "bg-zinc-200 dark:bg-zinc-600",
+        "hover:bg-gray-300 dark:hover:bg-zinc-600",
+        selected && "bg-gray-200 dark:bg-zinc-700",
         className
       )}
       onClick={() => {

@@ -53,6 +53,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             customStyle={{
               borderRadius: 10,
               padding: "1.25rem 1rem",
+              marginBottom: 0,
             }}
             {...props}
           >

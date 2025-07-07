@@ -12,7 +12,7 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
   return (
     <>
       <button
-        className="w-full flex items-center justify-between p-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md cursor-pointer"
+        className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer"
         onClick={() => setMenuOpen(!menuOpen)}
       >
         <span className="truncate">{email}</span>
