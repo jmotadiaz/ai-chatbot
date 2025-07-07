@@ -96,7 +96,7 @@ export const embeddings = pgTable(
       .notNull()
       .references(() => resources.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
-    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+    embedding: vector("embedding", { dimensions: 768 }).notNull(),
   },
   (table) => ({
     embeddingIndex: index("embeddingIndex").using(
@@ -160,7 +160,4 @@ export type InsertResource = Omit<
   "createdAt" | "updatedAt" | "id"
 >;
 export type Embedding = InferSelectModel<typeof embeddings>;
-export type InsertEmbedding = Omit<
-  InferInsertModel<typeof embeddings>,
-  "id"
->;
+export type InsertEmbedding = Omit<InferInsertModel<typeof embeddings>, "id">;

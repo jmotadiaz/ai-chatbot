@@ -3,7 +3,7 @@ import { generateEmbedding } from "@/lib/ai/generate-embeddings";
 import { findSimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/providers";
 
-interface RetrieveResult {
+export interface RetrieveResult {
   success: boolean;
   contextPrompt?: string;
   resources?: string[];
@@ -32,7 +32,7 @@ async function translateToEnglish(text: string): Promise<string> {
  */
 export async function retrieve(
   query: string,
-  limit: number = 20
+  limit: number = 10
 ): Promise<RetrieveResult> {
   try {
     console.log(

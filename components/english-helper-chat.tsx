@@ -27,13 +27,13 @@ const EnglishHelperChat: React.FC = () => {
   });
 
   return (
-    <div className="h-full pt-16 overflow-auto overflow-x-hidden px-4 sm:px-0">
+    <div className="h-full pt-16 overflow-auto overflow-x-hidden px-4">
       <div className="w-ful max-w-4xl mx-auto my-4">
         <Tabs.Container className="mb-8">
           <Tabs.Tab {...getTabProps("translate")}>Translate</Tabs.Tab>
           <Tabs.Tab {...getTabProps("grammar")}>Grammar</Tabs.Tab>
         </Tabs.Container>
-        <div className="px-0 sm:px-8">
+        <div className="px-0 md:px-8">
           <Tabs.Panel {...getPanelProps("translate")}>
             <EnglishTranslateChat {...completionResult} />
           </Tabs.Panel>

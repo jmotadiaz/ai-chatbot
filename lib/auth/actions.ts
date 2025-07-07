@@ -90,7 +90,9 @@ export const register = async (
     const [user] = users;
 
     if (!user) {
-      await transaction(createUser(validatedData.email, validatedData.password));
+      await transaction(
+        createUser(validatedData.email, validatedData.password)
+      );
       signInUrl = await signIn("credentials", {
         email: validatedData.email,
         password: validatedData.password,
@@ -101,6 +103,7 @@ export const register = async (
       signInStatus = { status: "user_exists" };
     }
   } catch (error) {
+    console.error("Error registering", error);
     if (error instanceof z.ZodError) {
       signInStatus = { status: "invalid_data" };
     } else {

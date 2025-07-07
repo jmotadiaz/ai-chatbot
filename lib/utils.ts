@@ -41,9 +41,8 @@ export const handleCopy = (value: string | null | undefined) => async () => {
 };
 
 export interface URLResource {
-  url: string;
   title: string;
-  markdown: string;
+  content: string;
 }
 
 const turndownService = new TurndownService({
@@ -75,7 +74,6 @@ export async function fetchAndConvertURL(
     }
 
     const html = await response.text();
-    const title = url;
 
     // Convert HTML to Markdown
     const markdown = turndownService
@@ -85,9 +83,8 @@ export async function fetchAndConvertURL(
       .trim();
 
     return {
-      url,
-      title,
-      markdown,
+      title: url,
+      content: markdown,
     };
   } catch (error) {
     console.error(`Error processing URL ${url}:`, error);

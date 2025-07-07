@@ -29,7 +29,7 @@ export default async function RAGUploadPage() {
             <ThemeToggle />
           </Header.Right>
         </Header.Container>
-        <div className="flex flex-col h-full w-full max-w-2xl mx-auto p-6 pt-20">
+        <div className="flex flex-col h-full w-full max-w-2xl mx-auto p-6 px-4 pt-20">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Upload RAG Resources

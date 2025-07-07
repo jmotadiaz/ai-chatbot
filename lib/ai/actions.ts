@@ -11,8 +11,11 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { InsertEmbedding } from "@/lib/db/schema";
-import { generateMarkdownEmbeddings } from "@/lib/ai/generate-embeddings";
-import { fetchAndConvertURL, URLResource } from "@/lib/utils";
+import {
+  generateEmbeddings,
+  generateMarkdownChunks,
+} from "@/lib/ai/generate-embeddings";
+import { fetchAndConvertURL } from "@/lib/utils";
 
 export async function deleteChat(id: string) {
   const session = await auth();
@@ -60,49 +63,83 @@ export async function uploadRAGResources(
   }
 
   try {
-    const file = formData.get("file") as File;
+    const jsonFile = formData.get("jsonFile") as File;
+    const markdownFilesCount = parseInt(
+      (formData.get("markdownFilesCount") as string) || "0"
+    );
 
-    if (!file) {
-      return { success: false, error: "No file provided" };
+    if (!jsonFile && markdownFilesCount === 0) {
+      return { success: false, error: "No files provided" };
     }
 
-    // Parse JSON file
-    const fileContent = await file.text();
-    let jsonData;
+    const resources: { title: string; content: string }[] = [];
 
-    try {
-      jsonData = JSON.parse(fileContent);
-    } catch {
-      return { success: false, error: "Invalid JSON file" };
+    // Process JSON file with URLs if provided
+    if (jsonFile) {
+      console.log("Processing JSON file with URLs...");
+
+      const fileContent = await jsonFile.text();
+      let jsonData;
+
+      try {
+        jsonData = JSON.parse(fileContent);
+      } catch {
+        return { success: false, error: "Invalid JSON file" };
+      }
+
+      if (!jsonData.urls || !Array.isArray(jsonData.urls)) {
+        return { success: false, error: "JSON must contain 'urls' array" };
+      }
+
+      const urls = jsonData.urls as string[];
+
+      if (urls.length === 0) {
+        return { success: false, error: "No URLs provided in JSON file" };
+      }
+
+      if (process.env.NODE_ENV === "production" && urls.length > 50) {
+        return { success: false, error: "Maximum 50 URLs allowed per batch" };
+      }
+
+      console.log(`Processing ${urls.length} URLs...`);
+
+      // Fetch and convert URLs in parallel (with concurrency limit)
+      const BATCH_SIZE = 10;
+
+      for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+        const batch = urls.slice(i, i + BATCH_SIZE);
+        const batchPromises = batch.map(fetchAndConvertURL);
+        const batchResults = await Promise.all(batchPromises);
+
+        // Filter out null results and map to simplified format
+        const urlResources = batchResults.filter(Boolean).map((resource) => ({
+          title: resource!.title,
+          content: resource!.content,
+        }));
+
+        resources.push(...urlResources);
+      }
     }
 
-    if (!jsonData.urls || !Array.isArray(jsonData.urls)) {
-      return { success: false, error: "JSON must contain 'urls' array" };
-    }
+    // Process markdown files if provided
+    if (markdownFilesCount > 0) {
+      console.log(`Processing ${markdownFilesCount} markdown files...`);
 
-    const urls = jsonData.urls as string[];
+      for (let i = 0; i < markdownFilesCount; i++) {
+        const markdownFile = formData.get(`markdownFile_${i}`) as File;
 
-    if (urls.length === 0) {
-      return { success: false, error: "No URLs provided" };
-    }
+        if (markdownFile) {
+          const content = await markdownFile.text();
 
-    if (urls.length > 50) {
-      return { success: false, error: "Maximum 50 URLs allowed per batch" };
-    }
+          // Extract title from filename (remove extension)
+          const title = markdownFile.name.replace(/\.(md|mdx)$/i, "");
 
-    console.log(`Processing ${urls.length} URLs...`);
-
-    // Fetch and convert URLs in parallel (with concurrency limit)
-    const BATCH_SIZE = 10; // Process 5 URLs at a time to avoid overwhelming servers
-    const resources: URLResource[] = [];
-
-    for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-      const batch = urls.slice(i, i + BATCH_SIZE);
-      const batchPromises = batch.map((url) => fetchAndConvertURL(url));
-      const batchResults = await Promise.all(batchPromises);
-
-      // Filter out null results
-      resources.push(...(batchResults.filter(Boolean) as URLResource[]));
+          resources.push({
+            title,
+            content,
+          });
+        }
+      }
     }
 
     if (resources.length === 0) {
@@ -130,9 +167,8 @@ export async function uploadRAGResources(
         createdResources.push(newResource);
 
         // Generate embeddings for the markdown content
-        const embeddingData = await generateMarkdownEmbeddings(
-          resource.markdown
-        );
+        const chunks = await generateMarkdownChunks(resource.content);
+        const embeddingData = await generateEmbeddings(chunks);
 
         // Prepare embeddings for database insertion
         const resourceEmbeddings: InsertEmbedding[] = embeddingData.map(

@@ -12,7 +12,10 @@ import { InputNumber } from "@/components/ui/input-number";
 import { Button } from "@/components/ui/button";
 import Chat from "@/components/chat";
 import { ModelPickerSelector } from "@/components/model-picker";
-import { markdownCommandStyle, MarkdownEditor } from "@/components/ui/markdown-editor";
+import {
+  markdownCommandStyle,
+  MarkdownEditor,
+} from "@/components/ui/markdown-editor";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { Project } from "@/lib/db/schema";
 import { defaultModel, chatModelId } from "@/lib/ai/providers";

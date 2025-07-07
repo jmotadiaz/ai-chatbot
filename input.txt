@@ -1,0 +1,434 @@
+# PRIORITY CONTEXT FOR USER QUERY
+
+The following information from your knowledge base is highly relevant to the user's question. Use this context as your primary source of information when responding. If the context doesn't contain enough information to fully answer the question, you may supplement with your general knowledge, but prioritize the provided context.
+
+## Context 1 (from "https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data", similarity: 69.6%)
+It is often useful to send additional data alongside the model's response. For example, you may want to send status information, the message ids after storing them, or references to content that the language model is referring to.
+
+The AI SDK provides several helpers that allows you to stream additional data to the client and attach it either to the `Message` or to the `data` object of the `useChat` hook:
+
+*   `createDataStream`: creates a data stream
+*   `createDataStreamResponse`: creates a response object that streams data
+*   `pipeDataStreamToResponse`: pipes a data stream to a server response object
+
+The data is streamed as part of the response stream.
+
+## Context 2 (from "https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data", similarity: 68.2%)
+page.tsx
+
+```
+'use client';
+import { Message, useChat } from '@ai-sdk/react';
+export default function Chat() {  const { messages, input, handleInputChange, handleSubmit, data, setData } =    useChat();
+  return (    <>      {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+      {messages?.map((m: Message) => (        <div key={m.id}>{`${m.role}: ${m.content}`}</div>      ))}
+      <form        onSubmit={e => {          setData(undefined); // clear stream data          handleSubmit(e);        }}      >        <input value={input} onChange={handleInputChange} />      </form>    </>  );}
+```
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 3 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-message-persistence", similarity: 67.6%)
+When you create a brand-new chat completion, you must:
+
+1.  Generate a fresh `streamId`
+2.  Persist it alongside your `chatId`
+3.  Kick off a `createDataStream` that pipes tokens as they arrive
+4.  Hand that new stream to `streamContext.resumableStream()`
+
+app/api/chat/route.ts
+
+```
+import {  appendResponseMessages,  createDataStream,  generateId,  streamText,} from 'ai';import { appendStreamId, saveChat } from '@/util/chat-store';import { createResumableStreamContext } from 'resumable-stream';
+const streamContext = createResumableStreamContext({  waitUntil: after,});
+async function POST(request: Request) {  const { id, messages } = await req.json();  const streamId = generateId();
+  // Record this new stream so we can resume later  await appendStreamId({ chatId: id, streamId });
+  // Build the data stream that will emit tokens  const stream = createDataStream({    execute: dataStream => {      const result = streamText({        model: openai('gpt-4o'),        messages,        onFinish: async ({ response }) => {          await saveChat({            id,            messages: appendResponseMessages({              messages,              responseMessages: response.messages,            }),          });        },      });
+      // Return a resumable stream to the client      result.mergeIntoDataStream(dataStream);    },  });
+  return new Response(    await streamContext.resumableStream(streamId, () => stream),  );}
+```
+
+With both handlers, your clients can now gracefully resume ongoing streams.
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 4 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-message-persistence", similarity: 66.9%)
+Once you have implemented message persistence, you might want to send only the last message to the server. This reduces the amount of data sent to the server on each request and can improve performance.
+
+To achieve this, you can provide an `experimental_prepareRequestBody` function to the `useChat` hook (React only). This function receives the messages and the chat ID, and returns the request body to be sent to the server.
+
+ui/chat.tsx
+
+```
+import { useChat } from '@ai-sdk/react';
+const {  // ...} = useChat({  // ...  // only send the last message to the server:  experimental_prepareRequestBody({ messages, id }) {    return { message: messages[messages.length - 1], id };  },});
+```
+
+On the server, you can then load the previous messages and append the new message to the previous messages:
+
+app/api/chat/route.ts
+
+```
+import { appendClientMessage } from 'ai';
+export async function POST(req: Request) {  // get the last message from the client:  const { message, id } = await req.json();
+  // load the previous messages from the server:  const previousMessages = await loadChat(id);
+  // append the new message to the previous messages:  const messages = appendClientMessage({    messages: previousMessages,    message,  });
+  const result = streamText({    // ...    messages,  });
+  // ...}
+```
+
+## Context 5 (from "https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data", similarity: 66.9%)
+In your server-side route handler, you can use `createDataStreamResponse` and `pipeDataStreamToResponse` in combination with `streamText`. You need to:
+
+1.  Call `createDataStreamResponse` or `pipeDataStreamToResponse` to get a callback function with a `DataStreamWriter`.
+2.  Write to the `DataStreamWriter` to stream additional data.
+3.  Merge the `streamText` result into the `DataStreamWriter`.
+4.  Return the response from `createDataStreamResponse` (if that method is used)
+
+Here is an example:
+
+route.ts
+
+```
+import { openai } from '@ai-sdk/openai';import { generateId, createDataStreamResponse, streamText } from 'ai';
+export async function POST(req: Request) {  const { messages } = await req.json();
+  // immediately start streaming (solves RAG issues with status, etc.)  return createDataStreamResponse({    execute: dataStream => {      dataStream.writeData('initialized call');
+      const result = streamText({        model: openai('gpt-4o'),        messages,        onChunk() {          dataStream.writeMessageAnnotation({ chunk: '123' });        },        onFinish() {          // message annotation:          dataStream.writeMessageAnnotation({            id: generateId(), // e.g. id from saved DB record            other: 'information',          });
+          // call annotation:          dataStream.writeData('call completed');        },      });
+      result.mergeIntoDataStream(dataStream);    },    onError: error => {      // Error messages are masked by default for security reasons.      // If you want to expose the error message to the client, you can do so here:      return error instanceof Error ? error.message : String(error);    },  });}
+```
+
+You can also send stream data from custom backends, e.g. Python / FastAPI, using the .
+
+## Context 6 (from "https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol", similarity: 66.2%)
+Here is a Next.js example that uses the data stream protocol:
+
+app/page.tsx
+
+```
+'use client';
+import { useCompletion } from '@ai-sdk/react';
+export default function Page() {  const { completion, input, handleInputChange, handleSubmit } = useCompletion({    streamProtocol: 'data', // optional, this is the default  });
+  return (    <form onSubmit={handleSubmit}>      <input name="prompt" value={input} onChange={handleInputChange} />      <button type="submit">Submit</button>      <div>{completion}</div>    </form>  );}
+```
+
+app/api/completion/route.ts
+
+```
+import { streamText } from 'ai';import { openai } from '@ai-sdk/openai';
+// Allow streaming responses up to 30 secondsexport const maxDuration = 30;
+export async function POST(req: Request) {  const { prompt }: { prompt: string } = await req.json();
+  const result = streamText({    model: openai('gpt-4o'),    prompt,  });
+  return result.toDataStreamResponse();}
+```
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 7 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-message-persistence", similarity: 65.6%)
+Add a `GET` method to `/api/chat` that:
+
+1.  Reads `chatId` from the query string
+2.  Validates it’s present
+3.  Loads any stored stream IDs for that chat
+4.  Returns the latest one to `streamContext.resumableStream()`
+5.  Falls back to an empty stream if it’s already closed
+
+app/api/chat/route.ts
+
+```
+import { loadStreams } from '@/util/chat-store';import { createDataStream, getMessagesByChatId } from 'ai';import { after } from 'next/server';import { createResumableStreamContext } from 'resumable-stream';
+const streamContext = createResumableStreamContext({  waitUntil: after,});
+export async function GET(request: Request) {  const { searchParams } = new URL(request.url);  const chatId = searchParams.get('chatId');
+  if (!chatId) {    return new Response('id is required', { status: 400 });  }
+  const streamIds = await loadStreams(chatId);
+  if (!streamIds.length) {    return new Response('No streams found', { status: 404 });  }
+  const recentStreamId = streamIds.at(-1);
+  if (!recentStreamId) {    return new Response('No recent stream found', { status: 404 });  }
+  const emptyDataStream = createDataStream({    execute: () => {},  });
+  const stream = await streamContext.resumableStream(    recentStreamId,    () => emptyDataStream,  );
+  if (stream) {    return new Response(stream, { status: 200 });  }
+  /*   * For when the generation is "active" during SSR but the   * resumable stream has concluded after reaching this point.   */
+  const messages = await getMessagesByChatId({ id: chatId });  const mostRecentMessage = messages.at(-1);
+  if (!mostRecentMessage || mostRecentMessage.role !== 'assistant') {    return new Response(emptyDataStream, { status: 200 });  }
+  const messageCreatedAt = new Date(mostRecentMessage.createdAt);
+  const streamWithMessage = createDataStream({    execute: buffer => {      buffer.writeData({        type: 'append-message',        message: JSON.stringify(mostRecentMessage),      });    },  });
+  return new Response(streamWithMessage, { status: 200 });}
+```
+
+After you've implemented the `GET` handler, you can update the `POST` handler to handle the creation of resumable streams.
+
+## Context 8 (from "https://ai-sdk.dev/docs/reference/ai-sdk-ui/append-client-message", similarity: 65.5%)
+Message\[\]:
+
+Array
+
+A new array of UI messages with either the appended message or the updated message replacing the previous one with the same ID.
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 9 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot", similarity: 65.2%)
+app/page.tsx
+
+```
+'use client';
+import { useChat } from '@ai-sdk/react';
+export default function Page() {  const { messages, input, handleInputChange, handleSubmit } = useChat({});
+  return (    <>      {messages.map(message => (        <div key={message.id}>          {message.role === 'user' ? 'User: ' : 'AI: '}          {message.content}        </div>      ))}
+      <form onSubmit={handleSubmit}>        <input name="prompt" value={input} onChange={handleInputChange} />        <button type="submit">Submit</button>      </form>    </>  );}
+```
+
+app/api/chat/route.ts
+
+```
+import { openai } from '@ai-sdk/openai';import { streamText } from 'ai';
+// Allow streaming responses up to 30 secondsexport const maxDuration = 30;
+export async function POST(req: Request) {  const { messages } = await req.json();
+  const result = streamText({    model: openai('gpt-4-turbo'),    system: 'You are a helpful assistant.',    messages,  });
+  return result.toDataStreamResponse();}
+```
+
+The UI messages have a new `parts` property that contains the message parts. We recommend rendering the messages using the `parts` property instead of the `content` property. The parts property supports different message types, including text, tool invocation, and tool result, and allows for more flexible and complex chat UIs.
+
+In the `Page` component, the `useChat` hook will request to your AI provider endpoint whenever the user submits a message. The messages are then streamed back in real-time and displayed in the chat UI.
+
+This enables a seamless chat experience where the user can see the AI response as soon as it is available, without having to wait for the entire response to be received.
+
+## Context 10 (from "https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data", similarity: 65.0%)
+Each message from the `useChat` hook has an optional `annotations` property that contains the message annotations sent from the server.
+
+Since the shape of the annotations depends on what you send from the server, you have to destructure them in a type-safe way on the client side.
+
+Here we just show the annotations as a JSON string:
+
+page.tsx
+
+```
+import { Message, useChat } from '@ai-sdk/react';
+const { messages } = useChat();
+const result = (  <>    {messages?.map((m: Message) => (      <div key={m.id}>        {m.annotations && <>{JSON.stringify(m.annotations)}</>}      </div>    ))}  </>);
+```
+
+## Context 11 (from "https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data", similarity: 64.2%)
+On the client, you can destructure `data` from the `useChat` hook which stores all `StreamData` as a `JSONValue[]`.
+
+page.tsx
+
+```
+import { useChat } from '@ai-sdk/react';
+const { data } = useChat();
+```
+
+## Context 12 (from "https://ai-sdk.dev/docs/reference/ai-sdk-ui/append-response-messages", similarity: 64.2%)
+Message\[\]:
+
+Array
+
+A new array of UI messages with the appended AI response messages (and updated tool-call results for the preceding assistant message).
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 13 (from "https://ai-sdk.dev/docs/reference/ai-sdk-ui/append-client-message", similarity: 64.1%)
+import { appendClientMessage } from "ai"
+
+## Context 14 (from "https://ai-sdk.dev/docs/ai-sdk-core/testing", similarity: 63.7%)
+You can also simulate  responses for testing, debugging, or demonstration purposes.
+
+Here is a Next example:
+
+route.ts
+
+```
+import { simulateReadableStream } from 'ai';
+export async function POST(req: Request) {  return new Response(    simulateReadableStream({      initialDelayInMs: 1000, // Delay before the first chunk      chunkDelayInMs: 300, // Delay between chunks      chunks: [        `0:"This"\n`,        `0:" is an"\n`,        `0:"example."\n`,        `e:{"finishReason":"stop","usage":{"promptTokens":20,"completionTokens":50},"isContinued":false}\n`,        `d:{"finishReason":"stop","usage":{"promptTokens":20,"completionTokens":50}}\n`,      ],    }).pipeThrough(new TextEncoderStream()),    {      status: 200,      headers: {        'X-Vercel-AI-Data-Stream': 'v1',        'Content-Type': 'text/plain; charset=utf-8',      },    },  );}
+```
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 15 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot", similarity: 63.5%)
+You can also send URLs as attachments along with a message. This can be useful for sending links to external resources or media content.
+
+> **Note:** The URL can also be a data URL, which is a base64-encoded string that represents the content of a file. Currently, only `image/*` content types get automatically converted into . You will need to handle other content types manually.
+
+app/page.tsx
+
+```
+'use client';
+import { useChat } from '@ai-sdk/react';import { useState } from 'react';import { Attachment } from '@ai-sdk/ui-utils';
+export default function Page() {  const { messages, input, handleSubmit, handleInputChange, status } =    useChat();
+  const [attachments] = useState<Attachment[]>([    {      name: 'earth.png',      contentType: 'image/png',      url: 'https://example.com/earth.png',    },    {      name: 'moon.png',      contentType: 'image/png',      url: 'data:image/png;base64,iVBORw0KGgo...',    },  ]);
+  return (    <div>      <div>        {messages.map(message => (          <div key={message.id}>            <div>{`${message.role}: `}</div>
+            <div>              {message.content}
+              <div>                {message.experimental_attachments                  ?.filter(attachment =>                    attachment.contentType?.startsWith('image/'),                  )                  .map((attachment, index) => (                    <img                      key={`${message.id}-${index}`}                      src={attachment.url}                      alt={attachment.name}                    />                  ))}              </div>            </div>          </div>        ))}      </div>
+      <form        onSubmit={event => {          handleSubmit(event, {            experimental_attachments: attachments,          });        }}      >        <input          value={input}          placeholder="Send message..."          onChange={handleInputChange}          disabled={status !== 'ready'}        />      </form>    </div>  );}
+```
+
+On this page
+
+Elevate your AI applications with Vercel.
+
+Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
+
+Vercel provides tools and infrastructure to deploy AI apps and features at scale.
+
+## Context 16 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot", similarity: 63.5%)
+You can configure custom `body` fields on a per-request basis using the `body` option of the `handleSubmit` function. This is useful if you want to pass in additional information to your backend that is not part of the message list.
+
+app/page.tsx
+
+```
+'use client';
+import { useChat } from '@ai-sdk/react';
+export default function Chat() {  const { messages, input, handleInputChange, handleSubmit } = useChat();  return (    <div>      {messages.map(m => (        <div key={m.id}>          {m.role}: {m.content}        </div>      ))}
+      <form        onSubmit={event => {          handleSubmit(event, {            body: {              customKey: 'customValue',            },          });        }}      >        <input value={input} onChange={handleInputChange} />      </form>    </div>  );}
+```
+
+You can retrieve these custom fields on your server side by destructuring the request body:
+
+app/api/chat/route.ts
+
+```
+export async function POST(req: Request) {  // Extract addition information ("customKey") from the body of the request:  const { messages, customKey } = await req.json();  //...}
+```
+
+## Context 17 (from "https://ai-sdk.dev/docs/ai-sdk-ui/object-generation", similarity: 63.1%)
+The client uses  to stream the object generation process.
+
+The results are partial and are displayed as they are received. Please note the code for handling `undefined` values in the JSX.
+
+app/page.tsx
+
+```
+'use client';
+import { experimental_useObject as useObject } from '@ai-sdk/react';import { notificationSchema } from './api/notifications/schema';
+export default function Page() {  const { object, submit } = useObject({    api: '/api/notifications',    schema: notificationSchema,  });
+  return (    <>      <button onClick={() => submit('Messages during finals week.')}>        Generate notifications      </button>
+      {object?.notifications?.map((notification, index) => (        <div key={index}>          <p>{notification?.name}</p>          <p>{notification?.message}</p>        </div>      ))}    </>  );}
+```
+
+## Context 18 (from "https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol", similarity: 63.0%)
+A text stream contains chunks in plain text, that are streamed to the frontend. Each chunk is then appended together to form a full text response.
+
+Text streams are supported by `useChat`, `useCompletion`, and `useObject`. When you use `useChat` or `useCompletion`, you need to enable text streaming by setting the `streamProtocol` options to `text`.
+
+You can generate text streams with `streamText` in the backend. When you call `toTextStreamResponse()` on the result object, a streaming HTTP response is returned.
+
+Text streams only support basic text data. If you need to stream other types of data such as tool calls, use data streams.
+
+## Context 19 (from "https://ai-sdk.dev/docs/ai-sdk-core/generating-text", similarity: 62.9%)
+When using `streamText`, you can provide an `onFinish` callback that is triggered when the stream is finished (  ). It contains the text, usage information, finish reason, messages, and more:
+
+```
+import { streamText } from 'ai';
+const result = streamText({  model: yourModel,  prompt: 'Invent a new holiday and describe its traditions.',  onFinish({ text, finishReason, usage, response }) {    // your own logic, e.g. for saving the chat history or recording usage
+    const messages = response.messages; // messages that were generated  },});
+```
+
+## Context 20 (from "https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-message-persistence", similarity: 62.9%)
+`useChat` sends the chat id and the messages to the backend. We have enabled the `sendExtraMessageFields` option to send the id and createdAt fields, meaning that we store messages in the `useChat` message format.
+
+The `useChat` message format is different from the `CoreMessage` format. The `useChat` message format is designed for frontend display, and contains additional fields such as `id` and `createdAt`. We recommend storing the messages in the `useChat` message format.
+
+Storing messages is done in the `onFinish` callback of the `streamText` function. `onFinish` receives the messages from the AI response as a `CoreMessage[]`, and we use the  helper to append the AI response messages to the chat messages.
+
+app/api/chat/route.ts
+
+```
+import { openai } from '@ai-sdk/openai';import { appendResponseMessages, streamText } from 'ai';import { saveChat } from '@tools/chat-store';
+export async function POST(req: Request) {  const { messages, id } = await req.json();
+  const result = streamText({    model: openai('gpt-4o-mini'),    messages,    async onFinish({ response }) {      await saveChat({        id,        messages: appendResponseMessages({          messages,          responseMessages: response.messages,        }),      });    },  });
+  return result.toDataStreamResponse();}
+```
+
+The actual storage of the messages is done in the `saveChat` function, which in our file-based chat store is implemented as follows:
+
+tools/chat-store.ts
+
+```
+import { Message } from 'ai';import { writeFile } from 'fs/promises';
+export async function saveChat({  id,  messages,}: {  id: string;  messages: Message[];}): Promise<void> {  const content = JSON.stringify(messages, null, 2);  await writeFile(getChatFile(id), content);}
+// ... rest of the file
+```
+
+---
+
+Please answer the user's question using the above context as your primary reference.
+
+---
+
+
+
+  You are a helpful and precise technical assistant. Your goal is to provide clear, well-structured, and accurate answers.
+
+  ## Formatting Rules
+  - Structure your answers with logical sections using hierarchical headers (h1 to h6).
+  - Use bold for emphasis on key terms.
+  - When comparing items, **strongly prefer** using a markdown table for clarity.
+  - Use lists and bullet points when a clear enumeration is needed.
+    - Use numbered lists only for ranked or sequential items. Otherwise, use bullet points.
+    - Avoid nesting lists where possible, but you may use them if it significantly improves clarity.
+  
+
+  ## Code Block Formatting
+  When providing code blocks, follow these guidelines:
+
+  ### Markdown Code Blocks
+  For markdown code blocks, follow this instructions:
+  - Use triple tilde (~~~) to start and end the block.
+  - Specify the language markdown immediately after the opening tilde.
+  - Example:
+    ~~~markdown
+      ## Heading Example
+      Here a json snippet inside a markdown code block:
+      ```json
+        { "key": "value" }
+      ```
+    ~~~
+
+  ### All Language Code Blocks (except markdown)
+  - Use triple backtick (```) to start and end the block.
+  - Specify the language immediately after the opening backtick.
+  - Example:
+  ```javascript
+    console.log("Hello, world!");
+  ```
+
+
+  ## Language and Tone
+  - Respond in the user's language unless they request otherwise.
+  - Be concise for simple questions. Provide comprehensive, well-reasoned answers for complex and open-ended questions.
+  - Maintain a helpful, expert tone.

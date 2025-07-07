@@ -5,43 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1747136704896,
-      "tag": "0000_rapid_kree",
+      "when": 1751889408119,
+      "tag": "0000_numerous_captain_britain",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1747946522208,
-      "tag": "0001_thick_patriot",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1748417987979,
-      "tag": "0002_free_warhawk",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1749571367481,
-      "tag": "0003_gifted_fabian_cortez",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1751443526408,
-      "tag": "0004_curly_lila_cheney",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1751448292070,
-      "tag": "0005_clammy_forgotten_one",
+      "when": 1751889430002,
+      "tag": "0001_dry_quentin_quire",
       "breakpoints": true
     }
   ]

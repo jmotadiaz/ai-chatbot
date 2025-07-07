@@ -21,7 +21,7 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
-import { retrieve } from "@/lib/ai/retrieve";
+import { retrieve, RetrieveResult } from "@/lib/ai/retrieve";
 
 export const maxDuration = 60;
 
@@ -73,6 +73,7 @@ export async function POST(req: Request) {
 
   // Handle RAG if enabled
   let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
+  let retrieveResult: RetrieveResult | null = null;
 
   if (useRAG && messages.length > 0) {
     const lastUserMessage = messages.findLast((msg) => msg.role === "user");
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
         userQuery.substring(0, 100)
       );
 
-      const retrieveResult = await retrieve(userQuery);
+      retrieveResult = await retrieve(userQuery);
 
       if (retrieveResult.success && retrieveResult.contextPrompt) {
         enhancedSystemPrompt = `${retrieveResult.contextPrompt}\n\n---\n\n${enhancedSystemPrompt}`;
@@ -157,6 +158,14 @@ export async function POST(req: Request) {
               console.error("Error saving message:", error);
             }
           }
+          if (retrieveResult?.resources) {
+            dataStream.writeMessageAnnotation({
+              resources: retrieveResult.resources,
+            });
+          }
+        },
+        onError: (error) => {
+          console.log("Error Inferring", error);
         },
       });
 

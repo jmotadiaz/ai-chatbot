@@ -17,7 +17,7 @@ const Loading: React.FC = () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <div className="h-svh w-full max-w-2xl mx-auto pt-24 relative px-4 overflow-hidden">
+      <div className="h-svh w-full max-w-4xl px-4 mx-auto pt-24 relative overflow-hidden">
         <div className="relative z-1 pr-4">
           {Array.from({ length: 3 }).map((_, index) => (
             <div key={index}>
