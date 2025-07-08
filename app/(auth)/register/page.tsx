@@ -1,9 +1,14 @@
 import React from "react";
+import { forbidden } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { register } from "@/lib/auth/actions";
 
 const Page: React.FC = async () => {
+  if (!process.env.REGISTER_ENABLED) {
+    return forbidden();
+  }
+
   return (
     <div className="relative flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
       <div className="absolute top-4 right-4 z-10">
