@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Upload, FileText } from "lucide-react";
-import { uploadRAGResources } from "@/lib/ai/actions";
+import { uploadResources } from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,19 +24,21 @@ export const RAGUploadForm = () => {
     }
   };
 
-  const handleMarkdownFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMarkdownFilesChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const selectedFiles = e.target.files;
     if (selectedFiles) {
       // Validate that all files are markdown
       const invalidFiles = Array.from(selectedFiles).filter(
-        file => !file.name.match(/\.(md|mdx)$/i)
+        (file) => !file.name.match(/\.(md|mdx)$/i)
       );
-      
+
       if (invalidFiles.length > 0) {
         toast.error("Please select only .md or .mdx files");
         return;
       }
-      
+
       setMarkdownFiles(selectedFiles);
     }
   };
@@ -45,7 +47,9 @@ export const RAGUploadForm = () => {
     e.preventDefault();
 
     if (!jsonFile && !markdownFiles) {
-      toast.error("Please select either a JSON file with URLs or markdown files");
+      toast.error(
+        "Please select either a JSON file with URLs or markdown files"
+      );
       return;
     }
 
@@ -53,11 +57,11 @@ export const RAGUploadForm = () => {
 
     try {
       const formData = new FormData();
-      
+
       if (jsonFile) {
         formData.append("jsonFile", jsonFile);
       }
-      
+
       if (markdownFiles) {
         Array.from(markdownFiles).forEach((file, index) => {
           formData.append(`markdownFile_${index}`, file);
@@ -65,7 +69,7 @@ export const RAGUploadForm = () => {
         formData.append("markdownFilesCount", markdownFiles.length.toString());
       }
 
-      const result = await uploadRAGResources(formData);
+      const result = await uploadResources(formData);
 
       if (result.success) {
         toast.success(
@@ -109,7 +113,9 @@ export const RAGUploadForm = () => {
         </div>
 
         <div className="space-y-4">
-          <Label htmlFor="markdownFiles">Markdown Files (.md, .mdx) - Optional</Label>
+          <Label htmlFor="markdownFiles">
+            Markdown Files (.md, .mdx) - Optional
+          </Label>
           <div className="relative">
             <Input
               id="markdownFiles"
@@ -143,7 +149,10 @@ export const RAGUploadForm = () => {
             </p>
             <div className="space-y-1 max-h-32 overflow-y-auto">
               {Array.from(markdownFiles).map((file, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg"
+                >
                   <FileText className="w-3 h-3 text-green-500" />
                   <span className="text-xs font-medium">{file.name}</span>
                   <span className="text-xs text-gray-500">
@@ -155,9 +164,9 @@ export const RAGUploadForm = () => {
           </div>
         )}
 
-        <Button 
-          type="submit" 
-          disabled={(!jsonFile && !markdownFiles) || isLoading} 
+        <Button
+          type="submit"
+          disabled={(!jsonFile && !markdownFiles) || isLoading}
           className="w-full"
         >
           {isLoading ? (

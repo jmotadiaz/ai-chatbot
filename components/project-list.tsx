@@ -7,7 +7,7 @@ import { ChatList } from "@/components/chat-list";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { getProjectsByUserId } from "@/lib/db/queries";
-import { deleteProject } from "@/lib/ai/actions";
+import { deleteProject } from "@/lib/ai/actions/actions";
 
 export interface ProjectListProps {
   limit?: number;

@@ -1,10 +1,4 @@
-AI SDK UI: Streaming Custom Data
-
-  
-
-Menu
-
-# 
+# [Streaming Custom Data](#streaming-custom-data)
 
 It is often useful to send additional data alongside the model's response. For example, you may want to send status information, the message ids after storing them, or references to content that the language model is referring to.
 
@@ -16,7 +10,7 @@ The AI SDK provides several helpers that allows you to stream additional data to
 
 The data is streamed as part of the response stream.
 
-## 
+## [Sending Custom Data from the Server](#sending-custom-data-from-the-server)
 
 In your server-side route handler, you can use `createDataStreamResponse` and `pipeDataStreamToResponse` in combination with `streamText`. You need to:
 
@@ -38,9 +32,9 @@ export async function POST(req: Request) {  const { messages } = await req.json(
       result.mergeIntoDataStream(dataStream);    },    onError: error => {      // Error messages are masked by default for security reasons.      // If you want to expose the error message to the client, you can do so here:      return error instanceof Error ? error.message : String(error);    },  });}
 ```
 
-You can also send stream data from custom backends, e.g. Python / FastAPI, using the .
+You can also send stream data from custom backends, e.g. Python / FastAPI, using the [Data Stream Protocol](/docs/ai-sdk-ui/stream-protocol#data-stream-protocol).
 
-## 
+## [Sending Custom Sources](#sending-custom-sources)
 
 You can send custom sources to the client using the `writeSource` method on the `DataStreamWriter`:
 
@@ -54,11 +48,11 @@ export async function POST(req: Request) {  const { messages } = await req.json(
       result.mergeIntoDataStream(dataStream);    },  });}
 ```
 
-## 
+## [Processing Custom Data in `useChat`](#processing-custom-data-in-usechat)
 
 The `useChat` hook automatically processes the streamed data and makes it available to you.
 
-### 
+### [Accessing Data](#accessing-data)
 
 On the client, you can destructure `data` from the `useChat` hook which stores all `StreamData` as a `JSONValue[]`.
 
@@ -69,7 +63,7 @@ import { useChat } from '@ai-sdk/react';
 const { data } = useChat();
 ```
 
-### 
+### [Accessing Message Annotations](#accessing-message-annotations)
 
 Each message from the `useChat` hook has an optional `annotations` property that contains the message annotations sent from the server.
 
@@ -85,7 +79,7 @@ const { messages } = useChat();
 const result = (  <>    {messages?.map((m: Message) => (      <div key={m.id}>        {m.annotations && <>{JSON.stringify(m.annotations)}</>}      </div>    ))}  </>);
 ```
 
-### 
+### [Updating and Clearing Data](#updating-and-clearing-data)
 
 You can update and clear the `data` object of the `useChat` hook using the `setData` function.
 
@@ -98,7 +92,7 @@ const { setData } = useChat();
 // transform existing data, e.g. adding additional values:setData(currentData => [...currentData, { test: 'value' }]);
 ```
 
-#### 
+#### [Example: Clear on Submit](#example-clear-on-submit)
 
 page.tsx
 
@@ -110,11 +104,3 @@ export default function Chat() {  const { messages, input, handleInputChange, ha
       {messages?.map((m: Message) => (        <div key={m.id}>{`${m.role}: ${m.content}`}</div>      ))}
       <form        onSubmit={e => {          setData(undefined); // clear stream data          handleSubmit(e);        }}      >        <input value={input} onChange={handleInputChange} />      </form>    </>  );}
 ```
-
-On this page
-
-Elevate your AI applications with Vercel.
-
-Trusted by OpenAI, Replicate, Suno, Pinecone, and more.
-
-Vercel provides tools and infrastructure to deploy AI apps and features at scale.

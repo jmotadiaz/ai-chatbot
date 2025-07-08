@@ -68,6 +68,7 @@ ${chunk.content}`;
     const contextPrompt = `# PRIORITY CONTEXT FOR USER QUERY
 
 The following information from your knowledge base is highly relevant to the user's question. Use this context as your primary source of information when responding. If the context doesn't contain enough information to fully answer the question, you may supplement with your general knowledge, but prioritize the provided context.
+After your response, create a section for the resources used.
 
 ${contextSections}
 

@@ -1,59 +1,33 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import {
-  createEmbeddings,
-  createResource,
-  deleteChat as deleteDBChat,
-  deleteProject as deleteDBProject,
-  transaction,
-} from "@/lib/db/queries";
+import { JSDOM } from "jsdom";
+import TurndownService from "turndown";
 import { auth } from "@/auth";
-import { InsertEmbedding } from "@/lib/db/schema";
 import {
   generateEmbeddings,
   generateMarkdownChunks,
 } from "@/lib/ai/generate-embeddings";
-import { fetchAndConvertURL } from "@/lib/utils";
+import {
+  createEmbeddings,
+  createResource,
+  transaction,
+} from "@/lib/db/queries";
+import { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
 
-export async function deleteChat(id: string) {
-  const session = await auth();
-  if (!session?.user) {
-    return;
-  }
-
-  try {
-    await transaction(deleteDBChat({ id, userId: session.user.id }));
-    revalidatePath("/");
-  } catch (error) {
-    console.error("Failed to delete chat:", error);
-  }
+export interface Resource {
+  title: string;
+  content: string;
 }
 
-export async function deleteProject(id: string) {
-  const session = await auth();
-  if (!session?.user) {
-    return;
-  }
-
-  try {
-    await transaction(deleteDBProject({ id, userId: session.user.id }));
-    revalidatePath("/");
-    revalidatePath("/project/new");
-  } catch (error) {
-    console.error("Failed to delete project:", error);
-  }
-}
-
-interface ProcessResult {
+export interface ProcessResult {
   success: boolean;
   resourcesCreated?: number;
   embeddingsCreated?: number;
   error?: string;
 }
 
-export async function uploadRAGResources(
+export async function uploadResources(
   formData: FormData
 ): Promise<ProcessResult> {
   const session = await auth();
@@ -76,8 +50,6 @@ export async function uploadRAGResources(
 
     // Process JSON file with URLs if provided
     if (jsonFile) {
-      console.log("Processing JSON file with URLs...");
-
       const fileContent = await jsonFile.text();
       let jsonData;
 
@@ -92,6 +64,7 @@ export async function uploadRAGResources(
       }
 
       const urls = jsonData.urls as string[];
+      const container = jsonData.container as string | undefined;
 
       if (urls.length === 0) {
         return { success: false, error: "No URLs provided in JSON file" };
@@ -101,30 +74,22 @@ export async function uploadRAGResources(
         return { success: false, error: "Maximum 50 URLs allowed per batch" };
       }
 
-      console.log(`Processing ${urls.length} URLs...`);
+      const batchPromises = urls.map((url) =>
+        fetchAndConvertURL({ url, container })
+      );
+      const batchResults = await Promise.all(batchPromises);
 
-      // Fetch and convert URLs in parallel (with concurrency limit)
-      const BATCH_SIZE = 10;
+      // Filter out null results and map to simplified format
+      const urlResources = batchResults.filter(Boolean).map((resource) => ({
+        title: resource!.title,
+        content: resource!.content,
+      }));
 
-      for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-        const batch = urls.slice(i, i + BATCH_SIZE);
-        const batchPromises = batch.map(fetchAndConvertURL);
-        const batchResults = await Promise.all(batchPromises);
-
-        // Filter out null results and map to simplified format
-        const urlResources = batchResults.filter(Boolean).map((resource) => ({
-          title: resource!.title,
-          content: resource!.content,
-        }));
-
-        resources.push(...urlResources);
-      }
+      resources.push(...urlResources);
     }
 
     // Process markdown files if provided
     if (markdownFilesCount > 0) {
-      console.log(`Processing ${markdownFilesCount} markdown files...`);
-
       for (let i = 0; i < markdownFilesCount; i++) {
         const markdownFile = formData.get(`markdownFile_${i}`) as File;
 
@@ -155,7 +120,7 @@ export async function uploadRAGResources(
 
     const result = await transaction(async (tx) => {
       const createdResources = [];
-      const allEmbeddings: InsertEmbedding[] = [];
+      const allEmbeddings: Promise<InsertEmbedding[]>[] = [];
 
       // Process each resource
       for (const resource of resources) {
@@ -166,25 +131,19 @@ export async function uploadRAGResources(
 
         createdResources.push(newResource);
 
-        // Generate embeddings for the markdown content
-        const chunks = await generateMarkdownChunks(resource.content);
-        const embeddingData = await generateEmbeddings(chunks);
-
-        // Prepare embeddings for database insertion
-        const resourceEmbeddings: InsertEmbedding[] = embeddingData.map(
-          ({ content, embedding }) => ({
-            resourceId: newResource.id,
-            content,
-            embedding,
+        allEmbeddings.push(
+          resourceToEmbeddings({
+            resource: newResource,
+            content: resource.content,
           })
         );
-
-        allEmbeddings.push(...resourceEmbeddings);
       }
 
       // Batch insert all embeddings
       if (allEmbeddings.length > 0) {
-        const createdEmbeddings = await createEmbeddings(allEmbeddings)(tx);
+        const createdEmbeddings = await createEmbeddings(
+          (await Promise.all(allEmbeddings)).flat()
+        )(tx);
         totalEmbeddingsCreated = createdEmbeddings.length;
       }
 
@@ -211,3 +170,85 @@ export async function uploadRAGResources(
     };
   }
 }
+
+const turndownService = new TurndownService({
+  headingStyle: "atx",
+  codeBlockStyle: "fenced",
+});
+
+turndownService.addRule("removeScriptAndStyle", {
+  filter: ["script", "style", "nav", "header", "footer", "aside"],
+  replacement: () => "",
+});
+
+export async function fetchAndConvertURL({
+  url,
+  container,
+}: {
+  url: string;
+  container?: string;
+}): Promise<Resource | null> {
+  try {
+    console.log(`Fetching URL: ${url}`);
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; RAG-Bot/1.0)",
+      },
+      signal: AbortSignal.timeout(30000), // 30 second timeout
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch ${url}: ${response.status}`);
+      return null;
+    }
+
+    const html = await response.text();
+
+    // Convert HTML to Markdown
+    const markdown = turndownService
+      .turndown(container ? extractContainer({ container, html }) : html)
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/^\s+|\s+$/g, "")
+      .trim();
+
+    return {
+      title: url,
+      content: markdown,
+    };
+  } catch (error) {
+    console.error(`Error processing URL ${url}:`, error);
+    return null;
+  }
+}
+
+const extractContainer = ({
+  container,
+  html,
+}: {
+  container: string;
+  html: string;
+}): HTMLElement => {
+  const dom = new JSDOM(html);
+  return (
+    dom.window.document.querySelector(container) ?? dom.window.document.body
+  );
+};
+
+const resourceToEmbeddings = async ({
+  resource,
+  content,
+}: {
+  resource: DBResource;
+  content: string;
+}): Promise<InsertEmbedding[]> => {
+  const chunks = await generateMarkdownChunks(content);
+  const embeddingData = await generateEmbeddings(chunks);
+
+  // Prepare embeddings for database insertion
+  return embeddingData.map(({ content, embedding }) => ({
+    resourceId: resource.id,
+    content,
+    embedding,
+  }));
+};
