@@ -14,6 +14,7 @@ import {
   transaction,
 } from "@/lib/db/queries";
 import { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
+import { isDefined } from "@/lib/utils";
 
 export interface Resource {
   title: string;
@@ -63,8 +64,10 @@ export async function uploadResources(
         return { success: false, error: "JSON must contain 'urls' array" };
       }
 
-      const urls = jsonData.urls as string[];
-      const container = jsonData.container as string | undefined;
+      const { urls, container } = jsonData as {
+        urls: string[];
+        container?: string;
+      };
 
       if (urls.length === 0) {
         return { success: false, error: "No URLs provided in JSON file" };
@@ -74,18 +77,11 @@ export async function uploadResources(
         return { success: false, error: "Maximum 50 URLs allowed per batch" };
       }
 
-      const batchPromises = urls.map((url) =>
-        fetchAndConvertURL({ url, container })
+      const batchResults = await Promise.all(
+        urls.map((url) => fetchAndConvertURL({ url, container }))
       );
-      const batchResults = await Promise.all(batchPromises);
 
-      // Filter out null results and map to simplified format
-      const urlResources = batchResults.filter(Boolean).map((resource) => ({
-        title: resource!.title,
-        content: resource!.content,
-      }));
-
-      resources.push(...urlResources);
+      resources.push(...batchResults.filter(isDefined));
     }
 
     // Process markdown files if provided
@@ -115,9 +111,6 @@ export async function uploadResources(
       `Successfully processed ${resources.length} resources, generating embeddings...`
     );
 
-    // Process embeddings and save to database using transactions
-    let totalEmbeddingsCreated = 0;
-
     const result = await transaction(async (tx) => {
       const createdResources = [];
       const allEmbeddings: Promise<InsertEmbedding[]>[] = [];
@@ -144,12 +137,15 @@ export async function uploadResources(
         const createdEmbeddings = await createEmbeddings(
           (await Promise.all(allEmbeddings)).flat()
         )(tx);
-        totalEmbeddingsCreated = createdEmbeddings.length;
+        return {
+          resourcesCreated: createdResources.length,
+          embeddingsCreated: createdEmbeddings.length,
+        };
       }
 
       return {
         resourcesCreated: createdResources.length,
-        embeddingsCreated: totalEmbeddingsCreated,
+        embeddingsCreated: 0,
       };
     });
 
@@ -181,7 +177,7 @@ turndownService.addRule("removeScriptAndStyle", {
   replacement: () => "",
 });
 
-export async function fetchAndConvertURL({
+async function fetchAndConvertURL({
   url,
   container,
 }: {

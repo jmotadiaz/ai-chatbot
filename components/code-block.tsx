@@ -37,7 +37,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
   if (match) {
     return (
-      <div className="animate-fade">
+      <div className="animate-fade mb-4">
         <CopyBlock
           text={
             match[1].trim() === "markdown"

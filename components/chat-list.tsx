@@ -2,7 +2,7 @@ import { X as XIcon } from "lucide-react";
 import { ClassValue } from "clsx";
 import { cn } from "@/lib/utils";
 import Link from "@/components/ui/link";
-import { deleteChat } from "@/lib/ai/actions/actions";
+import { deleteChat } from "@/lib/ai/actions/chat";
 import { Chat } from "@/lib/db/schema";
 import { Item } from "@/components/ui/item";
 

@@ -23,14 +23,14 @@ export const Textarea = ({
         )}
       >
         <div className="flex flex-col justify-around h-full w-full">
-          <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-2xl py-2 animate-pulse" />
-          <div className="w-2/5 bg-gray-200 dark:bg-zinc-700 rounded-2xl mt-2 py-2 animate-pulse" />
+          <div className="w-full bg-gray-200 dark:bg-zinc-800 rounded-2xl py-2 animate-pulse" />
+          <div className="w-2/5 bg-gray-200 dark:bg-zinc-800 rounded-2xl mt-2 py-2 animate-pulse" />
         </div>
       </div>
       <ShadcnTextarea
         className={cn(
           "resize-none relative bg-transparent w-full max-h-[500px] overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
-          isLoadingRefinedPrompt ? "opacity-0 max-h-32" : "opacity-100"
+          isLoadingRefinedPrompt ? "opacity-0 max-h-18" : "opacity-100"
         )}
         theme="outline"
         value={input}

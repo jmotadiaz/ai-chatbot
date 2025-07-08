@@ -38,3 +38,6 @@ export const handleCopy = (value: string | null | undefined) => async () => {
     toast.error("Failed to copy text");
   }
 };
+
+export const isDefined = <T>(value: T | null | undefined): value is T =>
+  Boolean(value);
