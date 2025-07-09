@@ -79,7 +79,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     moderate: {
-      ...languageModelConfigurations["GPT 4.1 Mini"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
     },
     complex: {
       ...languageModelConfigurations["Claude Sonnet 4"],

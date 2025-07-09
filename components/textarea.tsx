@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
+import { Textarea as TextareaUI } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface TextareaProps {
@@ -24,6 +24,19 @@ export const Textarea = ({
     }
   }, [input]);
 
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (
+    e
+  ) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (input.trim() && !isLoading) {
+        // @ts-expect-error err
+        const form = e.target.closest("form");
+        if (form) form.requestSubmit();
+      }
+    }
+  };
+
   return (
     <div className="bg-secondary dark:bg-zinc-700 w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden transition-all duration-200">
       <div
@@ -37,7 +50,7 @@ export const Textarea = ({
           <div className="w-2/5 bg-gray-200 dark:bg-zinc-800 rounded-2xl mt-2 py-2 animate-pulse" />
         </div>
       </div>
-      <ShadcnTextarea
+      <TextareaUI
         ref={textAreaRef}
         className={cn(
           "resize-none relative bg-transparent w-full min-h-18 max-h-80 overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
@@ -48,16 +61,7 @@ export const Textarea = ({
         placeholder={"Say something..."}
         // @ts-expect-error err
         onChange={handleInputChange}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            if (input.trim() && !isLoading) {
-              // @ts-expect-error err
-              const form = e.target.closest("form");
-              if (form) form.requestSubmit();
-            }
-          }
-        }}
+        onKeyDown={handleKeyDown}
       />
     </div>
   );
