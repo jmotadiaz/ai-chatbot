@@ -146,16 +146,13 @@ export type InsertProject = Omit<
 >;
 export type Chat = InferSelectModel<typeof chat>;
 export type InsertChat = Omit<
-  InferSelectModel<typeof chat>,
+  InferInsertModel<typeof chat>,
   "createdAt" | "updatedAt" | "projectId"
 > & {
   projectId?: string;
 };
 export type Message = InferSelectModel<typeof message>;
-export type InsertMessage = Omit<
-  InferSelectModel<typeof message>,
-  "createdAt" | "serial"
->;
+export type InsertMessage = Omit<InferInsertModel<typeof message>, "createdAt">;
 export type Resource = InferSelectModel<typeof resources>;
 export type InsertResource = Omit<
   InferInsertModel<typeof resources>,

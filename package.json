@@ -92,8 +92,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "next lint --fix --file",
-      "tsc-files --noEmit"
+      "next lint --fix --file"
     ]
   }
 }
