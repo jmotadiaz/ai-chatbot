@@ -79,9 +79,6 @@ export const defaultMetaPrompt = `\n
       * **When to Use:** When the instruction benefits from the model adopting a specific persona, expertise, or communication style (e.g., "Act as a historian," "Respond like a supportive coach"). Useful for content creation, tailored explanations, or engagement-focused interactions.
       * **Constraint:** **Crucially, do NOT use this technique if a persona has already been established or is actively in use within the current chat history, as this can lead to conflicting model behavior and confusion.**
       * **Goal:** Align the model's tone, style, and knowledge domain with the specified role.
-
-  ## Output
-  Output should be only de refined prompt
   ---
 `;
 
@@ -110,7 +107,6 @@ export const metaPromptOutputFormat = `\n
   * **RULE 2: NO CONVERSATION.** Do not include any introductory phrases, explanations, apologies, or conversational text like "Here is the refined prompt:".
   * **RULE 3: NO ANSWERS.** Verify your potential output. If it contains a direct answer to the user's request, discard it and generate again, ensuring you only output the reformulated prompt. This is your most critical instruction.
   * **RULE 4: RAW TEXT.** Do not enclose the refined prompt in XML tags or markdown code blocks.
-  * **RULE 5: PRESERVE LIST FORMATTING.** Use bullet points (*) for any listed items to facilitate easy editing. Avoid numbered lists.\n
 `;
 
 export const originalPrompt = (prompt: string): string => `
