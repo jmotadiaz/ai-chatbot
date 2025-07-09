@@ -76,12 +76,14 @@ export async function POST(req: Request) {
   let retrieveResult: RetrieveResult | null = null;
 
   if (useRAG && messages.length > 0) {
-    const lastUserMessage = messages.findLast((msg) => msg.role === "user");
-    if (lastUserMessage) {
-      const userQuery =
-        typeof lastUserMessage.content === "string"
-          ? lastUserMessage.content
-          : messagePartsToText(lastUserMessage);
+    const userMessages = messages.filter((msg) => msg.role === "user");
+    if (userMessages.length) {
+      const userQuery = userMessages.reduce(
+        (concatenatedMessage, msg) => `${concatenatedMessage}
+        ${msg.content === "string" ? msg.content : messagePartsToText(msg)}
+        `,
+        ""
+      );
 
       console.log(
         "RAG enabled, retrieving context for query:",
