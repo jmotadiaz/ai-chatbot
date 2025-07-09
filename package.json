@@ -14,6 +14,7 @@
     "db:logs": "docker-compose logs -f",
     "lint": "next lint && tsc --noEmit",
     "lint:fix": "next lint --fix && tsc --noEmit",
+    "type:check": "tsc --noEmit",
     "prepare": "husky"
   },
   "dependencies": {

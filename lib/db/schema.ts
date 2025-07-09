@@ -152,7 +152,10 @@ export type InsertChat = Omit<
   projectId?: string;
 };
 export type Message = InferSelectModel<typeof message>;
-export type InsertMessage = Omit<InferInsertModel<typeof message>, "createdAt">;
+export type InsertMessage = Omit<
+  InferInsertModel<typeof message>,
+  "createdAt" | "serial"
+>;
 export type Resource = InferSelectModel<typeof resources>;
 export type InsertResource = Omit<
   InferInsertModel<typeof resources>,
