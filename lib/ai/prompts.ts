@@ -21,9 +21,9 @@ export const codeBlockPrompt = `\n
   - Use triple backtick (\`\`\`) to start and end the block.
   - Specify the language immediately after the opening backtick.
   - Example:
-  \`\`\`javascript
-    console.log("Hello, world!");
-  \`\`\`
+    \`\`\`javascript
+      console.log("Hello, world!");
+    \`\`\`
 `;
 
 export const defaultSystemPrompt = `\n
