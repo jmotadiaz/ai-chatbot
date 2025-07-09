@@ -154,7 +154,7 @@ export type InsertChat = Omit<
 export type Message = InferSelectModel<typeof message>;
 export type InsertMessage = Omit<
   InferSelectModel<typeof message>,
-  "createdAt" | "updatedAt"
+  "createdAt" | "serial"
 >;
 export type Resource = InferSelectModel<typeof resources>;
 export type InsertResource = Omit<
