@@ -8,11 +8,8 @@ import {
 } from "@/lib/ai/workflows/language-utils";
 
 export default async function translate(prompt: string) {
-  // Determine target language
   const translationDirectionResult = identifyTranslationDirection(prompt);
-
   const audienceResult = identifyAudience(prompt);
-
   const domainResult = identifyDomain(prompt);
 
   const [

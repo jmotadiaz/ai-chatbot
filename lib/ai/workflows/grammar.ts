@@ -9,7 +9,6 @@ import { grammarSchema } from "@/lib/ai/schemas/grammar";
 
 export default async function correctGrammar(prompt: string) {
   const audienceResult = identifyAudience(prompt);
-
   const domainResult = identifyDomain(prompt);
 
   const [{ audience }, { domain, subdomain }] = await Promise.all([
