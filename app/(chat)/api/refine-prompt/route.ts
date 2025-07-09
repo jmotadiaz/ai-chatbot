@@ -48,7 +48,6 @@ export async function POST(req: Request) {
       concatenatePrompts +
       metaPromptOutputFormat,
     prompt: initialPrompt + concatenatePrompts + originalPrompt(prompt),
-    temperature: 0.2,
   });
 
   return Response.json({ text });
