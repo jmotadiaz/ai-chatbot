@@ -15,6 +15,13 @@
       "when": 1751889430002,
       "tag": "0001_dry_quentin_quire",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752038038802,
+      "tag": "0002_natural_terror",
+      "breakpoints": true
     }
   ]
 }

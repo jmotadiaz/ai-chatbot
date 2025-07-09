@@ -10,6 +10,7 @@ import {
   text,
   vector,
   index,
+  serial,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
@@ -72,6 +73,7 @@ export const message = pgTable("Message", {
   role: varchar("role", { length: 50 }).notNull(),
   parts: json("parts").notNull(),
   attachments: json("attachments").notNull(),
+  serial: serial("serial").unique(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

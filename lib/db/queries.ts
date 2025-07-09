@@ -331,7 +331,7 @@ export async function getMessagesByChatId(id: string): Promise<Array<Message>> {
       .select()
       .from(message)
       .where(eq(message.chatId, id))
-      .orderBy(asc(message.createdAt), desc(message.role));
+      .orderBy(asc(message.serial));
   } catch (error) {
     console.error("Failed to get messages by chat id from database", error);
     throw error;
