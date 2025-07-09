@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +15,15 @@ export const Textarea = ({
   isLoadingRefinedPrompt,
   isLoading,
 }: TextareaProps) => {
-  const [isBigSize, setIsBigSize] = useState(false);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    if (!CSS.supports("field-sizing", "content") && textAreaRef.current) {
+      textAreaRef.current.style.height = "auto";
+      textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
+    }
+  }, [input]);
+
   return (
     <div className="bg-secondary dark:bg-zinc-700 w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden transition-all duration-200">
       <div
@@ -30,20 +37,10 @@ export const Textarea = ({
           <div className="w-2/5 bg-gray-200 dark:bg-zinc-800 rounded-2xl mt-2 py-2 animate-pulse" />
         </div>
       </div>
-      <div
-        className="absolute z-2 top-3 right-3 cursor-pointer"
-        onClick={() => setIsBigSize((previous) => !previous)}
-      >
-        {isBigSize ? (
-          <Minimize2 className="h-4 w-4" />
-        ) : (
-          <Maximize2 className="h-4 w-4" />
-        )}
-      </div>
       <ShadcnTextarea
+        ref={textAreaRef}
         className={cn(
-          "resize-none relative bg-transparent w-full max-h-80 overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
-          { "h-80": isBigSize },
+          "resize-none relative bg-transparent w-full min-h-18 max-h-80 overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
           isLoadingRefinedPrompt ? "opacity-0 max-h-18" : "opacity-100"
         )}
         theme="outline"
