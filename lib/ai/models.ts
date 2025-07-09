@@ -66,6 +66,9 @@ export const languageModelConfigurations = {
   "Gemma 3": {
     model: openrouter("google/gemma-3-27b-it"),
   },
+  "Gemini 2.0 Flash": {
+    model: google("gemini-2.0-flash"),
+  },
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },

@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   languageModelConfigurations,
   ModelConfiguration,
-} from "@/lib/ai/providers";
+} from "@/lib/ai/models";
 import { scapeXML } from "@/lib/utils";
 
 const CATEGORIES = [

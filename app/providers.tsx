@@ -12,7 +12,7 @@ import {
   chatModelId,
   defaultTopK,
   getChatConfigurationByModelId,
-} from "@/lib/ai/providers";
+} from "@/lib/ai/models";
 import { generateUUID } from "@/lib/utils";
 
 interface ProvidersProps {

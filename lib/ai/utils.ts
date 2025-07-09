@@ -1,5 +1,5 @@
-import { generateText, Message, UIMessage } from "ai";
-import { languageModelConfigurations } from "@/lib/ai/providers";
+import { GenerateObjectResult, generateText, Message, UIMessage } from "ai";
+import { languageModelConfigurations } from "@/lib/ai/models";
 import { InsertMessage } from "@/lib/db/schema";
 
 export async function generateTitleFromUserMessage(
@@ -38,3 +38,5 @@ export const messagePartsToText = (message: UIMessage): string => {
     return content;
   }, "");
 };
+
+export const getObject = <T>({ object }: GenerateObjectResult<T>) => object;

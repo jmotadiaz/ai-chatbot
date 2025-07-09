@@ -1,5 +1,5 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
-import { openai } from "@/lib/ai/providers";
+import { openai } from "@/lib/ai/models";
 
 export async function POST(req: Request) {
   const { input } = await req.json();
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const result = await generateSpeech({
       model: openai.speech("gpt-4o-mini-tts"),
       speed: 0.9,
-      voice: "shimmer",
+      voice: "alloy",
       instructions: `
         When language is spanish, the pronunciation should be spanish (spain).
         When language is english, the pronunciation should be english (uk).

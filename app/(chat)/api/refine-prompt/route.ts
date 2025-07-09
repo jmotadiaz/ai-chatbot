@@ -1,6 +1,6 @@
 import { generateText, UIMessage } from "ai";
 import { auth } from "@/auth";
-import { languageModelConfigurations } from "@/lib/ai/providers";
+import { languageModelConfigurations } from "@/lib/ai/models";
 import {
   chatHistoryPrompt,
   concatenatePrompts,

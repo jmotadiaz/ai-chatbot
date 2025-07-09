@@ -2,7 +2,7 @@ import { UIMessage } from "ai";
 import { revalidatePath } from "next/cache";
 import { saveChat, saveMessages, transaction } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { chatModelId } from "@/lib/ai/providers";
+import { chatModelId } from "@/lib/ai/models";
 import {
   generateTitleFromUserMessage,
   messageToDbMessage,

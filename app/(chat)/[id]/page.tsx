@@ -10,11 +10,7 @@ import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
 import { Message } from "@/lib/db/schema";
-import {
-  defaultTemperature,
-  defaultTopP,
-  chatModelId,
-} from "@/lib/ai/providers";
+import { defaultTemperature, defaultTopP, chatModelId } from "@/lib/ai/models";
 import {
   getChatById,
   getMessagesByChatId,

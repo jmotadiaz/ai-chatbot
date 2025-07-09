@@ -1,7 +1,7 @@
 import { embedMany, embed } from "ai";
 import { MarkdownNodeParser } from "@llamaindex/core/node-parser";
 import { Document } from "@llamaindex/core/schema";
-import { google } from "@/lib/ai/providers";
+import { google } from "@/lib/ai/models";
 const embeddingDocumentModel = google.textEmbeddingModel("text-embedding-004", {
   taskType: "RETRIEVAL_DOCUMENT",
   outputDimensionality: 768,

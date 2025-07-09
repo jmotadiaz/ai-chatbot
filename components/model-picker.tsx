@@ -12,7 +12,7 @@ import {
   chatModelId,
   CHAT_MODELS,
   getChatConfigurationByModelId,
-} from "@/lib/ai/providers";
+} from "@/lib/ai/models";
 
 export const ModelPicker = () => {
   const modelPickerProps = useModelPicker();

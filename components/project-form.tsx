@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/markdown-editor";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { Project } from "@/lib/db/schema";
-import { defaultModel, chatModelId } from "@/lib/ai/providers";
+import { defaultModel, chatModelId } from "@/lib/ai/models";
 import { ChatProvider } from "@/app/providers";
 
 const tabs = ["configuration", "testChat"] as const;

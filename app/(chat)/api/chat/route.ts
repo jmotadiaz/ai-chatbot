@@ -9,7 +9,7 @@ import {
   chatModelConfigurations,
   chatModelId,
   ModelConfiguration,
-} from "@/lib/ai/providers";
+} from "@/lib/ai/models";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { generateUUID } from "@/lib/utils";
 import {
