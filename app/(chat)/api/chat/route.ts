@@ -21,7 +21,7 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
-import { retrieve, RetrieveResult } from "@/lib/ai/retrieve";
+import { retrieve } from "@/lib/ai/retrieve";
 
 export const maxDuration = 60;
 
@@ -71,9 +71,7 @@ export async function POST(req: Request) {
     };
   }
 
-  // Handle RAG if enabled
   let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
-  let retrieveResult: RetrieveResult | null = null;
 
   if (useRAG && messages.length > 0) {
     const userMessages = messages.filter((msg) => msg.role === "user");
@@ -90,10 +88,10 @@ export async function POST(req: Request) {
         userQuery.substring(0, 100)
       );
 
-      retrieveResult = await retrieve(userQuery);
+      const retrieveResult = await retrieve(userQuery);
 
       if (retrieveResult.success && retrieveResult.contextPrompt) {
-        enhancedSystemPrompt = `${retrieveResult.contextPrompt}\n\n---\n\n${enhancedSystemPrompt}`;
+        enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${retrieveResult.contextPrompt}`;
         console.log(
           "RAG context added to system prompt",
           retrieveResult.resources
@@ -159,11 +157,6 @@ export async function POST(req: Request) {
             } catch (error) {
               console.error("Error saving message:", error);
             }
-          }
-          if (retrieveResult?.resources) {
-            dataStream.writeMessageAnnotation({
-              resources: retrieveResult.resources,
-            });
           }
         },
         onError: (error) => {

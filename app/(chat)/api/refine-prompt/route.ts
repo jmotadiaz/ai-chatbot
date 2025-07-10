@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { languageModelConfigurations } from "@/lib/ai/models";
 import {
   chatHistoryPrompt,
-  concatenatePrompts,
   defaultMetaPrompt,
   metaPromptInputFormat,
   metaPromptOutputFormat,
@@ -40,14 +39,9 @@ export async function POST(req: Request) {
   const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
 
   const { text } = await generateText({
-    ...languageModelConfigurations["Qwen 3"],
-    system:
-      metaPrompt +
-      concatenatePrompts +
-      metaPromptInputFormat +
-      concatenatePrompts +
-      metaPromptOutputFormat,
-    prompt: initialPrompt + concatenatePrompts + originalPrompt(prompt),
+    ...languageModelConfigurations["Gemini 2.5 Pro"],
+    system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
+    prompt: initialPrompt + originalPrompt(prompt),
     temperature: 0.2,
   });
 

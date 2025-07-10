@@ -63,7 +63,7 @@ export async function retrieve(
         }", similarity: ${(chunk.similarity * 100).toFixed(1)}%)
 ${chunk.content}`;
       })
-      .join("\n\n");
+      .join("\n");
 
     const contextPrompt = `# PRIORITY CONTEXT FOR USER QUERY
 
