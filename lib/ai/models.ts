@@ -125,8 +125,8 @@ export const languageModelConfigurations = {
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
   },
-  "Grok 3": {
-    model: xai("grok-3"),
+  "Grok 4 0709": {
+    model: xai("grok-4-0709"),
   },
 } satisfies ModelConfigurations;
 
@@ -163,7 +163,7 @@ const chatModelKeys = [
   "o4 Mini",
   "o3",
   "Grok 3 Mini",
-  "Grok 3",
+  "Grok 4 0709",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
