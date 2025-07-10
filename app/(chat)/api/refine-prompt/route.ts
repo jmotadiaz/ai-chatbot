@@ -42,7 +42,6 @@ export async function POST(req: Request) {
     ...languageModelConfigurations["Gemini 2.5 Pro"],
     system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
     prompt: initialPrompt + originalPrompt(prompt),
-    temperature: 0.2,
   });
 
   return Response.json({ text });
