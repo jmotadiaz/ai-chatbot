@@ -40,7 +40,7 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
   return (
     <Item className="py-0">
       <Link href={`/${id}`} className="flex-1 py-2 overflow-hidden">
-        <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="whitespace-nowrap overflow-hidden text-ellipsis">
           {title || "Untitled Chat"}
         </div>
       </Link>

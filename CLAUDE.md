@@ -29,3 +29,7 @@
 
 ## Regarding Dependencies:
 - If a new dependency is required, please state the reason.
+
+## Required step after completing changes:
+- Run `pnpm lint:fix` to fix any linting issues.
+- Run `pnpm build` to check for any build errors.

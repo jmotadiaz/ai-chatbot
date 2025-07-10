@@ -7,6 +7,7 @@ import { SaveIcon } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import Chat from "@/components/chat";
+import { saveChat } from "@/lib/ai/actions/chat";
 import {
   clearSessionMessages,
   getSessionMessages,
@@ -26,39 +27,32 @@ const ChatWithClientStorage: React.FC = () => {
   } = useChatContext();
   const [isSavingChat, setIsSavingChat] = useState(false);
   const initialized = useRef(false);
-  const { push, refresh } = useRouter();
+  const { push } = useRouter();
   const isSaveChatEnabled =
     messages.length > 1 &&
     status !== "streaming" &&
     status !== "submitted" &&
     !isSavingChat;
 
-  const onSaveChat = () => {
+  const onSaveChat = async () => {
     setIsSavingChat(true);
-    fetch("/api/save-chat", {
-      method: "POST",
-      body: JSON.stringify({
+    try {
+      await saveChat({
         messages,
         projectId,
         chatId,
         selectedModel,
         temperature,
         topP,
-      }),
-    })
-      .then(() => {
-        clearSessionMessages();
-        // Refresh the router cache before navigating to ensure ChatList is refreshed
-        refresh();
-        push(`/${chatId}`);
-      })
-      .catch((error) => {
-        toast.error("Error saving chat");
-        console.error("Error saving chat", error);
-      })
-      .finally(() => {
-        setIsSavingChat(false);
       });
+      clearSessionMessages();
+      push(`/${chatId}`);
+    } catch (error) {
+      toast.error("Error saving chat");
+      console.error("Error saving chat", error);
+    } finally {
+      setIsSavingChat(false);
+    }
   };
 
   useEffect(() => {
