@@ -103,32 +103,30 @@ export const RAGUploadForm = () => {
               accept=".json"
               onChange={handleJsonFileChange}
               disabled={isLoading}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400"
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 border-none px-0 py-2 cursor-pointer file:cursor-pointer"
             />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Expected format:{" "}
             {'{ "urls": ["https://example.com", "https://example2.com"] }'}
           </p>
         </div>
 
         <div className="space-y-4">
-          <Label htmlFor="markdownFiles">
-            Markdown Files (.md, .mdx) - Optional
-          </Label>
+          <Label htmlFor="markdownFiles">Markdown Files - Optional</Label>
           <div className="relative">
             <Input
               id="markdownFiles"
               type="file"
-              accept=".md,.mdx"
+              accept=".md"
               multiple
               onChange={handleMarkdownFilesChange}
               disabled={isLoading}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400"
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400 border-none px-0 py-2 cursor-pointer file:cursor-pointer"
             />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Select multiple .md or .mdx files to upload directly
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Select multiple .md files to upload directly
           </p>
         </div>
 
@@ -167,7 +165,7 @@ export const RAGUploadForm = () => {
         <Button
           type="submit"
           disabled={(!jsonFile && !markdownFiles) || isLoading}
-          className="w-full"
+          className="w-full mt-4"
         >
           {isLoading ? (
             <>

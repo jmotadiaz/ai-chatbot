@@ -38,7 +38,7 @@ export const Textarea = ({
   };
 
   return (
-    <div className="bg-secondary dark:bg-zinc-700 w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden transition-all duration-200">
+    <div className="bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden transition-all duration-200">
       <div
         className={cn(
           "absolute z-3 top-0 bottom-16 pt-4 px-4 left-0 w-full",
