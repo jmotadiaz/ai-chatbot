@@ -17,6 +17,7 @@ import {
   MarkdownEditor,
 } from "@/components/ui/markdown-editor";
 import { Tabs, useTabs } from "@/components/ui/tabs";
+import { createProject, updateProject } from "@/lib/ai/actions/project";
 import { Project } from "@/lib/db/schema";
 import { defaultModel, chatModelId } from "@/lib/ai/models";
 import { ChatProvider } from "@/app/providers";
@@ -56,34 +57,24 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
 
     setIsCreating(true);
     try {
-      const response = await fetch(
-        project ? `/api/project/${project.id}` : "/api/project",
-        {
-          method: project ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: title,
-            defaultModel: model,
-            defaultTemperature: temperature,
-            defaultTopP: topP,
-            systemPrompt,
-            metaPrompt: metaPrompt,
-          }),
-        }
-      );
+      const projectData = {
+        name: title,
+        defaultModel: model,
+        defaultTemperature: temperature,
+        defaultTopP: topP,
+        systemPrompt,
+        metaPrompt,
+      };
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create project");
+      if (project) {
+        await updateProject(project.id, projectData);
+        toast.success("Project updated successfully!");
+        router.push(`/project/${project.id}`);
+      } else {
+        const newProject = await createProject(projectData);
+        toast.success("Project created successfully!");
+        router.push(`/project/${newProject.id}`);
       }
-
-      const {
-        project: { id },
-      } = await response.json();
-      toast.success("Project created successfully!");
-      router.push(`/project/${id}`);
     } catch (error) {
       console.error("Error creating project:", error);
       toast.error(
