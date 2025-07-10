@@ -27,7 +27,7 @@ const EnglishHelperChat: React.FC = () => {
   });
 
   return (
-    <div className="h-full pt-24 overflow-auto overflow-x-hidden px-4">
+    <div className="h-full pt-18 xl:pt-24 overflow-auto overflow-x-hidden px-4">
       <div className="w-ful max-w-4xl mx-auto my-4">
         <Tabs.Container className="mb-8">
           <Tabs.Tab {...getTabProps("translate")}>Translate</Tabs.Tab>

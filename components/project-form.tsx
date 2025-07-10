@@ -96,7 +96,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
 
   return (
     <div className="overflow-x-hidden h-full">
-      <Tabs.Container className="max-w-4xl mx-auto pt-18 my-4">
+      <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
         <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
         <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
       </Tabs.Container>
