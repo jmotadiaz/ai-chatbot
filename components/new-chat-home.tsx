@@ -3,15 +3,17 @@ import { Edit } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 
 export const NewChatHome = () => {
-  const { setMessages } = useChatContext();
+  const { setMessages, setInput, status } = useChatContext();
   return (
-    <span
-      className=" text-zinc-700 dark:text-zinc-200 border-none cursor-pointer"
+    <button
+      disabled={status === "streaming" || status === "submitted"}
+      className="text-zinc-700 dark:text-zinc-200 border-none cursor-pointer disabled:cursor-default disabled:opacity-10"
       onClick={() => {
+        setInput("");
         setMessages([]);
       }}
     >
       <Edit size={18} />
-    </span>
+    </button>
   );
 };

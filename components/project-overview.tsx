@@ -7,7 +7,7 @@ export interface ProjectOverviewProps {
 export const ProjectOverview = ({ title }: ProjectOverviewProps) => {
   return (
     <div className="h-full flex flex-col items-center justify-end px-4">
-      <h1 className="text-3xl text-center font-semibold mb-4">
+      <h1 className="text-3xl text-center font-semibold mb-4 select-none">
         {title ? (
           title
         ) : (

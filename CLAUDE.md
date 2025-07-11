@@ -19,6 +19,7 @@
 - Use try/catch for error handling with appropriate status codes
 - Error handling in UI components using toast notifications
 - Components should be properly typed using using React.FC with explicit prop interfaces
+  - When no props are needed, use `React.FC` without an interface
 - UI Components shouldn't have logic. the logic should be in a hook and the result of the hook should be the props of the component (Headless Components Pattern)
     - Example:
       ```

@@ -53,7 +53,7 @@ export const Textarea = ({
       <TextareaUI
         ref={textAreaRef}
         className={cn(
-          "resize-none relative bg-transparent w-full min-h-18 max-h-80 overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2",
+          "resize-none relative bg-transparent w-full min-h-18 max-h-80 overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2 placeholder:select-none",
           isLoadingRefinedPrompt ? "opacity-0 max-h-18" : "opacity-100"
         )}
         theme="outline"

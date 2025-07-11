@@ -56,15 +56,9 @@ const ChatWithClientStorage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (messages.length && initialized.current) {
+    if (initialized.current) {
       setMessagesInSession(messages);
-    }
-
-    if (!messages.length && initialized.current) {
-      clearSessionMessages();
-    }
-
-    if (!messages.length && !initialized.current) {
+    } else {
       initialized.current = true;
       setMessages(getSessionMessages());
     }

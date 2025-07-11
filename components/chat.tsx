@@ -71,7 +71,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
                   status={status}
                 />
                 {status === "submitted" && (
-                  <div className="flex items-center gap-2 ml-5 mt-2">
+                  <div className="flex items-center gap-2 ml-5 mt-4">
                     <Circle
                       size={2}
                       className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite]"
