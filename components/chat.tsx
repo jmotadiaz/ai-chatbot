@@ -17,7 +17,7 @@ import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/app/providers";
-import { useRefinePrompt } from "@/lib/ai/hooks";
+import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;

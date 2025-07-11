@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useRefinePrompt } from "@/lib/ai/hooks";
+import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 import { systemMetaPrompt } from "@/lib/ai/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

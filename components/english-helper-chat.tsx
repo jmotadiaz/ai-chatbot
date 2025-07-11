@@ -10,7 +10,8 @@ import { CopyBlock } from "@/components/copy-block";
 import { Markdown } from "@/components/markdown";
 import { cn } from "@/lib/utils";
 import { grammarSchema } from "@/lib/ai/schemas/grammar";
-import { useObject, UseObjectReturn, useSpeech } from "@/lib/ai/hooks";
+import { useObject, UseObjectReturn } from "@/lib/ai/hooks/use-object";
+import { useSpeech } from "@/lib/ai/hooks/use-speech";
 import { Button } from "@/components/ui/button";
 
 const tabs = ["translate", "grammar"] as const;
