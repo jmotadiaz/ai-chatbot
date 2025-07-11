@@ -14,6 +14,7 @@ const CATEGORIES = [
   "instructional",
   "conversational",
   "processing",
+  "other",
 ] as const;
 
 const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
@@ -71,7 +72,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Qwen 3"],
     },
     complex: {
-      ...languageModelConfigurations["Deepseek R1 0528"],
+      ...languageModelConfigurations["Grok 4"],
     },
   },
   technical: {
@@ -109,7 +110,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.5,
     },
     complex: {
-      ...languageModelConfigurations["Deepseek R1 0528"],
+      ...languageModelConfigurations["Gemini 2.5 Pro"],
       temperature: 0.5,
     },
   },
@@ -138,6 +139,17 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
     },
   },
+  other: {
+    simple: {
+      ...languageModelConfigurations["Llama 3.1 Instant"],
+    },
+    moderate: {
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
+    },
+    complex: {
+      ...languageModelConfigurations["Llama 4 Maverick"],
+    },
+  },
 } satisfies Record<
   (typeof CATEGORIES)[number],
   Record<(typeof COMPLEXITY_LEVELS)[number], ModelConfiguration>
@@ -145,65 +157,63 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
 
 const getPrompt = (query: string): string => `\n
   # Query Classification for LLM Routing
-  Analyze the following user query, included in a xml tag <query>, and classify it to determine the most appropriate LLM routing:
+  Analyze the following user query, included in an XML tag \`<query>\`, and classify it to determine the most appropriate LLM routing. Output your classification in the specified JSON format.
 
   ## Classification Requirements
 
   ### 1. Categories
 
-  #### factual
-  - Direct questions seeking specific information
-  - Examples: "What is the capital of France?", "When was Python created?"
+  Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
-  #### analytical
-  - Multi-step reasoning, problem-solving, logical analysis
-  - Examples: "Compare pros/cons of X vs Y", "Analyze this data trend"
+  - **Factual**: Direct questions seeking specific, verifiable information.
+    - Examples: "What is the capital of France?", "When was Python created?", "List the planets in our solar system."
 
-  #### technical
-  - Programming, debugging, system design, technical implementation
-  - Examples: "Fix this code bug", "Design a REST API"
+  - **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
+    - Examples: "Compare pros/cons of electric vs gas cars", "Analyze this sales data trend", "Solve this logic puzzle."
 
-  #### creative
-  - Artistic content generation, open-ended writing, brainstorming
-  - Examples: "Write a story", "Create a poem", "Generate creative marketing slogans"
+  - **Technical**: Programming, debugging, system design, or technical implementation.
+    - Examples: "Fix this code bug in Python", "Design a REST API for user authentication", "Explain quantum computing basics."
 
-  #### instructional
-  - Creating structured content, prompts, templates, educational materials
-  - Examples: "Design a prompt for X", "Create a lesson plan", "Write documentation template"
+  - **Creative**: Artistic content generation, open-ended writing, or brainstorming.
+    - Examples: "Write a short story about a time traveler", "Create a poem about autumn", "Generate creative marketing slogans for a coffee brand."
 
-  #### conversational
-  - Casual chat, personal advice, social interaction
-  - Examples: "How was your day?", "What should I wear?"
+  - **Instructional**: Creating structured content, prompts, templates, or educational materials.
+    - Examples: "Design a prompt for generating recipes", "Create a lesson plan on climate change", "Write a documentation template for software APIs."
 
-  #### processing
-  - Text transformation, translation, summarization
-  - Examples: "Translate this text", "Summarize this article"
+  - **Conversational**: Casual chat, personal advice, or social interaction.
+    - Examples: "How was your day?", "What should I wear to a job interview?", "Tell me a joke."
+
+  - **Processing**: Text transformation, translation, summarization, or data extraction.
+    - Examples: "Translate this text to Spanish", "Summarize this article on AI ethics", "Extract key points from this report."
+
+  - **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
 
-  #### simple
-  - Single-step task, common knowledge, minimal context needed
-  - Processing time: < 30 seconds
-  - Examples: "Define machine learning", "Convert 100°F to Celsius"
+  Assess complexity based on **required expertise, number of steps, and context depth**, not query length. Estimate processing effort as a guide.
 
-  #### moderate
-  - Multi-step process, some domain knowledge, moderate context
-  - Processing time: 30 seconds - 2 minutes
-  - Examples: "Explain how OAuth works", "Debug this 20-line function"
+  - **Simple**: Single-step task, common knowledge, minimal context needed.
+    - Estimated effort: Low (e.g., < 30 seconds).
+    - Examples: "Define machine learning", "Convert 100°F to Celsius."
 
-  #### complex
-  - Deep expertise required, extensive context, multi-faceted analysis
-  - Processing time: > 2 minutes
-  - Examples: "Design microservices architecture", "Write comprehensive market analysis"
+  - **Moderate**: Multi-step process, some domain knowledge, moderate context.
+    - Estimated effort: Medium (e.g., 30 seconds - 2 minutes).
+    - Examples: "Explain how OAuth works with examples", "Debug this 20-line JavaScript function."
+
+  - **Complex**: Deep expertise required, extensive context, multi-faceted analysis.
+    - Estimated effort: High (e.g., > 2 minutes).
+    - Examples: "Design a scalable microservices architecture for e-commerce", "Write a comprehensive market analysis report on renewable energy."
 
   ### 3. Reasoning
-  Brief reasoning for classification.
+  Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers.
 
   ### Classification Guidelines
 
-  1. **Choose the most specific category** that fits the primary intent
-  2. **Base complexity on required expertise and processing depth**, not query length
-  3. **Provide brief reasoning** - focus on the key deciding factors. 1-2 sentence explanation
+  1. **Choose the most specific category** that fits the primary intent; prioritize based on the query's core goal.
+  2. **Handle hybrids**: If a query spans categories (e.g., technical + analytical), select the primary and list secondaries in reasoning.
+  3. **Base complexity on inherent factors**: Consider expertise needed, steps involved, and potential for in-depth response.
+  4. **Edge cases**: For ambiguous queries, classify as "other" and suggest clarification. If multilingual, classify based on content intent.
+  5. **Confidence**: Include a confidence score (high/medium/low) in the output for the classification.
 
   ## User Query
   <query>

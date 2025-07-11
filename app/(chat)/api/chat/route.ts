@@ -53,22 +53,22 @@ export async function POST(req: Request) {
     useRAG?: boolean;
   } = await req.json();
 
-  let chatModelConfiguration: ModelConfiguration | null = null;
+  let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
 
   if (selectedModel === "Auto Model Workflow") {
     const firstMessage = messages[0];
 
-    chatModelConfiguration = await autoModel(
+    chatModelConfiguration = autoModel(
       firstMessage?.content || messagePartsToText(firstMessage)
     );
   } else {
-    chatModelConfiguration = {
+    chatModelConfiguration = Promise.resolve({
       ...(chatModelConfigurations[selectedModel] ||
         chatModelConfigurations["Llama 4 Maverick"]),
       temperature,
       topK,
       topP,
-    };
+    });
   }
 
   let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
@@ -76,19 +76,14 @@ export async function POST(req: Request) {
   if (useRAG && messages.length > 0) {
     const userMessages = messages.filter((msg) => msg.role === "user");
     if (userMessages.length) {
-      const userQuery = userMessages.reduce(
-        (concatenatedMessage, msg) => `${concatenatedMessage}
+      const retrieveResult = await retrieve(
+        userMessages.reduce(
+          (concatenatedMessage, msg) => `${concatenatedMessage}
         ${msg.content === "string" ? msg.content : messagePartsToText(msg)}
         `,
-        ""
+          ""
+        )
       );
-
-      console.log(
-        "RAG enabled, retrieving context for query:",
-        userQuery.substring(0, 100)
-      );
-
-      const retrieveResult = await retrieve(userQuery);
 
       if (retrieveResult.success && retrieveResult.contextPrompt) {
         enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${retrieveResult.contextPrompt}`;
@@ -97,15 +92,15 @@ export async function POST(req: Request) {
           retrieveResult.resources
         );
       } else {
-        console.warn("RAG retrieve failed:", retrieveResult.error);
+        console.error("RAG retrieve failed:", retrieveResult.error);
       }
     }
   }
 
   return createDataStreamResponse({
-    execute: (dataStream) => {
+    execute: async (dataStream) => {
       const result = streamText({
-        ...chatModelConfiguration,
+        ...(await chatModelConfiguration),
         system: enhancedSystemPrompt,
         messages,
         experimental_generateMessageId: generateUUID,

@@ -39,7 +39,7 @@ const components: Partial<Components> = {
   table: ({ node, children, ...props }) => {
     return (
       <div className="animate-fade w-full overflow-x-auto">
-        <table className="table-auto w-auto" {...props}>
+        <table className="table-auto w-auto text-sm" {...props}>
           {children}
         </table>
       </div>
@@ -67,9 +67,9 @@ const components: Partial<Components> = {
   },
   strong: ({ node, children, ...props }) => {
     return (
-      <span className="font-semibold" {...props}>
+      <strong className="font-semibold" {...props}>
         {children}
-      </span>
+      </strong>
     );
   },
   p: ({ node, children, ...props }) => {

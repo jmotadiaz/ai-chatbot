@@ -125,7 +125,7 @@ export const languageModelConfigurations = {
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
   },
-  "Grok 4 0709": {
+  "Grok 4": {
     model: xai("grok-4-0709"),
   },
 } satisfies ModelConfigurations;
@@ -148,10 +148,8 @@ const pickModelConfigurations = <
 };
 
 const chatModelKeys = [
-  "Llama 3.3 Versatile",
   "Llama 4 Maverick",
   "Deepseek V3",
-  "Gemini 2.5 Flash Lite",
   "Gemini 2.5 Flash",
   "GPT 4.1 Mini",
   "GPT 4.1",
@@ -159,11 +157,10 @@ const chatModelKeys = [
   "Deepseek R1 0528",
   "Gemini 2.5 Pro",
   "Claude Sonnet 4",
-  "Claude Opus 4",
   "o4 Mini",
   "o3",
   "Grok 3 Mini",
-  "Grok 4 0709",
+  "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
