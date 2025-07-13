@@ -486,10 +486,14 @@ export const createEmbeddings =
     }
   };
 
+export type SimilarChunks = Array<
+  Embedding & { similarity: number; resourceTitle: string }
+>;
+
 export async function findSimilarChunks(
   embedding: number[],
   limit: number = 5
-): Promise<Array<Embedding & { similarity: number; resourceTitle: string }>> {
+): Promise<SimilarChunks> {
   try {
     const similarity = sql<number>`1 - (${
       embeddings.embedding

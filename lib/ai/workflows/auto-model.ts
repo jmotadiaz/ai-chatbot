@@ -38,7 +38,7 @@ export async function autoModel(query: string): Promise<ModelConfiguration> {
     console.error("Error during model generation:", error);
     return {
       object: {
-        category: "factual",
+        category: "other",
         complexity: "simple",
         reasoning: "Default classification due to error",
       } satisfies z.infer<typeof schema>,
@@ -77,7 +77,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   technical: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     moderate: {
       ...languageModelConfigurations["Llama 4 Maverick"],
@@ -102,7 +102,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   instructional: {
     simple: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
       temperature: 0.5,
     },
     moderate: {

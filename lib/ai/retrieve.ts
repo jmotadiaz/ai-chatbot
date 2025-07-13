@@ -1,11 +1,11 @@
 import { generateText } from "ai";
 import { generateEmbedding } from "@/lib/ai/generate-embeddings";
-import { findSimilarChunks } from "@/lib/db/queries";
+import { findSimilarChunks, SimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/models";
 
 export interface RetrieveResult {
   success: boolean;
-  contextPrompt?: string;
+  similarChunks?: SimilarChunks;
   resources?: string[];
   error?: string;
 }
@@ -13,7 +13,7 @@ export interface RetrieveResult {
 /**
  * Translates text to English using Gemini 2.0 Flash
  */
-async function translateToEnglish(text: string): Promise<string> {
+export async function translateToEnglish(text: string): Promise<string> {
   try {
     const { text: translatedText } = await generateText({
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
@@ -35,15 +35,7 @@ export async function retrieve(
   limit: number = 6
 ): Promise<RetrieveResult> {
   try {
-    console.log(
-      `RAG retrieve called with query: ${query.substring(0, 100)}...`
-    );
-
-    console.log("Translating query to English...");
-    const englishQuery = await translateToEnglish(query);
-    console.log(`Processed query: ${englishQuery.substring(0, 100)}...`);
-
-    const userQueryEmbedded = await generateEmbedding(englishQuery);
+    const userQueryEmbedded = await generateEmbedding(query);
     const similarChunks = await findSimilarChunks(userQueryEmbedded, limit);
 
     if (similarChunks.length === 0) {
@@ -53,32 +45,9 @@ export async function retrieve(
       };
     }
 
-    console.log(`Found ${similarChunks.length} relevant chunks`);
-
-    // Step 4: Build context prompt
-    const contextSections = similarChunks
-      .map((chunk, index) => {
-        return `## Context ${index + 1} (from "${
-          chunk.resourceTitle
-        }", similarity: ${(chunk.similarity * 100).toFixed(1)}%)
-${chunk.content}`;
-      })
-      .join("\n");
-
-    const contextPrompt = `# PRIORITY CONTEXT FOR USER QUERY
-
-The following information from your knowledge base is highly relevant to the user's question. Use this context as your primary source of information when responding. If the context doesn't contain enough information to fully answer the question, you may supplement with your general knowledge, but prioritize the provided context.
-After your response, create a unique section for the resources used.
-
-${contextSections}
-
----
-
-Please answer the user's question using the above context as your primary reference.`;
-
     return {
       success: true,
-      contextPrompt,
+      similarChunks,
       resources: [
         ...new Set(similarChunks.map(({ resourceTitle }) => resourceTitle)),
       ],
@@ -93,4 +62,28 @@ Please answer the user's question using the above context as your primary refere
           : "Unknown error in retrieve function",
     };
   }
+}
+
+export function buildContextPrompt(similarChunks: SimilarChunks): string {
+  const contextSections = similarChunks
+    .map((chunk, index) => {
+      return `
+      ## Context ${index + 1} (from "${chunk.resourceTitle}", similarity: ${(
+        chunk.similarity * 100
+      ).toFixed(1)}%)
+      ${chunk.content}
+      `;
+    })
+    .join("\n");
+
+  return `# PRIORITY CONTEXT FOR USER QUERY
+
+    The following information from your knowledge base is highly relevant to the user's question. Use this context as your primary source of information when responding. If the context doesn't contain enough information to fully answer the question, you may supplement with your general knowledge, but prioritize the provided context.
+    After your response, create a unique section for the resources used.
+
+    ${contextSections}
+
+    ---
+
+    Please answer the user's question using the above context as your primary reference.`;
 }

@@ -21,7 +21,11 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
-import { retrieve } from "@/lib/ai/retrieve";
+import {
+  buildContextPrompt,
+  retrieve,
+  translateToEnglish,
+} from "@/lib/ai/retrieve";
 
 export const maxDuration = 60;
 
@@ -77,16 +81,23 @@ export async function POST(req: Request) {
     const userMessages = messages.filter((msg) => msg.role === "user");
     if (userMessages.length) {
       const retrieveResult = await retrieve(
-        userMessages.reduce(
-          (concatenatedMessage, msg) => `${concatenatedMessage}
-        ${msg.content === "string" ? msg.content : messagePartsToText(msg)}
-        `,
-          ""
+        await translateToEnglish(
+          userMessages.reduce(
+            (concatenatedMessage, msg) => `
+              ${concatenatedMessage}
+              ${
+                msg.content === "string" ? msg.content : messagePartsToText(msg)
+              }
+          `,
+            ""
+          )
         )
       );
 
-      if (retrieveResult.success && retrieveResult.contextPrompt) {
-        enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${retrieveResult.contextPrompt}`;
+      if (retrieveResult.success && retrieveResult.similarChunks) {
+        enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${buildContextPrompt(
+          retrieveResult.similarChunks
+        )}`;
         console.log(
           "RAG context added to system prompt",
           retrieveResult.resources

@@ -72,6 +72,16 @@ export const languageModelConfigurations = {
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
+  "Gemini 2.5 Flash Lite Thinking": {
+    model: google("gemini-2.5-flash-lite-preview-06-17"),
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 1024,
+        },
+      } satisfies GoogleGenerativeAIProviderOptions,
+    },
+  },
   "Gemini 2.5 Flash No Think": {
     model: google("gemini-2.5-flash"),
     providerOptions: {
