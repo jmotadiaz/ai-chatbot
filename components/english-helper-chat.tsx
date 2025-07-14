@@ -31,7 +31,7 @@ const EnglishHelperChat: React.FC = () => {
     <div className="flex flex-col w-full h-full overflow-y-auto xl:overflow-hidden pt-18 px-4">
       <div className="w-full h-full flex-1 max-w-[2048px] mx-auto">
         {/* Tabs for smaller screens */}
-        <Tabs.Container className="mb-8 my-4 xl:hidden">
+        <Tabs.Container className="mb-8 mt-4 xl:hidden">
           <Tabs.Tab {...getTabProps("translate")}>Translate</Tabs.Tab>
           <Tabs.Tab {...getTabProps("grammar")}>Grammar</Tabs.Tab>
         </Tabs.Container>

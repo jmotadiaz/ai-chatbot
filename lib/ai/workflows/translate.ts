@@ -43,6 +43,7 @@ export default async function translate(prompt: string) {
       == ADDITIONAL RULES ==
       - Do not add information that is not present in the original text.
       - Do a grammatical and spelling check of the translation.
+      - When translating, aim to use a diverse vocabulary by incorporating synonyms for repeated words or phrases.
       - Preserve the original formatting (paragraphs, lists, etc.) whenever possible.
     `,
     prompt: `Translate the following text from ${sourceLanguage} to ${targetLanguage}: ${prompt}`,

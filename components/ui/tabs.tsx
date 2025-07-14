@@ -12,7 +12,7 @@ export interface ContainerProps {
 
 const Container: React.FC<ContainerProps> = ({ className, children }) => {
   return (
-    <div className={cn("flex w-full border-b px-6", className)}>{children}</div>
+    <div className={cn("flex w-full border-b-2", className)}>{children}</div>
   );
 };
 
@@ -27,7 +27,7 @@ const Tab: React.FC<TabProps> = ({ children, active, onClick }) => {
     <button
       type="button"
       className={cn(
-        "px-4 py-2 border-b-2 font-medium transition-colors duration-300",
+        "px-4 py-2 relative top-[2px] border-b-2 font-medium transition-colors duration-300 select-none",
         active
           ? "border-primary text-primary"
           : "border-transparent text-gray-500 cursor-pointer"

@@ -86,12 +86,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   };
 
   return (
-    <div className="overflow-x-hidden h-full">
+    <div className="overflow-x-hidden h-full px-6">
       <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
         <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
         <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
       </Tabs.Container>
-      <div className="w-full max-w-4xl mx-auto pt-6 px-6">
+      <div className="w-full max-w-4xl mx-auto pt-6">
         <Tabs.Panel {...getPanelProps("configuration")}>
           <div className="flex flex-col gap-6 pb-8">
             <div className="flex flex-col gap-2">
