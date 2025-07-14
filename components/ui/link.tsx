@@ -2,7 +2,7 @@
 import NextLink from "next/link";
 import React, { ComponentProps } from "react";
 import { usePathname } from "next/navigation";
-import { clearSessionMessages } from "@/lib/ai/session";
+import { clearSessionMessages } from "@/lib/ai/client-session";
 import { cn } from "@/lib/utils";
 
 type LinkProps = ComponentProps<typeof NextLink>;

@@ -17,7 +17,12 @@ const CATEGORIES = [
   "other",
 ] as const;
 
-const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
+const COMPLEXITY_LEVELS = [
+  "simple",
+  "moderate",
+  "complex",
+  "advanced",
+] as const;
 
 const schema = z.object({
   reasoning: z.string(),
@@ -63,15 +68,21 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
     complex: {
       ...languageModelConfigurations["Llama 4 Maverick"],
     },
+    advanced: {
+      ...languageModelConfigurations["Qwen 3"],
+    },
   },
   analytical: {
     simple: {
-      ...languageModelConfigurations["Deepseek R1 Distill"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
     },
     moderate: {
-      ...languageModelConfigurations["Qwen 3"],
+      ...languageModelConfigurations["Deepseek R1 Distill"],
     },
     complex: {
+      ...languageModelConfigurations["Qwen 3"],
+    },
+    advanced: {
       ...languageModelConfigurations["Grok 4"],
     },
   },
@@ -83,6 +94,9 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Llama 4 Maverick"],
     },
     complex: {
+      ...languageModelConfigurations["Qwen 3"],
+    },
+    advanced: {
       ...languageModelConfigurations["Claude Sonnet 4"],
     },
   },
@@ -92,24 +106,32 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
       temperature: 1,
     },
     complex: {
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite Thinking"],
+      temperature: 1,
+    },
+    advanced: {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 1,
     },
   },
   instructional: {
     simple: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
       temperature: 0.5,
     },
     moderate: {
-      ...languageModelConfigurations["GPT 4.1 Mini"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 0.5,
     },
     complex: {
+      ...languageModelConfigurations["GPT 4.1"],
+      temperature: 0.5,
+    },
+    advanced: {
       ...languageModelConfigurations["Gemini 2.5 Pro"],
       temperature: 0.5,
     },
@@ -120,10 +142,14 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.8,
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
       temperature: 0.8,
     },
     complex: {
+      ...languageModelConfigurations["Llama 4 Maverick"],
+      temperature: 0.8,
+    },
+    advanced: {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
       temperature: 0.8,
     },
@@ -136,6 +162,9 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     complex: {
+      ...languageModelConfigurations["Gemini 2.0 Flash"],
+    },
+    advanced: {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
     },
   },
@@ -149,6 +178,9 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
     complex: {
       ...languageModelConfigurations["Llama 4 Maverick"],
     },
+    advanced: {
+      ...languageModelConfigurations["Llama 4 Maverick"],
+    },
   },
 } satisfies Record<
   (typeof CATEGORIES)[number],
@@ -158,51 +190,39 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
 const getPrompt = (query: string): string => `\n
   # Query Classification for LLM Routing
   Analyze the following user query, included in an XML tag \`<query>\`, and classify it to determine the most appropriate LLM routing. Output your classification in the specified JSON format.
-
   ## Classification Requirements
 
   ### 1. Categories
 
   Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
-  - **Factual**: Direct questions seeking specific, verifiable information.
-    - Examples: "What is the capital of France?", "When was Python created?", "List the planets in our solar system."
-
-  - **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
-    - Examples: "Compare pros/cons of electric vs gas cars", "Analyze this sales data trend", "Solve this logic puzzle."
-
-  - **Technical**: Programming, debugging, system design, or technical implementation.
-    - Examples: "Fix this code bug in Python", "Design a REST API for user authentication", "Explain quantum computing basics."
-
-  - **Creative**: Artistic content generation, open-ended writing, or brainstorming.
-    - Examples: "Write a short story about a time traveler", "Create a poem about autumn", "Generate creative marketing slogans for a coffee brand."
-
-  - **Instructional**: Creating structured content, prompts, templates, or educational materials.
-    - Examples: "Design a prompt for generating recipes", "Create a lesson plan on climate change", "Write a documentation template for software APIs."
-
-  - **Conversational**: Casual chat, personal advice, or social interaction.
-    - Examples: "How was your day?", "What should I wear to a job interview?", "Tell me a joke."
-
-  - **Processing**: Text transformation, translation, summarization, or data extraction.
-    - Examples: "Translate this text to Spanish", "Summarize this article on AI ethics", "Extract key points from this report."
-
-  - **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
+  *   **Factual**: Direct questions seeking specific, verifiable information.
+  *   **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
+  *   **Technical**: Programming, debugging, system design, or technical implementation.
+  *   **Creative**: Artistic content generation, open-ended writing, or brainstorming.
+  *   **Instructional**: Creating structured content, prompts, templates, or educational materials.
+  *   **Conversational**: Casual chat, personal advice, or social interaction.
+  *   **Processing**: Text transformation, translation, summarization, or data extraction.
+  *   **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
+  Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length.
 
-  Assess complexity based on **required expertise, number of steps, and context depth**, not query length. Estimate processing effort as a guide.
+  *   **Simple**: A task involving the retrieval of a single, self-contained piece of information or a generic, atomic action.
+      *   **Core Task**: Retrieving a generic fact or a standard code snippet.
+      *   **Estimated effort**: Low.
 
-  - **Simple**: Single-step task, common knowledge, minimal context needed.
-    - Estimated effort: Low (e.g., < 30 seconds).
-    - Examples: "Define machine learning", "Convert 100°F to Celsius."
+  *   **Moderate**: A task that requires applying a process to a **specific context provided within the prompt**, or combining distinct steps to create a structured output.
+      *   **Core Task**: Processing user-provided input to produce a customized or structured result.
+      *   **Estimated effort**: Moderate.
 
-  - **Moderate**: Multi-step process, some domain knowledge, moderate context.
-    - Estimated effort: Medium (e.g., 30 seconds - 2 minutes).
-    - Examples: "Explain how OAuth works with examples", "Debug this 20-line JavaScript function."
+  *   **Complex**: A task requiring the **deep and multi-faceted application of expert knowledge** to produce a single, comprehensive artifact. It involves detailed analysis, design, or planning within an established domain.
+      *   **Core Task**: Solving a difficult problem.
+      *   **Estimated effort**: High.
 
-  - **Complex**: Deep expertise required, extensive context, multi-faceted analysis.
-    - Estimated effort: High (e.g., > 2 minutes).
-    - Examples: "Design a scalable microservices architecture for e-commerce", "Write a comprehensive market analysis report on renewable energy."
+  *   **Advanced**: A task that involves **designing a system, a process, or a new conceptual framework**. It often requires orchestrating multiple complex sub-tasks, creating iterative or self-correcting workflows, or synthesizing disparate domains to build a novel structure.
+      *   **Core Task**: Designing a system to solve problems.
+      *  **Estimated effort**: Very high.
 
   ### 3. Reasoning
   Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers.
@@ -213,7 +233,6 @@ const getPrompt = (query: string): string => `\n
   2. **Handle hybrids**: If a query spans categories (e.g., technical + analytical), select the primary and list secondaries in reasoning.
   3. **Base complexity on inherent factors**: Consider expertise needed, steps involved, and potential for in-depth response.
   4. **Edge cases**: For ambiguous queries, classify as "other" and suggest clarification. If multilingual, classify based on content intent.
-  5. **Confidence**: Include a confidence score (high/medium/low) in the output for the classification.
 
   ## User Query
   <query>

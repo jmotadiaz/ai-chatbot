@@ -12,7 +12,7 @@ import {
   clearSessionMessages,
   getSessionMessages,
   setMessagesInSession,
-} from "@/lib/ai/session";
+} from "@/lib/ai/client-session";
 
 const ChatWithClientStorage: React.FC = () => {
   const {

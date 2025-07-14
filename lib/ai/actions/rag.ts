@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import {
   generateEmbeddings,
   generateMarkdownChunks,
-} from "@/lib/ai/generate-embeddings";
+} from "@/lib/ai/rag/generate-embeddings";
 import {
   createEmbeddings,
   createResource,

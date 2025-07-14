@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { generateEmbedding } from "@/lib/ai/generate-embeddings";
+import { generateEmbedding } from "@/lib/ai/rag/generate-embeddings";
 import { findSimilarChunks, SimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/models";
 

@@ -25,7 +25,7 @@ import {
   buildContextPrompt,
   retrieve,
   translateToEnglish,
-} from "@/lib/ai/retrieve";
+} from "@/lib/ai/rag/retrieve";
 
 export const maxDuration = 60;
 
