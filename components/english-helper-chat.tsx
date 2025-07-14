@@ -28,19 +28,35 @@ const EnglishHelperChat: React.FC = () => {
   });
 
   return (
-    <div className="h-full pt-18 xl:pt-24 overflow-auto overflow-x-hidden px-4">
-      <div className="w-ful max-w-4xl mx-auto my-4">
-        <Tabs.Container className="mb-8">
+    <div className="flex flex-col w-full h-full overflow-y-auto xl:overflow-hidden pt-18 px-4">
+      <div className="w-full h-full flex-1 max-w-[2048px] mx-auto">
+        {/* Tabs for smaller screens */}
+        <Tabs.Container className="mb-8 my-4 xl:hidden">
           <Tabs.Tab {...getTabProps("translate")}>Translate</Tabs.Tab>
           <Tabs.Tab {...getTabProps("grammar")}>Grammar</Tabs.Tab>
         </Tabs.Container>
-        <div className="px-0 md:px-8">
+
+        {/* Tab panels for smaller screens */}
+        <div className="px-0 md:px-8 xl:hidden">
           <Tabs.Panel {...getPanelProps("translate")}>
             <EnglishTranslateChat {...completionResult} />
           </Tabs.Panel>
           <Tabs.Panel {...getPanelProps("grammar")}>
             <EnglishGrammarChat {...objectResult} />
           </Tabs.Panel>
+        </div>
+
+        {/* Side-by-side for larger screens */}
+        <div className="hidden w-full h-full xl:grid xl:grid-cols-[1fr_auto_1fr] gap-0 px-0 md:px-8">
+          <div className="pb-4 overflow-y-auto pr-8">
+            <h2 className="text-2xl font-bold mb-4 mt-6">Translate</h2>
+            <EnglishTranslateChat {...completionResult} />
+          </div>
+          <div className="border-l border-secondary"></div>
+          <div className="pb-4 overflow-y-auto pl-8">
+            <h2 className="text-2xl font-bold mb-4 mt-6">Grammar</h2>
+            <EnglishGrammarChat {...objectResult} />
+          </div>
         </div>
       </div>
     </div>
@@ -79,7 +95,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
       </div>
       <div
         className={cn(
-          "w-full overflow-hidden relative text-lg h-full overflow-y-auto"
+          "w-full overflow-hidden relative text-lg overflow-y-auto"
         )}
       >
         <>
@@ -135,7 +151,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
       </div>
       <div
         className={cn(
-          "w-full overflow-hidden relative text-lg h-full overflow-y-auto"
+          "w-full overflow-hidden relative text-lg overflow-y-auto"
         )}
       >
         {object && (

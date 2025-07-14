@@ -17,17 +17,18 @@ const Page: React.FC = async () => {
 
   return (
     <SidebarProvider>
-      <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar />
-        <Header.Container>
-          <Header.Left>
-            <Logo />
-            <NewChat />
-          </Header.Left>
-          <Header.Right>
-            <ThemeToggle />
-          </Header.Right>
-        </Header.Container>
+      <Sidebar />
+
+      <Header.Container>
+        <Header.Left>
+          <Logo />
+          <NewChat />
+        </Header.Left>
+        <Header.Right>
+          <ThemeToggle />
+        </Header.Right>
+      </Header.Container>
+      <div className="h-full flex items-stretch">
         <EnglishHelperChat />
       </div>
     </SidebarProvider>

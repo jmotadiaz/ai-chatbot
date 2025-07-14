@@ -110,7 +110,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
     complex: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite Thinking"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 1,
     },
     advanced: {
@@ -156,7 +156,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   processing: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
     },
     moderate: {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
@@ -173,13 +173,13 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
     },
     advanced: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
     },
   },
 } satisfies Record<
@@ -231,7 +231,6 @@ const getPrompt = (query: string): string => `\n
 
   1. **Choose the most specific category** that fits the primary intent; prioritize based on the query's core goal.
   2. **Handle hybrids**: If a query spans categories (e.g., technical + analytical), select the primary and list secondaries in reasoning.
-  3. **Base complexity on inherent factors**: Consider expertise needed, steps involved, and potential for in-depth response.
   4. **Edge cases**: For ambiguous queries, classify as "other" and suggest clarification. If multilingual, classify based on content intent.
 
   ## User Query
