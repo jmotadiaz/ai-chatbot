@@ -6,7 +6,7 @@ export const NewChat = () => {
   return (
     <Link
       href="/"
-      className=" text-zinc-700 dark:text-zinc-200 border-none cursor-pointer"
+      className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
     >
       <Edit size={18} />
     </Link>

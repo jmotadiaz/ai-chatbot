@@ -7,14 +7,14 @@ export const sourceLanguages = ["Spanish", "English"] as const;
 export const targetLanguages = ["Spanish (Spain)", "English (UK)"] as const;
 export const audiences = [
   "general_public",
-  "internal_stakeholders",
+  "professionals",
   "internal_team",
   "partners",
   "executives_or_investors",
 ] as const;
 
 export const audienceInstructions = {
-  internal_stakeholders:
+  professionals:
     "The translation must be professional, clear, and respectful. While it's an internal communication, maintain a higher level of formality than when speaking to direct peers. Contractions (e.g., 'it's', 'we're') are acceptable for a natural flow, but avoid slang. The goal is to inform efficiently and build cross-functional alignment.",
   internal_team:
     "The translation is for direct team members. A more direct, conversational, and efficient tone is preferred. It's acceptable to use well-known internal acronyms and technical jargon if the knowledge level is 'technical' or 'expert'. The goal is operational clarity and speed.",
@@ -54,7 +54,9 @@ export const identifyAudience = (prompt: string) => {
     schema: z.object({
       audience: z.enum(audiences),
     }),
-    system: "You are an expert detecting the audience of a text.",
+    system: `
+    You are an expert communications analyst. Your task is to identify the primary audience that a given text is directed towards
+    `,
     prompt: `Identify the most likely target audience for the following text:
       ${prompt}`,
   })

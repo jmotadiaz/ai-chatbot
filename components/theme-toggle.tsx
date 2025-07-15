@@ -19,7 +19,7 @@ export const ThemeToggle = () => {
     <button
       aria-label="Toggle Dark Mode"
       onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-      className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors"
+      className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
     >
       {currentTheme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
     </button>
