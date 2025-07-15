@@ -48,6 +48,9 @@ export const languageModelConfigurations = {
     model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
     temperature: 0.3,
   },
+  "Kimi K2": {
+    model: groq("moonshotai/kimi-k2-instruct"),
+  },
   "Mistral 3 Medium": {
     model: openrouter.chat("mistralai/mistral-medium-3"),
   },
@@ -160,6 +163,7 @@ const pickModelConfigurations = <
 const chatModelKeys = [
   "Llama 4 Maverick",
   "Deepseek V3",
+  "Kimi K2",
   "Gemini 2.5 Flash",
   "GPT 4.1 Mini",
   "GPT 4.1",
