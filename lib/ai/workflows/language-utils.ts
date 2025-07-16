@@ -55,7 +55,13 @@ export const identifyAudience = (prompt: string) => {
       audience: z.enum(audiences),
     }),
     system: `
-    You are an expert communications analyst. Your task is to identify the primary audience that a given text is directed towards
+    You are an expert communications analyst. Your task is to identify the primary audience that a given text is directed towards.
+    Choose from the following options:
+    - "general_public" (for public-facing content),
+    - "professionals" (for communications to other professionals in the company, such as cross-departmental colleagues. Key criteria: Structured format (e.g., sections, guidelines); moderate formality; explanations of terms if not universal. Example: 'In the following sections, we will provide guidelines... It is important to note that these are a first version.' Avoid: Casual slang or team-specific shortcuts. Goal: Efficient information sharing and alignment.),
+    - "internal_team" (for communications within the immediate team. Key criteria: Conversational style; use of internal acronyms/jargon (e.g., 'shoppingbasket', 'bookings-feapi'); brevity and directness. Example: 'No lo controlo, pero diría que se escribe cuando se crea una shoppingbasket... hasta donde yo sé.' Avoid: Formal structures or over-explanations. Goal: Fast operational clarity.),
+    - "partners" (for content directed at business partners),
+    - "executives_or_investors" (for content directed at executives or investors).
     `,
     prompt: `Identify the most likely target audience for the following text:
       ${prompt}`,

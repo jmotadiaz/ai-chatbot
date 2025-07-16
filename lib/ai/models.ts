@@ -85,7 +85,7 @@ export const languageModelConfigurations = {
       } satisfies GoogleGenerativeAIProviderOptions,
     },
   },
-  "Gemini 2.5 Flash No Think": {
+  "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
     providerOptions: {
       google: {
@@ -95,7 +95,7 @@ export const languageModelConfigurations = {
       } as GoogleGenerativeAIProviderOptions,
     },
   },
-  "Gemini 2.5 Flash": {
+  "Gemini 2.5 Flash Thinking": {
     model: google("gemini-2.5-flash"),
   },
   "Deepseek R1 Distill": {
@@ -165,15 +165,12 @@ const chatModelKeys = [
   "Deepseek V3",
   "Kimi K2",
   "Gemini 2.5 Flash",
-  "GPT 4.1 Mini",
   "GPT 4.1",
   "Qwen 3",
   "Deepseek R1 0528",
-  "Gemini 2.5 Pro",
   "Claude Sonnet 4",
-  "o4 Mini",
+  "Gemini 2.5 Pro",
   "o3",
-  "Grok 3 Mini",
   "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
