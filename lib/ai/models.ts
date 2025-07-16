@@ -50,6 +50,7 @@ export const languageModelConfigurations = {
   },
   "Kimi K2": {
     model: groq("moonshotai/kimi-k2-instruct"),
+    temperature: 0.6,
   },
   "Mistral 3 Medium": {
     model: openrouter.chat("mistralai/mistral-medium-3"),
@@ -205,23 +206,3 @@ export const getChatConfigurationByModelId = (
 
   return { temperature, topK, topP, systemPrompt };
 };
-
-// export const modelCapabilities: Record<
-//   modelID,
-//   { img: boolean; pdf: boolean }
-// > = {
-//   "Llama 4 Maverick": { img: false, pdf: false },
-//   "Mistral 3 Medium": { img: false, pdf: false },
-//   "Deepseek V3": { img: false, pdf: false },
-//   "Claude 3.5 Haiku": { img: false, pdf: false },
-//   "GPT 4.1 Mini": { img: false, pdf: false },
-//   "Gemini 2.5 Flash": { img: false, pdf: false },
-//   "Claude Sonnet 4": { img: false, pdf: false },
-//   "Deepseek R1 Distill": { img: false, pdf: false },
-//   "Deepseek R1 0528": { img: false, pdf: false },
-//   "Qwen 3": { img: false, pdf: false },
-//   "o4 Mini": { img: false, pdf: false },
-//   "Gemini 2.5 Pro": { img: false, pdf: false },
-//   "Grok 3 Mini": { img: false, pdf: false },
-//   "Grok 3": { img: false, pdf: false },
-// };
