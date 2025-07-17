@@ -174,6 +174,7 @@ const chatModelKeys = [
   "Claude Sonnet 4",
   "Gemini 2.5 Pro",
   "o3",
+  "Grok 3 Mini",
   "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
