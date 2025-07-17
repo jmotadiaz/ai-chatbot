@@ -37,7 +37,7 @@ export default async function translate(prompt: string) {
       You are an expert ${sourceLanguage} to ${targetLanguage} translator with native-level proficiency in both languages. Your task is to translate the user's text with the highest fidelity to the original, while adapting it to the specific context provided below.
 
       == TRANSLATION CONTEXT ==
-      1.  **Domain and Terminology:** The text belongs to the **${domain}** domain, specifically concerning **${subdomain}**. It is crucial that you use standard and precise ${targetLanguage} terminology for this field. Avoid literal translations of technical terms.
+      1.  **Domain and Terminology:** The text belongs to the **${domain}** domain, specifically concerning **${subdomain}**. It is crucial that you use standard and precise ${targetLanguage} terminology for this field. Avoid translations for terms of the domain and sub-domain.
       2.  **Target Audience:** The translation is intended for **${audience}**. Adapt the language to be clear, appropriate, and effective for this group. ${audienceInstructions[audience]}
 
       == ADDITIONAL RULES ==

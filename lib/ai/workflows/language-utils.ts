@@ -6,21 +6,21 @@ import { getObject } from "@/lib/ai/utils";
 export const sourceLanguages = ["Spanish", "English"] as const;
 export const targetLanguages = ["Spanish (Spain)", "English (UK)"] as const;
 export const audiences = [
-  "general_public",
+  "general public",
   "professionals",
-  "internal_team",
+  "internal team",
   "partners",
-  "executives_or_investors",
+  "executives or investors",
 ] as const;
 
 export const audienceInstructions = {
   professionals:
     "The translation must be professional, clear, and respectful. While it's an internal communication, maintain a higher level of formality than when speaking to direct peers. Contractions (e.g., 'it's', 'we're') are acceptable for a natural flow, but avoid slang. The goal is to inform efficiently and build cross-functional alignment.",
-  internal_team:
+  "internal team":
     "The translation is for direct team members. A more direct, conversational, and efficient tone is preferred. It's acceptable to use well-known internal acronyms and technical jargon if the knowledge level is 'technical' or 'expert'. The goal is operational clarity and speed.",
-  executives_or_investors:
+  "executives or investors":
     "The translation must be formal, professional, and concise. The language should be polished and focused on business impact, metrics, and outcomes. Avoid colloquialisms, slang, and overly detailed technical jargon. Use a respectful and confident tone.",
-  general_public:
+  "general public":
     "Use simple, clear, and engaging language. The goal is maximum readability and public understanding.",
   partners:
     "Use a professional, collaborative, and clear tone. The language should foster a strong working relationship.",
@@ -57,11 +57,11 @@ export const identifyAudience = (prompt: string) => {
     system: `
     You are an expert communications analyst. Your task is to identify the primary audience that a given text is directed towards.
     Choose from the following options:
-    - "general_public" (for public-facing content),
+    - "general public" (for public-facing content),
     - "professionals" (for communications to other professionals in the company, such as cross-departmental colleagues. Key criteria: Structured format (e.g., sections, guidelines); moderate formality; explanations of terms if not universal. Example: 'In the following sections, we will provide guidelines... It is important to note that these are a first version.' Avoid: Casual slang or team-specific shortcuts. Goal: Efficient information sharing and alignment.),
-    - "internal_team" (for communications within the immediate team. Key criteria: Conversational style; use of internal acronyms/jargon (e.g., 'shoppingbasket', 'bookings-feapi'); brevity and directness. Example: 'No lo controlo, pero diría que se escribe cuando se crea una shoppingbasket... hasta donde yo sé.' Avoid: Formal structures or over-explanations. Goal: Fast operational clarity.),
+    - "internal team" (for immediate team members working on the same project or area (intra-team). The tone is direct, informal, and conversational, similar to a chat message or a ticket comment. It frequently uses acronyms, project names, and technical jargon specific to the team that would not be understood by wider audiences. The goal is maximum operational speed and efficiency.),
     - "partners" (for content directed at business partners),
-    - "executives_or_investors" (for content directed at executives or investors).
+    - "executives or investors" (for content directed at executives or investors).
     `,
     prompt: `Identify the most likely target audience for the following text:
       ${prompt}`,
@@ -69,7 +69,7 @@ export const identifyAudience = (prompt: string) => {
     .then(getObject)
     .catch((error) => {
       console.error("Error determining audience:", error);
-      return { audience: "general_public" } satisfies {
+      return { audience: "general public" } satisfies {
         audience: (typeof audiences)[number];
       };
     });
@@ -83,7 +83,7 @@ export const identifyDomain = (prompt: string) => {
       subdomain: z.string(),
     }),
     system: `You are an expert detecting the main domain or context of a text. Be as specific as possible.
-        Respond with the keys "domain" (e.g., "legal", "medical", "technology", "marketing", "academic") and "subdomain" (e.g., "contracts", "cardiology", "web_development", "seo", "quantum_physics")`,
+        Respond with the keys "domain" (e.g., "legal", "medical", "technology", "marketing", "academic") and "subdomain" (e.g., "contracts", "cardiology", "web development", "seo", "quantum physics")`,
     prompt: `Identify the main domain or context for the following text:
       ${prompt}`,
   })

@@ -8,6 +8,7 @@ import {
   GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
+import { ollama } from "ollama-ai-provider";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 export const google = createGoogleGenerativeAI();
@@ -67,8 +68,8 @@ export const languageModelConfigurations = {
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
   },
-  "Gemma 3": {
-    model: openrouter("google/gemma-3-27b-it"),
+  "Gemma 3n": {
+    model: ollama("gemma3n"),
   },
   "Gemini 2.0 Flash": {
     model: google("gemini-2.0-flash"),
@@ -165,6 +166,7 @@ const chatModelKeys = [
   "Llama 4 Maverick",
   "Deepseek V3",
   "Kimi K2",
+  ...(process.env.NODE_ENV === "development" ? (["Gemma 3n"] as const) : []),
   "Gemini 2.5 Flash",
   "GPT 4.1",
   "Qwen 3",
