@@ -9,6 +9,7 @@ import {
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { ollama } from "ollama-ai-provider";
+import { perplexity } from "@ai-sdk/perplexity";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 export const google = createGoogleGenerativeAI();
@@ -113,6 +114,12 @@ export const languageModelConfigurations = {
     temperature: 0.6,
     topP: 0.95,
   },
+  Sonar: {
+    model: perplexity("sonar"),
+  },
+  "Sonar Pro": {
+    model: perplexity("sonar-pro"),
+  },
   "Qwen 3": {
     model: groq("qwen/qwen3-32b"),
     temperature: 0.6,
@@ -169,6 +176,8 @@ const chatModelKeys = [
   ...(process.env.NODE_ENV === "development" ? (["Gemma 3n"] as const) : []),
   "Gemini 2.5 Flash",
   "GPT 4.1",
+  "Sonar",
+  "Sonar Pro",
   "Qwen 3",
   "Deepseek R1 0528",
   "Claude Sonnet 4",

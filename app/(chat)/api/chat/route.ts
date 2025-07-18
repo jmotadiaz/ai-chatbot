@@ -174,6 +174,7 @@ export async function POST(req: Request) {
 
       result.mergeIntoDataStream(dataStream, {
         sendReasoning: true,
+        sendSources: true,
       });
     },
   });

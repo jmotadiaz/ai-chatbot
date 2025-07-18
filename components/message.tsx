@@ -133,57 +133,85 @@ const PurePreviewMessage = ({
           )}
         >
           <div className="flex flex-col w-full space-y-4">
-            {message.parts?.map((part, i) => {
-              switch (part.type) {
-                case "text":
-                  return (
-                    <motion.div
-                      initial={{ y: 5, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      key={`message-${message.id}-part-${i}`}
-                      className="flex flex-row gap-2 items-start w-full pb-4"
-                    >
-                      {message.role === "user" ? (
-                        <CopyBlock
-                          text={part.text}
-                          className={cn(
-                            "flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                          )}
-                        >
-                          <Markdown>{part.text}</Markdown>
-                        </CopyBlock>
-                      ) : (
-                        <div className={cn("flex flex-col max-w-full")}>
-                          <Markdown>{part.text}</Markdown>
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                case "tool-invocation":
-                  const { toolName, state } = part.toolInvocation;
-                  console.log(
-                    `Rendering tool invocation: ${toolName} with state: ${state}`
-                  );
+            {message.parts
+              ?.filter((part) => part.type !== "source")
+              .map((part, i) => {
+                switch (part.type) {
+                  case "text":
+                    return (
+                      <motion.div
+                        initial={{ y: 5, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        key={`message-${message.id}-part-${i}`}
+                        className="flex flex-row gap-2 items-start w-full pb-4"
+                      >
+                        {message.role === "user" ? (
+                          <CopyBlock
+                            text={part.text}
+                            className={cn(
+                              "flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                            )}
+                          >
+                            <Markdown>{part.text}</Markdown>
+                          </CopyBlock>
+                        ) : (
+                          <div className={cn("flex flex-col max-w-full")}>
+                            <Markdown>{part.text}</Markdown>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  case "tool-invocation":
+                    const { toolName, state } = part.toolInvocation;
+                    console.log(
+                      `Rendering tool invocation: ${toolName} with state: ${state}`
+                    );
 
-                  return null;
-                case "reasoning":
-                  return (
-                    <ReasoningMessagePart
-                      key={`message-${message.id}-${i}`}
-                      // @ts-expect-error part
-                      part={part}
-                      isReasoning={
-                        (message.parts &&
-                          status === "streaming" &&
-                          i === message.parts.length - 1) ??
-                        false
-                      }
-                    />
-                  );
-                default:
-                  return null;
-              }
-            })}
+                    return null;
+                  case "reasoning":
+                    return (
+                      <ReasoningMessagePart
+                        key={`message-${message.id}-${i}`}
+                        // @ts-expect-error part
+                        part={part}
+                        isReasoning={
+                          (message.parts &&
+                            status === "streaming" &&
+                            i === message.parts.length - 1) ??
+                          false
+                        }
+                      />
+                    );
+                  default:
+                    return null;
+                }
+              })}
+            {message.parts?.some((part) => part.type === "source") && (
+              <>
+                <div className="text-xl text-zinc-500 dark:text-zinc-400">
+                  <span className="font-medium">Sources:</span>
+                </div>
+                <ul className="list-disc pl-10 mb-4">
+                  {message.parts
+                    ?.filter((part) => part.type === "source")
+                    .map((part) => {
+                      console.log(`Rendering source:`, part.source);
+                      return (
+                        <li key={`source-${part.source.id}`}>
+                          <a
+                            href={part.source.url}
+                            className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                            target="_blank"
+                          >
+                            {part.source.title ??
+                              new URL(part.source.url).hostname}
+                          </a>
+                        </li>
+                      );
+                    })}
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </motion.div>
