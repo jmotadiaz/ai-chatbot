@@ -177,7 +177,6 @@ const chatModelKeys = [
   "Gemini 2.5 Flash",
   "GPT 4.1",
   "Sonar",
-  "Sonar Pro",
   "Qwen 3",
   "Deepseek R1 0528",
   "Claude Sonnet 4",
