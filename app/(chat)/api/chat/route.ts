@@ -113,6 +113,7 @@ export async function POST(req: Request) {
       const result = streamText({
         ...(await chatModelConfiguration),
         system: enhancedSystemPrompt,
+        messages,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,
