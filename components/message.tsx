@@ -186,32 +186,33 @@ const PurePreviewMessage = ({
                     return null;
                 }
               })}
-            {message.parts?.some((part) => part.type === "source") && (
-              <>
-                <div className="text-xl text-zinc-500 dark:text-zinc-400">
-                  <span className="font-medium">Sources:</span>
-                </div>
-                <ul className="list-disc pl-10 mb-4">
-                  {message.parts
-                    ?.filter((part) => part.type === "source")
-                    .map((part) => {
-                      console.log(`Rendering source:`, part.source);
-                      return (
-                        <li key={`source-${part.source.id}`}>
-                          <a
-                            href={part.source.url}
-                            className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-                            target="_blank"
-                          >
-                            {part.source.title ??
-                              new URL(part.source.url).hostname}
-                          </a>
-                        </li>
-                      );
-                    })}
-                </ul>
-              </>
-            )}
+            {status === "ready" &&
+              message.parts?.some((part) => part.type === "source") && (
+                <>
+                  <div className="text-xl text-zinc-500 dark:text-zinc-400">
+                    <span className="font-medium">Sources:</span>
+                  </div>
+                  <ul className="list-disc pl-10 mb-4">
+                    {message.parts
+                      ?.filter((part) => part.type === "source")
+                      .map((part) => {
+                        console.log(`Rendering source:`, part.source);
+                        return (
+                          <li key={`source-${part.source.id}`}>
+                            <a
+                              href={part.source.url}
+                              className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                              target="_blank"
+                            >
+                              {part.source.title ??
+                                new URL(part.source.url).hostname}
+                            </a>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </>
+              )}
           </div>
         </div>
       </motion.div>

@@ -24,6 +24,7 @@ import { autoModel } from "@/lib/ai/workflows/auto-model";
 import {
   buildContextPrompt,
   retrieve,
+  RetrieveResult,
   translateToEnglish,
 } from "@/lib/ai/rag/retrieve";
 
@@ -57,70 +58,71 @@ export async function POST(req: Request) {
     useRAG?: boolean;
   } = await req.json();
 
-  let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
+  return createDataStreamResponse({
+    execute: async (dataStream) => {
+      let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
+      let retrieveResult: RetrieveResult | null = null;
 
-  if (selectedModel === "Auto Model Workflow") {
-    const firstMessage = messages[0];
+      if (selectedModel === "Auto Model Workflow") {
+        const firstMessage = messages[0];
 
-    chatModelConfiguration = autoModel(
-      firstMessage?.content || messagePartsToText(firstMessage)
-    );
-  } else {
-    chatModelConfiguration = Promise.resolve({
-      ...(chatModelConfigurations[selectedModel] ||
-        chatModelConfigurations["Llama 4 Maverick"]),
-      temperature,
-      topK,
-      topP,
-    });
-  }
+        chatModelConfiguration = autoModel(
+          firstMessage?.content || messagePartsToText(firstMessage)
+        );
+      } else {
+        chatModelConfiguration = Promise.resolve({
+          ...(chatModelConfigurations[selectedModel] ||
+            chatModelConfigurations["Llama 4 Maverick"]),
+          temperature,
+          topK,
+          topP,
+        });
+      }
 
-  let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
+      let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
 
-  if (useRAG && messages.length > 0) {
-    const userMessages = messages.filter((msg) => msg.role === "user");
-    if (userMessages.length) {
-      const retrieveResult = await retrieve(
-        await translateToEnglish(
-          userMessages.reduce(
-            (concatenatedMessage, msg) => `
+      if (useRAG && messages.length > 0) {
+        const userMessages = messages.filter((msg) => msg.role === "user");
+        if (userMessages.length) {
+          retrieveResult = await retrieve(
+            await translateToEnglish(
+              userMessages.reduce(
+                (concatenatedMessage, msg) => `
               ${concatenatedMessage}
               ${
                 msg.content === "string" ? msg.content : messagePartsToText(msg)
               }
           `,
-            ""
-          )
-        )
-      );
+                ""
+              )
+            )
+          );
 
-      if (retrieveResult.success && retrieveResult.similarChunks) {
-        enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${buildContextPrompt(
-          retrieveResult.similarChunks
-        )}`;
-        console.log(
-          "RAG context added to system prompt",
-          retrieveResult.resources
-        );
-      } else {
-        console.error("RAG retrieve failed:", retrieveResult.error);
+          if (retrieveResult.success && retrieveResult.similarChunks) {
+            enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${buildContextPrompt(
+              retrieveResult.similarChunks
+            )}`;
+            console.log(
+              "RAG context added to system prompt",
+              retrieveResult.resources
+            );
+          } else {
+            console.error("RAG retrieve failed:", retrieveResult.error);
+          }
+        }
       }
-    }
-  }
 
-  return createDataStreamResponse({
-    execute: async (dataStream) => {
       const result = streamText({
         ...(await chatModelConfiguration),
         system: enhancedSystemPrompt,
-        messages,
+        toolChoice: { type: "tool", toolName: "web_search_preview" },
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,
         experimental_telemetry: {
           isEnabled: true,
         },
-        onFinish: async ({ response }) => {
+        onFinish: async ({ response, usage }) => {
           if (chatId) {
             try {
               const allMessages = appendResponseMessages({
@@ -163,6 +165,23 @@ export async function POST(req: Request) {
             } catch (error) {
               console.error("Error saving message:", error);
             }
+          }
+          dataStream.writeData({
+            type: "usage",
+            promptTokens: usage.promptTokens,
+            completionTokens: usage.completionTokens,
+            totalTokens: usage.totalTokens,
+          });
+
+          if (retrieveResult?.resources) {
+            retrieveResult.resources.forEach((resource) => {
+              dataStream.writeSource({
+                id: generateUUID(),
+                sourceType: "url",
+                url: resource,
+                title: resource,
+              });
+            });
           }
         },
         onError: (error) => {

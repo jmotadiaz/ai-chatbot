@@ -60,16 +60,16 @@ export async function autoModel(query: string): Promise<ModelConfiguration> {
 const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   factual: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations["Sonar"],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations["Sonar"],
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Sonar Pro"],
     },
     advanced: {
-      ...languageModelConfigurations["Qwen 3"],
+      ...languageModelConfigurations["Sonar Pro"],
     },
   },
   analytical: {
@@ -196,13 +196,13 @@ const getPrompt = (query: string): string => `\n
 
   Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
-  *   **Factual**: Direct questions seeking specific, verifiable information.
+  *   **Factual**: Direct requests or questions seeking specific, verifiable information, such as facts, real data or news reports.
   *   **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
   *   **Technical**: Programming, debugging, system design, or technical implementation.
   *   **Creative**: Artistic content generation, open-ended writing, or brainstorming.
   *   **Instructional**: Creating structured content, prompts, templates, or educational materials.
   *   **Conversational**: Casual chat, personal advice, or social interaction.
-  *   **Processing**: Text transformation, translation, summarization, or data extraction.
+  *   **Processing**: Text transformation, translation, summarization, or data extraction. The original text to process should be included in the query.
   *   **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
@@ -226,12 +226,6 @@ const getPrompt = (query: string): string => `\n
 
   ### 3. Reasoning
   Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers.
-
-  ### Classification Guidelines
-
-  1. **Choose the most specific category** that fits the primary intent; prioritize based on the query's core goal.
-  2. **Handle hybrids**: If a query spans categories (e.g., technical + analytical), select the primary and list secondaries in reasoning.
-  4. **Edge cases**: For ambiguous queries, classify as "other" and suggest clarification. If multilingual, classify based on content intent.
 
   ## User Query
   <query>

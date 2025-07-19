@@ -1,5 +1,5 @@
 import { groq } from "@ai-sdk/groq";
-import { JSONValue, LanguageModelV1 } from "ai";
+import { JSONValue, LanguageModelV1, ToolSet } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -28,6 +28,7 @@ export interface ModelConfiguration {
   topP?: number;
   topK?: number;
   systemPrompt?: string;
+  tools?: ToolSet;
 }
 
 export type ModelConfigurations = Record<string, ModelConfiguration>;
@@ -89,7 +90,9 @@ export const languageModelConfigurations = {
     },
   },
   "Gemini 2.5 Flash": {
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-2.5-flash", {
+      useSearchGrounding: true,
+    }),
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -204,7 +207,9 @@ export const defaultTopK = 40;
 
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
-): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
+): Required<
+  Omit<ModelConfiguration, "tools" | "model" | "providerOptions">
+> => {
   const { temperature, topK, topP, systemPrompt } = Object.assign(
     {
       temperature: defaultTemperature,
