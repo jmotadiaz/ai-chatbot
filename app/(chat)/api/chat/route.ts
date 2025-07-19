@@ -58,64 +58,61 @@ export async function POST(req: Request) {
     useRAG?: boolean;
   } = await req.json();
 
-  return createDataStreamResponse({
-    execute: async (dataStream) => {
-      let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
-      let retrieveResult: RetrieveResult | null = null;
+  let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
+  let retrieveResult: RetrieveResult | null = null;
 
-      if (selectedModel === "Auto Model Workflow") {
-        const firstMessage = messages[0];
+  if (selectedModel === "Auto Model Workflow") {
+    const firstMessage = messages[0];
 
-        chatModelConfiguration = autoModel(
-          firstMessage?.content || messagePartsToText(firstMessage)
+    chatModelConfiguration = autoModel(
+      firstMessage?.content || messagePartsToText(firstMessage)
+    );
+  } else {
+    chatModelConfiguration = Promise.resolve({
+      ...(chatModelConfigurations[selectedModel] ||
+        chatModelConfigurations["Llama 4 Maverick"]),
+      temperature,
+      topK,
+      topP,
+    });
+  }
+
+  let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
+
+  if (useRAG && messages.length > 0) {
+    const userMessages = messages.filter((msg) => msg.role === "user");
+    if (userMessages.length) {
+      retrieveResult = await retrieve(
+        await translateToEnglish(
+          userMessages.reduce(
+            (concatenatedMessage, msg) => `
+          ${concatenatedMessage}
+          ${msg.content === "string" ? msg.content : messagePartsToText(msg)}
+      `,
+            ""
+          )
+        )
+      );
+
+      if (retrieveResult.success && retrieveResult.similarChunks) {
+        enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${buildContextPrompt(
+          retrieveResult.similarChunks
+        )}`;
+        console.log(
+          "RAG context added to system prompt",
+          retrieveResult.resources
         );
       } else {
-        chatModelConfiguration = Promise.resolve({
-          ...(chatModelConfigurations[selectedModel] ||
-            chatModelConfigurations["Llama 4 Maverick"]),
-          temperature,
-          topK,
-          topP,
-        });
+        console.error("RAG retrieve failed:", retrieveResult.error);
       }
+    }
+  }
 
-      let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
-
-      if (useRAG && messages.length > 0) {
-        const userMessages = messages.filter((msg) => msg.role === "user");
-        if (userMessages.length) {
-          retrieveResult = await retrieve(
-            await translateToEnglish(
-              userMessages.reduce(
-                (concatenatedMessage, msg) => `
-              ${concatenatedMessage}
-              ${
-                msg.content === "string" ? msg.content : messagePartsToText(msg)
-              }
-          `,
-                ""
-              )
-            )
-          );
-
-          if (retrieveResult.success && retrieveResult.similarChunks) {
-            enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${buildContextPrompt(
-              retrieveResult.similarChunks
-            )}`;
-            console.log(
-              "RAG context added to system prompt",
-              retrieveResult.resources
-            );
-          } else {
-            console.error("RAG retrieve failed:", retrieveResult.error);
-          }
-        }
-      }
-
+  return createDataStreamResponse({
+    execute: async (dataStream) => {
       const result = streamText({
         ...(await chatModelConfiguration),
         system: enhancedSystemPrompt,
-        toolChoice: { type: "tool", toolName: "web_search_preview" },
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,
