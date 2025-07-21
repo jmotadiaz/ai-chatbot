@@ -122,8 +122,10 @@ export async function POST(req: Request) {
         messages,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
-        maxSteps: 5,
-        experimental_activeTools: useWebSearch ? ["webSearch"] : [],
+        maxSteps: 2,
+        experimental_activeTools: [
+          ...(useWebSearch ? (["webSearch"] as const) : []),
+        ],
         experimental_telemetry: {
           isEnabled: true,
         },
