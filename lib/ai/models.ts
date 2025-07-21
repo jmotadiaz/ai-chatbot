@@ -141,7 +141,9 @@ export const languageModelConfigurations = {
     model: openai("o3"),
   },
   "Gemini 2.5 Pro": {
-    model: google("gemini-2.5-pro"),
+    model: google("gemini-2.5-pro", {
+      useSearchGrounding: true,
+    }),
   },
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
