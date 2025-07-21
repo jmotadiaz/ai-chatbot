@@ -163,7 +163,10 @@ const PurePreviewMessage = ({
                     );
                   case "tool-invocation":
                     const { toolName, state } = part.toolInvocation;
-                    if (toolName === "webSearch" && state === "call") {
+                    if (
+                      toolName === "webSearch" &&
+                      (state === "call" || state === "partial-call")
+                    ) {
                       return (
                         <div
                           key={`tool-web-search-${part.toolInvocation.toolCallId}`}
