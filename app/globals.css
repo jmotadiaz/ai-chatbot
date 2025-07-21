@@ -141,6 +141,18 @@ input[type=number] {
 
 }
 
+.toggle-bg:after {
+    content: '';
+    @apply absolute top-0.5 left-0.5 bg-white border border-gray-300 rounded-full h-4 w-4 transition shadow-sm;
+}
+input:checked + .toggle-bg:after {
+    transform: translateX(100%);
+    @apply border-white;
+}
+input:checked + .toggle-bg {
+    @apply bg-blue-600 border-blue-600;
+}
+
 @theme {
   --animate-fade: fadeIn .4s ease-in-out;
   --animate-typing: typing 1.5s ease-in-out infinite;
