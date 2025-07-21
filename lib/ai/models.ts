@@ -1,8 +1,8 @@
 import { groq } from "@ai-sdk/groq";
-import { JSONValue, LanguageModelV1, ToolSet } from "ai";
+import { JSONValue, LanguageModelV1 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createXai } from "@ai-sdk/xai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import {
   createGoogleGenerativeAI,
   GoogleGenerativeAIProviderOptions,
@@ -13,9 +13,6 @@ import { perplexity } from "@ai-sdk/perplexity";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 export const google = createGoogleGenerativeAI();
-export const openai = createOpenAI({
-  compatibility: "strict",
-});
 export const xai = createXai();
 export const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -28,7 +25,6 @@ export interface ModelConfiguration {
   topP?: number;
   topK?: number;
   systemPrompt?: string;
-  tools?: ToolSet;
 }
 
 export type ModelConfigurations = Record<string, ModelConfiguration>;
@@ -207,9 +203,7 @@ export const defaultTopK = 40;
 
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
-): Required<
-  Omit<ModelConfiguration, "tools" | "model" | "providerOptions">
-> => {
+): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
   const { temperature, topK, topP, systemPrompt } = Object.assign(
     {
       temperature: defaultTemperature,

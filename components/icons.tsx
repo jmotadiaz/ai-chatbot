@@ -1,4 +1,5 @@
 import { Circle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const LogoIcon = ({ size = 24, className = "", strokeWidth = 2.5 }) => (
   <svg
@@ -32,6 +33,23 @@ export const LogoIcon = ({ size = 24, className = "", strokeWidth = 2.5 }) => (
       strokeWidth={strokeWidth}
     />
   </svg>
+);
+
+export const DotsLoadingIcon = ({ className }: { className?: string }) => (
+  <div className={cn("flex items-center gap-2", className)}>
+    <Circle
+      size={2}
+      className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite]"
+    />
+    <Circle
+      size={2}
+      className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.2s]"
+    />
+    <Circle
+      size={2}
+      className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.4s]"
+    />
+  </div>
 );
 
 export const SpinnerIcon = ({ size = 16 }: { size?: number }) => (

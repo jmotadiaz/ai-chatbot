@@ -1,5 +1,5 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
-import { openai } from "@/lib/ai/models";
+import { openai } from "@ai-sdk/openai";
 
 export async function POST(req: Request) {
   const { input } = await req.json();

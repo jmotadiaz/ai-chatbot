@@ -27,6 +27,7 @@ import {
   RetrieveResult,
   translateToEnglish,
 } from "@/lib/ai/rag/retrieve";
+import { webSearch } from "@/lib/ai/tools/web-search";
 
 export const maxDuration = 60;
 
@@ -110,15 +111,29 @@ export async function POST(req: Request) {
 
   return createDataStreamResponse({
     execute: async (dataStream) => {
+      const modelConfig = await chatModelConfiguration;
       const result = streamText({
-        ...(await chatModelConfiguration),
+        ...modelConfig,
         system: enhancedSystemPrompt,
+        tools: { webSearch },
         messages,
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,
         experimental_telemetry: {
           isEnabled: true,
+        },
+        onChunk({ chunk }) {
+          if (chunk.type === "tool-result" && chunk.toolName === "webSearch") {
+            chunk.result.forEach((result) => {
+              dataStream.writeSource({
+                id: generateUUID(),
+                sourceType: "url",
+                url: result.url,
+                title: `${result.title}`,
+              });
+            });
+          }
         },
         onFinish: async ({ response, usage }) => {
           if (chatId) {

@@ -7,7 +7,7 @@ import equal from "fast-deep-equal";
 
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Markdown } from "@/components/markdown";
-import { SpinnerIcon } from "@/components/icons";
+import { DotsLoadingIcon, SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 
@@ -163,6 +163,19 @@ const PurePreviewMessage = ({
                     );
                   case "tool-invocation":
                     const { toolName, state } = part.toolInvocation;
+                    if (toolName === "webSearch" && state === "call") {
+                      return (
+                        <div
+                          key={`tool-web-search-${part.toolInvocation.toolCallId}`}
+                          className="flex items-center"
+                        >
+                          <div className="mr-4 font-medium">
+                            Searching the web
+                          </div>
+                          <DotsLoadingIcon />
+                        </div>
+                      );
+                    }
                     console.log(
                       `Rendering tool invocation: ${toolName} with state: ${state}`
                     );

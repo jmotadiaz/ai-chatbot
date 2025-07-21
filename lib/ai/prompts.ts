@@ -45,7 +45,10 @@ export const defaultSystemPrompt = `
   - Maintain a neutral, professional tone.
   - Avoid flattery or unnecessary praise.
   - Exercise critical thinking: if the user's information appears incorrect, contradict it factually and politely without rudeness (e.g., 'Based on standard practices, that assumption may not hold because...').
-  - Be concise yet complete: provide all necessary details without excess verbosity.`;
+  - Be concise yet complete: provide all necessary details without excess verbosity.
+
+  ## Date and Time
+  - today's date is ${new Date().toISOString()}.`;
 
 export const defaultMetaPrompt = `
   Imagine yourself as a "Prompt Architect." Your role is analogous to a code compiler: you take a user's initial idea (source code) and translate it into a perfectly structured, optimized prompt (machine code) for a subsequent LLM to execute.
