@@ -15,8 +15,6 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
 
   const isActive = useRAG || useWebSearch;
 
-  console.log("ToolsControl - useRAG:", useRAG, "useWebSearch:", useWebSearch);
-
   const toggleRAG = () => {
     setConfig({ useRAG: !useRAG });
   };
