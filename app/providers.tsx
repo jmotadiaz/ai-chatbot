@@ -39,7 +39,8 @@ interface ChatConfig {
   topP: number;
   systemPrompt?: string;
   topK: number;
-  useRAG?: boolean;
+  useRAG: boolean;
+  useWebSearch: boolean;
 }
 
 interface SetChatConfig {
@@ -62,6 +63,7 @@ const chatContext = createContext<
   topP: defaultTopP,
   topK: defaultTopK,
   useRAG: false,
+  useWebSearch: false,
   setConfig: () => {},
   id: "",
   messages: [],
@@ -120,7 +122,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
           systemPrompt,
         }).filter(([, value]) => value !== undefined && value !== null)
       ),
-      { selectedModel }
+      { selectedModel, useRAG: false, useWebSearch: false }
     )
   );
   const chatResult = useChat({

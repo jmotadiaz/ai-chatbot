@@ -1,18 +1,13 @@
 "use client";
 
-import {
-  ArrowUp,
-  RefreshCcw,
-  WandSparkles,
-  Undo,
-  DatabaseBackup,
-} from "lucide-react";
+import { ArrowUp, RefreshCcw, WandSparkles, Undo } from "lucide-react";
 import { useRef } from "react";
 import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
 import { Messages } from "@/components/messages";
 import { ChatControl } from "@/components/chat-control";
 import { ChatSettingsButton } from "@/components/chat-settings-button";
+import { ToolsControl } from "@/components/tools-control";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/app/providers";
@@ -35,8 +30,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     stop,
     reload,
     metaPrompt,
-    useRAG,
-    setConfig,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     useRefinePrompt({
@@ -112,11 +105,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
           <div className="absolute z-1 left-3 bottom-2 flex items-center space-x-2">
             <ChatSettingsButton />
             {saveChat}
-            <ChatControl
-              Icon={DatabaseBackup}
-              onClick={() => setConfig({ useRAG: !useRAG })}
-              isActive={useRAG}
-            />
+            <ToolsControl />
           </div>
 
           <div className="absolute z-1 right-3 bottom-2 flex items-center space-x-2">

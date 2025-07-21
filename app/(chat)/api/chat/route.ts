@@ -47,6 +47,7 @@ export async function POST(req: Request) {
     systemPrompt,
     reloadedMessageId,
     useRAG,
+    useWebSearch,
   }: {
     messages: UIMessage[];
     selectedModel: chatModelId;
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
     systemPrompt?: string;
     reloadedMessageId?: string;
     useRAG?: boolean;
+    useWebSearch?: boolean;
   } = await req.json();
 
   let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
@@ -112,6 +114,7 @@ export async function POST(req: Request) {
   return createDataStreamResponse({
     execute: async (dataStream) => {
       const modelConfig = await chatModelConfiguration;
+
       const result = streamText({
         ...modelConfig,
         system: enhancedSystemPrompt,
@@ -120,6 +123,7 @@ export async function POST(req: Request) {
         experimental_generateMessageId: generateUUID,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxSteps: 5,
+        experimental_activeTools: useWebSearch ? ["webSearch"] : [],
         experimental_telemetry: {
           isEnabled: true,
         },

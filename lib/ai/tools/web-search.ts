@@ -11,21 +11,16 @@ export const webSearch = tool({
     query: z.string().min(1).max(100).describe("The search query"),
   }),
   execute: async ({ query }) => {
-    try {
-      const { results } = await exa.searchAndContents(query, {
-        livecrawl: "always",
-        numResults: 5,
-      });
-      return results.map((result) => ({
-        title: result.title,
-        url: result.url,
-        content: result.text.slice(0, 1000), // take just the first 1000 characters
-        publishedDate: result.publishedDate,
-      }));
-    } catch (error) {
-      console.error("Error in webSearch tool:", error);
-      return [];
-    }
+    const { results } = await exa.searchAndContents(query, {
+      livecrawl: "always",
+      numResults: 5,
+    });
+    return results.map((result) => ({
+      title: result.title,
+      url: result.url,
+      content: result.text.slice(0, 1000), // take just the first 1000 characters
+      publishedDate: result.publishedDate,
+    }));
   },
 });
 
