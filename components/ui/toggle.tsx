@@ -18,7 +18,7 @@ export const Toggle: React.FC<ToggleProps> = ({
     <label
       htmlFor={id}
       className={cn(
-        "flex items-center text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none relative",
+        "flex flex-nowrap items-center text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none relative",
         className
       )}
     >
