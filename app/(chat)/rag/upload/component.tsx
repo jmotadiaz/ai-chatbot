@@ -1,9 +1,6 @@
-export interface RAGUploadContainerProps {
-  children?: React.ReactNode;
-}
-export const RAGUploadContainer: React.FC<RAGUploadContainerProps> = ({
-  children,
-}) => {
+import { RAGUploadForm } from "@/components/rag-upload-form";
+
+export const RAGUploadComponent: React.FC = () => {
   return (
     <div className="flex flex-col h-full w-full max-w-2xl mx-auto p-6 px-4 pt-32">
       <div className="mb-8">
@@ -16,7 +13,7 @@ export const RAGUploadContainer: React.FC<RAGUploadContainerProps> = ({
         </p>
       </div>
 
-      {children}
+      <RAGUploadForm />
     </div>
   );
 };
