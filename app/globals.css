@@ -207,10 +207,10 @@ input:checked + .toggle-bg {
 }
 
 ::view-transition-old(.shrink-out) {
-  animation: shrink-out 300ms ease-in-out both;
+  animation: shrink-out 150ms ease-in-out both;
 }
 ::view-transition-new(.reveal-pop) {
-  animation: reveal-pop 300ms ease-in-out both;
+  animation: reveal-pop 150ms ease-in-out both;
 }
 
 @keyframes reveal-pop {

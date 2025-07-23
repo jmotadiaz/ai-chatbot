@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Main } from "@/components/ui/main";
 
 const NewProjectPage: React.FC = async () => {
   const session = await auth();
@@ -16,7 +17,7 @@ const NewProjectPage: React.FC = async () => {
 
   return (
     <SidebarProvider>
-      <div className="h-svh flex flex-col justify-center w-full stretch">
+      <Main>
         <Sidebar />
         <Header.Container>
           <Header.Left>
@@ -28,7 +29,7 @@ const NewProjectPage: React.FC = async () => {
           </Header.Right>
         </Header.Container>
         <ProjectForm />
-      </div>
+      </Main>
     </SidebarProvider>
   );
 };
