@@ -206,6 +206,35 @@ input:checked + .toggle-bg {
   animation: slide-in-up 300ms ease-in-out both;
 }
 
+::view-transition-old(.shrink-out) {
+  animation: shrink-out 300ms ease-in-out both;
+}
+::view-transition-new(.reveal-pop) {
+  animation: reveal-pop 300ms ease-in-out both;
+}
+
+@keyframes reveal-pop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shrink-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
 @keyframes slide-in-right {
   from {
     transform: translateX(20%);

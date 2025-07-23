@@ -35,7 +35,7 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   return (
     <>
       {isShown && (
-        <ViewTransition enter="slide-up" exit="slide-up">
+        <ViewTransition enter="reveal-pop" exit="shrink-out">
           <div className="fixed inset-0 z-10 bg-transparent" onClick={close} />
           <div
             className={cn(
