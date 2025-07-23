@@ -8,6 +8,7 @@ import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { auth } from "@/auth";
 import EnglishHelperChat from "@/components/english-helper-chat";
+import { Main } from "@/components/ui/main";
 
 const Page: React.FC = async () => {
   const session = await auth();
@@ -28,9 +29,9 @@ const Page: React.FC = async () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <div className="h-full flex items-stretch">
+      <Main>
         <EnglishHelperChat />
-      </div>
+      </Main>
     </SidebarProvider>
   );
 };

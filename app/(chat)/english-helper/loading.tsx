@@ -4,6 +4,7 @@ import { Logo } from "@/components/logo";
 import { NewChatHome as NewChat } from "@/components/new-chat-home";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Main } from "@/components/ui/main";
+import EnglishHelperChat from "@/components/english-helper-chat";
 
 const Loading: React.FC = async () => {
   return (
@@ -17,6 +18,7 @@ const Loading: React.FC = async () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
+      <EnglishHelperChat />
     </Main>
   );
 };
