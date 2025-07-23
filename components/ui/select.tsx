@@ -2,248 +2,164 @@
 
 import * as React from "react";
 import { CheckIcon, ChevronUp } from "lucide-react";
+import { startTransition, useState } from "react";
 
-import { ClassValue } from "clsx";
 import { cn } from "@/lib/utils";
+import { Dropdown } from "@/components/ui/dropdown";
 
-interface SelectContextValue {
-  open: boolean;
-  value?: string;
-  onValueChange(value: string): void;
-  setOpen(open: boolean): void;
-  triggerRef: React.RefObject<HTMLButtonElement | null>;
-  contentRef: React.RefObject<HTMLDivElement | null>;
-}
-
-const SelectContext = React.createContext<SelectContextValue | null>(null);
-
-function useSelectContext() {
-  const context = React.useContext(SelectContext);
-  if (!context) {
-    throw new Error("Select components must be used within Select");
-  }
-  return context;
-}
-
-export function Select({
+export const useSelect = <T extends string>({
   value,
   onValueChange,
-  children,
 }: {
-  value?: string;
-  onValueChange?(value: string): void;
-  children: React.ReactNode;
-  className?: ClassValue;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const triggerRef = React.useRef<HTMLButtonElement>(null);
-  const contentRef = React.useRef<HTMLDivElement>(null);
+  value: T;
+  onValueChange: (value: T) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
 
-  React.useEffect(() => {
-    function handleClick(event: MouseEvent) {
-      const target = event.target as Node;
-      if (
-        open &&
-        triggerRef.current &&
-        contentRef.current &&
-        !triggerRef.current.contains(target) &&
-        !contentRef.current.contains(target)
-      ) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  React.useEffect(() => {
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-    if (open) {
-      document.addEventListener("keydown", handleKey);
-      return () => document.removeEventListener("keydown", handleKey);
-    }
-  }, [open]);
-
-  const handleValueChange = (val: string) => {
-    onValueChange?.(val);
+  const handleValueChange = (newValue: T) => {
+    onValueChange(newValue);
+    startTransition(() => {
+      setIsOpen(false);
+    });
   };
 
-  return (
-    <SelectContext.Provider
-      value={{
-        open,
-        value,
-        onValueChange: handleValueChange,
-        setOpen,
-        triggerRef,
-        contentRef,
-      }}
-    >
-      <div className="relative text-sm">{children}</div>
-    </SelectContext.Provider>
-  );
+  const toggle = () => {
+    startTransition(() => {
+      setIsOpen((prev) => !prev);
+    });
+  };
+
+  const close = () => {
+    startTransition(() => {
+      setIsOpen(false);
+    });
+  };
+
+  return {
+    getSelectTriggerProps: () => ({
+      toggle,
+      isOpen,
+      value,
+    }),
+    getSelectContentProps: () => ({
+      isShown: isOpen,
+      close,
+    }),
+    getSelectItemProps: (itemValue: T) => ({
+      value: itemValue,
+      onValueChange: handleValueChange,
+      selected: value === itemValue,
+    }),
+  };
+};
+
+export interface SelectContainerProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
-export function SelectGroup({
+const SelectContainer: React.FC<SelectContainerProps> = ({
   children,
   className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}) => {
   return (
-    <div
-      data-slot="select-group"
-      className={cn("flex flex-col", className)}
-      {...props}
-    >
+    <Dropdown.Container className={cn("text-sm", className)}>
       {children}
-    </div>
+    </Dropdown.Container>
   );
-}
+};
 
-export const SelectTrigger = React.forwardRef(
-  (
-    {
-      className,
-      children,
-      ...props
-    }: React.ButtonHTMLAttributes<HTMLButtonElement> & { className?: string },
-    forwardedRef: React.Ref<HTMLButtonElement>
-  ) => {
-    const { open, setOpen, triggerRef } = useSelectContext();
-
-    const ref = React.useCallback(
-      (node: HTMLButtonElement) => {
-        triggerRef.current = node;
-        if (typeof forwardedRef === "function") {
-          forwardedRef(node);
-        } else if (forwardedRef) {
-          (
-            forwardedRef as React.MutableRefObject<HTMLButtonElement | null>
-          ).current = node;
-        }
-      },
-      [forwardedRef, triggerRef]
-    );
-
-    return (
-      <button
-        type="button"
-        ref={ref}
-        className={cn(
-          "flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer",
-          className
-        )}
-        onClick={() => setOpen(!open)}
-        {...props}
-      >
-        {children}
-        <ChevronUp
-          size={16}
-          className={cn(
-            "transition-transform duration-300",
-            open ? "rotate-0" : "rotate-180"
-          )}
-        />
-      </button>
-    );
-  }
-);
-
-SelectTrigger.displayName = "SelectTrigger";
-
-export const SelectContent = React.forwardRef(
-  (
-    {
-      className,
-      children,
-      ...props
-    }: React.HTMLAttributes<HTMLDivElement> & { className?: string },
-    forwardedRef: React.Ref<HTMLDivElement>
-  ) => {
-    const { open, contentRef } = useSelectContext();
-
-    const ref = React.useCallback(
-      (node: HTMLDivElement) => {
-        contentRef.current = node;
-        if (typeof forwardedRef === "function") {
-          forwardedRef(node);
-        } else if (forwardedRef) {
-          (
-            forwardedRef as React.MutableRefObject<HTMLDivElement | null>
-          ).current = node;
-        }
-      },
-      [forwardedRef, contentRef]
-    );
-
-    if (!open) {
-      return null;
-    }
-
-    return (
-      <div
-        ref={ref}
-        data-slot="select-content"
-        className={cn(
-          "absolute z-50 top-full mt-2 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md shadow-md",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-SelectContent.displayName = "SelectContent";
-
-export function SelectValue({
-  placeholder,
-  className,
-}: {
-  placeholder?: string;
+export interface SelectTriggerProps<T extends string>
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  isOpen?: boolean;
+  value: T;
   className?: string;
-}) {
-  const { value } = useSelectContext();
+  toggle?: () => void;
+}
+
+function SelectTriggerComponent<T extends string>({
+  className,
+  isOpen,
+  value,
+  toggle,
+  ...props
+}: SelectTriggerProps<T>) {
   return (
-    <span data-slot="select-value" className={cn("block truncate", className)}>
-      {value ?? placeholder}
-    </span>
+    <button
+      type="button"
+      className={cn(
+        "flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer w-full",
+        className
+      )}
+      {...props}
+      onClick={toggle}
+    >
+      <span className="block truncate">{value}</span>
+      <ChevronUp
+        size={16}
+        className={cn(
+          "transition-transform duration-300",
+          isOpen ? "rotate-0" : "rotate-180"
+        )}
+      />
+    </button>
   );
 }
 
-export function SelectItem({
+export interface SelectContentProps {
+  children: React.ReactNode;
+  className?: string;
+  isShown: boolean;
+  close: () => void;
+}
+
+const SelectDropdownComponent: React.FC<SelectContentProps> = ({
+  children,
+  className,
+  isShown,
+  close,
+}) => {
+  return (
+    <Dropdown.Popup
+      isShown={isShown}
+      close={close}
+      variant="bottom"
+      className={cn("w-full p-0 overflow-auto", className)}
+    >
+      <div className="flex flex-col">{children}</div>
+    </Dropdown.Popup>
+  );
+};
+
+export interface SelectItemProps<T extends string>
+  extends React.HTMLAttributes<HTMLDivElement> {
+  value: T;
+  children: React.ReactNode;
+  className?: string;
+  onValueChange: (value: T) => void;
+  selected: boolean;
+}
+
+function SelectItemComponent<T extends string>({
   value,
   className,
   children,
+  onValueChange,
+  selected,
   ...props
-}: {
-  value: string;
-  className?: string;
-  children?: React.ReactNode;
-} & React.HTMLAttributes<HTMLDivElement>) {
-  const { value: selectedValue, onValueChange, setOpen } = useSelectContext();
-  const selected = selectedValue === value;
-
+}: SelectItemProps<T>): React.ReactNode {
   return (
     <div
-      data-slot="select-item"
       role="option"
       aria-selected={selected}
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center p-3 whitespace-nowrap",
+        "relative flex w-full cursor-pointer select-none items-center px-3 py-2 whitespace-nowrap",
         "hover:bg-gray-300 dark:hover:bg-zinc-600",
         selected && "bg-gray-200 dark:bg-zinc-700",
         className
       )}
       onClick={() => {
-        onValueChange(value);
-        setOpen(false);
+        onValueChange?.(value);
       }}
       {...props}
     >
@@ -255,39 +171,9 @@ export function SelectItem({
   );
 }
 
-export function SelectLabel({
-  children,
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      data-slot="select-label"
-      className={cn("px-2 py-1.5 text-sm font-medium", className)}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-}
-
-export function SelectSeparator({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLHRElement>) {
-  return (
-    <hr
-      data-slot="select-separator"
-      className={cn("-mx-1 my-1 h-px bg-border", className)}
-      {...props}
-    />
-  );
-}
-
-export function SelectScrollUpButton() {
-  return null;
-}
-
-export function SelectScrollDownButton() {
-  return null;
-}
+export const Select = {
+  Container: SelectContainer,
+  Trigger: SelectTriggerComponent,
+  Dropdown: SelectDropdownComponent,
+  Item: SelectItemComponent,
+};

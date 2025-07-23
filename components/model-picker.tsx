@@ -1,13 +1,6 @@
 "use client";
 import { useChatContext } from "@/app/providers";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, useSelect } from "@/components/ui/select";
 import {
   chatModelId,
   CHAT_MODELS,
@@ -28,22 +21,26 @@ export interface ModelPickerSelectorProps {
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   selectedModel,
   setSelectedModel,
-}) => (
-  <Select value={selectedModel} onValueChange={setSelectedModel}>
-    <SelectTrigger className="w-48 xl:w-52">
-      <SelectValue placeholder="Select a model" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectGroup className="w-48 xl:w-52">
+}) => {
+  const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
+    useSelect({
+      value: selectedModel,
+      onValueChange: setSelectedModel,
+    });
+
+  return (
+    <Select.Container>
+      <Select.Trigger {...getSelectTriggerProps()} className="w-48 xl:w-52" />
+      <Select.Dropdown {...getSelectContentProps()} className="w-48 xl:w-52">
         {CHAT_MODELS.map((modelId) => (
-          <SelectItem key={modelId} value={modelId}>
+          <Select.Item {...getSelectItemProps(modelId)} key={modelId}>
             {modelId}
-          </SelectItem>
+          </Select.Item>
         ))}
-      </SelectGroup>
-    </SelectContent>
-  </Select>
-);
+      </Select.Dropdown>
+    </Select.Container>
+  );
+};
 
 export const useModelPicker = (): ModelPickerSelectorProps => {
   const { selectedModel, setConfig } = useChatContext();
