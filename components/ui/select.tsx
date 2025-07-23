@@ -5,7 +5,7 @@ import { CheckIcon, ChevronUp } from "lucide-react";
 import { startTransition, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { Dropdown } from "@/components/ui/dropdown";
+import { Dropdown, DropdownPopupProps } from "@/components/ui/dropdown";
 
 export const useSelect = <T extends string>({
   value,
@@ -111,6 +111,7 @@ export interface SelectContentProps {
   className?: string;
   isShown: boolean;
   close: () => void;
+  variant?: DropdownPopupProps["variant"];
 }
 
 const SelectDropdownComponent: React.FC<SelectContentProps> = ({
@@ -118,12 +119,13 @@ const SelectDropdownComponent: React.FC<SelectContentProps> = ({
   className,
   isShown,
   close,
+  variant = "bottom",
 }) => {
   return (
     <Dropdown.Popup
       isShown={isShown}
       close={close}
-      variant="bottom"
+      variant={variant}
       className={cn("w-full p-0 overflow-auto", className)}
     >
       <div className="flex flex-col">{children}</div>
