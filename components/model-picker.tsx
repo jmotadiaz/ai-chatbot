@@ -13,6 +13,12 @@ export const ModelPicker = () => {
   return <ModelPickerSelector {...modelPickerProps} />;
 };
 
+export const ModelPickerLoading: React.FC = () => {
+  return (
+    <div className="w-48 xl:w-52 h-[32px] bg-gray-200 dark:bg-zinc-700 rounded-md py-2 animate-pulse" />
+  );
+};
+
 export interface ModelPickerSelectorProps {
   selectedModel: chatModelId;
   setSelectedModel: (model: chatModelId) => void;

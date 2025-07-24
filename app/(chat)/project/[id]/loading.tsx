@@ -3,6 +3,7 @@ import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
+import { ModelPickerLoading } from "@/components/model-picker";
 
 const Loading: React.FC = () => {
   return (
@@ -11,7 +12,7 @@ const Loading: React.FC = () => {
         <Header.Left>
           <Logo />
           <NewChat />
-          <div className="w-44 xl:w-48 h-[32px] bg-gray-200 dark:bg-zinc-700 rounded-md py-2 animate-pulse" />
+          <ModelPickerLoading />
         </Header.Left>
         <Header.Right>
           <ThemeToggle />
