@@ -13,7 +13,7 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
   return (
     <Dropdown.Container>
       <button
-        className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer"
+        className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 border-2 border-gray-300 hover:bg-gray-200 dark:border-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer"
         {...getDropdownTriggerProps()}
       >
         <span className="truncate">{email}</span>
@@ -28,10 +28,10 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
       <Dropdown.Popup
         {...getDropdownPopupProps()}
         variant="top"
-        className="w-full p-0"
+        className="w-full p-0 border-2 border-gray-300 dark:border-zinc-700"
       >
         <button
-          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-zinc-600 cursor-pointer"
           onClick={() => signOut()}
         >
           Sign out

@@ -88,7 +88,7 @@ function SelectTriggerComponent<T extends string>({
     <button
       type="button"
       className={cn(
-        "flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer w-full",
+        "flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-secondary hover:bg-gray-300 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer w-full",
         className
       )}
       {...props}

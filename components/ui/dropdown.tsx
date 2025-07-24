@@ -39,7 +39,7 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
           <div className="fixed inset-0 z-10 bg-transparent" onClick={close} />
           <div
             className={cn(
-              "absolute left-0 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg border border-zinc-200 dark:border-zinc-700 z-20 overflow-hidden",
+              "absolute left-0 bg-secondary p-4 rounded-lg shadow-lg z-20 overflow-hidden",
               variant === "top" ? "bottom-full mb-2" : "top-full mt-2",
               className
             )}
