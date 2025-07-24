@@ -38,7 +38,7 @@ const components: Partial<Components> = {
   },
   table: ({ node, children, ...props }) => {
     return (
-      <div className="animate-fade w-full overflow-x-auto">
+      <div className="animate-fade mt-6 mb-8 w-full overflow-x-auto">
         <table className="table-auto w-auto text-sm" {...props}>
           {children}
         </table>
@@ -74,7 +74,7 @@ const components: Partial<Components> = {
   },
   p: ({ node, children, ...props }) => {
     return (
-      <p className="animate-fade my-2" {...props}>
+      <p className="animate-fade my-4" {...props}>
         {children}
       </p>
     );
@@ -92,23 +92,26 @@ const components: Partial<Components> = {
       </Link>
     );
   },
+  hr: ({ node, ...props }) => {
+    return <hr className="animate-fade my-8 border-secondary" {...props} />;
+  },
   h1: ({ node, children, ...props }) => {
     return (
-      <h1 className="animate-fade text-2xl font-semibold mt-6 mb-2" {...props}>
+      <h1 className="animate-fade text-2xl font-semibold mt-8 mb-4" {...props}>
         {children}
       </h1>
     );
   },
   h2: ({ node, children, ...props }) => {
     return (
-      <h2 className="animate-fade text-xl font-semibold mt-4 mb-2" {...props}>
+      <h2 className="animate-fade text-xl font-semibold mt-6 mb-4" {...props}>
         {children}
       </h2>
     );
   },
   h3: ({ node, children, ...props }) => {
     return (
-      <h3 className="animate-fade text-lg font-semibold mt-4 mb-2" {...props}>
+      <h3 className="animate-fade text-lg font-semibold mt-6 mb-4" {...props}>
         {children}
       </h3>
     );
@@ -126,7 +129,7 @@ const components: Partial<Components> = {
   h5: ({ node, children, ...props }) => {
     return (
       <h5
-        className="animate-fade text-base opacity-80 font-semibold mt-2 mb-2"
+        className="animate-fade text-base opacity-80 font-semibold mt-4 mb-2"
         {...props}
       >
         {children}

@@ -149,13 +149,13 @@ const PurePreviewMessage = ({
                           <CopyBlock
                             text={part.text}
                             className={cn(
-                              "flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                              "flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-8 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
                             )}
                           >
                             <Markdown>{part.text}</Markdown>
                           </CopyBlock>
                         ) : (
-                          <div className={cn("flex flex-col max-w-full")}>
+                          <div className={cn("max-w-full")}>
                             <Markdown>{part.text}</Markdown>
                           </div>
                         )}

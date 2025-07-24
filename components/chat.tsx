@@ -48,7 +48,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     <>
       <div
         className={cn(
-          "w-full pt-16 overflow-hidden relative text-lg",
+          "w-full pt-16 overflow-hidden relative",
           messages.length && "h-full"
         )}
       >
