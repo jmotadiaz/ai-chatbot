@@ -4,6 +4,7 @@ import type { Message as TMessage } from "ai";
 import { AnimatePresence, motion } from "motion/react";
 import { memo, useCallback, useEffect, useState } from "react";
 import equal from "fast-deep-equal";
+import { useCollapse } from "react-collapsed";
 
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Markdown } from "@/components/markdown";
@@ -152,7 +153,7 @@ const PurePreviewMessage = ({
                               "flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
                             )}
                           >
-                            <Markdown>{part.text}</Markdown>
+                            <CollapsibleUserMessage text={part.text} />
                           </CopyBlock>
                         ) : (
                           <div className={cn("max-w-full")}>
@@ -235,6 +236,59 @@ const PurePreviewMessage = ({
     </AnimatePresence>
   );
 };
+
+interface CollapsibleUserMessageProps {
+  text: string;
+  maxWords?: number;
+}
+
+function CollapsibleUserMessage({ text }: CollapsibleUserMessageProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { getCollapseProps, getToggleProps } = useCollapse({
+    isExpanded,
+    collapsedHeight: 87,
+  });
+
+  const isLongMessage = text.length > 300;
+
+  if (!isLongMessage) {
+    return <Markdown>{text}</Markdown>;
+  }
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  return (
+    <div className="w-full">
+      <div {...getCollapseProps()}>
+        <Markdown>{text}</Markdown>
+      </div>
+
+      {!isExpanded && (
+        <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
+          <button
+            {...getToggleProps({ onClick: handleToggle })}
+            className=" hover:text-zinc-700 dark:hover:text-zinc-200 font-medium cursor-pointer"
+          >
+            Show more
+          </button>
+        </div>
+      )}
+
+      {isExpanded && (
+        <div className="flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
+          <button
+            {...getToggleProps({ onClick: handleToggle })}
+            className="hover:text-zinc-700 dark:hover:text-zinc-200 font-medium cursor-pointer"
+          >
+            Show less
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;

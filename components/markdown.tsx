@@ -93,7 +93,7 @@ const components: Partial<Components> = {
     );
   },
   hr: ({ node, ...props }) => {
-    return <hr className="animate-fade my-8 border-secondary" {...props} />;
+    return <hr className="animate-fade my-6 border-secondary" {...props} />;
   },
   h1: ({ node, children, ...props }) => {
     return (
