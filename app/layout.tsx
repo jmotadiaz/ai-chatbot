@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { Geist_Mono, Albert_Sans } from "next/font/google";
+import { Albert_Sans, Fira_Code } from "next/font/google";
 import { Providers } from "@/app/providers";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -10,8 +10,8 @@ const albertSans = Albert_Sans({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const firaCode = Fira_Code({
+  variable: "--font-fira-code",
   subsets: ["latin"],
 });
 
@@ -37,7 +37,7 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${albertSans.variable} ${geistMono.variable} antialiased`}
+        className={`${albertSans.variable} ${firaCode.variable} antialiased`}
       >
         <Providers>
           {children}

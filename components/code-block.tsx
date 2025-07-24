@@ -7,6 +7,7 @@ import {
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { CopyBlock } from "@/components/copy-block";
+import { cn } from "@/lib/utils";
 
 interface CodeBlockProps {
   className?: string;
@@ -55,6 +56,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
               padding: "1.25rem 1rem",
               marginBottom: 0,
             }}
+            codeTagProps={{ style: { fontFamily: "var(--font-fira-code)" } }}
             {...props}
           >
             {codeString}
@@ -65,7 +67,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   }
 
   return (
-    <code className={className} {...props}>
+    <code className={cn("font-mono", className)} {...props}>
       {children}
     </code>
   );
