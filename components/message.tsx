@@ -72,21 +72,11 @@ const PurePreviewMessage = ({
                       (state === "call" || state === "partial-call")
                     ) {
                       return (
-                        <div
+                        <SearchWebToolLoading
                           key={`tool-web-search-${part.toolInvocation.toolCallId}`}
-                          className="flex items-center"
-                        >
-                          <div className="mr-4 font-medium">
-                            Searching the web
-                          </div>
-                          <DotsLoadingIcon />
-                        </div>
+                        />
                       );
                     }
-                    console.log(
-                      `Rendering tool invocation: ${toolName} with state: ${state}`
-                    );
-
                     return null;
                   case "reasoning":
                     return (
@@ -278,6 +268,15 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
           })}
       </ul>
     </>
+  );
+};
+
+const SearchWebToolLoading: React.FC = () => {
+  return (
+    <div className="flex items-center">
+      <div className="mr-4 font-medium">Searching the web</div>
+      <DotsLoadingIcon />
+    </div>
   );
 };
 
