@@ -17,21 +17,27 @@ const components: Partial<Components> = {
   },
   ol: ({ node, children, ...props }) => {
     return (
-      <ol className="animate-fade list-decimal list-outside ml-4" {...props}>
+      <ol
+        className="animate-fade list-decimal list-outside space-y-4 my-4"
+        {...props}
+      >
         {children}
       </ol>
     );
   },
   li: ({ node, children, ...props }) => {
     return (
-      <li className="animate-fade py-1" {...props}>
+      <li className="animate-fade py-1 [&>p]:my-0" {...props}>
         {children}
       </li>
     );
   },
   ul: ({ node, children, ...props }) => {
     return (
-      <ul className="animate-fade list-decimal list-outside ml-4" {...props}>
+      <ul
+        className="animate-fade list-decimal list-outside space-y-4 ml-4 my-4"
+        {...props}
+      >
         {children}
       </ul>
     );

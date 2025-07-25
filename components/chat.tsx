@@ -66,7 +66,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
                 {status === "submitted" && (
                   <DotsLoadingIcon className="ml-5 mt-4" />
                 )}
-                {status === "ready" && (
+                {(status === "ready" || status === "error") && (
                   <div className="flex mt-1 ml-3">
                     <div
                       className="p-2 border dark:border-zinc-500 rounded-full cursor-pointer"
