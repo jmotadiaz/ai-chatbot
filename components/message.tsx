@@ -209,16 +209,21 @@ interface UserMessageProps {
 
 const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
   const isLongMessage = text.length > 350;
+  const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
     collapsedHeight: 16 * 1.5 * 3 + 16, // 3 lines of text + margin
     defaultExpanded: !isLongMessage,
+    onTransitionStateChange: (state) => {
+      setIsCollapseTransitionEnd(state === "collapseEnd");
+    },
   });
 
   return (
     <>
       <div
         className={cn({
-          "line-clamp-3 ![display:-webkit-box]": !isExpanded,
+          "line-clamp-3 ![display:-webkit-box]":
+            !isExpanded && isCollapseTransitionEnd,
         })}
         {...getCollapseProps()}
       >
