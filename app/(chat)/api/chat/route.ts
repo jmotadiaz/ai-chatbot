@@ -73,7 +73,7 @@ export async function POST(req: Request) {
   } else {
     chatModelConfiguration = Promise.resolve({
       ...(chatModelConfigurations[selectedModel] ||
-        chatModelConfigurations["Llama 4 Maverick"]),
+        chatModelConfigurations["Llama 4 Scout"]),
       temperature,
       topK,
       topP,
@@ -204,7 +204,7 @@ export async function POST(req: Request) {
           }
         },
         onError: (error) => {
-          console.log("Error Inferring", error);
+          console.log("Error Inferring", error.error);
         },
       });
 

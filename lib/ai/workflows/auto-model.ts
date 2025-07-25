@@ -11,7 +11,8 @@ const CATEGORIES = [
   "analytical",
   "technical",
   "creative",
-  "instructional",
+  "structured_content",
+  "prompt_engineering",
   "conversational",
   "processing",
   "other",
@@ -74,7 +75,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   analytical: {
     simple: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Scout"],
     },
     moderate: {
       ...languageModelConfigurations["Deepseek R1 Distill"],
@@ -91,7 +92,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Scout"],
     },
     complex: {
       ...languageModelConfigurations["Qwen 3"],
@@ -110,7 +111,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Scout"],
       temperature: 1,
     },
     advanced: {
@@ -118,13 +119,13 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
   },
-  instructional: {
+  prompt_engineering: {
     simple: {
       ...languageModelConfigurations["Llama 3.3 Versatile"],
       temperature: 0.5,
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Scout"],
       temperature: 0.5,
     },
     complex: {
@@ -134,6 +135,21 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
     advanced: {
       ...languageModelConfigurations["Gemini 2.5 Pro"],
       temperature: 0.5,
+    },
+  },
+  structured_content: {
+    simple: {
+      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      temperature: 0.7,
+    },
+    moderate: {
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite Web Search"],
+    },
+    complex: {
+      ...languageModelConfigurations["Gemini 2.5 Flash"],
+    },
+    advanced: {
+      ...languageModelConfigurations["Gemini 2.5 Flash Thinking"],
     },
   },
   conversational: {
@@ -146,7 +162,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.8,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4 Scout"],
       temperature: 0.8,
     },
     advanced: {
@@ -200,7 +216,8 @@ const getPrompt = (query: string): string => `\n
   *   **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
   *   **Technical**: Programming, debugging, system design, or technical implementation.
   *   **Creative**: Artistic content generation, open-ended writing, or brainstorming.
-  *   **Instructional**: Creating structured content, prompts, templates, or educational materials.
+  *   **Structured Content**: Requests to create organized, educational, or instructional materials (e.g., guides, tutorials, lesson plans, checklists, templates).
+  *   **Prompt Engineering**: Requests related to designing, optimizing, or analyzing prompts for AI models, including prompt templates, prompt tuning, or prompt best practices.
   *   **Conversational**: Casual chat, personal advice, or social interaction.
   *   **Processing**: Text transformation, translation, summarization, or data extraction. The original text to process should be included in the query.
   *   **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.

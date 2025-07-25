@@ -38,8 +38,8 @@ export const languageModelConfigurations = {
     temperature: 0.6,
     topP: 0.9,
   },
-  "Llama 4 Maverick": {
-    model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+  "Llama 4 Scout": {
+    model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
     temperature: 0.6,
     topP: 0.9,
   },
@@ -75,15 +75,10 @@ export const languageModelConfigurations = {
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
-  "Gemini 2.5 Flash Lite Thinking": {
-    model: google("gemini-2.5-flash-lite-preview-06-17"),
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 1024,
-        },
-      } satisfies GoogleGenerativeAIProviderOptions,
-    },
+  "Gemini 2.5 Flash Lite Web Search": {
+    model: google("gemini-2.5-flash-lite-preview-06-17", {
+      useSearchGrounding: true,
+    }),
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash", {
@@ -98,7 +93,9 @@ export const languageModelConfigurations = {
     },
   },
   "Gemini 2.5 Flash Thinking": {
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-2.5-flash", {
+      useSearchGrounding: true,
+    }),
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
@@ -171,7 +168,7 @@ const pickModelConfigurations = <
 };
 
 const chatModelKeys = [
-  "Llama 4 Maverick",
+  "Llama 4 Scout",
   "Deepseek V3",
   "Kimi K2",
   ...(process.env.NODE_ENV === "development" ? (["Gemma 3n"] as const) : []),
