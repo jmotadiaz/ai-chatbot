@@ -20,7 +20,6 @@ const EnglishHelperChat: React.FC = () => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
   const completionResult = useCompletion({
     api: "/api/english/translate",
-    experimental_throttle: 100,
   });
   const objectResult = useObject({
     api: "/api/english/grammar",

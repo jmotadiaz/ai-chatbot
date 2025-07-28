@@ -1,9 +1,8 @@
 "use client";
 
-import type { Message as TMessage } from "ai";
+import type { UIMessage as TMessage } from "ai";
 import { AnimatePresence, motion } from "motion/react";
-import React, { memo, useCallback, useEffect, useState } from "react";
-import equal from "fast-deep-equal";
+import React, { useCallback, useEffect, useState } from "react";
 import { useCollapse } from "react-collapsed";
 
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
@@ -38,7 +37,7 @@ const PurePreviewMessage = ({
         >
           <div className="flex flex-col w-full space-y-4">
             {message.parts
-              ?.filter((part) => part.type !== "source")
+              ?.filter((part) => part.type !== "source-url")
               .map((part, i) => {
                 switch (part.type) {
                   case "text":
@@ -65,15 +64,12 @@ const PurePreviewMessage = ({
                         )}
                       </motion.div>
                     );
-                  case "tool-invocation":
-                    const { toolName, state } = part.toolInvocation;
-                    if (
-                      toolName === "webSearch" &&
-                      (state === "call" || state === "partial-call")
-                    ) {
+                  case "tool-webSearch":
+                    console.log("Tool searchWeb part:", part);
+                    if (part.state === "input-streaming") {
                       return (
                         <SearchWebToolLoading
-                          key={`tool-web-search-${part.toolInvocation.toolCallId}`}
+                          key={`tool-web-search-${part.toolCallId}`}
                         />
                       );
                     }
@@ -96,7 +92,7 @@ const PurePreviewMessage = ({
                     return null;
                 }
               })}
-            {message.parts?.some((part) => part.type === "source") && (
+            {message.parts?.some((part) => part.type === "source-url") && (
               <SourceMessagePart message={message} />
             )}
           </div>
@@ -108,7 +104,7 @@ const PurePreviewMessage = ({
 
 interface ReasoningPart {
   type: "reasoning";
-  reasoning: string;
+  reasoningText: string;
   details: Array<{ type: "text"; text: string }>;
 }
 
@@ -189,7 +185,7 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
             variants={variants}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            {part.details.map((detail, detailIndex) =>
+            {part.details?.map((detail, detailIndex) =>
               detail.type === "text" ? (
                 <Markdown key={detailIndex}>{detail.text}</Markdown>
               ) : (
@@ -256,17 +252,16 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
       </div>
       <ul className="list-disc pl-10 mb-4">
         {message.parts
-          ?.filter((part) => part.type === "source")
+          ?.filter((part) => part.type === "source-url")
           .map((part) => {
-            console.log(`Rendering source:`, part.source);
             return (
-              <li key={`source-${part.source.id}`}>
+              <li key={`source-${part.sourceId}`}>
                 <a
-                  href={part.source.url}
+                  href={part.url}
                   className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   target="_blank"
                 >
-                  {part.source.title ?? new URL(part.source.url).hostname}
+                  {part.title ?? new URL(part.url).hostname}
                 </a>
               </li>
             );
@@ -285,12 +280,4 @@ const SearchWebToolLoading: React.FC = () => {
   );
 };
 
-export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
-  if (prevProps.status !== nextProps.status) return false;
-  if (prevProps.message.annotations !== nextProps.message.annotations)
-    return false;
-  // if (prevProps.message.content !== nextProps.message.content) return false;
-  if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
-
-  return true;
-});
+export const Message = PurePreviewMessage;

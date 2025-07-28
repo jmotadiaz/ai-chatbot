@@ -3,8 +3,8 @@ import React, { useCallback, useContext, useState, createContext } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { toast } from "sonner";
-import { UIMessage } from "ai";
 import {
   defaultModel,
   defaultTemperature,
@@ -47,15 +47,26 @@ interface SetChatConfig {
   setConfig: (config: Partial<ChatConfig>) => void;
 }
 
+interface InputState {
+  input: string;
+  setInput: (input: string) => void;
+  handleInputChange: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
+  handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+}
+
 const chatContext = createContext<
-  UseChatHelpers &
+  UseChatHelpers<UIMessage> &
     SetChatConfig &
-    ChatConfig & {
+    ChatConfig &
+    InputState & {
       selectedModel: chatModelId;
       metaPrompt?: string | null;
       chatId?: string;
       title?: string;
       projectId?: string;
+      reload: () => void;
     }
 >({
   selectedModel: defaultModel,
@@ -65,24 +76,23 @@ const chatContext = createContext<
   useRAG: false,
   useWebSearch: false,
   setConfig: () => {},
-  id: "",
-  messages: [],
-  setMessages: () => {},
   input: "",
   setInput: () => {},
   handleInputChange: () => {},
-  handleSubmit: () => {},
+  handleSubmit: async () => {},
+  id: "",
+  messages: [],
+  setMessages: () => {},
   status: "ready",
-  stop: () => {},
+  stop: async () => {},
   error: undefined,
-  isLoading: false,
-  append: async () => {
+  sendMessage: async () => {},
+  regenerate: async () => {
     return undefined;
   },
-  reload: async () => {
-    return undefined;
-  },
-  setData: () => {},
+  reload: async () => {},
+  resumeStream: async () => {},
+  addToolResult: async () => {},
 });
 
 export interface ChatProviderProps extends ProvidersProps {
@@ -125,16 +135,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       { selectedModel, useRAG: false, useWebSearch: false }
     )
   );
+
+  // Manual input state management for v5
+  const [input, setInput] = useState("");
+
   const chatResult = useChat({
-    initialMessages,
+    messages: initialMessages,
     generateId: generateUUID,
-    sendExtraMessageFields: true,
-    maxSteps: 5,
-    experimental_throttle: 400,
-    body: {
-      chatId,
-      ...chatConfig,
-    },
+    experimental_throttle: 200,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+    }),
+
     onError: (error) => {
       toast.error(
         error.message.length > 0
@@ -145,12 +157,48 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     },
   });
 
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setInput(event.target.value);
+    },
+    []
+  );
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (input.trim()) {
+        await chatResult.sendMessage(
+          {
+            text: input,
+          },
+          {
+            body: {
+              chatId,
+              ...chatConfig,
+            },
+          }
+        );
+        setInput("");
+      }
+    },
+    [input, chatResult, chatId, chatConfig]
+  );
+
   const setConfig = useCallback<SetChatConfig["setConfig"]>((config) => {
     setChatConfig((prev) => ({
       ...prev,
       ...config,
     }));
   }, []);
+
+  const reload = useCallback(() => {
+    setInput("");
+    chatResult.regenerate({
+      messageId: chatResult.messages.at(-1)?.id,
+      body: { chatId, ...chatConfig },
+    });
+  }, [chatConfig, chatId, chatResult]);
 
   return (
     <chatContext.Provider
@@ -159,6 +207,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         metaPrompt,
         chatId,
         setConfig,
+        input,
+        setInput,
+        handleInputChange,
+        handleSubmit,
+        reload,
         ...chatResult,
         ...chatConfig,
         title,

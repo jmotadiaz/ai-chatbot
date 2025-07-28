@@ -28,7 +28,7 @@ export const audienceInstructions = {
 
 export const identifyTranslationDirection = (prompt: string) => {
   return generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     schema: z.object({
       sourceLanguage: z.enum(sourceLanguages),
       targetLanguage: z.enum(targetLanguages),
@@ -50,7 +50,7 @@ export const identifyTranslationDirection = (prompt: string) => {
 
 export const identifyAudience = (prompt: string) => {
   return generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     schema: z.object({
       audience: z.enum(audiences),
     }),
@@ -77,7 +77,7 @@ export const identifyAudience = (prompt: string) => {
 
 export const identifyDomain = (prompt: string) => {
   return generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     schema: z.object({
       domain: z.string(),
       subdomain: z.string(),

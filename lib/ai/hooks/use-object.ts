@@ -4,10 +4,12 @@ import {
   Experimental_UseObjectOptions,
 } from "@ai-sdk/react";
 import { useCallback, useState } from "react";
+import * as z3 from "zod/v3";
 
-export type UseObjectParams<T> = Experimental_UseObjectOptions<T>;
+export type UseObjectParams<T extends z3.Schema> =
+  Experimental_UseObjectOptions<T, T>;
 export type UseObjectReturn<T> = Omit<
-  Experimental_UseObjectHelpers<T, unknown>,
+  Experimental_UseObjectHelpers<T, T>,
   "submit"
 > & {
   input: string;
@@ -18,7 +20,9 @@ export type UseObjectReturn<T> = Omit<
   handleSubmit: (e: React.FormEvent) => void;
 };
 
-export const useObject = <T>(args: UseObjectParams<T>): UseObjectReturn<T> => {
+export const useObject = <T extends z3.Schema>(
+  args: UseObjectParams<T>
+): UseObjectReturn<T> => {
   const { submit: internalSubmit, ...objectResult } =
     experimental_useObject(args);
   const [input, setInput] = useState("");

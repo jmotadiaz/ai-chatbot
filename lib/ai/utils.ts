@@ -1,4 +1,4 @@
-import { GenerateObjectResult, generateText, Message, UIMessage } from "ai";
+import { GenerateObjectResult, generateText, UIMessage } from "ai";
 import { languageModelConfigurations } from "@/lib/ai/models";
 import { InsertMessage } from "@/lib/db/schema";
 
@@ -22,12 +22,12 @@ export async function generateTitleFromUserMessage(
 
 export const messageToDbMessage =
   (chatId: string) =>
-  (message: Message): InsertMessage => ({
+  (message: UIMessage): InsertMessage => ({
     chatId,
     id: message.id,
     role: message.role,
     parts: message.parts,
-    attachments: message.experimental_attachments ?? [],
+    attachments: [], // In v5, attachments are handled through parts
   });
 
 export const messagePartsToText = (message: UIMessage): string => {

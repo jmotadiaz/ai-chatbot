@@ -26,7 +26,7 @@ const COMPLEXITY_LEVELS = [
 ] as const;
 
 const schema = z.object({
-  reasoning: z.string(),
+  reasoningText: z.string(),
   category: z.enum(CATEGORIES),
   complexity: z.enum(COMPLEXITY_LEVELS),
 });
@@ -46,7 +46,7 @@ export async function autoModel(query: string): Promise<ModelConfiguration> {
       object: {
         category: "other",
         complexity: "simple",
-        reasoning: "Default classification due to error",
+        reasoningText: "Default classification due to error",
       } satisfies z.infer<typeof schema>,
     } as const;
   });

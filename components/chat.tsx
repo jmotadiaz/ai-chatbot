@@ -43,7 +43,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
   const observeRef = useRef<HTMLDivElement>(null);
 
   const isLoading = status === "streaming" || status === "submitted";
-
+  console.log("Chat status:", status);
   return (
     <>
       <div
@@ -70,11 +70,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
                   <div className="flex mt-1 ml-3">
                     <div
                       className="p-2 border dark:border-zinc-500 rounded-full cursor-pointer"
-                      onClick={() =>
-                        reload({
-                          body: { reloadedMessageId: messages.at(-1)?.id },
-                        })
-                      }
+                      onClick={reload}
                     >
                       <RefreshCcw size={16} className="dark:text-white" />
                     </div>

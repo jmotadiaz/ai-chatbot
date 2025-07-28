@@ -1,6 +1,5 @@
-import { groq } from "@ai-sdk/groq";
-import { JSONValue, LanguageModelV1 } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { groq, GroqProviderOptions } from "@ai-sdk/groq";
+import { LanguageModel } from "ai";
 import { createXai } from "@ai-sdk/xai";
 import { openai } from "@ai-sdk/openai";
 import {
@@ -8,19 +7,18 @@ import {
   GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
-import { ollama } from "ollama-ai-provider";
 import { perplexity } from "@ai-sdk/perplexity";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 export const google = createGoogleGenerativeAI();
 export const xai = createXai();
-export const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
 
 export interface ModelConfiguration {
-  model: LanguageModelV1;
-  providerOptions?: Record<string, Record<string, JSONValue>>;
+  model: LanguageModel;
+  providerOptions?: {
+    groq?: GroqProviderOptions;
+    google?: GoogleGenerativeAIProviderOptions;
+  };
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -32,6 +30,11 @@ export type ModelConfigurations = Record<string, ModelConfiguration>;
 export const languageModelConfigurations = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
+    providerOptions: {
+      groq: {
+        structuredOutputs: false,
+      },
+    },
   },
   "Llama 3.3 Versatile": {
     model: groq("llama-3.3-70b-versatile"),
@@ -43,16 +46,9 @@ export const languageModelConfigurations = {
     temperature: 0.6,
     topP: 0.9,
   },
-  "Deepseek V3": {
-    model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
-    temperature: 0.3,
-  },
   "Kimi K2": {
     model: groq("moonshotai/kimi-k2-instruct"),
     temperature: 0.6,
-  },
-  "Mistral 3 Medium": {
-    model: openrouter.chat("mistralai/mistral-medium-3"),
   },
   "Claude 3.5 Haiku": {
     model: anthropic("claude-3-5-haiku-latest"),
@@ -66,9 +62,6 @@ export const languageModelConfigurations = {
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
   },
-  "Gemma 3n": {
-    model: ollama("gemma3n"),
-  },
   "Gemini 2.0 Flash": {
     model: google("gemini-2.0-flash"),
   },
@@ -76,26 +69,20 @@ export const languageModelConfigurations = {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
   "Gemini 2.5 Flash Lite Web Search": {
-    model: google("gemini-2.5-flash-lite-preview-06-17", {
-      useSearchGrounding: true,
-    }),
+    model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
   "Gemini 2.5 Flash": {
-    model: google("gemini-2.5-flash", {
-      useSearchGrounding: true,
-    }),
+    model: google("gemini-2.5-flash"),
     providerOptions: {
       google: {
         thinkingConfig: {
           thinkingBudget: 0,
         },
-      } as GoogleGenerativeAIProviderOptions,
+      },
     },
   },
   "Gemini 2.5 Flash Thinking": {
-    model: google("gemini-2.5-flash", {
-      useSearchGrounding: true,
-    }),
+    model: google("gemini-2.5-flash"),
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
@@ -104,11 +91,6 @@ export const languageModelConfigurations = {
     providerOptions: {
       groq: { reasoningFormat: "parsed" },
     },
-  },
-  "Deepseek R1 0528": {
-    model: openrouter.chat("deepseek/deepseek-r1-0528"),
-    temperature: 0.6,
-    topP: 0.95,
   },
   Sonar: {
     model: perplexity("sonar"),
@@ -122,7 +104,7 @@ export const languageModelConfigurations = {
     topP: 0.95,
     topK: 20,
     providerOptions: {
-      groq: { reasoningFormat: "parsed" },
+      groq: { reasoningFormat: "parsed" } satisfies GroqProviderOptions,
     },
   },
   "Claude Sonnet 4": {
@@ -138,9 +120,7 @@ export const languageModelConfigurations = {
     model: openai("o3"),
   },
   "Gemini 2.5 Pro": {
-    model: google("gemini-2.5-pro", {
-      useSearchGrounding: true,
-    }),
+    model: google("gemini-2.5-pro"),
   },
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
@@ -169,14 +149,11 @@ const pickModelConfigurations = <
 
 const chatModelKeys = [
   "Llama 4 Scout",
-  "Deepseek V3",
   "Kimi K2",
-  ...(process.env.NODE_ENV === "development" ? (["Gemma 3n"] as const) : []),
   "Gemini 2.5 Flash",
   "GPT 4.1",
   "Sonar",
   "Qwen 3",
-  "Deepseek R1 0528",
   "Claude Sonnet 4",
   "Gemini 2.5 Pro",
   "o3",
