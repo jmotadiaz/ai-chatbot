@@ -1,6 +1,5 @@
 "use client";
 
-import type { UIMessage as TMessage } from "ai";
 import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useCollapse } from "react-collapsed";
@@ -10,12 +9,13 @@ import { Markdown } from "@/components/markdown";
 import { DotsLoadingIcon, SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 const PurePreviewMessage = ({
   message,
   status,
 }: {
-  message: TMessage;
+  message: ChatbotMessage;
   isLoading: boolean;
   status: "error" | "submitted" | "streaming" | "ready";
   isLatestMessage: boolean;
@@ -41,6 +41,7 @@ const PurePreviewMessage = ({
               .map((part, i) => {
                 switch (part.type) {
                   case "text":
+                    console.log("text part", part.state);
                     return (
                       <motion.div
                         initial={{ y: 5, opacity: 0 }}
@@ -64,12 +65,11 @@ const PurePreviewMessage = ({
                         )}
                       </motion.div>
                     );
-                  case "tool-webSearch":
-                    console.log("Tool searchWeb part:", part);
-                    if (part.state === "input-streaming") {
+                  case "data-web-search":
+                    if (part.data.status === "loading") {
                       return (
                         <SearchWebToolLoading
-                          key={`tool-web-search-${part.toolCallId}`}
+                          key={`tool-web-search-${part.id}`}
                         />
                       );
                     }
@@ -241,7 +241,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
 };
 
 interface SourceMessagePart {
-  message: TMessage;
+  message: ChatbotMessage;
 }
 
 const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {

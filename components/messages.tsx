@@ -1,12 +1,12 @@
-import type { UIMessage as TMessage } from "ai";
 import { Message } from "@/components/message";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 export const Messages = ({
   messages,
   isLoading,
   status,
 }: {
-  messages: TMessage[];
+  messages: ChatbotMessage[];
   isLoading: boolean;
   status: "error" | "submitted" | "streaming" | "ready";
 }) => {

@@ -1,6 +1,5 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { UIMessage } from "ai";
 import { ChatProvider, SidebarProvider } from "../../providers";
 import { Sidebar } from "../sidebar";
 import Chat from "@/components/chat";
@@ -18,6 +17,7 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -49,7 +49,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
   const metaPrompt = project ? project.metaPrompt : defaultMetaPrompt;
 
   // Convert to UI messages format
-  const initialMessages = convertToUIMessages(messages);
+  const initialMessages = convertToChatbotMessages(messages);
 
   return (
     <ChatProvider
@@ -82,11 +82,13 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
 
 export default ChatPage;
 
-function convertToUIMessages(messages: Array<Message>): Array<UIMessage> {
+function convertToChatbotMessages(
+  messages: Array<Message>
+): Array<ChatbotMessage> {
   return messages.map((message) => ({
     id: message.id,
-    parts: message.parts as UIMessage["parts"],
-    role: message.role as UIMessage["role"],
+    parts: message.parts as ChatbotMessage["parts"],
+    role: message.role as ChatbotMessage["role"],
     createdAt: message.createdAt,
     // In v5, attachments are handled through parts array
   }));

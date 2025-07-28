@@ -1,9 +1,10 @@
 "use client";
+import { randomUUID } from "crypto";
 import React, { useCallback, useContext, useState, createContext } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
-import { DefaultChatTransport, UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import {
   defaultModel,
@@ -13,11 +14,14 @@ import {
   defaultTopK,
   getChatConfigurationByModelId,
 } from "@/lib/ai/models";
-import { generateUUID } from "@/lib/utils";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 interface ProvidersProps {
   children: React.ReactNode;
 }
+
+const generateId =
+  typeof window !== "undefined" ? () => window.crypto.randomUUID() : randomUUID;
 
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
@@ -57,7 +61,7 @@ interface InputState {
 }
 
 const chatContext = createContext<
-  UseChatHelpers<UIMessage> &
+  UseChatHelpers<ChatbotMessage> &
     SetChatConfig &
     ChatConfig &
     InputState & {
@@ -96,7 +100,7 @@ const chatContext = createContext<
 });
 
 export interface ChatProviderProps extends ProvidersProps {
-  initialMessages?: UIMessage[];
+  initialMessages?: ChatbotMessage[];
   projectId?: string;
   chatId?: string;
   selectedModel?: chatModelId;
@@ -141,7 +145,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 
   const chatResult = useChat({
     messages: initialMessages,
-    generateId: generateUUID,
+    generateId,
     experimental_throttle: 200,
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -168,6 +172,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (input.trim()) {
+        setInput("");
         await chatResult.sendMessage(
           {
             text: input,
@@ -179,7 +184,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
             },
           }
         );
-        setInput("");
       }
     },
     [input, chatResult, chatId, chatConfig]
