@@ -73,6 +73,13 @@ export const Message = ({
                       );
                     }
                     return null;
+                  case "data-rag":
+                    if (part.data.status === "loading") {
+                      return (
+                        <RagToolLoading key={`tool-web-search-${part.id}`} />
+                      );
+                    }
+                    return null;
                   case "reasoning":
                     return (
                       <ReasoningMessagePart
@@ -261,6 +268,15 @@ const SearchWebToolLoading: React.FC = () => {
   return (
     <div className="flex items-center">
       <div className="mr-4 font-medium">Searching the web</div>
+      <DotsLoadingIcon />
+    </div>
+  );
+};
+
+const RagToolLoading: React.FC = () => {
+  return (
+    <div className="flex items-center">
+      <div className="mr-4 font-medium">Searching documents</div>
       <DotsLoadingIcon />
     </div>
   );

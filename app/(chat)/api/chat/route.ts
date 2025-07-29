@@ -24,13 +24,9 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
-import {
-  buildContextPrompt,
-  retrieve,
-  RetrieveResult,
-} from "@/lib/ai/rag/retrieve";
 import { webSearchFactory } from "@/lib/ai/tools/web-search";
 import { ChatbotMessage } from "@/lib/ai/types";
+import { ragFactory } from "@/lib/ai/tools/rag";
 
 export const maxDuration = 60;
 
@@ -65,7 +61,6 @@ export async function POST(req: Request) {
   } = await req.json();
 
   let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
-  let retrieveResult: RetrieveResult | null = null;
 
   if (selectedModel === "Auto Model Workflow") {
     const firstMessage = messages[0];
@@ -83,31 +78,6 @@ export async function POST(req: Request) {
     });
   }
 
-  let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
-
-  if (useRAG && messages.length > 0) {
-    const userMessages = convertToModelMessages(messages).filter(
-      (msg) => msg.role === "user"
-    );
-    if (userMessages.length) {
-      retrieveResult = await retrieve(
-        userMessages.map(({ content }) => content).join("\n")
-      );
-
-      if (retrieveResult.success && retrieveResult.similarChunks) {
-        enhancedSystemPrompt = `${enhancedSystemPrompt}\n---\n${buildContextPrompt(
-          retrieveResult.similarChunks
-        )}`;
-        console.log(
-          "RAG context added to system prompt",
-          retrieveResult.resources
-        );
-      } else {
-        console.error("RAG retrieve failed:", retrieveResult.error);
-      }
-    }
-  }
-
   const modelConfig = await chatModelConfiguration;
   let startChunking = false;
 
@@ -116,9 +86,9 @@ export async function POST(req: Request) {
       execute({ writer }) {
         const result = streamText({
           ...modelConfig,
-          system: enhancedSystemPrompt,
+          system: systemPrompt || defaultSystemPrompt,
           messages: convertToModelMessages(messages),
-          tools: { ...webSearchFactory({ writer }) },
+          tools: { ...webSearchFactory({ writer }), ...ragFactory({ writer }) },
           stopWhen: stepCountIs(3),
           prepareStep: async ({ stepNumber, model }) => {
             const provider =
@@ -128,9 +98,19 @@ export async function POST(req: Request) {
               return {
                 ...languageModelConfigurations["Gemini 2.0 Flash"],
                 toolChoice: { type: "tool", toolName: "webSearch" },
+                activeTools: ["webSearch"],
+              };
+            }
+
+            if (useRAG && stepNumber === (useWebSearch ? 1 : 0)) {
+              return {
+                ...languageModelConfigurations["Gemini 2.0 Flash"],
+                toolChoice: { type: "tool", toolName: "rag" },
+                activeTools: ["rag"],
               };
             }
           },
+          activeTools: ["webSearch"],
           experimental_transform: smoothStream(),
           experimental_telemetry: {
             isEnabled: true,
