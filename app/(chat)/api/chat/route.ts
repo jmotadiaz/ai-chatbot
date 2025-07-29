@@ -6,6 +6,7 @@ import {
   stepCountIs,
   createUIMessageStreamResponse,
   createUIMessageStream,
+  smoothStream,
 } from "ai";
 import {
   chatModelConfigurations,
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
   }
 
   const modelConfig = await chatModelConfiguration;
+  let startChunking = false;
 
   return createUIMessageStreamResponse({
     stream: createUIMessageStream<ChatbotMessage>({
@@ -118,16 +120,30 @@ export async function POST(req: Request) {
           messages: convertToModelMessages(messages),
           tools: { ...webSearchFactory({ writer }) },
           stopWhen: stepCountIs(3),
-          prepareStep: async ({ stepNumber }) => {
-            if (useWebSearch && stepNumber === 0) {
+          prepareStep: async ({ stepNumber, model }) => {
+            const provider =
+              typeof model === "string" ? "unknown" : model.provider;
+
+            if (provider !== "perplexity" && useWebSearch && stepNumber === 0) {
               return {
-                ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+                ...languageModelConfigurations["Gemini 2.0 Flash"],
                 toolChoice: { type: "tool", toolName: "webSearch" },
               };
             }
           },
+          experimental_transform: smoothStream(),
           experimental_telemetry: {
             isEnabled: true,
+          },
+          onChunk: () => {
+            if (!startChunking) {
+              startChunking = true;
+              writer.write({
+                type: "data-notification",
+                data: { status: "streaming" },
+                transient: true,
+              });
+            }
           },
           onFinish: async ({ response }) => {
             if (chatId) {

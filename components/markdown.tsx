@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Link from "next/link";
-import React, { memo } from "react";
+import { marked } from "marked";
+import React, { memo, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import CodeBlock from "@/components/code-block";
@@ -156,15 +157,33 @@ const components: Partial<Components> = {
 
 const remarkPlugins = [remarkGfm];
 
-const NonMemoizedMarkdown = ({ children }: { children: string }) => {
-  return (
-    <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
-      {children}
-    </ReactMarkdown>
-  );
-};
+function parseMarkdownIntoBlocks(markdown: string): string[] {
+  const tokens = marked.lexer(markdown);
+  return tokens.map((token) => token.raw);
+}
 
-export const Markdown = memo(
-  NonMemoizedMarkdown,
-  (prevProps, nextProps) => prevProps.children === nextProps.children
+const MemoizedMarkdownBlock = memo(
+  ({ content }: { content: string }) => {
+    return (
+      <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+        {content}
+      </ReactMarkdown>
+    );
+  },
+  (prevProps, nextProps) => {
+    if (prevProps.content !== nextProps.content) return false;
+    return true;
+  }
 );
+
+MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
+
+export const Markdown = memo(({ content }: { content: string }) => {
+  const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
+
+  return blocks.map((block, index) => (
+    <MemoizedMarkdownBlock content={block} key={`block_${index}`} />
+  ));
+});
+
+Markdown.displayName = "Markdown";

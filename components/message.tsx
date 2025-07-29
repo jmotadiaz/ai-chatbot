@@ -3,15 +3,15 @@
 import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useCollapse } from "react-collapsed";
-
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ReasoningUIPart } from "ai";
 import { Markdown } from "@/components/markdown";
 import { DotsLoadingIcon, SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
 
-const PurePreviewMessage = ({
+export const Message = ({
   message,
   status,
 }: {
@@ -41,7 +41,6 @@ const PurePreviewMessage = ({
               .map((part, i) => {
                 switch (part.type) {
                   case "text":
-                    console.log("text part", part.state);
                     return (
                       <motion.div
                         initial={{ y: 5, opacity: 0 }}
@@ -60,7 +59,7 @@ const PurePreviewMessage = ({
                           </CopyBlock>
                         ) : (
                           <div className={cn("max-w-full")}>
-                            <Markdown>{part.text}</Markdown>
+                            <Markdown content={part.text} />
                           </div>
                         )}
                       </motion.div>
@@ -78,7 +77,6 @@ const PurePreviewMessage = ({
                     return (
                       <ReasoningMessagePart
                         key={`message-${message.id}-${i}`}
-                        // @ts-expect-error part
                         part={part}
                         isReasoning={
                           (message.parts &&
@@ -102,14 +100,8 @@ const PurePreviewMessage = ({
   );
 };
 
-interface ReasoningPart {
-  type: "reasoning";
-  reasoningText: string;
-  details: Array<{ type: "text"; text: string }>;
-}
-
 interface ReasoningMessagePartProps {
-  part: ReasoningPart;
+  part: ReasoningUIPart;
   isReasoning: boolean;
 }
 
@@ -185,13 +177,7 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
             variants={variants}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            {part.details?.map((detail, detailIndex) =>
-              detail.type === "text" ? (
-                <Markdown key={detailIndex}>{detail.text}</Markdown>
-              ) : (
-                "<redacted>"
-              )
-            )}
+            <Markdown content={part.text} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -223,7 +209,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
         })}
         {...getCollapseProps()}
       >
-        <Markdown>{text}</Markdown>
+        <Markdown content={text} />
       </div>
 
       {isLongMessage && (
@@ -255,13 +241,13 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
           ?.filter((part) => part.type === "source-url")
           .map((part) => {
             return (
-              <li key={`source-${part.sourceId}`}>
+              <li className="text-ellipsis" key={`source-${part.sourceId}`}>
                 <a
                   href={part.url}
                   className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   target="_blank"
                 >
-                  {part.title ?? new URL(part.url).hostname}
+                  {part.title || part.url}
                 </a>
               </li>
             );
@@ -279,5 +265,3 @@ const SearchWebToolLoading: React.FC = () => {
     </div>
   );
 };
-
-export const Message = PurePreviewMessage;

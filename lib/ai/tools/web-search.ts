@@ -11,8 +11,10 @@ export interface WebSearchFactoryArgs {
 }
 
 const inputSchema = z.object({
-  query: z.string().min(1).max(100).describe("The search query"),
-  urls: z.array(z.string()).describe("The urls provided by the user"),
+  query: z.string().min(1).max(100).describe("Optimized query for web search"),
+  urls: z
+    .array(z.string())
+    .describe("The urls provided directly in the user prompt"),
 });
 
 const outputSchema = z.array(
@@ -41,6 +43,9 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
         data: { status: "loading" },
       });
 
+      console.log("Web search query:", query);
+      console.log("Web search URLs:", urls);
+
       const { results } =
         urls.length > 0
           ? await exa.getContents(urls, {
@@ -67,7 +72,7 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
         });
 
         return {
-          title: result.title || result.url,
+          title: result.title?.trim() || result.url,
           url: result.url,
           content: result.text,
         };

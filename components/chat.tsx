@@ -43,7 +43,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
   const observeRef = useRef<HTMLDivElement>(null);
 
   const isLoading = status === "streaming" || status === "submitted";
-  console.log("Chat status:", status);
   return (
     <>
       <div

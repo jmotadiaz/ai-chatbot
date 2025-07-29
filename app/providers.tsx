@@ -1,6 +1,12 @@
 "use client";
 import { randomUUID } from "crypto";
-import React, { useCallback, useContext, useState, createContext } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useState,
+  createContext,
+  useEffect,
+} from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
@@ -14,7 +20,7 @@ import {
   defaultTopK,
   getChatConfigurationByModelId,
 } from "@/lib/ai/models";
-import { ChatbotMessage } from "@/lib/ai/types";
+import { ChatbotMessage, Notification } from "@/lib/ai/types";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -125,6 +131,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   projectId,
   title,
 }) => {
+  const [status, setStatus] = useState<Notification["status"]>("ready");
   const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
     Object.assign(
       getChatConfigurationByModelId(selectedModel),
@@ -147,10 +154,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     messages: initialMessages,
     generateId,
     experimental_throttle: 200,
+    onData: (data) => {
+      if (data.type === "data-notification") {
+        setStatus(data.data.status);
+      }
+    },
     transport: new DefaultChatTransport({
       api: "/api/chat",
     }),
-
     onError: (error) => {
       toast.error(
         error.message.length > 0
@@ -204,9 +215,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     });
   }, [chatConfig, chatId, chatResult]);
 
+  useEffect(() => {
+    if (chatResult.status !== "streaming") {
+      setStatus(chatResult.status);
+    }
+  }, [chatResult.status]);
+
   return (
     <chatContext.Provider
       value={{
+        ...chatResult,
+        ...chatConfig,
         projectId,
         metaPrompt,
         chatId,
@@ -216,8 +235,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         handleInputChange,
         handleSubmit,
         reload,
-        ...chatResult,
-        ...chatConfig,
+        status,
         title,
       }}
     >

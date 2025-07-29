@@ -23,8 +23,9 @@ export type UseObjectReturn<T> = Omit<
 export const useObject = <T extends z3.Schema>(
   args: UseObjectParams<T>
 ): UseObjectReturn<T> => {
-  const { submit: internalSubmit, ...objectResult } =
-    experimental_useObject(args);
+  const { submit: internalSubmit, ...objectResult } = experimental_useObject({
+    ...args,
+  });
   const [input, setInput] = useState("");
 
   const handleInputChange = useCallback(
