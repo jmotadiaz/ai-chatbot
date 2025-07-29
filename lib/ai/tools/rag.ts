@@ -20,7 +20,6 @@ export const ragFactory = ({ writer }: RagFactoryArgs) => ({
         .describe("The search query, in english."),
     }),
     execute: async ({ query }, { toolCallId }) => {
-      console.log("RAG query:", query);
       writer.write({
         type: "data-rag",
         id: toolCallId,
