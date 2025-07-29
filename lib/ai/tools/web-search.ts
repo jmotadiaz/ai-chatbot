@@ -43,7 +43,10 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
 
       const { results } =
         urls.length > 0
-          ? await exa.getContents(urls, { livecrawl: "always" })
+          ? await exa.getContents(urls, {
+              livecrawl: "always",
+              text: true,
+            })
           : await exa.searchAndContents(query, {
               livecrawl: "always",
               numResults: 5,
@@ -64,10 +67,9 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
         });
 
         return {
-          title: result.title || "",
+          title: result.title || result.url,
           url: result.url,
-          content: result.text.slice(0, 1000),
-          publishedDate: result.publishedDate,
+          content: result.text,
         };
       });
     },
