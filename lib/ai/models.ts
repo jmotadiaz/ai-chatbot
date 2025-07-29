@@ -70,6 +70,9 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Flash Lite Web Search": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
+    providerOptions: {
+      google: {},
+    },
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),

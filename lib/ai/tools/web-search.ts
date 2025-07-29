@@ -10,49 +10,49 @@ export interface WebSearchFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;
 }
 
-export const webSearch = ({ writer }: WebSearchFactoryArgs) =>
-  tool<
-    { query: string },
-    Array<{
-      title: string;
-      url: string;
-      content: string;
-      publishedDate?: string;
-    }>
-  >({
+const inputSchema = z.object({
+  query: z.string().min(1).max(100).describe("The search query"),
+  urls: z.array(z.string()).describe("The urls provided by the user"),
+});
+
+const outputSchema = z.array(
+  z.object({
+    title: z.string().describe("The title of the search result"),
+    url: z.string().url().describe("The URL of the search result"),
+    content: z
+      .string()
+      .describe("A snippet of the content from the search result"),
+    publishedDate: z
+      .string()
+      .optional()
+      .describe("The date the content was published"),
+  })
+);
+
+export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
+  webSearch: tool({
     description: "Search the web for up-to-date information",
-    inputSchema: z.object({
-      query: z.string().min(1).max(100).describe("The search query"),
-    }),
-    outputSchema: z.array(
-      z.object({
-        title: z.string().describe("The title of the search result"),
-        url: z.string().url().describe("The URL of the search result"),
-        content: z
-          .string()
-          .describe("A snippet of the content from the search result"),
-        publishedDate: z
-          .string()
-          .optional()
-          .describe("The date the content was published"),
-      })
-    ),
-    execute: async ({ query }, { toolCallId }) => {
+    inputSchema,
+    outputSchema,
+    execute: async ({ query, urls }, { toolCallId }) => {
       writer.write({
-        type: "data-web-search", // Custom type
-        id: toolCallId, // ID for updates
-        data: { status: "loading" }, // Your data
+        type: "data-web-search",
+        id: toolCallId,
+        data: { status: "loading" },
       });
 
-      const { results } = await exa.searchAndContents(query, {
-        livecrawl: "always",
-        numResults: 5,
-      });
+      const { results } =
+        urls.length > 0
+          ? await exa.getContents(urls, { livecrawl: "always" })
+          : await exa.searchAndContents(query, {
+              livecrawl: "always",
+              numResults: 5,
+            });
 
       writer.write({
-        type: "data-web-search", // Custom type
-        id: toolCallId, // ID for updates
-        data: { status: "loaded" }, // Your data
+        type: "data-web-search",
+        id: toolCallId,
+        data: { status: "loaded" },
       });
 
       return results.map((result) => {
@@ -66,9 +66,10 @@ export const webSearch = ({ writer }: WebSearchFactoryArgs) =>
         return {
           title: result.title || "",
           url: result.url,
-          content: result.text.slice(0, 1000), // take just the first 1000 characters
+          content: result.text.slice(0, 1000),
           publishedDate: result.publishedDate,
         };
       });
     },
-  });
+  }),
+});

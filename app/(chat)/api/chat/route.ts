@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import {
   streamText,
   UIMessage,
-  smoothStream,
   convertToModelMessages,
   stepCountIs,
   createUIMessageStreamResponse,
@@ -11,6 +10,7 @@ import {
 import {
   chatModelConfigurations,
   chatModelId,
+  languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/models";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
@@ -28,7 +28,7 @@ import {
   retrieve,
   RetrieveResult,
 } from "@/lib/ai/rag/retrieve";
-import { webSearch } from "@/lib/ai/tools/web-search";
+import { webSearchFactory } from "@/lib/ai/tools/web-search";
 import { ChatbotMessage } from "@/lib/ai/types";
 
 export const maxDuration = 60;
@@ -116,12 +116,12 @@ export async function POST(req: Request) {
           ...modelConfig,
           system: enhancedSystemPrompt,
           messages: convertToModelMessages(messages),
-          tools: { webSearch: webSearch({ writer }) },
-          experimental_transform: smoothStream({ chunking: "word" }),
+          tools: { ...webSearchFactory({ writer }) },
           stopWhen: stepCountIs(3),
           prepareStep: async ({ stepNumber }) => {
             if (useWebSearch && stepNumber === 0) {
               return {
+                ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
                 toolChoice: { type: "tool", toolName: "webSearch" },
               };
             }

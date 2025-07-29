@@ -46,6 +46,9 @@ export async function POST(req: Request) {
 
   const { text } = await generateText({
     ...languageModelConfigurations["Qwen 3"],
+    providerOptions: {
+      groq: { reasoningFormat: "hidden" },
+    },
     system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
     prompt: initialPrompt + originalPrompt(prompt),
   });
