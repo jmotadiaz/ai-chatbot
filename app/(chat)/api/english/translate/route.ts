@@ -11,5 +11,5 @@ export async function POST(req: Request) {
 
   const result = await translate(prompt);
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

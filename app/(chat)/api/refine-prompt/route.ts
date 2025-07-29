@@ -1,4 +1,4 @@
-import { generateText, UIMessage } from "ai";
+import { convertToModelMessages, generateText, UIMessage } from "ai";
 import { auth } from "@/auth";
 import { languageModelConfigurations } from "@/lib/ai/models";
 import {
@@ -26,20 +26,29 @@ export async function POST(req: Request) {
     metaPrompt?: string;
   } = await req.json();
 
-  const chatHistory = (messages || []).reduce((acc, message) => {
-    const role = message.role === "user" ? "user" : "assistant";
-    const content = message.content.replace(/<[^>]+>/g, "").trim();
-    return `${acc}
+  const chatHistory = convertToModelMessages(messages || []).reduce(
+    (acc, message) => {
+      const role = message.role === "user" ? "user" : "assistant";
+      const content =
+        typeof message.content === "string"
+          ? message.content.replace(/<[^>]+>/g, "").trim()
+          : "";
+      return `${acc}
       <${role}>
         ${scapeXML(content)}
       </${role}>
   `;
-  }, "");
+    },
+    ""
+  );
 
   const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
 
   const { text } = await generateText({
     ...languageModelConfigurations["Qwen 3"],
+    providerOptions: {
+      groq: { reasoningFormat: "hidden" },
+    },
     system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
     prompt: initialPrompt + originalPrompt(prompt),
   });

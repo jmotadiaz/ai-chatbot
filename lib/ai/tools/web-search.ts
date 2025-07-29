@@ -1,29 +1,82 @@
-import { tool } from "ai";
+import { tool, UIMessageStreamWriter } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 const exa = new Exa(process.env.EXA_API_KEY);
 
-export const webSearch = tool({
-  description: "Search the web for up-to-date information",
-  parameters: z.object({
-    query: z.string().min(1).max(100).describe("The search query"),
-  }),
-  execute: async ({ query }) => {
-    const { results } = await exa.searchAndContents(query, {
-      livecrawl: "always",
-      numResults: 5,
-    });
-    return results.map((result) => ({
-      title: result.title,
-      url: result.url,
-      content: result.text.slice(0, 1000), // take just the first 1000 characters
-      publishedDate: result.publishedDate,
-    }));
-  },
+export interface WebSearchFactoryArgs {
+  writer: UIMessageStreamWriter<ChatbotMessage>;
+}
+
+const inputSchema = z.object({
+  query: z.string().min(1).max(100).describe("Optimized query for web search"),
+  urls: z
+    .array(z.string())
+    .describe("The urls provided directly in the user prompt"),
 });
 
-export type WebSearchResults = Awaited<
-  ReturnType<Exclude<(typeof webSearch)["execute"], undefined>>
->;
+const outputSchema = z.array(
+  z.object({
+    title: z.string().describe("The title of the search result"),
+    url: z.string().url().describe("The URL of the search result"),
+    content: z
+      .string()
+      .describe("A snippet of the content from the search result"),
+    publishedDate: z
+      .string()
+      .optional()
+      .describe("The date the content was published"),
+  })
+);
+
+export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
+  webSearch: tool({
+    description: "Search the web for up-to-date information",
+    inputSchema,
+    outputSchema,
+    execute: async ({ query, urls }, { toolCallId }) => {
+      writer.write({
+        type: "data-web-search",
+        id: toolCallId,
+        data: { status: "loading" },
+      });
+
+      console.log("Web search query:", query);
+      console.log("Web search URLs:", urls);
+
+      const { results } =
+        urls.length > 0
+          ? await exa.getContents(urls, {
+              livecrawl: "always",
+              text: true,
+            })
+          : await exa.searchAndContents(query, {
+              livecrawl: "always",
+              numResults: 5,
+            });
+
+      writer.write({
+        type: "data-web-search",
+        id: toolCallId,
+        data: { status: "loaded" },
+      });
+
+      return results.map((result) => {
+        writer.write({
+          type: "source-url",
+          sourceId: `source-${result.id}`,
+          url: result.url,
+          title: result.title || "",
+        });
+
+        return {
+          title: result.title?.trim() || result.url,
+          url: result.url,
+          content: result.text,
+        };
+      });
+    },
+  }),
+});

@@ -1,10 +1,17 @@
 "use client";
-import React, { useCallback, useContext, useState, createContext } from "react";
+import { randomUUID } from "crypto";
+import React, {
+  useCallback,
+  useContext,
+  useState,
+  createContext,
+  useEffect,
+} from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
-import { UIMessage } from "ai";
 import {
   defaultModel,
   defaultTemperature,
@@ -13,11 +20,14 @@ import {
   defaultTopK,
   getChatConfigurationByModelId,
 } from "@/lib/ai/models";
-import { generateUUID } from "@/lib/utils";
+import { ChatbotMessage, Notification } from "@/lib/ai/types";
 
 interface ProvidersProps {
   children: React.ReactNode;
 }
+
+const generateId =
+  typeof window !== "undefined" ? () => window.crypto.randomUUID() : randomUUID;
 
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
@@ -47,15 +57,26 @@ interface SetChatConfig {
   setConfig: (config: Partial<ChatConfig>) => void;
 }
 
+interface InputState {
+  input: string;
+  setInput: (input: string) => void;
+  handleInputChange: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
+  handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+}
+
 const chatContext = createContext<
-  UseChatHelpers &
+  UseChatHelpers<ChatbotMessage> &
     SetChatConfig &
-    ChatConfig & {
+    ChatConfig &
+    InputState & {
       selectedModel: chatModelId;
       metaPrompt?: string | null;
       chatId?: string;
       title?: string;
       projectId?: string;
+      reload: () => void;
     }
 >({
   selectedModel: defaultModel,
@@ -65,28 +86,27 @@ const chatContext = createContext<
   useRAG: false,
   useWebSearch: false,
   setConfig: () => {},
-  id: "",
-  messages: [],
-  setMessages: () => {},
   input: "",
   setInput: () => {},
   handleInputChange: () => {},
-  handleSubmit: () => {},
+  handleSubmit: async () => {},
+  id: "",
+  messages: [],
+  setMessages: () => {},
   status: "ready",
-  stop: () => {},
+  stop: async () => {},
   error: undefined,
-  isLoading: false,
-  append: async () => {
+  sendMessage: async () => {},
+  regenerate: async () => {
     return undefined;
   },
-  reload: async () => {
-    return undefined;
-  },
-  setData: () => {},
+  reload: async () => {},
+  resumeStream: async () => {},
+  addToolResult: async () => {},
 });
 
 export interface ChatProviderProps extends ProvidersProps {
-  initialMessages?: UIMessage[];
+  initialMessages?: ChatbotMessage[];
   projectId?: string;
   chatId?: string;
   selectedModel?: chatModelId;
@@ -111,6 +131,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   projectId,
   title,
 }) => {
+  const [status, setStatus] = useState<Notification["status"]>("ready");
   const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
     Object.assign(
       getChatConfigurationByModelId(selectedModel),
@@ -125,16 +146,22 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       { selectedModel, useRAG: false, useWebSearch: false }
     )
   );
+
+  // Manual input state management for v5
+  const [input, setInput] = useState("");
+
   const chatResult = useChat({
-    initialMessages,
-    generateId: generateUUID,
-    sendExtraMessageFields: true,
-    maxSteps: 5,
-    experimental_throttle: 400,
-    body: {
-      chatId,
-      ...chatConfig,
+    messages: initialMessages,
+    generateId,
+    experimental_throttle: 200,
+    onData: (data) => {
+      if (data.type === "data-notification") {
+        setStatus(data.data.status);
+      }
     },
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+    }),
     onError: (error) => {
       toast.error(
         error.message.length > 0
@@ -145,6 +172,34 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     },
   });
 
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setInput(event.target.value);
+    },
+    []
+  );
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (input.trim()) {
+        setInput("");
+        await chatResult.sendMessage(
+          {
+            text: input,
+          },
+          {
+            body: {
+              chatId,
+              ...chatConfig,
+            },
+          }
+        );
+      }
+    },
+    [input, chatResult, chatId, chatConfig]
+  );
+
   const setConfig = useCallback<SetChatConfig["setConfig"]>((config) => {
     setChatConfig((prev) => ({
       ...prev,
@@ -152,15 +207,35 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     }));
   }, []);
 
+  const reload = useCallback(() => {
+    setInput("");
+    chatResult.regenerate({
+      messageId: chatResult.messages.at(-1)?.id,
+      body: { chatId, ...chatConfig },
+    });
+  }, [chatConfig, chatId, chatResult]);
+
+  useEffect(() => {
+    if (chatResult.status !== "streaming") {
+      setStatus(chatResult.status);
+    }
+  }, [chatResult.status]);
+
   return (
     <chatContext.Provider
       value={{
+        ...chatResult,
+        ...chatConfig,
         projectId,
         metaPrompt,
         chatId,
         setConfig,
-        ...chatResult,
-        ...chatConfig,
+        input,
+        setInput,
+        handleInputChange,
+        handleSubmit,
+        reload,
+        status,
         title,
       }}
     >

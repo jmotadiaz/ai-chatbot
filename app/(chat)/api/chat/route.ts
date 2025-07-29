@@ -1,17 +1,20 @@
+import { randomUUID } from "crypto";
 import {
   streamText,
   UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+  createUIMessageStreamResponse,
+  createUIMessageStream,
   smoothStream,
-  appendResponseMessages,
-  createDataStreamResponse,
 } from "ai";
 import {
   chatModelConfigurations,
   chatModelId,
+  languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/models";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
-import { generateUUID } from "@/lib/utils";
 import {
   deleteMessageById,
   saveMessages,
@@ -25,9 +28,9 @@ import {
   buildContextPrompt,
   retrieve,
   RetrieveResult,
-  translateToEnglish,
 } from "@/lib/ai/rag/retrieve";
-import { webSearch } from "@/lib/ai/tools/web-search";
+import { webSearchFactory } from "@/lib/ai/tools/web-search";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 export const maxDuration = 60;
 
@@ -49,7 +52,7 @@ export async function POST(req: Request) {
     useRAG,
     useWebSearch,
   }: {
-    messages: UIMessage[];
+    messages: ChatbotMessage[];
     selectedModel: chatModelId;
     temperature?: number;
     topP?: number;
@@ -68,7 +71,7 @@ export async function POST(req: Request) {
     const firstMessage = messages[0];
 
     chatModelConfiguration = autoModel(
-      firstMessage?.content || messagePartsToText(firstMessage)
+      firstMessage ? messagePartsToText(firstMessage) : ""
     );
   } else {
     chatModelConfiguration = Promise.resolve({
@@ -83,18 +86,12 @@ export async function POST(req: Request) {
   let enhancedSystemPrompt = systemPrompt || defaultSystemPrompt;
 
   if (useRAG && messages.length > 0) {
-    const userMessages = messages.filter((msg) => msg.role === "user");
+    const userMessages = convertToModelMessages(messages).filter(
+      (msg) => msg.role === "user"
+    );
     if (userMessages.length) {
       retrieveResult = await retrieve(
-        await translateToEnglish(
-          userMessages.reduce(
-            (concatenatedMessage, msg) => `
-          ${concatenatedMessage}
-          ${msg.content === "string" ? msg.content : messagePartsToText(msg)}
-      `,
-            ""
-          )
-        )
+        userMessages.map(({ content }) => content).join("\n")
       );
 
       if (retrieveResult.success && retrieveResult.similarChunks) {
@@ -111,109 +108,111 @@ export async function POST(req: Request) {
     }
   }
 
-  return createDataStreamResponse({
-    execute: async (dataStream) => {
-      const modelConfig = await chatModelConfiguration;
+  const modelConfig = await chatModelConfiguration;
+  let startChunking = false;
 
-      const result = streamText({
-        ...modelConfig,
-        system: enhancedSystemPrompt,
-        tools: { webSearch },
-        messages,
-        experimental_generateMessageId: generateUUID,
-        experimental_transform: smoothStream({ chunking: "word" }),
-        maxSteps: 2,
-        experimental_activeTools: [
-          ...(useWebSearch ? (["webSearch"] as const) : []),
-        ],
-        experimental_telemetry: {
-          isEnabled: true,
-        },
-        onChunk({ chunk }) {
-          if (chunk.type === "tool-result" && chunk.toolName === "webSearch") {
-            chunk.result.forEach((result) => {
-              dataStream.writeSource({
-                id: generateUUID(),
-                sourceType: "url",
-                url: result.url,
-                title: `${result.title}`,
-              });
-            });
-          }
-        },
-        onFinish: async ({ response, usage }) => {
-          if (chatId) {
-            try {
-              const allMessages = appendResponseMessages({
-                messages,
-                responseMessages: response.messages,
-              });
-              const userMessage = allMessages.at(-2);
-              const assistantMessage = allMessages.at(-1);
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream<ChatbotMessage>({
+      execute({ writer }) {
+        const result = streamText({
+          ...modelConfig,
+          system: enhancedSystemPrompt,
+          messages: convertToModelMessages(messages),
+          tools: { ...webSearchFactory({ writer }) },
+          stopWhen: stepCountIs(3),
+          prepareStep: async ({ stepNumber, model }) => {
+            const provider =
+              typeof model === "string" ? "unknown" : model.provider;
 
-              if (
-                userMessage?.role === "user" &&
-                assistantMessage?.role === "assistant"
-              ) {
-                // Save the user and assistant messages to the database
-                await transaction([
-                  updateChat(
-                    { id: chatId, userId: session.user.id },
-                    {
-                      defaultModel: selectedModel,
-                      defaultTemperature: temperature,
-                      defaultTopP: topP,
-                    }
-                  ),
-                  ...(reloadedMessageId
-                    ? [
-                        deleteMessageById(reloadedMessageId),
-                        saveMessages([
-                          messageToDbMessage(chatId)(assistantMessage),
-                        ]),
-                      ]
-                    : [
-                        saveMessages(
-                          [userMessage, assistantMessage].map(
-                            messageToDbMessage(chatId)
-                          )
-                        ),
-                      ]),
-                ]);
-              }
-            } catch (error) {
-              console.error("Error saving message:", error);
+            if (provider !== "perplexity" && useWebSearch && stepNumber === 0) {
+              return {
+                ...languageModelConfigurations["Gemini 2.0 Flash"],
+                toolChoice: { type: "tool", toolName: "webSearch" },
+              };
             }
-          }
-          dataStream.writeData({
-            type: "usage",
-            promptTokens: usage.promptTokens,
-            completionTokens: usage.completionTokens,
-            totalTokens: usage.totalTokens,
-          });
-
-          if (retrieveResult?.resources) {
-            retrieveResult.resources.forEach((resource) => {
-              dataStream.writeSource({
-                id: generateUUID(),
-                sourceType: "url",
-                url: resource,
-                title: resource,
+          },
+          experimental_transform: smoothStream(),
+          experimental_telemetry: {
+            isEnabled: true,
+          },
+          onChunk: () => {
+            if (!startChunking) {
+              startChunking = true;
+              writer.write({
+                type: "data-notification",
+                data: { status: "streaming" },
+                transient: true,
               });
-            });
-          }
-        },
-        onError: (error) => {
-          console.log("Error Inferring", error.error);
-        },
-      });
+            }
+          },
+          onFinish: async ({ response }) => {
+            if (chatId) {
+              try {
+                // In v5, we handle message persistence differently
+                const userMessage = messages.at(-1);
+                const assistantMessage = response.messages.at(-1);
 
-      result.consumeStream();
+                if (
+                  userMessage?.role === "user" &&
+                  assistantMessage?.role === "assistant"
+                ) {
+                  // Save the user and assistant messages to the database
+                  await transaction([
+                    updateChat(
+                      { id: chatId, userId: session.user.id },
+                      {
+                        defaultModel: selectedModel,
+                        defaultTemperature: temperature,
+                        defaultTopP: topP,
+                      }
+                    ),
+                    ...(reloadedMessageId
+                      ? [
+                          deleteMessageById(reloadedMessageId),
+                          saveMessages([
+                            messageToDbMessage(chatId)({
+                              id: randomUUID(),
+                              role: "assistant",
+                              parts: assistantMessage.content,
+                            } as UIMessage),
+                          ]),
+                        ]
+                      : [
+                          saveMessages(
+                            [
+                              userMessage,
+                              {
+                                id: randomUUID(),
+                                role: "assistant",
+                                parts: assistantMessage.content,
+                              } as UIMessage,
+                            ].map(messageToDbMessage(chatId))
+                          ),
+                        ]),
+                  ]);
+                }
+              } catch (error) {
+                console.error("Error saving message:", error);
+              }
+            }
+          },
+          onError: (error) => {
+            console.log("Error Inferring", error.error);
+          },
+        });
 
-      result.mergeIntoDataStream(dataStream, {
-        sendReasoning: true,
-        sendSources: true,
-      });
-    },
+        writer.merge(
+          result.toUIMessageStream({
+            originalMessages: messages,
+            sendReasoning: true,
+            sendSources: true,
+            generateMessageId: randomUUID,
+            onFinish() {
+              // Handle any final processing here if needed
+            },
+          })
+        );
+      },
+    }),
   });
 }

@@ -1,22 +1,21 @@
 "use client";
 
-import type { Message as TMessage } from "ai";
 import { AnimatePresence, motion } from "motion/react";
-import React, { memo, useCallback, useEffect, useState } from "react";
-import equal from "fast-deep-equal";
+import React, { useCallback, useEffect, useState } from "react";
 import { useCollapse } from "react-collapsed";
-
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ReasoningUIPart } from "ai";
 import { Markdown } from "@/components/markdown";
 import { DotsLoadingIcon, SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
+import { ChatbotMessage } from "@/lib/ai/types";
 
-const PurePreviewMessage = ({
+export const Message = ({
   message,
   status,
 }: {
-  message: TMessage;
+  message: ChatbotMessage;
   isLoading: boolean;
   status: "error" | "submitted" | "streaming" | "ready";
   isLatestMessage: boolean;
@@ -38,7 +37,7 @@ const PurePreviewMessage = ({
         >
           <div className="flex flex-col w-full space-y-4">
             {message.parts
-              ?.filter((part) => part.type !== "source")
+              ?.filter((part) => part.type !== "source-url")
               .map((part, i) => {
                 switch (part.type) {
                   case "text":
@@ -60,20 +59,16 @@ const PurePreviewMessage = ({
                           </CopyBlock>
                         ) : (
                           <div className={cn("max-w-full")}>
-                            <Markdown>{part.text}</Markdown>
+                            <Markdown content={part.text} />
                           </div>
                         )}
                       </motion.div>
                     );
-                  case "tool-invocation":
-                    const { toolName, state } = part.toolInvocation;
-                    if (
-                      toolName === "webSearch" &&
-                      (state === "call" || state === "partial-call")
-                    ) {
+                  case "data-web-search":
+                    if (part.data.status === "loading") {
                       return (
                         <SearchWebToolLoading
-                          key={`tool-web-search-${part.toolInvocation.toolCallId}`}
+                          key={`tool-web-search-${part.id}`}
                         />
                       );
                     }
@@ -82,7 +77,6 @@ const PurePreviewMessage = ({
                     return (
                       <ReasoningMessagePart
                         key={`message-${message.id}-${i}`}
-                        // @ts-expect-error part
                         part={part}
                         isReasoning={
                           (message.parts &&
@@ -96,7 +90,7 @@ const PurePreviewMessage = ({
                     return null;
                 }
               })}
-            {message.parts?.some((part) => part.type === "source") && (
+            {message.parts?.some((part) => part.type === "source-url") && (
               <SourceMessagePart message={message} />
             )}
           </div>
@@ -106,14 +100,8 @@ const PurePreviewMessage = ({
   );
 };
 
-interface ReasoningPart {
-  type: "reasoning";
-  reasoning: string;
-  details: Array<{ type: "text"; text: string }>;
-}
-
 interface ReasoningMessagePartProps {
-  part: ReasoningPart;
+  part: ReasoningUIPart;
   isReasoning: boolean;
 }
 
@@ -189,13 +177,7 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
             variants={variants}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            {part.details.map((detail, detailIndex) =>
-              detail.type === "text" ? (
-                <Markdown key={detailIndex}>{detail.text}</Markdown>
-              ) : (
-                "<redacted>"
-              )
-            )}
+            <Markdown content={part.text} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -227,7 +209,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
         })}
         {...getCollapseProps()}
       >
-        <Markdown>{text}</Markdown>
+        <Markdown content={text} />
       </div>
 
       {isLongMessage && (
@@ -245,7 +227,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
 };
 
 interface SourceMessagePart {
-  message: TMessage;
+  message: ChatbotMessage;
 }
 
 const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
@@ -256,17 +238,16 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
       </div>
       <ul className="list-disc pl-10 mb-4">
         {message.parts
-          ?.filter((part) => part.type === "source")
+          ?.filter((part) => part.type === "source-url")
           .map((part) => {
-            console.log(`Rendering source:`, part.source);
             return (
-              <li key={`source-${part.source.id}`}>
+              <li className="text-ellipsis" key={`source-${part.sourceId}`}>
                 <a
-                  href={part.source.url}
+                  href={part.url}
                   className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   target="_blank"
                 >
-                  {part.source.title ?? new URL(part.source.url).hostname}
+                  {part.title || part.url}
                 </a>
               </li>
             );
@@ -284,13 +265,3 @@ const SearchWebToolLoading: React.FC = () => {
     </div>
   );
 };
-
-export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
-  if (prevProps.status !== nextProps.status) return false;
-  if (prevProps.message.annotations !== nextProps.message.annotations)
-    return false;
-  // if (prevProps.message.content !== nextProps.message.content) return false;
-  if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
-
-  return true;
-});

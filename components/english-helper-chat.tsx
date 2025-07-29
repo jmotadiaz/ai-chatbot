@@ -20,7 +20,6 @@ const EnglishHelperChat: React.FC = () => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
   const completionResult = useCompletion({
     api: "/api/english/translate",
-    experimental_throttle: 100,
   });
   const objectResult = useObject({
     api: "/api/english/grammar",
@@ -103,7 +102,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
             <>
               <div className="font-semibold animate-fade">Translation:</div>
               <CopyBlock className="p-3 animate-fade" text={completion}>
-                <Markdown>{completion}</Markdown>
+                <Markdown content={completion} />
               </CopyBlock>
               <SpeechControl input={completion} className="my-2" />
             </>
@@ -165,7 +164,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
                   className="p-3 animate-fade"
                   text={object.correctedText}
                 >
-                  <Markdown>{object.correctedText || ""}</Markdown>
+                  <Markdown content={object.correctedText || ""} />
                 </CopyBlock>
                 {object.correctedText && (
                   <SpeechControl

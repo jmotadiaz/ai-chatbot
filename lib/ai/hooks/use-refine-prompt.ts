@@ -8,7 +8,7 @@ export interface UseRefinePromptParams {
   setInput: (value: string) => void;
   messages?: UIMessage[];
   metaPrompt?: string | null;
-  status?: UseChatHelpers["status"];
+  status?: UseChatHelpers<never>["status"];
 }
 
 export interface RefinePromptReturn {

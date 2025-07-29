@@ -1,17 +1,17 @@
-import { Message } from "ai";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 const SESSION_STORAGE_KEY = "messages";
-export function getSessionMessages(): Message[] {
+export function getSessionMessages(): ChatbotMessage[] {
   try {
     return JSON.parse(
       window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "[]"
-    ) as Message[];
+    ) as ChatbotMessage[];
   } catch {
     return [];
   }
 }
 
-export function setMessagesInSession(messages: Message[]) {
+export function setMessagesInSession(messages: ChatbotMessage[]) {
   window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(messages));
 }
 
