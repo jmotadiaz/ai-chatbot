@@ -8,6 +8,9 @@ dependencies:
   '@ai-sdk/anthropic':
     specifier: 2.0.0-beta.9
     version: 2.0.0-beta.9(zod@3.25.76)
+  '@ai-sdk/deepseek':
+    specifier: 1.0.0-beta.11
+    version: 1.0.0-beta.11(zod@3.25.76)
   '@ai-sdk/google':
     specifier: 2.0.0-beta.15
     version: 2.0.0-beta.15(zod@3.25.76)
@@ -252,6 +255,18 @@ packages:
       zod: 3.25.76
     dev: false
 
+  /@ai-sdk/deepseek@1.0.0-beta.11(zod@3.25.76):
+    resolution: {integrity: sha512-qlDrDSA2s5P7U1r1hCfJw/khQT7nB9M3bFGoihy1++h2gRcK7MPbJRJCVs8Lq13ylfCdEin/SfeJ46hqHStCCA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+    dependencies:
+      '@ai-sdk/openai-compatible': 1.0.0-beta.11(zod@3.25.76)
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@ai-sdk/provider-utils': 3.0.0-beta.8(zod@3.25.76)
+      zod: 3.25.76
+    dev: false
+
   /@ai-sdk/gateway@1.0.0-beta.14(zod@3.25.76):
     resolution: {integrity: sha512-jsOZoz4hd1vSQ6PBftdQ/j3hPC4Fxf7tY2slCgdpMEevrqFVmRBp6W5xEELDa2wXuPQ/3QxtrQhQU7Qxj42p2Q==}
     engines: {node: '>=18'}
@@ -282,6 +297,17 @@ packages:
     dependencies:
       '@ai-sdk/provider': 2.0.0-beta.1
       '@ai-sdk/provider-utils': 3.0.0-beta.6(zod@3.25.76)
+      zod: 3.25.76
+    dev: false
+
+  /@ai-sdk/openai-compatible@1.0.0-beta.11(zod@3.25.76):
+    resolution: {integrity: sha512-+Mhxt5h1o1cGJ3DTBItgj5cznMIyrgELF/kwTFKzxLv7dE2hdINoZm22hnrG+lu1q/9eWjkyd0JofIdLCe7fDw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@ai-sdk/provider-utils': 3.0.0-beta.8(zod@3.25.76)
       zod: 3.25.76
     dev: false
 
@@ -348,6 +374,19 @@ packages:
 
   /@ai-sdk/provider-utils@3.0.0-beta.6(zod@3.25.76):
     resolution: {integrity: sha512-r8Nswwko+7nuLnLxprPgAxjGcpjq5fnFmfFwtkz4k9KfF1Z6Nkwvl8+Ee9BULBWXOqbtJGh9iCiJaTPBnhZrqw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.3
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
+    dev: false
+
+  /@ai-sdk/provider-utils@3.0.0-beta.8(zod@3.25.76):
+    resolution: {integrity: sha512-N8H4HhqLRe7R635i33W2MkNuckGWjC5TdektsBpFUMFncqtZlNFJ8e3LV81Udk00ac8juX57bboUIi8APJ2V/g==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4

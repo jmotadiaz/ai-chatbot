@@ -8,6 +8,7 @@ import {
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { perplexity } from "@ai-sdk/perplexity";
+import { deepseek } from "@ai-sdk/deepseek";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 export const google = createGoogleGenerativeAI();
@@ -48,6 +49,10 @@ export const languageModelConfigurations = {
   },
   "Kimi K2": {
     model: groq("moonshotai/kimi-k2-instruct"),
+    temperature: 0.6,
+  },
+  "Deepseek Chat": {
+    model: deepseek("deepseek-chat"),
     temperature: 0.6,
   },
   "Claude 3.5 Haiku": {
@@ -94,6 +99,10 @@ export const languageModelConfigurations = {
     providerOptions: {
       groq: { reasoningFormat: "parsed" },
     },
+  },
+  "Deepseek R1": {
+    model: deepseek("deepseek-reasoner"),
+    temperature: 0.6,
   },
   Sonar: {
     model: perplexity("sonar"),
@@ -153,10 +162,12 @@ const pickModelConfigurations = <
 const chatModelKeys = [
   "Llama 4 Scout",
   "Kimi K2",
+  "Deepseek Chat",
   "Gemini 2.5 Flash",
   "GPT 4.1",
   "Sonar",
   "Qwen 3",
+  "Deepseek R1",
   "Claude Sonnet 4",
   "Gemini 2.5 Pro",
   "o3",
