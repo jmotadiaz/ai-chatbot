@@ -311,9 +311,9 @@ export const saveMessages =
         .onConflictDoUpdate({
           target: message.id,
           set: {
-            role: sql`excluded.role`,
-            parts: sql`excluded.parts`,
-            attachments: sql`excluded.attachments`,
+            role: sql`excluded.${message.role.name}`,
+            parts: sql`excluded.${message.parts.name}`,
+            attachments: sql`excluded.${message.attachments.name}`,
           },
         })
         .returning();

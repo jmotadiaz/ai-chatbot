@@ -254,7 +254,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
               <li className="text-ellipsis" key={`source-${part.sourceId}`}>
                 <a
                   href={part.url}
-                  className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                  className="font-medium text-sm text-blue-600 dark:text-blue-500 hover:underline"
                   target="_blank"
                 >
                   {part.title || part.url}
