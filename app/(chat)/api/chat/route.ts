@@ -10,12 +10,7 @@ import {
 } from "ai";
 import { chatModelId, languageModelConfigurations } from "@/lib/ai/models";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
-import {
-  deleteMessageById,
-  saveMessages,
-  transaction,
-  updateChat,
-} from "@/lib/db/queries";
+import { saveMessages, transaction, updateChat } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/workflows/auto-model";
@@ -44,7 +39,6 @@ export async function POST(req: Request) {
     topK,
     chatId,
     systemPrompt,
-    reloadedMessageId,
     useRAG,
     useWebSearch,
   }: {
@@ -55,7 +49,6 @@ export async function POST(req: Request) {
     topK?: number;
     chatId?: string;
     systemPrompt?: string;
-    reloadedMessageId?: string;
     useRAG?: boolean;
     useWebSearch?: boolean;
   } = await req.json();
@@ -182,20 +175,11 @@ export async function POST(req: Request) {
                         defaultTopP: topP,
                       }
                     ),
-                    ...(reloadedMessageId
-                      ? [
-                          deleteMessageById(reloadedMessageId),
-                          saveMessages([
-                            messageToDbMessage(chatId)(assistantMessage),
-                          ]),
-                        ]
-                      : [
-                          saveMessages(
-                            [userMessage, assistantMessage].map(
-                              messageToDbMessage(chatId)
-                            )
-                          ),
-                        ]),
+                    saveMessages(
+                      [userMessage, assistantMessage].map(
+                        messageToDbMessage(chatId)
+                      )
+                    ),
                   ]);
                 }
               } catch (error) {
