@@ -67,7 +67,6 @@ export async function POST(req: Request) {
 
   return createUIMessageStreamResponse({
     stream: createUIMessageStream<ChatbotMessage>({
-      originalMessages: messages,
       async execute({ writer }) {
         const notifyStreaming = once(() =>
           writer.write({
@@ -145,56 +144,6 @@ export async function POST(req: Request) {
           onChunk: () => {
             notifyStreaming();
           },
-          onFinish: async ({ response }) => {
-            if (chatId) {
-              try {
-                const userMessage = messages.at(-1);
-                const assistantMessage = response.messages.at(-1);
-
-                if (
-                  userMessage?.role === "user" &&
-                  assistantMessage?.role === "assistant"
-                ) {
-                  // Save the user and assistant messages to the database
-                  await transaction([
-                    updateChat(
-                      { id: chatId, userId: session.user.id },
-                      {
-                        defaultModel: selectedModel,
-                        defaultTemperature: temperature,
-                        defaultTopP: topP,
-                      }
-                    ),
-                    ...(reloadedMessageId
-                      ? [
-                          deleteMessageById(reloadedMessageId),
-                          saveMessages([
-                            messageToDbMessage(chatId)({
-                              id: randomUUID(),
-                              role: "assistant",
-                              parts: assistantMessage.content,
-                            } as ChatbotMessage),
-                          ]),
-                        ]
-                      : [
-                          saveMessages(
-                            [
-                              userMessage,
-                              {
-                                id: randomUUID(),
-                                role: "assistant",
-                                parts: assistantMessage.content,
-                              } as ChatbotMessage,
-                            ].map(messageToDbMessage(chatId))
-                          ),
-                        ]),
-                  ]);
-                }
-              } catch (error) {
-                console.error("Error saving message:", error);
-              }
-            }
-          },
           onError: (error) => {
             console.log("Error Inferring", error.error);
           },
@@ -206,6 +155,46 @@ export async function POST(req: Request) {
             sendReasoning: true,
             sendSources: true,
             generateMessageId: randomUUID,
+            onFinish: async ({ messages }) => {
+              if (chatId) {
+                try {
+                  const assistantMessage = messages.at(-1);
+                  const userMessage = messages.at(-2);
+
+                  if (
+                    userMessage?.role === "user" &&
+                    assistantMessage?.role === "assistant"
+                  ) {
+                    await transaction([
+                      updateChat(
+                        { id: chatId, userId: session.user.id },
+                        {
+                          defaultModel: selectedModel,
+                          defaultTemperature: temperature,
+                          defaultTopP: topP,
+                        }
+                      ),
+                      ...(reloadedMessageId
+                        ? [
+                            deleteMessageById(reloadedMessageId),
+                            saveMessages([
+                              messageToDbMessage(chatId)(assistantMessage),
+                            ]),
+                          ]
+                        : [
+                            saveMessages(
+                              [userMessage, assistantMessage].map(
+                                messageToDbMessage(chatId)
+                              )
+                            ),
+                          ]),
+                    ]);
+                  }
+                } catch (error) {
+                  console.error("Error saving message:", error);
+                }
+              }
+            },
           })
         );
       },
