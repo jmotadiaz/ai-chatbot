@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { register } from "@/lib/auth/actions";
 
 const Page: React.FC = async () => {
-  if (process.env.PRIVATE_BEHAVIOR_ENABLED !== "true") {
+  if (process.env.PRIVATE_BEHAVIOR !== "enabled") {
     return forbidden();
   }
 

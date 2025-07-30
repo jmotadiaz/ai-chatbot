@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { deleteResources } from "@/lib/db/queries";
 
 export async function GET() {
-  if (process.env.PRIVATE_BEHAVIOR_ENABLED !== "true") {
+  if (process.env.PRIVATE_BEHAVIOR_ENABLED !== "enabled") {
     return NextResponse.json({ status: 403 });
   }
   try {
