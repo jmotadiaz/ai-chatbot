@@ -41,3 +41,16 @@ export const messagePartsToText = (message: ChatbotMessage): string => {
 };
 
 export const getObject = <T>({ object }: GenerateObjectResult<T>) => object;
+
+export const once = <T>(fn: () => T): (() => T) => {
+  let called = false;
+  let result: T;
+
+  return () => {
+    if (!called) {
+      called = true;
+      result = fn();
+    }
+    return result;
+  };
+};

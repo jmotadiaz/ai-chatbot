@@ -22,7 +22,7 @@ import {
   updateChat,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
+import { messagePartsToText, messageToDbMessage, once } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
 import {
   hasContextUrls,
@@ -65,48 +65,47 @@ export async function POST(req: Request) {
     useWebSearch?: boolean;
   } = await req.json();
 
-  let chatModelConfiguration: Promise<ModelConfiguration> | null = null;
-
-  if (selectedModel === "Auto Model Workflow") {
-    const firstMessage = messages[0];
-
-    chatModelConfiguration = autoModel(
-      firstMessage ? messagePartsToText(firstMessage) : ""
-    );
-  } else {
-    chatModelConfiguration = Promise.resolve({
-      ...(chatModelConfigurations[selectedModel] ||
-        chatModelConfigurations["Llama 4 Maverick"]),
-      temperature,
-      topK,
-      topP,
-    });
-  }
-
-  const modelConfig = await chatModelConfiguration;
-  let startChunking = false;
-
   return createUIMessageStreamResponse({
     stream: createUIMessageStream<ChatbotMessage>({
-      execute({ writer }) {
+      originalMessages: messages,
+      async execute({ writer }) {
+        const notifyStreaming = once(() =>
+          writer.write({
+            type: "data-notification",
+            data: { status: "streaming" },
+            transient: true,
+          })
+        );
         const tools: ToolSet = {
           ...webSearchFactory({ writer }),
           ...ragFactory({ writer }),
           ...urlContextFactory({ writer }),
         };
         const executedTools = new Set<keyof typeof tools>();
+        const chatModelConfiguration = await calculateModelConfiguration(
+          selectedModel,
+          messages,
+          temperature,
+          topP,
+          topK
+        );
+
         const result = streamText({
-          ...modelConfig,
+          ...chatModelConfiguration,
           system: systemPrompt || defaultSystemPrompt,
           messages: convertToModelMessages(messages),
           tools,
           stopWhen: stepCountIs(4),
+          activeTools: [],
+          experimental_transform: smoothStream(),
+          experimental_telemetry: { isEnabled: true },
           prepareStep: async ({ model }) => {
             const provider =
               typeof model === "string" ? "unknown" : model.provider;
             const lastMessage = messagePartsToText(
               messages[messages.length - 1]
             );
+
             if (
               provider !== "perplexity" &&
               !executedTools.has("urlContext") &&
@@ -115,7 +114,7 @@ export async function POST(req: Request) {
             ) {
               executedTools.add("urlContext");
               return {
-                ...languageModelConfigurations["Gemini 2.0 Flash"],
+                ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
                 toolChoice: { type: "tool", toolName: "urlContext" },
                 activeTools: ["urlContext"],
               };
@@ -128,7 +127,7 @@ export async function POST(req: Request) {
             ) {
               executedTools.add("webSearch");
               return {
-                ...languageModelConfigurations["Gemini 2.0 Flash"],
+                ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
                 toolChoice: { type: "tool", toolName: "webSearch" },
                 activeTools: ["webSearch"],
               };
@@ -137,31 +136,18 @@ export async function POST(req: Request) {
             if (useRAG && !executedTools.has("rag")) {
               executedTools.add("rag");
               return {
-                ...languageModelConfigurations["Gemini 2.0 Flash"],
+                ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
                 toolChoice: { type: "tool", toolName: "rag" },
                 activeTools: ["rag"],
               };
             }
           },
-          activeTools: ["webSearch"],
-          experimental_transform: smoothStream(),
-          experimental_telemetry: {
-            isEnabled: true,
-          },
           onChunk: () => {
-            if (!startChunking) {
-              startChunking = true;
-              writer.write({
-                type: "data-notification",
-                data: { status: "streaming" },
-                transient: true,
-              });
-            }
+            notifyStreaming();
           },
           onFinish: async ({ response }) => {
             if (chatId) {
               try {
-                // In v5, we handle message persistence differently
                 const userMessage = messages.at(-1);
                 const assistantMessage = response.messages.at(-1);
 
@@ -220,12 +206,30 @@ export async function POST(req: Request) {
             sendReasoning: true,
             sendSources: true,
             generateMessageId: randomUUID,
-            onFinish() {
-              // Handle any final processing here if needed
-            },
           })
         );
       },
     }),
   });
 }
+
+const calculateModelConfiguration = async (
+  selectedModel: chatModelId,
+  messages: ChatbotMessage[],
+  temperature?: number,
+  topP?: number,
+  topK?: number
+): Promise<ModelConfiguration> => {
+  if (selectedModel === "Auto Model Workflow") {
+    const firstMessage = messages[0];
+    return autoModel(firstMessage ? messagePartsToText(firstMessage) : "");
+  } else {
+    return {
+      ...(chatModelConfigurations[selectedModel] ||
+        chatModelConfigurations["Llama 4 Maverick"]),
+      temperature,
+      topP,
+      topK,
+    };
+  }
+};
