@@ -1,6 +1,5 @@
 "use server";
 
-import { UIMessage } from "ai";
 import { revalidatePath } from "next/cache";
 import {
   deleteChat as deleteDBChat,
@@ -14,9 +13,10 @@ import {
   generateTitleFromUserMessage,
   messageToDbMessage,
 } from "@/lib/ai/utils";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 export async function saveChat(req: {
-  messages: UIMessage[];
+  messages: ChatbotMessage[];
   selectedModel: chatModelId;
   projectId?: string;
   chatId: string;

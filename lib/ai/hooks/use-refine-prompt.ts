@@ -1,12 +1,12 @@
 import { UseChatHelpers } from "@ai-sdk/react";
-import { UIMessage } from "ai";
 import { useEffect, useState } from "react";
 import { useGeneratedText } from "./use-generated-text";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 export interface UseRefinePromptParams {
   input: string;
   setInput: (value: string) => void;
-  messages?: UIMessage[];
+  messages?: ChatbotMessage[];
   metaPrompt?: string | null;
   status?: UseChatHelpers<never>["status"];
 }

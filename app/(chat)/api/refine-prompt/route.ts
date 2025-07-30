@@ -1,4 +1,4 @@
-import { convertToModelMessages, generateText, UIMessage } from "ai";
+import { convertToModelMessages, generateText } from "ai";
 import { auth } from "@/auth";
 import { languageModelConfigurations } from "@/lib/ai/models";
 import {
@@ -9,6 +9,7 @@ import {
   originalPrompt,
 } from "@/lib/ai/prompts";
 import { scapeXML } from "@/lib/utils";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     metaPrompt = defaultMetaPrompt,
   }: {
     prompt: string;
-    messages?: UIMessage[];
+    messages?: ChatbotMessage[];
     metaPrompt?: string;
   } = await req.json();
 

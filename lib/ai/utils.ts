@@ -1,9 +1,10 @@
-import { GenerateObjectResult, generateText, UIMessage } from "ai";
+import { GenerateObjectResult, generateText } from "ai";
 import { languageModelConfigurations } from "@/lib/ai/models";
 import { InsertMessage } from "@/lib/db/schema";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 export async function generateTitleFromUserMessage(
-  message: UIMessage | undefined
+  message: ChatbotMessage | undefined
 ) {
   if (!message) return "Unknown";
 
@@ -22,7 +23,7 @@ export async function generateTitleFromUserMessage(
 
 export const messageToDbMessage =
   (chatId: string) =>
-  (message: UIMessage): InsertMessage => ({
+  (message: ChatbotMessage): InsertMessage => ({
     chatId,
     id: message.id,
     role: message.role,
@@ -30,7 +31,7 @@ export const messageToDbMessage =
     attachments: [], // In v5, attachments are handled through parts
   });
 
-export const messagePartsToText = (message: UIMessage): string => {
+export const messagePartsToText = (message: ChatbotMessage): string => {
   return message.parts?.reduce((content, part) => {
     if (part.type === "text") {
       return `${content}${part.text}`;

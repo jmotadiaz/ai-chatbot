@@ -42,8 +42,8 @@ export const languageModelConfigurations = {
     temperature: 0.6,
     topP: 0.9,
   },
-  "Llama 4 Scout": {
-    model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+  "Llama 4 Maverick": {
+    model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     temperature: 0.6,
     topP: 0.9,
   },
@@ -160,8 +160,8 @@ const pickModelConfigurations = <
 };
 
 const chatModelKeys = [
-  "Llama 4 Scout",
   "Kimi K2",
+  "Llama 4 Maverick",
   "Deepseek Chat",
   "Gemini 2.5 Flash",
   "GPT 4.1",

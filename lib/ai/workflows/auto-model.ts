@@ -75,7 +75,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   analytical: {
     simple: {
-      ...languageModelConfigurations["Llama 4 Scout"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
     },
     moderate: {
       ...languageModelConfigurations["Deepseek R1 Distill"],
@@ -92,7 +92,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Scout"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
     },
     complex: {
       ...languageModelConfigurations["Qwen 3"],
@@ -111,7 +111,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Scout"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 1,
     },
     advanced: {
@@ -125,7 +125,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.5,
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Scout"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 0.5,
     },
     complex: {
@@ -162,7 +162,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.8,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Scout"],
+      ...languageModelConfigurations["Llama 4 Maverick"],
       temperature: 0.8,
     },
     advanced: {

@@ -1,12 +1,12 @@
 import { randomUUID } from "crypto";
 import {
   streamText,
-  UIMessage,
   convertToModelMessages,
   stepCountIs,
   createUIMessageStreamResponse,
   createUIMessageStream,
   smoothStream,
+  ToolSet,
 } from "ai";
 import {
   chatModelConfigurations,
@@ -24,7 +24,7 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
-import { webSearchFactory } from "@/lib/ai/tools/web-search";
+import { urlContextFactory, webSearchFactory } from "@/lib/ai/tools/web-search";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { ragFactory } from "@/lib/ai/tools/rag";
 
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
   } else {
     chatModelConfiguration = Promise.resolve({
       ...(chatModelConfigurations[selectedModel] ||
-        chatModelConfigurations["Llama 4 Scout"]),
+        chatModelConfigurations["Llama 4 Maverick"]),
       temperature,
       topK,
       topP,
@@ -84,17 +84,28 @@ export async function POST(req: Request) {
   return createUIMessageStreamResponse({
     stream: createUIMessageStream<ChatbotMessage>({
       execute({ writer }) {
+        const tools: ToolSet = {
+          ...webSearchFactory({ writer }),
+          ...ragFactory({ writer }),
+          ...urlContextFactory({ writer }),
+        };
+        const executedTools = new Set<keyof typeof tools>();
         const result = streamText({
           ...modelConfig,
           system: systemPrompt || defaultSystemPrompt,
           messages: convertToModelMessages(messages),
-          tools: { ...webSearchFactory({ writer }), ...ragFactory({ writer }) },
-          stopWhen: stepCountIs(3),
-          prepareStep: async ({ stepNumber, model }) => {
+          tools,
+          stopWhen: stepCountIs(4),
+          prepareStep: async ({ model }) => {
             const provider =
               typeof model === "string" ? "unknown" : model.provider;
 
-            if (provider !== "perplexity" && useWebSearch && stepNumber === 0) {
+            if (
+              provider !== "perplexity" &&
+              useWebSearch &&
+              !executedTools.has("webSearch")
+            ) {
+              executedTools.add("webSearch");
               return {
                 ...languageModelConfigurations["Gemini 2.0 Flash"],
                 toolChoice: { type: "tool", toolName: "webSearch" },
@@ -102,7 +113,8 @@ export async function POST(req: Request) {
               };
             }
 
-            if (useRAG && stepNumber === (useWebSearch ? 1 : 0)) {
+            if (useRAG && executedTools.has("rag")) {
+              executedTools.add("rag");
               return {
                 ...languageModelConfigurations["Gemini 2.0 Flash"],
                 toolChoice: { type: "tool", toolName: "rag" },
@@ -110,7 +122,7 @@ export async function POST(req: Request) {
               };
             }
           },
-          activeTools: ["webSearch"],
+          activeTools: ["webSearch", "urlContext"],
           experimental_transform: smoothStream(),
           experimental_telemetry: {
             isEnabled: true,
@@ -154,7 +166,7 @@ export async function POST(req: Request) {
                               id: randomUUID(),
                               role: "assistant",
                               parts: assistantMessage.content,
-                            } as UIMessage),
+                            } as ChatbotMessage),
                           ]),
                         ]
                       : [
@@ -165,7 +177,7 @@ export async function POST(req: Request) {
                                 id: randomUUID(),
                                 role: "assistant",
                                 parts: assistantMessage.content,
-                              } as UIMessage,
+                              } as ChatbotMessage,
                             ].map(messageToDbMessage(chatId))
                           ),
                         ]),
