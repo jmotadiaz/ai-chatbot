@@ -4,11 +4,9 @@ import { ChatbotMessage } from "@/lib/ai/types";
 export const Messages = ({
   messages,
   isLoading,
-  status,
 }: {
   messages: ChatbotMessage[];
   isLoading: boolean;
-  status: "error" | "submitted" | "streaming" | "ready";
 }) => {
   return (
     <>
@@ -18,7 +16,6 @@ export const Messages = ({
           isLatestMessage={i === messages.length - 1}
           isLoading={isLoading}
           message={m}
-          status={status}
         />
       ))}
     </>

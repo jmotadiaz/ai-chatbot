@@ -57,13 +57,9 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
               <ProjectOverview title={title} />
             ) : (
               <>
-                <Messages
-                  messages={messages}
-                  isLoading={isLoading}
-                  status={status}
-                />
+                <Messages messages={messages} isLoading={isLoading} />
                 {status === "submitted" && (
-                  <DotsLoadingIcon className="ml-5 mt-4" />
+                  <DotsLoadingIcon className="ml-4 mt-4" />
                 )}
                 {(status === "ready" || status === "error") && (
                   <div className="flex mt-1 ml-3">

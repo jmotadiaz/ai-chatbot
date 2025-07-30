@@ -1,10 +1,13 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import {
+  chatModelId,
   languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/models";
 import { scapeXML } from "@/lib/utils";
+import { ChatbotMessage } from "@/lib/ai/types";
+import { messagePartsToText } from "@/lib/ai/utils";
 
 const CATEGORIES = [
   "factual",
@@ -57,6 +60,27 @@ export async function autoModel(query: string): Promise<ModelConfiguration> {
 
   return decisionTree[category][complexity];
 }
+
+export const calculateModelConfiguration = async (
+  selectedModel: chatModelId,
+  messages: ChatbotMessage[],
+  temperature?: number,
+  topP?: number,
+  topK?: number
+): Promise<ModelConfiguration> => {
+  if (selectedModel === "Auto Model Workflow") {
+    const firstMessage = messages[0];
+    return autoModel(firstMessage ? messagePartsToText(firstMessage) : "");
+  } else {
+    return {
+      ...(languageModelConfigurations[selectedModel] ||
+        languageModelConfigurations["Llama 4 Maverick"]),
+      temperature,
+      topP,
+      topK,
+    };
+  }
+};
 
 const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   factual: {

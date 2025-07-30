@@ -8,8 +8,12 @@ import {
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { perplexity } from "@ai-sdk/perplexity";
-import { deepseek } from "@ai-sdk/deepseek";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 export const google = createGoogleGenerativeAI();
 export const xai = createXai();
@@ -52,7 +56,7 @@ export const languageModelConfigurations = {
     temperature: 0.6,
   },
   "Deepseek Chat": {
-    model: deepseek("deepseek-chat"),
+    model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
     temperature: 0.6,
   },
   "Claude 3.5 Haiku": {
@@ -101,8 +105,10 @@ export const languageModelConfigurations = {
     },
   },
   "Deepseek R1": {
-    model: deepseek("deepseek-reasoner"),
-    temperature: 0.6,
+    model: openrouter.chat("deepseek/deepseek-r1-0528", {
+      reasoning: { enabled: true, effort: "medium" },
+    }),
+    temperature: 0.3,
   },
   Sonar: {
     model: perplexity("sonar"),

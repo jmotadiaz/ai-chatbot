@@ -13,11 +13,9 @@ import { ChatbotMessage } from "@/lib/ai/types";
 
 export const Message = ({
   message,
-  status,
 }: {
   message: ChatbotMessage;
   isLoading: boolean;
-  status: "error" | "submitted" | "streaming" | "ready";
   isLatestMessage: boolean;
 }) => {
   return (
@@ -65,11 +63,11 @@ export const Message = ({
                       </motion.div>
                     );
                   case "data-web-search":
-                    console.log("Web Search Part:", part);
                     if (part.data.status === "loading") {
                       return (
-                        <SearchWebToolLoading
+                        <ToolLoading
                           key={`tool-web-search-${part.id}`}
+                          text="Searching the web"
                         />
                       );
                     }
@@ -77,7 +75,10 @@ export const Message = ({
                   case "data-rag":
                     if (part.data.status === "loading") {
                       return (
-                        <RagToolLoading key={`tool-web-search-${part.id}`} />
+                        <ToolLoading
+                          key={`tool-web-search-${part.id}`}
+                          text="Searching documents"
+                        />
                       );
                     }
                     return null;
@@ -87,10 +88,10 @@ export const Message = ({
                         key={`message-${message.id}-${i}`}
                         part={part}
                         isReasoning={
-                          (message.parts &&
-                            status === "streaming" &&
-                            i === message.parts.length - 1) ??
-                          false
+                          !(
+                            part.state === "done" ||
+                            message.parts?.some(({ type }) => type === "text")
+                          )
                         }
                       />
                     );
@@ -98,9 +99,10 @@ export const Message = ({
                     return null;
                 }
               })}
-            {message.parts?.some((part) => part.type === "source-url") && (
-              <SourceMessagePart message={message} />
-            )}
+            {message.metadata?.status === "finished" &&
+              message.parts?.some((part) => part.type === "source-url") && (
+                <SourceMessagePart message={message} />
+              )}
           </div>
         </div>
       </motion.div>
@@ -265,20 +267,15 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
   );
 };
 
-const SearchWebToolLoading: React.FC = () => {
-  return (
-    <div className="flex items-center">
-      <div className="mr-4 font-medium">Searching the web</div>
-      <DotsLoadingIcon />
-    </div>
-  );
-};
+interface ToolLoadingProps {
+  text: string;
+}
 
-const RagToolLoading: React.FC = () => {
+const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
   return (
-    <div className="flex items-center">
-      <div className="mr-4 font-medium">Searching documents</div>
+    <div className="flex items-center mt-2">
       <DotsLoadingIcon />
+      <div className="ml-4 font-medium">{text}</div>
     </div>
   );
 };
