@@ -174,20 +174,11 @@ export async function POST(req: Request) {
                           defaultTopP: topP,
                         }
                       ),
-                      ...(reloadedMessageId
-                        ? [
-                            deleteMessageById(reloadedMessageId),
-                            saveMessages([
-                              messageToDbMessage(chatId)(assistantMessage),
-                            ]),
-                          ]
-                        : [
-                            saveMessages(
-                              [userMessage, assistantMessage].map(
-                                messageToDbMessage(chatId)
-                              )
-                            ),
-                          ]),
+                      saveMessages(
+                        [userMessage, assistantMessage].map(
+                          messageToDbMessage(chatId)
+                        )
+                      ),
                     ]);
                   }
                 } catch (error) {
