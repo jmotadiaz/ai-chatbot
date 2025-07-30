@@ -308,6 +308,14 @@ export const saveMessages =
             createdAt: new Date(),
           }))
         )
+        .onConflictDoUpdate({
+          target: message.id,
+          set: {
+            role: sql`excluded.role`,
+            parts: sql`excluded.parts`,
+            attachments: sql`excluded.attachments`,
+          },
+        })
         .returning();
     } catch (error) {
       console.error("Failed to save messages");
