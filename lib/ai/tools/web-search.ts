@@ -156,7 +156,5 @@ export const hasContextUrls = async (text: string): Promise<boolean> => {
     }),
   });
 
-  console.log("hasContextUrls Result:", object.intent);
-
   return object.intent === "CONTEXT_EXTRACTION";
 };
