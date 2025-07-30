@@ -65,6 +65,7 @@ export const Message = ({
                       </motion.div>
                     );
                   case "data-web-search":
+                    console.log("Web Search Part:", part);
                     if (part.data.status === "loading") {
                       return (
                         <SearchWebToolLoading
