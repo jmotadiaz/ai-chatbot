@@ -16,7 +16,6 @@ import {
 } from "@/lib/ai/models";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
-  deleteMessageById,
   saveMessages,
   transaction,
   updateChat,
@@ -49,7 +48,6 @@ export async function POST(req: Request) {
     topK,
     chatId,
     systemPrompt,
-    reloadedMessageId,
     useRAG,
     useWebSearch,
   }: {
@@ -60,7 +58,6 @@ export async function POST(req: Request) {
     topK?: number;
     chatId?: string;
     systemPrompt?: string;
-    reloadedMessageId?: string;
     useRAG?: boolean;
     useWebSearch?: boolean;
   } = await req.json();
