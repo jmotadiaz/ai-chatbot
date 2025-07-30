@@ -24,9 +24,14 @@ import {
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { autoModel } from "@/lib/ai/workflows/auto-model";
-import { urlContextFactory, webSearchFactory } from "@/lib/ai/tools/web-search";
+import {
+  hasContextUrls,
+  urlContextFactory,
+  webSearchFactory,
+} from "@/lib/ai/tools/web-search";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { ragFactory } from "@/lib/ai/tools/rag";
+import { hasUrls } from "@/lib/utils";
 
 export const maxDuration = 60;
 
@@ -99,6 +104,22 @@ export async function POST(req: Request) {
           prepareStep: async ({ model }) => {
             const provider =
               typeof model === "string" ? "unknown" : model.provider;
+            const lastMessage = messagePartsToText(
+              messages[messages.length - 1]
+            );
+            if (
+              provider !== "perplexity" &&
+              !executedTools.has("urlContext") &&
+              hasUrls(lastMessage) &&
+              (await hasContextUrls(lastMessage))
+            ) {
+              executedTools.add("urlContext");
+              return {
+                ...languageModelConfigurations["Gemini 2.0 Flash"],
+                toolChoice: { type: "tool", toolName: "urlContext" },
+                activeTools: ["urlContext"],
+              };
+            }
 
             if (
               provider !== "perplexity" &&
@@ -113,7 +134,7 @@ export async function POST(req: Request) {
               };
             }
 
-            if (useRAG && executedTools.has("rag")) {
+            if (useRAG && !executedTools.has("rag")) {
               executedTools.add("rag");
               return {
                 ...languageModelConfigurations["Gemini 2.0 Flash"],
@@ -122,7 +143,7 @@ export async function POST(req: Request) {
               };
             }
           },
-          activeTools: ["webSearch", "urlContext"],
+          activeTools: ["webSearch"],
           experimental_transform: smoothStream(),
           experimental_telemetry: {
             isEnabled: true,

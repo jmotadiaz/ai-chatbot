@@ -33,3 +33,8 @@ export const handleCopy = (value: string | null | undefined) => async () => {
 
 export const isDefined = <T>(value: T | null | undefined): value is T =>
   Boolean(value);
+
+export const hasUrls = (text: string): boolean => {
+  const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
+  return urlRegex.test(text);
+};
