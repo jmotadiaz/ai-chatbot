@@ -182,12 +182,12 @@ export async function POST(req: Request) {
                         defaultTopP: topP,
                       }
                     ),
+                    deleteMessageById(messageId),
                     saveMessages(
                       [userMessage, assistantMessage].map(
                         messageToDbMessage(chatId)
                       )
-                    ),
-                    deleteMessageById(messageId)
+                    )
                   );
                 }
               } catch (error) {
