@@ -111,7 +111,7 @@ export async function uploadResources(
       `Successfully processed ${resources.length} resources, generating embeddings...`
     );
 
-    const result = await transaction(async (tx) => {
+    const [result] = await transaction(async (tx) => {
       const createdResources = [];
       const allEmbeddings: Promise<InsertEmbedding[]>[] = [];
 

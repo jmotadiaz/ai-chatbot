@@ -32,7 +32,7 @@ export async function saveChat(req: {
   const { projectId, chatId, messages, selectedModel, temperature, topP } = req;
 
   try {
-    await transaction([
+    await transaction(
       saveDBChat({
         userId: session.user.id,
         id: chatId,
@@ -42,8 +42,8 @@ export async function saveChat(req: {
         defaultTopP: topP,
         title: await generateTitleFromUserMessage(messages[0]),
       }),
-      saveMessages(messages.map(messageToDbMessage(chatId))),
-    ]);
+      saveMessages(messages.map(messageToDbMessage(chatId)))
+    );
     revalidatePath("/");
   } catch (error: unknown) {
     console.error("Error saving chat", error);

@@ -80,32 +80,19 @@ export type Transactional<T = unknown> = (
   >
 ) => Promise<T>;
 
-const isTransactionalArray = (
-  fnOrFns: Transactional<unknown> | readonly Transactional<unknown>[]
-): fnOrFns is readonly Transactional<unknown>[] => Array.isArray(fnOrFns);
-
 // Helper type to extract the return type from a Transactional
 type ExtractTransactionalType<T> = T extends Transactional<infer U> ? U : never;
 
-// Overload for single transactional function
-export function transaction<T>(fn: Transactional<T>): Promise<T>;
-
-// Overload for array of transactional functions with tuple return type
 export function transaction<
   T extends readonly [Transactional<unknown>, ...Transactional<unknown>[]]
->(fns: T): Promise<{ [K in keyof T]: ExtractTransactionalType<T[K]> }>;
+>(...fns: T): Promise<{ [K in keyof T]: ExtractTransactionalType<T[K]> }>;
 
-// Implementation
 export function transaction(
-  fnOrFns: Transactional<unknown> | readonly Transactional<unknown>[]
+  ...fns: Transactional<unknown>[]
 ): Promise<unknown> {
   try {
     return db.transaction(async (tx) => {
-      if (isTransactionalArray(fnOrFns)) {
-        return Promise.all(fnOrFns.map((fn) => fn(tx)));
-      } else {
-        return fnOrFns(tx);
-      }
+      return Promise.all(fns.map((fn) => fn(tx)));
     });
   } catch (error) {
     console.error("Failed to execute transaction", error);
@@ -311,9 +298,9 @@ export const saveMessages =
         .onConflictDoUpdate({
           target: message.id,
           set: {
-            role: sql`excluded.${message.role.name}`,
-            parts: sql`excluded.${message.parts.name}`,
-            attachments: sql`excluded.${message.attachments.name}`,
+            role: sql`excluded.role`,
+            parts: sql`excluded.parts`,
+            attachments: sql`excluded.attachments`,
           },
         })
         .returning();
@@ -324,8 +311,11 @@ export const saveMessages =
   };
 
 export const deleteMessageById =
-  (id: string): Transactional<Message | undefined> =>
+  (id?: string): Transactional<Message | undefined> =>
   async (tx) => {
+    if (!id) {
+      return undefined;
+    }
     const [deletedMessage] = await tx
       .delete(message)
       .where(eq(message.id, id))

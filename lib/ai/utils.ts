@@ -23,11 +23,11 @@ export async function generateTitleFromUserMessage(
 
 export const messageToDbMessage =
   (chatId: string) =>
-  (message: ChatbotMessage): InsertMessage => ({
+  ({ id, role, parts }: ChatbotMessage): InsertMessage => ({
     chatId,
-    id: message.id,
-    role: message.role,
-    parts: message.parts,
+    id,
+    role,
+    parts,
     attachments: [], // In v5, attachments are handled through parts
   });
 

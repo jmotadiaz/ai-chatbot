@@ -10,7 +10,12 @@ import {
 } from "ai";
 import { chatModelId, languageModelConfigurations } from "@/lib/ai/models";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
-import { saveMessages, transaction, updateChat } from "@/lib/db/queries";
+import {
+  deleteMessageById,
+  saveMessages,
+  transaction,
+  updateChat,
+} from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/workflows/auto-model";
@@ -41,6 +46,7 @@ export async function POST(req: Request) {
     systemPrompt,
     useRAG,
     useWebSearch,
+    messageId,
   }: {
     messages: ChatbotMessage[];
     selectedModel: chatModelId;
@@ -51,7 +57,10 @@ export async function POST(req: Request) {
     systemPrompt?: string;
     useRAG?: boolean;
     useWebSearch?: boolean;
+    messageId?: string;
   } = await req.json();
+
+  console.log("MessageId", messageId);
 
   const stream = createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
@@ -166,7 +175,8 @@ export async function POST(req: Request) {
                   userMessage?.role === "user" &&
                   assistantMessage?.role === "assistant"
                 ) {
-                  await transaction([
+                  console.log(`assistantMessageId: ${assistantMessage.id}`);
+                  await transaction(
                     updateChat(
                       { id: chatId, userId: session.user.id },
                       {
@@ -180,7 +190,8 @@ export async function POST(req: Request) {
                         messageToDbMessage(chatId)
                       )
                     ),
-                  ]);
+                    deleteMessageById(messageId)
+                  );
                 }
               } catch (error) {
                 console.error("Error saving message:", error);

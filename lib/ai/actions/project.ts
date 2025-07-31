@@ -21,7 +21,7 @@ export async function createProject(
   const projectWithUserId = { ...project, userId: session.user.id };
 
   try {
-    const newProject = await transaction(createDBProject(projectWithUserId));
+    const [newProject] = await transaction(createDBProject(projectWithUserId));
     revalidatePath("/");
     revalidatePath("/project/new");
     return newProject;
