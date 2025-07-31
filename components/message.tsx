@@ -76,7 +76,7 @@ export const Message = ({
                     if (part.data.status === "loading") {
                       return (
                         <ToolLoading
-                          key={`tool-web-search-${part.id}`}
+                          key={`tool-rag-search-${part.id}`}
                           text="Searching documents"
                         />
                       );

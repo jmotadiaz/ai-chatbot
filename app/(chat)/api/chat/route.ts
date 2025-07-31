@@ -60,8 +60,6 @@ export async function POST(req: Request) {
     messageId?: string;
   } = await req.json();
 
-  console.log("MessageId", messageId);
-
   const stream = createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
       writer.write({
@@ -175,7 +173,6 @@ export async function POST(req: Request) {
                   userMessage?.role === "user" &&
                   assistantMessage?.role === "assistant"
                 ) {
-                  console.log(`assistantMessageId: ${assistantMessage.id}`);
                   await transaction(
                     updateChat(
                       { id: chatId, userId: session.user.id },
