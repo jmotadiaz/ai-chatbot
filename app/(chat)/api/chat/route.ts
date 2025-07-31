@@ -94,6 +94,15 @@ export async function POST(req: Request) {
             typeof model === "string" ? "unknown" : model.provider;
           const lastMessage = messagePartsToText(messages[messages.length - 1]);
 
+          if (useRAG && !executedTools.has("rag")) {
+            executedTools.add("rag");
+            return {
+              ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+              toolChoice: { type: "tool", toolName: "rag" },
+              activeTools: ["rag"],
+            };
+          }
+
           if (
             provider !== "perplexity" &&
             !executedTools.has("urlContext") &&
@@ -118,15 +127,6 @@ export async function POST(req: Request) {
               ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
               toolChoice: { type: "tool", toolName: "webSearch" },
               activeTools: ["webSearch"],
-            };
-          }
-
-          if (useRAG && !executedTools.has("rag")) {
-            executedTools.add("rag");
-            return {
-              ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-              toolChoice: { type: "tool", toolName: "rag" },
-              activeTools: ["rag"],
             };
           }
         },
