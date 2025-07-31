@@ -87,11 +87,9 @@ export const Message = ({
                       <ReasoningMessagePart
                         key={`message-${message.id}-${i}`}
                         part={part}
-                        isReasoning={
-                          !(
-                            part.state === "done" ||
-                            message.parts?.some(({ type }) => type === "text")
-                          )
+                        isReasoningDone={
+                          part.state === "done" ||
+                          message.parts?.some(({ type }) => type === "text")
                         }
                       />
                     );
@@ -112,12 +110,12 @@ export const Message = ({
 
 interface ReasoningMessagePartProps {
   part: ReasoningUIPart;
-  isReasoning: boolean;
+  isReasoningDone: boolean;
 }
 
 const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
   part,
-  isReasoning,
+  isReasoningDone,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -141,8 +139,8 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
   }, []);
 
   useEffect(() => {
-    memoizedSetIsExpanded(isReasoning);
-  }, [isReasoning, memoizedSetIsExpanded]);
+    memoizedSetIsExpanded(!isReasoningDone);
+  }, [isReasoningDone, memoizedSetIsExpanded]);
 
   if (!part.text) {
     return null;
@@ -150,7 +148,7 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
 
   return (
     <div className="flex flex-col">
-      {isReasoning ? (
+      {!isReasoningDone ? (
         <div className="flex flex-row gap-2 items-center">
           <div className="font-medium text-sm">Reasoning</div>
           <div className="animate-spin">
