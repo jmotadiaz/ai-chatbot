@@ -279,7 +279,7 @@ const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
   return (
     <div className="flex items-center mt-2">
       <DotsLoadingIcon />
-      <div className="ml-4 font-medium animate-fade">{text}</div>
+      <div className="ml-4 font-medium">{text}</div>
     </div>
   );
 };
