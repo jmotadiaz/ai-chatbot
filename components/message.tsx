@@ -144,6 +144,10 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
     memoizedSetIsExpanded(isReasoning);
   }, [isReasoning, memoizedSetIsExpanded]);
 
+  if (!part.text) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col">
       {isReasoning ? (
@@ -275,7 +279,7 @@ const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
   return (
     <div className="flex items-center mt-2">
       <DotsLoadingIcon />
-      <div className="ml-4 font-medium">{text}</div>
+      <div className="ml-4 font-medium animate-fade">{text}</div>
     </div>
   );
 };

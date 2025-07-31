@@ -103,7 +103,7 @@ export const RAGUploadForm = () => {
               accept=".json"
               onChange={handleJsonFileChange}
               disabled={isLoading}
-              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 border-none px-0 py-2 cursor-pointer file:cursor-pointer"
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
             />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -122,7 +122,7 @@ export const RAGUploadForm = () => {
               multiple
               onChange={handleMarkdownFilesChange}
               disabled={isLoading}
-              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400 border-none px-0 py-2 cursor-pointer file:cursor-pointer"
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
             />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
