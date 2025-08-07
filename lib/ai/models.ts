@@ -1,7 +1,7 @@
 import { groq, GroqProviderOptions } from "@ai-sdk/groq";
 import { LanguageModel } from "ai";
 import { createXai } from "@ai-sdk/xai";
-import { openai } from "@ai-sdk/openai";
+import { openai, OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import {
   createGoogleGenerativeAI,
   GoogleGenerativeAIProviderOptions,
@@ -9,7 +9,6 @@ import {
 import { anthropic } from "@ai-sdk/anthropic";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { OpenAIProviderOptions } from "@ai-sdk/openai/internal";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 const openrouter = createOpenRouter({
@@ -24,7 +23,7 @@ export interface ModelConfiguration {
   providerOptions?: {
     groq?: GroqProviderOptions;
     google?: GoogleGenerativeAIProviderOptions;
-    openai?: OpenAIProviderOptions;
+    openai?: OpenAIResponsesProviderOptions;
   };
   temperature?: number;
   topP?: number;
@@ -135,7 +134,7 @@ export const languageModelConfigurations = {
     topP: 0.95,
     topK: 20,
     providerOptions: {
-      groq: { reasoningFormat: "parsed" } satisfies GroqProviderOptions,
+      groq: { reasoningFormat: "parsed" },
     },
   },
   "Claude Sonnet 4": {
@@ -146,6 +145,8 @@ export const languageModelConfigurations = {
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
+    temperature: 0.6,
+    topP: 0.95,
   },
   "o4 Mini": {
     model: openai("o4-mini"),
@@ -194,6 +195,7 @@ const chatModelKeys = [
   "Gemini 2.5 Pro",
   "GPT OSS",
   "GPT 5",
+  "o3",
   "Grok 3 Mini",
   "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];

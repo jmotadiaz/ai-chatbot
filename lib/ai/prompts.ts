@@ -70,12 +70,10 @@ export const defaultMetaPrompt = `
     - Based on the analysis from Step 1, rewrite the prompt:
       - Incorporate the selected prompt engineering techniques.
       - Ensure clarity, conciseness, and completeness.
-      - **Constraint**: Do not reformulate or alter the specific context part of the prompt, usually enclosed in quotes (or in the format specified by user). Preserve this content verbatim to maintain its integrity.
 
   ### 3. Review and adjust the refined prompt to ensure it:
     - Maintains the original objective
     - Is written in the same language of the original prompt
-      - If the original prompt is multilingual or ambiguous in language, prioritize the primary language used by the user (e.g., The language of the instruction part of the prompt)
     - Is concise, complete, and unambiguous
 
   ## Prompt Engineering Techniques Catalogue
