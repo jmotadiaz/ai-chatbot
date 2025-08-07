@@ -46,10 +46,7 @@ export async function POST(req: Request) {
   const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
 
   const { text } = await generateText({
-    ...languageModelConfigurations["Qwen 3"],
-    providerOptions: {
-      groq: { reasoningFormat: "hidden" },
-    },
+    ...languageModelConfigurations["GPT OSS"],
     system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
     prompt: initialPrompt + originalPrompt(prompt),
   });

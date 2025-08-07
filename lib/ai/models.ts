@@ -131,6 +131,9 @@ export const languageModelConfigurations = {
   "Claude Opus 4": {
     model: anthropic("claude-opus-4-20250514"),
   },
+  "GPT OSS": {
+    model: groq("openai/gpt-oss-120b"),
+  },
   "o4 Mini": {
     model: openai("o4-mini"),
   },
@@ -176,6 +179,7 @@ const chatModelKeys = [
   "Deepseek R1",
   "Claude Sonnet 4",
   "Gemini 2.5 Pro",
+  "GPT OSS",
   "o3",
   "Grok 3 Mini",
   "Grok 4",
