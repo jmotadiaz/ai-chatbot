@@ -153,7 +153,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.5,
     },
     complex: {
-      ...languageModelConfigurations["GPT 4.1"],
+      ...languageModelConfigurations["GPT 5 Mini"],
       temperature: 0.5,
     },
     advanced: {

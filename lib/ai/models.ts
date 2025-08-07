@@ -9,6 +9,7 @@ import {
 import { anthropic } from "@ai-sdk/anthropic";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { OpenAIProviderOptions } from "@ai-sdk/openai/internal";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 const openrouter = createOpenRouter({
@@ -23,6 +24,7 @@ export interface ModelConfiguration {
   providerOptions?: {
     groq?: GroqProviderOptions;
     google?: GoogleGenerativeAIProviderOptions;
+    openai?: OpenAIProviderOptions;
   };
   temperature?: number;
   topP?: number;
@@ -62,11 +64,22 @@ export const languageModelConfigurations = {
   "Claude 3.5 Haiku": {
     model: anthropic("claude-3-5-haiku-latest"),
   },
-  "GPT 4.1 Mini": {
-    model: openai("gpt-4.1-mini"),
+  "GPT 5 Mini": {
+    model: openai("gpt-5-mini-2025-08-07"),
+    temperature: undefined,
+    topP: undefined,
+    topK: undefined,
   },
-  "GPT 4.1": {
-    model: openai("gpt-4.1"),
+  "GPT 5": {
+    model: openai("gpt-5-2025-08-07"),
+    providerOptions: {
+      openai: {
+        reasoningEffort: "medium",
+      },
+    },
+    temperature: undefined,
+    topP: undefined,
+    topK: undefined,
   },
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
@@ -173,14 +186,14 @@ const chatModelKeys = [
   "Llama 4 Maverick",
   "Deepseek Chat",
   "Gemini 2.5 Flash",
-  "GPT 4.1",
+  "GPT 5 Mini",
   "Sonar",
   "Qwen 3",
   "Deepseek R1",
   "Claude Sonnet 4",
   "Gemini 2.5 Pro",
   "GPT OSS",
-  "o3",
+  "GPT 5",
   "Grok 3 Mini",
   "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
