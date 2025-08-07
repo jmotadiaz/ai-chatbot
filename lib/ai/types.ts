@@ -1,8 +1,7 @@
-import { UseChatHelpers } from "@ai-sdk/react";
 import { UIMessage } from "ai";
 
 export interface MessageMetadata {
-  status: "started" | "finished";
+  status: "started" | "streaming" | "finished";
 }
 
 export interface WebSearchDataPart {
@@ -13,15 +12,10 @@ export interface RagDataPart {
   status: "loading" | "loaded";
 }
 
-export interface Notification {
-  status: UseChatHelpers<never>["status"];
-}
-
 export type ChatbotMessage = UIMessage<
   MessageMetadata,
   {
     ["web-search"]: WebSearchDataPart;
     ["rag"]: RagDataPart;
-    notification: Notification;
   }
 >;

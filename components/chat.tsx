@@ -12,7 +12,7 @@ import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/app/providers";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
-import { DotsLoadingIcon } from "@/components/icons";
+import { LoadingMessage } from "@/components/loading-message";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -58,9 +58,10 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             ) : (
               <>
                 <Messages messages={messages} isLoading={isLoading} />
-                {status === "submitted" && (
-                  <DotsLoadingIcon className="ml-4 mt-4" />
-                )}
+                <LoadingMessage
+                  message={messages[messages.length - 1]}
+                  status={status}
+                />
                 {(status === "ready" || status === "error") && (
                   <div className="flex mt-1 ml-3">
                     <div

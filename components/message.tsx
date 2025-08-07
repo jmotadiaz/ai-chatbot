@@ -6,7 +6,7 @@ import { useCollapse } from "react-collapsed";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { ReasoningUIPart } from "ai";
 import { Markdown } from "@/components/markdown";
-import { DotsLoadingIcon, SpinnerIcon } from "@/components/icons";
+import { SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
@@ -62,26 +62,6 @@ export const Message = ({
                         )}
                       </motion.div>
                     );
-                  case "data-web-search":
-                    if (part.data.status === "loading") {
-                      return (
-                        <ToolLoading
-                          key={`tool-web-search-${part.id}`}
-                          text="Searching the web"
-                        />
-                      );
-                    }
-                    return null;
-                  case "data-rag":
-                    if (part.data.status === "loading") {
-                      return (
-                        <ToolLoading
-                          key={`tool-rag-search-${part.id}`}
-                          text="Searching documents"
-                        />
-                      );
-                    }
-                    return null;
                   case "reasoning":
                     return (
                       <ReasoningMessagePart
@@ -266,18 +246,5 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
           })}
       </ul>
     </>
-  );
-};
-
-interface ToolLoadingProps {
-  text: string;
-}
-
-const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
-  return (
-    <div className="flex items-center mt-2">
-      <DotsLoadingIcon />
-      <div className="ml-4 font-medium">{text}</div>
-    </div>
   );
 };

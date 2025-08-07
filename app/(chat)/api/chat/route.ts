@@ -62,10 +62,6 @@ export async function POST(req: Request) {
 
   const stream = createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
-      writer.write({
-        type: "data-notification",
-        data: { status: "submitted" },
-      });
       const tools: ToolSet = {
         ...webSearchFactory({ writer }),
         ...ragFactory({ writer }),
@@ -130,18 +126,6 @@ export async function POST(req: Request) {
             };
           }
         },
-        onStepFinish: () => {
-          writer.write({
-            type: "data-notification",
-            data: { status: "submitted" },
-          });
-        },
-        onChunk: () => {
-          writer.write({
-            type: "data-notification",
-            data: { status: "streaming" },
-          });
-        },
         onError: (error) => {
           console.log("Error Inferring", error.error);
         },
@@ -157,6 +141,8 @@ export async function POST(req: Request) {
             switch (part.type) {
               case "start":
                 return { status: "started" };
+              case "text-start":
+                return { status: "streaming" };
               case "finish":
                 return { status: "finished" };
               default:
