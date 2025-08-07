@@ -73,7 +73,7 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
         return {
           title: result.title?.trim() || result.url,
           url: result.url,
-          content: result.text,
+          content: result.text.slice(0, 1000),
         };
       });
     },

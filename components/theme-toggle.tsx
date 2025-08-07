@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const ThemeToggle = () => {
   const { theme, setTheme, systemTheme } = useTheme();
@@ -16,12 +17,13 @@ export const ThemeToggle = () => {
   const currentTheme = mounted && resolvedTheme ? resolvedTheme : "light";
 
   return (
-    <button
+    <Button
+      variant="icon"
+      size="icon"
       aria-label="Toggle Dark Mode"
       onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-      className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
     >
       {currentTheme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
+    </Button>
   );
 };

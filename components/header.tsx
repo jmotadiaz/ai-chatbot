@@ -18,7 +18,7 @@ export interface HeaderLeftProps {
 
 const Left: React.FC<HeaderLeftProps> = ({ children }) => {
   return (
-    <div className="flex flex-row items-center gap-3 lg:gap-6 shrink-0">
+    <div className="flex flex-row items-center gap-2 lg:gap-6 shrink-0">
       {children}
     </div>
   );

@@ -192,7 +192,7 @@ export const CHAT_MODELS: chatModelId[] = [
   ...chatModelKeys,
 ];
 
-export const defaultModel: chatModelId = "Auto Model Workflow";
+export const defaultModel: chatModelId = "Kimi K2";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 export const defaultTopK = 40;
