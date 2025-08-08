@@ -21,7 +21,11 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
     setConfig({ topP: value });
   };
 
-  if (selectedModel === "Auto Model Workflow") return null;
+  if (
+    selectedModel === "Auto Model Workflow" ||
+    (temperature === undefined && topP === undefined)
+  )
+    return null;
 
   return (
     <Dropdown.Container>
@@ -32,28 +36,32 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        <div className="flex items-center justify-between space-x-4">
-          <Label htmlFor="temperature">Temperature</Label>
-          <InputNumber
-            id="temperature"
-            value={temperature}
-            min={0}
-            max={2}
-            step={0.1}
-            onChange={setTemperature}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="topP">Top P</Label>
-          <InputNumber
-            id="topP"
-            value={topP}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={setTopP}
-          />
-        </div>
+        {temperature !== undefined && (
+          <div className="flex items-center justify-between space-x-4">
+            <Label htmlFor="temperature">Temperature</Label>
+            <InputNumber
+              id="temperature"
+              value={temperature}
+              min={0}
+              max={2}
+              step={0.1}
+              onChange={setTemperature}
+            />
+          </div>
+        )}
+        {topP !== undefined && (
+          <div className="flex items-center justify-between">
+            <Label htmlFor="topP">Top P</Label>
+            <InputNumber
+              id="topP"
+              value={topP}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={setTopP}
+            />
+          </div>
+        )}
       </Dropdown.Popup>
     </Dropdown.Container>
   );
