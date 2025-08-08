@@ -20,12 +20,17 @@ import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/workflows/auto-model";
 import {
+  WEB_SEARCH_TOOL,
+  URL_CONTEXT_TOOL,
+  RAG_TOOL,
+} from "@/lib/ai/tools/constants";
+import {
   hasContextUrls,
   urlContextFactory,
   webSearchFactory,
 } from "@/lib/ai/tools/web-search";
-import { ChatbotMessage } from "@/lib/ai/types";
 import { ragFactory } from "@/lib/ai/tools/rag";
+import { ChatbotMessage } from "@/lib/ai/types";
 import { hasUrls } from "@/lib/utils";
 
 export const maxDuration = 60;
@@ -44,8 +49,7 @@ export async function POST(req: Request) {
     topK,
     chatId,
     systemPrompt,
-    useRAG,
-    useWebSearch,
+    tools = [],
     messageId,
   }: {
     messages: ChatbotMessage[];
@@ -55,19 +59,18 @@ export async function POST(req: Request) {
     topK?: number;
     chatId?: string;
     systemPrompt?: string;
-    useRAG?: boolean;
-    useWebSearch?: boolean;
+    tools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
     messageId?: string;
   } = await req.json();
 
   const stream = createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
-      const tools: ToolSet = {
+      const toolSet: ToolSet = {
         ...webSearchFactory({ writer }),
         ...ragFactory({ writer }),
         ...urlContextFactory({ writer }),
       };
-      const executedTools = new Set<keyof typeof tools>();
+      const executedTools = new Set<keyof typeof toolSet>();
       const chatModelConfiguration = await calculateModelConfiguration(
         selectedModel,
         messages,
@@ -80,7 +83,7 @@ export async function POST(req: Request) {
         ...chatModelConfiguration,
         system: systemPrompt || defaultSystemPrompt,
         messages: convertToModelMessages(messages),
-        tools,
+        tools: toolSet,
         stopWhen: stepCountIs(4),
         activeTools: [],
         experimental_transform: smoothStream(),
@@ -90,39 +93,39 @@ export async function POST(req: Request) {
             typeof model === "string" ? "unknown" : model.provider;
           const lastMessage = messagePartsToText(messages[messages.length - 1]);
 
-          if (useRAG && !executedTools.has("rag")) {
-            executedTools.add("rag");
+          if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
+            executedTools.add(RAG_TOOL);
             return {
               ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-              toolChoice: { type: "tool", toolName: "rag" },
-              activeTools: ["rag"],
+              toolChoice: { type: "tool", toolName: RAG_TOOL },
+              activeTools: [RAG_TOOL],
             };
           }
 
           if (
             provider !== "perplexity" &&
-            !executedTools.has("urlContext") &&
+            !executedTools.has(URL_CONTEXT_TOOL) &&
             hasUrls(lastMessage) &&
             (await hasContextUrls(lastMessage))
           ) {
-            executedTools.add("urlContext");
+            executedTools.add(URL_CONTEXT_TOOL);
             return {
               ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-              toolChoice: { type: "tool", toolName: "urlContext" },
-              activeTools: ["urlContext"],
+              toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
+              activeTools: [URL_CONTEXT_TOOL],
             };
           }
 
           if (
             provider !== "perplexity" &&
-            useWebSearch &&
-            !executedTools.has("webSearch")
+            tools.includes(WEB_SEARCH_TOOL) &&
+            !executedTools.has(WEB_SEARCH_TOOL)
           ) {
-            executedTools.add("webSearch");
+            executedTools.add(WEB_SEARCH_TOOL);
             return {
               ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-              toolChoice: { type: "tool", toolName: "webSearch" },
-              activeTools: ["webSearch"],
+              toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
+              activeTools: [WEB_SEARCH_TOOL],
             };
           }
         },

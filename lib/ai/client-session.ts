@@ -1,20 +1,35 @@
+import { ChatConfig, Tools } from "@/app/providers";
 import { ChatbotMessage } from "@/lib/ai/types";
 
 const SESSION_STORAGE_KEY = "messages";
-export function getSessionMessages(): ChatbotMessage[] {
+
+interface ChatDataInSession {
+  messages?: ChatbotMessage[];
+  chatConfig?: Partial<ChatConfig>;
+  tools?: Tools;
+}
+
+export function getSessionChatData(): ChatDataInSession {
   try {
     return JSON.parse(
-      window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "[]"
-    ) as ChatbotMessage[];
+      window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "{}"
+    ) as ChatDataInSession;
   } catch {
-    return [];
+    return {};
   }
 }
 
-export function setMessagesInSession(messages: ChatbotMessage[]) {
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(messages));
+export function setChatDataInSession({
+  messages,
+  chatConfig,
+  tools,
+}: ChatDataInSession) {
+  window.sessionStorage.setItem(
+    SESSION_STORAGE_KEY,
+    JSON.stringify({ messages, chatConfig, tools })
+  );
 }
 
-export function clearSessionMessages() {
-  setMessagesInSession([]);
+export function clearChatDataInSession() {
+  setChatDataInSession({});
 }

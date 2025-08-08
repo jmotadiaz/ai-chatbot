@@ -9,9 +9,9 @@ import { ChatControl } from "@/components/chat-control";
 import Chat from "@/components/chat";
 import { saveChat } from "@/lib/ai/actions/chat";
 import {
-  clearSessionMessages,
-  getSessionMessages,
-  setMessagesInSession,
+  clearChatDataInSession,
+  getSessionChatData,
+  setChatDataInSession,
 } from "@/lib/ai/client-session";
 
 const ChatWithClientStorage: React.FC = () => {
@@ -23,7 +23,10 @@ const ChatWithClientStorage: React.FC = () => {
     temperature,
     topP,
     status,
+    tools,
     projectId,
+    setConfig,
+    setTools,
   } = useChatContext();
   const [isSavingChat, setIsSavingChat] = useState(false);
   const initialized = useRef(false);
@@ -45,7 +48,7 @@ const ChatWithClientStorage: React.FC = () => {
         temperature,
         topP,
       });
-      clearSessionMessages();
+      clearChatDataInSession();
       push(`/${chatId}`);
     } catch (error) {
       toast.error("Error saving chat");
@@ -57,12 +60,28 @@ const ChatWithClientStorage: React.FC = () => {
 
   useEffect(() => {
     if (initialized.current) {
-      setMessagesInSession(messages);
+      setChatDataInSession({
+        messages,
+        chatConfig: { selectedModel, temperature, topP },
+        tools,
+      });
     } else {
       initialized.current = true;
-      setMessages(getSessionMessages());
+      const sessionData = getSessionChatData();
+      setMessages(sessionData.messages || []);
+      setConfig(sessionData.chatConfig || {});
+      setTools(sessionData.tools || []);
     }
-  }, [messages, setMessages]);
+  }, [
+    messages,
+    selectedModel,
+    setConfig,
+    setMessages,
+    setTools,
+    temperature,
+    tools,
+    topP,
+  ]);
 
   return (
     <Chat

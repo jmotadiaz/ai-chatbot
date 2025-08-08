@@ -15,6 +15,7 @@ import {
   getChatConfigurationByModelId,
 } from "@/lib/ai/models";
 import { ChatbotMessage } from "@/lib/ai/types";
+import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/constants";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -37,15 +38,17 @@ export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   );
 };
 
-interface ChatConfig {
+export interface ChatConfig {
   selectedModel: chatModelId;
   temperature: number;
   topP: number;
   systemPrompt?: string;
   topK: number;
-  useRAG: boolean;
-  useWebSearch: boolean;
 }
+
+export type Tool = typeof RAG_TOOL | typeof WEB_SEARCH_TOOL;
+
+export type Tools = Array<Tool>;
 
 interface SetChatConfig {
   setConfig: (config: Partial<ChatConfig>) => void;
@@ -71,14 +74,16 @@ const chatContext = createContext<
       title?: string;
       projectId?: string;
       reload: () => void;
+      tools: Tools;
+      toggleTool: (tool: Tool) => void;
+      hasTool: (tool: Tool) => boolean;
+      setTools: (tools: Tools) => void;
     }
 >({
   selectedModel: defaultModel,
   temperature: defaultTemperature,
   topP: defaultTopP,
   topK: defaultTopK,
-  useRAG: false,
-  useWebSearch: false,
   setConfig: () => {},
   input: "",
   setInput: () => {},
@@ -90,6 +95,7 @@ const chatContext = createContext<
   status: "ready",
   stop: async () => {},
   error: undefined,
+  tools: [],
   sendMessage: async () => {},
   regenerate: async () => {
     return undefined;
@@ -97,6 +103,9 @@ const chatContext = createContext<
   reload: async () => {},
   resumeStream: async () => {},
   addToolResult: async () => {},
+  toggleTool: () => {},
+  hasTool: () => false,
+  setTools: () => {},
 });
 
 export interface ChatProviderProps extends ProvidersProps {
@@ -110,6 +119,7 @@ export interface ChatProviderProps extends ProvidersProps {
   systemPrompt?: string;
   metaPrompt?: string | null;
   title?: string;
+  tools?: Tools;
 }
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({
@@ -124,6 +134,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   chatId,
   projectId,
   title,
+  tools = [],
 }) => {
   const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
     Object.assign(
@@ -139,6 +150,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       { selectedModel, useRAG: false, useWebSearch: false }
     )
   );
+  const [selectedTools, setSelectedTools] = useState(tools);
 
   // Manual input state management for v5
   const [input, setInput] = useState("");
@@ -179,13 +191,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
           {
             body: {
               chatId,
+              tools: selectedTools,
               ...chatConfig,
             },
           }
         );
       }
     },
-    [input, chatResult, chatId, chatConfig]
+    [input, chatResult, chatId, chatConfig, selectedTools]
   );
 
   const setConfig = useCallback<SetChatConfig["setConfig"]>((config) => {
@@ -194,6 +207,19 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       ...config,
     }));
   }, []);
+
+  const toggleTool = useCallback((tool: Tool) => {
+    setSelectedTools((prev) =>
+      prev.includes(tool) ? prev.filter((t) => t !== tool) : [...prev, tool]
+    );
+  }, []);
+
+  const hasTool = useCallback(
+    (tool: Tool) => {
+      return selectedTools.includes(tool);
+    },
+    [selectedTools]
+  );
 
   const reload = useCallback(() => {
     setInput("");
@@ -218,6 +244,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         handleSubmit,
         reload,
         title,
+        tools: selectedTools,
+        toggleTool,
+        hasTool,
+        setTools: setSelectedTools,
       }}
     >
       {children}

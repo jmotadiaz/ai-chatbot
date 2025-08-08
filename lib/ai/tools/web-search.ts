@@ -4,6 +4,7 @@ import { z } from "zod";
 import Exa from "exa-js";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { languageModelConfigurations } from "@/lib/ai/models";
+import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/constants";
 
 const exa = new Exa(process.env.EXA_API_KEY);
 
@@ -36,7 +37,7 @@ const outputSchema = z.array(
 );
 
 export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
-  webSearch: tool({
+  [WEB_SEARCH_TOOL]: tool({
     description: `
     Search the web for up-to-date information
     - Input: An object with a single string property 'query'.
@@ -81,7 +82,7 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
 });
 
 export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
-  urlContext: tool({
+  [URL_CONTEXT_TOOL]: tool({
     description: `
     Retrieves the textual content from a list of specific URLs provided by the user.
     - Input: An object with a single property 'urls', which is an array of strings representing the URLs.

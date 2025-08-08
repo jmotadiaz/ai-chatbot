@@ -20,6 +20,9 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const setTopP = (value: number) => {
     setConfig({ topP: value });
   };
+  // const setTopK = (value: number) => {
+  //   setConfig({ topK: value });
+  // };
 
   if (
     selectedModel === "Auto Model Workflow" ||
@@ -62,6 +65,19 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             />
           </div>
         )}
+        {/* {topK !== undefined && (
+          <div className="flex items-center justify-between">
+            <Label htmlFor="topK">Top K</Label>
+            <InputNumber
+              id="topK"
+              value={topK}
+              min={0}
+              max={100}
+              step={5}
+              onChange={setTopK}
+            />
+          </div>
+        )} */}
       </Dropdown.Popup>
     </Dropdown.Container>
   );

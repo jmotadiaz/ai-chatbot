@@ -4,6 +4,7 @@ import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
+import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/constants";
 
 export interface ToolsControlProps {
   className?: ClassValue;
@@ -11,17 +12,9 @@ export interface ToolsControlProps {
 
 export const ToolsControl = ({ className }: ToolsControlProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
-  const { useRAG, useWebSearch, setConfig } = useChatContext();
+  const { tools, toggleTool, hasTool } = useChatContext();
 
-  const isActive = useRAG || useWebSearch;
-
-  const toggleRAG = () => {
-    setConfig({ useRAG: !useRAG });
-  };
-
-  const toggleWebSearch = () => {
-    setConfig({ useWebSearch: !useWebSearch });
-  };
+  const isActive = tools.length > 0;
 
   return (
     <Dropdown.Container>
@@ -33,15 +26,19 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        <Toggle id="rag-tool" checked={useRAG} onChange={toggleRAG}>
+        <Toggle
+          id="rag-tool"
+          checked={hasTool(RAG_TOOL)}
+          onChange={() => toggleTool(RAG_TOOL)}
+        >
           <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
           <span className="whitespace-nowrap">RAG (Document Search)</span>
         </Toggle>
 
         <Toggle
           id="web-search-tool"
-          checked={useWebSearch}
-          onChange={toggleWebSearch}
+          checked={hasTool(WEB_SEARCH_TOOL)}
+          onChange={() => toggleTool(WEB_SEARCH_TOOL)}
         >
           <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
           <span className="whitespace-nowrap">Web Search</span>

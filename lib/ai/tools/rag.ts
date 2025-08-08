@@ -3,13 +3,14 @@ import { z } from "zod";
 
 import { buildContextPrompt, retrieve } from "@/lib/ai/rag/retrieve";
 import { ChatbotMessage } from "@/lib/ai/types";
+import { RAG_TOOL } from "@/lib/ai/tools/constants";
 
 export interface RagFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;
 }
 
 export const ragFactory = ({ writer }: RagFactoryArgs) => ({
-  rag: tool({
+  [RAG_TOOL]: tool({
     description:
       "Get information from your knowledge base to answer questions. you will receive a json object with the resources used and the context to answer the question.",
     inputSchema: z.object({
