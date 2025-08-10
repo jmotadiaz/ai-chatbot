@@ -71,16 +71,17 @@ export async function POST(req: Request) {
         ...urlContextFactory({ writer }),
       };
       const executedTools = new Set<keyof typeof toolSet>();
-      const chatModelConfiguration = await calculateModelConfiguration(
-        selectedModel,
-        messages,
-        temperature,
-        topP,
-        topK
-      );
+      const { modelConfiguration, autoModelMetadata } =
+        await calculateModelConfiguration(
+          selectedModel,
+          messages,
+          temperature,
+          topP,
+          topK
+        );
 
       const result = streamText({
-        ...chatModelConfiguration,
+        ...modelConfiguration,
         system: systemPrompt || defaultSystemPrompt,
         messages: convertToModelMessages(messages),
         tools: toolSet,
@@ -147,7 +148,7 @@ export async function POST(req: Request) {
               case "text-start":
                 return { status: "streaming" };
               case "finish":
-                return { status: "finished" };
+                return { status: "finished", autoModel: autoModelMetadata };
               default:
                 return undefined;
             }

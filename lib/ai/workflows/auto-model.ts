@@ -34,7 +34,16 @@ const schema = z.object({
   complexity: z.enum(COMPLEXITY_LEVELS),
 });
 
-export async function autoModel(query: string): Promise<ModelConfiguration> {
+export interface AutoModelMetadata {
+  category: (typeof CATEGORIES)[number];
+  complexity: (typeof COMPLEXITY_LEVELS)[number];
+  model: string;
+}
+
+export async function autoModel(query: string): Promise<{
+  modelConfiguration: ModelConfiguration;
+  autoModelMetadata: AutoModelMetadata;
+}> {
   if (!query || query.trim() === "") {
     throw new Error("Query cannot be empty");
   }
@@ -57,8 +66,19 @@ export async function autoModel(query: string): Promise<ModelConfiguration> {
   console.log("Classification Result:", classification);
 
   const { category, complexity } = classification;
+  const modelConfiguration = decisionTree[category][complexity];
 
-  return decisionTree[category][complexity];
+  return {
+    modelConfiguration,
+    autoModelMetadata: {
+      category,
+      complexity,
+      model:
+        typeof modelConfiguration.model === "string"
+          ? modelConfiguration.model
+          : modelConfiguration.model.modelId,
+    },
+  };
 }
 
 export const calculateModelConfiguration = async (
@@ -67,17 +87,22 @@ export const calculateModelConfiguration = async (
   temperature?: number,
   topP?: number,
   topK?: number
-): Promise<ModelConfiguration> => {
+): Promise<{
+  modelConfiguration: ModelConfiguration;
+  autoModelMetadata?: AutoModelMetadata;
+}> => {
   if (selectedModel === "Auto Model Workflow") {
     const firstMessage = messages[0];
     return autoModel(firstMessage ? messagePartsToText(firstMessage) : "");
   } else {
     return {
-      ...(languageModelConfigurations[selectedModel] ||
-        languageModelConfigurations["Llama 4 Maverick"]),
-      temperature,
-      topP,
-      topK,
+      modelConfiguration: {
+        ...(languageModelConfigurations[selectedModel] ||
+          languageModelConfigurations["Llama 4 Maverick"]),
+        temperature,
+        topP,
+        topK,
+      },
     };
   }
 };
