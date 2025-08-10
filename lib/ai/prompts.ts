@@ -129,7 +129,6 @@ export const defaultMetaPrompt = `
         - Professional contexts (emails, presentations, consultations)
         - Need for empathy/support in sensitive topics
         - Requests for "help with" or "advice on" specific domains
-    * **Constraint:** **Do NOT use this technique if a persona has already been established or is actively in use within the current chat history, as this can lead to conflicting model behavior and confusion.**
     * **Goal:** Align the model's expertise level, communication style, and approach with the most appropriate professional role for the task.
 `;
 
