@@ -18,6 +18,10 @@ export function scapeXML(str: string): string {
     .trim();
 }
 
+export const capitalize = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 export const handleCopy = (value: string | null | undefined) => async () => {
   if (!value) {
     toast.error("Nothing to copy");

@@ -7,7 +7,7 @@ import { ChevronDownIcon, ChevronUpIcon, Dot } from "lucide-react";
 import { ReasoningUIPart } from "ai";
 import { Markdown } from "@/components/markdown";
 import { SpinnerIcon } from "@/components/icons";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
@@ -265,13 +265,15 @@ const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
       </div>
       <div className="flex items-center space-x-2 text-sm text-zinc-500 dark:text-zinc-400 mb-2">
         <div>
-          <span className="font-medium">Category:</span> {metadata.category}
+          <span className="font-medium">Category:</span>{" "}
+          {capitalize(metadata.category)}
         </div>
         <div>
           <Dot />
         </div>
         <div>
-          <span className="font-medium">Complexity:</span> {metadata.complexity}
+          <span className="font-medium">Complexity:</span>{" "}
+          {capitalize(metadata.complexity)}
         </div>
         <div>
           <Dot />
