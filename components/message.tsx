@@ -263,19 +263,19 @@ const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
       <div className="font-bold text-sm text-zinc-500 dark:text-zinc-400 my-2">
         Auto Model Details
       </div>
-      <div className="flex items-center space-x-2 text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+      <div className="flex flex-col lg:flex-row  lg:items-center space-y-1 space-x-2 text-sm text-zinc-500 dark:text-zinc-400 mb-2">
         <div>
           <span className="font-medium">Category:</span>{" "}
           {capitalize(metadata.category)}
         </div>
-        <div>
+        <div className="hidden lg:block">
           <Dot />
         </div>
         <div>
           <span className="font-medium">Complexity:</span>{" "}
           {capitalize(metadata.complexity)}
         </div>
-        <div>
+        <div className="hidden lg:block">
           <Dot />
         </div>
         <div>
