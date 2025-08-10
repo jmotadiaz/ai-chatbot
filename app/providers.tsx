@@ -1,6 +1,12 @@
 "use client";
 import { randomUUID } from "crypto";
-import React, { useCallback, useContext, useState, createContext } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useState,
+  createContext,
+  useMemo,
+} from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
@@ -172,6 +178,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     },
   });
 
+  const body = useMemo(() => {
+    return {
+      chatId,
+      ...chatConfig,
+      tools: selectedTools,
+    };
+  }, [chatConfig, chatId, selectedTools]);
+
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setInput(event.target.value);
@@ -189,16 +203,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
             text: input,
           },
           {
-            body: {
-              chatId,
-              tools: selectedTools,
-              ...chatConfig,
-            },
+            body,
           }
         );
       }
     },
-    [input, chatResult, chatId, chatConfig, selectedTools]
+    [input, chatResult, body]
   );
 
   const setConfig = useCallback<SetChatConfig["setConfig"]>((config) => {
@@ -225,9 +235,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     setInput("");
     chatResult.regenerate({
       messageId: chatResult.messages.at(-1)?.id,
-      body: { chatId, ...chatConfig },
+      body,
     });
-  }, [chatConfig, chatId, chatResult]);
+  }, [body, chatResult]);
 
   return (
     <chatContext.Provider
