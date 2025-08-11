@@ -7,9 +7,10 @@ import { RAG_TOOL } from "@/lib/ai/tools/constants";
 
 export interface RagFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;
+  userId: string;
 }
 
-export const ragFactory = ({ writer }: RagFactoryArgs) => ({
+export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
   [RAG_TOOL]: tool({
     description:
       "Get information from your knowledge base to answer questions. you will receive a json object with the resources used and the context to answer the question.",
@@ -26,7 +27,11 @@ export const ragFactory = ({ writer }: RagFactoryArgs) => ({
         id: toolCallId,
         data: { status: "loading" },
       });
-      const { resources, similarChunks } = await retrieve(query, 10);
+      const { resources, similarChunks } = await retrieve({
+        query,
+        userId,
+        limit: 10,
+      });
       if (!resources || !similarChunks) {
         throw new Error("No resources or similar chunks found");
       }

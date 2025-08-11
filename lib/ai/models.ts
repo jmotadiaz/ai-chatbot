@@ -63,6 +63,12 @@ export const languageModelConfigurations = {
   "Claude 3.5 Haiku": {
     model: anthropic("claude-3-5-haiku-latest"),
   },
+  "GPT 5 Nano": {
+    model: openai("gpt-5-nano-2025-08-07"),
+    temperature: undefined,
+    topP: undefined,
+    topK: undefined,
+  },
   "GPT 5 Mini": {
     model: openai("gpt-5-mini-2025-08-07"),
     temperature: undefined,

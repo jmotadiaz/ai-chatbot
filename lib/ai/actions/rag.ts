@@ -120,6 +120,7 @@ export async function uploadResources(
         // Create resource
         const newResource = await createResource({
           title: resource.title,
+          userId: session.user.id,
         })(tx);
 
         createdResources.push(newResource);

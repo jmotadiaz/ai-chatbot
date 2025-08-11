@@ -30,13 +30,22 @@ export async function translateToEnglish(text: string): Promise<string> {
 /**
  * Retrieves relevant context from RAG database for a given query
  */
-export async function retrieve(
-  query: string,
-  limit: number = 6
-): Promise<RetrieveResult> {
+export async function retrieve({
+  query,
+  userId,
+  limit = 6,
+}: {
+  query: string;
+  userId: string;
+  limit?: number;
+}): Promise<RetrieveResult> {
   try {
     const userQueryEmbedded = await generateEmbedding(query);
-    const similarChunks = await findSimilarChunks(userQueryEmbedded, limit);
+    const similarChunks = await findSimilarChunks({
+      embedding: userQueryEmbedded,
+      userId,
+      limit,
+    });
 
     if (similarChunks.length === 0) {
       return {

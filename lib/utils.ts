@@ -22,6 +22,13 @@ export const capitalize = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
+export const isEmpty = <T>(
+  value: T | null | undefined
+): value is null | undefined =>
+  value === null ||
+  value === undefined ||
+  (typeof value === "object" && Object.keys(value).length === 0);
+
 export const handleCopy = (value: string | null | undefined) => async () => {
   if (!value) {
     toast.error("Nothing to copy");

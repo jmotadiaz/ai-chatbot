@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     async execute({ writer }) {
       const toolSet: ToolSet = {
         ...webSearchFactory({ writer }),
-        ...ragFactory({ writer }),
+        ...ragFactory({ writer, userId: session.user.id }),
         ...urlContextFactory({ writer }),
       };
       const executedTools = new Set<keyof typeof toolSet>();

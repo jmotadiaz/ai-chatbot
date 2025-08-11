@@ -81,6 +81,9 @@ export const message = pgTable("Message", {
 
 export const resources = pgTable("resources", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
@@ -112,6 +115,10 @@ export const projectRelations = relations(project, ({ many }) => ({
   chats: many(chat),
 }));
 
+export const userRelations = relations(user, ({ many }) => ({
+  resources: many(resources),
+}));
+
 export const chatRelations = relations(chat, ({ one, many }) => ({
   project: one(project, {
     fields: [chat.projectId],
@@ -127,7 +134,11 @@ export const messageRelations = relations(message, ({ one }) => ({
   }),
 }));
 
-export const resourcesRelations = relations(resources, ({ many }) => ({
+export const resourcesRelations = relations(resources, ({ many, one }) => ({
+  user: one(user, {
+    fields: [resources.userId],
+    references: [user.id],
+  }),
   embeddings: many(embeddings),
 }));
 

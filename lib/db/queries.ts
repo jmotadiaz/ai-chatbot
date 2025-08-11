@@ -455,7 +455,7 @@ export const deleteProject =
 // RAG Database Operations
 
 export const createResource =
-  (data: InsertResource): Transactional<Resource> =>
+  (data: InsertResource & { userId: string }): Transactional<Resource> =>
   async (tx) => {
     try {
       const [newResource] = await tx
@@ -488,14 +488,19 @@ export type SimilarChunks = Array<
   Embedding & { similarity: number; resourceTitle: string }
 >;
 
-export async function findSimilarChunks(
-  embedding: number[],
-  limit: number = 5
-): Promise<SimilarChunks> {
+export async function findSimilarChunks({
+  embedding,
+  userId,
+  limit = 5,
+}: {
+  embedding: number[];
+  userId: string;
+  limit?: number;
+}): Promise<SimilarChunks> {
   try {
-    const similarity = sql<number>`1 - (${
-      embeddings.embedding
-    } <=> ${JSON.stringify(embedding)}::vector)`;
+    const similarity = sql<number>`1 - (${embeddings.embedding} <=> ${JSON.stringify(
+      embedding
+    )}::vector)`;
 
     return await db
       .select({
@@ -508,7 +513,7 @@ export async function findSimilarChunks(
       })
       .from(embeddings)
       .innerJoin(resources, eq(embeddings.resourceId, resources.id))
-      .where(gt(similarity, 0.6))
+      .where(and(gt(similarity, 0.6), eq(resources.userId, userId)))
       .orderBy(desc(similarity))
       .limit(limit);
   } catch (error) {

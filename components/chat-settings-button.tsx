@@ -5,6 +5,7 @@ import { ChatControl } from "@/components/chat-control";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
+import { isEmpty } from "@/lib/utils";
 
 export interface ChatSettingsButtonProps {
   className?: ClassValue;
@@ -26,7 +27,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
 
   if (
     selectedModel === "Auto Model Workflow" ||
-    (temperature === undefined && topP === undefined)
+    (isEmpty(temperature) && isEmpty(topP))
   )
     return null;
 
@@ -39,7 +40,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        {temperature !== undefined && (
+        {temperature ?? (
           <div className="flex items-center justify-between space-x-4">
             <Label htmlFor="temperature">Temperature</Label>
             <InputNumber
@@ -52,7 +53,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             />
           </div>
         )}
-        {topP !== undefined && (
+        {topP ?? (
           <div className="flex items-center justify-between">
             <Label htmlFor="topP">Top P</Label>
             <InputNumber

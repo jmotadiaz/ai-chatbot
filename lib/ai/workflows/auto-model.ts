@@ -272,7 +272,7 @@ const getPrompt = (query: string): string => `\n
   *   **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
-  Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length.
+  Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length. Additionally, factor in the **specificity of the query**: If the query is well-specified (clear, detailed, with all necessary context and instructions provided), reduce the complexity level accordingly, as it minimizes the need for assumptions or additional inference. Vague or incomplete queries increase complexity.
 
   *   **Simple**: A task involving the retrieval of a single, self-contained piece of information or a generic, atomic action.
       *   **Core Task**: Retrieving a generic fact or a standard code snippet.
