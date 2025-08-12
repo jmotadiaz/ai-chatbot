@@ -5,7 +5,7 @@ import { Database, Globe, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
-import { systemMetaPrompt } from "@/lib/ai/prompts";
+import { defaultMetaPrompt, systemMetaPrompt } from "@/lib/ai/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
@@ -252,6 +252,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             topK={topK}
             selectedModel={model}
             systemPrompt={systemPrompt}
+            tools={tools}
+            metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
             title={title}
           >
             <Chat />

@@ -9,7 +9,6 @@ import {
 import { anthropic } from "@ai-sdk/anthropic";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { defaultSystemPrompt } from "@/lib/ai/prompts";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -98,16 +97,6 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
-      },
-    },
-  },
-  "Gemini 2.5 Flash Thinking": {
-    model: google("gemini-2.5-flash"),
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
@@ -187,16 +176,15 @@ const chatModelKeys = [
   "Llama 4",
   "Kimi K2",
   "Deepseek Chat",
-  "Gemini 2.5 Flash",
-  "GPT 5 Mini",
   "Sonar",
   "Qwen 3",
   "Deepseek R1",
   "Claude Sonnet 4",
+  "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",
   "GPT OSS",
+  "GPT 5 Mini",
   "GPT 5",
-  "o3",
   "Grok 3 Mini",
   "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
@@ -216,21 +204,3 @@ export const defaultModel: chatModelId = "Llama 4";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 export const defaultTopK = 40;
-
-export const getChatConfigurationByModelId = (
-  modelId: chatModelId
-): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
-  const { temperature, topK, topP, systemPrompt, disabledConfig } =
-    Object.assign(
-      {
-        temperature: defaultTemperature,
-        topP: defaultTopP,
-        topK: defaultTopK,
-        systemPrompt: defaultSystemPrompt,
-        disabledConfig: [],
-      },
-      modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
-    );
-
-  return { temperature, topK, topP, systemPrompt, disabledConfig };
-};

@@ -1,9 +1,14 @@
 import {
+  chatModelConfigurations,
   chatModelId,
   defaultModel,
+  defaultTemperature,
+  defaultTopK,
+  defaultTopP,
   languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
+import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { messagePartsToText } from "@/lib/ai/utils";
 import { autoModel, AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
@@ -38,4 +43,22 @@ export const calculateModelConfiguration = async (
       },
     };
   }
+};
+
+export const getChatConfigurationByModelId = (
+  modelId: chatModelId
+): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
+  const { temperature, topK, topP, systemPrompt, disabledConfig } =
+    Object.assign(
+      {
+        temperature: defaultTemperature,
+        topP: defaultTopP,
+        topK: defaultTopK,
+        systemPrompt: defaultSystemPrompt,
+        disabledConfig: [],
+      },
+      modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
+    );
+
+  return { temperature, topK, topP, systemPrompt, disabledConfig };
 };

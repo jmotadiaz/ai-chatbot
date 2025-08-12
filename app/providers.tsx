@@ -18,10 +18,10 @@ import {
   defaultTopP,
   chatModelId,
   defaultTopK,
-  getChatConfigurationByModelId,
 } from "@/lib/ai/models/definition";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { Tool, Tools } from "@/lib/ai/tools/types";
+import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 
 interface ProvidersProps {
   children: React.ReactNode;

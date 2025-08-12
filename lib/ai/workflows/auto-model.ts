@@ -194,13 +194,13 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.7,
     },
     moderate: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite Web Search"],
+      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     complex: {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
     },
     advanced: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Thinking"],
+      ...languageModelConfigurations["Gemini 2.5 Pro"],
     },
   },
   conversational: {
