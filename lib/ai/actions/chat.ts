@@ -8,7 +8,7 @@ import {
   transaction,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { chatModelId } from "@/lib/ai/models";
+import { chatModelId } from "@/lib/ai/models/definition";
 import {
   generateTitleFromUserMessage,
   messageToDbMessage,
@@ -20,8 +20,10 @@ export async function saveChat(req: {
   selectedModel: chatModelId;
   projectId?: string;
   chatId: string;
-  temperature: number;
-  topP: number;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  tools?: string[];
 }) {
   const session = await auth();
 
@@ -29,7 +31,16 @@ export async function saveChat(req: {
     throw new Error("Unauthorized");
   }
 
-  const { projectId, chatId, messages, selectedModel, temperature, topP } = req;
+  const {
+    projectId,
+    chatId,
+    messages,
+    selectedModel,
+    temperature,
+    topP,
+    topK,
+    tools,
+  } = req;
 
   try {
     await transaction(
@@ -40,6 +51,8 @@ export async function saveChat(req: {
         defaultModel: selectedModel,
         defaultTemperature: temperature,
         defaultTopP: topP,
+        defaultTopK: topK,
+        tools,
         title: await generateTitleFromUserMessage(messages[0]),
       }),
       saveMessages(messages.map(messageToDbMessage(chatId)))

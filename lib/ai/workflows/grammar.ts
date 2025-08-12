@@ -1,5 +1,5 @@
 import { streamObject } from "ai";
-import { languageModelConfigurations } from "@/lib/ai/models";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import {
   audienceInstructions,
   identifyAudience,

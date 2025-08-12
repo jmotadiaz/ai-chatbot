@@ -11,6 +11,7 @@ import {
   vector,
   index,
   serial,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
@@ -34,9 +35,10 @@ export const project = pgTable("Project", {
   defaultModel: varchar("defaultModel", { length: 100 }),
   defaultTemperature: real("defaultTemperature"),
   defaultTopP: real("defaultTopP"),
+  defaultTopK: real("defaultTopK"),
   systemPrompt: text("systemPrompt").notNull(),
-  metaPrompt: text("metaPrompt"),
-  tools: text("tools").array(),
+  hasPromptRefiner: boolean("hasMetaPrompt").default(false).notNull(),
+  tools: varchar("tools", { length: 100 }).array(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -57,6 +59,8 @@ export const chat = pgTable("Chat", {
   defaultModel: varchar("defaultModel", { length: 100 }),
   defaultTemperature: real("defaultTemperature"),
   defaultTopP: real("defaultTopP"),
+  defaultTopK: real("defaultTopK"),
+  tools: varchar("tools", { length: 100 }).array(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

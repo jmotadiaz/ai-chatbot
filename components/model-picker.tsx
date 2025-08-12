@@ -7,14 +7,42 @@ import {
   chatModelId,
   CHAT_MODELS,
   getChatConfigurationByModelId,
-} from "@/lib/ai/models";
+} from "@/lib/ai/models/definition";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export const ModelPicker = () => {
-  const modelPickerProps = useModelPicker();
+  const { selectedModel, setSelectedModel } = useModelPicker();
+  const [previousModel, setPreviousModel] =
+    useState<chatModelId>(selectedModel);
 
-  return <ModelPickerSelector {...modelPickerProps} />;
+  return (
+    <div className="flex items-center space-x-2">
+      {selectedModel !== "Auto Model Workflow" ? (
+        <ModelPickerSelector {...{ selectedModel, setSelectedModel }} />
+      ) : (
+        <ModelPickerLoading animated={false} />
+      )}
+      <Button
+        variant="icon"
+        size="icon"
+        className={cn({
+          "bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-500 text-white dark:text-white":
+            selectedModel === "Auto Model Workflow",
+        })}
+        onClick={() => {
+          setPreviousModel(selectedModel);
+          setSelectedModel(
+            selectedModel === "Auto Model Workflow"
+              ? previousModel
+              : "Auto Model Workflow"
+          );
+        }}
+      >
+        <Sparkles className="w-4 h-4" />
+      </Button>
+    </div>
+  );
 };
 
 export interface ModelPickerLoadingProps {
@@ -49,44 +77,18 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
       value: selectedModel,
       onValueChange: setSelectedModel,
     });
-  const [previousModel, setPreviousModel] =
-    useState<chatModelId>(selectedModel);
 
   return (
-    <div className="flex items-center space-x-4">
-      <Button
-        variant="icon"
-        size="icon"
-        className={cn({
-          "bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-500 text-white dark:text-white":
-            selectedModel === "Auto Model Workflow",
-        })}
-        onClick={() => {
-          setPreviousModel(selectedModel);
-          setSelectedModel(
-            selectedModel === "Auto Model Workflow"
-              ? previousModel
-              : "Auto Model Workflow"
-          );
-        }}
-      >
-        <Sparkles className="w-4 h-4" />
-      </Button>
-      {selectedModel !== "Auto Model Workflow" ? (
-        <Select.Container>
-          <Select.Trigger {...getSelectTriggerProps()} className="w-42" />
-          <Select.Dropdown {...getSelectContentProps()} className="w-42">
-            {models.map((modelId) => (
-              <Select.Item {...getSelectItemProps(modelId)} key={modelId}>
-                {modelId}
-              </Select.Item>
-            ))}
-          </Select.Dropdown>
-        </Select.Container>
-      ) : (
-        <ModelPickerLoading animated={false} />
-      )}
-    </div>
+    <Select.Container>
+      <Select.Trigger {...getSelectTriggerProps()} className="w-42" />
+      <Select.Dropdown {...getSelectContentProps()} className="w-42">
+        {models.map((modelId) => (
+          <Select.Item {...getSelectItemProps(modelId)} key={modelId}>
+            {modelId}
+          </Select.Item>
+        ))}
+      </Select.Dropdown>
+    </Select.Container>
   );
 };
 

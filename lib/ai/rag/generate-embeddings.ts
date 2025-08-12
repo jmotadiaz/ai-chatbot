@@ -1,7 +1,7 @@
 import { embedMany, embed } from "ai";
 import { MarkdownNodeParser } from "@llamaindex/core/node-parser";
 import { Document } from "@llamaindex/core/schema";
-import { google } from "@/lib/ai/models";
+import { google } from "@/lib/ai/models/definition";
 
 const embeddingModel = google.textEmbeddingModel("gemini-embedding-001");
 const MAX_EMBEDDINGS = 99;

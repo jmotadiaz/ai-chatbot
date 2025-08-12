@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { languageModelConfigurations } from "@/lib/ai/models";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { getObject } from "@/lib/ai/utils";
 
 export const sourceLanguages = ["Spanish", "English"] as const;

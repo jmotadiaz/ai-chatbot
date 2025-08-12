@@ -8,7 +8,10 @@ import {
   smoothStream,
   ToolSet,
 } from "ai";
-import { chatModelId, languageModelConfigurations } from "@/lib/ai/models";
+import {
+  chatModelId,
+  languageModelConfigurations,
+} from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
   deleteMessageById,
@@ -23,7 +26,7 @@ import {
   WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
   RAG_TOOL,
-} from "@/lib/ai/tools/constants";
+} from "@/lib/ai/tools/types";
 import {
   hasContextUrls,
   urlContextFactory,
@@ -170,6 +173,8 @@ export async function POST(req: Request) {
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
                         defaultTopP: topP,
+                        defaultTopK: topK,
+                        tools,
                       }
                     ),
                     deleteMessageById(messageId),

@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { generateEmbedding } from "@/lib/ai/rag/generate-embeddings";
 import { findSimilarChunks, SimilarChunks } from "@/lib/db/queries";
-import { languageModelConfigurations } from "@/lib/ai/models";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 
 export interface RetrieveResult {
   success: boolean;

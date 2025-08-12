@@ -9,7 +9,11 @@ import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
 import { Message } from "@/lib/db/schema";
-import { defaultTemperature, defaultTopP, chatModelId } from "@/lib/ai/models";
+import {
+  defaultTemperature,
+  defaultTopP,
+  chatModelId,
+} from "@/lib/ai/models/definition";
 import {
   getChatById,
   getMessagesByChatId,
@@ -18,6 +22,7 @@ import {
 import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { ChatbotMessage } from "@/lib/ai/types";
+import { filterTools } from "@/lib/ai/tools/utils";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -46,7 +51,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
     ? await getProjectById(chat.projectId ?? "")
     : null;
 
-  const metaPrompt = project ? project.metaPrompt : defaultMetaPrompt;
+  const metaPrompt = project?.hasPromptRefiner ? defaultMetaPrompt : null;
 
   // Convert to UI messages format
   const initialMessages = convertToChatbotMessages(messages);
@@ -57,6 +62,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
       temperature={chat.defaultTemperature ?? defaultTemperature}
       topP={chat.defaultTopP ?? defaultTopP}
       chatId={id}
+      tools={filterTools(chat.tools || [])}
       metaPrompt={metaPrompt}
       initialMessages={initialMessages}
     >

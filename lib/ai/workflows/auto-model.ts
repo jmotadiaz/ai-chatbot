@@ -4,7 +4,7 @@ import {
   chatModelId,
   languageModelConfigurations,
   ModelConfiguration,
-} from "@/lib/ai/models";
+} from "@/lib/ai/models/definition";
 import { scapeXML } from "@/lib/utils";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { messagePartsToText } from "@/lib/ai/utils";
@@ -98,7 +98,7 @@ export const calculateModelConfiguration = async (
     return {
       modelConfiguration: {
         ...(languageModelConfigurations[selectedModel] ||
-          languageModelConfigurations["Llama 4 Maverick"]),
+          languageModelConfigurations["Llama 4"]),
         temperature,
         topP,
         topK,
@@ -124,7 +124,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   analytical: {
     simple: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4"],
     },
     moderate: {
       ...languageModelConfigurations["Deepseek R1 Distill"],
@@ -141,7 +141,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4"],
     },
     complex: {
       ...languageModelConfigurations["Qwen 3"],
@@ -160,7 +160,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4"],
       temperature: 1,
     },
     advanced: {
@@ -174,12 +174,14 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.5,
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4"],
       temperature: 0.5,
     },
     complex: {
       ...languageModelConfigurations["GPT 5 Mini"],
-      temperature: 0.5,
+      temperature: undefined,
+      topP: undefined,
+      topK: undefined,
     },
     advanced: {
       ...languageModelConfigurations["Gemini 2.5 Pro"],
@@ -211,7 +213,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 0.8,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4 Maverick"],
+      ...languageModelConfigurations["Llama 4"],
       temperature: 0.8,
     },
     advanced: {

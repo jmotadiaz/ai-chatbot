@@ -1,5 +1,5 @@
 import { GenerateObjectResult, generateText } from "ai";
-import { languageModelConfigurations } from "@/lib/ai/models";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
 

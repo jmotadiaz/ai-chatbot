@@ -22,6 +22,7 @@ const ChatWithClientStorage: React.FC = () => {
     selectedModel,
     temperature,
     topP,
+    topK,
     status,
     tools,
     projectId,
@@ -47,6 +48,8 @@ const ChatWithClientStorage: React.FC = () => {
         selectedModel,
         temperature,
         topP,
+        topK,
+        tools,
       });
       clearChatDataInSession();
       push(`/${chatId}`);
@@ -68,9 +71,15 @@ const ChatWithClientStorage: React.FC = () => {
     } else {
       initialized.current = true;
       const sessionData = getSessionChatData();
-      setMessages(sessionData.messages || []);
-      setConfig(sessionData.chatConfig || {});
-      setTools(sessionData.tools || []);
+      if (sessionData.messages) {
+        setMessages(sessionData.messages);
+      }
+      if (sessionData.chatConfig) {
+        setConfig(sessionData.chatConfig);
+      }
+      if (sessionData.tools) {
+        setTools(sessionData.tools);
+      }
     }
   }, [
     messages,

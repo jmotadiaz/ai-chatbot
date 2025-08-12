@@ -3,8 +3,8 @@ import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { languageModelConfigurations } from "@/lib/ai/models";
-import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/constants";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
+import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
 const exa = new Exa(process.env.EXA_API_KEY);
 

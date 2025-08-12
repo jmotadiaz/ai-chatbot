@@ -1,6 +1,6 @@
 import { convertToModelMessages, generateText } from "ai";
 import { auth } from "@/auth";
-import { languageModelConfigurations } from "@/lib/ai/models";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import {
   chatHistoryPrompt,
   defaultMetaPrompt,

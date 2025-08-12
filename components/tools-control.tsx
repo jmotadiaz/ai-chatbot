@@ -4,7 +4,7 @@ import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/constants";
+import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
 export interface ToolsControlProps {
   className?: ClassValue;

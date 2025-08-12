@@ -25,6 +25,7 @@ export interface ModelConfiguration {
     google?: GoogleGenerativeAIProviderOptions;
     openai?: OpenAIResponsesProviderOptions;
   };
+  disabledConfig?: ("temperature" | "topP" | "topK")[];
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -47,7 +48,7 @@ export const languageModelConfigurations = {
     temperature: 0.6,
     topP: 0.9,
   },
-  "Llama 4 Maverick": {
+  "Llama 4": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     temperature: 0.6,
     topP: 0.9,
@@ -65,15 +66,11 @@ export const languageModelConfigurations = {
   },
   "GPT 5 Nano": {
     model: openai("gpt-5-nano-2025-08-07"),
-    temperature: undefined,
-    topP: undefined,
-    topK: undefined,
+    disabledConfig: ["topK", "topP", "temperature"],
   },
   "GPT 5 Mini": {
     model: openai("gpt-5-mini-2025-08-07"),
-    temperature: undefined,
-    topP: undefined,
-    topK: undefined,
+    disabledConfig: ["topK", "topP", "temperature"],
   },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
@@ -82,9 +79,7 @@ export const languageModelConfigurations = {
         reasoningEffort: "medium",
       },
     },
-    temperature: undefined,
-    topP: undefined,
-    topK: undefined,
+    disabledConfig: ["topK", "topP", "temperature"],
   },
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
@@ -189,8 +184,8 @@ const pickModelConfigurations = <
 };
 
 const chatModelKeys = [
+  "Llama 4",
   "Kimi K2",
-  "Llama 4 Maverick",
   "Deepseek Chat",
   "Gemini 2.5 Flash",
   "GPT 5 Mini",
@@ -217,7 +212,7 @@ export const CHAT_MODELS: chatModelId[] = [
   ...chatModelKeys,
 ];
 
-export const defaultModel: chatModelId = "Kimi K2";
+export const defaultModel: chatModelId = "Llama 4";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 export const defaultTopK = 40;
@@ -225,15 +220,17 @@ export const defaultTopK = 40;
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
 ): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
-  const { temperature, topK, topP, systemPrompt } = Object.assign(
-    {
-      temperature: defaultTemperature,
-      topP: defaultTopP,
-      topK: defaultTopK,
-      systemPrompt: defaultSystemPrompt,
-    },
-    modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
-  );
+  const { temperature, topK, topP, systemPrompt, disabledConfig } =
+    Object.assign(
+      {
+        temperature: defaultTemperature,
+        topP: defaultTopP,
+        topK: defaultTopK,
+        systemPrompt: defaultSystemPrompt,
+        disabledConfig: [],
+      },
+      modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
+    );
 
-  return { temperature, topK, topP, systemPrompt };
+  return { temperature, topK, topP, systemPrompt, disabledConfig };
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { WandSparkles } from "lucide-react";
+import { Database, Globe, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
@@ -19,8 +19,16 @@ import {
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { createProject, updateProject } from "@/lib/ai/actions/project";
 import { Project } from "@/lib/db/schema";
-import { defaultModel, chatModelId } from "@/lib/ai/models";
+import {
+  defaultModel,
+  chatModelId,
+  defaultTemperature,
+  defaultTopP,
+  defaultTopK,
+} from "@/lib/ai/models/definition";
 import { ChatProvider } from "@/app/providers";
+import { Toggle } from "@/components/ui/toggle";
+import { RAG_TOOL, WEB_SEARCH_TOOL, Tool, Tools } from "@/lib/ai/tools/types";
 
 const tabs = ["configuration", "testChat"] as const;
 
@@ -32,14 +40,18 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
   const [title, setTitle] = useState(project?.name || "");
   const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
-  const [metaPrompt, setMetaPrompt] = useState(project?.metaPrompt || "");
+  const [hasPromptRefiner, setHasPromptRefiner] = useState(
+    project?.hasPromptRefiner || false
+  );
+  const [tools, setTools] = useState<Tools>((project?.tools as Tools) || []);
   const [model, setModel] = useState<chatModelId>(
     (project?.defaultModel as chatModelId) || defaultModel
   );
-  const [temperature, setTemperature] = useState(
-    project?.defaultTemperature || 0.2
+  const [temperature, setTemperature] = useState<number>(
+    project?.defaultTemperature ?? defaultTemperature
   );
-  const [topP, setTopP] = useState(project?.defaultTopP || 0.95);
+  const [topP, setTopP] = useState<number>(project?.defaultTopP ?? defaultTopP);
+  const [topK, setTopK] = useState<number>(project?.defaultTopK ?? defaultTopK);
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
 
@@ -48,6 +60,14 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     setInput: setSystemPrompt,
     metaPrompt: systemMetaPrompt,
   });
+
+  const handleToggleTool = (tool: Tool) => () => {
+    setTools((prev) =>
+      prev.includes(tool) ? prev.filter((t) => t !== tool) : [...prev, tool]
+    );
+  };
+
+  const hasTool = (tool: Tool) => tools.includes(tool);
 
   const handleSaveProject = async () => {
     if (!title.trim() || !systemPrompt.trim()) {
@@ -62,8 +82,10 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
         defaultModel: model,
         defaultTemperature: temperature,
         defaultTopP: topP,
+        defaultTopK: topK,
         systemPrompt,
-        metaPrompt,
+        tools,
+        hasPromptRefiner,
       };
 
       if (project) {
@@ -139,38 +161,80 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label className="text-lg mb-2" htmlFor="metaPrompt">
-                Meta Prompt
-              </Label>
-              <MarkdownEditor value={metaPrompt} onChange={setMetaPrompt} />
-            </div>
-            <div className="flex flex-row gap-6 justify-between lg:justify-start lg:gap-12">
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2" htmlFor="temperature">
-                  Temperature
-                </Label>
-                <InputNumber
-                  id="temperature"
-                  value={temperature}
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  onChange={setTemperature}
-                />
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-lg font-medium mb-6">Tools</h3>
+              <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
+                <Toggle
+                  id="rag-tool"
+                  checked={hasTool(RAG_TOOL)}
+                  onChange={handleToggleTool(RAG_TOOL)}
+                >
+                  <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                  <span className="whitespace-nowrap">
+                    RAG (Document Search)
+                  </span>
+                </Toggle>
+
+                <Toggle
+                  id="web-search-tool"
+                  checked={hasTool(WEB_SEARCH_TOOL)}
+                  onChange={handleToggleTool(WEB_SEARCH_TOOL)}
+                >
+                  <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                  <span className="whitespace-nowrap">Web Search</span>
+                </Toggle>
+                <Toggle
+                  id="refine-prompt"
+                  checked={hasPromptRefiner}
+                  onChange={() => setHasPromptRefiner((prev) => !prev)}
+                >
+                  <WandSparkles className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                  <span className="whitespace-nowrap">Refine Prompt</span>
+                </Toggle>
               </div>
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2" htmlFor="topP">
-                  Top P
-                </Label>
-                <InputNumber
-                  id="topP"
-                  value={topP}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  onChange={setTopP}
-                />
+            </div>
+            <div className="flex flex-col mt-4">
+              <h3 className="text-lg font-medium mb-4">Settings</h3>
+              <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
+                <div className="flex flex-col gap-2">
+                  <Label className="text-base" htmlFor="temperature">
+                    Temperature
+                  </Label>
+                  <InputNumber
+                    id="temperature"
+                    value={temperature}
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    onChange={setTemperature}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-base" htmlFor="topP">
+                    Top P
+                  </Label>
+                  <InputNumber
+                    id="topP"
+                    value={topP}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onChange={setTopP}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-base" htmlFor="topK">
+                    Top K
+                  </Label>
+                  <InputNumber
+                    id="topK"
+                    value={topK}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onChange={setTopK}
+                  />
+                </div>
               </div>
             </div>
 
@@ -185,6 +249,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
           <ChatProvider
             temperature={temperature}
             topP={topP}
+            topK={topK}
             selectedModel={model}
             systemPrompt={systemPrompt}
             title={title}

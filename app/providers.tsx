@@ -19,9 +19,9 @@ import {
   chatModelId,
   defaultTopK,
   getChatConfigurationByModelId,
-} from "@/lib/ai/models";
+} from "@/lib/ai/models/definition";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/constants";
+import { Tool, Tools } from "@/lib/ai/tools/types";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -51,10 +51,6 @@ export interface ChatConfig {
   systemPrompt?: string;
   topK: number;
 }
-
-export type Tool = typeof RAG_TOOL | typeof WEB_SEARCH_TOOL;
-
-export type Tools = Array<Tool>;
 
 interface SetChatConfig {
   setConfig: (config: Partial<ChatConfig>) => void;
@@ -156,7 +152,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       { selectedModel, useRAG: false, useWebSearch: false }
     )
   );
-  const [selectedTools, setSelectedTools] = useState(tools);
+  const [selectedTools, setSelectedTools] = useState<Tools>(tools || []);
 
   // Manual input state management for v5
   const [input, setInput] = useState("");

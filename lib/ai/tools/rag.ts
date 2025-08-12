@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { buildContextPrompt, retrieve } from "@/lib/ai/rag/retrieve";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { RAG_TOOL } from "@/lib/ai/tools/constants";
+import { RAG_TOOL } from "@/lib/ai/tools/types";
 
 export interface RagFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;

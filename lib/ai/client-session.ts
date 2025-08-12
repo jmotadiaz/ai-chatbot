@@ -1,7 +1,8 @@
-import { ChatConfig, Tools } from "@/app/providers";
+import { ChatConfig } from "@/app/providers";
+import { Tools } from "@/lib/ai/tools/types";
 import { ChatbotMessage } from "@/lib/ai/types";
 
-const SESSION_STORAGE_KEY = "messages";
+const SESSION_STORAGE_KEY = "chat_data";
 
 interface ChatDataInSession {
   messages?: ChatbotMessage[];

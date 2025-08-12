@@ -127,6 +127,8 @@ export const saveChat =
     defaultModel,
     defaultTemperature,
     defaultTopP,
+    defaultTopK,
+    tools,
     projectId,
   }: InsertChat): Transactional<Chat> =>
   async (tx) => {
@@ -140,6 +142,8 @@ export const saveChat =
           defaultModel,
           defaultTemperature,
           defaultTopP,
+          defaultTopK,
+          tools,
           projectId,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -159,7 +163,13 @@ export const updateChat =
     partialChat: Partial<
       Pick<
         Chat,
-        "defaultModel" | "title" | "defaultTemperature" | "defaultTopP"
+        | "defaultModel"
+        | "title"
+        | "defaultTemperature"
+        | "defaultTopP"
+        | "defaultTopK"
+        | "tools"
+        | "projectId"
       >
     >
   ): Transactional<Chat> =>
@@ -343,8 +353,9 @@ export const createProject =
     defaultModel,
     defaultTemperature,
     defaultTopP,
+    defaultTopK,
     systemPrompt,
-    metaPrompt,
+    hasPromptRefiner,
     tools,
   }: InsertProject): Transactional<Project> =>
   (tx) => {
@@ -356,8 +367,9 @@ export const createProject =
         defaultModel,
         defaultTemperature,
         defaultTopP,
+        defaultTopK,
         systemPrompt,
-        metaPrompt,
+        hasPromptRefiner,
         tools,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -498,9 +510,9 @@ export async function findSimilarChunks({
   limit?: number;
 }): Promise<SimilarChunks> {
   try {
-    const similarity = sql<number>`1 - (${embeddings.embedding} <=> ${JSON.stringify(
-      embedding
-    )}::vector)`;
+    const similarity = sql<number>`1 - (${
+      embeddings.embedding
+    } <=> ${JSON.stringify(embedding)}::vector)`;
 
     return await db
       .select({
