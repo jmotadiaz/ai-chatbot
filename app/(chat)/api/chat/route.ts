@@ -21,7 +21,7 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
-import { calculateModelConfiguration } from "@/lib/ai/workflows/auto-model";
+import { calculateModelConfiguration } from "@/lib/ai/models/utils";
 import {
   WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
