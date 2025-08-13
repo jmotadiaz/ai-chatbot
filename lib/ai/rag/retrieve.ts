@@ -33,7 +33,7 @@ export async function translateToEnglish(text: string): Promise<string> {
 export async function retrieve({
   query,
   userId,
-  limit = 6,
+  limit = 4,
 }: {
   query: string;
   userId: string;
