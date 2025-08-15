@@ -42,12 +42,20 @@ export async function uploadResources(
     const markdownFilesCount = parseInt(
       (formData.get("markdownFilesCount") as string) || "0"
     );
+    const url = formData.get("url") as string;
 
-    if (!jsonFile && markdownFilesCount === 0) {
+    if (!jsonFile && markdownFilesCount === 0 && !url) {
       return { success: false, error: "No files provided" };
     }
 
     const resources: { title: string; content: string }[] = [];
+
+    if (url) {
+      const urlResource = await fetchAndConvertURL({ url });
+      if (urlResource) {
+        resources.push(urlResource);
+      }
+    }
 
     // Process JSON file with URLs if provided
     if (jsonFile) {

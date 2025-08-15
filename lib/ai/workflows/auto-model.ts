@@ -46,7 +46,7 @@ export async function autoModel(query: string): Promise<{
   }
 
   const { object: classification } = await generateObject({
-    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+    ...languageModelConfigurations["GPT OSS Mini"],
     schema,
     prompt: getPrompt(query),
   }).catch((error) => {

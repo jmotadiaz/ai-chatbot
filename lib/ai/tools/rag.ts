@@ -13,7 +13,7 @@ export interface RagFactoryArgs {
 export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
   [RAG_TOOL]: tool({
     description:
-      "Get information from your knowledge base to answer questions.",
+      "Get information from your knowledge base to answer questions. Extract the optimal search query in english from the user inputs.",
     inputSchema: z.object({
       query: z.string().min(1).max(500).describe("The search query."),
     }),

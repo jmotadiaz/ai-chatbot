@@ -60,38 +60,6 @@ export const languageModelConfigurations = {
     model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
     temperature: 0.6,
   },
-  "Claude 3.5 Haiku": {
-    model: anthropic("claude-3-5-haiku-latest"),
-  },
-  "GPT 5 Nano": {
-    model: openai("gpt-5-nano-2025-08-07"),
-    disabledConfig: ["topK", "topP", "temperature"],
-  },
-  "GPT 5 Mini": {
-    model: openai("gpt-5-mini-2025-08-07"),
-    disabledConfig: ["topK", "topP", "temperature"],
-  },
-  "GPT 5": {
-    model: openai("gpt-5-2025-08-07"),
-    providerOptions: {
-      openai: {
-        reasoningEffort: "medium",
-      },
-    },
-    disabledConfig: ["topK", "topP", "temperature"],
-  },
-  "Gemma 2": {
-    model: groq("gemma2-9b-it"),
-  },
-  "Gemini 2.0 Flash": {
-    model: google("gemini-2.0-flash"),
-  },
-  "Gemini 2.5 Flash Lite": {
-    model: google("gemini-2.5-flash-lite-preview-06-17"),
-  },
-  "Gemini 2.5 Flash": {
-    model: google("gemini-2.5-flash"),
-  },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
     temperature: 0.6,
@@ -121,6 +89,9 @@ export const languageModelConfigurations = {
       groq: { reasoningFormat: "parsed" },
     },
   },
+  "Claude 3.5 Haiku": {
+    model: anthropic("claude-3-5-haiku-latest"),
+  },
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
   },
@@ -143,8 +114,51 @@ export const languageModelConfigurations = {
   o3: {
     model: openai("o3"),
   },
+  "GPT 5 Nano": {
+    model: openai("gpt-5-nano-2025-08-07"),
+    disabledConfig: ["topK", "topP", "temperature"],
+  },
+  "GPT 5 Mini": {
+    model: openai("gpt-5-mini-2025-08-07"),
+    disabledConfig: ["topK", "topP", "temperature"],
+  },
+  "GPT 5": {
+    model: openai("gpt-5-2025-08-07"),
+    providerOptions: {
+      openai: {
+        reasoningEffort: "medium",
+      },
+    },
+    disabledConfig: ["topK", "topP", "temperature"],
+  },
+  "Gemma 2": {
+    model: groq("gemma2-9b-it"),
+  },
+  "Gemini 2.0 Flash": {
+    model: google("gemini-2.0-flash"),
+  },
+  "Gemini 2.5 Flash Lite": {
+    model: google("gemini-2.5-flash-lite-preview-06-17"),
+  },
+  "Gemini 2.5 Flash": {
+    model: google("gemini-2.5-flash"),
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          includeThoughts: true,
+        },
+      },
+    },
+  },
   "Gemini 2.5 Pro": {
     model: google("gemini-2.5-pro"),
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          includeThoughts: true,
+        },
+      },
+    },
   },
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),

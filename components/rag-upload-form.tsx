@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Link as LinkIcon } from "lucide-react";
 import { uploadResources } from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 export const RAGUploadForm = () => {
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [markdownFiles, setMarkdownFiles] = useState<FileList | null>(null);
+  const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +30,6 @@ export const RAGUploadForm = () => {
   ) => {
     const selectedFiles = e.target.files;
     if (selectedFiles) {
-      // Validate that all files are markdown
       const invalidFiles = Array.from(selectedFiles).filter(
         (file) => !file.name.match(/\.(md|mdx)$/i)
       );
@@ -46,9 +46,9 @@ export const RAGUploadForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!jsonFile && !markdownFiles) {
+    if (!jsonFile && !markdownFiles && !url) {
       toast.error(
-        "Please select either a JSON file with URLs or markdown files"
+        "Please provide a source: a JSON file, markdown files, or a URL."
       );
       return;
     }
@@ -68,6 +68,9 @@ export const RAGUploadForm = () => {
         });
         formData.append("markdownFilesCount", markdownFiles.length.toString());
       }
+      if (url) {
+        formData.append("url", url);
+      }
 
       const result = await uploadResources(formData);
 
@@ -77,7 +80,7 @@ export const RAGUploadForm = () => {
         );
         setJsonFile(null);
         setMarkdownFiles(null);
-        // Reset form
+        setUrl("");
         const form = e.target as HTMLFormElement;
         form.reset();
       } else {
@@ -95,6 +98,31 @@ export const RAGUploadForm = () => {
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
+          <Label htmlFor="url">URL - Optional</Label>
+          <div className="relative">
+            <Input
+              id="url"
+              type="url"
+              placeholder="https://example.com/article"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={isLoading}
+              className="pl-10"
+            />
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Enter a single URL to scrape and process.
+          </p>
+        </div>
+        <div className="relative flex items-center my-4">
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <span className="flex-shrink mx-4 text-xs text-gray-500 dark:text-gray-400">
+            AND / OR
+          </span>
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
+        <div className="space-y-4">
           <Label htmlFor="jsonFile">JSON File (URLs) - Optional</Label>
           <div className="relative">
             <Input
@@ -111,14 +139,20 @@ export const RAGUploadForm = () => {
             {'{ "urls": ["https://example.com", "https://example2.com"] }'}
           </p>
         </div>
-
+        <div className="relative flex items-center my-4">
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <span className="flex-shrink mx-4 text-xs text-gray-500 dark:text-gray-400">
+            AND / OR
+          </span>
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
         <div className="space-y-4">
           <Label htmlFor="markdownFiles">Markdown Files - Optional</Label>
           <div className="relative">
             <Input
               id="markdownFiles"
               type="file"
-              accept=".md"
+              accept=".md, .mdx"
               multiple
               onChange={handleMarkdownFilesChange}
               disabled={isLoading}
@@ -126,9 +160,16 @@ export const RAGUploadForm = () => {
             />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Select multiple .md files to upload directly
+            Select multiple .md or .mdx files to upload directly.
           </p>
         </div>
+
+        {url && (
+          <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+            <LinkIcon className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium truncate">{url}</span>
+          </div>
+        )}
 
         {jsonFile && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -164,7 +205,7 @@ export const RAGUploadForm = () => {
 
         <Button
           type="submit"
-          disabled={(!jsonFile && !markdownFiles) || isLoading}
+          disabled={(!jsonFile && !markdownFiles && !url) || isLoading}
           className="w-full mt-4"
         >
           {isLoading ? (
