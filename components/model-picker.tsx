@@ -3,15 +3,20 @@ import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useChatContext } from "@/app/providers";
 import { Select, useSelect } from "@/components/ui/select";
-import { chatModelId, CHAT_MODELS } from "@/lib/ai/models/definition";
+import {
+  chatModelId,
+  CHAT_MODELS,
+  defaultModel,
+} from "@/lib/ai/models/definition";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 
 export const ModelPicker = () => {
   const { selectedModel, setSelectedModel } = useModelPicker();
-  const [previousModel, setPreviousModel] =
-    useState<chatModelId>(selectedModel);
+  const [previousModel, setPreviousModel] = useState<chatModelId>(() =>
+    selectedModel === "Auto Model Workflow" ? defaultModel : selectedModel
+  );
 
   return (
     <div className="flex items-center space-x-2">
