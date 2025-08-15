@@ -10,7 +10,6 @@ import {
 } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { messagePartsToText } from "@/lib/ai/utils";
 import { autoModel, AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
 
 export const calculateModelConfiguration = async (
@@ -24,8 +23,7 @@ export const calculateModelConfiguration = async (
   autoModelMetadata?: AutoModelMetadata;
 }> => {
   if (selectedModel === "Auto Model Workflow") {
-    const firstMessage = messages[0];
-    return autoModel(firstMessage ? messagePartsToText(firstMessage) : "");
+    return autoModel(messages);
   } else {
     const modelConfig: ModelConfiguration =
       languageModelConfigurations[selectedModel] ||

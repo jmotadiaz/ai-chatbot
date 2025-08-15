@@ -1,10 +1,10 @@
-import { generateObject } from "ai";
+import { convertToModelMessages, generateObject } from "ai";
 import { z } from "zod";
 import {
   languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
-import { scapeXML } from "@/lib/utils";
+import { ChatbotMessage } from "@/lib/ai/types";
 
 const CATEGORIES = [
   "factual",
@@ -37,18 +37,19 @@ export interface AutoModelMetadata {
   model: string;
 }
 
-export async function autoModel(query: string): Promise<{
+export async function autoModel(messages: ChatbotMessage[]): Promise<{
   modelConfiguration: ModelConfiguration;
   autoModelMetadata: AutoModelMetadata;
 }> {
-  if (!query || query.trim() === "") {
+  if (messages.length === 0) {
     throw new Error("Query cannot be empty");
   }
 
   const { object: classification } = await generateObject({
     ...languageModelConfigurations["GPT OSS Mini"],
     schema,
-    prompt: getPrompt(query),
+    system: systemPrompt,
+    messages: convertToModelMessages(messages.filter((m) => m.role === "user")),
   }).catch((error) => {
     console.error("Error during model generation:", error);
     return {
@@ -222,7 +223,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   Record<(typeof COMPLEXITY_LEVELS)[number], ModelConfiguration>
 >;
 
-const getPrompt = (query: string): string => `\n
+const systemPrompt = `\n
   # Query Classification for LLM Routing
   Analyze the following user query, included in an XML tag \`<query>\`, and classify it to determine the most appropriate LLM routing. Output your classification in the specified JSON format.
   ## Classification Requirements
@@ -261,10 +262,5 @@ const getPrompt = (query: string): string => `\n
       *  **Estimated effort**: Very high.
 
   ### 3. Reasoning
-  Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers.
-
-  ## User Query
-  <query>
-    ${scapeXML(query)}
-  </query>
+  Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers
 `;
