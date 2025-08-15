@@ -13,13 +13,9 @@ export interface RagFactoryArgs {
 export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
   [RAG_TOOL]: tool({
     description:
-      "Get information from your knowledge base to answer questions. you will receive a json object with the resources used and the context to answer the question.",
+      "Get information from your knowledge base to answer questions.",
     inputSchema: z.object({
-      query: z
-        .string()
-        .min(1)
-        .max(500)
-        .describe("The search query, in english."),
+      query: z.string().min(1).max(500).describe("The search query."),
     }),
     execute: async ({ query }, { toolCallId }) => {
       writer.write({
@@ -30,7 +26,7 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
       const { resources, similarChunks } = await retrieve({
         query,
         userId,
-        limit: 10,
+        limit: 5,
       });
       if (!resources || !similarChunks) {
         throw new Error("No resources or similar chunks found");

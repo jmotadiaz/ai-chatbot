@@ -89,12 +89,6 @@ export const languageModelConfigurations = {
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
   },
-  "Gemini 2.5 Flash Lite Web Search": {
-    model: google("gemini-2.5-flash-lite-preview-06-17"),
-    providerOptions: {
-      google: {},
-    },
-  },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
   },
@@ -135,6 +129,11 @@ export const languageModelConfigurations = {
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
+    temperature: 0.6,
+    topP: 0.95,
+  },
+  "GPT OSS Mini": {
+    model: groq("openai/gpt-oss-20b"),
     temperature: 0.6,
     topP: 0.95,
   },

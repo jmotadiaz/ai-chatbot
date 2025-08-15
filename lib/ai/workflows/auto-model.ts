@@ -1,13 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import {
-  chatModelId,
   languageModelConfigurations,
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
 import { scapeXML } from "@/lib/utils";
-import { ChatbotMessage } from "@/lib/ai/types";
-import { messagePartsToText } from "@/lib/ai/utils";
 
 const CATEGORIES = [
   "factual",
@@ -81,32 +78,6 @@ export async function autoModel(query: string): Promise<{
   };
 }
 
-export const calculateModelConfiguration = async (
-  selectedModel: chatModelId,
-  messages: ChatbotMessage[],
-  temperature?: number,
-  topP?: number,
-  topK?: number
-): Promise<{
-  modelConfiguration: ModelConfiguration;
-  autoModelMetadata?: AutoModelMetadata;
-}> => {
-  if (selectedModel === "Auto Model Workflow") {
-    const firstMessage = messages[0];
-    return autoModel(firstMessage ? messagePartsToText(firstMessage) : "");
-  } else {
-    return {
-      modelConfiguration: {
-        ...(languageModelConfigurations[selectedModel] ||
-          languageModelConfigurations["Llama 4"]),
-        temperature,
-        topP,
-        topK,
-      },
-    };
-  }
-};
-
 const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   factual: {
     simple: {
@@ -127,7 +98,7 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Llama 4"],
     },
     moderate: {
-      ...languageModelConfigurations["Deepseek R1 Distill"],
+      ...languageModelConfigurations["GPT OSS Mini"],
     },
     complex: {
       ...languageModelConfigurations["Qwen 3"],
@@ -141,13 +112,13 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4"],
-    },
-    complex: {
       ...languageModelConfigurations["Qwen 3"],
     },
-    advanced: {
+    complex: {
       ...languageModelConfigurations["Claude Sonnet 4"],
+    },
+    advanced: {
+      ...languageModelConfigurations["GPT 5"],
     },
   },
   creative: {
@@ -170,22 +141,16 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   prompt_engineering: {
     simple: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
-      temperature: 0.5,
+      ...languageModelConfigurations["Llama 3.1 Instant"],
     },
     moderate: {
       ...languageModelConfigurations["Llama 4"],
-      temperature: 0.5,
     },
     complex: {
-      ...languageModelConfigurations["GPT 5 Mini"],
-      temperature: undefined,
-      topP: undefined,
-      topK: undefined,
+      ...languageModelConfigurations["Qwen 3"],
     },
     advanced: {
-      ...languageModelConfigurations["Gemini 2.5 Pro"],
-      temperature: 0.5,
+      ...languageModelConfigurations["GPT 5"],
     },
   },
   structured_content: {
@@ -195,30 +160,33 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
     },
     moderate: {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+      temperature: 0.7,
     },
     complex: {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
+      temperature: 0.7,
     },
     advanced: {
       ...languageModelConfigurations["Gemini 2.5 Pro"],
+      temperature: 0.7,
     },
   },
   conversational: {
     simple: {
       ...languageModelConfigurations["Llama 3.1 Instant"],
-      temperature: 0.8,
+      temperature: 1,
     },
     moderate: {
       ...languageModelConfigurations["Llama 3.3 Versatile"],
-      temperature: 0.8,
+      temperature: 1,
     },
     complex: {
       ...languageModelConfigurations["Llama 4"],
-      temperature: 0.8,
+      temperature: 1,
     },
     advanced: {
       ...languageModelConfigurations["Gemini 2.5 Flash"],
-      temperature: 0.8,
+      temperature: 1,
     },
   },
   processing: {
