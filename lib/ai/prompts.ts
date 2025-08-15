@@ -9,6 +9,7 @@ export const codeBlockPrompt = `
   To prevent parsing errors when a Markdown block contains a nested code block example (which uses backticks), use a different delimiter for the outer Markdown block.
   - Use triple tilde (~~~) to start and end the block.
   - Specify the language markdown immediately after the opening tilde.
+  - Common Use Case: This is essential for showing examples of prompts for an AI,
   - Example:
     ~~~markdown
       ## Heading Example
