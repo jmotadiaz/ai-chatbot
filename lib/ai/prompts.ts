@@ -5,7 +5,7 @@ export const codeBlockPrompt = `
   When providing code blocks, follow these guidelines:
 
   ### Markdown Code Blocks
-  For markdown code blocks, follow this instructions:
+  To prevent parsing errors when a Markdown block contains a nested code block example (which uses backticks), use a different delimiter for the outer Markdown block.
   - Use triple tilde (~~~) to start and end the block.
   - Specify the language markdown immediately after the opening tilde.
   - Example:
