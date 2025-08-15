@@ -2,6 +2,7 @@ import { scapeXML } from "@/lib/utils";
 
 export const codeBlockPrompt = `
   ## Code Block Formatting
+  Use a code block anytime you need to show a code snippet to the user. A code block presents the code as plain text, preserving its original formatting and syntax, and ensures it is not interpreted as part of your own response.
   When providing code blocks, follow these guidelines:
 
   ### Markdown Code Blocks
