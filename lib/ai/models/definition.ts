@@ -100,13 +100,9 @@ export const languageModelConfigurations = {
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
-    temperature: 0.6,
-    topP: 0.95,
   },
   "GPT OSS Mini": {
     model: groq("openai/gpt-oss-20b"),
-    temperature: 0.6,
-    topP: 0.95,
   },
   "o4 Mini": {
     model: openai("o4-mini"),
