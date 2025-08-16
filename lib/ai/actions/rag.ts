@@ -15,11 +15,7 @@ import {
 } from "@/lib/db/queries";
 import { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
 import { isDefined } from "@/lib/utils";
-
-export interface Resource {
-  title: string;
-  content: string;
-}
+import { Resource } from "@/lib/ai/types";
 
 export interface ProcessResult {
   success: boolean;
@@ -48,7 +44,7 @@ export async function uploadResources(
       return { success: false, error: "No files provided" };
     }
 
-    const resources: { title: string; content: string }[] = [];
+    const resources: Resource[] = [];
 
     if (url) {
       const urlResource = await fetchAndConvertURL({ url });
@@ -128,6 +124,7 @@ export async function uploadResources(
         // Create resource
         const newResource = await createResource({
           title: resource.title,
+          url: resource.url,
           userId: session.user.id,
         })(tx);
 
@@ -208,17 +205,18 @@ async function fetchAndConvertURL({
       return null;
     }
 
-    const html = await response.text();
+    const dom = new JSDOM(await response.text());
 
     // Convert HTML to Markdown
     const markdown = turndownService
-      .turndown(container ? extractContainer({ container, html }) : html)
+      .turndown(extractContainer({ container, dom }))
       .replace(/\n{3,}/g, "\n\n")
       .replace(/^\s+|\s+$/g, "")
       .trim();
 
     return {
-      title: url,
+      title: dom.window.document.title || url,
+      url,
       content: markdown,
     };
   } catch (error) {
@@ -229,15 +227,17 @@ async function fetchAndConvertURL({
 
 const extractContainer = ({
   container,
-  html,
+  dom,
 }: {
-  container: string;
-  html: string;
+  container?: string;
+  dom: JSDOM;
 }): HTMLElement => {
-  const dom = new JSDOM(html);
-  return (
-    dom.window.document.querySelector(container) ?? dom.window.document.body
-  );
+  let el: HTMLElement | null = null;
+  if (container) {
+    el = dom.window.document.querySelector(container);
+  }
+
+  return el ?? dom.window.document.body;
 };
 
 const resourceToEmbeddings = async ({

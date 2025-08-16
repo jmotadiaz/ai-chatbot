@@ -13,11 +13,18 @@ export interface RagFactoryArgs {
 export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
   [RAG_TOOL]: tool({
     description:
-      "Get information from your knowledge base to answer questions. Extract the optimal search query in english from the user inputs.",
+      "Get information from your knowledge base to answer questions.",
     inputSchema: z.object({
-      query: z.string().min(1).max(500).describe("The search query."),
+      query: z
+        .string()
+        .min(1)
+        .max(500)
+        .describe(
+          "The search query. It should be in english and optimized for rag search."
+        ),
     }),
     execute: async ({ query }, { toolCallId }) => {
+      console.log("RAG tool called with query:", query);
       writer.write({
         type: "data-rag",
         id: toolCallId,
@@ -41,13 +48,13 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
         writer.write({
           type: "source-url",
           sourceId: `source-rag-${toolCallId}-${idx}`,
-          url: resource,
-          title: resource,
+          url: resource.url || "",
+          title: resource.title,
         });
       });
       const context = buildContextPrompt(similarChunks);
       return {
-        resources,
+        resources: resources.map(({ title }) => title),
         context,
       };
     },

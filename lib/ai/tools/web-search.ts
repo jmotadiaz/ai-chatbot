@@ -46,6 +46,7 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
     inputSchema: webSearchInputSchema,
     outputSchema,
     execute: async ({ query }, { toolCallId }) => {
+      console.log("Web Search tool called with query:", query);
       writer.write({
         type: "data-web-search",
         id: toolCallId,
@@ -53,7 +54,7 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
       });
 
       const { results } = await exa.searchAndContents(query, {
-        livecrawl: "always",
+        livecrawl: "fallback",
         numResults: 3,
       });
 

@@ -89,6 +89,7 @@ export const resources = pgTable("resources", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  url: varchar("url", { length: 255 }),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

@@ -2,11 +2,12 @@ import { generateText } from "ai";
 import { generateEmbedding } from "@/lib/ai/rag/generate-embeddings";
 import { findSimilarChunks, SimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
+import { Resource } from "@/lib/ai/types";
 
 export interface RetrieveResult {
   success: boolean;
   similarChunks?: SimilarChunks;
-  resources?: string[];
+  resources?: Pick<Resource, "title" | "url">[];
   error?: string;
 }
 
@@ -58,8 +59,15 @@ export async function retrieve({
       success: true,
       similarChunks,
       resources: [
-        ...new Set(similarChunks.map(({ resourceTitle }) => resourceTitle)),
-      ],
+        ...new Set(
+          similarChunks.map(({ resourceTitle, resourceUrl }) =>
+            JSON.stringify({
+              title: resourceTitle,
+              url: resourceUrl || "",
+            })
+          )
+        ),
+      ].map((item) => JSON.parse(item)),
     };
   } catch (error) {
     console.error("Error in retrieve function:", error);

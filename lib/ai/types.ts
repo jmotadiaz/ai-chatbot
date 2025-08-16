@@ -1,6 +1,12 @@
 import { UIMessage } from "ai";
 import { AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
 
+export interface Resource {
+  title: string;
+  url?: string;
+  content: string;
+}
+
 export interface MessageMetadata {
   status: "started" | "streaming" | "finished";
   autoModel?: AutoModelMetadata;

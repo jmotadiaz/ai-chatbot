@@ -497,7 +497,11 @@ export const createEmbeddings =
   };
 
 export type SimilarChunks = Array<
-  Embedding & { similarity: number; resourceTitle: string }
+  Embedding & {
+    similarity: number;
+    resourceTitle: string;
+    resourceUrl: string | null;
+  }
 >;
 
 export async function findSimilarChunks({
@@ -518,6 +522,7 @@ export async function findSimilarChunks({
       .select({
         id: embeddings.id,
         resourceId: embeddings.resourceId,
+        resourceUrl: resources.url,
         content: embeddings.content,
         embedding: embeddings.embedding,
         similarity,

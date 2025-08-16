@@ -112,20 +112,28 @@ export const languageModelConfigurations = {
   },
   "GPT 5 Nano": {
     model: openai("gpt-5-nano-2025-08-07"),
-    disabledConfig: ["topK", "topP", "temperature"],
+    providerOptions: {
+      openai: {
+        textVerbosity: "low",
+      },
+    },
   },
   "GPT 5 Mini": {
     model: openai("gpt-5-mini-2025-08-07"),
-    disabledConfig: ["topK", "topP", "temperature"],
+    providerOptions: {
+      openai: {
+        textVerbosity: "low",
+      },
+    },
   },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
     providerOptions: {
       openai: {
-        reasoningEffort: "medium",
+        textVerbosity: "low",
+        serviceTier: "flex",
       },
     },
-    disabledConfig: ["topK", "topP", "temperature"],
   },
   "Gemma 2": {
     model: groq("gemma2-9b-it"),

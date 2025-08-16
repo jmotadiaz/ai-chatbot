@@ -7,6 +7,8 @@ import {
   createUIMessageStream,
   smoothStream,
   ToolSet,
+  NoSuchToolError,
+  InvalidArgumentError,
 } from "ai";
 import {
   chatModelId,
@@ -133,9 +135,6 @@ export async function POST(req: Request) {
             };
           }
         },
-        onError: (error) => {
-          console.log("Error Inferring", error.error);
-        },
       });
 
       writer.merge(
@@ -189,6 +188,15 @@ export async function POST(req: Request) {
                 console.error("Error saving message:", error);
               }
             }
+          },
+          onError: (error) => {
+            console.error("Error in AI response:", error);
+            if (NoSuchToolError.isInstance(error)) {
+              return `Tool non available: ${error.toolName}`;
+            } else if (InvalidArgumentError.isInstance(error)) {
+              return `The model called a tool with invalid arguments. ${error.parameter}`;
+            }
+            return `Runtime error: ${error}`;
           },
         })
       );

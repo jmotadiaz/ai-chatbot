@@ -102,6 +102,7 @@ const chatContext = createContext<
   regenerate: async () => {
     return undefined;
   },
+  clearError: () => {},
   reload: async () => {},
   resumeStream: async () => {},
   addToolResult: async () => {},
