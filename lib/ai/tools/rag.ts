@@ -48,7 +48,7 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
         writer.write({
           type: "source-url",
           sourceId: `source-rag-${toolCallId}-${idx}`,
-          url: resource.url || "",
+          url: resource.url || resource.title,
           title: resource.title,
         });
       });
