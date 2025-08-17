@@ -35,7 +35,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
   };
 
   return (
-    <div className="w-full max-h-[60dvh] overflow-auto">
+    <div className="w-full max-h-[50dvh] overflow-auto">
       <h2 className="text-lg font-semibold mb-4">Your Resources</h2>
       {isLoading && <p>Loading resources...</p>}
       {!isLoading && resources.length === 0 && <p>No resources found.</p>}
