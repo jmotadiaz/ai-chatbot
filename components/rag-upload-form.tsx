@@ -95,7 +95,7 @@ export const RAGUploadForm = () => {
   };
 
   return (
-    <div className="w-full mb-6">
+    <div className="w-full pb-6">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <Label htmlFor="url">URL - Optional</Label>
