@@ -7,7 +7,7 @@ import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sidebar } from "@/app/(chat)/sidebar";
 import { Main } from "@/components/ui/main";
-import { RAGUploadComponent } from "@/app/(chat)/rag/upload/component";
+import { RAGUploadComponent } from "@/app/(chat)/rag/component";
 
 export default async function RAGUploadPage() {
   const session = await auth();

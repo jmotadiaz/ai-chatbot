@@ -5,11 +5,19 @@ export const codeBlockPrompt = `
   Use a code block anytime you need to show a code snippet to the user. A code block presents the code as plain text, preserving its original formatting and syntax, and ensures it is not interpreted as part of your own response.
   When providing code blocks, follow these guidelines:
 
+  ### Common Code Blocks (except markdown)
+  - Use triple backtick (\`\`\`) to start and end the block.
+  - Specify the language immediately after the opening backtick.
+  - Example:
+    \`\`\`javascript
+      console.log("Hello, world!");
+    \`\`\`
+
   ### Markdown Code Blocks
   To prevent parsing errors when a Markdown block contains a nested code block example (which uses backticks), use a different delimiter for the outer Markdown block.
   - Use triple tilde (~~~) to start and end the block.
   - Specify the language markdown immediately after the opening tilde.
-  - Common Use Case: This is essential for showing examples of prompts for an AI,
+  - Common Use Case: Showing examples of prompts for an AI,
   - Example:
     ~~~markdown
       ## Heading Example
@@ -18,14 +26,6 @@ export const codeBlockPrompt = `
         { "key": "value" }
       \`\`\`
     ~~~
-
-  ### All Language Code Blocks (except markdown)
-  - Use triple backtick (\`\`\`) to start and end the block.
-  - Specify the language immediately after the opening backtick.
-  - Example:
-    \`\`\`javascript
-      console.log("Hello, world!");
-    \`\`\`
 `;
 
 export const defaultSystemPrompt = `

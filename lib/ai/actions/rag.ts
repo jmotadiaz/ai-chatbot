@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
   generateEmbeddings,
@@ -11,6 +12,7 @@ import {
 import {
   createEmbeddings,
   createResource,
+  deleteResourcesByTitle,
   transaction,
 } from "@/lib/db/queries";
 import { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
@@ -155,6 +157,8 @@ export async function uploadResources(
       };
     });
 
+    revalidatePath("/rag");
+
     console.log(
       `Completed: ${result.resourcesCreated} resources, ${result.embeddingsCreated} embeddings`
     );
@@ -166,6 +170,36 @@ export async function uploadResources(
     };
   } catch (error) {
     console.error("Error in uploadRAGResources:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+export async function deleteResource(title: string): Promise<ProcessResult> {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  try {
+    const [result] = await transaction(
+      deleteResourcesByTitle({
+        title,
+        userId: session.user.id,
+      })
+    );
+
+    if (result.length === 0) {
+      return { success: false, error: "Resource not found" };
+    }
+    revalidatePath("/rag");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteResource:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",

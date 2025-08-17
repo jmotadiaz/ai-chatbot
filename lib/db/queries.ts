@@ -542,3 +542,38 @@ export async function findSimilarChunks({
 export const deleteResources = async () => {
   return db.delete(resources);
 };
+
+export async function getUniqueResourceTitlesByUserId(
+  userId: string
+): Promise<Array<{ title: string }>> {
+  try {
+    return await db
+      .selectDistinctOn([resources.title], { title: resources.title })
+      .from(resources)
+      .where(eq(resources.userId, userId))
+      .orderBy(resources.title);
+  } catch (error) {
+    console.error("Failed to get unique resource titles by user id");
+    throw error;
+  }
+}
+
+export const deleteResourcesByTitle =
+  ({
+    title,
+    userId,
+  }: {
+    title: string;
+    userId: string;
+  }): Transactional<Resource[]> =>
+  async (tx) => {
+    try {
+      return await tx
+        .delete(resources)
+        .where(and(eq(resources.title, title), eq(resources.userId, userId)))
+        .returning();
+    } catch (error) {
+      console.error("Failed to delete resource by title");
+      throw error;
+    }
+  };

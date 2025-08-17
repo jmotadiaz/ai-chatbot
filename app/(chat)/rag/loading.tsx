@@ -1,4 +1,4 @@
-import { RAGUploadComponent } from "@/app/(chat)/rag/upload/component";
+import { RAGUploadComponent } from "@/app/(chat)/rag/component";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";

@@ -19,7 +19,7 @@ const components: Partial<Components> = {
   ol: ({ node, children, ...props }) => {
     return (
       <ol
-        className="animate-fade list-decimal list-outside space-y-4 my-4"
+        className="animate-fade list-decimal list-outside space-y-4 ml-4 my-4"
         {...props}
       >
         {children}
@@ -36,7 +36,7 @@ const components: Partial<Components> = {
   ul: ({ node, children, ...props }) => {
     return (
       <ul
-        className="animate-fade list-decimal list-outside space-y-4 ml-4 my-4"
+        className="animate-fade list-disc list-outside space-y-4 ml-4 my-4"
         {...props}
       >
         {children}
