@@ -35,15 +35,15 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-h-[60dvh] overflow-auto">
       <h2 className="text-lg font-semibold mb-4">Your Resources</h2>
       {isLoading && <p>Loading resources...</p>}
       {!isLoading && resources.length === 0 && <p>No resources found.</p>}
-      <ul className="space-y-2">
+      <ul className="space-y-3 px-4">
         {resources.map((resource) => (
           <li
             key={resource.title}
-            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg"
+            className="flex items-center justify-between p-3 bg-secondary rounded-lg"
           >
             <span className="truncate">{resource.title}</span>
             <Button
