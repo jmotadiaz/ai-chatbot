@@ -19,10 +19,6 @@ export const RAGUploadComponent: React.FC = async () => {
         <h1 className="text-3xl font-medium text-gray-900 dark:text-white mb-6">
           Manage RAG Resources
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-2">
-          Upload a JSON file containing an array of URLs to process and add to
-          your RAG knowledge base, or manage your existing resources.
-        </p>
       </div>
 
       <RAGTabs
