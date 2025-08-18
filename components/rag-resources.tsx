@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
-import { deleteResource } from "@/lib/ai/actions/rag";
+import { SearchIcon, Trash2 } from "lucide-react";
+import { deleteAllResources, deleteResource } from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
 
 interface Resource {
   title: string;
@@ -15,47 +17,94 @@ interface RAGResourcesProps {
 }
 
 export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, startTransition] = useTransition();
+  const [filter, setFilter] = useState("");
+  const { modalProps, triggerModalProps } = useConfirmModal();
 
-  const handleDelete = async (title: string) => {
-    setIsLoading(true);
-    try {
-      const result = await deleteResource(title);
-      if (result.success) {
-        toast.success(`Resource "${title}" deleted successfully`);
-      } else {
-        toast.error(result.error || "Failed to delete resource");
+  const handleDeleteResource = (title: string) => {
+    startTransition(async () => {
+      try {
+        const result = await deleteResource(title);
+        if (result.success) {
+          toast.success(`Resource "${title}" deleted successfully`);
+        } else {
+          toast.error(result.error || "Failed to delete resource");
+        }
+      } catch (error) {
+        console.error("Error deleting resource:", error);
+        toast.error("An error occurred while deleting the resource");
       }
-    } catch (error) {
-      console.error("Error deleting resource:", error);
-      toast.error("An error occurred while deleting the resource");
-    } finally {
-      setIsLoading(false);
-    }
+    });
+  };
+
+  const handleDeleteAllResources = () => {
+    startTransition(async () => {
+      try {
+        const result = await deleteAllResources();
+        if (result.success) {
+          toast.success("All resources deleted successfully");
+        } else {
+          toast.error(result.error || "Failed to delete all resources");
+        }
+      } catch (error) {
+        console.error("Error deleting all resources:", error);
+        toast.error("An error occurred while deleting all resources");
+      }
+    });
   };
 
   return (
-    <div className="w-full max-h-[70dvh] overflow-auto">
-      <h2 className="text-lg font-semibold mb-4">Your Resources</h2>
-      {isLoading && <p>Loading resources...</p>}
-      {!isLoading && resources.length === 0 && <p>No resources found.</p>}
-      <ul className="space-y-3 px-4">
-        {resources.map((resource) => (
-          <li
-            key={resource.title}
-            className="flex items-center justify-between p-3 bg-secondary rounded-lg"
-          >
-            <span className="truncate">{resource.title}</span>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDelete(resource.title)}
-              disabled={isLoading}
+    <div className="w-full pb-6">
+      <h2 className="text-lg font-semibold mb-4 ml-2">Your Resources</h2>
+      <div className="px-4 flex flex-col lg:flex-row gap-6 items-center">
+        <div className="relative flex-1">
+          <Input
+            className="my-6 pl-10"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+          <SearchIcon className="absolute top-1/2 left-3 w-4 h-4 transform -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <Button
+          className="flex-1"
+          variant="destructive"
+          disabled={isLoading}
+          {...triggerModalProps()}
+        >
+          Delete All
+        </Button>
+      </div>
+      <ConfirmModal
+        {...modalProps()}
+        onConfirm={() => {
+          handleDeleteAllResources();
+        }}
+        title="Delete All Resources"
+        message={`Are you sure you want to delete all resources? This action cannot be undone.`}
+      />
+      <ul className="px-4 space-y-3 max-h-[70dvh] overflow-auto">
+        {resources
+          .filter(
+            ({ title }) =>
+              filter.trim().length === 0 ||
+              title.toLowerCase().includes(filter.trim().toLocaleLowerCase())
+          )
+          .map((resource) => (
+            <li
+              key={resource.title}
+              className="flex items-center justify-between p-3 bg-secondary rounded-lg"
             >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </li>
-        ))}
+              <span className="truncate">{resource.title}</span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteResource(resource.title)}
+                disabled={isLoading}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </li>
+          ))}
       </ul>
     </div>
   );

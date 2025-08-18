@@ -3,6 +3,7 @@
 import React, {
   unstable_ViewTransition as ViewTransition,
   startTransition,
+  useState,
 } from "react";
 import { Button, ButtonProps } from "@/components/ui/button"; // Assuming button component exists
 
@@ -71,4 +72,33 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       </ViewTransition>
     </>
   );
+};
+
+export const useConfirmModal = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openModal = () => {
+    setIsOpen(true);
+  };
+
+  const onClose = () => {
+    setIsOpen(false);
+  };
+
+  return {
+    modalProps: () => ({
+      isOpen,
+      onClose,
+    }),
+    triggerModalProps: ({
+      onClick,
+    }: {
+      onClick?: React.MouseEventHandler;
+    } = {}) => ({
+      onClick: (e: React.MouseEvent) => {
+        openModal();
+        onClick?.(e);
+      },
+    }),
+  };
 };

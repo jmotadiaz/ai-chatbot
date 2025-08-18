@@ -539,10 +539,10 @@ export async function findSimilarChunks({
   }
 }
 
-export const deleteResources = async () => {
-  return db.delete(resources);
-};
-
+export const deleteResources =
+  ({ userId }: { userId: string }): Transactional<Resource[]> =>
+  async (tx) =>
+    tx.delete(resources).where(eq(resources.userId, userId)).returning();
 export async function getUniqueResourceTitlesByUserId(
   userId: string
 ): Promise<Array<{ title: string }>> {
