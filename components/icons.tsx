@@ -58,6 +58,7 @@ export const SpinnerIcon = ({ size = 16 }: { size?: number }) => (
     strokeLinejoin="round"
     viewBox="0 0 16 16"
     width={size}
+    className="animate-spin"
     style={{ color: "currentcolor" }}
   >
     <g clipPath="url(#clip0_2393_1490)">

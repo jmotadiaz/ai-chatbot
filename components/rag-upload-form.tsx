@@ -206,19 +206,13 @@ export const RAGUploadForm = () => {
         <Button
           type="submit"
           disabled={(!jsonFile && !markdownFiles && !url) || isLoading}
-          className="w-full mt-4"
+          className="mt-4"
+          isLoading={isLoading}
         >
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload and Process
-            </>
-          )}
+          <>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload and Process
+          </>
         </Button>
       </form>
     </div>
