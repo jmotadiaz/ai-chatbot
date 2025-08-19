@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Globe, WandSparkles } from "lucide-react";
+import { Database, Globe, Save, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
@@ -115,7 +115,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
       </Tabs.Container>
       <div className="w-full max-w-4xl mx-auto pt-6">
         <Tabs.Panel {...getPanelProps("configuration")}>
-          <div className="flex flex-col gap-6 pb-8">
+          <div className="flex flex-col gap-6 pb-8 px-4">
             <div className="flex flex-col gap-2">
               <Label className="text-lg mb-2" htmlFor="title">
                 Title
@@ -239,8 +239,13 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             </div>
 
             <div className="pt-4 text-right">
-              <Button onClick={handleSaveProject} disabled={isCreating}>
-                {isCreating ? "Saving..." : "Save Project"}
+              <Button
+                onClick={handleSaveProject}
+                disabled={isCreating}
+                isLoading={isCreating}
+              >
+                <Save />
+                Save Project
               </Button>
             </div>
           </div>

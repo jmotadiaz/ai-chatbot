@@ -203,17 +203,16 @@ export const RAGUploadForm = () => {
           </div>
         )}
 
-        <Button
-          type="submit"
-          disabled={(!jsonFile && !markdownFiles && !url) || isLoading}
-          className="mt-4"
-          isLoading={isLoading}
-        >
-          <>
+        <div className="text-right mt-4">
+          <Button
+            type="submit"
+            disabled={(!jsonFile && !markdownFiles && !url) || isLoading}
+            isLoading={isLoading}
+          >
             <Upload className="w-4 h-4 mr-2" />
             Upload and Process
-          </>
-        </Button>
+          </Button>
+        </div>
       </form>
     </div>
   );
