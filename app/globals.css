@@ -147,7 +147,18 @@ input[type=number] {
   body {
     @apply bg-background text-foreground;
   }
+}
 
+@layer utilities {
+  .scrollbar-none {
+    /* Firefox */
+    scrollbar-width: none;
+    /* Internet Explorer 10+ */
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
 }
 
 .toggle-bg:after {

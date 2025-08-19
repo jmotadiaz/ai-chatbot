@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { toast } from "sonner";
-import { SearchIcon, Trash2 } from "lucide-react";
+import { SearchIcon } from "lucide-react";
+import { RagResourceItem } from "./rag-resource-item";
 import { deleteAllResources, deleteResource } from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
+import { DotsLoadingIcon } from "@/components/icons";
+import { useIntersectionObserver } from "@/lib/hooks/intersection";
 
 interface Resource {
   title: string;
@@ -17,10 +20,22 @@ interface RAGResourcesProps {
   resources: Resource[];
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
   const [isLoading, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
   const { modalProps, triggerModalProps } = useConfirmModal();
+  const [offset, setOffset] = useState(ITEMS_PER_PAGE);
+  const onIntersect = useCallback(() => {
+    setOffset((prev) => prev + ITEMS_PER_PAGE);
+  }, []);
+  const { loader, scrollContainer } = useIntersectionObserver<
+    HTMLUListElement,
+    HTMLLIElement
+  >({
+    onIntersect,
+  });
 
   const handleDeleteResource = (title: string) => {
     startTransition(async () => {
@@ -54,6 +69,12 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
     });
   };
 
+  const filteredResources = resources.filter(
+    ({ title }) =>
+      filter.trim().length === 0 ||
+      title.toLowerCase().includes(filter.trim().toLowerCase())
+  );
+
   return (
     <div className="w-full pb-6">
       <h2 className="text-lg font-semibold ml-2">Your Resources</h2>
@@ -63,6 +84,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
             className="pl-10"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter resources..."
           />
           <SearchIcon className="absolute top-1/2 left-3 w-4 h-4 transform -translate-y-1/2 text-muted-foreground" />
         </div>
@@ -77,48 +99,29 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
       </div>
       <ConfirmModal
         {...modalProps()}
-        onConfirm={() => {
-          handleDeleteAllResources();
-        }}
+        onConfirm={handleDeleteAllResources}
         title="Delete All Resources"
-        message={`Are you sure you want to delete all resources? This action cannot be undone.`}
+        message="Are you sure you want to delete all resources? This action cannot be undone."
       />
-      <ul className="px-4 space-y-3 max-h-[70dvh] overflow-auto">
-        {resources
-          .filter(
-            ({ title }) =>
-              filter.trim().length === 0 ||
-              title.toLowerCase().includes(filter.trim().toLocaleLowerCase())
-          )
-          .map((resource) => (
-            <li
-              key={resource.title}
-              className="flex items-center justify-between p-3 bg-secondary rounded-lg"
-            >
-              <>
-                {!!resource.url ? (
-                  <a
-                    className="truncate cursor-pointer hover:underline"
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {resource.title}
-                  </a>
-                ) : (
-                  <span className="truncate">{resource.title}</span>
-                )}
-              </>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => handleDeleteResource(resource.title)}
-                disabled={isLoading}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </li>
-          ))}
+      <ul
+        ref={scrollContainer}
+        className="px-4 space-y-3 max-h-[70dvh] overflow-auto scrollbar-none"
+      >
+        {filteredResources.slice(0, offset).map((resource) => (
+          <RagResourceItem
+            key={resource.title}
+            resource={resource}
+            isLoading={isLoading}
+            onDelete={handleDeleteResource}
+          />
+        ))}
+        {offset < filteredResources.length && (
+          <li ref={loader}>
+            <div>
+              <DotsLoadingIcon />
+            </div>
+          </li>
+        )}
       </ul>
     </div>
   );
