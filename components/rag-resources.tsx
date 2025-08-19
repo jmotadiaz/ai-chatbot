@@ -99,6 +99,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
       <ConfirmModal
         {...modalProps()}
         onConfirm={handleDeleteAllResources}
+        isLoading={isLoading}
         title="Delete All Resources"
         message="Are you sure you want to delete all resources? This action cannot be undone."
       />

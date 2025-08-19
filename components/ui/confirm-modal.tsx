@@ -3,6 +3,7 @@
 import React, {
   unstable_ViewTransition as ViewTransition,
   startTransition,
+  useCallback,
   useState,
 } from "react";
 import { Button, ButtonProps } from "@/components/ui/button"; // Assuming button component exists
@@ -11,6 +12,7 @@ interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  isLoading?: boolean;
   confirmButtonVariant?: ButtonProps["variant"];
   title?: string;
   message?: string;
@@ -21,6 +23,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  isLoading = false,
   title = "Confirm Deletion",
   message = "Are you sure you want to delete this item?",
   confirmButtonVariant = "destructive",
@@ -63,7 +66,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               >
                 Cancel
               </Button>
-              <Button variant={confirmButtonVariant} onClick={handleConfirm}>
+              <Button
+                variant={confirmButtonVariant}
+                onClick={handleConfirm}
+                isLoading={isLoading}
+              >
                 {confirmButtonText}
               </Button>
             </div>
@@ -76,16 +83,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
 export const useConfirmModal = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const closeModal = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
-  const openModal = () => {
+  const openModal = useCallback(() => {
     setIsOpen(true);
-  };
+  }, []);
 
   const onClose = () => {
-    setIsOpen(false);
+    closeModal();
   };
 
   return {
+    openModal,
+    closeModal,
     modalProps: () => ({
       isOpen,
       onClose,

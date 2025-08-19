@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Upload, FileText, Link as LinkIcon } from "lucide-react";
 import { uploadResources } from "@/lib/ai/actions/rag";
@@ -12,7 +12,7 @@ export const RAGUploadForm = () => {
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [markdownFiles, setMarkdownFiles] = useState<FileList | null>(null);
   const [url, setUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, startTransition] = useTransition();
 
   const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -43,9 +43,8 @@ export const RAGUploadForm = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!jsonFile && !markdownFiles && !url) {
       toast.error(
         "Please provide a source: a JSON file, markdown files, or a URL."
@@ -53,45 +52,46 @@ export const RAGUploadForm = () => {
       return;
     }
 
-    setIsLoading(true);
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
 
-    try {
-      const formData = new FormData();
+        if (jsonFile) {
+          formData.append("jsonFile", jsonFile);
+        }
 
-      if (jsonFile) {
-        formData.append("jsonFile", jsonFile);
+        if (markdownFiles) {
+          Array.from(markdownFiles).forEach((file, index) => {
+            formData.append(`markdownFile_${index}`, file);
+          });
+          formData.append(
+            "markdownFilesCount",
+            markdownFiles.length.toString()
+          );
+        }
+        if (url) {
+          formData.append("url", url);
+        }
+
+        const result = await uploadResources(formData);
+
+        if (result.success) {
+          toast.success(
+            `Successfully processed ${result.resourcesCreated} resources with ${result.embeddingsCreated} embeddings`
+          );
+          setJsonFile(null);
+          setMarkdownFiles(null);
+          setUrl("");
+          const form = e.target as HTMLFormElement;
+          form.reset();
+        } else {
+          toast.error(result.error || "Failed to process resources");
+        }
+      } catch (error) {
+        console.error("Error uploading RAG resources:", error);
+        toast.error("An error occurred while uploading resources");
       }
-
-      if (markdownFiles) {
-        Array.from(markdownFiles).forEach((file, index) => {
-          formData.append(`markdownFile_${index}`, file);
-        });
-        formData.append("markdownFilesCount", markdownFiles.length.toString());
-      }
-      if (url) {
-        formData.append("url", url);
-      }
-
-      const result = await uploadResources(formData);
-
-      if (result.success) {
-        toast.success(
-          `Successfully processed ${result.resourcesCreated} resources with ${result.embeddingsCreated} embeddings`
-        );
-        setJsonFile(null);
-        setMarkdownFiles(null);
-        setUrl("");
-        const form = e.target as HTMLFormElement;
-        form.reset();
-      } else {
-        toast.error(result.error || "Failed to process resources");
-      }
-    } catch (error) {
-      console.error("Error uploading RAG resources:", error);
-      toast.error("An error occurred while uploading resources");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   return (
