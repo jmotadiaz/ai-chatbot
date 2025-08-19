@@ -77,8 +77,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
 
   return (
     <div className="w-full pb-6">
-      <h2 className="text-lg font-semibold ml-2">Your Resources</h2>
-      <div className="px-4 flex flex-col lg:flex-row gap-4 my-8 items-center">
+      <div className="px-4 flex flex-col lg:flex-row gap-4 mb-8 items-center">
         <div className="relative flex-1 w-full">
           <Input
             className="pl-10"
