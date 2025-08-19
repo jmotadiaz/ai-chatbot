@@ -10,6 +10,7 @@ import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
 
 interface Resource {
   title: string;
+  url: string | null;
 }
 
 interface RAGResourcesProps {
@@ -94,7 +95,20 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
               key={resource.title}
               className="flex items-center justify-between p-3 bg-secondary rounded-lg"
             >
-              <span className="truncate">{resource.title}</span>
+              <>
+                {!!resource.url ? (
+                  <a
+                    className="truncate cursor-pointer hover:underline"
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {resource.title}
+                  </a>
+                ) : (
+                  <span className="truncate">{resource.title}</span>
+                )}
+              </>
               <Button
                 variant="destructive"
                 size="sm"

@@ -543,12 +543,16 @@ export const deleteResources =
   ({ userId }: { userId: string }): Transactional<Resource[]> =>
   async (tx) =>
     tx.delete(resources).where(eq(resources.userId, userId)).returning();
+
 export async function getUniqueResourceTitlesByUserId(
   userId: string
-): Promise<Array<{ title: string }>> {
+): Promise<Array<{ title: string; url: string | null }>> {
   try {
     return await db
-      .selectDistinctOn([resources.title], { title: resources.title })
+      .selectDistinctOn([resources.title], {
+        title: resources.title,
+        url: resources.url,
+      })
       .from(resources)
       .where(eq(resources.userId, userId))
       .orderBy(resources.title);
