@@ -55,18 +55,18 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
 
   return (
     <div className="w-full pb-6">
-      <h2 className="text-lg font-semibold mb-4 ml-2">Your Resources</h2>
-      <div className="px-4 flex flex-col lg:flex-row gap-6 items-center">
-        <div className="relative flex-1">
+      <h2 className="text-lg font-semibold ml-2">Your Resources</h2>
+      <div className="px-4 flex flex-col lg:flex-row gap-4 my-8 items-center">
+        <div className="relative flex-1 w-full">
           <Input
-            className="my-6 pl-10"
+            className="pl-10"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
           <SearchIcon className="absolute top-1/2 left-3 w-4 h-4 transform -translate-y-1/2 text-muted-foreground" />
         </div>
         <Button
-          className="flex-1"
+          className="flex-1 w-full"
           variant="destructive"
           disabled={isLoading}
           {...triggerModalProps()}

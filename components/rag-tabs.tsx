@@ -20,7 +20,7 @@ export const RAGTabs: React.FC<RAGTabsProps> = ({ upload, resources }) => {
         <Tabs.Tab {...getTabProps("upload")}>Upload</Tabs.Tab>
         <Tabs.Tab {...getTabProps("resources")}>Your Resources</Tabs.Tab>
       </Tabs.Container>
-      <div className="mt-10">
+      <div className="mt-8">
         <Tabs.Panel {...getPanelProps("upload")}>{upload}</Tabs.Panel>
         <Tabs.Panel {...getPanelProps("resources")}>{resources}</Tabs.Panel>
       </div>
