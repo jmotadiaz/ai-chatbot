@@ -1,8 +1,9 @@
-import { ProjectForm } from "@/components/project-form";
+import React from "react";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
+import EnglishHelperChat from "@/components/english-helper-chat";
 import { Main } from "@/components/ui/main";
 
 const Loading: React.FC = () => {
@@ -17,7 +18,7 @@ const Loading: React.FC = () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <ProjectForm />
+      <EnglishHelperChat />
     </Main>
   );
 };

@@ -14,16 +14,16 @@ const Page: React.FC = async () => {
     <SidebarProvider>
       <AuthCheck />
       <Sidebar />
-      <Header.Container>
-        <Header.Left>
-          <Logo />
-          <NewChat />
-        </Header.Left>
-        <Header.Right>
-          <ThemeToggle />
-        </Header.Right>
-      </Header.Container>
       <Main>
+        <Header.Container>
+          <Header.Left>
+            <Logo />
+            <NewChat />
+          </Header.Left>
+          <Header.Right>
+            <ThemeToggle />
+          </Header.Right>
+        </Header.Container>
         <EnglishHelperChat />
       </Main>
     </SidebarProvider>
