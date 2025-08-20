@@ -32,7 +32,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
   return (
     <div className={cn("my-4", className)}>
       <Link
-        href="/project/new"
+        href="/project/add"
         className="text-sm uppercase flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4 tracking-wider"
       >
         Projects <Edit className="h-5 w-5 ml-2" />

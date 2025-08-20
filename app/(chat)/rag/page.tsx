@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth/auth-config";
 import { SidebarProvider } from "@/app/providers";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
@@ -8,16 +6,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Sidebar } from "@/app/(chat)/sidebar";
 import { Main } from "@/components/ui/main";
 import { RAGUploadComponent } from "@/app/(chat)/rag/component";
+import { AuthCheck } from "@/components/auth-check";
 
 export default async function RAGUploadPage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   return (
     <SidebarProvider>
+      <AuthCheck />
       <Main>
         <Sidebar />
         <Header.Container>

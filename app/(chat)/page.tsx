@@ -1,5 +1,4 @@
 import React from "react";
-import { redirect } from "next/navigation";
 import { ChatProvider, SidebarProvider } from "@/app/providers";
 import Chat from "@/components/chat-with-client-storage";
 import { Header } from "@/components/header";
@@ -7,19 +6,16 @@ import { Logo } from "@/components/logo";
 import { NewChatHome as NewChat } from "@/components/new-chat-home";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { Sidebar } from "@/app/(chat)/sidebar";
+import { Main } from "@/components/ui/main";
+import { AuthCheck } from "@/components/auth-check";
 
 const Page: React.FC = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   return (
     <SidebarProvider>
-      <div className="h-svh flex flex-col justify-center w-full stretch">
+      <AuthCheck />
+      <Main>
         <Sidebar />
         <ChatProvider metaPrompt={defaultMetaPrompt}>
           <Header.Container>
@@ -34,7 +30,7 @@ const Page: React.FC = async () => {
           </Header.Container>
           <Chat />
         </ChatProvider>
-      </div>
+      </Main>
     </SidebarProvider>
   );
 };

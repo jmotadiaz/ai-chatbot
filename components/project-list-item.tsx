@@ -42,7 +42,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">
-            <Link href={`/project/${id}`}>
+            <Link href={`/project/${id}/chat`}>
               <Button variant="outline">Chat</Button>
             </Link>
             <Link href={`/project/${id}/edit`}>
