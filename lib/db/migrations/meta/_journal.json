@@ -43,6 +43,13 @@
       "when": 1755352711344,
       "tag": "0005_fresh_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1755769977066,
+      "tag": "0006_bumpy_the_santerians",
+      "breakpoints": true
     }
   ]
 }

@@ -110,13 +110,13 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   technical: {
     simple: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+      ...languageModelConfigurations["Llama 4 Scout"],
     },
     moderate: {
-      ...languageModelConfigurations["Qwen 3"],
+      ...languageModelConfigurations["GPT OSS Mini"],
     },
     complex: {
-      ...languageModelConfigurations["Claude Sonnet 4"],
+      ...languageModelConfigurations["GPT OSS"],
     },
     advanced: {
       ...languageModelConfigurations["GPT 5"],

@@ -47,6 +47,11 @@ export const languageModelConfigurations = {
     temperature: 0.6,
     topP: 0.9,
   },
+  "Llama 4 Scout": {
+    model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+    temperature: 0.6,
+    topP: 0.9,
+  },
   "Llama 4": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     temperature: 0.6,
