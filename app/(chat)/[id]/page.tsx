@@ -51,7 +51,11 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
     ? await getProjectById(chat.projectId ?? "")
     : null;
 
-  const metaPrompt = project?.hasPromptRefiner ? defaultMetaPrompt : null;
+  let metaPrompt: string | null = defaultMetaPrompt;
+
+  if (project && !project.hasPromptRefiner) {
+    metaPrompt = null;
+  }
 
   // Convert to UI messages format
   const initialMessages = convertToChatbotMessages(messages);
