@@ -1,0 +1,1 @@
+ALTER TABLE "Chat" ALTER COLUMN "title" SET DATA TYPE text;
