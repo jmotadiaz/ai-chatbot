@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
 import { DotsLoadingIcon } from "@/components/icons";
 import { useIntersectionObserver } from "@/lib/hooks/intersection";
+import { toWords } from "@/lib/utils";
 
 interface Resource {
   title: string;
@@ -72,7 +73,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
   const filteredResources = resources.filter(
     ({ title }) =>
       filter.trim().length === 0 ||
-      title.toLowerCase().includes(filter.trim().toLowerCase())
+      toWords(filter).every((word) => title.toLowerCase().includes(word))
   );
 
   return (
