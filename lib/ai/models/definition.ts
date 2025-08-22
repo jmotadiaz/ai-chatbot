@@ -105,6 +105,9 @@ export const languageModelConfigurations = {
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
+    providerOptions: {
+      groq: { reasoningEffort: "high" },
+    },
   },
   "GPT OSS Mini": {
     model: groq("openai/gpt-oss-20b"),
