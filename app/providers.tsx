@@ -22,6 +22,7 @@ import {
 import { ChatbotMessage } from "@/lib/ai/types";
 import { Tool, Tools } from "@/lib/ai/tools/types";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
+import { convertFilesToDataURLs, FilePart } from "@/lib/ai/utils";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -58,10 +59,13 @@ interface SetChatConfig {
 
 interface InputState {
   input: string;
+  files: FilePart[];
   setInput: (input: string) => void;
+  setFiles: (files: FilePart[]) => void;
   handleInputChange: (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
+  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
@@ -88,8 +92,11 @@ const chatContext = createContext<
   topK: defaultTopK,
   setConfig: () => {},
   input: "",
+  files: [],
   setInput: () => {},
+  setFiles: () => {},
   handleInputChange: () => {},
+  handleFileChange: () => {},
   handleSubmit: async () => {},
   id: "",
   messages: [],
@@ -157,6 +164,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 
   // Manual input state management for v5
   const [input, setInput] = useState("");
+  const [files, setFiles] = useState<FilePart[]>([]);
 
   const chatResult = useChat({
     messages: initialMessages,
@@ -190,14 +198,26 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     []
   );
 
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const files = await convertFilesToDataURLs(e.target.files);
+        setFiles((prevFiles) => [...prevFiles, ...files]);
+      }
+    },
+    []
+  );
+
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (input.trim()) {
         setInput("");
+        setFiles([]);
         await chatResult.sendMessage(
           {
-            text: input,
+            role: "user",
+            parts: [{ type: "text", text: input }, ...files],
           },
           {
             body,
@@ -205,7 +225,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         );
       }
     },
-    [input, chatResult, body]
+    [input, chatResult, body, files]
   );
 
   const setConfig = useCallback<SetChatConfig["setConfig"]>((config) => {
@@ -247,7 +267,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         setConfig,
         input,
         setInput,
+        setFiles,
+        files,
         handleInputChange,
+        handleFileChange,
         handleSubmit,
         reload,
         title,

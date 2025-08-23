@@ -46,17 +46,31 @@ export const calculateModelConfiguration = async (
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
 ): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
-  const { temperature, topK, topP, systemPrompt, disabledConfig } =
-    Object.assign(
-      {
-        temperature: defaultTemperature,
-        topP: defaultTopP,
-        topK: defaultTopK,
-        systemPrompt: defaultSystemPrompt,
-        disabledConfig: [],
-      },
-      modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
-    );
+  const {
+    temperature,
+    topK,
+    topP,
+    systemPrompt,
+    disabledConfig,
+    supportedFiles,
+  } = Object.assign(
+    {
+      temperature: defaultTemperature,
+      topP: defaultTopP,
+      topK: defaultTopK,
+      systemPrompt: defaultSystemPrompt,
+      disabledConfig: [],
+      supportedFiles: [],
+    },
+    modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
+  );
 
-  return { temperature, topK, topP, systemPrompt, disabledConfig };
+  return {
+    temperature,
+    topK,
+    topP,
+    systemPrompt,
+    disabledConfig,
+    supportedFiles,
+  };
 };

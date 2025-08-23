@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useChatContext } from "@/app/providers";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 import { LoadingMessage } from "@/components/loading-message";
+import { AttachmentsControl } from "@/components/attachments-control";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -98,6 +99,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             <ChatSettingsButton />
             {saveChat}
             <ToolsControl />
+            <AttachmentsControl />
           </div>
 
           <div className="absolute z-1 right-3 bottom-2 flex items-center space-x-2">

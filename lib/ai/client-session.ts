@@ -27,7 +27,14 @@ export function setChatDataInSession({
 }: ChatDataInSession) {
   window.sessionStorage.setItem(
     SESSION_STORAGE_KEY,
-    JSON.stringify({ messages, chatConfig, tools })
+    JSON.stringify({
+      messages: messages?.map((message) => ({
+        ...message,
+        parts: message.parts.filter((part) => part.type !== "file"),
+      })),
+      chatConfig,
+      tools,
+    })
   );
 }
 

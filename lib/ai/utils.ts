@@ -27,7 +27,7 @@ export const messageToDbMessage =
     chatId,
     id,
     role,
-    parts,
+    parts: parts.filter((part) => part.type !== "file"),
     attachments: [], // In v5, attachments are handled through parts
   });
 
@@ -53,4 +53,36 @@ export const once = <T>(fn: () => T): (() => T) => {
     }
     return result;
   };
+};
+
+export interface FilePart {
+  type: "file";
+  mediaType: string;
+  url: string;
+}
+
+export const convertFilesToDataURLs = async (
+  files: FileList
+): Promise<FilePart[]> => {
+  return Promise.all(
+    Array.from(files).map(
+      (file) =>
+        new Promise<{
+          type: "file";
+          mediaType: string;
+          url: string;
+        }>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({
+              type: "file",
+              mediaType: file.type,
+              url: reader.result as string,
+            });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+    )
+  );
 };

@@ -22,16 +22,14 @@ export const capitalize = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
+export const normalize = (text: string): string =>
+  text
+    .normalize("NFD")
+    .replace(/[^a-z0-9 ]/gi, " ")
+    .toLowerCase()
+    .trim();
 export const toWords = (str: string): string[] => {
-  return [
-    ...new Set(
-      str
-        .replace(/[^a-z0-9 ]/gi, " ")
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((word) => word.length > 0)
-    ),
-  ];
+  return [...new Set(str.split(/\s+/))];
 };
 
 export const isEmpty = <T>(

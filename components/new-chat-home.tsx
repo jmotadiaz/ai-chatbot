@@ -3,7 +3,7 @@ import { Edit } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 
 export const NewChatHome = () => {
-  const { setMessages, setInput, status } = useChatContext();
+  const { setMessages, setInput, setFiles, status } = useChatContext();
   return (
     <button
       disabled={status === "streaming" || status === "submitted"}
@@ -11,6 +11,7 @@ export const NewChatHome = () => {
       onClick={() => {
         setInput("");
         setMessages([]);
+        setFiles([]);
       }}
     >
       <Edit size={18} />

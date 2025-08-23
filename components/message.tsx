@@ -11,6 +11,7 @@ import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
+import { FileThumbnail } from "@/components/file-thumbnail";
 
 export const Message = ({
   message,
@@ -28,65 +29,11 @@ export const Message = ({
         key={`message-${message.id}`}
         data-role={message.role}
       >
-        <div
-          className={cn(
-            "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-4xl",
-            "group-data-[role=user]/message:w-fit"
-          )}
-        >
-          <div className="flex flex-col w-full space-y-4">
-            {message.parts
-              ?.filter((part) => part.type !== "source-url")
-              .map((part, i) => {
-                switch (part.type) {
-                  case "text":
-                    return (
-                      <motion.div
-                        initial={{ y: 5, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        key={`message-${message.id}-part-${i}`}
-                        className="flex flex-row gap-2 items-start w-full"
-                      >
-                        {message.role === "user" ? (
-                          <CopyBlock
-                            text={part.text}
-                            className={cn(
-                              "flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                            )}
-                          >
-                            <UserMessage text={part.text} />
-                          </CopyBlock>
-                        ) : (
-                          <div className={cn("max-w-full")}>
-                            <Markdown content={part.text} />
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  case "reasoning":
-                    return (
-                      <ReasoningMessagePart
-                        key={`message-${message.id}-${i}`}
-                        part={part}
-                        isReasoningDone={
-                          part.state === "done" ||
-                          message.parts?.some(({ type }) => type === "text")
-                        }
-                      />
-                    );
-                  default:
-                    return null;
-                }
-              })}
-            {message.metadata?.status === "finished" &&
-              message.parts?.some((part) => part.type === "source-url") && (
-                <SourceMessagePart message={message} />
-              )}
-            {message.metadata?.autoModel && (
-              <AutoModelDetails metadata={message.metadata.autoModel} />
-            )}
-          </div>
-        </div>
+        {message.role === "user" ? (
+          <UserMessage message={message} />
+        ) : (
+          <AssistantMessage message={message} />
+        )}
       </motion.div>
     </AnimatePresence>
   );
@@ -182,10 +129,11 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
 };
 
 interface UserMessageProps {
-  text: string;
+  message: ChatbotMessage;
 }
 
-const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
+const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
+  const text = message.parts.find((part) => part.type === "text")?.text || "";
   const isLongMessage = text.length > 350;
   const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
@@ -199,13 +147,45 @@ const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
   return (
     <>
       <div
-        className={cn({
-          "line-clamp-3 ![display:-webkit-box]":
-            !isExpanded && isCollapseTransitionEnd,
-        })}
-        {...getCollapseProps()}
+        className={cn(
+          "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-4xl",
+          "group-data-[role=user]/message:w-fit"
+        )}
       >
-        <Markdown content={text} />
+        <div className="flex flex-col w-full space-y-4">
+          <CopyBlock text={text}>
+            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl">
+              <>
+                <motion.div
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  className="flex flex-row gap-2 items-start w-full"
+                >
+                  <div
+                    className={cn({
+                      "line-clamp-3 ![display:-webkit-box]":
+                        !isExpanded && isCollapseTransitionEnd,
+                    })}
+                    {...getCollapseProps()}
+                  >
+                    {text}
+                  </div>
+                </motion.div>
+              </>
+              <div className="mt-2 flex space-x-2 items-center">
+                {message.parts
+                  ?.filter((part) => part.type === "file")
+                  .map((part, i) => (
+                    <FileThumbnail
+                      key={`message-${message.id}-${i}`}
+                      url={part.url}
+                      mediaType={part.mediaType}
+                    />
+                  ))}
+              </div>
+            </div>
+          </CopyBlock>
+        </div>
       </div>
 
       {isLongMessage && (
@@ -219,6 +199,58 @@ const UserMessage: React.FC<UserMessageProps> = ({ text }) => {
         </div>
       )}
     </>
+  );
+};
+
+interface AssistantMessageProps {
+  message: ChatbotMessage;
+}
+
+const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
+  return (
+    <div className={cn("flex gap-4 w-full")}>
+      <div className="flex flex-col w-full space-y-4">
+        {message.parts
+          ?.filter((part) => part.type !== "source-url")
+          .map((part, i) => {
+            switch (part.type) {
+              case "text":
+                return (
+                  <motion.div
+                    initial={{ y: 5, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    key={`message-${message.id}-part-${i}`}
+                    className="flex flex-row gap-2 items-start w-full"
+                  >
+                    <div className={cn("max-w-full")}>
+                      <Markdown content={part.text} />
+                    </div>
+                  </motion.div>
+                );
+              case "reasoning":
+                return (
+                  <ReasoningMessagePart
+                    key={`message-${message.id}-${i}`}
+                    part={part}
+                    isReasoningDone={
+                      part.state === "done" ||
+                      message.parts?.some(({ type }) => type === "text")
+                    }
+                  />
+                );
+              default:
+                return null;
+            }
+          })}
+        {message.metadata?.status === "finished" &&
+          message.parts?.some((part) => part.type === "source-url") && (
+            <SourceMessagePart message={message} />
+          )}
+        {message.metadata?.autoModel && (
+          <AutoModelDetails metadata={message.metadata.autoModel} />
+        )}
+      </div>
+    </div>
   );
 };
 

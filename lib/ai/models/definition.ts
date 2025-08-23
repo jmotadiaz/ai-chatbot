@@ -25,6 +25,7 @@ export interface ModelConfiguration {
     openai?: OpenAIResponsesProviderOptions;
   };
   disabledConfig?: ("temperature" | "topP" | "topK")[];
+  supportedFiles?: Array<"pdf" | "img">;
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -56,6 +57,7 @@ export const languageModelConfigurations = {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     temperature: 0.6,
     topP: 0.9,
+    supportedFiles: ["img"],
   },
   "Kimi K2": {
     model: groq("moonshotai/kimi-k2-instruct"),
@@ -81,6 +83,7 @@ export const languageModelConfigurations = {
   },
   Sonar: {
     model: perplexity("sonar"),
+    supportedFiles: ["img"],
   },
   "Sonar Pro": {
     model: perplexity("sonar-pro"),
@@ -99,6 +102,7 @@ export const languageModelConfigurations = {
   },
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
+    supportedFiles: ["pdf", "img"],
   },
   "Claude Opus 4": {
     model: anthropic("claude-opus-4-20250514"),
@@ -139,6 +143,7 @@ export const languageModelConfigurations = {
         textVerbosity: "low",
       },
     },
+    supportedFiles: ["pdf", "img"],
   },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
@@ -148,6 +153,7 @@ export const languageModelConfigurations = {
         serviceTier: "flex",
       },
     },
+    supportedFiles: ["pdf", "img"],
   },
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
@@ -160,6 +166,7 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
+    supportedFiles: ["pdf", "img"],
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -170,6 +177,7 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Pro": {
     model: google("gemini-2.5-pro"),
+    supportedFiles: ["pdf", "img"],
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -183,6 +191,7 @@ export const languageModelConfigurations = {
   },
   "Grok 4": {
     model: xai("grok-4-0709"),
+    supportedFiles: ["img", "pdf"],
   },
 } satisfies ModelConfigurations;
 

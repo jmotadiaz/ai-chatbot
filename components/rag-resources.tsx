@@ -1,5 +1,6 @@
 "use client";
 
+import { normalize } from "path";
 import { useState, useTransition, useCallback } from "react";
 import { toast } from "sonner";
 import { SearchIcon } from "lucide-react";
@@ -70,11 +71,17 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
     });
   };
 
-  const filteredResources = resources.filter(
-    ({ title }) =>
-      filter.trim().length === 0 ||
-      toWords(filter).every((word) => title.toLowerCase().includes(word))
-  );
+  const normalizedFilter = normalize(filter);
+
+  const filteredResources =
+    normalizedFilter.length === 0
+      ? resources
+      : resources.filter(({ title }) => {
+          const normalizedTitle = normalize(title);
+          return toWords(normalizedFilter).every((word) =>
+            normalizedTitle.includes(word)
+          );
+        });
 
   return (
     <div className="w-full pb-6">
