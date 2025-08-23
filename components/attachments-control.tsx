@@ -13,7 +13,7 @@ const mapSupportedFileTypesToAccept = (
       case "pdf":
         return "application/pdf";
       case "img":
-        return "image/*;capture=camera";
+        return "image/*";
       default:
         return "";
     }
@@ -57,6 +57,7 @@ export const AttachmentsControl: React.FC = () => {
         className="absolute w-0 h-0 overflow-hidden opacity-0"
         onChange={handleFileChange}
         multiple
+        capture="environment"
         ref={fileInputRef}
       />
     </div>
