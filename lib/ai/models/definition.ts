@@ -102,7 +102,7 @@ export const languageModelConfigurations = {
   },
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
-    supportedFiles: ["pdf", "img"],
+    supportedFiles: ["img", "pdf"],
   },
   "Claude Opus 4": {
     model: anthropic("claude-opus-4-20250514"),
@@ -143,7 +143,7 @@ export const languageModelConfigurations = {
         textVerbosity: "low",
       },
     },
-    supportedFiles: ["pdf", "img"],
+    supportedFiles: ["img", "pdf"],
   },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
@@ -153,7 +153,7 @@ export const languageModelConfigurations = {
         serviceTier: "flex",
       },
     },
-    supportedFiles: ["pdf", "img"],
+    supportedFiles: ["img", "pdf"],
   },
   "Gemma 2": {
     model: groq("gemma2-9b-it"),
@@ -166,7 +166,7 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
-    supportedFiles: ["pdf", "img"],
+    supportedFiles: ["img", "pdf"],
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -177,7 +177,7 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Pro": {
     model: google("gemini-2.5-pro"),
-    supportedFiles: ["pdf", "img"],
+    supportedFiles: ["img", "pdf"],
     providerOptions: {
       google: {
         thinkingConfig: {
