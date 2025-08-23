@@ -13,7 +13,7 @@ const mapSupportedFileTypesToAccept = (
       case "pdf":
         return "application/pdf";
       case "img":
-        return "image/*";
+        return "image/*;capture=camera";
       default:
         return "";
     }
