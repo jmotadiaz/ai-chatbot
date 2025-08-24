@@ -58,7 +58,7 @@ export const AttachmentsControl: React.FC = () => {
           <>
             <div className="flex items-center justify-between space-x-4">
               <Label className="cursor-pointer" htmlFor="image-input">
-                <ImageIcon className="h-4 w-4 mr-1" /> Image
+                <ImageIcon className="h-5 w-5 mr-1" /> Image
               </Label>
               <input
                 id="image-input"
@@ -72,7 +72,7 @@ export const AttachmentsControl: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <Label className="cursor-pointer" htmlFor="camera-input">
-                <Camera className="h-4 w-4 mr-1" /> Camera
+                <Camera className="h-5 w-5 mr-1" /> Camera
               </Label>
               <input
                 id="camera-input"
@@ -90,7 +90,7 @@ export const AttachmentsControl: React.FC = () => {
         {supportedFiles.includes("pdf") && (
           <div className="flex items-center justify-between">
             <Label className="cursor-pointer" htmlFor="document-input">
-              <FileText className="h-4 w-4 mr-1" /> Document
+              <FileText className="h-5 w-5 mr-1" /> Document
             </Label>
             <input
               id="document-input"
