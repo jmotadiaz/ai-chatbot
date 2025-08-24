@@ -1,6 +1,7 @@
 import {
   unstable_ViewTransition as ViewTransition,
   startTransition,
+  useCallback,
   useState,
 } from "react";
 import { cn } from "@/lib/utils";
@@ -66,15 +67,16 @@ const useDropdown = () => {
     });
   };
 
-  const close = () => {
+  const close = useCallback(() => {
     startTransition(() => {
       setIsShown(false);
     });
-  };
+  }, []);
 
   return {
     getDropdownTriggerProps: () => ({ onClick: toggle }),
     getDropdownPopupProps: () => ({ isShown, close }),
+    close,
     isShown,
   };
 };

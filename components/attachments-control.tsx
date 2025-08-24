@@ -1,41 +1,42 @@
-import { Paperclip } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
-import { ModelConfiguration } from "@/lib/ai/models/definition";
-
-const mapSupportedFileTypesToAccept = (
-  types: Required<ModelConfiguration>["supportedFiles"]
-) => {
-  const mimeTypes = types.map((type) => {
-    switch (type) {
-      case "pdf":
-        return "application/pdf";
-      case "img":
-        return "image/*";
-      default:
-        return "";
-    }
-  });
-  return mimeTypes.join(",");
-};
+import { Dropdown, useDropdown } from "@/components/ui/dropdown";
+import { Label } from "@/components/ui/label";
 
 export const AttachmentsControl: React.FC = () => {
   const { handleFileChange, files, selectedModel } = useChatContext();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { getDropdownPopupProps, getDropdownTriggerProps, close } =
+    useDropdown();
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+
+  const clearInputs = useCallback(() => {
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = "";
+    }
+    if (documentInputRef.current) {
+      documentInputRef.current.value = "";
+    }
+  }, []);
 
   useEffect(() => {
-    if (files === null && fileInputRef.current) {
-      fileInputRef.current.value = "";
+    if (files === null) {
+      clearInputs();
     }
-  }, [files]);
+  }, [clearInputs, files]);
 
   useEffect(() => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    if (imageInputRef.current) {
+      clearInputs();
     }
-  }, [selectedModel]);
+  }, [selectedModel, clearInputs]);
 
   const { supportedFiles } = getChatConfigurationByModelId(selectedModel);
 
@@ -43,22 +44,67 @@ export const AttachmentsControl: React.FC = () => {
     return null;
   }
 
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileChange(e);
+    close();
+  };
+
   return (
     <div className="relative">
-      <ChatControl
-        Icon={Paperclip}
-        onClick={() => {
-          fileInputRef.current?.click();
-        }}
-      />
-      <input
-        type="file"
-        accept={mapSupportedFileTypesToAccept(supportedFiles)}
-        className="absolute w-0 h-0 overflow-hidden opacity-0"
-        onChange={handleFileChange}
-        multiple
-        ref={fileInputRef}
-      />
+      <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
+
+      <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
+        {supportedFiles.includes("img") && (
+          <>
+            <div className="flex items-center justify-between space-x-4">
+              <Label className="cursor-pointer" htmlFor="image-input">
+                <ImageIcon className="h-4 w-4 mr-1" /> Image
+              </Label>
+              <input
+                id="image-input"
+                type="file"
+                accept="image/*"
+                className="absolute w-0 h-0 overflow-hidden opacity-0"
+                onChange={onChange}
+                ref={imageInputRef}
+                multiple
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="cursor-pointer" htmlFor="camera">
+                <Camera className="h-4 w-4 mr-1" /> Camera
+              </Label>
+              <input
+                id="camera-input"
+                type="file"
+                accept="image/*"
+                className="absolute w-0 h-0 overflow-hidden opacity-0"
+                onChange={onChange}
+                capture="environment"
+                ref={cameraInputRef}
+                multiple
+              />
+            </div>
+          </>
+        )}
+        {supportedFiles.includes("pdf") && (
+          <div className="flex items-center justify-between">
+            <Label className="cursor-pointer" htmlFor="document-input">
+              <FileText className="h-4 w-4 mr-1" /> Document
+            </Label>
+            <input
+              id="document-input"
+              type="file"
+              accept="application/pdf"
+              className="absolute w-0 h-0 overflow-hidden opacity-0"
+              onChange={onChange}
+              capture="environment"
+              ref={documentInputRef}
+              multiple
+            />
+          </div>
+        )}
+      </Dropdown.Popup>
     </div>
   );
 };
