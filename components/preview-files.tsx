@@ -10,8 +10,8 @@ export interface PreviewFilesProps {
 export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
   const { files, setFiles } = useChatContext();
 
-  const removeFile = (url: string) => {
-    setFiles(files.filter((file) => file.url !== url));
+  const removeFile = (filename: string = "") => {
+    setFiles(files.filter((file) => file.filename !== filename));
   };
 
   if (files.length === 0) {
@@ -19,14 +19,23 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
   }
   return (
     <div className={cn("flex space-x-3 items-center", className)}>
-      {files.map(({ url, mediaType }, idx) => (
+      {files.map((file, idx) => (
         <div
           className="relative cursor-pointer"
           key={idx}
-          onClick={() => removeFile(url)}
+          onClick={() => removeFile(file.filename)}
         >
-          <X className="h-2 w-2 absolute top-0.5 right-0.5" />
-          <FileThumbnail url={url} mediaType={mediaType} />
+          <div
+            className={cn(
+              "bg-secondary absolute p-1 rounded-full opacity-80",
+              file.mediaType.startsWith("image/")
+                ? "top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
+                : "top-3 right-3"
+            )}
+          >
+            <X className="h-3 w-3" />
+          </div>
+          <FileThumbnail file={file} />
         </div>
       ))}
     </div>

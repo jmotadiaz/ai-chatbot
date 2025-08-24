@@ -178,8 +178,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
                   .map((part, i) => (
                     <FileThumbnail
                       key={`message-${message.id}-${i}`}
-                      url={part.url}
-                      mediaType={part.mediaType}
+                      file={part}
                     />
                   ))}
               </div>

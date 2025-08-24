@@ -1,4 +1,4 @@
-import { GenerateObjectResult, generateText } from "ai";
+import { FileUIPart, GenerateObjectResult, generateText } from "ai";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
@@ -55,11 +55,10 @@ export const once = <T>(fn: () => T): (() => T) => {
   };
 };
 
-export interface FilePart {
-  type: "file";
-  mediaType: string;
-  url: string;
-}
+export type FilePart = Pick<
+  FileUIPart,
+  "type" | "mediaType" | "url" | "filename"
+>;
 
 export const convertFilesToDataURLs = async (
   files: FileList
@@ -67,16 +66,13 @@ export const convertFilesToDataURLs = async (
   return Promise.all(
     Array.from(files).map(
       (file) =>
-        new Promise<{
-          type: "file";
-          mediaType: string;
-          url: string;
-        }>((resolve, reject) => {
+        new Promise<FilePart>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
             resolve({
               type: "file",
               mediaType: file.type,
+              filename: file.name,
               url: reader.result as string,
             });
           };
