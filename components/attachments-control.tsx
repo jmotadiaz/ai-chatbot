@@ -71,7 +71,7 @@ export const AttachmentsControl: React.FC = () => {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label className="cursor-pointer" htmlFor="camera">
+              <Label className="cursor-pointer" htmlFor="camera-input">
                 <Camera className="h-4 w-4 mr-1" /> Camera
               </Label>
               <input
