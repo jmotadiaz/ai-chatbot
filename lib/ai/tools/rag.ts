@@ -35,14 +35,17 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
         userId,
         limit: 5,
       });
-      if (!resources || !similarChunks) {
-        throw new Error("No resources or similar chunks found");
-      }
+
       writer.write({
         type: "data-rag",
         id: toolCallId,
         data: { status: "loaded" },
       });
+
+      if (!resources || !similarChunks) {
+        console.error("No resources or similar chunks found");
+        return { resources: [], context: "" };
+      }
 
       resources.forEach((resource, idx) => {
         writer.write({

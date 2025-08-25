@@ -7,6 +7,7 @@ import {
   GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
+import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
@@ -64,7 +65,7 @@ export const languageModelConfigurations = {
     temperature: 0.6,
   },
   "Deepseek Chat": {
-    model: openrouter.chat("deepseek/deepseek-chat-v3-0324"),
+    model: deepseek("deepseek-chat"),
     temperature: 0.6,
   },
   "Deepseek R1 Distill": {
@@ -81,13 +82,6 @@ export const languageModelConfigurations = {
     }),
     temperature: 0.3,
   },
-  Sonar: {
-    model: perplexity("sonar"),
-    supportedFiles: ["img"],
-  },
-  "Sonar Pro": {
-    model: perplexity("sonar-pro"),
-  },
   "Qwen 3": {
     model: groq("qwen/qwen3-32b"),
     temperature: 0.6,
@@ -96,6 +90,16 @@ export const languageModelConfigurations = {
     providerOptions: {
       groq: { reasoningFormat: "parsed" },
     },
+  },
+  Sonar: {
+    model: perplexity("sonar"),
+    supportedFiles: ["img"],
+  },
+  "Sonar Pro": {
+    model: perplexity("sonar-pro"),
+  },
+  "Sonar Reasoning": {
+    model: perplexity("sonar-reasoning"),
   },
   "Claude 3.5 Haiku": {
     model: anthropic("claude-3-5-haiku-latest"),
@@ -219,6 +223,7 @@ const chatModelKeys = [
   "Sonar",
   "Qwen 3",
   "Deepseek R1",
+  "Sonar Reasoning",
   "Claude Sonnet 4",
   "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",

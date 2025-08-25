@@ -21,8 +21,8 @@ dependencies:
     specifier: 2.0.15
     version: 2.0.15(zod@3.25.76)
   '@ai-sdk/perplexity':
-    specifier: 2.0.3
-    version: 2.0.3(zod@3.25.76)
+    specifier: 2.0.5
+    version: 2.0.5(zod@3.25.76)
   '@ai-sdk/react':
     specifier: 2.0.15
     version: 2.0.15(react@19.1.0)(zod@3.25.76)
@@ -325,14 +325,14 @@ packages:
       zod: 3.25.76
     dev: false
 
-  /@ai-sdk/perplexity@2.0.3(zod@3.25.76):
-    resolution: {integrity: sha512-rHF/1FEmV57VJ24qfWHoTz1ktQU7ZsgehY1UTgz+shTzNjnLjX+P9h2HRweLkvxPhB3/sNX8zl6Y2dUbSnA5gw==}
+  /@ai-sdk/perplexity@2.0.5(zod@3.25.76):
+    resolution: {integrity: sha512-2CXyEXH/hIM/xwVuU+a9SelPEYzVDAB3BUfk0uaM6Qx1x4l6QghCJ+wqfb7UXP7Yjv+EbszN7p3OcVVoBOyhEw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.3(zod@3.25.76)
+      '@ai-sdk/provider-utils': 3.0.5(zod@3.25.76)
       zod: 3.25.76
     dev: false
 
@@ -366,6 +366,19 @@ packages:
 
   /@ai-sdk/provider-utils@3.0.3(zod@3.25.76):
     resolution: {integrity: sha512-kAxIw1nYmFW1g5TvE54ZB3eNtgZna0RnLjPUp1ltz1+t9xkXJIuDT4atrwfau9IbS0BOef38wqrI8CjFfQrxhw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.3
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
+    dev: false
+
+  /@ai-sdk/provider-utils@3.0.5(zod@3.25.76):
+    resolution: {integrity: sha512-HliwB/yzufw3iwczbFVE2Fiwf1XqROB/I6ng8EKUsPM5+2wnIa8f4VbljZcDx+grhFrPV+PnRZH7zBqi8WZM7Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
