@@ -231,7 +231,7 @@ const pickModelConfigurations = <
   return models;
 };
 
-const chatModelKeys = [
+export const chatModelKeys = [
   "Llama 4",
   "Kimi K2",
   "Deepseek Chat",

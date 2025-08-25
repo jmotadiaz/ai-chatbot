@@ -6,7 +6,7 @@ import { Select, useSelect } from "@/components/ui/select";
 import {
   chatModelId,
   CHAT_MODELS,
-  defaultModel,
+  chatModelKeys,
 } from "@/lib/ai/models/definition";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 export const ModelPicker = () => {
   const { selectedModel, setSelectedModel } = useModelPicker();
   const [previousModel, setPreviousModel] = useState<chatModelId>(() =>
-    selectedModel === "Auto Model Workflow" ? defaultModel : selectedModel
+    selectedModel === "Auto Model Workflow" ? chatModelKeys[0] : selectedModel
   );
 
   return (
