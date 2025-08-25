@@ -61,7 +61,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
                 return (
                   <ToolLoading
                     key={`message-reasoning-${message.id}-${i}`}
-                    text="Thinking"
+                    text="Reasoning"
                   />
                 );
               }

@@ -71,7 +71,7 @@ export const AttachmentsControl: React.FC = () => {
         )}
         {supportedFiles.includes("pdf") && (
           <Label
-            className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative py-1 m-0 py-1.5"
+            className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative py-1 m-0"
             htmlFor="document-input"
           >
             <FileText className="w-4 h-4 mr-1.5" /> Document
