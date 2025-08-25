@@ -11,7 +11,7 @@ import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
-import { FileThumbnail } from "@/components/file-thumbnail";
+import { FileThumbnail } from "@/components/attachment-thumbnail";
 
 export const Message = ({
   message,
@@ -290,7 +290,7 @@ interface AutoModelDetailsProps {
 
 const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
   return (
-    <>
+    <div className="mb-4">
       <div className="font-bold text-sm text-zinc-500 dark:text-zinc-400 my-2">
         Auto Model Details
       </div>
@@ -313,6 +313,6 @@ const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
           <span className="font-medium">Model:</span> {metadata.model}
         </div>
       </div>
-    </>
+    </div>
   );
 };

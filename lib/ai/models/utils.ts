@@ -9,21 +9,30 @@ import {
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
+import { Tools } from "@/lib/ai/tools/types";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { autoModel, AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
 
-export const calculateModelConfiguration = async (
-  selectedModel: chatModelId,
-  messages: ChatbotMessage[],
-  temperature?: number,
-  topP?: number,
-  topK?: number
-): Promise<{
+export const calculateModelConfiguration = async ({
+  selectedModel,
+  messages,
+  temperature,
+  topK,
+  topP,
+  tools,
+}: {
+  selectedModel: chatModelId;
+  messages: ChatbotMessage[];
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  tools?: Tools;
+}): Promise<{
   modelConfiguration: ModelConfiguration;
   autoModelMetadata?: AutoModelMetadata;
 }> => {
   if (selectedModel === "Auto Model Workflow") {
-    return autoModel(messages);
+    return autoModel({ messages, tools });
   } else {
     const modelConfig: ModelConfiguration =
       languageModelConfigurations[selectedModel] ||
@@ -62,7 +71,10 @@ export const getChatConfigurationByModelId = (
       systemPrompt: defaultSystemPrompt,
       disabledConfig: [],
       disabledTools: [],
-      supportedFiles: [],
+      supportedFiles: [
+        "img",
+        "pdf",
+      ] as Required<ModelConfiguration>["supportedFiles"],
     },
     modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
   );

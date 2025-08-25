@@ -77,13 +77,14 @@ export async function POST(req: Request) {
         ...urlContextFactory({ writer }),
       };
       const { modelConfiguration, autoModelMetadata } =
-        await calculateModelConfiguration(
+        await calculateModelConfiguration({
           selectedModel,
           messages,
           temperature,
           topP,
-          topK
-        );
+          topK,
+          tools,
+        });
       const executedTools = new Set<Tool>(modelConfiguration.disabledTools);
 
       const result = streamText({

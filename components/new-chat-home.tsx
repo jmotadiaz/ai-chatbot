@@ -1,9 +1,11 @@
 "use client";
 import { Edit } from "lucide-react";
 import { useChatContext } from "@/app/providers";
+import { defaultModel } from "@/lib/ai/models/definition";
 
 export const NewChatHome = () => {
-  const { setMessages, setInput, setFiles, status } = useChatContext();
+  const { setMessages, setInput, setFiles, status, setConfig, setTools } =
+    useChatContext();
   return (
     <button
       disabled={status === "streaming" || status === "submitted"}
@@ -12,6 +14,10 @@ export const NewChatHome = () => {
         setInput("");
         setMessages([]);
         setFiles([]);
+        setTools([]);
+        setConfig({
+          selectedModel: defaultModel,
+        });
       }}
     >
       <Edit size={18} />

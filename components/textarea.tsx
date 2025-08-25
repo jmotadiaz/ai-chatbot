@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { Textarea as TextareaUI } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { PreviewFiles } from "@/components/preview-files";
+import { PreviewFiles } from "@/components/attachments-preview";
 
 interface TextareaProps {
   input: string;

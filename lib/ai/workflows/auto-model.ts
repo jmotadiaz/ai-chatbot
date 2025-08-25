@@ -5,6 +5,7 @@ import {
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
 import { ChatbotMessage } from "@/lib/ai/types";
+import { RAG_TOOL, Tools } from "@/lib/ai/tools/types";
 
 const CATEGORIES = [
   "factual",
@@ -37,7 +38,19 @@ export interface AutoModelMetadata {
   model: string;
 }
 
-export async function autoModel(messages: ChatbotMessage[]): Promise<{
+export interface AutoModelArguments {
+  messages: ChatbotMessage[];
+  tools?: Tools;
+}
+
+export interface AutoModelResult {
+  modelConfiguration: ModelConfiguration;
+  autoModelMetadata: AutoModelMetadata;
+}
+export async function autoModel({
+  messages,
+  tools = [],
+}: AutoModelArguments): Promise<{
   modelConfiguration: ModelConfiguration;
   autoModelMetadata: AutoModelMetadata;
 }> {
@@ -45,11 +58,36 @@ export async function autoModel(messages: ChatbotMessage[]): Promise<{
     throw new Error("Query cannot be empty");
   }
 
+  let hasImage = false;
+  let hasDocument = false;
+
+  const userMessages = messages.reduce((memo, message) => {
+    if (message.role === "user") {
+      memo.push({
+        ...message,
+        parts: message.parts.filter((part) => {
+          const hasFile = part.type === "file";
+          if (hasFile) {
+            if (part.mediaType.includes("image/")) hasImage = true;
+            if (
+              part.mediaType.includes("application/") ||
+              part.mediaType.includes("text/")
+            )
+              hasDocument = true;
+          }
+
+          return !hasFile;
+        }),
+      });
+    }
+    return memo;
+  }, [] as ChatbotMessage[]);
+
   const { object: classification } = await generateObject({
     ...languageModelConfigurations["GPT OSS Mini"],
     schema,
     system: systemPrompt,
-    messages: convertToModelMessages(messages.filter((m) => m.role === "user")),
+    messages: convertToModelMessages(userMessages),
   }).catch((error) => {
     console.error("Error during model generation:", error);
     return {
@@ -64,7 +102,9 @@ export async function autoModel(messages: ChatbotMessage[]): Promise<{
   console.log("Classification Result:", classification);
 
   const { category, complexity } = classification;
-  const modelConfiguration = decisionTree[category][complexity];
+  const modelConfiguration = decisionTree({ tools, hasDocument, hasImage })[
+    category
+  ][complexity];
 
   return {
     modelConfiguration,
@@ -79,30 +119,62 @@ export async function autoModel(messages: ChatbotMessage[]): Promise<{
   };
 }
 
-const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
+const decisionTree = ({
+  tools,
+  hasDocument,
+  hasImage,
+}: {
+  tools: Tools;
+  hasImage: boolean;
+  hasDocument: boolean;
+}): Record<string, Record<string, ModelConfiguration>> => ({
   factual: {
     simple: {
-      ...languageModelConfigurations["Sonar"],
+      ...languageModelConfigurations[
+        !hasDocument && !tools.includes(RAG_TOOL)
+          ? "Sonar"
+          : !hasDocument
+          ? "Llama 4 Scout"
+          : "Gemini 2.5 Flash Lite"
+      ],
     },
     moderate: {
-      ...languageModelConfigurations["Sonar"],
+      ...languageModelConfigurations[
+        !hasDocument && !tools.includes(RAG_TOOL)
+          ? "Sonar"
+          : !hasDocument
+          ? "Llama 4"
+          : "Gemini 2.5 Flash Lite"
+      ],
     },
     complex: {
-      ...languageModelConfigurations["Sonar Pro"],
+      ...languageModelConfigurations[
+        !hasDocument && !tools.includes(RAG_TOOL)
+          ? "Sonar Reasoning"
+          : "Gemini 2.5 Flash"
+      ],
     },
     advanced: {
-      ...languageModelConfigurations["Sonar Pro"],
+      ...languageModelConfigurations[
+        !hasDocument && !tools.includes(RAG_TOOL) ? "Sonar Reasoning" : "GPT 5"
+      ],
     },
   },
   analytical: {
     simple: {
-      ...languageModelConfigurations["Llama 4"],
+      ...languageModelConfigurations[
+        !hasDocument ? "Llama 4" : "Gemini 2.5 Flash Lite"
+      ],
     },
     moderate: {
-      ...languageModelConfigurations["GPT OSS Mini"],
+      ...languageModelConfigurations[
+        !hasDocument && !hasImage ? "GPT OSS Mini" : "GPT 5 Mini"
+      ],
     },
     complex: {
-      ...languageModelConfigurations["Qwen 3"],
+      ...languageModelConfigurations[
+        !hasDocument && !hasImage ? "Qwen 3" : "Gemini 2.5 Flash"
+      ],
     },
     advanced: {
       ...languageModelConfigurations["Grok 4"],
@@ -110,13 +182,19 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   technical: {
     simple: {
-      ...languageModelConfigurations["Llama 4 Scout"],
+      ...languageModelConfigurations[
+        !hasDocument ? "Llama 4 Scout" : "GPT 5 Mini"
+      ],
     },
     moderate: {
-      ...languageModelConfigurations["GPT OSS Mini High"],
+      ...languageModelConfigurations[
+        !hasDocument && !hasImage ? "GPT OSS Mini High" : "GPT 5 Mini"
+      ],
     },
     complex: {
-      ...languageModelConfigurations["GPT OSS"],
+      ...languageModelConfigurations[
+        !hasDocument && !hasImage ? "GPT OSS" : "Claude Sonnet 4"
+      ],
     },
     advanced: {
       ...languageModelConfigurations["GPT 5"],
@@ -124,7 +202,13 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   creative: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations[
+        !hasImage && !hasDocument
+          ? "Llama 3.1 Instant"
+          : !hasDocument
+          ? "Llama 4 Scout"
+          : "Gemini 2.5 Flash Lite"
+      ],
       temperature: 1,
     },
     moderate: {
@@ -132,7 +216,9 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
       temperature: 1,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4"],
+      ...languageModelConfigurations[
+        !hasDocument ? "Llama 4" : "Gemini 2.5 Flash"
+      ],
       temperature: 1,
     },
     advanced: {
@@ -142,13 +228,17 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   prompt_engineering: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations[
+        !hasDocument && !hasImage ? "Llama 3.1 Instant" : "GPT 5 Nano"
+      ],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 4"],
+      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
     },
     complex: {
-      ...languageModelConfigurations["Qwen 3"],
+      ...languageModelConfigurations[
+        !hasDocument && !hasImage ? "Qwen 3" : "GPT 5 Mini High"
+      ],
     },
     advanced: {
       ...languageModelConfigurations["GPT 5"],
@@ -156,7 +246,9 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   structured_content: {
     simple: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations[
+        !hasDocument ? "Llama 4 Scout" : "GPT 5 Nano"
+      ],
       temperature: 0.7,
     },
     moderate: {
@@ -174,15 +266,23 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   conversational: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations[
+        !hasImage && !hasDocument
+          ? "Llama 3.1 Instant"
+          : !hasDocument
+          ? "Llama 4 Scout"
+          : "GPT 5 Nano"
+      ],
       temperature: 1,
     },
     moderate: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations[
+        !hasDocument ? "Llama 4 Scout" : "Gemini 2.5 Flash Lite"
+      ],
       temperature: 1,
     },
     complex: {
-      ...languageModelConfigurations["Llama 4"],
+      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
       temperature: 1,
     },
     advanced: {
@@ -192,7 +292,9 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   processing: {
     simple: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations[
+        !hasDocument ? "Llama 4 Scout" : "GPT 5 Nano"
+      ],
     },
     moderate: {
       ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
@@ -206,22 +308,31 @@ const decisionTree: Record<string, Record<string, ModelConfiguration>> = {
   },
   other: {
     simple: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations[
+        !hasImage && !hasDocument
+          ? "Llama 3.1 Instant"
+          : !hasDocument
+          ? "Llama 4 Scout"
+          : "GPT 5 Nano"
+      ],
     },
     moderate: {
-      ...languageModelConfigurations["Llama 3.1 Instant"],
+      ...languageModelConfigurations[
+        !hasImage && !hasDocument
+          ? "Llama 3.1 Instant"
+          : !hasDocument
+          ? "Llama 4 Scout"
+          : "GPT 5 Nano"
+      ],
     },
     complex: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
     },
     advanced: {
-      ...languageModelConfigurations["Llama 3.3 Versatile"],
+      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
     },
   },
-} satisfies Record<
-  (typeof CATEGORIES)[number],
-  Record<(typeof COMPLEXITY_LEVELS)[number], ModelConfiguration>
->;
+});
 
 const systemPrompt = `\n
   # Query Classification for LLM Routing
@@ -263,4 +374,7 @@ const systemPrompt = `\n
 
   ### 3. Reasoning
   Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers
+
+  ## 4 Additional Notes
+  *   If the query is referencing a document, assume the document is available for context, even if you don't have it available.
 `;

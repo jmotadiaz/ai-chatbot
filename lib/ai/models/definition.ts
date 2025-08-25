@@ -154,6 +154,16 @@ export const languageModelConfigurations = {
     },
     supportedFiles: ["img", "pdf"],
   },
+  "GPT 5 Mini High": {
+    model: openai("gpt-5-mini-2025-08-07"),
+    providerOptions: {
+      openai: {
+        textVerbosity: "low",
+        reasoningEffort: "high",
+      },
+    },
+    supportedFiles: ["img", "pdf"],
+  },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
     providerOptions: {
@@ -250,7 +260,7 @@ export const CHAT_MODELS: chatModelId[] = [
   ...chatModelKeys,
 ];
 
-export const defaultModel: chatModelId = "Llama 4";
+export const defaultModel: chatModelId = "Auto Model Workflow";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 export const defaultTopK = 40;

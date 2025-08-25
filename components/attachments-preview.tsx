@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { useChatContext } from "@/app/providers";
-import { FileThumbnail } from "@/components/file-thumbnail";
+import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { cn } from "@/lib/utils";
 
 export interface PreviewFilesProps {
@@ -27,10 +27,7 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
         >
           <div
             className={cn(
-              "bg-secondary absolute p-1 rounded-full opacity-80",
-              file.mediaType.startsWith("image/")
-                ? "top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
-                : "top-3 right-3"
+              "bg-secondary absolute top-2 right-2 p-1 rounded-full opacity-80"
             )}
           >
             <X className="h-3 w-3" />
