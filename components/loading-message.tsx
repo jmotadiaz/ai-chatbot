@@ -13,7 +13,10 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
   status,
 }) => {
   const toolParts = message.parts?.filter(
-    (part) => part.type === "data-web-search" || part.type === "data-rag"
+    (part) =>
+      part.type === "data-web-search" ||
+      part.type === "data-rag" ||
+      part.type === "data-reasoning"
   );
 
   if (
@@ -37,7 +40,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
               if (part.data.status === "loading") {
                 return (
                   <ToolLoading
-                    key={`message-${message.id}-${i}`}
+                    key={`message-web-${message.id}-${i}`}
                     text="Searching the web"
                   />
                 );
@@ -47,8 +50,18 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
               if (part.data.status === "loading") {
                 return (
                   <ToolLoading
-                    key={`message-${message.id}-${i}`}
+                    key={`message-rag-${message.id}-${i}`}
                     text="Searching documents"
+                  />
+                );
+              }
+              return null;
+            case "data-reasoning":
+              if (part.data.status === "started") {
+                return (
+                  <ToolLoading
+                    key={`message-reasoning-${message.id}-${i}`}
+                    text="Thinking"
                   />
                 );
               }

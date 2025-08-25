@@ -137,7 +137,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const isLongMessage = text.length > 350;
   const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
-    collapsedHeight: 16 * 1.5 * 3 + 16, // 3 lines of text + margin
+    collapsedHeight: 16 * 1.5 * 3, // 3 lines of text + margin
     defaultExpanded: !isLongMessage,
     onTransitionStateChange: (state) => {
       setIsCollapseTransitionEnd(state === "collapseEnd");

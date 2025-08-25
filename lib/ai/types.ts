@@ -20,10 +20,15 @@ export interface RagDataPart {
   status: "loading" | "loaded";
 }
 
+export interface ReasoningPart {
+  status: "started" | "finished";
+}
+
 export type ChatbotMessage = UIMessage<
   MessageMetadata,
   {
     ["web-search"]: WebSearchDataPart;
     ["rag"]: RagDataPart;
+    ["reasoning"]: ReasoningPart;
   }
 >;

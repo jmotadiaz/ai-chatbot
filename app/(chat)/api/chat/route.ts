@@ -86,6 +86,7 @@ export async function POST(req: Request) {
           tools,
         });
       const executedTools = new Set<Tool>(modelConfiguration.disabledTools);
+      let reasoning = false;
 
       const result = streamText({
         ...modelConfiguration,
@@ -131,6 +132,28 @@ export async function POST(req: Request) {
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };
+          }
+        },
+        onChunk: ({ chunk }) => {
+          if (chunk.type === "reasoning-delta" && !reasoning) {
+            console.log("Reasoning started");
+            writer.write({
+              type: "data-reasoning",
+              data: {
+                status: "started",
+              },
+            });
+            reasoning = true;
+          }
+          if (chunk.type !== "reasoning-delta" && reasoning) {
+            console.log("Reasoning finished");
+            writer.write({
+              type: "data-reasoning",
+              data: {
+                status: "finished",
+              },
+            });
+            reasoning = false;
           }
         },
       });
