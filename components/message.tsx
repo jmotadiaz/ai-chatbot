@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useCollapse } from "react-collapsed";
-import { ChevronDownIcon, ChevronUpIcon, Dot } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, Dot, LinkIcon } from "lucide-react";
 import { ReasoningUIPart } from "ai";
 import { Markdown } from "@/components/markdown";
 import { SpinnerIcon } from "@/components/icons";
@@ -191,7 +191,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
         <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
           <button
             {...getToggleProps()}
-            className="hover:text-zinc-700 dark:hover:text-zinc-200 font-medium cursor-pointer"
+            className="text-blue-600 font-medium cursor-pointer"
           >
             Show {isExpanded ? "less" : "more"}
           </button>
@@ -258,29 +258,40 @@ interface SourceMessagePart {
 }
 
 const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
+  const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
+  const sources = message.parts?.filter((part) => part.type === "source-url");
   return (
-    <>
-      <div className="text-xl text-zinc-500 dark:text-zinc-400">
-        <span className="font-medium">Sources:</span>
-      </div>
-      <ul className="list-disc pl-10 mb-4">
-        {message.parts
-          ?.filter((part) => part.type === "source-url")
-          .map((part) => {
-            return (
-              <li className="text-ellipsis" key={`source-${part.sourceId}`}>
-                <a
-                  href={part.url}
-                  className="font-medium text-sm text-blue-600 dark:text-blue-500 hover:underline"
-                  target="_blank"
-                >
-                  {part.title || part.url}
-                </a>
-              </li>
-            );
+    <div className="mb-3 text-sm">
+      <div
+        className="flex font-bold items-center text-blue-600 mb-2 cursor-pointer select-none"
+        {...getToggleProps()}
+      >
+        Used {sources.length} sources
+        <ChevronDownIcon
+          className={cn("h-4 w-4 ml-1", {
+            "rotate-180": isExpanded,
           })}
-      </ul>
-    </>
+        />
+      </div>
+      <div
+        className="flex flex-col items-start space-y-2"
+        {...getCollapseProps()}
+      >
+        {sources.map((part) => {
+          return (
+            <a
+              key={`source-${part.sourceId}`}
+              href={part.url}
+              className="font-medium flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
+              target="_blank"
+            >
+              <LinkIcon className="h-4 w-4" />
+              <span>{part.title || part.url}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
@@ -289,12 +300,24 @@ interface AutoModelDetailsProps {
 }
 
 const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
+  const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
   return (
-    <div className="mb-4">
-      <div className="font-bold text-sm text-zinc-500 dark:text-zinc-400 my-2">
-        Auto Model Details
+    <div className="mb-3">
+      <div
+        className="font-bold flex items-center text-sm text-blue-600 my-2 cursor-pointer select-none"
+        {...getToggleProps()}
+      >
+        Auto Model Details{" "}
+        <ChevronDownIcon
+          className={cn("h-4 w-4 ml-1", {
+            "rotate-180": isExpanded,
+          })}
+        />
       </div>
-      <div className="flex flex-col lg:flex-row  lg:items-center space-y-1 space-x-2 text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+      <div
+        className="flex flex-col lg:flex-row  lg:items-center space-y-1 space-x-2 text-sm text-zinc-500 dark:text-zinc-400"
+        {...getCollapseProps()}
+      >
         <div>
           <span className="font-medium">Category:</span>{" "}
           {capitalize(metadata.category)}
