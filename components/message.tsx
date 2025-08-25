@@ -263,7 +263,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
   return (
     <div className="mb-3 text-sm">
       <div
-        className="flex text-sm` font-bold items-center text-blue-600 mb-2 cursor-pointer select-none"
+        className="flex text-sm font-bold items-center text-zinc-500 dark:text-zinc-400 mb-2 cursor-pointer select-none"
         {...getToggleProps()}
       >
         Used {sources.length} sources
@@ -304,7 +304,7 @@ const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
   return (
     <div className="mb-3">
       <div
-        className="font-bold flex items-center text-sm text-blue-600 my-2 cursor-pointer select-none"
+        className="font-bold flex items-center text-sm text-zinc-500 dark:text-zinc-400 my-2 cursor-pointer select-none"
         {...getToggleProps()}
       >
         Auto Model Details{" "}
