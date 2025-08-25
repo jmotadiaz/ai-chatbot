@@ -191,7 +191,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
         <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
           <button
             {...getToggleProps()}
-            className="text-blue-600 font-medium cursor-pointer"
+            className="hover:text-zinc-700 dark:hover:text-zinc-200 font-medium cursor-pointer"
           >
             Show {isExpanded ? "less" : "more"}
           </button>
@@ -263,7 +263,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
   return (
     <div className="mb-3 text-sm">
       <div
-        className="flex font-bold items-center text-blue-600 mb-2 cursor-pointer select-none"
+        className="flex text-sm` font-bold items-center text-blue-600 mb-2 cursor-pointer select-none"
         {...getToggleProps()}
       >
         Used {sources.length} sources
