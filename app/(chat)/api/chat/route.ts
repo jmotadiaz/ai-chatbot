@@ -138,7 +138,7 @@ export async function POST(req: Request) {
       writer.merge(
         result.toUIMessageStream({
           originalMessages: messages,
-          sendReasoning: true,
+          sendReasoning: selectedModel !== "Auto Model Workflow",
           sendSources: true,
           generateMessageId: randomUUID,
           messageMetadata: ({ part }) => {
