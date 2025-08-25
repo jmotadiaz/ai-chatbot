@@ -35,10 +35,10 @@ export const AttachmentsControl: React.FC = () => {
         {supportedFiles.includes("img") && (
           <>
             <Label
-              className="flex items-center space-x-4 cursor-pointer w-full relative py-1"
+              className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative m-0 py-1.5"
               htmlFor="image-input"
             >
-              <ImageIcon className="h-4 w-4 mr-1" /> Image
+              <ImageIcon className="w-4 h-4 mr-1.5" /> Image
               <input
                 id="image-input"
                 type="file"
@@ -51,10 +51,10 @@ export const AttachmentsControl: React.FC = () => {
             <>
               {isCaptureSupported && (
                 <Label
-                  className="flex items-center space-x-4 cursor-pointer w-full relative py-1"
+                  className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative m-0 py-1.5"
                   htmlFor="camera-input"
                 >
-                  <Camera className="h-4 w-4 mr-1" /> Camera
+                  <Camera className="w-4 h-4 mr-1.5" /> Camera
                   <input
                     id="camera-input"
                     type="file"
@@ -71,10 +71,10 @@ export const AttachmentsControl: React.FC = () => {
         )}
         {supportedFiles.includes("pdf") && (
           <Label
-            className="flex items-center space-x-4 cursor-pointer w-full relative py-1"
+            className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative py-1 m-0 py-1.5"
             htmlFor="document-input"
           >
-            <FileText className="h-4 w-4 mr-1" /> Document
+            <FileText className="w-4 h-4 mr-1.5" /> Document
             <input
               id="document-input"
               type="file"
