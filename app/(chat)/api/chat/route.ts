@@ -28,6 +28,7 @@ import {
   WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
   RAG_TOOL,
+  Tool,
 } from "@/lib/ai/tools/types";
 import {
   hasContextUrls,
@@ -75,7 +76,6 @@ export async function POST(req: Request) {
         ...ragFactory({ writer, userId: session.user.id }),
         ...urlContextFactory({ writer }),
       };
-      const executedTools = new Set<keyof typeof toolSet>();
       const { modelConfiguration, autoModelMetadata } =
         await calculateModelConfiguration(
           selectedModel,
@@ -84,6 +84,7 @@ export async function POST(req: Request) {
           topP,
           topK
         );
+      const executedTools = new Set<Tool>(modelConfiguration.disabledTools);
 
       const result = streamText({
         ...modelConfiguration,
@@ -94,9 +95,7 @@ export async function POST(req: Request) {
         activeTools: [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async ({ model }) => {
-          const provider =
-            typeof model === "string" ? "unknown" : model.provider;
+        prepareStep: async () => {
           const lastMessage = messagePartsToText(messages[messages.length - 1]);
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
@@ -109,7 +108,6 @@ export async function POST(req: Request) {
           }
 
           if (
-            provider !== "perplexity" &&
             !executedTools.has(URL_CONTEXT_TOOL) &&
             hasUrls(lastMessage) &&
             (await hasContextUrls(lastMessage))
@@ -123,7 +121,6 @@ export async function POST(req: Request) {
           }
 
           if (
-            provider !== "perplexity" &&
             tools.includes(WEB_SEARCH_TOOL) &&
             !executedTools.has(WEB_SEARCH_TOOL)
           ) {

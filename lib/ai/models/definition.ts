@@ -10,6 +10,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { Tools } from "@/lib/ai/tools/types";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -26,6 +27,7 @@ export interface ModelConfiguration {
     openai?: OpenAIResponsesProviderOptions;
   };
   disabledConfig?: ("temperature" | "topP" | "topK")[];
+  disabledTools?: Tools;
   supportedFiles?: Array<"pdf" | "img">;
   temperature?: number;
   topP?: number;
@@ -94,12 +96,15 @@ export const languageModelConfigurations = {
   Sonar: {
     model: perplexity("sonar"),
     supportedFiles: ["img"],
+    disabledTools: ["webSearch", "rag"],
   },
   "Sonar Pro": {
     model: perplexity("sonar-pro"),
+    disabledTools: ["webSearch", "rag"],
   },
   "Sonar Reasoning": {
     model: perplexity("sonar-reasoning"),
+    disabledTools: ["webSearch", "rag"],
   },
   "Claude 3.5 Haiku": {
     model: anthropic("claude-3-5-haiku-latest"),

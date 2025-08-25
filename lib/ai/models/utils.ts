@@ -52,6 +52,7 @@ export const getChatConfigurationByModelId = (
     topP,
     systemPrompt,
     disabledConfig,
+    disabledTools,
     supportedFiles,
   } = Object.assign(
     {
@@ -60,6 +61,7 @@ export const getChatConfigurationByModelId = (
       topK: defaultTopK,
       systemPrompt: defaultSystemPrompt,
       disabledConfig: [],
+      disabledTools: [],
       supportedFiles: [],
     },
     modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
@@ -71,6 +73,7 @@ export const getChatConfigurationByModelId = (
     topP,
     systemPrompt,
     disabledConfig,
+    disabledTools,
     supportedFiles,
   };
 };
