@@ -152,7 +152,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
       <div className={cn("flex gap-4 w-full ml-auto max-w-4xl mt-4", "w-fit")}>
         <div className="flex flex-col w-full space-y-4">
           <CopyBlock text={text}>
-            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl">
+            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-4 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl">
               <>
                 <motion.div
                   initial={{ y: 5, opacity: 0 }}

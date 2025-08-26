@@ -54,7 +54,7 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
       });
 
       const { results } = await exa.searchAndContents(query, {
-        livecrawl: "fallback",
+        livecrawl: "preferred",
         numResults: 3,
       });
 

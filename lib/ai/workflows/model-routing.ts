@@ -410,8 +410,8 @@ const systemPrompt = `\n
 
   Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
-  *   **Current News**: Requests for information about recent events, breaking news, current developments, or any topic requiring up-to-date and rapidly changing information.
-  *   **Factual**: Direct requests or questions seeking specific, verifiable information, such as facts, real data or news reports.
+  *   **Current News**: Requests for information about recent events, breaking news, current developments, updates, latest versions, real-time status, or any topic requiring up-to-date data subject to rapid changes. Excludes stable, timeless, or historical knowledge not dependent on immediacy.
+  *   **Factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge. Does not apply to latest updates, current news, ongoing developments, or anything requiring real-time verification.
   *   **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
   *   **Technical**: Programming, debugging, system design, or technical implementation.
   *   **Creative**: Artistic content generation, open-ended writing, or brainstorming.
