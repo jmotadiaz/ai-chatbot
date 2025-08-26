@@ -184,7 +184,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           </CopyBlock>
         </div>
       </div>
-      {!!files.length && (
+      {files.length > 0 && (
         <div className="flex space-x-3 items-center justify-end my-4">
           {files.map((part, i) => (
             <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
