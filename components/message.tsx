@@ -23,9 +23,9 @@ export const Message = ({
   return (
     <AnimatePresence key={message.id}>
       <motion.div
-        className="w-full mx-auto px-4 group/message wrap-anywhere"
-        initial={{ y: 5, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        className="w-full mx-auto px-4 wrap-anywhere"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         key={`message-${message.id}`}
         data-role={message.role}
       >
@@ -149,7 +149,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
 
   return (
     <>
-      <div className={cn("flex gap-4 w-full ml-auto max-w-4xl my-4", "w-fit")}>
+      <div className={cn("flex gap-4 w-full ml-auto max-w-4xl mt-4", "w-fit")}>
         <div className="flex flex-col w-full space-y-4">
           <CopyBlock text={text}>
             <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl">

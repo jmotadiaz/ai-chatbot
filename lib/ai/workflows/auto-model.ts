@@ -124,17 +124,13 @@ const findModelWithSupportedFileTypes =
     ...modelIds: Array<keyof typeof languageModelConfigurations>
   ): ModelConfiguration => {
     const modelSelected =
-      modelIds.find((modelId) => {
-        return (
-          fileTypes.intersection(
-            new Set(
-              (
-                languageModelConfigurations[modelId] as ModelConfiguration
-              ).supportedFiles
-            )
-          ).size > 0
-        );
-      }) || "GPT 5 Mini";
+      fileTypes.size === 0
+        ? modelIds[0]
+        : modelIds.find((modelId) =>
+            (
+              languageModelConfigurations[modelId] as ModelConfiguration
+            ).supportedFiles?.some((fileType) => fileTypes.has(fileType))
+          ) || "GPT 5 Mini";
     return languageModelConfigurations[modelSelected];
   };
 

@@ -83,9 +83,9 @@ const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
   return (
     <motion.div
       className="font-semibold"
-      initial={{ x: 5, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 5, opacity: 0 }}
+      initial={{ y: 5, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 5, opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       {text}
