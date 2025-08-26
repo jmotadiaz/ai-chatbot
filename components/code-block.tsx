@@ -14,6 +14,20 @@ interface CodeBlockProps {
   children?: ReactNode;
 }
 
+const languageAliases = {
+  js: "javascript",
+  ts: "typescript",
+  py: "python",
+  rb: "ruby",
+  sh: "bash",
+  yml: "yaml",
+  md: "markdown",
+} as const;
+
+const mapLanguage = (language: string): string => {
+  return languageAliases[language as keyof typeof languageAliases] || language;
+};
+
 const CodeBlock: React.FC<CodeBlockProps> = ({
   className,
   children,
@@ -40,12 +54,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     return (
       <div className="animate-fade my-6">
         <CopyBlock
+          iconClassName="top-4"
           text={
             match[1].trim() === "markdown"
               ? codeString.replaceAll("`", "\\`")
               : codeString
           }
         >
+          <div className="absolute left-4 top-4 text-sm font-medium font-mono text-muted-foreground capitalize">
+            {mapLanguage(match[1])}
+          </div>
+          <div className="bg-background absolute left-0 top-12 h-[2px] w-full" />
           <SyntaxHighlighter
             wrapLongLines={false}
             style={codeTheme}
@@ -53,7 +72,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             PreTag="div"
             customStyle={{
               borderRadius: 10,
-              padding: "1.25rem 1rem",
+              paddingTop: "4rem",
+              paddingBottom: "1.25rem",
+              paddingLeft: "1rem",
+              paddingRight: "1rem",
               marginBottom: 0,
             }}
             codeTagProps={{ style: { fontFamily: "var(--font-fira-code)" } }}
