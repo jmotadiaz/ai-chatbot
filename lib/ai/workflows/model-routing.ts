@@ -225,7 +225,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "GPT OSS Mini High",
+          "Qwen 3",
           "GPT 5 Mini"
         ),
       },
@@ -272,19 +272,16 @@ const decisionTree = ({
     prompt_engineering: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 3.1 Instant",
+          "Llama 4 Scout",
           "GPT 5 Nano"
         ),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4",
-          "GPT 5 Mini"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT OSS Mini"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen 3",
+          "GPT OSS",
           "GPT 5 Mini High"
         ),
       },
@@ -438,7 +435,7 @@ const systemPrompt = `\n
 
   *   **Advanced**: A task that involves **designing a system, a process, or a new conceptual framework**. It often requires orchestrating multiple complex sub-tasks, creating iterative or self-correcting workflows, or synthesizing disparate domains to build a novel structure.
       *   **Core Task**: Designing a system to solve problems.
-      *  **Estimated effort**: Very high.
+      *   **Estimated effort**: Very high.
 
   ### 3. Reasoning
   Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers

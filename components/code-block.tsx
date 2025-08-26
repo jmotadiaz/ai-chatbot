@@ -17,6 +17,7 @@ interface CodeBlockProps {
 const languageAliases = {
   js: "javascript",
   ts: "typescript",
+  tsx: "typescript",
   py: "python",
   rb: "ruby",
   sh: "bash",
@@ -24,8 +25,11 @@ const languageAliases = {
   md: "markdown",
 } as const;
 
-const mapLanguage = (language: string): string => {
-  return languageAliases[language as keyof typeof languageAliases] || language;
+const getLanguageName = (languageCode: string): string => {
+  return (
+    languageAliases[languageCode as keyof typeof languageAliases] ||
+    languageCode
+  );
 };
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
@@ -62,7 +66,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           }
         >
           <div className="absolute left-4 top-4 text-sm font-medium font-mono text-muted-foreground capitalize">
-            {mapLanguage(match[1])}
+            {getLanguageName(match[1])}
           </div>
           <div className="bg-background absolute left-0 top-12 h-[2px] w-full" />
           <SyntaxHighlighter
