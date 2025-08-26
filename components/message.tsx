@@ -10,7 +10,7 @@ import { SpinnerIcon } from "@/components/icons";
 import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
+import { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 
 export const Message = ({
@@ -290,7 +290,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
 };
 
 interface AutoModelDetailsProps {
-  metadata: AutoModelMetadata;
+  metadata: ModelRoutingMetadata;
 }
 
 const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {

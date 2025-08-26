@@ -33,26 +33,26 @@ const schema = z.object({
   complexity: z.enum(COMPLEXITY_LEVELS),
 });
 
-export interface AutoModelMetadata {
+export interface ModelRoutingMetadata {
   category: (typeof CATEGORIES)[number];
   complexity: (typeof COMPLEXITY_LEVELS)[number];
   model: string;
 }
 
-export interface AutoModelArguments {
+export interface ModelRoutingArguments {
   messages: ChatbotMessage[];
   tools?: Tools;
 }
 
-export interface AutoModelResult {
+export interface ModelRoutingResult {
   modelConfiguration: ModelConfiguration;
-  autoModelMetadata: AutoModelMetadata;
+  autoModelMetadata: ModelRoutingMetadata;
   tools: Tools;
 }
-export async function autoModel({
+export async function modelRouting({
   messages,
   tools: previousTools = [],
-}: AutoModelArguments): Promise<AutoModelResult> {
+}: ModelRoutingArguments): Promise<ModelRoutingResult> {
   if (messages.length === 0) {
     throw new Error("Query cannot be empty");
   }

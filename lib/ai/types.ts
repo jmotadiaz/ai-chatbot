@@ -1,5 +1,5 @@
 import { UIMessage } from "ai";
-import { AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
+import { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 
 export interface Resource {
   title: string;
@@ -9,7 +9,7 @@ export interface Resource {
 
 export interface MessageMetadata {
   status: "started" | "streaming" | "finished";
-  autoModel?: AutoModelMetadata;
+  autoModel?: ModelRoutingMetadata;
 }
 
 export interface WebSearchDataPart {

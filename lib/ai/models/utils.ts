@@ -1,7 +1,7 @@
 import {
   chatModelConfigurations,
   chatModelId,
-  defaultModel,
+  chatModelKeys,
   defaultTemperature,
   defaultTopK,
   defaultTopP,
@@ -11,7 +11,10 @@ import {
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import { Tools } from "@/lib/ai/tools/types";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { autoModel, AutoModelMetadata } from "@/lib/ai/workflows/auto-model";
+import {
+  modelRouting,
+  ModelRoutingMetadata,
+} from "@/lib/ai/workflows/model-routing";
 
 export const calculateModelConfiguration = async ({
   selectedModel,
@@ -29,17 +32,15 @@ export const calculateModelConfiguration = async ({
   tools: Tools;
 }): Promise<{
   modelConfiguration: ModelConfiguration;
-  autoModelMetadata?: AutoModelMetadata;
+  autoModelMetadata?: ModelRoutingMetadata;
   tools: Tools;
 }> => {
   if (selectedModel === "Router") {
-    return autoModel({ messages, tools });
+    return modelRouting({ messages, tools });
   } else {
     const modelConfig: ModelConfiguration =
       languageModelConfigurations[selectedModel] ||
-      languageModelConfigurations[
-        defaultModel as keyof typeof languageModelConfigurations
-      ];
+      languageModelConfigurations[chatModelKeys[0]];
     return {
       modelConfiguration: {
         ...modelConfig,
