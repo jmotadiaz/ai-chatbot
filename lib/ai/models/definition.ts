@@ -80,7 +80,7 @@ export const languageModelConfigurations = {
   },
   "Deepseek R1": {
     model: openrouter.chat("deepseek/deepseek-r1-0528", {
-      reasoning: { enabled: true, effort: "medium" },
+      reasoning: { enabled: true, effort: "high" },
     }),
     temperature: 0.3,
   },
@@ -170,6 +170,16 @@ export const languageModelConfigurations = {
       openai: {
         textVerbosity: "low",
         serviceTier: "flex",
+      },
+    },
+    supportedFiles: ["img", "pdf"],
+  },
+  "GPT 5 High": {
+    model: openai("gpt-5-2025-08-07"),
+    providerOptions: {
+      openai: {
+        textVerbosity: "low",
+        reasoningEffort: "high",
       },
     },
     supportedFiles: ["img", "pdf"],
