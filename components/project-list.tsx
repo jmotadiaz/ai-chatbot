@@ -70,7 +70,7 @@ export const ProjectListLoading: React.FC<{ className?: ClassNameValue }> = ({
         Projects <Edit className="h-5 w-5 ml-2" />
       </div>
       <div className="space-y-2">
-        <div className="block p-2 text-sm font-medium cursor-pointer select-none rounded-lg border dark:border-zinc-600 hover:bg-accent transition-colors">
+        <div className="block p-2 text-sm font-semibold cursor-pointer select-none rounded-lg border dark:border-zinc-600 hover:bg-accent transition-colors">
           English Helper
         </div>
         {Array.from({ length: 3 }).map((_, index) => (

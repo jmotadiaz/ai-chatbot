@@ -162,7 +162,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             </div>
 
             <div className="flex flex-col space-y-4">
-              <h3 className="text-lg font-medium mb-6">Tools</h3>
+              <h3 className="text-lg font-semibold mb-6">Tools</h3>
               <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
                 <Toggle
                   id="rag-tool"
@@ -194,7 +194,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               </div>
             </div>
             <div className="flex flex-col mt-4">
-              <h3 className="text-lg font-medium mb-4">Settings</h3>
+              <h3 className="text-lg font-semibold mb-4">Settings</h3>
               <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
                 <div className="flex flex-col gap-2">
                   <Label className="text-base" htmlFor="temperature">

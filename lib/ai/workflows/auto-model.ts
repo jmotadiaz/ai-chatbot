@@ -5,7 +5,7 @@ import {
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
 import { ChatbotMessage } from "@/lib/ai/types";
-import { RAG_TOOL, Tools } from "@/lib/ai/tools/types";
+import { Tools } from "@/lib/ai/tools/types";
 
 const CATEGORIES = [
   "factual",
@@ -47,10 +47,7 @@ export interface AutoModelResult {
   modelConfiguration: ModelConfiguration;
   autoModelMetadata: AutoModelMetadata;
 }
-export async function autoModel({
-  messages,
-  tools = [],
-}: AutoModelArguments): Promise<{
+export async function autoModel({ messages }: AutoModelArguments): Promise<{
   modelConfiguration: ModelConfiguration;
   autoModelMetadata: AutoModelMetadata;
 }> {
@@ -58,8 +55,9 @@ export async function autoModel({
     throw new Error("Query cannot be empty");
   }
 
-  let hasImage = false;
-  let hasDocument = false;
+  const requestedFileTypes = new Set<
+    Required<ModelConfiguration>["supportedFiles"][number]
+  >();
 
   const userMessages = messages.reduce((memo, message) => {
     if (message.role === "user") {
@@ -68,12 +66,13 @@ export async function autoModel({
         parts: message.parts.filter((part) => {
           const hasFile = part.type === "file";
           if (hasFile) {
-            if (part.mediaType.includes("image/")) hasImage = true;
+            if (part.mediaType.includes("image/"))
+              requestedFileTypes.add("img");
             if (
               part.mediaType.includes("application/") ||
               part.mediaType.includes("text/")
             )
-              hasDocument = true;
+              requestedFileTypes.add("pdf");
           }
 
           return !hasFile;
@@ -102,9 +101,9 @@ export async function autoModel({
   console.log("Classification Result:", classification);
 
   const { category, complexity } = classification;
-  const modelConfiguration = decisionTree({ tools, hasDocument, hasImage })[
-    category
-  ][complexity];
+  const modelConfiguration = decisionTree({ requestedFileTypes })[category][
+    complexity
+  ];
 
   return {
     modelConfiguration,
@@ -119,220 +118,199 @@ export async function autoModel({
   };
 }
 
+const findModelWithSupportedFileTypes =
+  (fileTypes: Set<Required<ModelConfiguration>["supportedFiles"][number]>) =>
+  (
+    ...modelIds: Array<keyof typeof languageModelConfigurations>
+  ): ModelConfiguration => {
+    const modelSelected =
+      modelIds.find((modelId) => {
+        return (
+          fileTypes.intersection(
+            new Set(
+              (
+                languageModelConfigurations[modelId] as ModelConfiguration
+              ).supportedFiles
+            )
+          ).size > 0
+        );
+      }) || "GPT 5 Mini";
+    return languageModelConfigurations[modelSelected];
+  };
+
 const decisionTree = ({
-  tools,
-  hasDocument,
-  hasImage,
+  requestedFileTypes,
 }: {
-  tools: Tools;
-  hasImage: boolean;
-  hasDocument: boolean;
-}): Record<string, Record<string, ModelConfiguration>> => ({
-  factual: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasDocument && !tools.includes(RAG_TOOL)
-          ? "Sonar"
-          : !hasDocument
-          ? "Llama 4 Scout"
-          : "Gemini 2.5 Flash Lite"
-      ],
+  requestedFileTypes: Set<
+    Required<ModelConfiguration>["supportedFiles"][number]
+  >;
+}): Record<string, Record<string, ModelConfiguration>> => {
+  const findModelByRequestedFileTypes =
+    findModelWithSupportedFileTypes(requestedFileTypes);
+  return {
+    factual: {
+      simple: {
+        ...findModelByRequestedFileTypes(
+          "Llama 3.1 Instant",
+          "Llama 4 Scout",
+          "GPT 5 Nano"
+        ),
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("Llama 4 Scout"),
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Llama 4", "Gemini 2.5 Flash"),
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("GPT 5"),
+      },
     },
-    moderate: {
-      ...languageModelConfigurations[
-        !hasDocument && !tools.includes(RAG_TOOL)
-          ? "Sonar"
-          : !hasDocument
-          ? "Llama 4"
-          : "Gemini 2.5 Flash Lite"
-      ],
+    analytical: {
+      simple: {
+        ...findModelByRequestedFileTypes("Llama 4", "Gemini 2.5 Flash Lite"),
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("GPT OSS Mini", "GPT 5 Mini"),
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Qwen 3", "Gemini 2.5 Flash"),
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("Grok 4"),
+      },
     },
-    complex: {
-      ...languageModelConfigurations[
-        !hasDocument && !tools.includes(RAG_TOOL)
-          ? "Sonar Reasoning"
-          : "Gemini 2.5 Flash"
-      ],
+    technical: {
+      simple: {
+        ...findModelByRequestedFileTypes("Llama 4 Scout", "GPT 5 Mini"),
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("GPT OSS Mini High", "GPT 5 Mini"),
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("GPT OSS", "Claude Sonnet 4"),
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("GPT 5"),
+      },
     },
-    advanced: {
-      ...languageModelConfigurations[
-        !hasDocument && !tools.includes(RAG_TOOL) ? "Sonar Reasoning" : "GPT 5"
-      ],
+    creative: {
+      simple: {
+        ...findModelByRequestedFileTypes(
+          "Llama 3.1 Instant",
+          "Llama 4 Scout",
+          "Gemini 2.5 Flash Lite"
+        ),
+        temperature: 1,
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
+        temperature: 1,
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Llama 4", "Gemini 2.5 Flash"),
+        temperature: 1,
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+        temperature: 1,
+      },
     },
-  },
-  analytical: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasDocument ? "Llama 4" : "Gemini 2.5 Flash Lite"
-      ],
+    prompt_engineering: {
+      simple: {
+        ...findModelByRequestedFileTypes("Llama 3.1 Instant", "GPT 5 Nano"),
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("Llama 4", "GPT 5 Mini"),
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Qwen 3", "GPT 5 Mini High"),
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("GPT 5"),
+      },
     },
-    moderate: {
-      ...languageModelConfigurations[
-        !hasDocument && !hasImage ? "GPT OSS Mini" : "GPT 5 Mini"
-      ],
+    structured_content: {
+      simple: {
+        ...findModelByRequestedFileTypes("Llama 4 Scout", "GPT 5 Nano"),
+        temperature: 0.7,
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
+        temperature: 0.7,
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+        temperature: 0.7,
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Pro"),
+        temperature: 0.7,
+      },
     },
-    complex: {
-      ...languageModelConfigurations[
-        !hasDocument && !hasImage ? "Qwen 3" : "Gemini 2.5 Flash"
-      ],
+    conversational: {
+      simple: {
+        ...findModelByRequestedFileTypes(
+          "Llama 3.1 Instant",
+          "Llama 4 Scout",
+          "GPT 5 Nano"
+        ),
+        temperature: 1,
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes(
+          "Llama 4 Scout",
+          "Gemini 2.5 Flash Lite"
+        ),
+        temperature: 1,
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Llama 4", "GPT 5 Mini"),
+        temperature: 1,
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+        temperature: 1,
+      },
     },
-    advanced: {
-      ...languageModelConfigurations["Grok 4"],
+    processing: {
+      simple: {
+        ...findModelByRequestedFileTypes("Llama 4 Scout", "GPT 5 Nano"),
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Gemini 2.0 Flash"),
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+      },
     },
-  },
-  technical: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasDocument ? "Llama 4 Scout" : "GPT 5 Mini"
-      ],
+    other: {
+      simple: {
+        ...findModelByRequestedFileTypes(
+          "Llama 3.1 Instant",
+          "Llama 4 Scout",
+          "GPT 5 Nano"
+        ),
+      },
+      moderate: {
+        ...findModelByRequestedFileTypes(
+          "Llama 3.1 Instant",
+          "Llama 4 Scout",
+          "GPT 5 Nano"
+        ),
+      },
+      complex: {
+        ...findModelByRequestedFileTypes("Llama 4", "GPT 5 Mini"),
+      },
+      advanced: {
+        ...findModelByRequestedFileTypes("Llama 4", "GPT 5 Mini"),
+      },
     },
-    moderate: {
-      ...languageModelConfigurations[
-        !hasDocument && !hasImage ? "GPT OSS Mini High" : "GPT 5 Mini"
-      ],
-    },
-    complex: {
-      ...languageModelConfigurations[
-        !hasDocument && !hasImage ? "GPT OSS" : "Claude Sonnet 4"
-      ],
-    },
-    advanced: {
-      ...languageModelConfigurations["GPT 5"],
-    },
-  },
-  creative: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasImage && !hasDocument
-          ? "Llama 3.1 Instant"
-          : !hasDocument
-          ? "Llama 4 Scout"
-          : "Gemini 2.5 Flash Lite"
-      ],
-      temperature: 1,
-    },
-    moderate: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-      temperature: 1,
-    },
-    complex: {
-      ...languageModelConfigurations[
-        !hasDocument ? "Llama 4" : "Gemini 2.5 Flash"
-      ],
-      temperature: 1,
-    },
-    advanced: {
-      ...languageModelConfigurations["Gemini 2.5 Flash"],
-      temperature: 1,
-    },
-  },
-  prompt_engineering: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasDocument && !hasImage ? "Llama 3.1 Instant" : "GPT 5 Nano"
-      ],
-    },
-    moderate: {
-      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
-    },
-    complex: {
-      ...languageModelConfigurations[
-        !hasDocument && !hasImage ? "Qwen 3" : "GPT 5 Mini High"
-      ],
-    },
-    advanced: {
-      ...languageModelConfigurations["GPT 5"],
-    },
-  },
-  structured_content: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasDocument ? "Llama 4 Scout" : "GPT 5 Nano"
-      ],
-      temperature: 0.7,
-    },
-    moderate: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-      temperature: 0.7,
-    },
-    complex: {
-      ...languageModelConfigurations["Gemini 2.5 Flash"],
-      temperature: 0.7,
-    },
-    advanced: {
-      ...languageModelConfigurations["Gemini 2.5 Pro"],
-      temperature: 0.7,
-    },
-  },
-  conversational: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasImage && !hasDocument
-          ? "Llama 3.1 Instant"
-          : !hasDocument
-          ? "Llama 4 Scout"
-          : "GPT 5 Nano"
-      ],
-      temperature: 1,
-    },
-    moderate: {
-      ...languageModelConfigurations[
-        !hasDocument ? "Llama 4 Scout" : "Gemini 2.5 Flash Lite"
-      ],
-      temperature: 1,
-    },
-    complex: {
-      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
-      temperature: 1,
-    },
-    advanced: {
-      ...languageModelConfigurations["Gemini 2.5 Flash"],
-      temperature: 1,
-    },
-  },
-  processing: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasDocument ? "Llama 4 Scout" : "GPT 5 Nano"
-      ],
-    },
-    moderate: {
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
-    },
-    complex: {
-      ...languageModelConfigurations["Gemini 2.0 Flash"],
-    },
-    advanced: {
-      ...languageModelConfigurations["Gemini 2.5 Flash"],
-    },
-  },
-  other: {
-    simple: {
-      ...languageModelConfigurations[
-        !hasImage && !hasDocument
-          ? "Llama 3.1 Instant"
-          : !hasDocument
-          ? "Llama 4 Scout"
-          : "GPT 5 Nano"
-      ],
-    },
-    moderate: {
-      ...languageModelConfigurations[
-        !hasImage && !hasDocument
-          ? "Llama 3.1 Instant"
-          : !hasDocument
-          ? "Llama 4 Scout"
-          : "GPT 5 Nano"
-      ],
-    },
-    complex: {
-      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
-    },
-    advanced: {
-      ...languageModelConfigurations[!hasDocument ? "Llama 4" : "GPT 5 Mini"],
-    },
-  },
-});
+  };
+};
 
 const systemPrompt = `\n
   # Query Classification for LLM Routing

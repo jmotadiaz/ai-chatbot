@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useCollapse } from "react-collapsed";
-import { ChevronDownIcon, ChevronUpIcon, Dot, LinkIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, LinkIcon } from "lucide-react";
 import { ReasoningUIPart } from "ai";
 import { Markdown } from "@/components/markdown";
 import { SpinnerIcon } from "@/components/icons";
@@ -81,14 +81,16 @@ const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
     <div className="flex flex-col">
       {!isReasoningDone ? (
         <div className="flex flex-row gap-2 items-center">
-          <div className="font-medium text-sm">Reasoning</div>
+          <div className="font-semibold text-sm">Reasoning</div>
           <div className="animate-spin">
             <SpinnerIcon />
           </div>
         </div>
       ) : (
         <div className="flex flex-row gap-2 items-center">
-          <div className="font-medium text-sm">Reasoned for a few seconds</div>
+          <div className="font-semibold text-sm">
+            Reasoned for a few seconds
+          </div>
           <button
             className={cn(
               "cursor-pointer rounded-full dark:hover:bg-zinc-800 hover:bg-zinc-200",
@@ -134,6 +136,7 @@ interface UserMessageProps {
 
 const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const text = message.parts.find((part) => part.type === "text")?.text || "";
+  const files = message.parts?.filter((part) => part.type === "file");
   const isLongMessage = text.length > 350;
   const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
@@ -146,12 +149,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
 
   return (
     <>
-      <div
-        className={cn(
-          "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-4xl",
-          "group-data-[role=user]/message:w-fit"
-        )}
-      >
+      <div className={cn("flex gap-4 w-full ml-auto max-w-4xl my-4", "w-fit")}>
         <div className="flex flex-col w-full space-y-4">
           <CopyBlock text={text}>
             <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-2 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl">
@@ -172,29 +170,25 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
                   </div>
                 </motion.div>
               </>
-              <div className="mt-2 flex space-x-2 items-center">
-                {message.parts
-                  ?.filter((part) => part.type === "file")
-                  .map((part, i) => (
-                    <FileThumbnail
-                      key={`message-${message.id}-${i}`}
-                      file={part}
-                    />
-                  ))}
-              </div>
+              {isLongMessage && (
+                <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
+                  <button
+                    {...getToggleProps()}
+                    className="hover:text-zinc-700 dark:hover:text-zinc-200 font-semibold cursor-pointer"
+                  >
+                    Show {isExpanded ? "less" : "more"}
+                  </button>
+                </div>
+              )}
             </div>
           </CopyBlock>
         </div>
       </div>
-
-      {isLongMessage && (
-        <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
-          <button
-            {...getToggleProps()}
-            className="hover:text-zinc-700 dark:hover:text-zinc-200 font-medium cursor-pointer"
-          >
-            Show {isExpanded ? "less" : "more"}
-          </button>
+      {!!files.length && (
+        <div className="flex space-x-3 items-center justify-end my-4">
+          {files.map((part, i) => (
+            <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
+          ))}
         </div>
       )}
     </>
@@ -282,7 +276,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
             <a
               key={`source-${part.sourceId}`}
               href={part.url}
-              className="font-medium flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
+              className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
               target="_blank"
             >
               <LinkIcon className="h-4 w-4" />
@@ -302,7 +296,7 @@ interface AutoModelDetailsProps {
 const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
   return (
-    <div className="mb-3">
+    <div className="mb-4">
       <div
         className="font-bold flex items-center text-sm text-zinc-500 dark:text-zinc-400 my-2 cursor-pointer select-none"
         {...getToggleProps()}
@@ -315,25 +309,19 @@ const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
         />
       </div>
       <div
-        className="flex flex-col lg:flex-row  lg:items-center space-y-1 space-x-2 text-sm text-zinc-500 dark:text-zinc-400"
+        className="flex flex-col space-y-1 text-sm ml-2 pl-3 text-zinc-500 dark:text-zinc-400 border-l-4 border-secondary"
         {...getCollapseProps()}
       >
         <div>
-          <span className="font-medium">Category:</span>{" "}
+          <span className="font-semibold">Category:</span>{" "}
           {capitalize(metadata.category)}
         </div>
-        <div className="hidden lg:block">
-          <Dot />
-        </div>
         <div>
-          <span className="font-medium">Complexity:</span>{" "}
+          <span className="font-semibold">Complexity:</span>{" "}
           {capitalize(metadata.complexity)}
         </div>
-        <div className="hidden lg:block">
-          <Dot />
-        </div>
         <div>
-          <span className="font-medium">Model:</span> {metadata.model}
+          <span className="font-semibold">Model:</span> {metadata.model}
         </div>
       </div>
     </div>

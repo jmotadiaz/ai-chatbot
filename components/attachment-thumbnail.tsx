@@ -29,7 +29,7 @@ export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
     );
   } else {
     return (
-      <div className="h-12 flex rounded-xl bg-zinc-500  dark:bg-zinc-700 text-gray-100 flex-col justify-center pl-4 pr-12 py-2 text-sm font-medium">
+      <div className="h-12 flex rounded-xl bg-zinc-500  dark:bg-zinc-700 text-gray-100 flex-col justify-center pl-4 pr-12 py-2 text-sm font-semibold">
         <span className="whitespace-nowrap mb-0.5">
           {removeExtension(file.filename)}
         </span>

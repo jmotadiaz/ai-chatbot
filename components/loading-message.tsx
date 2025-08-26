@@ -82,7 +82,7 @@ interface ToolLoadingProps {
 const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
   return (
     <motion.div
-      className="font-medium"
+      className="font-semibold"
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 5, opacity: 0 }}

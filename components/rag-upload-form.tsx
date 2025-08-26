@@ -131,7 +131,7 @@ export const RAGUploadForm = () => {
               accept=".json"
               onChange={handleJsonFileChange}
               disabled={isLoading}
-              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
             />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -156,7 +156,7 @@ export const RAGUploadForm = () => {
               multiple
               onChange={handleMarkdownFilesChange}
               disabled={isLoading}
-              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/20 dark:file:text-green-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
             />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -167,14 +167,14 @@ export const RAGUploadForm = () => {
         {url && (
           <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
             <LinkIcon className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium truncate">{url}</span>
+            <span className="text-sm font-semibold truncate">{url}</span>
           </div>
         )}
 
         {jsonFile && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <FileText className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium">{jsonFile.name}</span>
+            <span className="text-sm font-semibold">{jsonFile.name}</span>
             <span className="text-xs text-gray-500">
               ({(jsonFile.size / 1024).toFixed(1)} KB)
             </span>
@@ -183,7 +183,7 @@ export const RAGUploadForm = () => {
 
         {markdownFiles && markdownFiles.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               Selected markdown files ({markdownFiles.length}):
             </p>
             <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -193,7 +193,7 @@ export const RAGUploadForm = () => {
                   className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg"
                 >
                   <FileText className="w-3 h-3 text-green-500" />
-                  <span className="text-xs font-medium">{file.name}</span>
+                  <span className="text-xs font-semibold">{file.name}</span>
                   <span className="text-xs text-gray-500">
                     ({(file.size / 1024).toFixed(1)} KB)
                   </span>
