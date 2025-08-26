@@ -1,5 +1,5 @@
 import { ClassValue } from "clsx";
-import { Settings } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { Label } from "@/components/ui/label";
@@ -25,14 +25,14 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
     setConfig({ topK: value });
   };
 
-  if (selectedModel === "Auto Model Workflow") {
+  if (selectedModel === "Router") {
     return null;
   }
 
   return (
     <Dropdown.Container>
       <ChatControl
-        Icon={Settings}
+        Icon={Settings2}
         type="button"
         className={className}
         {...getDropdownTriggerProps()}

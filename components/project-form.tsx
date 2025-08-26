@@ -20,11 +20,11 @@ import { Tabs, useTabs } from "@/components/ui/tabs";
 import { createProject, updateProject } from "@/lib/ai/actions/project";
 import { Project } from "@/lib/db/schema";
 import {
-  defaultModel,
   chatModelId,
   defaultTemperature,
   defaultTopP,
   defaultTopK,
+  CHAT_MODELS,
 } from "@/lib/ai/models/definition";
 import { ChatProvider } from "@/app/providers";
 import { Toggle } from "@/components/ui/toggle";
@@ -36,6 +36,8 @@ export interface ProjectFormProps {
   project?: Project;
 }
 
+const models = CHAT_MODELS.filter((model) => model !== "Router");
+
 export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
   const [title, setTitle] = useState(project?.name || "");
@@ -45,7 +47,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   );
   const [tools, setTools] = useState<Tools>((project?.tools as Tools) || []);
   const [model, setModel] = useState<chatModelId>(
-    (project?.defaultModel as chatModelId) || defaultModel
+    (project?.defaultModel as chatModelId) || models[0]
   );
   const [temperature, setTemperature] = useState<number>(
     project?.defaultTemperature ?? defaultTemperature
@@ -133,6 +135,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               <ModelPickerSelector
                 selectedModel={model}
                 setSelectedModel={setModel}
+                models={models}
               />
             </div>
 

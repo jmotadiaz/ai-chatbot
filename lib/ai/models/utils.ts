@@ -31,7 +31,7 @@ export const calculateModelConfiguration = async ({
   modelConfiguration: ModelConfiguration;
   autoModelMetadata?: AutoModelMetadata;
 }> => {
-  if (selectedModel === "Auto Model Workflow") {
+  if (selectedModel === "Router") {
     return autoModel({ messages, tools });
   } else {
     const modelConfig: ModelConfiguration =
@@ -76,7 +76,7 @@ export const getChatConfigurationByModelId = (
         "pdf",
       ] as Required<ModelConfiguration>["supportedFiles"],
     },
-    modelId !== "Auto Model Workflow" ? chatModelConfigurations[modelId] : {}
+    modelId !== "Router" ? chatModelConfigurations[modelId] : {}
   );
 
   return {

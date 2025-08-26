@@ -235,13 +235,12 @@ export const chatModelKeys = [
   "Llama 4",
   "Kimi K2",
   "Deepseek Chat",
-  "Sonar",
   "Qwen 3",
   "Deepseek R1",
-  "Sonar Reasoning",
   "Claude Sonnet 4",
   "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",
+  "GPT OSS Mini",
   "GPT OSS",
   "GPT 5 Mini",
   "GPT 5",
@@ -251,16 +250,11 @@ export const chatModelKeys = [
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
 
-export type chatModelId =
-  | (typeof chatModelKeys)[number]
-  | "Auto Model Workflow";
+export type chatModelId = (typeof chatModelKeys)[number] | "Router";
 
-export const CHAT_MODELS: chatModelId[] = [
-  "Auto Model Workflow",
-  ...chatModelKeys,
-];
+export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 
-export const defaultModel: chatModelId = "Auto Model Workflow";
+export const defaultModel: chatModelId = "Router";
 export const defaultTemperature = 0.3;
 export const defaultTopP = 0.95;
 export const defaultTopK = 40;

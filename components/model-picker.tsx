@@ -1,49 +1,18 @@
 "use client";
-import { Sparkles } from "lucide-react";
-import { useState } from "react";
+
 import { useChatContext } from "@/app/providers";
 import { Select, useSelect } from "@/components/ui/select";
-import {
-  chatModelId,
-  CHAT_MODELS,
-  chatModelKeys,
-} from "@/lib/ai/models/definition";
+import { chatModelId, CHAT_MODELS } from "@/lib/ai/models/definition";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 
 export const ModelPicker = () => {
   const { selectedModel, setSelectedModel } = useModelPicker();
-  const [previousModel, setPreviousModel] = useState<chatModelId>(() =>
-    selectedModel === "Auto Model Workflow" ? chatModelKeys[0] : selectedModel
-  );
 
   return (
-    <div className="flex items-center space-x-2">
-      {selectedModel !== "Auto Model Workflow" ? (
-        <ModelPickerSelector {...{ selectedModel, setSelectedModel }} />
-      ) : (
-        <ModelPickerLoading animated={false} />
-      )}
-      <Button
-        variant="icon"
-        size="icon"
-        className={cn({
-          "bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-500 text-white dark:text-white":
-            selectedModel === "Auto Model Workflow",
-        })}
-        onClick={() => {
-          setPreviousModel(selectedModel);
-          setSelectedModel(
-            selectedModel === "Auto Model Workflow"
-              ? previousModel
-              : "Auto Model Workflow"
-          );
-        }}
-      >
-        <Sparkles className="w-4 h-4" />
-      </Button>
-    </div>
+    <ModelPickerSelector
+      {...{ selectedModel, setSelectedModel, models: CHAT_MODELS }}
+    />
   );
 };
 
@@ -66,13 +35,13 @@ export const ModelPickerLoading: React.FC<ModelPickerLoadingProps> = ({
 export interface ModelPickerSelectorProps {
   selectedModel: chatModelId;
   setSelectedModel: (model: chatModelId) => void;
+  models: chatModelId[];
 }
-
-const models = CHAT_MODELS.filter((model) => model !== "Auto Model Workflow");
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   selectedModel,
   setSelectedModel,
+  models,
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -94,7 +63,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   );
 };
 
-export const useModelPicker = (): ModelPickerSelectorProps => {
+export const useModelPicker = (): Omit<ModelPickerSelectorProps, "models"> => {
   const { selectedModel, setConfig } = useChatContext();
 
   const setSelectedModel = (model: chatModelId) => {

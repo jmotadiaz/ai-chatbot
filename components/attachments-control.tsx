@@ -31,14 +31,14 @@ export const AttachmentsControl: React.FC = () => {
     <div className="relative">
       <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
 
-      <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
+      <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4 py-0.5">
         {supportedFiles.includes("img") && (
           <>
             <Label
               className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative m-0 py-1.5"
               htmlFor="image-input"
             >
-              <ImageIcon className="w-4 h-4 mr-1.5" /> Image
+              <ImageIcon className="w-5 h-5 mr-1" /> Image
               <input
                 id="image-input"
                 type="file"
@@ -54,7 +54,7 @@ export const AttachmentsControl: React.FC = () => {
                   className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative m-0 py-1.5"
                   htmlFor="camera-input"
                 >
-                  <Camera className="w-4 h-4 mr-1.5" /> Camera
+                  <Camera className="w-5 h-5 mr-1" /> Camera
                   <input
                     id="camera-input"
                     type="file"
@@ -74,7 +74,7 @@ export const AttachmentsControl: React.FC = () => {
             className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative py-1 m-0"
             htmlFor="document-input"
           >
-            <FileText className="w-4 h-4 mr-1.5" /> Document
+            <FileText className="w-5 h-5 mr-1" /> Document
             <input
               id="document-input"
               type="file"
