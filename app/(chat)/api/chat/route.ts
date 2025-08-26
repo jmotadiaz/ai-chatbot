@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     topK,
     chatId,
     systemPrompt,
-    tools = [],
+    tools: selectedTools = [],
     messageId,
   }: {
     messages: ChatbotMessage[];
@@ -76,14 +76,14 @@ export async function POST(req: Request) {
         ...ragFactory({ writer, userId: session.user.id }),
         ...urlContextFactory({ writer }),
       };
-      const { modelConfiguration, autoModelMetadata } =
+      const { modelConfiguration, autoModelMetadata, tools } =
         await calculateModelConfiguration({
           selectedModel,
           messages,
           temperature,
           topP,
           topK,
-          tools,
+          tools: selectedTools,
         });
       const executedTools = new Set<Tool>(modelConfiguration.disabledTools);
       let reasoning = false;

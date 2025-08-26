@@ -26,10 +26,11 @@ export const calculateModelConfiguration = async ({
   temperature?: number;
   topP?: number;
   topK?: number;
-  tools?: Tools;
+  tools: Tools;
 }): Promise<{
   modelConfiguration: ModelConfiguration;
   autoModelMetadata?: AutoModelMetadata;
+  tools: Tools;
 }> => {
   if (selectedModel === "Router") {
     return autoModel({ messages, tools });
@@ -48,6 +49,7 @@ export const calculateModelConfiguration = async ({
         topP: modelConfig.disabledConfig?.includes("topP") ? undefined : topP,
         topK: modelConfig.disabledConfig?.includes("topK") ? undefined : topK,
       },
+      tools,
     };
   }
 };
