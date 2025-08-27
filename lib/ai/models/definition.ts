@@ -83,9 +83,10 @@ export const languageModelConfigurations = {
     },
   },
   "Deepseek R1": {
-    model: openrouter.chat("deepseek/deepseek-r1-0528", {
-      reasoning: { enabled: true, effort: "high" },
-    }),
+    model: deepseek("deepseek-reasoner"),
+    providerOptions: {
+      openrouter: { reasoning: { enabled: true, effort: "high" } },
+    },
     temperature: 0.3,
   },
   "Qwen 3": {
