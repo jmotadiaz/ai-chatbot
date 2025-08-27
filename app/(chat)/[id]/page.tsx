@@ -8,7 +8,6 @@ import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
-import { Message } from "@/lib/db/schema";
 import {
   defaultTemperature,
   defaultTopP,
@@ -21,8 +20,8 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
-import { ChatbotMessage } from "@/lib/ai/types";
 import { filterTools } from "@/lib/ai/tools/utils";
+import { dbMessageToChatbotMessage } from "@/lib/ai/utils";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -58,7 +57,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
   }
 
   // Convert to UI messages format
-  const initialMessages = convertToChatbotMessages(messages);
+  const initialMessages = dbMessageToChatbotMessage(messages);
 
   return (
     <ChatProvider
@@ -91,15 +90,3 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
 };
 
 export default ChatPage;
-
-function convertToChatbotMessages(
-  messages: Array<Message>
-): Array<ChatbotMessage> {
-  return messages.map((message) => ({
-    id: message.id,
-    parts: message.parts as ChatbotMessage["parts"],
-    role: message.role as ChatbotMessage["role"],
-    createdAt: message.createdAt,
-    // In v5, attachments are handled through parts array
-  }));
-}

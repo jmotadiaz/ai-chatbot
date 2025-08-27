@@ -11,7 +11,7 @@ import { auth } from "@/auth";
 import { chatModelId } from "@/lib/ai/models/definition";
 import {
   generateTitleFromUserMessage,
-  messageToDbMessage,
+  chatbotMessageToDbMessage,
 } from "@/lib/ai/utils";
 import { ChatbotMessage } from "@/lib/ai/types";
 
@@ -55,7 +55,7 @@ export async function saveChat(req: {
         tools,
         title: await generateTitleFromUserMessage(messages[0]),
       }),
-      saveMessages(messages.map(messageToDbMessage(chatId)))
+      saveMessages(messages.map(chatbotMessageToDbMessage(chatId)))
     );
     revalidatePath("/");
   } catch (error: unknown) {

@@ -223,8 +223,7 @@ export async function getChats({
   try {
     const extendedLimit = limit + 1;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const query = (whereCondition?: SQL<any>) =>
+    const query = (whereCondition?: SQL) =>
       db
         .select()
         .from(chat)
@@ -244,7 +243,7 @@ export async function getChats({
                   : eq(chat.projectId, projectId)
               )
         )
-        .orderBy(desc(chat.createdAt))
+        .orderBy(desc(chat.updatedAt))
         .limit(extendedLimit);
 
     let filteredChats: Array<Chat> = [];
@@ -296,14 +295,17 @@ export const saveMessages =
       return tx
         .insert(message)
         .values(
-          messages.map(({ id, chatId, role, parts, attachments }) => ({
-            id,
-            chatId,
-            role,
-            parts,
-            attachments,
-            createdAt: new Date(),
-          }))
+          messages.map(
+            ({ id, chatId, role, parts, attachments, metadata }) => ({
+              id,
+              chatId,
+              role,
+              parts,
+              metadata,
+              attachments,
+              createdAt: new Date(),
+            })
+          )
         )
         .onConflictDoUpdate({
           target: message.id,

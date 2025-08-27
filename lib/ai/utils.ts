@@ -1,6 +1,6 @@
 import { FileUIPart, GenerateObjectResult, generateText } from "ai";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
-import { InsertMessage } from "@/lib/db/schema";
+import { InsertMessage, Message } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
 
 export async function generateTitleFromUserMessage(
@@ -21,15 +21,29 @@ export async function generateTitleFromUserMessage(
   return title;
 }
 
-export const messageToDbMessage =
+export const chatbotMessageToDbMessage =
   (chatId: string) =>
-  ({ id, role, parts }: ChatbotMessage): InsertMessage => ({
+  ({ id, role, parts, metadata }: ChatbotMessage): InsertMessage => ({
     chatId,
     id,
     role,
     parts: parts.filter((part) => part.type !== "file"),
+    metadata,
     attachments: [], // In v5, attachments are handled through parts
   });
+
+export function dbMessageToChatbotMessage(
+  messages: Array<Message>
+): Array<ChatbotMessage> {
+  return messages.map((message) => ({
+    id: message.id,
+    parts: message.parts as ChatbotMessage["parts"],
+    role: message.role as ChatbotMessage["role"],
+    metadata: message.metadata as ChatbotMessage["metadata"],
+    createdAt: message.createdAt,
+    // In v5, attachments are handled through parts array
+  }));
+}
 
 export const messagePartsToText = (message: ChatbotMessage): string => {
   return message.parts?.reduce((content, part) => {

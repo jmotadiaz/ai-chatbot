@@ -22,7 +22,7 @@ import {
   updateChat,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { messagePartsToText, messageToDbMessage } from "@/lib/ai/utils";
+import { messagePartsToText, chatbotMessageToDbMessage } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/models/utils";
 import {
   WEB_SEARCH_TOOL,
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
                     deleteMessageById(messageId),
                     saveMessages(
                       [userMessage, assistantMessage].map(
-                        messageToDbMessage(chatId)
+                        chatbotMessageToDbMessage(chatId)
                       )
                     )
                   );
