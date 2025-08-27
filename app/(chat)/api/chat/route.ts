@@ -136,7 +136,6 @@ export async function POST(req: Request) {
         },
         onChunk: ({ chunk }) => {
           if (chunk.type === "reasoning-delta" && !reasoning) {
-            console.log("Reasoning started");
             writer.write({
               type: "data-reasoning",
               data: {
@@ -146,7 +145,6 @@ export async function POST(req: Request) {
             reasoning = true;
           }
           if (chunk.type !== "reasoning-delta" && reasoning) {
-            console.log("Reasoning finished");
             writer.write({
               type: "data-reasoning",
               data: {

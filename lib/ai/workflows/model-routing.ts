@@ -301,13 +301,13 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
+          ...findModelByRequestedFileTypes("Gemini 2.0 Flash"),
           temperature: 0.7,
         },
       },
       complex: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+          ...findModelByRequestedFileTypes("Kimi K2"),
           temperature: 0.7,
         },
       },
