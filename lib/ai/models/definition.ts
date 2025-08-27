@@ -9,7 +9,10 @@ import {
 import { anthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import {
+  createOpenRouter,
+  OpenRouterProviderOptions,
+} from "@openrouter/ai-sdk-provider";
 import { Tools } from "@/lib/ai/tools/types";
 
 const openrouter = createOpenRouter({
@@ -25,6 +28,7 @@ export interface ModelConfiguration {
     groq?: GroqProviderOptions;
     google?: GoogleGenerativeAIProviderOptions;
     openai?: OpenAIResponsesProviderOptions;
+    openrouter?: OpenRouterProviderOptions;
   };
   disabledConfig?: ("temperature" | "topP" | "topK")[];
   disabledTools?: Tools;
@@ -92,6 +96,9 @@ export const languageModelConfigurations = {
     providerOptions: {
       groq: { reasoningFormat: "parsed" },
     },
+  },
+  "Qwen 3 Coder": {
+    model: openrouter.chat("qwen/qwen3-coder"),
   },
   Sonar: {
     model: perplexity("sonar"),

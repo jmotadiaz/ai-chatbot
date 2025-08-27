@@ -144,8 +144,11 @@ const decisionTree = ({
     Required<ModelConfiguration>["supportedFiles"][number]
   >;
 }): Record<
-  string,
-  Record<string, { modelConfiguration: ModelConfiguration; tools?: Tools }>
+  (typeof CATEGORIES)[number],
+  Record<
+    (typeof COMPLEXITY_LEVELS)[number],
+    { modelConfiguration: ModelConfiguration; tools?: Tools }
+  >
 > => {
   const findModelByRequestedFileTypes =
     findModelWithSupportedFileTypes(requestedFileTypes);
@@ -225,7 +228,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen 3",
+          "Qwen 3 Coder",
           "GPT 5 Mini"
         ),
       },
