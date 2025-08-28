@@ -260,6 +260,7 @@ export const chatModelKeys = [
   "GPT OSS",
   "GPT 5 Mini",
   "GPT 5",
+  "o3",
   "Grok 3 Mini",
   "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
