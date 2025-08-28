@@ -39,7 +39,7 @@ import { ragFactory } from "@/lib/ai/tools/rag";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { hasUrls } from "@/lib/utils";
 
-export const maxDuration = process.env.NODE_ENV === "development" ? 60 * 5 : 60;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const session = await auth();
