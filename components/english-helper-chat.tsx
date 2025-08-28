@@ -7,12 +7,12 @@ import { ChatControl } from "@/components/chat-control";
 import { LoadingAssistantMessageIcon, SpinnerIcon } from "@/components/icons";
 import { Textarea } from "@/components/textarea";
 import { CopyBlock } from "@/components/copy-block";
-import { Markdown } from "@/components/markdown";
 import { cn } from "@/lib/utils";
 import { grammarSchema } from "@/lib/ai/schemas/grammar";
 import { useObject, UseObjectReturn } from "@/lib/ai/hooks/use-object";
 import { useSpeech } from "@/lib/ai/hooks/use-speech";
 import { Button } from "@/components/ui/button";
+import { Response } from "@/components/response";
 
 const tabs = ["translate", "grammar"] as const;
 
@@ -102,7 +102,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
             <>
               <div className="font-semibold animate-fade">Translation:</div>
               <CopyBlock className="p-3 animate-fade" text={completion}>
-                <Markdown content={completion} />
+                <Response>{completion}</Response>
               </CopyBlock>
               <SpeechControl input={completion} className="my-2" />
             </>
@@ -164,7 +164,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
                   className="p-3 animate-fade"
                   text={object.correctedText}
                 >
-                  <Markdown content={object.correctedText || ""} />
+                  <Response>{object.correctedText}</Response>
                 </CopyBlock>
                 {object.correctedText && (
                   <SpeechControl

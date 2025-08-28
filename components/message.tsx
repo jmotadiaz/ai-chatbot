@@ -1,17 +1,15 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useCollapse } from "react-collapsed";
-import { ChevronDownIcon, ChevronUpIcon, LinkIcon } from "lucide-react";
-import { ReasoningUIPart } from "ai";
-import { Markdown } from "@/components/markdown";
-import { SpinnerIcon } from "@/components/icons";
+import { ChevronDownIcon, LinkIcon } from "lucide-react";
 import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
+import { Response } from "@/components/response";
 
 export const Message = ({
   message,
@@ -36,97 +34,6 @@ export const Message = ({
         )}
       </motion.div>
     </AnimatePresence>
-  );
-};
-
-interface ReasoningMessagePartProps {
-  part: ReasoningUIPart;
-  isReasoningDone: boolean;
-}
-
-const ReasoningMessagePart: React.FC<ReasoningMessagePartProps> = ({
-  part,
-  isReasoningDone,
-}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const variants = {
-    collapsed: {
-      height: 0,
-      opacity: 0,
-      marginTop: 0,
-      marginBottom: 0,
-    },
-    expanded: {
-      height: "auto",
-      opacity: 1,
-      marginTop: "1rem",
-      marginBottom: 0,
-    },
-  };
-
-  const memoizedSetIsExpanded = useCallback((value: boolean) => {
-    setIsExpanded(value);
-  }, []);
-
-  useEffect(() => {
-    memoizedSetIsExpanded(!isReasoningDone);
-  }, [isReasoningDone, memoizedSetIsExpanded]);
-
-  if (!part.text) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-col">
-      {!isReasoningDone ? (
-        <div className="flex flex-row gap-2 items-center">
-          <div className="font-semibold text-sm">Reasoning</div>
-          <div className="animate-spin">
-            <SpinnerIcon />
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-row gap-2 items-center">
-          <div className="font-semibold text-sm">
-            Reasoned for a few seconds
-          </div>
-          <button
-            className={cn(
-              "cursor-pointer rounded-full dark:hover:bg-zinc-800 hover:bg-zinc-200",
-              {
-                "dark:bg-zinc-800 bg-zinc-200": isExpanded,
-              }
-            )}
-            onClick={() => {
-              setIsExpanded(!isExpanded);
-            }}
-          >
-            {isExpanded ? (
-              <ChevronDownIcon className="h-4 w-4" />
-            ) : (
-              <ChevronUpIcon className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-      )}
-
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <motion.div
-            key="reasoning"
-            className="text-sm dark:text-zinc-400 text-zinc-600 flex flex-col gap-4 border-l pl-3 dark:border-zinc-800"
-            initial="collapsed"
-            animate="expanded"
-            exit="collapsed"
-            variants={variants}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-          >
-            <Markdown content={part.text} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
   );
 };
 
@@ -216,20 +123,9 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
                     className="flex flex-row gap-2 items-start w-full"
                   >
                     <div className={cn("max-w-full")}>
-                      <Markdown content={part.text} />
+                      <Response>{part.text}</Response>
                     </div>
                   </motion.div>
-                );
-              case "reasoning":
-                return (
-                  <ReasoningMessagePart
-                    key={`message-${message.id}-${i}`}
-                    part={part}
-                    isReasoningDone={
-                      part.state === "done" ||
-                      message.parts?.some(({ type }) => type === "text")
-                    }
-                  />
                 );
               default:
                 return null;

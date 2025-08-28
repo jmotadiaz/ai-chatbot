@@ -57,6 +57,13 @@
       "when": 1756305442712,
       "tag": "0007_cloudy_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1756360238701,
+      "tag": "0008_complete_paladin",
+      "breakpoints": true
     }
   ]
 }

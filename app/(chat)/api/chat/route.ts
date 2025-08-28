@@ -174,11 +174,11 @@ export async function POST(req: Request) {
                 return undefined;
             }
           },
-          onFinish: async ({ messages }) => {
+          onFinish: async ({ responseMessage }) => {
             if (chatId) {
               try {
-                const assistantMessage = messages.at(-1);
-                const userMessage = messages.at(-2);
+                const assistantMessage = responseMessage;
+                const userMessage = messages.at(-1);
 
                 if (
                   userMessage?.role === "user" &&

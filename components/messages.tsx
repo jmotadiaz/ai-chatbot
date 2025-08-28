@@ -8,6 +8,8 @@ export const Messages = ({
   messages: ChatbotMessage[];
   isLoading: boolean;
 }) => {
+  console.log(messages.at(-1)?.parts.map((p) => p.type));
+  console.log(messages.at(-1)?.metadata);
   return (
     <>
       {messages.map((m, i) => (

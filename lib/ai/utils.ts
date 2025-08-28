@@ -29,7 +29,6 @@ export const chatbotMessageToDbMessage =
     role,
     parts: parts.filter((part) => part.type !== "file"),
     metadata,
-    attachments: [], // In v5, attachments are handled through parts
   });
 
 export function dbMessageToChatbotMessage(
@@ -41,7 +40,6 @@ export function dbMessageToChatbotMessage(
     role: message.role as ChatbotMessage["role"],
     metadata: message.metadata as ChatbotMessage["metadata"],
     createdAt: message.createdAt,
-    // In v5, attachments are handled through parts array
   }));
 }
 

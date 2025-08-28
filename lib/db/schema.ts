@@ -77,7 +77,6 @@ export const message = pgTable("Message", {
   role: varchar("role", { length: 50 }).notNull(),
   parts: json("parts").notNull(),
   metadata: json("metadata"),
-  attachments: json("attachments").notNull(),
   serial: serial("serial").unique(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()

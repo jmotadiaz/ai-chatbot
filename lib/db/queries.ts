@@ -295,24 +295,20 @@ export const saveMessages =
       return tx
         .insert(message)
         .values(
-          messages.map(
-            ({ id, chatId, role, parts, attachments, metadata }) => ({
-              id,
-              chatId,
-              role,
-              parts,
-              metadata,
-              attachments,
-              createdAt: new Date(),
-            })
-          )
+          messages.map(({ id, chatId, role, parts, metadata }) => ({
+            id,
+            chatId,
+            role,
+            parts,
+            metadata,
+            createdAt: new Date(),
+          }))
         )
         .onConflictDoUpdate({
           target: message.id,
           set: {
             role: sql`excluded.role`,
             parts: sql`excluded.parts`,
-            attachments: sql`excluded.attachments`,
           },
         })
         .returning();
