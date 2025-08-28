@@ -239,7 +239,7 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5 High"),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
       },
     },
     creative: {

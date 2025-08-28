@@ -4,6 +4,7 @@ import { z } from "zod";
 import { retrieve } from "@/lib/ai/rag/retrieve";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
+import { SimilarChunks } from "@/lib/db/queries";
 
 export interface RagFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;
@@ -31,7 +32,7 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
         similarity: z.number().describe("The similarity score of the chunk."),
       })
     ),
-    execute: async ({ query }, { toolCallId }) => {
+    execute: async ({ query }, { toolCallId }): Promise<SimilarChunks> => {
       console.log("RAG tool called with query:", query);
       writer.write({
         type: "data-rag",

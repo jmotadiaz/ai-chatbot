@@ -1,6 +1,6 @@
 import { groq, GroqProviderOptions } from "@ai-sdk/groq";
 import { LanguageModel } from "ai";
-import { createXai } from "@ai-sdk/xai";
+import { createXai, XaiProviderOptions } from "@ai-sdk/xai";
 import { openai, OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import {
   createGoogleGenerativeAI,
@@ -29,6 +29,7 @@ export interface ModelConfiguration {
     google?: GoogleGenerativeAIProviderOptions;
     openai?: OpenAIResponsesProviderOptions;
     openrouter?: OpenRouterProviderOptions;
+    xai?: XaiProviderOptions;
   };
   disabledConfig?: ("temperature" | "topP" | "topK")[];
   disabledTools?: Tools;
@@ -177,16 +178,6 @@ export const languageModelConfigurations = {
     providerOptions: {
       openai: {
         textVerbosity: "low",
-        serviceTier: "flex",
-      },
-    },
-    supportedFiles: ["img", "pdf"],
-  },
-  "GPT 5 High": {
-    model: openai("gpt-5-2025-08-07"),
-    providerOptions: {
-      openai: {
-        textVerbosity: "low",
         reasoningEffort: "high",
       },
     },
@@ -229,6 +220,11 @@ export const languageModelConfigurations = {
   "Grok 4": {
     model: xai("grok-4-0709"),
     supportedFiles: ["img", "pdf"],
+    providerOptions: {
+      xai: {
+        reasoningEffort: "high",
+      },
+    },
   },
 } satisfies ModelConfigurations;
 
