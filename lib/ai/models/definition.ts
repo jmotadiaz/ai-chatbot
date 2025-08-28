@@ -185,7 +185,7 @@ export const languageModelConfigurations = {
     providerOptions: {
       openai: {
         textVerbosity: "low",
-        reasoningEffort: "high",
+        reasoningEffort: "medium",
       },
     },
     supportedFiles: ["img", "pdf"],
@@ -227,11 +227,6 @@ export const languageModelConfigurations = {
   "Grok 4": {
     model: xai("grok-4-0709"),
     supportedFiles: ["img", "pdf"],
-    providerOptions: {
-      xai: {
-        reasoningEffort: "high",
-      },
-    },
   },
 } satisfies ModelConfigurations;
 
