@@ -6,7 +6,7 @@ import {
   createGoogleGenerativeAI,
   GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
-import { anthropic } from "@ai-sdk/anthropic";
+import { anthropic, AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import {
@@ -25,6 +25,7 @@ export const xai = createXai();
 export interface ModelConfiguration {
   model: LanguageModel;
   providerOptions?: {
+    anthropic?: AnthropicProviderOptions;
     groq?: GroqProviderOptions;
     google?: GoogleGenerativeAIProviderOptions;
     openai?: OpenAIResponsesProviderOptions;
@@ -124,6 +125,12 @@ export const languageModelConfigurations = {
   },
   "Claude Opus 4": {
     model: anthropic("claude-opus-4-20250514"),
+    providerOptions: {
+      anthropic: {
+        sendReasoning: true,
+        thinking: { type: "enabled", budgetTokens: 12000 },
+      },
+    },
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
