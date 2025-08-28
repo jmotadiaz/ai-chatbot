@@ -239,7 +239,7 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
       },
     },
     creative: {
