@@ -6,7 +6,6 @@ import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import EnglishHelperChat from "@/components/english-helper-chat";
-import { Main } from "@/components/ui/main";
 import { AuthCheck } from "@/components/auth-check";
 
 const Page: React.FC = async () => {
@@ -14,18 +13,16 @@ const Page: React.FC = async () => {
     <SidebarProvider>
       <AuthCheck />
       <Sidebar />
-      <Main>
-        <Header.Container>
-          <Header.Left>
-            <Logo />
-            <NewChat />
-          </Header.Left>
-          <Header.Right>
-            <ThemeToggle />
-          </Header.Right>
-        </Header.Container>
-        <EnglishHelperChat />
-      </Main>
+      <Header.Container>
+        <Header.Left>
+          <Logo />
+          <NewChat />
+        </Header.Left>
+        <Header.Right>
+          <ThemeToggle />
+        </Header.Right>
+      </Header.Container>
+      <EnglishHelperChat />
     </SidebarProvider>
   );
 };
