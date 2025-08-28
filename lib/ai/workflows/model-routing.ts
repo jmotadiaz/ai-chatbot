@@ -223,23 +223,22 @@ const decisionTree = ({
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
           "GPT OSS Mini",
-          "GPT 5 Mini"
+          "GPT 5 Nano"
         ),
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen 3 Coder",
+          "GPT OSS",
           "GPT 5 Mini"
         ),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Deepseek R1",
           "Claude Sonnet 4"
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4"),
       },
     },
     creative: {
