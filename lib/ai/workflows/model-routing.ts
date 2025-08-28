@@ -171,7 +171,7 @@ const decisionTree = ({
         tools: ["webSearch"],
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
         tools: ["webSearch"],
       },
     },
@@ -193,7 +193,7 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
       },
     },
     analytical: {
@@ -239,7 +239,7 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
       },
     },
     creative: {
@@ -289,7 +289,7 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
       },
     },
     structured_content: {
