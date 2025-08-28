@@ -1,7 +1,7 @@
 import { tool, UIMessageStreamWriter } from "ai";
 import { z } from "zod";
 
-import { buildContextPrompt, retrieve } from "@/lib/ai/rag/retrieve";
+import { retrieve } from "@/lib/ai/rag/retrieve";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
 
@@ -23,6 +23,14 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
           "The search query. It should be in english and optimized for rag search."
         ),
     }),
+    outputSchema: z.array(
+      z.object({
+        content: z.string().describe("The content of the chunk."),
+        resourceTitle: z.string().describe("The title of the resource."),
+        resourceUrl: z.string().nullable().describe("The URL of the resource."),
+        similarity: z.number().describe("The similarity score of the chunk."),
+      })
+    ),
     execute: async ({ query }, { toolCallId }) => {
       console.log("RAG tool called with query:", query);
       writer.write({
@@ -30,10 +38,11 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
         id: toolCallId,
         data: { status: "loading" },
       });
+
       const { resources, similarChunks } = await retrieve({
         query,
         userId,
-        limit: 5,
+        limit: 10,
       });
 
       writer.write({
@@ -44,7 +53,7 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
 
       if (!resources || !similarChunks) {
         console.error("No resources or similar chunks found");
-        return { resources: [], context: "" };
+        return [];
       }
 
       resources.forEach((resource, idx) => {
@@ -55,11 +64,8 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
           title: resource.title,
         });
       });
-      const context = buildContextPrompt(similarChunks);
-      return {
-        resources: resources.map(({ title }) => title),
-        context,
-      };
+
+      return similarChunks;
     },
   }),
 });
