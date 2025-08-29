@@ -93,11 +93,11 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
       if (project) {
         await updateProject(project.id, projectData);
         toast.success("Project updated successfully!");
-        router.push(`/project/${project.id}`);
+        router.push(`/project/${project.id}/chat`);
       } else {
         const newProject = await createProject(projectData);
         toast.success("Project created successfully!");
-        router.push(`/project/${newProject.id}`);
+        router.push(`/project/${newProject.id}/chat`);
       }
     } catch (error) {
       console.error("Error creating project:", error);
