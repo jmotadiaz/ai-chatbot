@@ -46,11 +46,13 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
         limit: 10,
       });
 
-      writer.write({
-        type: "data-rag",
-        id: toolCallId,
-        data: { status: "loaded" },
-      });
+      setTimeout(() => {
+        writer.write({
+          type: "data-rag",
+          id: toolCallId,
+          data: { status: "loaded" },
+        });
+      }, 100);
 
       if (!resources || !similarChunks) {
         console.error("No resources or similar chunks found");

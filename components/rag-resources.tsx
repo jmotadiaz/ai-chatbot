@@ -1,6 +1,5 @@
 "use client";
 
-import { normalize } from "path";
 import { useState, useTransition, useCallback } from "react";
 import { toast } from "sonner";
 import { SearchIcon } from "lucide-react";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
 import { DotsLoadingIcon } from "@/components/icons";
 import { useIntersectionObserver } from "@/lib/hooks/intersection";
-import { toWords } from "@/lib/utils";
+import { normalize, toWords } from "@/lib/utils";
 
 interface Resource {
   title: string;
