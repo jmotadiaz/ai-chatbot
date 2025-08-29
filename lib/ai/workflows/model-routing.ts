@@ -233,10 +233,13 @@ const decisionTree = ({
         ),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
+        modelConfiguration: findModelByRequestedFileTypes(
+          "Deepseek R1",
+          "GPT 5 Mini High"
+        ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4.1"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
       },
     },
     creative: {

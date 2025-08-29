@@ -122,21 +122,10 @@ export const languageModelConfigurations = {
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
     supportedFiles: ["img", "pdf"],
-    providerOptions: {
-      anthropic: {
-        sendReasoning: true,
-        thinking: { type: "enabled", budgetTokens: 12000 },
-      },
-    },
   },
   "Claude Opus 4.1": {
     model: anthropic("claude-opus-4-1-20250805"),
-    providerOptions: {
-      anthropic: {
-        sendReasoning: true,
-        thinking: { type: "enabled", budgetTokens: 12000 },
-      },
-    },
+    supportedFiles: ["img", "pdf"],
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
