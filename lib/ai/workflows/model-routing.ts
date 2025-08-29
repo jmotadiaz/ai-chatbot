@@ -233,12 +233,10 @@ const decisionTree = ({
         ),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Claude Sonnet 4"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4"),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4.1"),
       },
     },
     creative: {

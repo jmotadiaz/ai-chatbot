@@ -10,6 +10,7 @@ import { ChatbotMessage } from "@/lib/ai/types";
 import { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
+import { Reasoning } from "@/components/reasoning";
 
 export const Message = ({
   message,
@@ -110,6 +111,21 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
   return (
     <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
+        {message.parts
+          ?.filter((part) => part.type === "reasoning")
+          .map((reasoningPart, idx) => {
+            return (
+              <Reasoning
+                key={`message-${message.id}-reasoning-${idx}`}
+                className="mt-4"
+                part={reasoningPart}
+                isReasoningDone={
+                  reasoningPart.state === "done" ||
+                  message.parts?.some(({ type }) => type === "text")
+                }
+              />
+            );
+          })}
         {message.parts
           ?.filter((part) => part.type !== "source-url")
           .map((part, i) => {
