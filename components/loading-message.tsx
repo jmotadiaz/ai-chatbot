@@ -80,6 +80,7 @@ interface ToolLoadingProps {
 }
 
 const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
+  console.log(text);
   return (
     <motion.div
       className="font-semibold text-zinc-500 dark:text-zinc-400"
