@@ -159,7 +159,7 @@ export async function POST(req: Request) {
       writer.merge(
         result.toUIMessageStream({
           originalMessages: messages,
-          sendReasoning: true,
+          sendReasoning: false,
           sendSources: true,
           generateMessageId: randomUUID,
           messageMetadata: ({ part }) => {
