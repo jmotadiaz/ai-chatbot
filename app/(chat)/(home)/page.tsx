@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { Sidebar } from "@/app/(chat)/sidebar";
 import { AuthCheck } from "@/components/auth-check";
 import { HomeChat } from "@/app/(chat)/(home)/component";
@@ -6,7 +5,6 @@ import { HomeChat } from "@/app/(chat)/(home)/component";
 const Page: React.FC = async () => {
   return (
     <>
-      <Suspense fallback={null}></Suspense>
       <AuthCheck />
       <Sidebar />
       <HomeChat />

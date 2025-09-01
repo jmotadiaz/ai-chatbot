@@ -4,10 +4,12 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
 import { ModelPickerLoading } from "@/components/model-picker";
+import { Sidebar } from "@/components/sidebar";
 
 const Loading: React.FC = () => {
   return (
     <>
+      <Sidebar />
       <Header.Container>
         <Header.Left>
           <Logo />

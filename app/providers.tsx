@@ -6,12 +6,14 @@ import React, {
   useState,
   createContext,
   useMemo,
+  useEffect,
 } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
+import { usePathname } from "next/navigation";
 import {
   defaultModel,
   defaultTemperature,
@@ -299,9 +301,15 @@ const sidebarContext = createContext<SidebarContext>({
 
 export const SidebarProvider: React.FC<ProvidersProps> = ({ children }) => {
   const [showSidebar, setShowSidebar] = useState(false);
+  const pathname = usePathname();
   const toggleSidebar = useCallback(() => {
     setShowSidebar((prev) => !prev);
   }, []);
+
+  useEffect(() => {
+    setShowSidebar(false);
+  }, [pathname]);
+
   return (
     <sidebarContext.Provider
       value={{ showSidebar, setShowSidebar, toggleSidebar }}

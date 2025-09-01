@@ -8,7 +8,7 @@ export interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <ViewTransition>
+    <ViewTransition enter={"fade-in"} exit={"fade-out"}>
       <Main>
         <SidebarProvider>{children}</SidebarProvider>
       </Main>
