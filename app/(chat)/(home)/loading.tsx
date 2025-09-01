@@ -5,7 +5,7 @@ const Loading: React.FC = () => {
   return (
     <>
       <Sidebar />
-      <HomeChat />;
+      <HomeChat />
     </>
   );
 };
