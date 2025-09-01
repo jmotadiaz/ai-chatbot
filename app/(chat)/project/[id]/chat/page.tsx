@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "../../../sidebar";
 import { auth } from "@/auth";
 import { getProjectById } from "@/lib/db/queries";
-import { ChatProvider, SidebarProvider } from "@/app/providers";
+import { ChatProvider } from "@/app/providers";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChat } from "@/components/new-chat";
@@ -47,22 +47,20 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
       title={project.name}
       tools={filterTools(project.tools || [])}
     >
-      <SidebarProvider>
-        <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar projectId={id} />
-          <Header.Container>
-            <Header.Left>
-              <Logo />
-              <NewChat />
-              <ModelPicker />
-            </Header.Left>
-            <Header.Right>
-              <ThemeToggle />
-            </Header.Right>
-          </Header.Container>
-          <Chat />
-        </div>
-      </SidebarProvider>
+      <div className="h-svh flex flex-col justify-center w-full stretch">
+        <Sidebar projectId={id} />
+        <Header.Container>
+          <Header.Left>
+            <Logo />
+            <NewChat />
+            <ModelPicker />
+          </Header.Left>
+          <Header.Right>
+            <ThemeToggle />
+          </Header.Right>
+        </Header.Container>
+        <Chat />
+      </div>
     </ChatProvider>
   );
 };

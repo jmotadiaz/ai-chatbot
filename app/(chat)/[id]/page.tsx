@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { ChatProvider, SidebarProvider } from "../../providers";
+import { ChatProvider } from "../../providers";
 import { Sidebar } from "../sidebar";
 import Chat from "@/components/chat";
 import { Header } from "@/components/header";
@@ -69,22 +69,20 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
       metaPrompt={metaPrompt}
       initialMessages={initialMessages}
     >
-      <SidebarProvider>
-        <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar projectId={chat.projectId} />
-          <Header.Container>
-            <Header.Left>
-              <Logo />
-              <NewChat />
-              <ModelPicker />
-            </Header.Left>
-            <Header.Right>
-              <ThemeToggle />
-            </Header.Right>
-          </Header.Container>
-          <Chat />
-        </div>
-      </SidebarProvider>
+      <div className="h-svh flex flex-col justify-center w-full stretch">
+        <Sidebar projectId={chat.projectId} />
+        <Header.Container>
+          <Header.Left>
+            <Logo />
+            <NewChat />
+            <ModelPicker />
+          </Header.Left>
+          <Header.Right>
+            <ThemeToggle />
+          </Header.Right>
+        </Header.Container>
+        <Chat />
+      </div>
     </ChatProvider>
   );
 };

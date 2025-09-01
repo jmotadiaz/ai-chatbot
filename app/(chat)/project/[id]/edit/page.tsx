@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { SidebarProvider } from "../../../../providers";
 import { Sidebar } from "../../../sidebar";
 import { auth } from "@/auth";
 import { ProjectForm } from "@/components/project-form";
@@ -29,7 +28,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
   }
 
   return (
-    <SidebarProvider>
+    <>
       <div className="h-svh flex flex-col justify-center w-full stretch">
         <Sidebar projectId={id} />
         <Header.Container>
@@ -43,7 +42,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
         </Header.Container>
         <ProjectForm project={project} />
       </div>
-    </SidebarProvider>
+    </>
   );
 };
 
