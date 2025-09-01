@@ -1,5 +1,5 @@
 import { ClassNameValue } from "tailwind-merge";
-import { Edit } from "lucide-react";
+import { CirclePlus, Edit } from "lucide-react";
 import { Item } from "@/components/ui/item";
 import Link from "@/components/ui/link";
 import { ProjectListItem } from "@/components/project-list-item";
@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { getProjectsByUserId } from "@/lib/db/queries";
 import { deleteProject } from "@/lib/ai/actions/project";
+import { SidebarSectionTitle } from "@/components/sidebar";
 
 export interface ProjectListProps {
   limit?: number;
@@ -31,11 +32,10 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
 
   return (
     <div className={cn("my-4", className)}>
-      <Link
-        href="/project/add"
-        className="text-sm uppercase flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4 tracking-wider"
-      >
-        Projects <Edit className="h-5 w-5 ml-2" />
+      <Link href="/project/add">
+        <SidebarSectionTitle>
+          Projects <CirclePlus className="h-4 w-4 ml-2" />
+        </SidebarSectionTitle>
       </Link>
       <div className="space-y-2">
         <Link href="/english-helper">

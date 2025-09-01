@@ -5,6 +5,7 @@ import Link from "@/components/ui/link";
 import { deleteChat } from "@/lib/ai/actions/chat";
 import { Chat } from "@/lib/db/schema";
 import { Item } from "@/components/ui/item";
+import { SidebarSectionTitle } from "@/components/sidebar";
 
 export interface ChatListProps {
   chats: Chat[];
@@ -19,9 +20,7 @@ export const ChatList: React.FC<ChatListProps> = async ({
 
   return (
     <div className={cn("my-4", className)}>
-      <h3 className="text-sm uppercase font-semibold text-zinc-500 dark:text-zinc-300 mb-4 tracking-wider">
-        Chats
-      </h3>
+      <SidebarSectionTitle>Chats</SidebarSectionTitle>
       <div className="space-y-3">
         {chats.map((chat) => (
           <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
