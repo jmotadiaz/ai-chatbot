@@ -85,7 +85,7 @@ export async function modelRouting({
   }, [] as ChatbotMessage[]);
 
   const { object: classification } = await generateObject({
-    ...languageModelConfigurations["GPT OSS Mini"],
+    ...languageModelConfigurations["GPT OSS Mini Low"],
     schema,
     system: systemPrompt,
     messages: convertToModelMessages(userMessages),
@@ -403,7 +403,8 @@ const decisionTree = ({
 
 const systemPrompt = `\n
   # Query Classification for LLM Routing
-  Analyze the following user query, included in an XML tag \`<query>\`, and classify it to determine the most appropriate LLM routing. Output your classification in the specified JSON format.
+  Analyze the user query, and classify it to determine the most appropriate LLM routing.
+
   ## Classification Requirements
 
   ### 1. Categories

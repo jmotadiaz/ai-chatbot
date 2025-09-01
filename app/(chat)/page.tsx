@@ -1,4 +1,4 @@
-import React from "react";
+import { Suspense } from "react";
 import { ChatProvider, SidebarProvider } from "@/app/providers";
 import Chat from "@/components/chat-with-client-storage";
 import { Header } from "@/components/header";
@@ -13,8 +13,10 @@ import { AuthCheck } from "@/components/auth-check";
 const Page: React.FC = async () => {
   return (
     <SidebarProvider>
-      <AuthCheck />
-      <Sidebar />
+      <Suspense fallback={null}>
+        <AuthCheck />
+        <Sidebar />
+      </Suspense>
       <ChatProvider metaPrompt={defaultMetaPrompt}>
         <Header.Container>
           <Header.Left>

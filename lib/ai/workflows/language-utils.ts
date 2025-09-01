@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
-import { getObject } from "@/lib/ai/utils";
+import { getObject, zodToPrompt } from "@/lib/ai/utils";
 
 export const sourceLanguages = ["Spanish", "English"] as const;
 export const targetLanguages = ["Spanish (Spain)", "English (UK)"] as const;
@@ -26,19 +26,30 @@ export const audienceInstructions = {
     "Use a professional, collaborative, and clear tone. The language should foster a strong working relationship.",
 } as const satisfies Record<(typeof audiences)[number], string>;
 
+const translationDirectionSchema = z.object({
+  sourceLanguage: z.enum(sourceLanguages),
+  targetLanguage: z.enum(targetLanguages),
+});
+
+const audienceSchema = z.object({
+  audience: z.enum(audiences),
+});
+
+const domainSchema = z.object({
+  domain: z.string(),
+  subdomain: z.string(),
+});
+
 export const identifyTranslationDirection = (prompt: string) => {
   return generateObject({
     ...languageModelConfigurations["Llama 3.1 Instant"],
-    schema: z.object({
-      sourceLanguage: z.enum(sourceLanguages),
-      targetLanguage: z.enum(targetLanguages),
-    }),
-    system: `You are an expert detecting the language of a text. You should determine the target language for translation based on the content provided. If the text is already in English, translate it to Spanish (Spain). If it's in Spanish, translate it to English (UK).
-      your output should be in JSON format:
-      {
-        "sourceLanguage": "Spanish" | "English",
-        "targetLanguage": "Spanish (Spain)" | "English (UK)"
-      }`,
+    schema: translationDirectionSchema,
+    system: `
+      You are an expert detecting the language of a text.
+      You should determine the target language for translation based on the content provided.
+      If the text is already in English, translate it to Spanish (Spain). If it's in Spanish, translate it to English (UK).
+      ${zodToPrompt(translationDirectionSchema)}
+    `,
     prompt: `Determine the target language for translation based on the following text:
     ${prompt}`,
   })
@@ -55,15 +66,10 @@ export const identifyTranslationDirection = (prompt: string) => {
 export const identifyAudience = (prompt: string) => {
   return generateObject({
     ...languageModelConfigurations["Llama 3.1 Instant"],
-    schema: z.object({
-      audience: z.enum(audiences),
-    }),
+    schema: audienceSchema,
     system: `
     You are an expert communications analyst. Your task is to identify the primary audience that a given text is directed towards.
-    Following this JSON schema:
-    {
-      "audience": "general public" | "professionals" | "internal team" | "partners" | "executives or investors"
-    }
+    ${zodToPrompt(audienceSchema)}
 
     The audience can be one of the following:
     - "general public" (for public-facing content),
@@ -87,17 +93,10 @@ export const identifyAudience = (prompt: string) => {
 export const identifyDomain = (prompt: string) => {
   return generateObject({
     ...languageModelConfigurations["Llama 3.1 Instant"],
-    schema: z.object({
-      domain: z.string(),
-      subdomain: z.string(),
-    }),
+    schema: domainSchema,
     system: `
       You are an expert detecting the main domain or context of a text. Be as specific as possible.
-      Respond with following JSON schema:
-      {
-        "domain": string, // e.g., "technology", "healthcare", "finance", etc.
-        "subdomain": string // e.g., "AI", "software development", "investment", etc.
-      }
+      ${zodToPrompt(domainSchema)}
     `,
     prompt: `Identify the main domain or context for the following text:
       ${prompt}`,

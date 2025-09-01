@@ -1,4 +1,19 @@
 import { FileUIPart, GenerateObjectResult, generateText } from "ai";
+import {
+  ZodArray,
+  ZodBoolean,
+  ZodDate,
+  ZodDefault,
+  ZodEnum,
+  ZodLiteral,
+  ZodNullable,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodString,
+  ZodTypeAny,
+  ZodUnion,
+} from "zod";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage, Message } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
@@ -94,3 +109,55 @@ export const convertFilesToDataURLs = async (
     )
   );
 };
+
+export function zodToPrompt(schema: ZodTypeAny): string {
+  const indent = (lvl: number) => "  ".repeat(lvl);
+
+  const format = (s: ZodTypeAny, lvl: number): string => {
+    if (s instanceof ZodString) return `"string"`;
+    if (s instanceof ZodNumber) return `"number"`;
+    if (s instanceof ZodBoolean) return `"boolean"`;
+    if (s instanceof ZodDate) return `"date"`;
+
+    if (s instanceof ZodLiteral) return JSON.stringify(s._def.value);
+
+    if (s instanceof ZodEnum) {
+      return s._def.values.map((v: string) => `"${v}"`).join(" | ");
+    }
+
+    if (s instanceof ZodUnion) {
+      return s._def.options
+        .map((opt: ZodTypeAny) => format(opt, lvl))
+        .join(" | ");
+    }
+
+    if (s instanceof ZodArray) {
+      return `${format(s._def.type, lvl)}[]`;
+    }
+
+    if (s instanceof ZodObject) {
+      const shape = s._def.shape();
+      const entries = Object.entries(shape);
+      const lines = entries.map(([key, subSchema], i) => {
+        const value = format(subSchema as ZodTypeAny, lvl + 1);
+        const comma = i < entries.length - 1 ? "," : "";
+        return `${indent(lvl + 1)}"${key}": ${value}${comma}`;
+      });
+      return `{\n${lines.join("\n")}\n${indent(lvl)}}`;
+    }
+
+    if (
+      s instanceof ZodOptional ||
+      s instanceof ZodNullable ||
+      s instanceof ZodDefault
+    ) {
+      const inner = s._def.innerType ?? s._def.typeName;
+      return format(inner as ZodTypeAny, lvl);
+    }
+
+    // ---------- Otros ----------
+    return `"unknown"`;
+  };
+
+  return `Your output should follow this JSON schema:\n${format(schema, 0)}`;
+}
