@@ -10,7 +10,7 @@ export const RAGNav = () => {
       <div className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
         RAG
       </div>
-      <Link prefetch={true} href="/rag">
+      <Link href="/rag">
         <Item>
           <DatabaseBackup className="w-4 h-4" />
           Resources
