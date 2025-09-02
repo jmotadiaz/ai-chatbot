@@ -1,4 +1,11 @@
-import { FileUIPart, GenerateObjectResult, generateText } from "ai";
+import {
+  FileUIPart,
+  GenerateObjectResult,
+  generateText,
+  SourceDocumentUIPart,
+  SourceUrlUIPart,
+  TextUIPart,
+} from "ai";
 import {
   ZodArray,
   ZodBoolean,
@@ -107,6 +114,39 @@ export const convertFilesToDataURLs = async (
           reader.readAsDataURL(file);
         })
     )
+  );
+};
+
+export interface SegregatedMessagePartsReturn {
+  textParts: TextUIPart[];
+  fileParts: FileUIPart[];
+  sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
+}
+
+export const segregateMessageParts = (
+  parts: ChatbotMessage["parts"]
+): {
+  textParts: TextUIPart[];
+  fileParts: FileUIPart[];
+  sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
+} => {
+  return parts?.reduce<SegregatedMessagePartsReturn>(
+    (acc, part) => {
+      switch (part.type) {
+        case "text":
+          acc.textParts.push(part);
+          break;
+        case "source-url":
+        case "source-document":
+          acc.sourceParts.push(part);
+          break;
+        case "file":
+          acc.fileParts.push(part);
+          break;
+      }
+      return acc;
+    },
+    { textParts: [], sourceParts: [], fileParts: [] }
   );
 };
 

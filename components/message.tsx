@@ -1,16 +1,17 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useCollapse } from "react-collapsed";
 import { ChevronDownIcon, LinkIcon } from "lucide-react";
+import { SourceDocumentUIPart, SourceUrlUIPart } from "ai";
 import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
-import { Reasoning } from "@/components/reasoning";
+import { segregateMessageParts } from "@/lib/ai/utils";
 
 export const Message = ({
   message,
@@ -43,8 +44,11 @@ interface UserMessageProps {
 }
 
 const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
-  const text = message.parts.find((part) => part.type === "text")?.text || "";
-  const files = message.parts?.filter((part) => part.type === "file");
+  const { textParts, fileParts: files } = useMemo(
+    () => segregateMessageParts(message.parts),
+    [message.parts]
+  );
+  const text = textParts[0].text ?? "";
   const isLongMessage = text.length > 350;
   const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
@@ -108,49 +112,35 @@ interface AssistantMessageProps {
 }
 
 const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
+  const { textParts, sourceParts } = useMemo(
+    () => segregateMessageParts(message.parts),
+    [message.parts]
+  );
   return (
-    <div className={cn("flex gap-4 w-full my-6")}>
+    <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
-        {message.parts
-          ?.filter((part) => part.type === "reasoning")
-          .map((reasoningPart, idx) => {
-            return (
-              <Reasoning
-                key={`message-${message.id}-reasoning-${idx}`}
-                className="mt-4"
-                part={reasoningPart}
-                isReasoningDone={
-                  reasoningPart.state === "done" ||
-                  message.parts?.some(({ type }) => type === "text")
-                }
-              />
-            );
-          })}
-        {message.parts
-          ?.filter((part) => part.type !== "source-url")
-          .map((part, i) => {
-            switch (part.type) {
-              case "text":
-                return (
-                  <motion.div
-                    initial={{ y: 5, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    key={`message-${message.id}-part-${i}`}
-                    className="flex flex-row gap-2 items-start w-full"
-                  >
-                    <div className={cn("max-w-full")}>
-                      <Response>{part.text}</Response>
-                    </div>
-                  </motion.div>
-                );
-              default:
-                return null;
-            }
-          })}
-        {message.metadata?.status === "finished" &&
-          message.parts?.some((part) => part.type === "source-url") && (
-            <SourceMessagePart message={message} />
-          )}
+        {textParts.map((part, i) => {
+          switch (part.type) {
+            case "text":
+              return (
+                <motion.div
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  key={`message-${message.id}-part-${i}`}
+                  className="flex flex-row gap-2 items-start w-full my-6"
+                >
+                  <div className={cn("max-w-full")}>
+                    <Response>{part.text}</Response>
+                  </div>
+                </motion.div>
+              );
+            default:
+              return null;
+          }
+        })}
+        {message.metadata?.status === "finished" && (
+          <SourceMessagePart sourceParts={sourceParts} />
+        )}
         {message.metadata?.autoModel && (
           <AutoModelDetails metadata={message.metadata.autoModel} />
         )}
@@ -160,12 +150,14 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
 };
 
 interface SourceMessagePart {
-  message: ChatbotMessage;
+  sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
 }
 
-const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
+const SourceMessagePart: React.FC<SourceMessagePart> = ({
+  sourceParts: sources,
+}) => {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
-  const sources = message.parts?.filter((part) => part.type === "source-url");
+  if (sources.length === 0) return null;
   return (
     <div className="mb-3 text-sm">
       <div
@@ -187,12 +179,15 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({ message }) => {
           return (
             <a
               key={`source-${part.sourceId}`}
-              href={part.url}
+              {...(part.type === "source-url" && { href: part.url })}
               className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
               target="_blank"
             >
               <LinkIcon className="h-4 w-4" />
-              <span>{part.title || part.url}</span>
+              <span>
+                {part.title ||
+                  (part.type === "source-url" ? part.url : part.filename)}
+              </span>
             </a>
           );
         })}
