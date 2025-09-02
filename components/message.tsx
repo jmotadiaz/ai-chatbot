@@ -124,13 +124,15 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
             case "text":
               return (
                 <motion.div
-                  initial={{ y: 5, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   key={`message-${message.id}-part-${i}`}
-                  className="flex flex-row gap-2 items-start w-full my-6"
+                  className="flex flex-row gap-2 items-start w-full"
                 >
                   <div className={cn("max-w-full")}>
-                    <Response>{part.text}</Response>
+                    <Response className="[&>*:first-child]:mt-6 [&>*:last-child]:mb-6">
+                      {part.text}
+                    </Response>
                   </div>
                 </motion.div>
               );
