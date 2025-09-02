@@ -85,7 +85,7 @@ export async function modelRouting({
   }, [] as ChatbotMessage[]);
 
   const { object: classification } = await generateObject({
-    ...languageModelConfigurations["GPT OSS Mini Low"],
+    ...languageModelConfigurations["GPT OSS Mini"],
     schema,
     system: systemPrompt,
     messages: convertToModelMessages(userMessages),
@@ -233,13 +233,10 @@ const decisionTree = ({
         ),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Deepseek R1",
-          "GPT 5 Mini High"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4.1"),
       },
     },
     creative: {
@@ -442,7 +439,7 @@ const systemPrompt = `\n
       *   **Estimated effort**: Very high.
 
   ### 3. Reasoning
-  Provide a brief reasoning (1-3 sentences) explaining the classification, focusing on key deciding factors such as query intent, overlaps, and complexity drivers
+  Provide a brief reasoning (1-3 sentences) explaining only the classification and complexity drivers
 
   ## 4 Additional Notes
   *   If the query is referencing a document, assume the document is available for context, even if you don't have it available.

@@ -90,6 +90,15 @@ export async function POST(req: Request) {
 
       const result = streamText({
         ...modelConfiguration,
+        ...(tools.length > 0 && {
+          providerOptions: {
+            anthropic: {
+              ...modelConfiguration.providerOptions?.anthropic,
+              sendReasoning: false,
+              thinking: { type: "disabled" },
+            },
+          },
+        }),
         system: systemPrompt || defaultSystemPrompt,
         messages: convertToModelMessages(messages),
         tools: toolSet,

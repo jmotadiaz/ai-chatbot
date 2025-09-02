@@ -109,7 +109,7 @@ interface AssistantMessageProps {
 
 const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
   return (
-    <div className={cn("flex gap-4 w-full")}>
+    <div className={cn("flex gap-4 w-full my-6")}>
       <div className="flex flex-col w-full space-y-4">
         {message.parts
           ?.filter((part) => part.type === "reasoning")

@@ -3,12 +3,20 @@
 import { type ComponentProps, memo } from "react";
 import { Streamdown } from "streamdown";
 import CodeBlock from "@/components/code-block";
+import { cn } from "@/lib/utils";
 
 type ResponseProps = ComponentProps<typeof Streamdown>;
 
 export const Response = memo(
-  (props: ResponseProps) => (
-    <Streamdown components={{ code: CodeBlock }} {...props} />
+  ({ className, ...props }: ResponseProps) => (
+    <Streamdown
+      className={cn(
+        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        className
+      )}
+      components={{ code: CodeBlock }}
+      {...props}
+    />
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );
