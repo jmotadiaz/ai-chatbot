@@ -288,31 +288,49 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 };
 
 export interface SidebarContext {
-  showSidebar: boolean;
-  setShowSidebar: (showSidebar: boolean) => void;
-  toggleSidebar: () => void;
+  showNavSidebar: boolean;
+  setShowNavSidebar: (showSidebar: boolean) => void;
+  toggleNavSidebar: () => void;
+  showSettingsSidebar: boolean;
+  setShowSettingsSidebar: (showSidebar: boolean) => void;
+  toggleSettingsSidebar: () => void;
 }
 
 const sidebarContext = createContext<SidebarContext>({
-  showSidebar: false,
-  setShowSidebar: () => {},
-  toggleSidebar: () => {},
+  showNavSidebar: false,
+  setShowNavSidebar: () => {},
+  toggleNavSidebar: () => {},
+  showSettingsSidebar: false,
+  setShowSettingsSidebar: () => {},
+  toggleSettingsSidebar: () => {},
 });
 
 export const SidebarProvider: React.FC<ProvidersProps> = ({ children }) => {
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showNavSidebar, setShowNavSidebar] = useState(false);
+  const [showSettingsSidebar, setShowSettingsSidebar] = useState(false);
   const pathname = usePathname();
-  const toggleSidebar = useCallback(() => {
-    setShowSidebar((prev) => !prev);
+  const toggleNavSidebar = useCallback(() => {
+    setShowNavSidebar((prev) => !prev);
+  }, []);
+  const toggleSettingsSidebar = useCallback(() => {
+    setShowSettingsSidebar((prev) => !prev);
   }, []);
 
   useEffect(() => {
-    setShowSidebar(false);
+    setShowNavSidebar(false);
+    setShowSettingsSidebar(false);
   }, [pathname]);
 
   return (
     <sidebarContext.Provider
-      value={{ showSidebar, setShowSidebar, toggleSidebar }}
+      value={{
+        showNavSidebar,
+        setShowNavSidebar,
+        toggleNavSidebar,
+        showSettingsSidebar,
+        setShowSettingsSidebar,
+        toggleSettingsSidebar,
+      }}
     >
       {children}
     </sidebarContext.Provider>

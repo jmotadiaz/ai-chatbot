@@ -5,9 +5,10 @@ import { Sidebar } from "../sidebar";
 import Chat from "@/components/chat";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
-import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChat } from "@/components/new-chat";
+import { SettingsSidebar } from "@/components/settings-sidebar";
+import { SettingsToggleButton } from "@/components/settings-toggle-button";
 import {
   defaultTemperature,
   defaultTopP,
@@ -69,19 +70,22 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
       metaPrompt={metaPrompt}
       initialMessages={initialMessages}
     >
-      <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar projectId={chat.projectId} />
-        <Header.Container>
-          <Header.Left>
-            <Logo />
-            <NewChat />
-            <ModelPicker />
-          </Header.Left>
-          <Header.Right>
-            <ThemeToggle />
-          </Header.Right>
-        </Header.Container>
-        <Chat />
+      <div className="flex flex-1">
+        <div className="flex-1 h-svh flex flex-col justify-center w-full stretch">
+          <Sidebar projectId={chat.projectId} />
+          <Header.Container>
+            <Header.Left>
+              <Logo />
+              <NewChat />
+            </Header.Left>
+            <Header.Right>
+              <SettingsToggleButton />
+              <ThemeToggle />
+            </Header.Right>
+          </Header.Container>
+          <Chat />
+        </div>
+        <SettingsSidebar />
       </div>
     </ChatProvider>
   );

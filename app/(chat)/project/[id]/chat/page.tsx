@@ -9,9 +9,10 @@ import { NewChat } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Chat from "@/components/chat-with-client-storage";
 import { chatModelId } from "@/lib/ai/models/definition";
-import { ModelPicker } from "@/components/model-picker";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { filterTools } from "@/lib/ai/tools/utils";
+import { SettingsSidebar } from "@/components/settings-sidebar";
+import { SettingsToggleButton } from "@/components/settings-toggle-button";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -47,19 +48,22 @@ const ProjectPage: React.FC<ProjectPageProps> = async ({ params }) => {
       title={project.name}
       tools={filterTools(project.tools || [])}
     >
-      <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar projectId={id} />
-        <Header.Container>
-          <Header.Left>
-            <Logo />
-            <NewChat />
-            <ModelPicker />
-          </Header.Left>
-          <Header.Right>
-            <ThemeToggle />
-          </Header.Right>
-        </Header.Container>
-        <Chat />
+      <div className="flex flex-1">
+        <div className="flex-1 h-svh flex flex-col justify-center w-full stretch">
+          <Sidebar projectId={id} />
+          <Header.Container>
+            <Header.Left>
+              <Logo />
+              <NewChat />
+            </Header.Left>
+            <Header.Right>
+              <SettingsToggleButton />
+              <ThemeToggle />
+            </Header.Right>
+          </Header.Container>
+          <Chat />
+        </div>
+        <SettingsSidebar />
       </div>
     </ChatProvider>
   );

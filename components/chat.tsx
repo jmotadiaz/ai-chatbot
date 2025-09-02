@@ -6,7 +6,6 @@ import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
 import { Messages } from "@/components/message";
 import { ChatControl } from "@/components/chat-control";
-import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ToolsControl } from "@/components/tools-control";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils";
@@ -96,7 +95,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
           />
           <div className="absolute z-1 left-3 bottom-2 flex items-center space-x-2">
-            <ChatSettingsButton />
             {saveChat}
             <ToolsControl />
             <AttachmentsControl />
