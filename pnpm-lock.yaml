@@ -2391,12 +2391,12 @@ packages:
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
     dev: false
 
-  /@sveltejs/acorn-typescript@1.0.5(acorn@8.14.1):
+  /@sveltejs/acorn-typescript@1.0.5(acorn@8.15.0):
     resolution: {integrity: sha512-IwQk4yfwLdibDlrXVE04jTZYlLnwsTT2PIOQQGNLWfjavGifnk1JD1LcZjZaBTRcxZu2FfPfNLOE04DSu9lqtQ==}
     peerDependencies:
       acorn: ^8.9.0
     dependencies:
-      acorn: 8.14.1
+      acorn: 8.15.0
     dev: false
 
   /@swc/helpers@0.5.15:
@@ -9012,9 +9012,9 @@ packages:
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@jridgewell/sourcemap-codec': 1.5.0
-      '@sveltejs/acorn-typescript': 1.0.5(acorn@8.14.1)
+      '@sveltejs/acorn-typescript': 1.0.5(acorn@8.15.0)
       '@types/estree': 1.0.7
-      acorn: 8.14.1
+      acorn: 8.15.0
       aria-query: 5.3.2
       axobject-query: 4.1.0
       clsx: 2.1.1

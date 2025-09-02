@@ -4,7 +4,7 @@ import { ArrowUp, RefreshCcw, WandSparkles, Undo } from "lucide-react";
 import { useRef } from "react";
 import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
-import { Messages } from "@/components/messages";
+import { Messages } from "@/components/message";
 import { ChatControl } from "@/components/chat-control";
 import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ToolsControl } from "@/components/tools-control";

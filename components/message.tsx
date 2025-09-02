@@ -13,7 +13,25 @@ import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
 import { segregateMessageParts } from "@/lib/ai/utils";
 
-export const Message = ({ message }: { message: ChatbotMessage }) => {
+export interface MessagesProps {
+  messages: ChatbotMessage[];
+}
+
+export const Messages: React.FC<MessagesProps> = ({ messages }) => {
+  return (
+    <>
+      {messages.map((m, i) => (
+        <Message key={i} message={m} />
+      ))}
+    </>
+  );
+};
+
+export interface MessageProps {
+  message: ChatbotMessage;
+}
+
+export const Message: React.FC<MessageProps> = ({ message }) => {
   return (
     <AnimatePresence key={message.id}>
       <motion.div
