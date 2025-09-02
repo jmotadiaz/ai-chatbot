@@ -22,10 +22,6 @@ export const SettingsSidebar = () => {
     setConfig({ topK: value });
   };
 
-  if (selectedModel === "Router") {
-    return null;
-  }
-
   return (
     <>
       <div
@@ -54,42 +50,44 @@ export const SettingsSidebar = () => {
               />
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-md font-semibold">Parameters</h3>
-              <div className="flex items-center justify-between space-x-4">
-                <Label htmlFor="temperature">Temperature</Label>
-                <InputNumber
-                  id="temperature"
-                  value={temperature}
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  onChange={setTemperature}
-                />
+            {selectedModel !== "Router" && (
+              <div className="space-y-4">
+                <h3 className="text-md font-semibold">Parameters</h3>
+                <div className="flex items-center justify-between space-x-4">
+                  <Label htmlFor="temperature">Temperature</Label>
+                  <InputNumber
+                    id="temperature"
+                    value={temperature}
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    onChange={setTemperature}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="topP">Top P</Label>
+                  <InputNumber
+                    id="topP"
+                    value={topP}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onChange={setTopP}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="topK">Top K</Label>
+                  <InputNumber
+                    id="topK"
+                    value={topK}
+                    min={0}
+                    max={100}
+                    step={5}
+                    onChange={setTopK}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="topP">Top P</Label>
-                <InputNumber
-                  id="topP"
-                  value={topP}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  onChange={setTopP}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="topK">Top K</Label>
-                <InputNumber
-                  id="topK"
-                  value={topK}
-                  min={0}
-                  max={100}
-                  step={5}
-                  onChange={setTopK}
-                />
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
