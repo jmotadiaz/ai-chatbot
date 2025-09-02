@@ -58,7 +58,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
               <ProjectOverview title={title} />
             ) : (
               <>
-                <Messages messages={messages} isLoading={isLoading} />
+                <Messages messages={messages} />
                 <LoadingMessage
                   message={messages[messages.length - 1]}
                   status={status}

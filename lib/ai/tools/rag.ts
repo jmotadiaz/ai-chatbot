@@ -59,10 +59,11 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
 
       resources.forEach((resource, idx) => {
         writer.write({
-          type: "source-url",
           sourceId: `source-rag-${toolCallId}-${idx}`,
-          url: resource.url || resource.title,
           title: resource.title,
+          ...(resource.url
+            ? { type: "source-url", url: resource.url }
+            : { type: "source-document", mediaType: "text/plain" }),
         });
       });
 

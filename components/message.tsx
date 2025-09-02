@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import React, { useMemo, useState } from "react";
 import { useCollapse } from "react-collapsed";
-import { ChevronDownIcon, LinkIcon } from "lucide-react";
+import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
 import { SourceDocumentUIPart, SourceUrlUIPart } from "ai";
 import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
@@ -13,13 +13,7 @@ import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
 import { segregateMessageParts } from "@/lib/ai/utils";
 
-export const Message = ({
-  message,
-}: {
-  message: ChatbotMessage;
-  isLoading: boolean;
-  isLatestMessage: boolean;
-}) => {
+export const Message = ({ message }: { message: ChatbotMessage }) => {
   return (
     <AnimatePresence key={message.id}>
       <motion.div
@@ -177,22 +171,25 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({
         className="flex flex-col items-start space-y-2"
         {...getCollapseProps()}
       >
-        {sources.map((part) => {
-          return (
-            <a
-              key={`source-${part.sourceId}`}
-              {...(part.type === "source-url" && { href: part.url })}
-              className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
-              target="_blank"
-            >
-              <LinkIcon className="h-4 w-4" />
-              <span>
-                {part.title ||
-                  (part.type === "source-url" ? part.url : part.filename)}
-              </span>
-            </a>
-          );
-        })}
+        {sources.map((part) => (
+          <React.Fragment key={part.sourceId}>
+            {part.type === "source-url" ? (
+              <a
+                href={part.url}
+                className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
+                target="_blank"
+              >
+                <LinkIcon className="h-4 w-4" />
+                <span>{part.title}</span>
+              </a>
+            ) : (
+              <div className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline">
+                <Book className="h-4 w-4" />
+                <span>{part.title}</span>
+              </div>
+            )}
+          </React.Fragment>
+        ))}
       </div>
     </div>
   );
