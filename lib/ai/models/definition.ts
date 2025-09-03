@@ -21,6 +21,16 @@ const openrouter = createOpenRouter({
 
 export const google = createGoogleGenerativeAI();
 export const xai = createXai();
+export type Company =
+  | "meta"
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "xai"
+  | "deepseek"
+  | "perplexity"
+  | "alibaba"
+  | "moonshotai";
 
 export interface ModelConfiguration {
   model: LanguageModel;
@@ -38,6 +48,7 @@ export interface ModelConfiguration {
   temperature?: number;
   topP?: number;
   topK?: number;
+  company: Company;
   systemPrompt?: string;
 }
 
@@ -46,6 +57,7 @@ export type ModelConfigurations = Record<string, ModelConfiguration>;
 export const languageModelConfigurations = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
+    company: "meta",
     providerOptions: {
       groq: {
         structuredOutputs: false,
@@ -54,30 +66,36 @@ export const languageModelConfigurations = {
   },
   "Llama 3.3 Versatile": {
     model: groq("llama-3.3-70b-versatile"),
+    company: "meta",
     temperature: 0.6,
     topP: 0.9,
   },
   "Llama 4 Scout": {
     model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+    company: "meta",
     temperature: 0.6,
     topP: 0.9,
   },
   "Llama 4": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+    company: "meta",
     temperature: 0.6,
     topP: 0.9,
     supportedFiles: ["img"],
   },
   "Kimi K2": {
     model: groq("moonshotai/kimi-k2-instruct"),
+    company: "moonshotai",
     temperature: 0.6,
   },
   "Deepseek Chat": {
     model: deepseek("deepseek-chat"),
+    company: "deepseek",
     temperature: 0.6,
   },
   "Deepseek R1 Distill": {
     model: groq("deepseek-r1-distill-llama-70b"),
+    company: "deepseek",
     temperature: 0.6,
     topP: 0.95,
     providerOptions: {
@@ -86,6 +104,7 @@ export const languageModelConfigurations = {
   },
   "Deepseek R1": {
     model: openrouter.chat("deepseek/deepseek-r1-0528"),
+    company: "deepseek",
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
@@ -93,6 +112,7 @@ export const languageModelConfigurations = {
   },
   "Qwen 3": {
     model: groq("qwen/qwen3-32b"),
+    company: "alibaba",
     temperature: 0.6,
     topP: 0.95,
     topK: 20,
@@ -102,25 +122,31 @@ export const languageModelConfigurations = {
   },
   "Qwen 3 Coder": {
     model: openrouter.chat("qwen/qwen3-coder"),
+    company: "alibaba",
   },
   Sonar: {
     model: perplexity("sonar"),
+    company: "perplexity",
     supportedFiles: ["img"],
     disabledTools: ["webSearch", "rag"],
   },
   "Sonar Pro": {
     model: perplexity("sonar-pro"),
+    company: "perplexity",
     disabledTools: ["webSearch", "rag"],
   },
   "Sonar Reasoning": {
     model: perplexity("sonar-reasoning"),
+    company: "perplexity",
     disabledTools: ["webSearch", "rag"],
   },
   "Claude 3.5 Haiku": {
     model: anthropic("claude-3-5-haiku-latest"),
+    company: "anthropic",
   },
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
+    company: "anthropic",
     supportedFiles: ["img", "pdf"],
     providerOptions: {
       anthropic: {
@@ -131,6 +157,7 @@ export const languageModelConfigurations = {
   },
   "Claude Opus 4.1": {
     model: anthropic("claude-opus-4-1-20250805"),
+    company: "anthropic",
     supportedFiles: ["img", "pdf"],
     providerOptions: {
       anthropic: {
@@ -141,33 +168,26 @@ export const languageModelConfigurations = {
   },
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
+    company: "openai",
     providerOptions: {
       groq: { reasoningEffort: "high" },
     },
   },
   "GPT OSS Mini": {
     model: groq("openai/gpt-oss-20b"),
-  },
-  "GPT OSS Mini High": {
-    model: groq("openai/gpt-oss-20b"),
-    providerOptions: {
-      groq: { reasoningEffort: "high" },
-    },
-  },
-  "GPT OSS Mini Low": {
-    model: groq("openai/gpt-oss-20b"),
-    providerOptions: {
-      groq: { reasoningEffort: "low" },
-    },
+    company: "openai",
   },
   "o4 Mini": {
     model: openai("o4-mini"),
+    company: "openai",
   },
   o3: {
     model: openai("o3"),
+    company: "openai",
   },
   "GPT 5 Nano": {
     model: openai("gpt-5-nano-2025-08-07"),
+    company: "openai",
     providerOptions: {
       openai: {
         textVerbosity: "low",
@@ -176,25 +196,17 @@ export const languageModelConfigurations = {
   },
   "GPT 5 Mini": {
     model: openai("gpt-5-mini-2025-08-07"),
+    company: "openai",
     providerOptions: {
       openai: {
         textVerbosity: "low",
-      },
-    },
-    supportedFiles: ["img", "pdf"],
-  },
-  "GPT 5 Mini High": {
-    model: openai("gpt-5-mini-2025-08-07"),
-    providerOptions: {
-      openai: {
-        textVerbosity: "low",
-        reasoningEffort: "high",
       },
     },
     supportedFiles: ["img", "pdf"],
   },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
+    company: "openai",
     providerOptions: {
       openai: {
         textVerbosity: "low",
@@ -203,17 +215,19 @@ export const languageModelConfigurations = {
     },
     supportedFiles: ["img", "pdf"],
   },
-  "Gemma 2": {
-    model: groq("gemma2-9b-it"),
-  },
   "Gemini 2.0 Flash": {
     model: google("gemini-2.0-flash"),
+    company: "google",
+    supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash Lite": {
     model: google("gemini-2.5-flash-lite-preview-06-17"),
+    company: "google",
+    supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
     model: google("gemini-2.5-flash"),
+    company: "google",
     supportedFiles: ["img", "pdf"],
     providerOptions: {
       google: {
@@ -225,6 +239,7 @@ export const languageModelConfigurations = {
   },
   "Gemini 2.5 Pro": {
     model: google("gemini-2.5-pro"),
+    company: "google",
     supportedFiles: ["img", "pdf"],
     providerOptions: {
       google: {
@@ -236,9 +251,11 @@ export const languageModelConfigurations = {
   },
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
+    company: "xai",
   },
   "Grok 4": {
     model: xai("grok-4-0709"),
+    company: "xai",
     supportedFiles: ["img", "pdf"],
   },
 } satisfies ModelConfigurations;

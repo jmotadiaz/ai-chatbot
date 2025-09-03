@@ -280,10 +280,7 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("GPT OSS Mini"),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "GPT OSS",
-          "GPT 5 Mini High"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT OSS"),
       },
       advanced: {
         modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),

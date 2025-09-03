@@ -57,7 +57,9 @@ export const calculateModelConfiguration = async ({
 
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
-): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
+): Required<
+  Omit<ModelConfiguration, "model" | "providerOptions" | "company">
+> => {
   const {
     temperature,
     topK,
