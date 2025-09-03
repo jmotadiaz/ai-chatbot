@@ -52,7 +52,10 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
           messages.length && "h-full"
         )}
       >
-        <div className="h-full overflow-y-auto py-8" ref={scrollContainerRef}>
+        <div
+          className="h-full overflow-y-auto pb-8 pt-4"
+          ref={scrollContainerRef}
+        >
           <div className="w-full max-w-4xl px-4 mx-auto">
             {messages.length === 0 ? (
               <ProjectOverview title={title} />
