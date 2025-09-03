@@ -1,5 +1,6 @@
 import { ClassValue } from "clsx";
 import { ComponentType } from "react";
+import { LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SpinnerIcon } from "@/components/icons";
 
@@ -8,7 +9,7 @@ export interface ChatControlProps
     React.ButtonHTMLAttributes<HTMLButtonElement>,
     "className" | "children"
   > {
-  Icon: ComponentType<{ className: string }>;
+  Icon: ComponentType<LucideProps>;
   isLoading?: boolean;
   onLoadingClick?: () => void;
   className?: ClassValue;
@@ -54,7 +55,7 @@ export const ChatControl = ({
           )}
           {...buttonProps}
         >
-          <Icon className="h-4 w-4 text-white" />
+          <Icon strokeWidth={2} size={16} className="text-white" />
         </button>
       )}
     </>
