@@ -281,9 +281,9 @@ const pickModelConfigurations = <
 export const chatModelKeys = [
   "Llama 4",
   "Kimi K2",
-  "Deepseek Chat",
   "Qwen 3",
   "Qwen 3 Coder",
+  "Deepseek Chat",
   "Deepseek R1",
   "Claude Sonnet 4",
   "Gemini 2.5 Flash",
