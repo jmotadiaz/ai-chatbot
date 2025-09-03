@@ -75,7 +75,7 @@ export const languageModelConfigurations = {
       },
     },
   },
-  "Llama 3.3 Versatile": {
+  "Llama 3.3": {
     model: groq("llama-3.3-70b-versatile"),
     company: "meta",
     temperature: 0.6,
@@ -295,7 +295,7 @@ const pickModelConfigurations = <
 };
 
 export const chatModelKeys = [
-  "Llama 3.3 Versatile",
+  "Llama 3.3",
   "Llama 4",
   "Kimi K2",
   "Qwen 3",
