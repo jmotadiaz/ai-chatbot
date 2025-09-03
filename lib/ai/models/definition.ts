@@ -1,5 +1,9 @@
 import { groq, GroqProviderOptions } from "@ai-sdk/groq";
-import { LanguageModel } from "ai";
+import {
+  extractReasoningMiddleware,
+  LanguageModel,
+  wrapLanguageModel,
+} from "ai";
 import { createXai, XaiProviderOptions } from "@ai-sdk/xai";
 import { openai, OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import {
@@ -52,6 +56,12 @@ export interface ModelConfiguration {
   company: Company;
   systemPrompt?: string;
 }
+
+const reasoningMw = extractReasoningMiddleware({
+  tagName: "think", // <think>... </think>
+  separator: "\n",
+  startWithReasoning: false, // cambiar a true si el modelo no la incluye al inicio
+});
 
 export type ModelConfigurations = Record<string, ModelConfiguration>;
 
@@ -134,16 +144,22 @@ export const languageModelConfigurations = {
   "Sonar Pro": {
     model: perplexity("sonar-pro"),
     company: "perplexity",
+    supportedFiles: ["img"],
     disabledTools: ["webSearch", "rag"],
   },
   "Sonar Reasoning": {
-    model: perplexity("sonar-reasoning"),
+    model: wrapLanguageModel({
+      model: perplexity("sonar-pro"),
+      middleware: [reasoningMw],
+    }),
     company: "perplexity",
+    supportedFiles: ["img"],
     disabledTools: ["webSearch", "rag"],
   },
   "Claude Haiku 3.5": {
     model: anthropic("claude-3-5-haiku-latest"),
     company: "anthropic",
+    supportedFiles: ["img", "pdf"],
   },
   "Claude Sonnet 4": {
     model: anthropic("claude-sonnet-4-20250514"),
