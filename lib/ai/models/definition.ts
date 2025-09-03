@@ -141,7 +141,7 @@ export const languageModelConfigurations = {
     company: "perplexity",
     disabledTools: ["webSearch", "rag"],
   },
-  "Claude 3.5 Haiku": {
+  "Claude Haiku 3.5": {
     model: anthropic("claude-3-5-haiku-latest"),
     company: "anthropic",
   },
@@ -279,13 +279,20 @@ const pickModelConfigurations = <
 };
 
 export const chatModelKeys = [
+  "Llama 3.3 Versatile",
   "Llama 4",
   "Kimi K2",
   "Qwen 3",
   "Qwen 3 Coder",
   "Deepseek Chat",
   "Deepseek R1",
+  "Sonar",
+  "Sonar Pro",
+  "Sonar Reasoning",
+  "Claude Haiku 3.5",
   "Claude Sonnet 4",
+  "Claude Opus 4.1",
+  "Gemini 2.5 Flash Lite",
   "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",
   "GPT OSS Mini",
