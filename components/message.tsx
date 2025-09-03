@@ -198,7 +198,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({
                 target="_blank"
               >
                 <LinkIcon className="h-4 w-4" />
-                <span>{part.title}</span>
+                <span>{part.title || part.url}</span>
               </a>
             ) : (
               <div className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline">
