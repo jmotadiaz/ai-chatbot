@@ -65,6 +65,7 @@ export function DropdownItem<T extends React.ElementType = "div">({
   children,
   className,
   as,
+  ...props
 }: DropdownItemProps<T>) {
   const Component = as || "div";
   return (
@@ -73,6 +74,7 @@ export function DropdownItem<T extends React.ElementType = "div">({
         "flex items-center space-x-1 px-5 py-3 first:pt-4 last:pb-4 hover:bg-zinc-300 dark:hover:bg-zinc-700 active:bg-zinc-400/80 dark:active:bg-zinc-600 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
         className
       )}
+      {...props}
     >
       {children}
     </Component>

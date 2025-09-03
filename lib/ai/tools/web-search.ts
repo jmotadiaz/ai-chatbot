@@ -58,6 +58,8 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
         numResults: 3,
       });
 
+      console.log("Web Search results:", results.length);
+
       writer.write({
         type: "data-web-search",
         id: toolCallId,
