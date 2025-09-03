@@ -31,7 +31,10 @@ export const AttachmentsControl: React.FC = () => {
     <div className="relative">
       <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
 
-      <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4 py-0.5">
+      <Dropdown.Popup
+        {...getDropdownPopupProps()}
+        className="space-y-4 lg:py-0.5"
+      >
         {supportedFiles.includes("img") && (
           <>
             <Label

@@ -220,13 +220,6 @@ input:checked + .toggle-bg {
   animation: slide-in-left 300ms ease-in-out both;
 }
 
-::view-transition-old(.slide-up) {
-  animation: slide-out-up 300ms ease-in-out both;
-}
-::view-transition-new(.slide-up) {
-  animation: slide-in-up 300ms ease-in-out both;
-}
-
 ::view-transition-old(.shrink-out) {
   animation: shrink-out 150ms ease-in-out both;
 }
@@ -239,6 +232,19 @@ input:checked + .toggle-bg {
 }
 ::view-transition-new(.fade-in) {
   animation: fade-in 300ms ease-in-out both;
+}
+
+::view-transition-old(.dropdown-exit) {
+  animation: slide-out-down 300ms ease-in-out both;
+  @media (width >= 64rem) {
+    animation: shrink-out 150ms ease-in-out both;
+  }
+}
+::view-transition-new(.dropdown-enter) {
+  animation: slide-in-up 300ms ease-in-out both;
+  @media (width >= 64rem) {
+    animation: reveal-pop 150ms ease-in-out both;
+  }
 }
 
 @keyframes reveal-pop {
@@ -274,6 +280,28 @@ input:checked + .toggle-bg {
   }
 }
 
+@keyframes slide-in-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-down {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
 @keyframes slide-out-left {
   from {
     transform: translateX(0);
@@ -304,17 +332,6 @@ input:checked + .toggle-bg {
   to {
     transform: translateX(20%);
     opacity: 0;
-  }
-}
-
-@keyframes slide-in-up {
-  from {
-    transform: translateY(-20%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
   }
 }
 

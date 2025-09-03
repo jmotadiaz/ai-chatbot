@@ -25,9 +25,12 @@ export const ModelPickerLoading: React.FC<ModelPickerLoadingProps> = ({
 }) => {
   return (
     <div
-      className={cn("w-42 h-[36px] bg-gray-200 dark:bg-zinc-700 rounded-md", {
-        "animate-pulse": animated,
-      })}
+      className={cn(
+        "lg:w-42 h-[36px] bg-gray-200 dark:bg-zinc-700 rounded-md",
+        {
+          "animate-pulse": animated,
+        }
+      )}
     />
   );
 };
@@ -52,7 +55,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   return (
     <Select.Container>
       <Select.Trigger {...getSelectTriggerProps()} className="w-42" />
-      <Select.Dropdown {...getSelectContentProps()} className="w-42">
+      <Select.Dropdown {...getSelectContentProps()} className="lg:w-42">
         {models.map((modelId) => (
           <Select.Item {...getSelectItemProps(modelId)} key={modelId}>
             {modelId}
