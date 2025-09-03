@@ -16,6 +16,7 @@ import {
   MoonshotIcon,
   GrokIcon,
   PerplexityIcon,
+  GeminiIcon,
 } from "@/components/icons";
 import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
@@ -90,7 +91,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   openai: OpenaiIcon,
   anthropic: ClaudeIcon,
   meta: MetaIcon,
-  google: LogoIcon,
+  google: GeminiIcon,
   xai: GrokIcon,
   deepseek: DeepseekIcon,
   perplexity: PerplexityIcon,
