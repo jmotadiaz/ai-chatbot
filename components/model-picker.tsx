@@ -107,7 +107,7 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
   const config = getChatConfigurationByModelId(name);
   const CompanyIcon = icons[config.company] || LogoIcon;
   return (
-    <div className="flex items-center space-x-5 pl-4 pr-8">
+    <div className="flex items-center space-x-5 py-2 pl-4 pr-8">
       <CompanyIcon size={20} />
       <div className="flex flex-col space-y-1">
         <div className="font-medium">{name}</div>
