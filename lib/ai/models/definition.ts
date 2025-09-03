@@ -30,7 +30,8 @@ export type Company =
   | "deepseek"
   | "perplexity"
   | "alibaba"
-  | "moonshotai";
+  | "moonshotai"
+  | "ai chatbot";
 
 export interface ModelConfiguration {
   model: LanguageModel;
@@ -282,6 +283,7 @@ export const chatModelKeys = [
   "Kimi K2",
   "Deepseek Chat",
   "Qwen 3",
+  "Qwen 3 Coder",
   "Deepseek R1",
   "Claude Sonnet 4",
   "Gemini 2.5 Flash",

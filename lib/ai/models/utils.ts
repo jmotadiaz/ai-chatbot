@@ -57,9 +57,7 @@ export const calculateModelConfiguration = async ({
 
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
-): Required<
-  Omit<ModelConfiguration, "model" | "providerOptions" | "company">
-> => {
+): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
   const {
     temperature,
     topK,
@@ -68,6 +66,7 @@ export const getChatConfigurationByModelId = (
     disabledConfig,
     disabledTools,
     supportedFiles,
+    company,
   } = Object.assign(
     {
       temperature: defaultTemperature,
@@ -76,15 +75,21 @@ export const getChatConfigurationByModelId = (
       systemPrompt: defaultSystemPrompt,
       disabledConfig: [],
       disabledTools: [],
-      supportedFiles: [
-        "img",
-        "pdf",
-      ] as Required<ModelConfiguration>["supportedFiles"],
+      company: "ai chatbot" as const,
+      supportedFiles: [],
     },
-    modelId !== "Router" ? chatModelConfigurations[modelId] : {}
+    modelId !== "Router"
+      ? chatModelConfigurations[modelId]
+      : {
+          supportedFiles: [
+            "img",
+            "pdf",
+          ] as Required<ModelConfiguration>["supportedFiles"],
+        }
   );
 
   return {
+    company,
     temperature,
     topK,
     topP,

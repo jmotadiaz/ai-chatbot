@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckIcon, ChevronUp } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 import { startTransition, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -88,7 +88,7 @@ function SelectTriggerComponent<T extends string>({
     <button
       type="button"
       className={cn(
-        "flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-secondary hover:bg-gray-300 dark:hover:bg-zinc-600 rounded-lg transition-colors select-none cursor-pointer w-full",
+        "flex items-center space-x-3 font-semibold text-black dark:text-white select-none cursor-pointer",
         className
       )}
       {...props}
@@ -167,7 +167,6 @@ function SelectItemComponent<T extends string>({
     >
       <span className="flex items-center justify-between w-full">
         {children}
-        {selected && <CheckIcon className="size-4" />}
       </span>
     </div>
   );
