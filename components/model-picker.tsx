@@ -108,7 +108,7 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
   const CompanyIcon = icons[config.company] || LogoIcon;
   return (
     <div className="flex items-center space-x-5 pl-4 pr-8">
-      <CompanyIcon size={18} />
+      <CompanyIcon size={20} />
       <div className="flex flex-col space-y-1">
         <div className="font-medium">{name}</div>
         <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
