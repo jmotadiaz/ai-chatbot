@@ -39,12 +39,9 @@ export const ModelPickerLoading: React.FC<ModelPickerLoadingProps> = ({
 }) => {
   return (
     <div
-      className={cn(
-        "lg:w-42 h-[20px] bg-gray-200 dark:bg-zinc-700 rounded-md",
-        {
-          "animate-pulse": animated,
-        }
-      )}
+      className={cn("w-42 h-[20px] bg-gray-200 dark:bg-zinc-700 rounded-md", {
+        "animate-pulse": animated,
+      })}
     />
   );
 };
