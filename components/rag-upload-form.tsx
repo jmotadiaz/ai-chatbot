@@ -98,7 +98,9 @@ export const RAGUploadForm = () => {
     <div className="w-full pb-6">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          <Label htmlFor="url">URL - Optional</Label>
+          <Label className="mb-2" htmlFor="url">
+            URL - Optional
+          </Label>
           <div className="relative">
             <Input
               id="url"
@@ -123,7 +125,9 @@ export const RAGUploadForm = () => {
           <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
         </div>
         <div className="space-y-4">
-          <Label htmlFor="jsonFile">JSON File (URLs) - Optional</Label>
+          <Label className="mb-2" htmlFor="jsonFile">
+            JSON File (URLs) - Optional
+          </Label>
           <div className="relative">
             <Input
               id="jsonFile"
@@ -147,7 +151,9 @@ export const RAGUploadForm = () => {
           <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
         </div>
         <div className="space-y-4">
-          <Label htmlFor="markdownFiles">Markdown Files - Optional</Label>
+          <Label className="mb-2" htmlFor="markdownFiles">
+            Markdown Files - Optional
+          </Label>
           <div className="relative">
             <Input
               id="markdownFiles"
