@@ -31,17 +31,11 @@ export const AttachmentsControl: React.FC = () => {
     <div className="relative">
       <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
 
-      <Dropdown.Popup
-        {...getDropdownPopupProps()}
-        className="space-y-4 lg:py-0.5"
-      >
+      <Dropdown.Popup {...getDropdownPopupProps()}>
         {supportedFiles.includes("img") && (
           <>
-            <Label
-              className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative m-0 py-1.5"
-              htmlFor="image-input"
-            >
-              <ImageIcon className="w-5 h-5 mr-1" /> Image
+            <Dropdown.Item as={Label} className="text-sm" htmlFor="image-input">
+              <ImageIcon className="w-5 h-5" /> <span>Image</span>
               <input
                 id="image-input"
                 type="file"
@@ -50,14 +44,15 @@ export const AttachmentsControl: React.FC = () => {
                 onChange={onChange}
                 multiple
               />
-            </Label>
+            </Dropdown.Item>
             <>
               {isCaptureSupported && (
-                <Label
-                  className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative m-0 py-1.5"
+                <Dropdown.Item
+                  as={Label}
+                  className="text-sm"
                   htmlFor="camera-input"
                 >
-                  <Camera className="w-5 h-5 mr-1" /> Camera
+                  <Camera className="w-5 h-5" /> <span>Camera</span>
                   <input
                     id="camera-input"
                     type="file"
@@ -67,17 +62,18 @@ export const AttachmentsControl: React.FC = () => {
                     capture="environment"
                     multiple
                   />
-                </Label>
+                </Dropdown.Item>
               )}
             </>
           </>
         )}
         {supportedFiles.includes("pdf") && (
-          <Label
-            className="flex items-center space-x-4 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer w-full relative py-1 m-0"
+          <Dropdown.Item
+            as={Label}
+            className="text-sm"
             htmlFor="document-input"
           >
-            <FileText className="w-5 h-5 mr-1" /> Document
+            <FileText className="w-5 h-5" /> <span>Document</span>
             <input
               id="document-input"
               type="file"
@@ -87,7 +83,7 @@ export const AttachmentsControl: React.FC = () => {
               capture="environment"
               multiple
             />
-          </Label>
+          </Dropdown.Item>
         )}
       </Dropdown.Popup>
     </div>

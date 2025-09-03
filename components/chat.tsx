@@ -95,14 +95,14 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             isLoading={isLoading}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
           />
-          <div className="absolute z-1 left-3 bottom-2 flex items-center space-x-2">
+          <div className="absolute left-3 bottom-2 flex items-center space-x-2">
             <ChatSettingsButton />
             {saveChat}
             <ToolsControl />
             <AttachmentsControl />
           </div>
 
-          <div className="absolute z-1 right-3 bottom-2 flex items-center space-x-2">
+          <div className="absolute right-3 bottom-2 flex items-center space-x-2">
             {hasPreviousMessage && <ChatControl Icon={Undo} onClick={undo} />}
             {metaPrompt && (
               <ChatControl

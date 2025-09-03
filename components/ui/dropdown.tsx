@@ -40,10 +40,10 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
           <div className="fixed inset-0 z-10 bg-transparent" onClick={close} />
           <div
             className={cn(
-              "fixed lg:absolute w-full lg:w-auto left-0 bottom-0 bg-secondary p-4 rounded-t-lg lg:rounded-lg shadow-lg z-20 overflow-hidden",
+              "fixed lg:absolute w-full lg:w-auto left-0 bottom-0 bg-zinc-100 dark:bg-zinc-900 rounded-t-lg lg:rounded-lg shadow-lg z-20 overflow-hidden p-0",
               variant === "top"
                 ? "lg:bottom-full lg:mb-2"
-                : "top-none lg:top-full lg:mt-2",
+                : "top-auto lg:top-full lg:bottom-auto lg:mt-2",
               className
             )}
           >
@@ -55,9 +55,34 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   );
 };
 
+export type DropdownItemProps<T extends React.ElementType> = {
+  children: React.ReactNode;
+  className?: string;
+  as?: T;
+} & React.ComponentPropsWithoutRef<T>;
+
+export function DropdownItem<T extends React.ElementType = "div">({
+  children,
+  className,
+  as,
+}: DropdownItemProps<T>) {
+  const Component = as || "div";
+  return (
+    <Component
+      className={cn(
+        "flex items-center space-x-1 px-5 py-3 first:pt-4 last:pb-4 hover:bg-zinc-300 dark:hover:bg-zinc-700 active:bg-zinc-400/80 dark:active:bg-zinc-600 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
+        className
+      )}
+    >
+      {children}
+    </Component>
+  );
+}
+
 const Dropdown = {
   Container: DropdownContainer,
   Popup: DropdownPopup,
+  Item: DropdownItem,
 };
 
 const useDropdown = () => {

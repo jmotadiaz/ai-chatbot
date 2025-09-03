@@ -25,24 +25,26 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
         isActive={isActive}
         {...getDropdownTriggerProps()}
       />
-      <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        <Toggle
+      <Dropdown.Popup {...getDropdownPopupProps()}>
+        <Dropdown.Item
+          as={Toggle}
           id="rag-tool"
           checked={hasTool(RAG_TOOL)}
           onChange={() => toggleTool(RAG_TOOL)}
         >
           <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
           <span className="whitespace-nowrap">RAG (Document Search)</span>
-        </Toggle>
+        </Dropdown.Item>
 
-        <Toggle
+        <Dropdown.Item
+          as={Toggle}
           id="web-search-tool"
           checked={hasTool(WEB_SEARCH_TOOL)}
           onChange={() => toggleTool(WEB_SEARCH_TOOL)}
         >
           <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
           <span className="whitespace-nowrap">Web Search</span>
-        </Toggle>
+        </Dropdown.Item>
       </Dropdown.Popup>
     </Dropdown.Container>
   );
