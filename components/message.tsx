@@ -83,7 +83,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
             </div>
           )}
           <CopyBlock text={text}>
-            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-4 pl-4 pr-8 mb-4 rounded-tl-xl rounded-br-xl rounded-bl-xl">
+            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-4 pl-4 pr-8 mb-4 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
               <>
                 <motion.div
                   initial={{ y: 5, opacity: 0 }}
