@@ -23,7 +23,7 @@ const Loading: React.FC = () => {
       <div className="h-svh w-full max-w-4xl px-4 mx-auto pt-24 relative overflow-hidden">
         <div className="relative z-1 pr-4">
           <div className="flex justify-end">
-            <div className="h-20 bg-secondary rounded-tl-full rounded-br-full rounded-bl-full animate-pulse w-3/4 mb-10" />
+            <div className="h-20 bg-secondary rounded-tl-xl rounded-br-xl rounded-bl-xl animate-pulse w-3/4 mb-10" />
           </div>
           {Array.from({ length: 10 }).map((_, index) => (
             <div key={index}>
