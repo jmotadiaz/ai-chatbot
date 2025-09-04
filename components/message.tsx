@@ -74,16 +74,16 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   return (
     <>
       <div className={cn("flex gap-4 w-full ml-auto max-w-4xl mt-4", "w-fit")}>
-        <div className="flex flex-col w-full space-y-4">
+        <div className="flex flex-col w-full space-y-2">
           {files.length > 0 && (
-            <div className="flex space-x-3 items-center justify-end">
+            <div className="flex space-x-2 items-center justify-end">
               {files.map((part, i) => (
                 <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
               ))}
             </div>
           )}
           <CopyBlock text={text}>
-            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-4 pl-4 pr-8 mb-4 rounded-tl-xl rounded-tr-xl rounded-bl-xl">
+            <div className="flex flex-col max-w-full bg-secondary text-secondary-foreground py-4 pl-4 pr-8 mb-4 rounded-tl-full rounded-br-full rounded-bl-full">
               <>
                 <motion.div
                   initial={{ y: 5, opacity: 0 }}
