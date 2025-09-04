@@ -22,9 +22,11 @@ const Loading: React.FC = () => {
       </Header.Container>
       <div className="h-svh w-full max-w-4xl px-4 mx-auto pt-24 relative overflow-hidden">
         <div className="relative z-1 pr-4">
-          {Array.from({ length: 3 }).map((_, index) => (
+          <div className="flex justify-end">
+            <div className="h-20 bg-secondary rounded-tl-xl rounded-tr-xl rounded-bl-xl animate-pulse w-3/4 mb-10" />
+          </div>
+          {Array.from({ length: 10 }).map((_, index) => (
             <div key={index}>
-              <div className="h-5 bg-gray-200 dark:bg-zinc-700 rounded-md py-1 animate-pulse w-full mb-3" />
               <div className="pr-6">
                 <div className="h-5 bg-gray-200 dark:bg-zinc-700 rounded-md py-1 animate-pulse w-full mb-3" />
               </div>
@@ -37,7 +39,7 @@ const Loading: React.FC = () => {
           ))}
         </div>
         <div className="absolute bottom-0 left-0 right-0 z-2 p-4 bg-background">
-          <div className="w-full h-[102px] bg-gray-200 dark:bg-zinc-700 rounded-md py-2 animate-pulse" />
+          <div className="w-full h-[148px] bg-gray-200 dark:bg-zinc-700 rounded-md py-2 animate-pulse" />
         </div>
       </div>
     </div>
