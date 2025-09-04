@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, FileText, Globe, ImageIcon, Pen } from "lucide-react";
+import { FileText, ImageIcon, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { Select, useSelect } from "@/components/ui/select";
 import { chatModelId, CHAT_MODELS, Company } from "@/lib/ai/models/definition";
@@ -17,8 +17,8 @@ import {
   GrokIcon,
   PerplexityIcon,
   GeminiIcon,
+  TextIcon,
 } from "@/components/icons";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
 export const ModelPicker = () => {
   const { selectedModel, setSelectedModel } = useModelPicker();
@@ -65,10 +65,10 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
 
   return (
     <Select.Container>
-      <Select.Trigger {...getSelectTriggerProps()} />
+      <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
       <Select.Dropdown
         {...getSelectContentProps()}
-        className="max-h-[400px] lg:max-h-[600px] min-w-52 overflow-auto scrollbar-none"
+        className="max-h-[400px] lg:max-h-[600px] min-w-64 overflow-auto scrollbar-none"
       >
         {models.map((modelId) => (
           <Select.Item
@@ -108,32 +108,19 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
     <div className="flex items-center space-x-6 py-2 px-8 lg:pl-4">
       <CompanyIcon size={20} />
       <div className="flex flex-col space-y-1">
-        <div className="font-medium">{name}</div>
+        <div className="font-medium text-[15px]">{name}</div>
         <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-1">
-            <span className="mr-1">Media:</span>
-            <Pen size={13} />
+            <TextIcon size={16} />
             {config.supportedFiles.map((supportedFile) => {
               switch (supportedFile) {
                 case "img":
-                  return <ImageIcon key={supportedFile} size={13} />;
+                  return <ImageIcon key={supportedFile} size={16} />;
                 case "pdf":
-                  return <FileText key={supportedFile} size={13} />;
+                  return <FileText key={supportedFile} size={16} />;
               }
             })}
-          </div>
-          <div className="flex items-center space-x-1">
-            <span className="mr-1">Tools:</span>
-            {([WEB_SEARCH_TOOL, RAG_TOOL] as const).map((tool) => {
-              if (!config.disabledTools.includes(tool)) {
-                switch (tool) {
-                  case WEB_SEARCH_TOOL:
-                    return <Globe key={tool} size={13} />;
-                  case RAG_TOOL:
-                    return <Database key={tool} size={13} />;
-                }
-              }
-            })}
+            {config.disabledTools.length === 0 && <Wrench size={16} />}
           </div>
         </div>
       </div>

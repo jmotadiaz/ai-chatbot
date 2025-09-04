@@ -527,3 +527,23 @@ export const QwenIcon = ({ size = 16 }: { size?: number }) => (
     </defs>
   </svg>
 );
+
+export const TextIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M4 7V4h16v3m-8-3v16m-3 0h6"
+      />
+    </svg>
+  );
+};
