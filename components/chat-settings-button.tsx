@@ -38,8 +38,10 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        <div className="flex items-center justify-between space-x-4">
-          <Label htmlFor="temperature">Temperature</Label>
+        <Dropdown.Item className="justify-between">
+          <Label className="mr-4" htmlFor="temperature">
+            Temperature
+          </Label>
           <InputNumber
             id="temperature"
             value={temperature}
@@ -48,9 +50,11 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             step={0.1}
             onChange={setTemperature}
           />
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="topP">Top P</Label>
+        </Dropdown.Item>
+        <Dropdown.Item className="justify-between">
+          <Label className="mr-4" htmlFor="topP">
+            Top P
+          </Label>
           <InputNumber
             id="topP"
             value={topP}
@@ -59,9 +63,11 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             step={0.01}
             onChange={setTopP}
           />
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="topK">Top K</Label>
+        </Dropdown.Item>
+        <Dropdown.Item className="justify-between">
+          <Label className="mr-4" htmlFor="topK">
+            Top K
+          </Label>
           <InputNumber
             id="topK"
             value={topK}
@@ -70,7 +76,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             step={5}
             onChange={setTopK}
           />
-        </div>
+        </Dropdown.Item>
       </Dropdown.Popup>
     </Dropdown.Container>
   );
