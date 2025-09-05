@@ -24,11 +24,10 @@ export interface ReasoningPart {
   status: "started" | "finished";
 }
 
-export type ChatbotMessage = UIMessage<
-  MessageMetadata,
-  {
-    ["web-search"]: WebSearchDataPart;
-    ["rag"]: RagDataPart;
-    ["reasoning"]: ReasoningPart;
-  }
->;
+export type ChatbotDataPart = {
+  ["web-search"]: WebSearchDataPart;
+  ["rag"]: RagDataPart;
+  ["reasoning"]: ReasoningPart;
+};
+
+export type ChatbotMessage = UIMessage<MessageMetadata, ChatbotDataPart>;

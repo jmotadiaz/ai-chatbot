@@ -145,7 +145,6 @@ export async function POST(req: Request) {
           }
 
           if (stepNumber >= tools.length && modelName.includes("gpt-5")) {
-            console.log("Reasoning workaround");
             writer.write({
               type: "data-reasoning",
               data: {

@@ -11,7 +11,7 @@ import React, {
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DataUIPart, DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import {
@@ -21,7 +21,7 @@ import {
   chatModelId,
   defaultTopK,
 } from "@/lib/ai/models/definition";
-import { ChatbotMessage } from "@/lib/ai/types";
+import { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import { Tool, Tools } from "@/lib/ai/tools/types";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 import { convertFilesToDataURLs, FilePart } from "@/lib/ai/utils";
@@ -83,6 +83,7 @@ const chatContext = createContext<
       projectId?: string;
       reload: () => void;
       tools: Tools;
+      data: DataUIPart<ChatbotDataPart> | undefined;
       toggleTool: (tool: Tool) => void;
       hasTool: (tool: Tool) => boolean;
       setTools: (tools: Tools) => void;
@@ -118,6 +119,7 @@ const chatContext = createContext<
   toggleTool: () => {},
   hasTool: () => false,
   setTools: () => {},
+  data: undefined,
 });
 
 export interface ChatProviderProps extends ProvidersProps {
@@ -167,6 +169,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   // Manual input state management for v5
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
+  const [data, setData] = useState<DataUIPart<ChatbotDataPart> | undefined>(
+    undefined
+  );
 
   const chatResult = useChat({
     messages: initialMessages,
@@ -175,6 +180,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     transport: new DefaultChatTransport({
       api: "/api/chat",
     }),
+    onData: (incomingData) => {
+      setData(incomingData);
+    },
     onError: (error) => {
       toast.error(
         error.message.length > 0
@@ -271,6 +279,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         setInput,
         setFiles,
         files,
+        data,
         handleInputChange,
         handleFileChange,
         handleSubmit,
