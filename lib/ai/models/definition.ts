@@ -317,7 +317,6 @@ export const chatModelKeys = [
   "GPT OSS",
   "GPT 5 Mini",
   "GPT 5",
-  "o3",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
