@@ -31,19 +31,22 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   className,
   isShown,
   close,
-  variant = "top",
+  variant = "bottom",
 }) => {
   return (
     <>
       {isShown && (
-        <ViewTransition enter="dropdown-enter" exit="dropdown-exit">
+        <ViewTransition
+          enter={variant === "bottom" ? "dropdown-enter" : "reveal-pop"}
+          exit={variant === "bottom" ? "dropdown-exit" : "shrink-out"}
+        >
           <div className="fixed inset-0 z-10 bg-transparent" onClick={close} />
           <div
             className={cn(
-              "fixed lg:absolute w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-20 overflow-hidden p-0",
+              "w-full bg-secondary-foreground shadow-lg z-20 overflow-hidden p-0",
               variant === "top"
-                ? "lg:bottom-full lg:mb-2"
-                : "top-auto lg:top-full lg:bottom-auto lg:mt-2",
+                ? "absolute bottom-full rounded-lg mb-2"
+                : "fixed lg:absolute left-0 bottom-0 top-auto lg:top-full lg:bottom-auto rounded-t-lg lg:rounded-lg lg:mt-2",
               className
             )}
           >
