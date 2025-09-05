@@ -30,7 +30,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
 
   return (
     <div className="flex items-center mt-4 ml-4 h-4">
-      <AnimatePresence>
+      <AnimatePresence key={`message-loading-${message.id}`}>
         <div className="mr-4">
           <DotsLoadingIcon />
         </div>
@@ -80,7 +80,6 @@ interface ToolLoadingProps {
 }
 
 const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
-  console.log(text);
   return (
     <motion.div
       className="font-semibold text-zinc-500 dark:text-zinc-400"

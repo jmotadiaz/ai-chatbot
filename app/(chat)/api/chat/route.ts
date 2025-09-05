@@ -106,8 +106,9 @@ export async function POST(req: Request) {
         activeTools: [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async () => {
+        prepareStep: async ({ stepNumber, model }) => {
           const lastMessage = messagePartsToText(messages[messages.length - 1]);
+          const modelName = typeof model === "string" ? model : model.modelId;
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
@@ -141,6 +142,17 @@ export async function POST(req: Request) {
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };
+          }
+
+          if (stepNumber >= tools.length && modelName.includes("gpt-5")) {
+            console.log("Reasoning workaround");
+            writer.write({
+              type: "data-reasoning",
+              data: {
+                status: "started",
+              },
+            });
+            reasoning = true;
           }
         },
         onChunk: ({ chunk }) => {
