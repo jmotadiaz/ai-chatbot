@@ -228,6 +228,7 @@ export const languageModelConfigurations = {
       openai: {
         textVerbosity: "low",
         reasoningEffort: "high",
+        serviceTier: "priority",
       },
     },
     supportedFiles: ["img", "pdf"],
