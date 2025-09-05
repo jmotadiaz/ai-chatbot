@@ -28,7 +28,7 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
       <Dropdown.Popup
         {...getDropdownPopupProps()}
         variant="top"
-        className="p-0 border-2 border-gray-300 dark:border-zinc-700"
+        className="lg:w-full p-0 border-2 border-gray-300 dark:border-zinc-700"
       >
         <button
           className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-zinc-600 cursor-pointer"
