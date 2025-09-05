@@ -308,6 +308,8 @@ export const chatModelKeys = [
   "Claude Haiku 3.5",
   "Claude Sonnet 4",
   "Claude Opus 4.1",
+  "Grok 3 Mini",
+  "Grok 4",
   "Gemini 2.5 Flash Lite",
   "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",
@@ -316,8 +318,6 @@ export const chatModelKeys = [
   "GPT 5 Mini",
   "GPT 5",
   "o3",
-  "Grok 3 Mini",
-  "Grok 4",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
