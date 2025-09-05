@@ -227,7 +227,7 @@ export const languageModelConfigurations = {
     providerOptions: {
       openai: {
         textVerbosity: "low",
-        reasoningEffort: "medium",
+        reasoningEffort: "high",
       },
     },
     supportedFiles: ["img", "pdf"],
