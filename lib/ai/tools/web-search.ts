@@ -13,7 +13,7 @@ export interface WebSearchFactoryArgs {
 }
 
 const webSearchInputSchema = z.object({
-  query: z.string().min(1).max(100).describe("Optimized query for web search"),
+  query: z.string().min(1).max(300).describe("Optimized query for web search"),
 });
 
 const urlContextInputSchema = z.object({

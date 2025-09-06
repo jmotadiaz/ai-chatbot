@@ -10,6 +10,7 @@ import {
 } from "@/lib/ai/prompts";
 import { scapeXML } from "@/lib/utils";
 import { ChatbotMessage } from "@/lib/ai/types";
+import { messagePartsToText } from "@/lib/ai/utils";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -18,11 +19,11 @@ export async function POST(req: Request) {
   }
 
   const {
-    prompt,
+    message,
     messages,
     metaPrompt = defaultMetaPrompt,
   }: {
-    prompt: string;
+    message: ChatbotMessage;
     messages?: ChatbotMessage[];
     metaPrompt?: string;
   } = await req.json();
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
   const { text } = await generateText({
     ...languageModelConfigurations["GPT OSS"],
     system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
-    prompt: initialPrompt + originalPrompt(prompt),
+    prompt: initialPrompt + originalPrompt(messagePartsToText(message)),
   });
 
   return Response.json({ text });

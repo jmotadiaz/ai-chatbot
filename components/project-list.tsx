@@ -41,6 +41,9 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
         <Link href="/english-helper">
           <Item>English Helper</Item>
         </Link>
+        <Link href="/image-editor">
+          <Item>Image Editor</Item>
+        </Link>
         {projects.length > 0 && (
           <>
             {projects.map((project) => (

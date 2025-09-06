@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { FilePart } from "@/lib/ai/utils";
 
 export interface UseGenerateTextParams {
   api: string;
@@ -21,10 +22,22 @@ export interface UseGenerateTextReturn {
   ) => void;
 }
 
+export interface ImageResponse {
+  base64Data: string;
+  mediaType: string;
+}
+
+export interface Image {
+  url: string;
+  mediaType: string;
+}
+
 export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
   const [text, setText] = useState("");
+  const [files, setFiles] = useState<Image[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
+  const [filesInput, setFilesInput] = useState<FilePart[]>([]);
 
   const generate = useCallback(
     async ({ prompt, onFinish, body }: GenerateTextParams = {}) => {
@@ -34,7 +47,10 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
       await fetch(api, {
         method: "POST",
         body: JSON.stringify({
-          prompt: prompt || input,
+          message: {
+            role: "user",
+            parts: [{ type: "text", text: prompt || input }, ...filesInput],
+          },
           ...body,
         }),
       })
@@ -43,7 +59,17 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
             return Promise.reject("Network response was not ok");
           }
           response.json().then((json) => {
-            setText(json.text);
+            if (json.files) {
+              setFiles(
+                json.files.map((file: ImageResponse) => ({
+                  url: `data:image/png;base64,${file.base64Data}`,
+                  mediaType: file.mediaType,
+                }))
+              );
+            }
+            if (json.text) {
+              setText(json.text);
+            }
             onFinish?.(json.text);
           });
         })
@@ -55,7 +81,7 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
           setIsLoading(false);
         });
     },
-    [api, input]
+    [api, filesInput, input]
   );
 
   const handleInputChange = useCallback(
@@ -65,11 +91,21 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
     []
   );
 
+  const clear = useCallback(() => {
+    setText("");
+    setFiles([]);
+  }, []);
+
   return {
     text,
+    files,
     isLoading,
     generate,
     input,
+    setInput,
+    filesInput,
+    setFilesInput,
     handleInputChange,
+    clear,
   };
 };

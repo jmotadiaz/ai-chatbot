@@ -6,6 +6,7 @@ import {
 } from "@/lib/ai/models/definition";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { Tools } from "@/lib/ai/tools/types";
+import { zodToPrompt } from "@/lib/ai/utils";
 
 const CATEGORIES = [
   "current_news",
@@ -398,6 +399,7 @@ const decisionTree = ({
 const systemPrompt = `\n
   # Query Classification for LLM Routing
   Analyze the user query, and classify it to determine the most appropriate LLM routing.
+  ${zodToPrompt(schema)}
 
   ## Classification Requirements
 

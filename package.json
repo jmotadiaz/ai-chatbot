@@ -66,7 +66,7 @@
     "react": "^19.1.0",
     "react-collapsed": "^4.2.0",
     "react-dom": "^19.1.0",
-    "react-files": "^3.0.3",
+    "react-dropzone": "^14.3.8",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
     "remark-gfm": "^4.0.1",

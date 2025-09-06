@@ -97,24 +97,23 @@ export type FilePart = Pick<
 export const convertFilesToDataURLs = async (
   files: FileList
 ): Promise<FilePart[]> => {
-  return Promise.all(
-    Array.from(files).map(
-      (file) =>
-        new Promise<FilePart>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            resolve({
-              type: "file",
-              mediaType: file.type,
-              filename: file.name,
-              url: reader.result as string,
-            });
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        })
-    )
-  );
+  return Promise.all(Array.from(files).map(convertFileToDataURLs));
+};
+
+export const convertFileToDataURLs = async (file: File): Promise<FilePart> => {
+  return new Promise<FilePart>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve({
+        type: "file",
+        mediaType: file.type,
+        filename: file.name,
+        url: reader.result as string,
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };
 
 export interface SegregatedMessagePartsReturn {

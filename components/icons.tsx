@@ -35,18 +35,24 @@ export const LogoIcon = ({ size = 24, className = "", strokeWidth = 2.5 }) => (
   </svg>
 );
 
-export const DotsLoadingIcon = ({ className }: { className?: string }) => (
+export const DotsLoadingIcon = ({
+  className,
+  size = 2,
+}: {
+  className?: string;
+  size?: number;
+}) => (
   <div className={cn("flex items-center gap-2", className)}>
     <Circle
-      size={2}
+      size={size}
       className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite]"
     />
     <Circle
-      size={2}
+      size={size}
       className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.2s]"
     />
     <Circle
-      size={2}
+      size={size}
       className="w-2 h-2 fill-gray-400 text-gray-400 animate-[typing_1.5s_ease-in-out_infinite] [animation-delay:0.4s]"
     />
   </div>
