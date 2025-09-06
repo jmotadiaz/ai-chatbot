@@ -1,11 +1,12 @@
 "use client";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Download, ImageIcon } from "lucide-react";
 import { Content } from "@/components/content";
 import { convertFileToDataURLs } from "@/lib/ai/utils";
 import { useGeneratedText } from "@/lib/ai/hooks/use-generated-text";
 import { DotsLoadingIcon } from "@/components/icons";
+import { removeExtension } from "@/lib/utils";
 
 export const ImageAutomaticEdition: React.FC = () => {
   const { getRootProps, getInputProps } = useDropzone({
@@ -26,7 +27,7 @@ export const ImageAutomaticEdition: React.FC = () => {
       <div className="flex gap-4 items-stretch my-8">
         <div
           {...getRootProps()}
-          className="relative flex-1 p-12 border-2 border-dashed border-gray-300 rounded-md cursor-pointer"
+          className="flex justify-center relative flex-1 py-2 border-2 border-dashed border-gray-300 rounded-md cursor-pointer"
         >
           <input {...getInputProps()} />
           {filesInput.length ? (
@@ -34,14 +35,16 @@ export const ImageAutomaticEdition: React.FC = () => {
               <Image
                 width={50}
                 height={50}
-                className="absolute left-1/2 top-1/2 -translate-1/2 h-18 w-auto mr-4 rounded-lg"
+                className="h-18 rounded-lg"
                 key={index}
                 src={file.url}
                 alt="optimized"
               />
             ))
           ) : (
-            <p>Drag n drop some files here, or click to select files</p>
+            <div>
+              <ImageIcon strokeWidth={1} className="h-18 w-18" />
+            </div>
           )}
         </div>
         <button
@@ -55,19 +58,29 @@ export const ImageAutomaticEdition: React.FC = () => {
           <ArrowDown className="h-5 w-5 mx-auto" />
         </button>
       </div>
-      <div className="mt-8 flex justify-center">
+      <div className="mt-10 flex justify-center">
         {isLoading && <DotsLoadingIcon size={6} />}
         <>
           {files.map((file, index) => {
             return (
-              <Image
-                width={500}
-                height={500}
-                className="max-w-full lg:max-w-1/2 w-auto h-auto rounded-lg"
-                key={index}
-                src={file.url}
-                alt="optimized"
-              />
+              <div key={index} className="relative">
+                <a
+                  className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-80 cursor-pointer"
+                  href={file.url}
+                  download={`${removeExtension(
+                    filesInput[index].filename || "image"
+                  )}-optimized.png`}
+                >
+                  <Download size={16} />
+                </a>
+                <Image
+                  width={500}
+                  height={500}
+                  className="max-w-full lg:max-w-1/2 w-auto h-auto rounded-lg"
+                  src={file.url}
+                  alt="optimized"
+                />
+              </div>
             );
           })}
         </>

@@ -59,3 +59,12 @@ export const hasUrls = (text: string): boolean => {
   const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
   return urlRegex.test(text);
 };
+
+export const removeExtension = (filename: string = ""): string => {
+  return filename.replace(/\.[^/.]+$/, "");
+};
+
+export const extractMediaType = (mediaType: string): string => {
+  const parts = mediaType.split("/");
+  return parts.at(-1) || mediaType;
+};

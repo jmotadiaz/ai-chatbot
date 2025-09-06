@@ -1,18 +1,10 @@
 import Image from "next/image";
 import { FilePart } from "@/lib/ai/utils";
+import { extractMediaType, removeExtension } from "@/lib/utils";
 
 interface FileThumbnailProps {
   file: FilePart;
 }
-
-const removeExtension = (filename: string = "") => {
-  return filename.replace(/\.[^/.]+$/, "");
-};
-
-const extractMediaType = (mediaType: string) => {
-  const parts = mediaType.split("/");
-  return parts.at(-1) || mediaType;
-};
 
 export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
   if (file.mediaType.startsWith("image/")) {
