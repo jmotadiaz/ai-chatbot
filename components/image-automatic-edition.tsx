@@ -65,7 +65,7 @@ export const ImageAutomaticEdition: React.FC = () => {
             return (
               <div key={index} className="relative">
                 <a
-                  className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-80 cursor-pointer"
+                  className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
                   href={file.url}
                   download={`${removeExtension(
                     filesInput[index].filename || "image"
