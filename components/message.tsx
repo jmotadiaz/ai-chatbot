@@ -197,12 +197,12 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({
                 className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
                 target="_blank"
               >
-                <LinkIcon className="h-4 w-4" />
+                <LinkIcon size={12} />
                 <span>{part.title || part.url}</span>
               </a>
             ) : (
               <div className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline">
-                <Book className="h-4 w-4" />
+                <Book size={12} />
                 <span>{part.title}</span>
               </div>
             )}
