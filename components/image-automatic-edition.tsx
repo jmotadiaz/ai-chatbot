@@ -35,7 +35,7 @@ export const ImageAutomaticEdition: React.FC = () => {
               <Image
                 width={50}
                 height={50}
-                className="h-18 rounded-lg"
+                className="h-18 w-auto rounded-lg"
                 key={index}
                 src={file.url}
                 alt="optimized"
@@ -63,7 +63,7 @@ export const ImageAutomaticEdition: React.FC = () => {
         <>
           {files.map((file, index) => {
             return (
-              <div key={index} className="relative">
+              <div key={index} className="relative w-full lg:w-1/2">
                 <a
                   className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
                   href={file.url}
@@ -71,12 +71,12 @@ export const ImageAutomaticEdition: React.FC = () => {
                     filesInput[index].filename || "image"
                   )}-optimized.png`}
                 >
-                  <Download size={16} />
+                  <Download className="text-zinc-900" size={16} />
                 </a>
                 <Image
                   width={500}
                   height={500}
-                  className="max-w-full lg:max-w-1/2 w-auto h-auto rounded-lg"
+                  className="w-full h-auto rounded-lg"
                   src={file.url}
                   alt="optimized"
                 />

@@ -211,6 +211,7 @@ export const languageModelConfigurations = {
     providerOptions: {
       openai: {
         textVerbosity: "low",
+        serviceTier: "priority",
       },
     },
   },
