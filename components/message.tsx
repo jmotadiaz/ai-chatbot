@@ -97,7 +97,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
                     })}
                     {...getCollapseProps()}
                   >
-                    {text}
+                    <Response components={{ code: "pre" }}>{text}</Response>
                   </div>
                 </motion.div>
               </>
