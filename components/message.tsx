@@ -172,6 +172,7 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({
 }) => {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
   if (sources.length === 0) return null;
+  console.log(sources);
   return (
     <div className="mb-3 text-sm">
       <div
@@ -197,12 +198,15 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({
                 className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline"
                 target="_blank"
               >
-                <LinkIcon size={12} />
+                <span>
+                  <LinkIcon className="h-4 w-4" />
+                </span>
                 <span>{part.title || part.url}</span>
               </a>
             ) : (
               <div className="font-semibold flex pl-4 items-center space-x-2 text-blue-600 dark:text-blue-500 hover:underline">
-                <Book size={12} />
+                <span></span>
+                <Book className="h-4 w-4" />
                 <span>{part.title}</span>
               </div>
             )}

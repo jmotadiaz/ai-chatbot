@@ -1,5 +1,4 @@
 import { clsx, type ClassValue } from "clsx";
-import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -39,18 +38,18 @@ export const isEmpty = <T>(
   value === undefined ||
   (typeof value === "object" && Object.keys(value).length === 0);
 
-export const handleCopy = (value: string | null | undefined) => async () => {
-  if (!value) {
-    toast.error("Nothing to copy");
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(value);
-    toast.success("Text copied to clipboard");
-  } catch {
-    toast.error("Failed to copy text");
-  }
-};
+export const handleCopy =
+  (value: string | null | undefined) => async (): Promise<boolean> => {
+    if (!value) {
+      return false;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
 export const isDefined = <T>(value: T | null | undefined): value is T =>
   Boolean(value);
