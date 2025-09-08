@@ -38,14 +38,19 @@ const components: StreamdownProps["components"] = {
 
 export const Response = memo(
   ({ className, ...props }: StreamdownProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
-      components={components}
-      {...props}
-    />
+    <>
+      {/* Hack to make sure dark mode classes are not purged */}
+      <span className="dark:hidden opacity-0 h-0"></span>
+      <span className="dark:block opacity-0 h-0"></span>
+      <Streamdown
+        className={cn(
+          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          className
+        )}
+        components={components}
+        {...props}
+      />
+    </>
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );
