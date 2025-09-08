@@ -1,5 +1,3 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
@@ -48,16 +46,13 @@ const Button: React.FC<ButtonProps> = ({
   className,
   variant,
   size,
-  asChild = false,
   isLoading = false,
   children,
   disabled,
   ...props
 }) => {
-  const Comp = asChild ? Slot : "button";
-
   return (
-    <Comp
+    <button
       data-slot="button"
       disabled={disabled || isLoading}
       className={cn(buttonVariants({ variant, size, className }))}
@@ -76,7 +71,7 @@ const Button: React.FC<ButtonProps> = ({
           <SpinnerIcon />
         </div>
       )}
-    </Comp>
+    </button>
   );
 };
 

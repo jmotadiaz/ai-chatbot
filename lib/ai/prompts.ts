@@ -28,17 +28,26 @@ export const codeBlockPrompt = `
     ~~~
 
     ### Mermaid Code Blocks
-    When providing diagrams using Mermaid syntax, use the following format:
-    - Use triple backtick (\`\`\`) to start and end the block.
-    - Specify the language mermaid immediately after the opening backtick.
-    - Example:
-      \`\`\`mermaid
-        graph TD;
-          A-->B;
-          A-->C;
-          B-->D;
-          C-->D;
-      \`\`\`
+    When providing diagrams using Mermaid syntax, follow these guidelines to ensure clarity, compatibility, and proper rendering:
+
+    #### Character Requirements
+    - **Incorporate ASCII characters** in all node text and labels to maintain broad compatibility.
+    - **Employ standard keyboard characters** for all diagram elements to support reliable display.
+    - **Represent conceptual arrows within text** using: \`->\`, \`to\`, \`towards\`, or descriptive words to convey direction clearly.
+
+    #### Recommended Characters
+    - **Apply arrows** such as \`->\`, \`to\`, or \`towards\` to indicate flow and connections effectively.
+    - **Utilize bullet points** with \`-\` or \`*\` to organize lists neatly.
+    - **Provide emphasis** through descriptive words to highlight important elements without relying on symbols.
+
+    #### Node Format
+    - **Craft node text** in the format \`[Simple description using standard characters]\` to keep it straightforward and compatible.
+    - **Establish connections** using standard Mermaid syntax like \`-->\`, \`->\`, \`-.->\`, or \`==>\` based on the diagram type to create accurate relationships.
+
+    #### Validation
+    - **Confirm that all node texts include ASCII characters** to support universal rendering.
+    - **Verify that the diagram renders correctly** with a standard character set to ensure optimal functionality.
+
 `;
 
 export const defaultSystemPrompt = `
