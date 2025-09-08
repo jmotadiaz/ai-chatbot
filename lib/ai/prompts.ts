@@ -26,6 +26,19 @@ export const codeBlockPrompt = `
         { "key": "value" }
       \`\`\`
     ~~~
+
+    ### Mermaid Code Blocks
+    When providing diagrams using Mermaid syntax, use the following format:
+    - Use triple backtick (\`\`\`) to start and end the block.
+    - Specify the language mermaid immediately after the opening backtick.
+    - Example:
+      \`\`\`mermaid
+        graph TD;
+          A-->B;
+          A-->C;
+          B-->D;
+          C-->D;
+      \`\`\`
 `;
 
 export const defaultSystemPrompt = `
