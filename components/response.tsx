@@ -19,7 +19,7 @@ const components: StreamdownProps["components"] = {
   th: ({ children, ...props }) => {
     return (
       <th
-        className="whitespace-nowrap text-left py-2 border-b border-secondary break-word"
+        className="whitespace-nowrap text-left py-2 pr-3 border-b border-secondary break-word"
         {...props}
       >
         {children}
@@ -29,7 +29,7 @@ const components: StreamdownProps["components"] = {
   td: ({ children, ...props }) => {
     return (
       <td
-        className="py-2 pr-2 border-b border-secondary wrap-break-word"
+        className="py-2 pr-3 border-b border-secondary wrap-break-word"
         {...props}
       >
         {children}
