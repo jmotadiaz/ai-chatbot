@@ -3,8 +3,10 @@
 import { memo } from "react";
 import { Streamdown, StreamdownProps } from "streamdown";
 import { cn } from "@/lib/utils";
+import CodeBlock from "@/components/code-block";
 
 const components: StreamdownProps["components"] = {
+  code: CodeBlock,
   table: ({ children, ...props }) => {
     return (
       <div className="mt-6 mb-8 w-full overflow-x-auto">
@@ -38,19 +40,14 @@ const components: StreamdownProps["components"] = {
 
 export const Response = memo(
   ({ className, ...props }: StreamdownProps) => (
-    <>
-      {/* Hack to make sure dark mode classes are not purged */}
-      <span className="dark:hidden opacity-0 h-0"></span>
-      <span className="dark:block opacity-0 h-0"></span>
-      <Streamdown
-        className={cn(
-          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-          className
-        )}
-        components={components}
-        {...props}
-      />
-    </>
+    <Streamdown
+      className={cn(
+        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        className
+      )}
+      components={components}
+      {...props}
+    />
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );
