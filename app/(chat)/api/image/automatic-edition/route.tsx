@@ -129,6 +129,9 @@ export async function POST(req: Request) {
     return Response.json({ text, files });
   } catch (error) {
     console.error("Error generating text:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response("Internal Server Error", {
+      status: 500,
+      statusText: (error as Error).message,
+    });
   }
 }

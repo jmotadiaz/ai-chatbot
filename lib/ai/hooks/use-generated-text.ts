@@ -56,7 +56,9 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
       })
         .then((response) => {
           if (!response.ok) {
-            return Promise.reject("Network response was not ok");
+            return Promise.reject(
+              response.statusText || "Error generating text"
+            );
           }
           response.json().then((json) => {
             if (json.files) {
@@ -74,7 +76,7 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
           });
         })
         .catch((error) => {
-          toast.error("Error generating text");
+          toast.error(`Error generating text: ${error}`);
           console.error("Error generating text:", error);
         })
         .finally(() => {
