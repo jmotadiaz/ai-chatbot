@@ -12,8 +12,8 @@ dependencies:
     specifier: 1.0.7
     version: 1.0.7(zod@3.25.76)
   '@ai-sdk/google':
-    specifier: 2.0.6
-    version: 2.0.6(zod@3.25.76)
+    specifier: 2.0.13
+    version: 2.0.13(zod@3.25.76)
   '@ai-sdk/groq':
     specifier: 2.0.10
     version: 2.0.10(zod@3.25.76)
@@ -260,14 +260,14 @@ packages:
       zod: 3.25.76
     dev: false
 
-  /@ai-sdk/google@2.0.6(zod@3.25.76):
-    resolution: {integrity: sha512-8acuseWJI+RRH99JDWM/n7IJRuuGNa4YzLXB/leqE/ZByHyIiVWGADjJi/vfnJnmdM5fQnezJ6SRTF6feI5rSQ==}
+  /@ai-sdk/google@2.0.13(zod@3.25.76):
+    resolution: {integrity: sha512-5WauM+IrqbllWT4uXZVrfTnPCSKTtkHGNsD2CYD0JgGfeIOpa285UYCYUi0Z4RtcovwnZitvQABq465FfeLwzA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.3(zod@3.25.76)
+      '@ai-sdk/provider-utils': 3.0.8(zod@3.25.76)
       zod: 3.25.76
     dev: false
 
@@ -335,7 +335,7 @@ packages:
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0
-      eventsource-parser: 3.0.3
+      eventsource-parser: 3.0.6
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
     dev: false
@@ -4436,11 +4436,6 @@ packages:
   /eventemitter3@5.0.1:
     resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
     dev: true
-
-  /eventsource-parser@3.0.3:
-    resolution: {integrity: sha512-nVpZkTMM9rF6AQ9gPJpFsNAMt48wIzB5TQgiTLdHiuO8XEDhUgZEhqKlZWXbIzo9VmJ/HvysHqEaVeD5v9TPvA==}
-    engines: {node: '>=20.0.0'}
-    dev: false
 
   /eventsource-parser@3.0.6:
     resolution: {integrity: sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==}
