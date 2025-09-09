@@ -56,9 +56,7 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
       })
         .then((response) => {
           if (!response.ok) {
-            return Promise.reject(
-              response.statusText || "Error generating text"
-            );
+            return Promise.reject(response.statusText || response.status);
           }
           response.json().then((json) => {
             if (json.files) {
