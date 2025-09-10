@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { ArrowDown, Download, EyeIcon, ImageIcon, X } from "lucide-react";
+import { ArrowDown, Download, ImageIcon, X } from "lucide-react";
 import { useState } from "react";
 import { Content } from "@/components/content";
 import { convertFileToDataURLs } from "@/lib/ai/utils";
@@ -70,16 +70,8 @@ export const ImageAutomaticEdition: React.FC = () => {
           {files.map((file, index) => {
             return (
               <div key={index} className="relative w-full lg:w-1/2">
-                <span
-                  className="absolute top-4 right-4 bg-gray-200 p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
-                  onClick={() => {
-                    setFilePair({ old: filesInput[index], optimized: file });
-                  }}
-                >
-                  <EyeIcon className="text-zinc-900" size={16} />
-                </span>
                 <a
-                  className="absolute top-4 left-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
+                  className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
                   href={file.url}
                   download={`${removeExtension(
                     filesInput[index].filename || "image"
@@ -88,9 +80,12 @@ export const ImageAutomaticEdition: React.FC = () => {
                   <Download className="text-zinc-900" size={16} />
                 </a>
                 <Image
+                  onClick={() => {
+                    setFilePair({ old: filesInput[index], optimized: file });
+                  }}
                   width={500}
                   height={500}
-                  className="w-full h-auto rounded-lg"
+                  className="w-full h-auto rounded-lg cursor-pointer"
                   src={file.url}
                   alt="optimized"
                 />
@@ -118,25 +113,27 @@ const CompareFile: React.FC<{
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
         <div className="absolute inset-0 z-1" onClick={onClose}></div>
         <div className="pt-4 rounded-lg relative z-2 max-w-3xl w-full">
-          <button
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-100 cursor-pointer"
-            onClick={onClose}
-          >
-            <X size={24} />
-          </button>
           <div className="flex justify-center">
-            <Image
-              src={fileToShow.url}
-              alt="Image Preview"
-              width={500}
-              height={500}
-              className="max-h-[80vh] max-w-full object-contain cursor-pointer"
-              onClick={() => {
-                setFileToShow(
-                  fileToShow.url === optimized.url ? old : optimized
-                );
-              }}
-            />
+            <div className="relative max-h-[80vh] max-w-full">
+              <button
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-100 cursor-pointer"
+                onClick={onClose}
+              >
+                <X size={24} />
+              </button>
+              <Image
+                src={fileToShow.url}
+                alt="Image Preview"
+                width={500}
+                height={500}
+                className="h-auto w-full object-contain cursor-pointer"
+                onClick={() => {
+                  setFileToShow(
+                    fileToShow.url === optimized.url ? old : optimized
+                  );
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
