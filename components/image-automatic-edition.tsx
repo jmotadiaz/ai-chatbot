@@ -71,7 +71,7 @@ export const ImageAutomaticEdition: React.FC = () => {
             return (
               <div key={index} className="relative w-full lg:w-1/2">
                 <span
-                  className="absolute top-4 left-4 bg-gray-200 p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
+                  className="absolute top-4 right-4 bg-gray-200 p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
                   onClick={() => {
                     setFilePair({ old: filesInput[index], optimized: file });
                   }}
@@ -79,7 +79,7 @@ export const ImageAutomaticEdition: React.FC = () => {
                   <EyeIcon className="text-zinc-900" size={16} />
                 </span>
                 <a
-                  className="absolute top-4 right-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
+                  className="absolute top-4 left-4 bg-white p-2 rounded-full hover:bg-gray-100 opacity-70 cursor-pointer"
                   href={file.url}
                   download={`${removeExtension(
                     filesInput[index].filename || "image"
