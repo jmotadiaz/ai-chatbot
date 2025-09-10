@@ -27,14 +27,14 @@ export interface ImageResponse {
   mediaType: string;
 }
 
-export interface Image {
+export interface ImageFile {
   url: string;
   mediaType: string;
 }
 
 export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
   const [text, setText] = useState("");
-  const [files, setFiles] = useState<Image[]>([]);
+  const [files, setFiles] = useState<ImageFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
   const [filesInput, setFilesInput] = useState<FilePart[]>([]);
