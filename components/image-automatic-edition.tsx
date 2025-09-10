@@ -13,6 +13,7 @@ export const ImageAutomaticEdition: React.FC = () => {
   const { getRootProps, getInputProps } = useDropzone({
     accept: { "image/*": [] },
     multiple: false,
+    maxSize: 4.5 * 1024 * 1024, // 4.5MB
     onDrop: async (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
         setFilesInput([await convertFileToDataURLs(acceptedFiles[0])]);
