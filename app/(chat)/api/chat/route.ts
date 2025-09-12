@@ -86,12 +86,15 @@ export async function POST(req: Request) {
           tools: selectedTools,
         });
       const executedTools = new Set<Tool>(modelConfiguration.disabledTools);
+      const lastMessage = messagePartsToText(messages[messages.length - 1]);
+      const isUrlPresentInLastMessage = hasUrls(lastMessage);
       let reasoning = false;
 
       const result = streamText({
         ...modelConfiguration,
-        ...(tools.length > 0 && {
+        ...((tools.length > 0 || isUrlPresentInLastMessage) && {
           providerOptions: {
+            ...modelConfiguration.providerOptions,
             anthropic: {
               ...modelConfiguration.providerOptions?.anthropic,
               sendReasoning: false,
@@ -107,7 +110,6 @@ export async function POST(req: Request) {
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber, model }) => {
-          const lastMessage = messagePartsToText(messages[messages.length - 1]);
           const modelName = typeof model === "string" ? model : model.modelId;
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
@@ -121,7 +123,7 @@ export async function POST(req: Request) {
 
           if (
             !executedTools.has(URL_CONTEXT_TOOL) &&
-            hasUrls(lastMessage) &&
+            isUrlPresentInLastMessage &&
             (await hasContextUrls(lastMessage))
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
