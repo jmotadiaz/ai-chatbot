@@ -95,7 +95,7 @@ export const languageModelConfigurations = {
     supportedFiles: ["img"],
   },
   "Kimi K2": {
-    model: groq("moonshotai/kimi-k2-instruct"),
+    model: groq("moonshotai/kimi-k2-instruct-0905"),
     company: "moonshotai",
     temperature: 0.6,
   },
@@ -300,7 +300,6 @@ const pickModelConfigurations = <
 };
 
 export const chatModelKeys = [
-  "Llama 3.3",
   "Llama 4",
   "Kimi K2",
   "Qwen 3",
