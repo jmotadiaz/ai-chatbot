@@ -58,13 +58,19 @@ export const DotsLoadingIcon = ({
   </div>
 );
 
-export const SpinnerIcon = ({ size = 16 }: { size?: number }) => (
+export const SpinnerIcon = ({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) => (
   <svg
     height={size}
     strokeLinejoin="round"
     viewBox="0 0 16 16"
     width={size}
-    className="animate-spin"
+    className={cn("animate-spin", className)}
     style={{ color: "currentcolor" }}
   >
     <g clipPath="url(#clip0_2393_1490)">

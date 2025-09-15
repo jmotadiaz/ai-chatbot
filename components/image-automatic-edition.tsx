@@ -6,7 +6,7 @@ import { Content } from "@/components/content";
 import { convertFileToDataURLs } from "@/lib/ai/utils";
 import { useGeneratedText } from "@/lib/ai/hooks/use-generated-text";
 import { SpinnerIcon } from "@/components/icons";
-import { removeExtension } from "@/lib/utils";
+import { cn, removeExtension } from "@/lib/utils";
 
 export const ImageAutomaticEdition: React.FC = () => {
   const { getRootProps, getInputProps } = useDropzone({
@@ -59,7 +59,14 @@ export const ImageAutomaticEdition: React.FC = () => {
           <ArrowDown className="h-5 w-5 mx-auto" />
         </button>
       </div>
-      <div className="mt-10 snap-x snap-mandatory gap-6 flex w-full overflow-x-auto items-center">
+      <div
+        className={cn(
+          "mt-10 snap-x snap-mandatory gap-6 flex w-full overflow-x-auto items-center",
+          {
+            "justify-center": files.length === 0,
+          }
+        )}
+      >
         <>
           {files.map((file, index) => {
             return (
@@ -86,17 +93,19 @@ export const ImageAutomaticEdition: React.FC = () => {
               </div>
             );
           })}
-          <div className="snap-center flex-none w-full lg:w-1/2 py-4">
+          <div className="relative snap-center flex-none w-full lg:w-1/2 py-4">
             {isLoading && (
-              <div className="absolute top-0 right-0 left-0 bottom-0 backdrop-brightness-50 opacity-30">
-                <SpinnerIcon size={40} />
+              <div className="absolute top-0 right-0 left-0 bottom-0 text-white z-1 opacity-60 flex items-center justify-center">
+                <SpinnerIcon size={50} />
               </div>
             )}
             {filesInput[0] && (
               <Image
                 width={500}
                 height={500}
-                className="w-full h-auto object-contain rounded-lg"
+                className={cn("w-full h-full object-contain rounded-lg", {
+                  "blur-xs": isLoading,
+                })}
                 src={filesInput[0].url}
                 alt="optimized"
               />
