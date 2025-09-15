@@ -92,13 +92,15 @@ export const ImageAutomaticEdition: React.FC = () => {
                 <SpinnerIcon size={40} />
               </div>
             )}
-            <Image
-              width={500}
-              height={500}
-              className="w-full h-auto object-contain rounded-lg"
-              src={filesInput[0].url}
-              alt="optimized"
-            />
+            {filesInput[0] && (
+              <Image
+                width={500}
+                height={500}
+                className="w-full h-auto object-contain rounded-lg"
+                src={filesInput[0].url}
+                alt="optimized"
+              />
+            )}
           </div>
         </>
       </div>
