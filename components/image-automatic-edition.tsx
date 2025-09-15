@@ -37,7 +37,7 @@ export const ImageAutomaticEdition: React.FC = () => {
 
   return (
     <Content className="pb-10">
-      <div className="space-y-6">
+      <div className="pt-6 space-y-6">
         <div
           {...getRootProps()}
           className="flex w-full lg:w-1/2 mx-auto justify-center bg-secondary py-4 z-1 rounded-xl hover:bg-secondary-accent active:bg-secondary-accent/80 cursor-pointer"
