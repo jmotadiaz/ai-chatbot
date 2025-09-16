@@ -111,7 +111,9 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
         <div className="font-medium text-[15px]">{name}</div>
         <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-1">
-            <div className="font-mono font-medium text-lg">I:</div>
+            <div className="font-mono font-medium text-lg relative top-[1px]">
+              I:
+            </div>
             <div>
               <TextIcon size={16} />
             </div>
@@ -120,8 +122,7 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
                 case "img":
                   return (
                     <div>
-                      {" "}
-                      <ImageIcon key={supportedFile} size={16} />{" "}
+                      <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );
                 case "pdf":
@@ -133,7 +134,9 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               }
             })}
             <div className="font-mono font-medium mx-2">|</div>
-            <div className="font-mono font-medium text-lg">O:</div>
+            <div className="font-mono font-medium text-lg relative top-[1px]">
+              O:
+            </div>
             <div>
               <TextIcon size={16} />
             </div>
