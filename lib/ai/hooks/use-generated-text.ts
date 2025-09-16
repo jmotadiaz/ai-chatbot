@@ -72,12 +72,11 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
             }
             onFinish?.(json.text);
           });
+          setIsLoading(false);
         })
         .catch((error) => {
           toast.error(`Error generating text: ${error}`);
           console.error("Error generating text:", error);
-        })
-        .finally(() => {
           setIsLoading(false);
         });
     },
