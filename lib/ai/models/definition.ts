@@ -17,7 +17,12 @@ import {
   createOpenRouter,
   OpenRouterProviderOptions,
 } from "@openrouter/ai-sdk-provider";
-import { Tools } from "@/lib/ai/tools/types";
+import {
+  RAG_TOOL,
+  Tools,
+  URL_CONTEXT_TOOL,
+  WEB_SEARCH_TOOL,
+} from "@/lib/ai/tools/types";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -140,13 +145,13 @@ export const languageModelConfigurations = {
     model: perplexity("sonar"),
     company: "perplexity",
     supportedFiles: ["img"],
-    disabledTools: ["webSearch", "rag"],
+    disabledTools: [WEB_SEARCH_TOOL, RAG_TOOL, URL_CONTEXT_TOOL],
   },
   "Sonar Pro": {
     model: perplexity("sonar-pro"),
     company: "perplexity",
     supportedFiles: ["img"],
-    disabledTools: ["webSearch", "rag"],
+    disabledTools: [WEB_SEARCH_TOOL, RAG_TOOL, URL_CONTEXT_TOOL],
   },
   "Sonar Reasoning": {
     model: wrapLanguageModel({
@@ -155,7 +160,7 @@ export const languageModelConfigurations = {
     }),
     company: "perplexity",
     supportedFiles: ["img"],
-    disabledTools: ["webSearch", "rag"],
+    disabledTools: [WEB_SEARCH_TOOL, RAG_TOOL, URL_CONTEXT_TOOL],
   },
   "Claude Haiku 3.5": {
     model: anthropic("claude-3-5-haiku-latest"),
