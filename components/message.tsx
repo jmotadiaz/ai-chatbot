@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 import { useCollapse } from "react-collapsed";
 import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
 import { SourceDocumentUIPart, SourceUrlUIPart } from "ai";
+import Image from "next/image";
 import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
 import { ChatbotMessage } from "@/lib/ai/types";
@@ -124,14 +125,14 @@ interface AssistantMessageProps {
 }
 
 const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
-  const { textParts, sourceParts } = useMemo(
+  const { sourceParts } = useMemo(
     () => segregateMessageParts(message.parts),
     [message.parts]
   );
   return (
     <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
-        {textParts.map((part, i) => {
+        {message.parts.map((part, i) => {
           switch (part.type) {
             case "text":
               return (
@@ -147,6 +148,27 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
                     </Response>
                   </div>
                 </motion.div>
+              );
+            case "file":
+              return (
+                <>
+                  {part.mediaType.startsWith("image/") && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={`message-${message.id}-part-${i}`}
+                      className="mb-4"
+                    >
+                      <Image
+                        src={part.url}
+                        alt={part.filename || "image"}
+                        width={500}
+                        height={500}
+                        className="rounded-lg max-w-full h-auto mx-auto object-contain"
+                      />
+                    </motion.div>
+                  )}
+                </>
               );
             default:
               return null;

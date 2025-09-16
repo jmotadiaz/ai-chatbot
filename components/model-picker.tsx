@@ -111,6 +111,7 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
         <div className="font-medium text-[15px]">{name}</div>
         <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-1">
+            <span className="font-mono font-medium text-lg">I:</span>
             <TextIcon size={16} />
             {config.supportedFiles.map((supportedFile) => {
               switch (supportedFile) {
@@ -120,7 +121,21 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
                   return <FileText key={supportedFile} size={16} />;
               }
             })}
-            {config.disabledTools.length === 0 && <Wrench size={16} />}
+            <span className="font-mono font-medium mx-2">|</span>
+            <span className="font-mono font-medium text-lg">O:</span>
+            <TextIcon size={16} />
+            {config.supportedOutput.map((supportedFile) => {
+              switch (supportedFile) {
+                case "img":
+                  return <ImageIcon key={supportedFile} size={16} />;
+              }
+            })}
+            {config.disabledTools.length === 0 && (
+              <>
+                <span className="font-mono font-medium mx-2">|</span>
+                <Wrench size={16} />
+              </>
+            )}
           </div>
         </div>
       </div>

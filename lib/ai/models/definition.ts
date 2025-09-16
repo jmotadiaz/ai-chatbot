@@ -50,6 +50,7 @@ export interface ModelConfiguration {
   disabledConfig?: ("temperature" | "topP" | "topK")[];
   disabledTools?: Tools;
   supportedFiles?: Array<"pdf" | "img">;
+  supportedOutput?: Array<"text" | "img">;
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -268,6 +269,21 @@ export const languageModelConfigurations = {
       },
     },
   },
+  "Gemini Nano Banana": {
+    model: google("gemini-2.5-flash-image-preview"),
+    company: "google",
+    supportedFiles: ["img", "pdf"],
+    supportedOutput: ["text", "img"],
+    providerOptions: {
+      google: {
+        responseModalities: ["TEXT", "IMAGE"],
+      },
+    },
+  },
+  "Grok Code Fast": {
+    model: xai("grok-code-fast-1"),
+    company: "xai",
+  },
   "Grok 3 Mini": {
     model: xai("grok-3-mini"),
     company: "xai",
@@ -309,15 +325,17 @@ export const chatModelKeys = [
   "Claude Haiku 3.5",
   "Claude Sonnet 4",
   "Claude Opus 4.1",
+  "Grok Code Fast",
   "Grok 3 Mini",
   "Grok 4",
-  "Gemini 2.5 Flash Lite",
-  "Gemini 2.5 Flash",
-  "Gemini 2.5 Pro",
   "GPT OSS Mini",
   "GPT OSS",
   "GPT 5 Mini",
   "GPT 5",
+  "Gemini 2.5 Flash Lite",
+  "Gemini 2.5 Flash",
+  "Gemini Nano Banana",
+  "Gemini 2.5 Pro",
 ] satisfies (keyof typeof languageModelConfigurations)[];
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);

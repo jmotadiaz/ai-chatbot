@@ -66,6 +66,7 @@ export const getChatConfigurationByModelId = (
     disabledConfig,
     disabledTools,
     supportedFiles,
+    supportedOutput,
     company,
   } = Object.assign(
     {
@@ -77,6 +78,9 @@ export const getChatConfigurationByModelId = (
       disabledTools: [],
       company: "ai chatbot" as const,
       supportedFiles: [],
+      supportedOutput: [
+        "text",
+      ] as Required<ModelConfiguration>["supportedOutput"],
     },
     modelId !== "Router"
       ? chatModelConfigurations[modelId]
@@ -97,5 +101,6 @@ export const getChatConfigurationByModelId = (
     disabledConfig,
     disabledTools,
     supportedFiles,
+    supportedOutput,
   };
 };

@@ -17,7 +17,6 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
     if (
       status === "ready" ||
       status === "error" ||
-      metadata?.status === "streaming" ||
       metadata?.status === "finished"
     ) {
       return null;
