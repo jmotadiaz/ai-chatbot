@@ -111,29 +111,48 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
         <div className="font-medium text-[15px]">{name}</div>
         <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-1">
-            <span className="font-mono font-medium text-lg">I:</span>
-            <TextIcon size={16} />
+            <div className="font-mono font-medium text-lg">I:</div>
+            <div>
+              <TextIcon size={16} />
+            </div>
             {config.supportedFiles.map((supportedFile) => {
               switch (supportedFile) {
                 case "img":
-                  return <ImageIcon key={supportedFile} size={16} />;
+                  return (
+                    <div>
+                      {" "}
+                      <ImageIcon key={supportedFile} size={16} />{" "}
+                    </div>
+                  );
                 case "pdf":
-                  return <FileText key={supportedFile} size={16} />;
+                  return (
+                    <div>
+                      <FileText key={supportedFile} size={16} />
+                    </div>
+                  );
               }
             })}
-            <span className="font-mono font-medium mx-2">|</span>
-            <span className="font-mono font-medium text-lg">O:</span>
-            <TextIcon size={16} />
+            <div className="font-mono font-medium mx-2">|</div>
+            <div className="font-mono font-medium text-lg">O:</div>
+            <div>
+              <TextIcon size={16} />
+            </div>
             {config.supportedOutput.map((supportedFile) => {
               switch (supportedFile) {
                 case "img":
-                  return <ImageIcon key={supportedFile} size={16} />;
+                  return (
+                    <div>
+                      <ImageIcon key={supportedFile} size={16} />
+                    </div>
+                  );
               }
             })}
             {config.disabledTools.length === 0 && (
               <>
-                <span className="font-mono font-medium mx-2">|</span>
-                <Wrench size={16} />
+                <div className="font-mono font-medium mx-2">|</div>
+                <div>
+                  <Wrench size={16} />
+                </div>
               </>
             )}
           </div>
