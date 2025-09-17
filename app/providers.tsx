@@ -24,7 +24,7 @@ import {
 import { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import { Tool, Tools } from "@/lib/ai/tools/types";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
-import { convertFilesToDataURLs, FilePart } from "@/lib/ai/utils";
+import { FilePart, handleFileUpload } from "@/lib/ai/utils";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -207,10 +207,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files) {
-        const files = await convertFilesToDataURLs(e.target.files);
-        setFiles((prevFiles) => [...prevFiles, ...files]);
-      }
+      handleFileUpload(setFiles, e.target.files);
     },
     []
   );
@@ -218,13 +215,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (input.trim()) {
+      if (input.trim() && !files.some((file) => !file.loading)) {
         setInput("");
         setFiles([]);
         await chatResult.sendMessage(
           {
             role: "user",
-            parts: [{ type: "text", text: input }, ...files],
+            parts: [
+              { type: "text", text: input },
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              ...files.map(({ loading, ...file }) => file),
+            ],
           },
           {
             body,

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { FilePart } from "@/lib/ai/utils";
+import { FilePart, handleFileUpload } from "@/lib/ai/utils";
 
 export interface UseGenerateTextParams {
   api: string;
@@ -20,6 +20,7 @@ export interface UseGenerateTextReturn {
   handleInputChange: (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
+  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export interface ImageResponse {
@@ -95,6 +96,13 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
     setFiles([]);
   }, []);
 
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFileUpload(setFilesInput, e.target.files);
+    },
+    []
+  );
+
   return {
     text,
     files,
@@ -105,6 +113,7 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
     filesInput,
     setFilesInput,
     handleInputChange,
+    handleFileChange,
     clear,
   };
 };

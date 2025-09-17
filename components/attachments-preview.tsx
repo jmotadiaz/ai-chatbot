@@ -4,6 +4,7 @@ import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { cn } from "@/lib/utils";
 import { FilePart } from "@/lib/ai/utils";
 import { deleteFile } from "@/lib/ai/actions/files";
+import { CircleProgress } from "@/components/icons";
 
 export interface PreviewFilesProps {
   className?: string;
@@ -17,6 +18,12 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
     setFiles(files.filter((file) => file.filename !== fileToDelete.filename));
   };
 
+  console.log("files", files.length);
+  files.forEach(
+    (file) =>
+      file.loading && console.log("file loading", file.loading.percentage)
+  );
+
   if (files.length === 0) {
     return null;
   }
@@ -26,15 +33,26 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
         <div
           className="relative cursor-pointer"
           key={idx}
-          onClick={() => removeFile(file)}
+          onClick={() => !file.loading && removeFile(file)}
         >
-          <div
-            className={cn(
-              "bg-secondary absolute top-2 right-2 p-1 rounded-full opacity-80"
-            )}
-          >
-            <X className="h-3 w-3" />
-          </div>
+          {!file.loading && (
+            <div
+              className={cn(
+                "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80"
+              )}
+            >
+              <X size={15} />
+            </div>
+          )}
+          {file.loading && (
+            <div
+              className={cn(
+                "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80 text-xs"
+              )}
+            >
+              <CircleProgress size={15} progress={file.loading.percentage} />
+            </div>
+          )}
           <FileThumbnail file={file} />
         </div>
       ))}

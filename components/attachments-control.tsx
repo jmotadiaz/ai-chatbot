@@ -1,15 +1,12 @@
 import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import { upload } from "@vercel/blob/client";
+import { useEffect, useState } from "react";
 import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
-import { toFilePart } from "@/lib/ai/utils";
 export const AttachmentsControl: React.FC = () => {
-  const [isPending, startTransition] = useTransition();
-  const { setFiles, selectedModel } = useChatContext();
+  const { handleFileChange, selectedModel } = useChatContext();
   const { getDropdownPopupProps, getDropdownTriggerProps, close } =
     useDropdown();
   const [isCaptureSupported, setIsCaptureSupported] = useState(false);
@@ -20,18 +17,7 @@ export const AttachmentsControl: React.FC = () => {
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     close();
-    startTransition(async () => {
-      if (e.target.files) {
-        for (const file of e.target.files) {
-          const blobPromise = upload(file.name, file, {
-            access: "public",
-            handleUploadUrl: "/api/upload",
-          });
-          const filePart = toFilePart(await blobPromise, file);
-          setFiles((prevFiles) => [...prevFiles, filePart]);
-        }
-      }
-    });
+    handleFileChange(e);
   };
 
   const { supportedFiles } = getChatConfigurationByModelId(selectedModel);
@@ -42,11 +28,7 @@ export const AttachmentsControl: React.FC = () => {
 
   return (
     <div className="relative">
-      <ChatControl
-        Icon={Paperclip}
-        isLoading={isPending}
-        {...getDropdownTriggerProps()}
-      />
+      <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
 
       <Dropdown.Popup {...getDropdownPopupProps()}>
         {supportedFiles.includes("img") && (

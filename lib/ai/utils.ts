@@ -22,6 +22,7 @@ import {
   ZodUnion,
 } from "zod";
 import { PutBlobResult } from "@vercel/blob";
+import { upload } from "@vercel/blob/client";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage, Message } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
@@ -93,7 +94,7 @@ export const once = <T>(fn: () => T): (() => T) => {
 export type FilePart = Pick<
   FileUIPart,
   "type" | "mediaType" | "url" | "filename"
->;
+> & { loading?: { percentage: number } };
 
 export const convertFilesToDataURLs = async (
   files: FileList
@@ -212,4 +213,47 @@ export const toFilePart = (
     mediaType: originalFile.type,
     url: blob.url,
   };
+};
+
+export const handleFileUpload = async (
+  setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>,
+  fileList: FileList | null
+) => {
+  if (fileList) {
+    for (const file of fileList) {
+      const filePart = await convertFileToDataURLs(file);
+      setFiles((prevFiles) => [
+        ...prevFiles,
+        { ...filePart, loading: { percentage: 0 } },
+      ]);
+      const blobPromise = upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+        onUploadProgress: ({ percentage }) => {
+          setFiles((prevFiles) =>
+            prevFiles.map((f) => {
+              if (f.url === filePart.url) {
+                return { ...f, loading: { percentage } };
+              }
+              return f;
+            })
+          );
+        },
+      });
+      const blob = await blobPromise;
+      setFiles((prevFiles) =>
+        prevFiles.map((f) => {
+          if (f.url === filePart.url) {
+            return {
+              url: blob.url,
+              type: "file",
+              filename: file.name,
+              mediaType: file.type,
+            };
+          }
+          return f;
+        })
+      );
+    }
+  }
 };

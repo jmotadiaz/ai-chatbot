@@ -594,3 +594,45 @@ export const ImageSparkleIcon = ({ size = 16 }: { size?: number }) => (
     />
   </svg>
 );
+
+interface CircleProgressProps {
+  size: number;
+  strokeWidth?: number;
+  progress: number;
+}
+
+export const CircleProgress: React.FC<CircleProgressProps> = ({
+  size,
+  progress,
+  strokeWidth = 1,
+}) => {
+  const radius = (size / 2) * 0.8;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg width={size} height={size}>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="transparent"
+        strokeWidth={1}
+        fill="none"
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: "stroke-dashoffset 0.35s" }}
+      />
+    </svg>
+  );
+};
