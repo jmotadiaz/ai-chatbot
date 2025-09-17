@@ -71,7 +71,7 @@ const reasoningMw = extractReasoningMiddleware({
 
 export type ModelConfigurations = Record<string, ModelConfiguration>;
 
-export const languageModelConfigurations = {
+export const languageModelConfigurations: ModelConfigurations = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
     company: "meta",
@@ -92,6 +92,7 @@ export const languageModelConfigurations = {
     company: "meta",
     temperature: 0.6,
     topP: 0.9,
+    supportedFiles: ["img"],
   },
   "Llama 4": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
@@ -298,7 +299,7 @@ export const languageModelConfigurations = {
     company: "xai",
     supportedFiles: ["img", "pdf"],
   },
-} satisfies ModelConfigurations;
+};
 
 const pickModelConfigurations = <
   T extends keyof typeof languageModelConfigurations

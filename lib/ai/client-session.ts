@@ -30,7 +30,10 @@ export function setChatDataInSession({
     JSON.stringify({
       messages: messages?.map((message) => ({
         ...message,
-        parts: message.parts.filter((part) => part.type !== "file"),
+        parts:
+          message.role === "user"
+            ? message.parts
+            : message.parts.filter((part) => part.type !== "file"),
       })),
       chatConfig,
       tools,

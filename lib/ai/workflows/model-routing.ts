@@ -122,21 +122,24 @@ export async function modelRouting({
   };
 }
 
-const findModelWithSupportedFileTypes =
-  (fileTypes: Set<Required<ModelConfiguration>["supportedFiles"][number]>) =>
-  (
+const findModelWithSupportedFileTypes = (
+  fileTypes: Set<Required<ModelConfiguration>["supportedFiles"][number]>
+) => {
+  const requestedFileTypes = [...fileTypes];
+  return (
     ...modelIds: Array<keyof typeof languageModelConfigurations>
   ): ModelConfiguration => {
     const modelSelected =
-      fileTypes.size === 0
-        ? modelIds[0]
-        : modelIds.find((modelId) =>
-            (
-              languageModelConfigurations[modelId] as ModelConfiguration
-            ).supportedFiles?.some((fileType) => fileTypes.has(fileType))
-          ) || "GPT 5 Mini";
+      modelIds.find((modelId) =>
+        requestedFileTypes.every((fileType) =>
+          languageModelConfigurations[modelId].supportedFiles?.includes(
+            fileType
+          )
+        )
+      ) || "GPT 5 Mini";
     return languageModelConfigurations[modelSelected];
   };
+};
 
 const decisionTree = ({
   requestedFileTypes,
@@ -441,5 +444,5 @@ const systemPrompt = `\n
   Provide a brief reasoning (1-3 sentences) explaining only the classification and complexity drivers
 
   ## 4 Additional Notes
-  *   If the query is referencing a document, assume the document is available for context, even if you don't have it available.
+  *   If the query is referencing an image or document, assume the image or document is available for context, even if you don't have it available.
 `;
