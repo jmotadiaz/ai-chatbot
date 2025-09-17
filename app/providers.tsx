@@ -1,5 +1,4 @@
 "use client";
-import { randomUUID } from "crypto";
 import React, {
   useCallback,
   useContext,
@@ -14,6 +13,7 @@ import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { DataUIPart, DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
+import { v4 } from "uuid";
 import {
   defaultModel,
   defaultTemperature,
@@ -29,9 +29,6 @@ import { convertFilesToDataURLs, FilePart } from "@/lib/ai/utils";
 interface ProvidersProps {
   children: React.ReactNode;
 }
-
-const generateId =
-  typeof window !== "undefined" ? () => window.crypto.randomUUID() : randomUUID;
 
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
@@ -175,7 +172,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 
   const chatResult = useChat({
     messages: initialMessages,
-    generateId,
+    generateId: v4,
     experimental_throttle: 200,
     transport: new DefaultChatTransport({
       api: "/api/chat",

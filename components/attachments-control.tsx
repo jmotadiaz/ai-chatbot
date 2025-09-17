@@ -1,11 +1,12 @@
 import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
+import { upload } from "@vercel/blob/client";
 import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
-import { uploadFiles } from "@/lib/ai/actions/files";
+import { toFilePart } from "@/lib/ai/utils";
 export const AttachmentsControl: React.FC = () => {
   const [isPending, startTransition] = useTransition();
   const { setFiles, selectedModel } = useChatContext();
@@ -21,8 +22,14 @@ export const AttachmentsControl: React.FC = () => {
     close();
     startTransition(async () => {
       if (e.target.files) {
-        const files = await uploadFiles(e.target.files);
-        setFiles((prevFiles) => [...prevFiles, ...files]);
+        for (const file of e.target.files) {
+          const blobPromise = upload(file.name, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload",
+          });
+          const filePart = toFilePart(await blobPromise, file);
+          setFiles((prevFiles) => [...prevFiles, filePart]);
+        }
       }
     });
   };

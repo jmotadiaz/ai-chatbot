@@ -21,6 +21,7 @@ import {
   ZodTypeAny,
   ZodUnion,
 } from "zod";
+import { PutBlobResult } from "@vercel/blob";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage, Message } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
@@ -200,3 +201,15 @@ export function zodToPrompt(schema: ZodTypeAny): string {
 
   return `Your output should follow this JSON schema:\n${format(schema, 0)}`;
 }
+
+export const toFilePart = (
+  blob: PutBlobResult,
+  originalFile: File
+): FilePart => {
+  return {
+    filename: originalFile.name,
+    type: "file",
+    mediaType: originalFile.type,
+    url: blob.url,
+  };
+};

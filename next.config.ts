@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
   experimental: {
     viewTransition: true,
     authInterrupts: true,
-    serverActions: {
-      bodySizeLimit: "20mb",
-    },
   },
   images: {
     remotePatterns: [
