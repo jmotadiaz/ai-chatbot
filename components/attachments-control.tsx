@@ -5,7 +5,6 @@ import { ChatControl } from "@/components/chat-control";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
-
 export const AttachmentsControl: React.FC = () => {
   const { handleFileChange, selectedModel } = useChatContext();
   const { getDropdownPopupProps, getDropdownTriggerProps, close } =
@@ -17,8 +16,8 @@ export const AttachmentsControl: React.FC = () => {
   }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileChange(e);
     close();
+    handleFileChange(e);
   };
 
   const { supportedFiles } = getChatConfigurationByModelId(selectedModel);

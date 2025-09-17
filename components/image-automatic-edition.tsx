@@ -1,44 +1,57 @@
 "use client";
 import Image from "next/image";
-import { useDropzone } from "react-dropzone";
 import { Download } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Content } from "@/components/content";
-import { convertFileToDataURLs } from "@/lib/ai/utils";
 import { useGeneratedText } from "@/lib/ai/hooks/use-generated-text";
-import { ImageIcon, ImageSparkleIcon, SpinnerIcon } from "@/components/icons";
+import {
+  CircleProgress,
+  ImageIcon,
+  ImageSparkleIcon,
+  SpinnerIcon,
+} from "@/components/icons";
 import { cn, removeExtension } from "@/lib/utils";
 
 export const ImageAutomaticEdition: React.FC = () => {
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: { "image/*": [] },
-    multiple: false,
-    maxSize: 4 * 1024 * 1024, // 4MB
-    onDrop: async (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
-        setFilesInput([await convertFileToDataURLs(acceptedFiles[0])]);
-        clear();
-      }
-    },
+  const {
+    files,
+    filesInput,
+    handleFileChange,
+    setFilesInput,
+    generate,
+    isLoading,
+    clear,
+  } = useGeneratedText({
+    api: "/api/image/automatic-edition",
   });
-  const { files, filesInput, setFilesInput, generate, isLoading, clear } =
-    useGeneratedText({
-      api: "/api/image/automatic-edition",
-    });
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      clear();
+      setFilesInput([]);
+      handleFileChange(e);
+    }
+  };
 
   return (
     <AnimatePresence key="image-automatic-edition">
       <Content className="pb-10">
         <div className="pt-6 space-y-4 lg:space-y-6">
-          <div
-            {...getRootProps()}
+          <label
+            htmlFor="image-edition-input"
             className="flex w-full lg:w-1/2 mx-auto justify-center bg-secondary py-3 z-1 rounded-xl hover:bg-secondary-accent active:bg-secondary-accent/80 cursor-pointer"
           >
-            <input {...getInputProps()} />
+            <input
+              id="image-edition-input"
+              type="file"
+              accept="image/*"
+              className="absolute w-0 h-0 overflow-hidden opacity-0"
+              onChange={onChange}
+            />
             <div>
               <ImageIcon size={38} />
             </div>
-          </div>
+          </label>
 
           <div
             className={cn(
@@ -85,6 +98,19 @@ export const ImageAutomaticEdition: React.FC = () => {
                   }`}
                   className="relative snap-center flex-none w-full py-4"
                 >
+                  {filesInput[0].loading && (
+                    <div
+                      className={cn(
+                        "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80 text-xs"
+                      )}
+                    >
+                      <CircleProgress
+                        size={80}
+                        progress={filesInput[0].loading.percentage}
+                        strokeWidth={3}
+                      />
+                    </div>
+                  )}
                   {isLoading && (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -110,7 +136,7 @@ export const ImageAutomaticEdition: React.FC = () => {
               )}
             </>
           </div>
-          {filesInput[0] && (
+          {filesInput[0] && !filesInput[0].loading && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <button
                 className="w-full lg:w-1/2 mx-auto py-3 flex justify-center bg-secondary rounded-xl hover:bg-secondary-accent active:bg-secondary-accent/80 cursor-pointer"
