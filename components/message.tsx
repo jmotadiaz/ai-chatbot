@@ -178,7 +178,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
           <SourceMessagePart sourceParts={sourceParts} />
         )}
         {message.metadata?.autoModel && (
-          <AutoModelDetails metadata={message.metadata.autoModel} />
+          <RouterDetails metadata={message.metadata.autoModel} />
         )}
       </div>
     </div>
@@ -243,7 +243,7 @@ interface AutoModelDetailsProps {
   metadata: ModelRoutingMetadata;
 }
 
-const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
+const RouterDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
   return (
     <div className="mb-4">
@@ -251,7 +251,7 @@ const AutoModelDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
         className="font-bold flex items-center text-sm text-zinc-500 dark:text-zinc-400 my-2 cursor-pointer select-none"
         {...getToggleProps()}
       >
-        Auto Model Details{" "}
+        Router Details
         <ChevronDownIcon
           className={cn("h-4 w-4 ml-1", {
             "rotate-180": isExpanded,
