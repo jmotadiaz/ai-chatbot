@@ -12,8 +12,8 @@ export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
       <div className="h-12 w-12 overflow-hidden rounded-xl">
         <Image
           src={file.url}
-          width={20}
-          height={20}
+          width={50}
+          height={50}
           className="h-full w-full object-cover object-center"
           alt="attachment"
         />
