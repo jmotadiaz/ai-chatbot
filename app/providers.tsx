@@ -63,7 +63,7 @@ interface InputState {
   input: string;
   files: FilePart[];
   setInput: (input: string) => void;
-  setFiles: (files: FilePart[]) => void;
+  setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>;
   handleInputChange: (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;

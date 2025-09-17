@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
     viewTransition: true,
     authInterrupts: true,
   },
+  images: {
+    remotePatterns: [
+      new URL("https://cwbcp1ymgf2pibcv.public.blob.vercel-storage.com/**"),
+    ],
+  },
 };
 
 export default nextConfig;

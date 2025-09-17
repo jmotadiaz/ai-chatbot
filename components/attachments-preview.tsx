@@ -2,6 +2,8 @@ import { X } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { cn } from "@/lib/utils";
+import { FilePart } from "@/lib/ai/utils";
+import { deleteFile } from "@/lib/ai/actions/files";
 
 export interface PreviewFilesProps {
   className?: string;
@@ -10,8 +12,9 @@ export interface PreviewFilesProps {
 export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
   const { files, setFiles } = useChatContext();
 
-  const removeFile = (filename: string = "") => {
-    setFiles(files.filter((file) => file.filename !== filename));
+  const removeFile = (fileToDelete: FilePart) => {
+    deleteFile(fileToDelete.url);
+    setFiles(files.filter((file) => file.filename !== fileToDelete.filename));
   };
 
   if (files.length === 0) {
@@ -23,7 +26,7 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
         <div
           className="relative cursor-pointer"
           key={idx}
-          onClick={() => removeFile(file.filename)}
+          onClick={() => removeFile(file)}
         >
           <div
             className={cn(

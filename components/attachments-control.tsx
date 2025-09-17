@@ -1,13 +1,14 @@
 import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useChatContext } from "@/app/providers";
 import { ChatControl } from "@/components/chat-control";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
-
+import { uploadFiles } from "@/lib/ai/actions/files";
 export const AttachmentsControl: React.FC = () => {
-  const { handleFileChange, selectedModel } = useChatContext();
+  const [isPending, startTransition] = useTransition();
+  const { setFiles, selectedModel } = useChatContext();
   const { getDropdownPopupProps, getDropdownTriggerProps, close } =
     useDropdown();
   const [isCaptureSupported, setIsCaptureSupported] = useState(false);
@@ -17,8 +18,13 @@ export const AttachmentsControl: React.FC = () => {
   }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileChange(e);
     close();
+    startTransition(async () => {
+      if (e.target.files) {
+        const files = await uploadFiles(e.target.files);
+        setFiles((prevFiles) => [...prevFiles, ...files]);
+      }
+    });
   };
 
   const { supportedFiles } = getChatConfigurationByModelId(selectedModel);
@@ -29,7 +35,11 @@ export const AttachmentsControl: React.FC = () => {
 
   return (
     <div className="relative">
-      <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
+      <ChatControl
+        Icon={Paperclip}
+        isLoading={isPending}
+        {...getDropdownTriggerProps()}
+      />
 
       <Dropdown.Popup {...getDropdownPopupProps()}>
         {supportedFiles.includes("img") && (

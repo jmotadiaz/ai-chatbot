@@ -33,6 +33,7 @@
     "@opentelemetry/sdk-logs": "^0.200.0",
     "@types/turndown": "^5.0.5",
     "@uiw/react-md-editor": "^4.0.7",
+    "@vercel/blob": "^2.0.0",
     "@vercel/otel": "^1.10.4",
     "@vercel/postgres": "^0.10.0",
     "ai": "5.0.15",
