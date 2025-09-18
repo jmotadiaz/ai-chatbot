@@ -27,19 +27,26 @@ import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage, Message } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
 
-export async function generateTitleFromUserMessage(
-  message: ChatbotMessage | undefined
-) {
-  if (!message) return "Unknown";
+export async function generateTitle(messages: ChatbotMessage[]) {
+  if (messages.length === 0) return "Unknown";
 
   const { text: title } = await generateText({
     ...languageModelConfigurations["Llama 3.1 Instant"],
     system: `\n
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 60 characters long
-    - the title should be a summary of the user's message, and should only include the summary
-    - do not use markdown formatting, it should be plain text`,
-    prompt: JSON.stringify(message),
+    You are a chat title generator. Create a concise title (≤60 characters) summarizing the first user message. Follow these rules:
+    1. Extract the core topic from the user's message
+    2. Use only essential keywords (no filler words)
+    3. Never include:
+      - Markdown formatting
+      - Prefixes/suffixes (e.g., "Title:")
+      - Quotation marks
+      - Unrelated content
+    4. Strictly output only the generated title
+
+    Example:
+    User message: "Can you help debug my Python script? It's throwing index errors"
+    Output: Python script debugging help`,
+    prompt: JSON.stringify(messages.find(({ role }) => role === "user")),
   });
 
   return title;

@@ -9,10 +9,7 @@ import {
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { chatModelId } from "@/lib/ai/models/definition";
-import {
-  generateTitleFromUserMessage,
-  chatbotMessageToDbMessage,
-} from "@/lib/ai/utils";
+import { generateTitle, chatbotMessageToDbMessage } from "@/lib/ai/utils";
 import { ChatbotMessage } from "@/lib/ai/types";
 
 export async function saveChat(req: {
@@ -53,7 +50,7 @@ export async function saveChat(req: {
         defaultTopP: topP,
         defaultTopK: topK,
         tools,
-        title: await generateTitleFromUserMessage(messages[0]),
+        title: await generateTitle(messages),
       }),
       saveMessages(messages.map(chatbotMessageToDbMessage(chatId)))
     );

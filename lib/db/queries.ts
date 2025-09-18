@@ -9,8 +9,6 @@ import {
   ExtractTablesWithRelations,
   gt,
   isNull,
-  lt,
-  SQL,
   sql,
 } from "drizzle-orm";
 import { drizzle, PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
@@ -210,77 +208,45 @@ export const deleteChat =
 export async function getChats({
   userId,
   limit,
-  startingAfter = null,
-  endingBefore = null,
   projectId = null,
 }: {
   userId: string;
   limit: number;
-  startingAfter?: string | null;
-  endingBefore?: string | null;
   projectId?: string | null;
-}): Promise<{ chats: Array<Chat>; hasMore: boolean }> {
+}): Promise<{ chats: Array<Chat> }> {
   try {
     const extendedLimit = limit + 1;
 
-    const query = (whereCondition?: SQL) =>
-      db
-        .select()
-        .from(chat)
-        .where(
-          whereCondition
-            ? and(
-                whereCondition,
-                eq(chat.userId, userId),
-                projectId === null
-                  ? isNull(chat.projectId)
-                  : eq(chat.projectId, projectId)
-              )
-            : and(
-                eq(chat.userId, userId),
-                projectId === null
-                  ? isNull(chat.projectId)
-                  : eq(chat.projectId, projectId)
-              )
+    const chats = await db
+      .selectDistinct({
+        id: chat.id,
+        projectId: chat.projectId,
+        userId: chat.userId,
+        title: chat.title,
+        defaultModel: chat.defaultModel,
+        defaultTemperature: chat.defaultTemperature,
+        defaultTopP: chat.defaultTopP,
+        defaultTopK: chat.defaultTopK,
+        tools: chat.tools,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+      })
+      .from(chat)
+      .innerJoin(message, eq(message.chatId, chat.id))
+      .where(
+        and(
+          eq(chat.userId, userId),
+          eq(message.chatId, chat.id),
+          projectId === null
+            ? isNull(chat.projectId)
+            : eq(chat.projectId, projectId)
         )
-        .orderBy(desc(chat.updatedAt))
-        .limit(extendedLimit);
-
-    let filteredChats: Array<Chat> = [];
-
-    if (startingAfter) {
-      const [selectedChat] = await db
-        .select()
-        .from(chat)
-        .where(eq(chat.id, startingAfter))
-        .limit(1);
-
-      if (!selectedChat) {
-        throw new Error(`Chat with id ${startingAfter} not found`);
-      }
-
-      filteredChats = await query(gt(chat.createdAt, selectedChat.createdAt));
-    } else if (endingBefore) {
-      const [selectedChat] = await db
-        .select()
-        .from(chat)
-        .where(eq(chat.id, endingBefore))
-        .limit(1);
-
-      if (!selectedChat) {
-        throw new Error(`Chat with id ${endingBefore} not found`);
-      }
-
-      filteredChats = await query(lt(chat.createdAt, selectedChat.createdAt));
-    } else {
-      filteredChats = await query();
-    }
-
-    const hasMore = filteredChats.length > limit;
+      )
+      .orderBy(desc(chat.updatedAt))
+      .limit(extendedLimit);
 
     return {
-      chats: hasMore ? filteredChats.slice(0, limit) : filteredChats,
-      hasMore,
+      chats,
     };
   } catch (error) {
     console.error("Failed to get chats by user from database");
@@ -414,7 +380,15 @@ export async function getProjectsByUserId({
       return await db.query.project.findMany({
         where: eq(project.userId, userId),
         with: {
-          chats: true,
+          chats: {
+            where: (chats, { exists, sql }) =>
+              exists(
+                db
+                  .select({ dummy: sql`1` })
+                  .from(message)
+                  .where(eq(message.chatId, chats.id))
+              ),
+          },
         },
         orderBy: desc(project.updatedAt),
         limit,

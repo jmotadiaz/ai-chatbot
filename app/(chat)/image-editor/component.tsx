@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { ImageAutomaticEdition } from "@/components/image-automatic-edition";
 import { Logo } from "@/components/logo";
-import { NewChat } from "@/components/new-chat";
+import { NewChatHeader } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const ImageEditorLayout: React.FC = () => {
@@ -10,7 +10,7 @@ export const ImageEditorLayout: React.FC = () => {
       <Header.Container>
         <Header.Left>
           <Logo />
-          <NewChat />
+          <NewChatHeader />
         </Header.Left>
         <Header.Right>
           <ThemeToggle />

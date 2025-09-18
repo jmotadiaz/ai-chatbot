@@ -175,10 +175,12 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
           }
         })}
         {message.metadata?.status === "finished" && (
-          <SourceMessagePart sourceParts={sourceParts} />
-        )}
-        {message.metadata?.autoModel && (
-          <RouterDetails metadata={message.metadata.autoModel} />
+          <>
+            <SourceMessagePart sourceParts={sourceParts} />
+            {message.metadata?.autoModel && (
+              <RouterDetails metadata={message.metadata.autoModel} />
+            )}
+          </>
         )}
       </div>
     </div>

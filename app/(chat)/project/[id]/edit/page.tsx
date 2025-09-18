@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { ProjectForm } from "@/components/project-form";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
-import { NewChat } from "@/components/new-chat";
+import { NewChatHeader } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getProjectById } from "@/lib/db/queries";
 
@@ -34,7 +34,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
         <Header.Container>
           <Header.Left>
             <Logo />
-            <NewChat />
+            <NewChatHeader />
           </Header.Left>
           <Header.Right>
             <ThemeToggle />

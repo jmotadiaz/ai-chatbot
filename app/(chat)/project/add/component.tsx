@@ -1,7 +1,7 @@
 import { ProjectForm } from "@/components/project-form";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
-import { NewChat } from "@/components/new-chat";
+import { NewChatHeader } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const NewProject: React.FC = async () => {
@@ -10,7 +10,7 @@ export const NewProject: React.FC = async () => {
       <Header.Container>
         <Header.Left>
           <Logo />
-          <NewChat />
+          <NewChatHeader />
         </Header.Left>
         <Header.Right>
           <ThemeToggle />

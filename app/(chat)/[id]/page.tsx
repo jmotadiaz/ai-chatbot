@@ -7,7 +7,7 @@ import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NewChat } from "@/components/new-chat";
+import { NewChatHeader } from "@/components/new-chat";
 import {
   defaultTemperature,
   defaultTopP,
@@ -74,7 +74,7 @@ const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
         <Header.Container>
           <Header.Left>
             <Logo />
-            <NewChat />
+            <NewChatHeader />
             <ModelPicker />
           </Header.Left>
           <Header.Right>

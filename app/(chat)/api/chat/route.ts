@@ -22,7 +22,11 @@ import {
   updateChat,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { messagePartsToText, chatbotMessageToDbMessage } from "@/lib/ai/utils";
+import {
+  messagePartsToText,
+  chatbotMessageToDbMessage,
+  generateTitle,
+} from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/models/utils";
 import {
   WEB_SEARCH_TOOL,
@@ -210,6 +214,7 @@ export async function POST(req: Request) {
                     updateChat(
                       { id: chatId, userId: session.user.id },
                       {
+                        title: await generateTitle(messages),
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
                         defaultTopP: topP,
