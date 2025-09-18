@@ -1,5 +1,9 @@
-import { useCallback, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import {
+  unstable_ViewTransition as ViewTransition,
+  startTransition,
+  useCallback,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface DropdownContainerProps {
@@ -30,15 +34,11 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   variant = "top",
 }) => {
   return (
-    <AnimatePresence>
+    <>
       {isShown && (
-        <>
+        <ViewTransition enter="dropdown-enter" exit="dropdown-exit">
           <div className="fixed inset-0 z-10 bg-transparent" onClick={close} />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeInOut" }}
+          <div
             className={cn(
               "fixed lg:absolute w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-20 overflow-hidden pb-4 lg:pb-0",
               variant === "top"
@@ -48,10 +48,10 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
             )}
           >
             {children}
-          </motion.div>
-        </>
+          </div>
+        </ViewTransition>
       )}
-    </AnimatePresence>
+    </>
   );
 };
 
@@ -91,11 +91,15 @@ const useDropdown = () => {
   const [isShown, setIsShown] = useState(false);
 
   const toggle = () => {
-    setIsShown((prev) => !prev);
+    startTransition(() => {
+      setIsShown((prev) => !prev);
+    });
   };
 
   const close = useCallback(() => {
-    setIsShown(false);
+    startTransition(() => {
+      setIsShown(false);
+    });
   }, []);
 
   return {
