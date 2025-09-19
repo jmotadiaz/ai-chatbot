@@ -63,6 +63,7 @@ export async function POST(req: Request) {
     tools: selectedTools = [],
     messageId,
     projectId,
+    preventChatPersistence = false,
   }: {
     messages: ChatbotMessage[];
     selectedModel: chatModelId;
@@ -74,6 +75,7 @@ export async function POST(req: Request) {
     tools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
     messageId?: string;
     projectId?: string;
+    preventChatPersistence?: boolean;
   } = await req.json();
 
   const stream = createUIMessageStream<ChatbotMessage>({
@@ -204,6 +206,8 @@ export async function POST(req: Request) {
             }
           },
           onFinish: async ({ responseMessage }) => {
+            if (preventChatPersistence) return;
+
             try {
               const assistantMessage = responseMessage;
               const userMessage = messages.at(-1);

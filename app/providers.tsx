@@ -131,6 +131,7 @@ export interface ChatProviderProps extends ProvidersProps {
   metaPrompt?: string | null;
   title?: string;
   tools?: Tools;
+  preventChatPersistence?: boolean;
 }
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({
@@ -145,6 +146,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   chatId,
   projectId,
   title,
+  preventChatPersistence = false,
   tools = [],
 }) => {
   const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
@@ -201,10 +203,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     return {
       chatId: chatId || (validate(chatIdUrl) ? chatIdUrl : undefined),
       projectId,
+      preventChatPersistence,
       ...chatConfig,
       tools: selectedTools,
     };
-  }, [chatConfig, chatId, projectId, pathname, selectedTools]);
+  }, [
+    chatConfig,
+    chatId,
+    projectId,
+    preventChatPersistence,
+    pathname,
+    selectedTools,
+  ]);
 
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

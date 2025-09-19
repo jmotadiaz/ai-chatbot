@@ -263,6 +263,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             tools={tools}
             metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
             title={title}
+            preventChatPersistence={true}
           >
             <Chat />
           </ChatProvider>
