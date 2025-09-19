@@ -9,7 +9,7 @@ import { DotsLoadingIcon } from "@/components/icons";
 interface LoadingMessageProps {
   metadata: MessageMetadata | undefined;
   status: ChatStatus;
-  data: DataUIPart<ChatbotDataPart> | undefined;
+  data: DataUIPart<Omit<ChatbotDataPart, "chat">> | undefined;
 }
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = memo(

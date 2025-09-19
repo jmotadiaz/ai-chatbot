@@ -21,7 +21,7 @@ import {
   ZodTypeAny,
   ZodUnion,
 } from "zod";
-import { PutBlobResult } from "@vercel/blob";
+import { put, PutBlobResult } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { InsertMessage, Message } from "@/lib/db/schema";
@@ -52,15 +52,64 @@ export async function generateTitle(messages: ChatbotMessage[]) {
   return title;
 }
 
+const isBase64URI = (str: string) => {
+  return /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+)?;base64,/.test(str);
+};
+
+const convertBase64ToBlob = (base64URI: string, mimetype: string): Blob => {
+  let base64Data = base64URI;
+  const prefix = `data:${mimetype};base64,`;
+
+  if (base64URI.startsWith(prefix)) {
+    base64Data = base64URI.substring(prefix.length);
+  }
+
+  const byteString = atob(base64Data);
+
+  const byteArray = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) {
+    byteArray[i] = byteString.charCodeAt(i);
+  }
+
+  return new Blob([byteArray], { type: mimetype });
+};
+
+const buildBlobPart = async (part: FileUIPart): Promise<FileUIPart> => {
+  if (!isBase64URI(part.url)) return part;
+  const blob = await put(
+    part.filename || "Unknown",
+    convertBase64ToBlob(part.url, part.mediaType),
+    {
+      access: "public",
+      addRandomSuffix: true,
+    }
+  );
+
+  return {
+    ...part,
+    url: blob.url,
+  };
+};
 export const chatbotMessageToDbMessage =
   (chatId: string) =>
-  ({ id, role, parts, metadata }: ChatbotMessage): InsertMessage => ({
-    chatId,
+  async ({
     id,
     role,
-    parts: parts.filter((part) => part.type !== "file"),
+    parts,
     metadata,
-  });
+  }: ChatbotMessage): Promise<InsertMessage> => {
+    return {
+      chatId,
+      id,
+      role,
+      parts: await Promise.all(
+        parts.map(async (part) =>
+          part.type === "file" ? await buildBlobPart(part) : part
+        )
+      ),
+      metadata,
+    };
+  };
 
 export function dbMessageToChatbotMessage(
   messages: Array<Message>

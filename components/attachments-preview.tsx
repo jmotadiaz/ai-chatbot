@@ -18,12 +18,6 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
     setFiles(files.filter((file) => file.filename !== fileToDelete.filename));
   };
 
-  console.log("files", files.length);
-  files.forEach(
-    (file) =>
-      file.loading && console.log("file loading", file.loading.percentage)
-  );
-
   if (files.length === 0) {
     return null;
   }

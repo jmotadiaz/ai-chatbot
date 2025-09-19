@@ -151,7 +151,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
               );
             case "file":
               return (
-                <>
+                <div key={`message-${message.id}-file-part-${i}`}>
                   {part.mediaType.startsWith("image/") && (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -168,7 +168,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
                       />
                     </motion.div>
                   )}
-                </>
+                </div>
               );
             default:
               return null;
@@ -196,7 +196,6 @@ const SourceMessagePart: React.FC<SourceMessagePart> = ({
 }) => {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse();
   if (sources.length === 0) return null;
-  console.log(sources);
   return (
     <div className="mb-3 text-sm">
       <div

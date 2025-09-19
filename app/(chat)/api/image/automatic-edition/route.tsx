@@ -250,7 +250,6 @@ export async function POST(req: Request) {
 
     const { files: filesVariant1 } = await resultVariant1;
     const { files: filesVariant2 } = await resultVariant2;
-    console.log("Generated files:", filesVariant1.length, filesVariant2.length);
 
     return Response.json({ files: [...filesVariant1, ...filesVariant2] });
   } catch (error) {

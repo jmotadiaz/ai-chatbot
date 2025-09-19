@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { saveChat, transaction } from "@/lib/db/queries";
-import { defaultModel } from "@/lib/ai/models/definition";
+import { ChatComposition } from "@/app/(chat)/chat-composition";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -10,15 +9,14 @@ interface ProjectPageProps {
 }
 
 const Page: React.FC<ProjectPageProps> = async ({ params }) => {
+  const { id } = await params;
   const session = await auth();
+
   if (!session?.user) {
     redirect("/login");
   }
-  const { id } = await params;
-  const [chat] = await transaction(
-    saveChat({ userId: session.user.id, defaultModel, projectId: id })
-  );
-  redirect(`/${chat.id}`);
+
+  return <ChatComposition projectId={id} />;
 };
 
 export default Page;

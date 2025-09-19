@@ -13,7 +13,7 @@ import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { DataUIPart, DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
-import { v4 } from "uuid";
+import { v4, validate } from "uuid";
 import {
   defaultModel,
   defaultTemperature,
@@ -162,13 +162,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     )
   );
   const [selectedTools, setSelectedTools] = useState<Tools>(tools || []);
-
-  // Manual input state management for v5
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
   const [data, setData] = useState<DataUIPart<ChatbotDataPart> | undefined>(
     undefined
   );
+  const pathname = usePathname();
 
   const chatResult = useChat({
     messages: initialMessages,
@@ -179,6 +178,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     }),
     onData: (incomingData) => {
       setData(incomingData);
+      if (incomingData.type === "data-chat") {
+        history.replaceState(
+          undefined,
+          incomingData.data.id,
+          `/${incomingData.data.id}`
+        );
+      }
     },
     onError: (error) => {
       toast.error(
@@ -191,12 +197,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   });
 
   const body = useMemo(() => {
+    const chatIdUrl = pathname.split("/").pop() || "";
     return {
-      chatId,
+      chatId: chatId || (validate(chatIdUrl) ? chatIdUrl : undefined),
+      projectId,
       ...chatConfig,
       tools: selectedTools,
     };
-  }, [chatConfig, chatId, selectedTools]);
+  }, [chatConfig, chatId, projectId, pathname, selectedTools]);
 
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

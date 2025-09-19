@@ -16,9 +16,10 @@ import {
 } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
+  db,
   deleteMessageById,
+  saveChat,
   saveMessages,
-  transaction,
   updateChat,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
     systemPrompt,
     tools: selectedTools = [],
     messageId,
+    projectId,
   }: {
     messages: ChatbotMessage[];
     selectedModel: chatModelId;
@@ -71,6 +73,7 @@ export async function POST(req: Request) {
     systemPrompt?: string;
     tools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
     messageId?: string;
+    projectId?: string;
   } = await req.json();
 
   const stream = createUIMessageStream<ChatbotMessage>({
@@ -201,38 +204,58 @@ export async function POST(req: Request) {
             }
           },
           onFinish: async ({ responseMessage }) => {
-            if (chatId) {
-              try {
-                const assistantMessage = responseMessage;
-                const userMessage = messages.at(-1);
+            try {
+              const assistantMessage = responseMessage;
+              const userMessage = messages.at(-1);
 
-                if (
-                  userMessage?.role === "user" &&
-                  assistantMessage?.role === "assistant"
-                ) {
-                  await transaction(
-                    updateChat(
-                      { id: chatId, userId: session.user.id },
-                      {
+              if (
+                userMessage?.role === "user" &&
+                assistantMessage?.role === "assistant"
+              ) {
+                const dbChatId = await db.transaction(async (tx) => {
+                  const { id } = chatId
+                    ? await updateChat(
+                        { id: chatId, userId: session.user.id },
+                        {
+                          defaultModel: selectedModel,
+                          defaultTemperature: temperature,
+                          defaultTopP: topP,
+                          defaultTopK: topK,
+                          tools,
+                        }
+                      )(tx)
+                    : await saveChat({
+                        userId: session.user.id,
                         title: await generateTitle(messages),
+                        projectId,
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
                         defaultTopP: topP,
                         defaultTopK: topK,
                         tools,
-                      }
-                    ),
-                    deleteMessageById(messageId),
-                    saveMessages(
+                      })(tx);
+                  await deleteMessageById(messageId)(tx);
+                  await saveMessages(
+                    await Promise.all(
                       [userMessage, assistantMessage].map(
-                        chatbotMessageToDbMessage(chatId)
+                        chatbotMessageToDbMessage(id)
                       )
                     )
-                  );
+                  )(tx);
+
+                  return id;
+                });
+                if (!chatId) {
+                  writer.write({
+                    type: "data-chat",
+                    data: {
+                      id: dbChatId,
+                    },
+                  });
                 }
-              } catch (error) {
-                console.error("Error saving message:", error);
               }
+            } catch (error) {
+              console.error("Error saving message:", error);
             }
           },
           onError: (error) => {

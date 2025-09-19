@@ -63,11 +63,13 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             ) : (
               <>
                 <Messages messages={messages} />
-                <LoadingMessage
-                  metadata={messages[messages.length - 1]?.metadata}
-                  status={status}
-                  data={data}
-                />
+                {data?.type !== "data-chat" && (
+                  <LoadingMessage
+                    metadata={messages[messages.length - 1]?.metadata}
+                    status={status}
+                    data={data}
+                  />
+                )}
                 {(status === "ready" || status === "error") && (
                   <div className="flex mt-1 ml-3">
                     <div

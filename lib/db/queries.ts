@@ -63,7 +63,7 @@ const schema = {
   embeddingsRelations,
 } as const;
 
-const db = drizzle(client, { schema });
+export const db = drizzle(client, { schema });
 
 interface SafeTransaction {
   id: string;
@@ -218,25 +218,11 @@ export async function getChats({
     const extendedLimit = limit + 1;
 
     const chats = await db
-      .selectDistinct({
-        id: chat.id,
-        projectId: chat.projectId,
-        userId: chat.userId,
-        title: chat.title,
-        defaultModel: chat.defaultModel,
-        defaultTemperature: chat.defaultTemperature,
-        defaultTopP: chat.defaultTopP,
-        defaultTopK: chat.defaultTopK,
-        tools: chat.tools,
-        createdAt: chat.createdAt,
-        updatedAt: chat.updatedAt,
-      })
+      .select()
       .from(chat)
-      .innerJoin(message, eq(message.chatId, chat.id))
       .where(
         and(
           eq(chat.userId, userId),
-          eq(message.chatId, chat.id),
           projectId === null
             ? isNull(chat.projectId)
             : eq(chat.projectId, projectId)
@@ -380,15 +366,7 @@ export async function getProjectsByUserId({
       return await db.query.project.findMany({
         where: eq(project.userId, userId),
         with: {
-          chats: {
-            where: (chats, { exists, sql }) =>
-              exists(
-                db
-                  .select({ dummy: sql`1` })
-                  .from(message)
-                  .where(eq(message.chatId, chats.id))
-              ),
-          },
+          chats: true,
         },
         orderBy: desc(project.updatedAt),
         limit,
