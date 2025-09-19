@@ -1,9 +1,9 @@
 "use client";
 import { Edit } from "lucide-react";
-import Link from "next/link";
-import { useChatContext } from "@/app/providers";
+import { useChatContext, useSidebarContext } from "@/app/providers";
 import { cn } from "@/lib/utils";
 import { SidebarSectionTitle } from "@/components/sidebar";
+import Link from "@/components/ui/link";
 
 interface NewChatProps {
   children: React.ReactNode;
@@ -11,17 +11,18 @@ interface NewChatProps {
 
 const NewChat: React.FC<NewChatProps> = ({ children }) => {
   const { status, setMessages } = useChatContext();
+  const { setShowSidebar } = useSidebarContext();
   return (
     <Link
       href="/"
       className={cn(
-        "p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors",
         status === "streaming" || status === "submitted"
           ? "pointer-events-none opacity-50"
           : "cursor-pointer"
       )}
       onNavigate={() => {
         setMessages([]);
+        setShowSidebar(false);
       }}
     >
       {children}
@@ -32,7 +33,9 @@ const NewChat: React.FC<NewChatProps> = ({ children }) => {
 export const NewChatHeader = () => {
   return (
     <NewChat>
-      <Edit size={18} />
+      <div className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors">
+        <Edit size={18} />
+      </div>
     </NewChat>
   );
 };
