@@ -366,7 +366,9 @@ export async function getProjectsByUserId({
       return await db.query.project.findMany({
         where: eq(project.userId, userId),
         with: {
-          chats: true,
+          chats: {
+            limit: 20,
+          },
         },
         orderBy: desc(project.updatedAt),
         limit,

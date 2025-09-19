@@ -47,7 +47,7 @@ const Chats: React.FC = async () => {
 
   const { chats } = await getChats({
     userId: session.user.id,
-    limit: 10,
+    limit: 20,
   });
   return <ChatList chats={chats} />;
 };
