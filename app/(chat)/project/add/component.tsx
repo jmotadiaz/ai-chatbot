@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ProjectForm } from "@/components/project-form";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
@@ -16,7 +17,9 @@ export const NewProject: React.FC = async () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <ProjectForm />
+      <Suspense fallback={null}>
+        <ProjectForm />
+      </Suspense>
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChatHeader } from "@/components/new-chat";
@@ -17,7 +17,9 @@ export const EnglishHelper: React.FC = async () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <EnglishHelperChat />
+      <Suspense fallback={null}>
+        <EnglishHelperChat />
+      </Suspense>
     </>
   );
 };

@@ -30,16 +30,18 @@ export const RAGManager: React.FC<RAGManagerProps> = async ({
           Manage RAG Resources
         </h1>
 
-        <RAGTabs
-          upload={<RAGUploadForm />}
-          resources={
-            withResources ? (
-              <Suspense fallback={null}>
-                <Resources />
-              </Suspense>
-            ) : null
-          }
-        />
+        <Suspense fallback={null}>
+          <RAGTabs
+            upload={<RAGUploadForm />}
+            resources={
+              withResources ? (
+                <Suspense fallback={null}>
+                  <Resources />
+                </Suspense>
+              ) : null
+            }
+          />
+        </Suspense>
       </div>
     </>
   );
