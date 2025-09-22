@@ -1,8 +1,8 @@
 import React, {
   startTransition,
-  useState,
   unstable_ViewTransition as ViewTransition,
 } from "react";
+import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { cn } from "@/lib/utils";
 
 export interface ContainerProps {
@@ -79,7 +79,10 @@ export const useTabs = <T extends string>({
   tabs,
   initialTab = tabs[0],
 }: UseTabsParams<T>): UseTabsReturn<T> => {
-  const [activeTab, setActiveTab] = useState<T>(() => initialTab);
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabs).withDefault(initialTab)
+  );
 
   const handleTabClick = (tab: T) => {
     startTransition(() => {
