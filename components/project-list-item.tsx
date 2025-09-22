@@ -4,7 +4,7 @@ import { startTransition, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useCollapse } from "react-collapsed";
 import { cn } from "@/lib/utils";
-import Link from "@/components/ui/link";
+import ChatLink from "@/components/chat-link";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { Item } from "@/components/ui/item";
@@ -42,12 +42,12 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">
-            <Link href={`/project/${id}/chat`}>
+            <ChatLink href={`/project/${id}/chat`}>
               <Button variant="outline">Chat</Button>
-            </Link>
-            <Link href={`/project/${id}/edit`}>
+            </ChatLink>
+            <ChatLink href={`/project/${id}/edit`}>
               <Button variant="outline">Edit</Button>
-            </Link>
+            </ChatLink>
             <Button
               variant="outline"
               onClick={() =>

@@ -1,7 +1,7 @@
 import { ClassNameValue } from "tailwind-merge";
 import { CirclePlus, Edit } from "lucide-react";
 import { Item } from "@/components/ui/item";
-import Link from "@/components/ui/link";
+import ChatLink from "@/components/chat-link";
 import { ProjectListItem } from "@/components/project-list-item";
 import { ChatList } from "@/components/chat-list";
 import { auth } from "@/auth";
@@ -32,18 +32,18 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
 
   return (
     <div className={cn("my-4", className)}>
-      <Link href="/project/add">
+      <ChatLink href="/project/add">
         <SidebarSectionTitle>
           Projects <CirclePlus className="h-4 w-4 ml-2" />
         </SidebarSectionTitle>
-      </Link>
+      </ChatLink>
       <div className="space-y-2">
-        <Link href="/english-helper">
+        <ChatLink href="/english-helper">
           <Item>English Helper</Item>
-        </Link>
-        <Link href="/image-editor">
+        </ChatLink>
+        <ChatLink href="/image-editor">
           <Item>Image Editor</Item>
-        </Link>
+        </ChatLink>
         {projects.length > 0 && (
           <>
             {projects.map((project) => (

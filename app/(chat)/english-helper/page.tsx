@@ -1,5 +1,5 @@
 import React from "react";
-import { Sidebar } from "../sidebar";
+import { Sidebar } from "@/app/(chat)/sidebar";
 import { AuthCheck } from "@/components/auth-check";
 import { EnglishHelper } from "@/app/(chat)/english-helper/component";
 

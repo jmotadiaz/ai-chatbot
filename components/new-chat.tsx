@@ -1,32 +1,27 @@
 "use client";
 import { Edit } from "lucide-react";
-import { useChatContext, useSidebarContext } from "@/app/providers";
 import { cn } from "@/lib/utils";
 import { SidebarSectionTitle } from "@/components/sidebar";
-import Link from "@/components/ui/link";
+import ChatLink from "@/components/chat-link";
+import { useChatContext } from "@/app/providers";
 
 interface NewChatProps {
   children: React.ReactNode;
 }
 
 const NewChat: React.FC<NewChatProps> = ({ children }) => {
-  const { status, setMessages } = useChatContext();
-  const { setShowSidebar } = useSidebarContext();
+  const { status } = useChatContext();
   return (
-    <Link
+    <ChatLink
       href="/"
       className={cn(
         status === "streaming" || status === "submitted"
           ? "pointer-events-none opacity-50"
           : "cursor-pointer"
       )}
-      onNavigate={() => {
-        setMessages([]);
-        setShowSidebar(false);
-      }}
     >
       {children}
-    </Link>
+    </ChatLink>
   );
 };
 
