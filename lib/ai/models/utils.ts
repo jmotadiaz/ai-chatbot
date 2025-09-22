@@ -89,6 +89,10 @@ export const getChatConfigurationByModelId = (
             "img",
             "pdf",
           ] as Required<ModelConfiguration>["supportedFiles"],
+          supportedOutput: [
+            "text",
+            "img",
+          ] as Required<ModelConfiguration>["supportedOutput"],
         }
   );
 

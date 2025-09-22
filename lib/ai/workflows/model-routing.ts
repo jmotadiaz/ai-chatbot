@@ -16,6 +16,7 @@ const CATEGORIES = [
   "creative",
   "structured_content",
   "prompt_engineering",
+  "image_generation",
   "conversational",
   "processing",
   "other",
@@ -80,6 +81,17 @@ export async function modelRouting({
 
           return !hasFile;
         }),
+      });
+    } else {
+      message.parts.forEach((part) => {
+        if (part.type === "file") {
+          if (part.mediaType.includes("image/")) requestedFileTypes.add("img");
+          if (
+            part.mediaType.includes("application/") ||
+            part.mediaType.includes("text/")
+          )
+            requestedFileTypes.add("pdf");
+        }
       });
     }
     return memo;
@@ -368,6 +380,20 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
       },
     },
+    image_generation: {
+      simple: {
+        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+      },
+      moderate: {
+        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+      },
+      complex: {
+        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+      },
+      advanced: {
+        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+      },
+    },
     other: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
@@ -414,11 +440,16 @@ const systemPrompt = `\n
   *   **Factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge. Does not apply to latest updates, current news, ongoing developments, or anything requiring real-time verification.
   *   **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
   *   **Technical**: Programming, debugging, system design, or technical implementation.
-  *   **Creative**: Artistic content generation, open-ended writing, or brainstorming.
   *   **Structured Content**: Requests to create organized, educational, or instructional materials (e.g., guides, tutorials, lesson plans, checklists, templates).
   *   **Prompt Engineering**: Requests related to designing, optimizing, or analyzing prompts for AI models, including prompt templates, prompt tuning, or prompt best practices.
   *   **Conversational**: Casual chat, personal advice, or social interaction.
   *   **Processing**: Text transformation, translation, summarization, or data extraction. The original text to process should be included in the query.
+  *   **Image Generation**: Requests to create visual content (images, graphics, art) from textual descriptions, including style specifications or modifications.
+      Examples:
+        - "Generate a photorealistic image of a forest at sunset"
+        - "Create a logo with a blue wolf and mountains in flat design style"
+        - "Edit the attached image to add a rainbow in the sky"
+  *   **Creative**: Requests for the generation of original, text-based artistic or imaginative content. This includes tasks like writing poetry, stories, scripts, song lyrics, engaging in open-ended brainstorming, or developing novel ideas. This category is distinct from **Image Generation**, which is specific to creating visual assets.
   *   **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
