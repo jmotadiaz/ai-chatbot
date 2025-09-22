@@ -14,14 +14,14 @@ export const Item: React.FC<ItemProps> = ({
   return (
     <div
       className={cn(
-        "gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg transition-colors select-none",
-        { "bg-zinc-800 animate-pulse duration-600": loading },
+        "px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg transition-colors select-none",
+        { "dark:bg-zinc-700 bg-gray-200 animate-pulse duration-600": loading },
         className
       )}
       {...props}
     >
       <div
-        className={cn("flex items-center", {
+        className={cn("flex items-center gap-3", {
           "opacity-0": loading,
         })}
       >
