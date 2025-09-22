@@ -1,6 +1,6 @@
 "use client";
 import NextLink from "next/link";
-import React, { ComponentProps } from "react";
+import React, { ComponentProps, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useChatContext, useSidebarContext } from "@/app/providers";
@@ -14,12 +14,16 @@ const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
   const handleNavigate: LinkProps["onNavigate"] = (e) => {
     if (pathname === props.href) {
       e.preventDefault();
+      setShowSidebar(false);
     } else {
       setMessages([]);
     }
-    setShowSidebar(false);
     onNavigate?.(e);
   };
+
+  useEffect(() => {
+    setShowSidebar(false);
+  }, [pathname, setShowSidebar]);
 
   return (
     <NextLink
