@@ -13,9 +13,10 @@ const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
   const { setShowSidebar } = useSidebarContext();
   const handleNavigate: LinkProps["onNavigate"] = (e) => {
     if (pathname === props.href) {
+      console.log("same path");
       e.preventDefault();
       setShowSidebar(false);
-    } else {
+    } else if (props.href === "/") {
       setMessages([]);
     }
     onNavigate?.(e);

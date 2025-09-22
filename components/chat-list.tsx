@@ -1,11 +1,8 @@
-import { X as XIcon } from "lucide-react";
 import { ClassValue } from "clsx";
 import { cn } from "@/lib/utils";
-import ChatLink from "@/components/chat-link";
-import { deleteChat } from "@/lib/ai/actions/chat";
 import { Chat } from "@/lib/db/schema";
-import { Item } from "@/components/ui/item";
 import { SidebarSectionTitle } from "@/components/sidebar";
+import { ChatListItem } from "@/components/chat-list-item";
 
 export interface ChatListProps {
   chats: Chat[];
@@ -27,28 +24,6 @@ export const ChatList: React.FC<ChatListProps> = async ({
         ))}
       </div>
     </div>
-  );
-};
-
-interface ChatListItemProps {
-  id: string;
-  title?: string | null;
-}
-
-const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
-  return (
-    <Item className="py-0">
-      <ChatLink href={`/${id}`} className="flex-1 py-2 overflow-hidden">
-        <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-          {title || "Untitled Chat"}
-        </div>
-      </ChatLink>
-      <form className="leading-0" action={deleteChat.bind(null, id)}>
-        <button className="cursor-pointer" aria-label="Delete chat">
-          <XIcon className="h-4 w-4" />
-        </button>
-      </form>
-    </Item>
   );
 };
 
