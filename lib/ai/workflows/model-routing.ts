@@ -426,21 +426,10 @@ const systemPrompt = `\n
   ### 2. Complexity Levels
   Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length. Additionally, factor in the **specificity of the query**: If the query is well-specified (clear, detailed, with all necessary context and instructions provided), reduce the complexity level accordingly, as it minimizes the need for assumptions or additional inference. Vague or incomplete queries increase complexity.
 
-  *   **Simple**: A task involving the retrieval of a single, self-contained piece of information or a generic, atomic action.
-      *   **Core Task**: Retrieving a generic fact or a standard code snippet.
-      *   **Estimated effort**: Low.
-
-  *   **Moderate**: A task that requires applying a process to a **specific context provided within the prompt**, or combining distinct steps to create a structured output.
-      *   **Core Task**: Processing user-provided input to produce a customized or structured result.
-      *   **Estimated effort**: Moderate.
-
-  *   **Complex**: A task requiring the **deep and multi-faceted application of expert knowledge** to produce a single, comprehensive artifact. It involves detailed analysis, design, or planning within an established domain.
-      *   **Core Task**: Solving a difficult problem.
-      *   **Estimated effort**: High.
-
-  *   **Advanced**: A task that involves **designing a system, a process, or a new conceptual framework**. It often requires orchestrating multiple complex sub-tasks, creating iterative or self-correcting workflows, or synthesizing disparate domains to build a novel structure.
-      *   **Core Task**: Designing a system to solve problems.
-      *   **Estimated effort**: Very high.
+  *   **Simple**
+  *   **Moderate**
+  *   **Complex**
+  *   **Advanced**
 
   ### 3. Reasoning
   Provide a brief reasoning (1-3 sentences) explaining only the classification and complexity drivers
