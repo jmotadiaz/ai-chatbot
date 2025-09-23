@@ -119,7 +119,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Deepseek R1": {
-    model: openrouter.chat("deepseek/deepseek-r1-0528"),
+    model: deepseek("deepseek-reasoner"),
     company: "deepseek",
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
