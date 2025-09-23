@@ -256,7 +256,10 @@ export function zodToPrompt(schema: ZodTypeAny): string {
     return `"unknown"`;
   };
 
-  return `Your output should follow this JSON schema:\n${format(schema, 0)}`;
+  return `Your output should be in the following JSON format:\n${format(
+    schema,
+    0
+  )}`;
 }
 
 export const toFilePart = (

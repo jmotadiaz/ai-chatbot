@@ -121,13 +121,13 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               switch (supportedFile) {
                 case "img":
                   return (
-                    <div>
+                    <div key={`${name}-supported-input-${supportedFile}`}>
                       <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );
                 case "pdf":
                   return (
-                    <div>
+                    <div key={`${name}-supported-input-${supportedFile}`}>
                       <FileText key={supportedFile} size={16} />
                     </div>
                   );
@@ -144,7 +144,7 @@ const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               switch (supportedFile) {
                 case "img":
                   return (
-                    <div>
+                    <div key={`${name}-supported-output-${supportedFile}`}>
                       <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );

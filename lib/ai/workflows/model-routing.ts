@@ -428,7 +428,6 @@ const decisionTree = ({
 const systemPrompt = `\n
   # Query Classification for LLM Routing
   Analyze the user query, and classify it to determine the most appropriate LLM routing.
-  ${zodToPrompt(schema)}
 
   ## Classification Requirements
 
@@ -436,21 +435,21 @@ const systemPrompt = `\n
 
   Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
-  *   **Current News**: Requests for information about recent events, breaking news, current developments, updates, latest versions, real-time status, or any topic requiring up-to-date data subject to rapid changes. Excludes stable, timeless, or historical knowledge not dependent on immediacy.
-  *   **Factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge. Does not apply to latest updates, current news, ongoing developments, or anything requiring real-time verification.
-  *   **Analytical**: Multi-step reasoning, problem-solving, or logical analysis.
-  *   **Technical**: Programming, debugging, system design, or technical implementation.
-  *   **Structured Content**: Requests to create organized, educational, or instructional materials (e.g., guides, tutorials, lesson plans, checklists, templates).
-  *   **Prompt Engineering**: Requests related to designing, optimizing, or analyzing prompts for AI models, including prompt templates, prompt tuning, or prompt best practices.
-  *   **Conversational**: Casual chat, personal advice, or social interaction.
-  *   **Processing**: Text transformation, translation, summarization, or data extraction. The original text to process should be included in the query.
-  *   **Image Generation**: Requests to create visual content (images, graphics, art) from textual descriptions, including style specifications or modifications.
+  *   **current_news**: Requests for information about recent events, breaking news, current developments, updates, latest versions, real-time status, or any topic requiring up-to-date data subject to rapid changes. Excludes stable, timeless, or historical knowledge not dependent on immediacy.
+  *   **factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge. Does not apply to latest updates, current news, ongoing developments, or anything requiring real-time verification.
+  *   **analytical**: Multi-step reasoning, problem-solving, or logical analysis.
+  *   **technical**: Programming, debugging, system design, or technical implementation.
+  *   **structured_content**: Requests to create organized, educational, or instructional materials (e.g., guides, tutorials, lesson plans, checklists, templates).
+  *   **prompt_engineering**: Requests related to designing, optimizing, or analyzing prompts for AI models, including prompt templates, prompt tuning, or prompt best practices.
+  *   **conversational**: Casual chat, personal advice, or social interaction.
+  *   **processing**: Text transformation, translation, summarization, or data extraction. The original text to process should be included in the query.
+  *   **image_generation**: Requests to create visual content (images, graphics, art) from textual descriptions, including style specifications or modifications.
       Examples:
         - "Generate a photorealistic image of a forest at sunset"
         - "Create a logo with a blue wolf and mountains in flat design style"
         - "Edit the attached image to add a rainbow in the sky"
-  *   **Creative**: Requests for the generation of original, text-based artistic or imaginative content. This includes tasks like writing poetry, stories, scripts, song lyrics, engaging in open-ended brainstorming, or developing novel ideas. This category is distinct from **Image Generation**, which is specific to creating visual assets.
-  *   **Other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
+  *   **creative**: Requests for the generation of original, text-based artistic or imaginative content. This includes tasks like writing poetry, stories, scripts, song lyrics, engaging in open-ended brainstorming, or developing novel ideas. This category is distinct from **Image Generation**, which is specific to creating visual assets.
+  *   **other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
   Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length. Additionally, factor in the **specificity of the query**: If the query is well-specified (clear, detailed, with all necessary context and instructions provided), reduce the complexity level accordingly, as it minimizes the need for assumptions or additional inference. Vague or incomplete queries increase complexity.
@@ -476,4 +475,7 @@ const systemPrompt = `\n
 
   ## 4 Additional Notes
   *   If the query is referencing an image or document, assume the image or document is available for context, even if you don't have it available.
+
+  ## 5 Output Format
+  ${zodToPrompt(schema)}
 `;

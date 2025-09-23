@@ -69,9 +69,7 @@ const reasoningMw = extractReasoningMiddleware({
   startWithReasoning: false, // cambiar a true si el modelo no la incluye al inicio
 });
 
-export type ModelConfigurations = Record<string, ModelConfiguration>;
-
-export const languageModelConfigurations: ModelConfigurations = {
+export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.1 Instant": {
     model: groq("llama-3.1-8b-instant"),
     company: "meta",
@@ -299,7 +297,17 @@ export const languageModelConfigurations: ModelConfigurations = {
     company: "xai",
     supportedFiles: ["img", "pdf"],
   },
+} as const satisfies Record<string, ModelConfiguration>;
+
+export type LanguageModelKeys =
+  keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
+
+export type ModelConfigurations = {
+  [K in LanguageModelKeys]: ModelConfiguration;
 };
+
+export const languageModelConfigurations: ModelConfigurations =
+  LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 const pickModelConfigurations = <
   T extends keyof typeof languageModelConfigurations
@@ -342,7 +350,7 @@ export const chatModelKeys = [
   "Gemini 2.5 Flash",
   "Gemini Nano Banana",
   "Gemini 2.5 Pro",
-] satisfies (keyof typeof languageModelConfigurations)[];
+] satisfies LanguageModelKeys[];
 
 export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
 

@@ -20,7 +20,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
         </div>
       </ChatLink>
       <button
-        className="pl-2 cursor-pointer"
+        className="pl-4 cursor-pointer"
         aria-label="Delete chat"
         onClick={() => {
           startTransition(async () => {
