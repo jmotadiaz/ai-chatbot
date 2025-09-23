@@ -14,7 +14,6 @@ const CATEGORIES = [
   "analytical",
   "technical",
   "creative",
-  "structured_content",
   "prompt_engineering",
   "image_generation",
   "conversational",
@@ -302,32 +301,6 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
       },
     },
-    structured_content: {
-      simple: {
-        modelConfiguration: {
-          ...findModelByRequestedFileTypes("Llama 4 Scout", "GPT 5 Nano"),
-          temperature: 0.7,
-        },
-      },
-      moderate: {
-        modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.0 Flash"),
-          temperature: 0.7,
-        },
-      },
-      complex: {
-        modelConfiguration: {
-          ...findModelByRequestedFileTypes("Kimi K2"),
-          temperature: 0.7,
-        },
-      },
-      advanced: {
-        modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.5 Pro"),
-          temperature: 0.7,
-        },
-      },
-    },
     conversational: {
       simple: {
         modelConfiguration: {
@@ -439,7 +412,6 @@ const systemPrompt = `\n
   *   **factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge. Does not apply to latest updates, current news, ongoing developments, or anything requiring real-time verification.
   *   **analytical**: Multi-step reasoning, problem-solving, or logical analysis.
   *   **technical**: Programming, debugging, system design, or technical implementation.
-  *   **structured_content**: Requests to create organized, educational, or instructional materials (e.g., guides, tutorials, lesson plans, checklists, templates).
   *   **prompt_engineering**: Requests related to designing, optimizing, or analyzing prompts for AI models, including prompt templates, prompt tuning, or prompt best practices.
   *   **conversational**: Casual chat, personal advice, or social interaction.
   *   **processing**: Text transformation, translation, summarization, or data extraction. The original text to process should be included in the query.
