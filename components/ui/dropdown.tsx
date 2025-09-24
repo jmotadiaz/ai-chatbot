@@ -4,6 +4,7 @@ import {
   useCallback,
   useState,
 } from "react";
+import { ClassValue } from "clsx";
 import { cn } from "@/lib/utils";
 
 export interface DropdownContainerProps {
@@ -22,9 +23,15 @@ export interface DropdownPopupProps {
   children: React.ReactNode;
   isShown: boolean;
   close: () => void;
-  variant?: "top" | "bottom";
+  variant?: "top" | "bottom" | "center";
   className?: string;
 }
+
+const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
+  top: "lg:absolute lg:bottom-full lg:mb-2",
+  bottom: "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
+  center: "lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
+};
 
 const DropdownPopup: React.FC<DropdownPopupProps> = ({
   children,
@@ -40,10 +47,8 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
           <div className="fixed inset-0 z-10 bg-transparent" onClick={close} />
           <div
             className={cn(
-              "fixed lg:absolute w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-20 overflow-hidden pb-4 lg:pb-0",
-              variant === "top"
-                ? "lg:bottom-full lg:mb-2"
-                : "top-auto lg:top-full lg:bottom-auto lg:mt-2",
+              "fixed w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-20 overflow-hidden pb-4 lg:pb-0",
+              variants[variant],
               className
             )}
           >

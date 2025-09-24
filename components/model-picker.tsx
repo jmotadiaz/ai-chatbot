@@ -72,7 +72,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
       >
         {models.map((modelId) => (
           <Select.Item
-            className="px-0"
+            className="px-0 py-0"
             {...getSelectItemProps(modelId)}
             key={modelId}
           >
@@ -101,11 +101,11 @@ interface ModelItemProps {
   name: chatModelId;
 }
 
-const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
+export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
   const config = getChatConfigurationByModelId(name);
   const CompanyIcon = icons[config.company] || LogoIcon;
   return (
-    <div className="flex items-center space-x-6 py-2 px-8 lg:pl-4">
+    <div className="flex items-center space-x-6 py-4 px-8 lg:pl-4">
       <CompanyIcon size={20} />
       <div className="flex flex-col space-y-1">
         <div className="font-medium text-[15px]">{name}</div>

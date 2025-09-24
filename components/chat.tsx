@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, RefreshCcw, WandSparkles, Undo } from "lucide-react";
+import { ArrowUp, WandSparkles, Undo } from "lucide-react";
 import { useRef } from "react";
 import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
@@ -14,6 +14,7 @@ import { useChatContext } from "@/app/providers";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
+import { ChatReload } from "@/components/chat-reload";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -29,7 +30,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     title,
     status,
     stop,
-    reload,
     data,
     metaPrompt,
   } = useChatContext();
@@ -69,13 +69,8 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
                   {...(data?.type !== "data-chat" && { data })}
                 />
                 {(status === "ready" || status === "error") && (
-                  <div className="flex mt-1 ml-3">
-                    <div
-                      className="p-2 border dark:border-zinc-500 rounded-full cursor-pointer"
-                      onClick={reload}
-                    >
-                      <RefreshCcw size={16} className="dark:text-white" />
-                    </div>
+                  <div className="mt-1 ml-4">
+                    <ChatReload />
                   </div>
                 )}
               </>

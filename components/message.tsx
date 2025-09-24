@@ -249,12 +249,12 @@ const RouterDetails: React.FC<AutoModelDetailsProps> = ({ metadata }) => {
   return (
     <div className="mb-4">
       <div
-        className="font-bold flex items-center text-sm text-zinc-500 dark:text-zinc-400 my-2 cursor-pointer select-none"
+        className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 my-2 cursor-pointer select-none"
         {...getToggleProps()}
       >
         Router Details
         <ChevronDownIcon
-          className={cn("h-4 w-4 ml-1", {
+          className={cn("h-4 w-4", {
             "rotate-180": isExpanded,
           })}
         />

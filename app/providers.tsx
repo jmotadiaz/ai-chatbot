@@ -77,7 +77,7 @@ const chatContext = createContext<
       chatId?: string;
       title?: string;
       projectId?: string;
-      reload: () => void;
+      reload: (reloadConfig?: Partial<ChatConfig>) => void;
       tools: Tools;
       data: DataUIPart<ChatbotDataPart> | undefined;
       toggleTool: (tool: Tool) => void;
@@ -273,13 +273,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     [selectedTools]
   );
 
-  const reload = useCallback(() => {
-    setInput("");
-    chatResult.regenerate({
-      messageId: chatResult.messages.at(-1)?.id,
-      body,
-    });
-  }, [body, chatResult]);
+  const reload = useCallback(
+    (reloadConfig: Partial<ChatConfig> = {}) => {
+      setInput("");
+      chatResult.regenerate({
+        messageId: chatResult.messages.at(-1)?.id,
+        body,
+        ...reloadConfig,
+      });
+    },
+    [body, chatResult]
+  );
 
   return (
     <chatContext.Provider
