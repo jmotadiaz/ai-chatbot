@@ -193,22 +193,21 @@ const decisionTree = ({
     factual: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 3.1 Instant",
           "Llama 4 Scout",
           "GPT 5 Nano"
         ),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Scout"),
+        modelConfiguration: findModelByRequestedFileTypes("Llama 4"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4",
+          "Kimi K2",
           "Gemini 2.5 Flash"
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
       },
     },
     analytical: {
@@ -220,7 +219,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "GPT OSS Mini",
+          "Qwen 3",
           "GPT 5 Mini"
         ),
       },

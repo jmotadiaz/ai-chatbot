@@ -2,6 +2,7 @@ import { ComponentProps, useMemo, useRef, useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface InputNumberProps
   extends Omit<ComponentProps<typeof Input>, "onChange" | "type" | "value"> {
@@ -97,22 +98,18 @@ export function InputNumber({
 
   return (
     <div className={cn("flex items-center space-x-2", className)}>
-      <button
-        type="button"
+      <Button
         onClick={() => change(value - step)}
         onTouchStart={decrement}
         onMouseDown={decrement}
         onTouchEnd={clearTimers}
         onMouseUp={clearTimers}
         disabled={disabled}
-        className={cn(
-          "p-2 bg-gray-200 dark:bg-zinc-700 rounded-md text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors cursor-pointer",
-          disabled && "opacity-50 cursor-not-allowed"
-        )}
+        variant="secondary"
         aria-label="Decrease value"
       >
         <Minus className="h-4 w-4" />
-      </button>
+      </Button>
       <Input
         id={id}
         type="number"
@@ -123,25 +120,21 @@ export function InputNumber({
         onChange={handleChange}
         onBlur={handleBlur}
         disabled={disabled}
-        className="w-16 text-center"
+        className="w-12 text-center border-0 shadow-none focus-visible:ring-0"
         {...props}
       />
-      <button
-        type="button"
+      <Button
         onClick={() => change(value + step)}
         onTouchStart={increment}
         onMouseDown={increment}
         onTouchEnd={clearTimers}
         onMouseUp={clearTimers}
         disabled={disabled}
-        className={cn(
-          "p-2 bg-gray-200 dark:bg-zinc-700 rounded-md text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors cursor-pointer",
-          disabled && "opacity-50 cursor-not-allowed"
-        )}
+        variant="secondary"
         aria-label="Increase value"
       >
         <Plus className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   );
 }

@@ -39,7 +39,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
         <Dropdown.Item className="justify-between">
-          <Label className="mr-4" htmlFor="temperature">
+          <Label className="mr-8" htmlFor="temperature">
             Temperature
           </Label>
           <InputNumber
@@ -52,7 +52,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
           />
         </Dropdown.Item>
         <Dropdown.Item className="justify-between">
-          <Label className="mr-4" htmlFor="topP">
+          <Label className="mr-8" htmlFor="topP">
             Top P
           </Label>
           <InputNumber
@@ -65,7 +65,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
           />
         </Dropdown.Item>
         <Dropdown.Item className="justify-between">
-          <Label className="mr-4" htmlFor="topK">
+          <Label className="mr-8" htmlFor="topK">
             Top K
           </Label>
           <InputNumber
