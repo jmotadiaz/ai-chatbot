@@ -276,10 +276,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   const reload = useCallback(
     (reloadConfig: Partial<ChatConfig> = {}) => {
       setInput("");
+      console.log({ body, reloadConfig });
       chatResult.regenerate({
         messageId: chatResult.messages.at(-1)?.id,
-        body,
-        ...reloadConfig,
+        body: {
+          ...body,
+          ...reloadConfig,
+        },
       });
     },
     [body, chatResult]

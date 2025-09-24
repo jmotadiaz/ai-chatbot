@@ -6,7 +6,7 @@ import { CHAT_MODELS } from "@/lib/ai/models/definition";
 import { ModelItem } from "@/components/model-picker";
 
 export const ChatReload: React.FC = () => {
-  const { reload, selectedModel, setConfig } = useChatContext();
+  const { reload, setConfig } = useChatContext();
   const { isShown, close, getDropdownPopupProps, getDropdownTriggerProps } =
     useDropdown();
 
@@ -30,10 +30,10 @@ export const ChatReload: React.FC = () => {
         className="max-h-[400px] lg:max-h-[600px] overflow-auto scrollbar-none"
         variant="center"
       >
-        {CHAT_MODELS.filter((model) => model !== selectedModel).map((model) => (
+        {CHAT_MODELS.map((model) => (
           <Dropdown.Item
             key={model}
-            className="px-0 py-0"
+            className="px-0 py-0 first:py-0 last:py-0"
             onClick={() => {
               reload({ selectedModel: model });
               setConfig({ selectedModel: model });
