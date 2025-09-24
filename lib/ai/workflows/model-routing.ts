@@ -408,7 +408,6 @@ const systemPrompt = `\n
   ## Classification Requirements
 
   ### 1. Categories
-
   Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
   *   **current_news**: Requests for information about recent events, breaking news, current developments, updates, latest versions, real-time status, or any topic requiring up-to-date data subject to rapid changes. Excludes stable, timeless, or historical knowledge not dependent on immediacy.
@@ -429,10 +428,10 @@ const systemPrompt = `\n
   ### 2. Complexity Levels
   Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length. Additionally, factor in the **specificity of the query**: If the query is well-specified (clear, detailed, with all necessary context and instructions provided), reduce the complexity level accordingly, as it minimizes the need for assumptions or additional inference. Vague or incomplete queries increase complexity.
 
-  *   **Simple**
-  *   **Moderate**
-  *   **Complex**
-  *   **Advanced**
+  *   **Simple**: Straightforward tasks requiring minimal reasoning or expertise, such as basic facts, simple transformations, or casual responses with clear, direct outputs.
+  *   **Moderate**: Tasks involving some analysis or synthesis, moderate expertise (e.g., standard problem-solving or content generation), and structured but not intricate outputs.
+  *   **Complex**: Multi-layered tasks needing deeper reasoning, domain-specific knowledge, or integration of multiple elements, resulting in detailed or nuanced outputs.
+  *   **Advanced**: Highly intricate tasks demanding expert-level expertise, extensive multi-step reasoning, or innovative problem-solving, often with ambiguous or open-ended outputs requiring significant inference.
 
   ### 3. Reasoning
   Provide a brief reasoning (1-3 sentences) explaining only the classification and complexity drivers

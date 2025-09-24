@@ -10,7 +10,7 @@ interface NewChatProps {
 }
 
 const NewChat: React.FC<NewChatProps> = ({ children }) => {
-  const { status } = useChatContext();
+  const { status, setMessages } = useChatContext();
   return (
     <ChatLink
       href="/"
@@ -19,6 +19,7 @@ const NewChat: React.FC<NewChatProps> = ({ children }) => {
           ? "pointer-events-none opacity-50"
           : "cursor-pointer"
       )}
+      onClick={() => setMessages([])}
     >
       {children}
     </ChatLink>
