@@ -155,7 +155,10 @@ export async function POST(req: Request) {
             };
           }
 
-          if (stepNumber >= tools.length && modelName.includes("gpt-5")) {
+          if (
+            stepNumber >= tools.length &&
+            (modelName.includes("gpt-5") || modelName.includes("grok-4"))
+          ) {
             writer.write({
               type: "data-reasoning",
               data: {

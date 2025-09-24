@@ -231,7 +231,10 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Grok 4"),
+        modelConfiguration: findModelByRequestedFileTypes(
+          "Grok 4 Fast",
+          "GPT 5"
+        ),
       },
     },
     technical: {

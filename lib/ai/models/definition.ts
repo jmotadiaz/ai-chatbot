@@ -119,7 +119,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Deepseek R1": {
-    model: deepseek("deepseek-reasoner"),
+    model: openrouter.chat("deepseek/deepseek-r1-0528"),
     company: "deepseek",
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
@@ -288,14 +288,15 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: xai("grok-code-fast-1"),
     company: "xai",
   },
-  "Grok 3 Mini": {
-    model: xai("grok-3-mini"),
+  "Grok 4 Fast": {
+    model: xai("grok-4-fast"),
     company: "xai",
+    supportedFiles: ["img"],
   },
   "Grok 4": {
     model: xai("grok-4-0709"),
     company: "xai",
-    supportedFiles: ["img", "pdf"],
+    supportedFiles: ["img"],
   },
 } as const satisfies Record<string, ModelConfiguration>;
 
@@ -340,7 +341,7 @@ export const chatModelKeys = [
   "Claude Sonnet 4",
   "Claude Opus 4.1",
   "Grok Code Fast",
-  "Grok 3 Mini",
+  "Grok 4 Fast",
   "Grok 4",
   "GPT OSS Mini",
   "GPT OSS",
