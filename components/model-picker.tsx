@@ -18,6 +18,7 @@ import {
   PerplexityIcon,
   GeminiIcon,
   TextIcon,
+  MistralIcon,
 } from "@/components/icons";
 
 export const ModelPicker = () => {
@@ -94,6 +95,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   perplexity: PerplexityIcon,
   alibaba: QwenIcon,
   moonshotai: MoonshotIcon,
+  mistral: MistralIcon,
   "ai chatbot": LogoIcon,
 };
 

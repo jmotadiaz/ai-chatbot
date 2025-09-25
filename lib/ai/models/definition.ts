@@ -36,6 +36,7 @@ export type Company =
   | "anthropic"
   | "google"
   | "xai"
+  | "mistral"
   | "deepseek"
   | "perplexity"
   | "alibaba"
@@ -103,6 +104,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: groq("moonshotai/kimi-k2-instruct-0905"),
     company: "moonshotai",
     temperature: 0.6,
+  },
+  "Magistral Medium": {
+    model: openrouter.chat("mistralai/magistral-medium-2506:thinking"),
+    company: "mistral",
+    providerOptions: {
+      openrouter: { reasoning: { enabled: true, effort: "high" } },
+    },
+  },
+  "Magistral Small": {
+    model: openrouter.chat("mistralai/magistral-small-2506"),
+    company: "mistral",
   },
   "Deepseek Chat": {
     model: deepseek("deepseek-chat"),
@@ -332,6 +344,8 @@ export const chatModelKeys = [
   "Kimi K2",
   "Qwen 3",
   "Qwen 3 Coder",
+  "Magistral Small",
+  "Magistral Medium",
   "Deepseek Chat",
   "Deepseek R1",
   "Sonar",

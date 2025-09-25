@@ -3,10 +3,8 @@
 import { memo } from "react";
 import { Streamdown, StreamdownProps } from "streamdown";
 import { cn } from "@/lib/utils";
-import CodeBlock from "@/components/code-block";
 
 const components: StreamdownProps["components"] = {
-  code: CodeBlock,
   table: ({ children, ...props }) => {
     return (
       <div className="mt-6 mb-8 w-full overflow-x-auto">
