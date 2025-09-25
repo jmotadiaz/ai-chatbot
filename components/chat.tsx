@@ -48,7 +48,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observeRef = useRef<HTMLDivElement>(null);
   const onPaste: React.ClipboardEventHandler<HTMLTextAreaElement> = (e) => {
-    e.preventDefault();
     handleFileUpload(
       setFiles,
       e.clipboardData.files,
