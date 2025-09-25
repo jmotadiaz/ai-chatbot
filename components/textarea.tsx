@@ -8,6 +8,7 @@ interface TextareaProps {
   handleInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isLoading: boolean;
   isLoadingRefinedPrompt?: boolean;
+  onPaste?: React.ClipboardEventHandler<HTMLTextAreaElement>;
 }
 
 export const Textarea = ({
@@ -15,6 +16,7 @@ export const Textarea = ({
   handleInputChange,
   isLoadingRefinedPrompt,
   isLoading,
+  onPaste,
 }: TextareaProps) => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,6 +62,7 @@ export const Textarea = ({
         )}
         theme="outline"
         value={input}
+        onPaste={onPaste}
         placeholder={"Say something..."}
         // @ts-expect-error err
         onChange={handleInputChange}

@@ -98,7 +98,7 @@ export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileUpload(setFilesInput, e.target.files);
+      handleFileUpload(setFilesInput, e.target.files, ["img"]);
     },
     []
   );

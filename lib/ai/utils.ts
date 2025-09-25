@@ -23,7 +23,10 @@ import {
 } from "zod";
 import { put, PutBlobResult } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
-import { languageModelConfigurations } from "@/lib/ai/models/definition";
+import {
+  languageModelConfigurations,
+  ModelConfiguration,
+} from "@/lib/ai/models/definition";
 import { InsertMessage, Message } from "@/lib/db/schema";
 import { ChatbotMessage } from "@/lib/ai/types";
 
@@ -276,10 +279,17 @@ export const toFilePart = (
 
 export const handleFileUpload = async (
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>,
-  fileList: FileList | null
+  fileList: FileList | null,
+  supportedFiles: Required<ModelConfiguration>["supportedFiles"]
 ) => {
   if (fileList) {
     for (const file of fileList) {
+      if (
+        (!supportedFiles.includes("img") && file.type.startsWith("image/")) ||
+        (!supportedFiles.includes("pdf") && file.type === "application/pdf")
+      ) {
+        continue;
+      }
       const filePart = await convertFileToDataURLs(file);
       setFiles((prevFiles) => [
         ...prevFiles,

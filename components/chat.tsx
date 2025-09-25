@@ -15,6 +15,8 @@ import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
+import { handleFileUpload } from "@/lib/ai/utils";
+import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 
 export interface ChatProps {
   saveChat?: React.ReactNode;
@@ -31,6 +33,8 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     status,
     stop,
     data,
+    selectedModel,
+    setFiles,
     metaPrompt,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
@@ -43,6 +47,14 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observeRef = useRef<HTMLDivElement>(null);
+  const onPaste: React.ClipboardEventHandler<HTMLTextAreaElement> = (e) => {
+    e.preventDefault();
+    handleFileUpload(
+      setFiles,
+      e.clipboardData.files,
+      getChatConfigurationByModelId(selectedModel).supportedFiles
+    );
+  };
 
   const isLoading = status === "streaming" || status === "submitted";
   return (
@@ -93,6 +105,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             handleInputChange={handleInputChange}
             input={input}
             isLoading={isLoading}
+            onPaste={onPaste}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">

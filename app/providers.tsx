@@ -224,9 +224,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileUpload(setFiles, e.target.files);
+      handleFileUpload(
+        setFiles,
+        e.target.files,
+        getChatConfigurationByModelId(selectedModel).supportedFiles
+      );
     },
-    []
+    [selectedModel]
   );
 
   const handleSubmit = useCallback(

@@ -9,11 +9,11 @@ interface FileThumbnailProps {
 export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
   if (file.mediaType.startsWith("image/")) {
     return (
-      <div className="h-12 w-12 overflow-hidden rounded-xl">
+      <div className="h-14 w-14 overflow-hidden rounded-xl">
         <Image
           src={file.url}
-          width={50}
-          height={50}
+          width={56}
+          height={56}
           className="h-full w-full object-cover object-center"
           alt="attachment"
         />
