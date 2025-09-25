@@ -1,4 +1,4 @@
-import { ChevronUpIcon } from "lucide-react";
+import { ChevronUpIcon, RefreshCcw } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,11 @@ export const ChatReload: React.FC = () => {
     useDropdown();
 
   return (
-    <div className="relative">
+    <div className="flex items-center gap-3 relative text-zinc-700 dark:text-zinc-200">
+      <div onClick={() => reload()} className="cursor-pointer">
+        <RefreshCcw size={18} />
+      </div>
+      <div className="w-[2px] h-4 bg-secondary"></div>
       <div
         {...getDropdownTriggerProps()}
         className="flex items-center gap-2 font-bold text-sm select-none cursor-pointer"

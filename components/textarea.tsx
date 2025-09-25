@@ -39,7 +39,7 @@ export const Textarea = ({
   };
 
   return (
-    <div className="bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden transition-all duration-200">
+    <div className="bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden">
       <PreviewFiles className="m-3" />
       <div
         className={cn(
