@@ -140,6 +140,9 @@ dependencies:
   react-syntax-highlighter:
     specifier: ^15.6.1
     version: 15.6.1(react@19.1.0)
+  rehype-class-names:
+    specifier: ^2.0.0
+    version: 2.0.0
   remark-gfm:
     specifier: ^4.0.1
     version: 4.0.1
@@ -4827,6 +4830,13 @@ packages:
     dependencies:
       function-bind: 1.1.2
 
+  /hast-util-classnames@3.0.0:
+    resolution: {integrity: sha512-tI3JjoGDEBVorMAWK4jNRsfLMYmih1BUOG3VV36pH36njs1IEl7xkNrVTD2mD2yYHmQCa5R/fj61a8IAF4bRaQ==}
+    dependencies:
+      '@types/hast': 3.0.4
+      space-separated-tokens: 2.0.2
+    dev: false
+
   /hast-util-from-dom@5.0.1:
     resolution: {integrity: sha512-N+LqofjR2zuzTjCPzyDUdSshy4Ma6li7p/c3pA78uTwzFgENbgbUrm2ugwsOdcjI1muO+o6Dgzp9p8WHtn/39Q==}
     dependencies:
@@ -7137,6 +7147,15 @@ packages:
       hast-util-is-element: 3.0.0
       unified: 11.0.5
       unist-util-visit: 5.0.0
+    dev: false
+
+  /rehype-class-names@2.0.0:
+    resolution: {integrity: sha512-jldCIiAEvXKdq8hqr5f5PzNdIDkvHC6zfKhwta9oRoMu7bn0W7qLES/JrrjBvr9rKz3nJ8x4vY1EWI+dhjHVZQ==}
+    dependencies:
+      '@types/hast': 3.0.4
+      hast-util-classnames: 3.0.0
+      hast-util-select: 6.0.4
+      unified: 11.0.5
     dev: false
 
   /rehype-ignore@2.0.2:

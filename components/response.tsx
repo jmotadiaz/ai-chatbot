@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { Streamdown, StreamdownProps } from "streamdown";
+import addClasses from "rehype-class-names";
 import { cn } from "@/lib/utils";
 
 const components: StreamdownProps["components"] = {
@@ -40,10 +41,13 @@ export const Response = memo(
   ({ className, ...props }: StreamdownProps) => (
     <Streamdown
       className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "size-full animate-streaming [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}
       components={components}
+      rehypePlugins={[
+        [addClasses, { "h1,h2,h3,h4,h5,h6,p,li,code,pre": "animate-fade" }],
+      ]}
       {...props}
     />
   ),

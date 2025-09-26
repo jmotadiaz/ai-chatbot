@@ -3,7 +3,7 @@
 import { FileText, ImageIcon, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { Select, useSelect } from "@/components/ui/select";
-import { chatModelId, CHAT_MODELS, Company } from "@/lib/ai/models/definition";
+import { chatModelId, Company } from "@/lib/ai/models/definition";
 import { cn } from "@/lib/utils";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 import {
@@ -23,10 +23,11 @@ import {
 
 export const ModelPicker = () => {
   const { selectedModel, setSelectedModel } = useModelPicker();
+  const { availableModels } = useChatContext();
 
   return (
     <ModelPickerSelector
-      {...{ selectedModel, setSelectedModel, models: CHAT_MODELS }}
+      {...{ selectedModel, setSelectedModel, models: availableModels }}
     />
   );
 };

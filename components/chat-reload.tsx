@@ -2,11 +2,10 @@ import { ChevronUpIcon, RefreshCcw } from "lucide-react";
 import { useChatContext } from "@/app/providers";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
-import { CHAT_MODELS } from "@/lib/ai/models/definition";
 import { ModelItem } from "@/components/model-picker";
 
 export const ChatReload: React.FC = () => {
-  const { reload, setConfig } = useChatContext();
+  const { reload, setConfig, availableModels } = useChatContext();
   const { isShown, close, getDropdownPopupProps, getDropdownTriggerProps } =
     useDropdown();
 
@@ -34,7 +33,7 @@ export const ChatReload: React.FC = () => {
         className="max-h-[400px] lg:max-h-[600px] overflow-auto scrollbar-none"
         variant="center"
       >
-        {CHAT_MODELS.map((model) => (
+        {availableModels.map((model) => (
           <Dropdown.Item
             key={model}
             className="px-0 py-0 first:py-0 last:py-0"

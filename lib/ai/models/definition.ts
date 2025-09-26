@@ -344,8 +344,6 @@ export const chatModelKeys = [
   "Kimi K2",
   "Qwen 3",
   "Qwen 3 Coder",
-  "Magistral Small",
-  "Magistral Medium",
   "Deepseek Chat",
   "Deepseek R1",
   "Sonar",

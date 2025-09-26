@@ -19,6 +19,7 @@ import {
   defaultTopP,
   chatModelId,
   defaultTopK,
+  CHAT_MODELS,
 } from "@/lib/ai/models/definition";
 import { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import { Tool, Tools } from "@/lib/ai/tools/types";
@@ -82,6 +83,7 @@ const chatContext = createContext<
       data: DataUIPart<ChatbotDataPart> | undefined;
       toggleTool: (tool: Tool) => void;
       hasTool: (tool: Tool) => boolean;
+      availableModels: chatModelId[];
       setTools: (tools: Tools) => void;
     }
 >({
@@ -115,6 +117,7 @@ const chatContext = createContext<
   toggleTool: () => {},
   hasTool: () => false,
   setTools: () => {},
+  availableModels: CHAT_MODELS,
   data: undefined,
 });
 
@@ -196,6 +199,30 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       );
     },
   });
+
+  const availableModels = useMemo(() => {
+    return CHAT_MODELS.filter((model) => {
+      const config = getChatConfigurationByModelId(model);
+      const mediaTypes = [
+        ...chatResult.messages.flatMap((message) =>
+          message.parts
+            .filter((part) => part.type === "file")
+            .map((part) => part.mediaType)
+        ),
+        ...files.map((file) => file.mediaType),
+      ];
+      return (
+        !selectedTools.some((tool) => config.disabledTools.includes(tool)) &&
+        mediaTypes.every((type) => {
+          if (type.startsWith("image/"))
+            return config.supportedFiles.includes("img");
+          if (type === "application/pdf")
+            return config.supportedFiles.includes("pdf");
+          return false;
+        })
+      );
+    });
+  }, [selectedTools, chatResult.messages, files]);
 
   const body = useMemo(() => {
     const chatIdUrl = pathname.split("/").pop() || "";
@@ -311,6 +338,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         handleSubmit,
         reload,
         title,
+        availableModels,
         tools: selectedTools,
         toggleTool,
         hasTool,

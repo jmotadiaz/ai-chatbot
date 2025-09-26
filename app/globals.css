@@ -155,7 +155,7 @@ input:checked + .toggle-bg {
 }
 
 @theme {
-  --animate-fade: fadeIn .4s ease-in-out;
+  --animate-fade: fadeIn .2s ease-in-out;
   --animate-typing: typing 1.5s ease-in-out infinite;
   @keyframes fadeIn {
     0% {
