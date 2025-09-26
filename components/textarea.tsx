@@ -9,6 +9,8 @@ interface TextareaProps {
   isLoading: boolean;
   isLoadingRefinedPrompt?: boolean;
   onPaste?: React.ClipboardEventHandler<HTMLTextAreaElement>;
+  containerClassName?: string;
+  textAreaClassName?: string;
 }
 
 export const Textarea = ({
@@ -17,6 +19,8 @@ export const Textarea = ({
   isLoadingRefinedPrompt,
   isLoading,
   onPaste,
+  containerClassName,
+  textAreaClassName,
 }: TextareaProps) => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,7 +45,12 @@ export const Textarea = ({
   };
 
   return (
-    <div className="bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden">
+    <div
+      className={cn(
+        "bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden",
+        containerClassName
+      )}
+    >
       <PreviewFiles className="m-3" />
       <div
         className={cn(
@@ -58,7 +67,8 @@ export const Textarea = ({
         ref={textAreaRef}
         className={cn(
           "resize-none relative bg-transparent w-full min-h-18 max-h-80 overflow-auto rounded-2xl z-1 pr-12 pt-4 mb-16 mt-2 placeholder:select-none",
-          isLoadingRefinedPrompt ? "opacity-0 max-h-18" : "opacity-100"
+          isLoadingRefinedPrompt ? "opacity-0 max-h-18" : "opacity-100",
+          textAreaClassName
         )}
         theme="outline"
         value={input}

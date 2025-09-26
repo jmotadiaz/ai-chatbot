@@ -12,10 +12,6 @@ import { InputNumber } from "@/components/ui/input-number";
 import { Button } from "@/components/ui/button";
 import Chat from "@/components/chat";
 import { ModelPickerSelector } from "@/components/model-picker";
-import {
-  markdownCommandStyle,
-  MarkdownEditor,
-} from "@/components/ui/markdown-editor";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { createProject, updateProject } from "@/lib/ai/actions/project";
 import { Project } from "@/lib/db/schema";
@@ -29,6 +25,8 @@ import {
 import { ChatProvider } from "@/app/providers";
 import { Toggle } from "@/components/ui/toggle";
 import { RAG_TOOL, WEB_SEARCH_TOOL, Tool, Tools } from "@/lib/ai/tools/types";
+import { Textarea } from "@/components/textarea";
+import { ChatControl } from "@/components/chat-control";
 
 const tabs = ["configuration", "testChat"] as const;
 
@@ -143,25 +141,22 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               <Label className="text-lg mb-2" htmlFor="systemPrompt">
                 System Prompt
               </Label>
-              <MarkdownEditor
-                value={systemPrompt}
-                onChange={setSystemPrompt}
-                isLoading={isLoadingRefinedPrompt}
-                extraCommands={[
-                  {
-                    name: "refine",
-                    keyCommand: "refine",
-                    icon: (
-                      <div
-                        className={markdownCommandStyle}
-                        onClick={refinePrompt}
-                      >
-                        <WandSparkles size={12} />
-                      </div>
-                    ),
-                  },
-                ]}
-              />
+              <div className="relative">
+                <Textarea
+                  input={systemPrompt}
+                  isLoadingRefinedPrompt={isLoadingRefinedPrompt}
+                  handleInputChange={(e) => setSystemPrompt(e.target.value)}
+                  isLoading={true}
+                  textAreaClassName="max-h-auto"
+                />
+                <ChatControl
+                  className="absolute bottom-2 right-4 z-2"
+                  onClick={refinePrompt}
+                  Icon={WandSparkles}
+                  disabled={!systemPrompt.trim()}
+                  isLoading={isLoadingRefinedPrompt}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col space-y-4">
