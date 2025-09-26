@@ -83,37 +83,39 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
               ))}
             </div>
           )}
-          <CopyBlock text={text}>
-            <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 mb-4 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
-              <>
-                <motion.div
-                  initial={{ y: 5, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="flex flex-row gap-2 items-start w-full"
-                >
-                  <div
-                    className={cn({
-                      "line-clamp-3 ![display:-webkit-box]":
-                        !isExpanded && isCollapseTransitionEnd,
-                    })}
-                    {...getCollapseProps()}
+          {text.trim() && (
+            <CopyBlock text={text}>
+              <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 mb-4 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
+                <>
+                  <motion.div
+                    initial={{ y: 5, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="flex flex-row gap-2 items-start w-full"
                   >
-                    {text}
+                    <div
+                      className={cn({
+                        "line-clamp-3 ![display:-webkit-box]":
+                          !isExpanded && isCollapseTransitionEnd,
+                      })}
+                      {...getCollapseProps()}
+                    >
+                      {text}
+                    </div>
+                  </motion.div>
+                </>
+                {isLongMessage && (
+                  <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
+                    <button
+                      {...getToggleProps()}
+                      className="hover:text-zinc-700 dark:hover:text-zinc-200 font-semibold cursor-pointer"
+                    >
+                      Show {isExpanded ? "less" : "more"}
+                    </button>
                   </div>
-                </motion.div>
-              </>
-              {isLongMessage && (
-                <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
-                  <button
-                    {...getToggleProps()}
-                    className="hover:text-zinc-700 dark:hover:text-zinc-200 font-semibold cursor-pointer"
-                  >
-                    Show {isExpanded ? "less" : "more"}
-                  </button>
-                </div>
-              )}
-            </div>
-          </CopyBlock>
+                )}
+              </div>
+            </CopyBlock>
+          )}
         </div>
       </div>
     </>

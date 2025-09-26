@@ -31,6 +31,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     handleSubmit,
     title,
     status,
+    sendEnabled,
     stop,
     data,
     selectedModel,
@@ -127,7 +128,7 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
             <ChatControl
               Icon={ArrowUp}
               type="submit"
-              disabled={!input.trim() || isLoadingRefinedPrompt}
+              disabled={!sendEnabled || isLoadingRefinedPrompt}
               isLoading={isLoading}
               onLoadingClick={stop}
             />

@@ -79,6 +79,7 @@ const chatContext = createContext<
       title?: string;
       projectId?: string;
       reload: (reloadConfig?: Partial<ChatConfig>) => void;
+      sendEnabled: boolean;
       tools: Tools;
       data: DataUIPart<ChatbotDataPart> | undefined;
       toggleTool: (tool: Tool) => void;
@@ -106,6 +107,7 @@ const chatContext = createContext<
   stop: async () => {},
   error: undefined,
   tools: [],
+  sendEnabled: false,
   sendMessage: async () => {},
   regenerate: async () => {
     return undefined;
@@ -172,6 +174,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     undefined
   );
   const pathname = usePathname();
+  const sendEnabled =
+    !!input.trim() || (files.length > 0 && files.every((f) => !f.loading));
 
   const chatResult = useChat({
     messages: initialMessages,
@@ -263,7 +267,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (input.trim() && files.every((file) => !file.loading)) {
+      if (sendEnabled) {
         setInput("");
         setFiles([]);
         await chatResult.sendMessage(
@@ -281,7 +285,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         );
       }
     },
-    [input, chatResult, body, files]
+    [input, chatResult, body, files, sendEnabled]
   );
 
   const setConfig = useCallback<SetChatConfig["setConfig"]>((config) => {
@@ -338,6 +342,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         handleSubmit,
         reload,
         title,
+        sendEnabled,
         availableModels,
         tools: selectedTools,
         toggleTool,
