@@ -117,7 +117,7 @@ export const RAGUploadForm = () => {
             Enter a single URL to scrape and process.
           </p>
         </div>
-        <div className="relative flex items-center my-4">
+        <div className="relative flex items-center my-8">
           <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
           <span className="flex-shrink mx-4 text-xs text-gray-500 dark:text-gray-400">
             AND / OR
@@ -143,7 +143,7 @@ export const RAGUploadForm = () => {
             {'{ "urls": ["https://example.com", "https://example2.com"] }'}
           </p>
         </div>
-        <div className="relative flex items-center my-4">
+        <div className="relative flex items-center my-8">
           <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
           <span className="flex-shrink mx-4 text-xs text-gray-500 dark:text-gray-400">
             AND / OR
