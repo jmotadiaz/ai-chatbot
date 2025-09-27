@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { ClassValue } from "clsx";
 import { Textarea as TextareaUI } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PreviewFiles } from "@/components/attachments-preview";
@@ -9,8 +10,8 @@ interface TextareaProps {
   isLoading: boolean;
   isLoadingRefinedPrompt?: boolean;
   onPaste?: React.ClipboardEventHandler<HTMLTextAreaElement>;
-  containerClassName?: string;
-  textAreaClassName?: string;
+  containerClassName?: ClassValue;
+  textAreaClassName?: ClassValue;
 }
 
 export const Textarea = ({

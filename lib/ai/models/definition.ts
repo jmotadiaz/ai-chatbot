@@ -65,9 +65,9 @@ export interface ModelConfiguration {
 }
 
 const reasoningMw = extractReasoningMiddleware({
-  tagName: "think", // <think>... </think>
+  tagName: "think",
   separator: "\n",
-  startWithReasoning: false, // cambiar a true si el modelo no la incluye al inicio
+  startWithReasoning: false,
 });
 
 export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
@@ -131,14 +131,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Deepseek R1": {
-    model: openrouter.chat("deepseek/deepseek-r1-0528"),
+    model: wrapLanguageModel({
+      model: openrouter.chat("deepseek/deepseek-r1-0528"),
+      middleware: [reasoningMw],
+    }),
     company: "deepseek",
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
     temperature: 0.3,
   },
-  "Qwen 3": {
+  "Qwen3 32B": {
     model: groq("qwen/qwen3-32b"),
     company: "alibaba",
     temperature: 0.6,
@@ -148,7 +151,20 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       groq: { reasoningFormat: "parsed" },
     },
   },
-  "Qwen 3 Coder": {
+  "Qwen3 235B": {
+    model: wrapLanguageModel({
+      model: openrouter.chat("qwen/qwen3-235b-a22b-thinking-2507"),
+      middleware: [reasoningMw],
+    }),
+    providerOptions: {
+      openrouter: { reasoning: { enabled: true, effort: "high" } },
+    },
+    company: "alibaba",
+    temperature: 0.6,
+    topP: 0.95,
+    topK: 20,
+  },
+  "Qwen3 Coder": {
     model: openrouter.chat("qwen/qwen3-coder"),
     company: "alibaba",
   },
@@ -342,8 +358,9 @@ const pickModelConfigurations = <
 export const chatModelKeys = [
   "Llama 4",
   "Kimi K2",
-  "Qwen 3",
-  "Qwen 3 Coder",
+  "Qwen3 Coder",
+  "Qwen3 32B",
+  "Qwen3 235B",
   "Deepseek Chat",
   "Deepseek R1",
   "Sonar",

@@ -319,8 +319,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
           ...reloadConfig,
         },
       });
+      if (reloadConfig) {
+        setConfig(reloadConfig);
+      }
     },
-    [body, chatResult]
+    [body, chatResult, setConfig]
   );
 
   return (

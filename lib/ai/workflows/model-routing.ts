@@ -219,33 +219,30 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen 3",
+          "Qwen3 32B",
           "GPT 5 Mini"
         ),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "GPT OSS",
+          "Grok 4 Fast",
           "Gemini 2.5 Flash"
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Grok 4 Fast",
-          "GPT 5"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Grok 4", "GPT 5"),
       },
     },
     technical: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "GPT OSS Mini",
+          "Llama 4 Scout",
           "GPT 5 Nano"
         ),
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "GPT OSS",
+          "Qwen3 Coder",
           "GPT 5 Mini"
         ),
       },
@@ -253,7 +250,7 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4.1"),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
       },
     },
     creative: {
@@ -294,7 +291,7 @@ const decisionTree = ({
         ),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT OSS Mini"),
+        modelConfiguration: findModelByRequestedFileTypes("Kimi K2"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes("GPT OSS"),

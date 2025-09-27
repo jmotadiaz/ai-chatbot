@@ -115,7 +115,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
       </Tabs.Container>
       <div className="w-full max-w-4xl mx-auto pt-6">
         <Tabs.Panel {...getPanelProps("configuration")}>
-          <div className="flex flex-col gap-6 pb-8 px-4">
+          <div className="flex flex-col gap-6 pb-8 lg:px-4">
             <div className="flex flex-col gap-2">
               <Label className="text-lg mb-2" htmlFor="title">
                 Title
@@ -147,7 +147,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                   isLoadingRefinedPrompt={isLoadingRefinedPrompt}
                   handleInputChange={(e) => setSystemPrompt(e.target.value)}
                   isLoading={true}
-                  textAreaClassName="max-h-auto"
+                  textAreaClassName="max-h-[80vh]"
                 />
                 <ChatControl
                   className="absolute bottom-2 right-4 z-2"
@@ -193,7 +193,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             </div>
             <div className="flex flex-col mt-4">
               <h3 className="text-lg font-semibold mb-4">Settings</h3>
-              <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
+              <div className="flex flex-wrap space-y-4 space-x-5 lg:space-x-10">
                 <div className="flex flex-col gap-2">
                   <Label className="text-base" htmlFor="temperature">
                     Temperature
