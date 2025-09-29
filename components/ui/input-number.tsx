@@ -120,7 +120,7 @@ export function InputNumber({
         onChange={handleChange}
         onBlur={handleBlur}
         disabled={disabled}
-        className="w-12 text-center border-0 shadow-none focus-visible:ring-0"
+        className="w-16 text-center border-0 shadow-none focus-visible:ring-0"
         {...props}
       />
       <Button

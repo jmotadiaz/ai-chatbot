@@ -196,7 +196,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               </div>
               <div className="flex flex-col mt-4">
                 <h3 className="text-lg font-semibold mb-4">Settings</h3>
-                <div className="flex flex-wrap space-y-4 space-x-5 lg:space-x-10">
+                <div className="flex flex-col lg:flex-row space-y-4 space-x-5 lg:space-x-10">
                   <div className="flex flex-col gap-2">
                     <Label className="text-base" htmlFor="temperature">
                       Temperature
