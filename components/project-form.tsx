@@ -108,161 +108,167 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   };
 
   return (
-    <div className="overflow-x-hidden h-full px-6">
-      <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
-        <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
-        <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
-      </Tabs.Container>
+    <div className="overflow-x-hidden h-full">
+      <div className="px-6">
+        <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
+          <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
+          <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
+        </Tabs.Container>
+      </div>
       <div className="w-full max-w-4xl mx-auto pt-6">
-        <Tabs.Panel {...getPanelProps("configuration")}>
-          <div className="flex flex-col gap-6 pb-8 lg:px-4">
-            <div className="flex flex-col gap-2">
-              <Label className="text-lg mb-2" htmlFor="title">
-                Title
-              </Label>
-              <Input
-                id="title"
-                placeholder="Project title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label className="text-lg mb-2">Model</Label>
-              <ModelPickerSelector
-                selectedModel={model}
-                setSelectedModel={setModel}
-                models={models}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label className="text-lg mb-2" htmlFor="systemPrompt">
-                System Prompt
-              </Label>
-              <div className="relative">
-                <Textarea
-                  input={systemPrompt}
-                  isLoadingRefinedPrompt={isLoadingRefinedPrompt}
-                  handleInputChange={(e) => setSystemPrompt(e.target.value)}
-                  isLoading={true}
-                  textAreaClassName="max-h-[80vh]"
-                />
-                <ChatControl
-                  className="absolute bottom-2 right-4 z-2"
-                  onClick={refinePrompt}
-                  Icon={WandSparkles}
-                  disabled={!systemPrompt.trim()}
-                  isLoading={isLoadingRefinedPrompt}
+        <div className="px-6">
+          <Tabs.Panel {...getPanelProps("configuration")}>
+            <div className="flex flex-col gap-6 pb-8 lg:px-4">
+              <div className="flex flex-col gap-2">
+                <Label className="text-lg mb-2" htmlFor="title">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  placeholder="Project title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-lg font-semibold mb-6">Tools</h3>
-              <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
-                <Toggle
-                  id="rag-tool"
-                  checked={hasTool(RAG_TOOL)}
-                  onChange={handleToggleTool(RAG_TOOL)}
-                >
-                  <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                  <span className="whitespace-nowrap">
-                    RAG (Document Search)
-                  </span>
-                </Toggle>
-
-                <Toggle
-                  id="web-search-tool"
-                  checked={hasTool(WEB_SEARCH_TOOL)}
-                  onChange={handleToggleTool(WEB_SEARCH_TOOL)}
-                >
-                  <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                  <span className="whitespace-nowrap">Web Search</span>
-                </Toggle>
-                <Toggle
-                  id="refine-prompt"
-                  checked={hasPromptRefiner}
-                  onChange={() => setHasPromptRefiner((prev) => !prev)}
-                >
-                  <WandSparkles className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                  <span className="whitespace-nowrap">Refine Prompt</span>
-                </Toggle>
+              <div className="flex flex-col gap-2">
+                <Label className="text-lg mb-2">Model</Label>
+                <ModelPickerSelector
+                  selectedModel={model}
+                  setSelectedModel={setModel}
+                  models={models}
+                />
               </div>
-            </div>
-            <div className="flex flex-col mt-4">
-              <h3 className="text-lg font-semibold mb-4">Settings</h3>
-              <div className="flex flex-wrap space-y-4 space-x-5 lg:space-x-10">
-                <div className="flex flex-col gap-2">
-                  <Label className="text-base" htmlFor="temperature">
-                    Temperature
-                  </Label>
-                  <InputNumber
-                    id="temperature"
-                    value={temperature}
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    onChange={setTemperature}
+
+              <div className="flex flex-col gap-2">
+                <Label className="text-lg mb-2" htmlFor="systemPrompt">
+                  System Prompt
+                </Label>
+                <div className="relative">
+                  <Textarea
+                    input={systemPrompt}
+                    isLoadingRefinedPrompt={isLoadingRefinedPrompt}
+                    handleInputChange={(e) => setSystemPrompt(e.target.value)}
+                    isLoading={true}
+                    textAreaClassName="max-h-[80vh]"
                   />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label className="text-base" htmlFor="topP">
-                    Top P
-                  </Label>
-                  <InputNumber
-                    id="topP"
-                    value={topP}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    onChange={setTopP}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label className="text-base" htmlFor="topK">
-                    Top K
-                  </Label>
-                  <InputNumber
-                    id="topK"
-                    value={topK}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onChange={setTopK}
+                  <ChatControl
+                    className="absolute bottom-2 right-4 z-2"
+                    onClick={refinePrompt}
+                    Icon={WandSparkles}
+                    disabled={!systemPrompt.trim()}
+                    isLoading={isLoadingRefinedPrompt}
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="pt-4 text-right">
-              <Button
-                onClick={handleSaveProject}
-                disabled={isCreating}
-                isLoading={isCreating}
-              >
-                <Save />
-                Save Project
-              </Button>
+              <div className="flex flex-col space-y-4">
+                <h3 className="text-lg font-semibold mb-6">Tools</h3>
+                <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
+                  <Toggle
+                    id="rag-tool"
+                    checked={hasTool(RAG_TOOL)}
+                    onChange={handleToggleTool(RAG_TOOL)}
+                  >
+                    <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                    <span className="whitespace-nowrap">
+                      RAG (Document Search)
+                    </span>
+                  </Toggle>
+
+                  <Toggle
+                    id="web-search-tool"
+                    checked={hasTool(WEB_SEARCH_TOOL)}
+                    onChange={handleToggleTool(WEB_SEARCH_TOOL)}
+                  >
+                    <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                    <span className="whitespace-nowrap">Web Search</span>
+                  </Toggle>
+                  <Toggle
+                    id="refine-prompt"
+                    checked={hasPromptRefiner}
+                    onChange={() => setHasPromptRefiner((prev) => !prev)}
+                  >
+                    <WandSparkles className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                    <span className="whitespace-nowrap">Refine Prompt</span>
+                  </Toggle>
+                </div>
+              </div>
+              <div className="flex flex-col mt-4">
+                <h3 className="text-lg font-semibold mb-4">Settings</h3>
+                <div className="flex flex-wrap space-y-4 space-x-5 lg:space-x-10">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-base" htmlFor="temperature">
+                      Temperature
+                    </Label>
+                    <InputNumber
+                      id="temperature"
+                      value={temperature}
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      onChange={setTemperature}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-base" htmlFor="topP">
+                      Top P
+                    </Label>
+                    <InputNumber
+                      id="topP"
+                      value={topP}
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      onChange={setTopP}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-base" htmlFor="topK">
+                      Top K
+                    </Label>
+                    <InputNumber
+                      id="topK"
+                      value={topK}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={setTopK}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 text-right">
+                <Button
+                  onClick={handleSaveProject}
+                  disabled={isCreating}
+                  isLoading={isCreating}
+                >
+                  <Save />
+                  Save Project
+                </Button>
+              </div>
             </div>
-          </div>
-        </Tabs.Panel>
-        <Tabs.Panel {...getPanelProps("testChat")}>
-          <ChatProvider
-            temperature={temperature}
-            topP={topP}
-            topK={topK}
-            selectedModel={model}
-            systemPrompt={systemPrompt}
-            tools={tools}
-            metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
-            title={title}
-            preventChatPersistence={true}
-          >
-            <Chat />
-          </ChatProvider>
-        </Tabs.Panel>
+          </Tabs.Panel>
+        </div>
+        <div className="px-2">
+          <Tabs.Panel {...getPanelProps("testChat")}>
+            <ChatProvider
+              temperature={temperature}
+              topP={topP}
+              topK={topK}
+              selectedModel={model}
+              systemPrompt={systemPrompt}
+              tools={tools}
+              metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
+              title={title}
+              preventChatPersistence={true}
+            >
+              <Chat />
+            </ChatProvider>
+          </Tabs.Panel>
+        </div>
       </div>
     </div>
   );

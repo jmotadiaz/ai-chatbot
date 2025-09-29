@@ -80,10 +80,6 @@ export async function uploadResources(
         return { success: false, error: "No URLs provided in JSON file" };
       }
 
-      if (process.env.NODE_ENV === "production" && urls.length > 50) {
-        return { success: false, error: "Maximum 50 URLs allowed per batch" };
-      }
-
       const batchResults = await Promise.all(
         urls.map((url) => fetchAndConvertURL({ url, container }))
       );
