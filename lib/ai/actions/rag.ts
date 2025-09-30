@@ -266,17 +266,17 @@ async function fetchAndConvertURL({
       return null;
     }
 
-    const dom = new JSDOM(await response.text());
+    const html = await response.text();
 
     // Convert HTML to Markdown
     const markdown = turndownService
-      .turndown(extractContainer({ container, dom }))
+      .turndown(extractContainer({ container, html }))
       .replace(/\n{3,}/g, "\n\n")
       .replace(/^\s+|\s+$/g, "")
       .trim();
 
     return {
-      title: dom.window.document.title || url,
+      title: extractTitle(html) || url,
       url,
       content: markdown,
     };
@@ -286,17 +286,23 @@ async function fetchAndConvertURL({
   }
 }
 
+const extractTitle = (html: string): string | null => {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return match ? match[1].trim() : null;
+};
+
 const extractContainer = ({
   container,
-  dom,
+  html,
 }: {
   container?: string;
-  dom: JSDOM;
-}): HTMLElement => {
-  let el: HTMLElement | null = null;
-  if (container) {
-    el = dom.window.document.querySelector(container);
+  html: string;
+}): HTMLElement | string => {
+  if (!container) {
+    return html;
   }
+  const dom = new JSDOM(html);
+  const el = dom.window.document.querySelector<HTMLElement>(container);
 
   return el ?? dom.window.document.body;
 };

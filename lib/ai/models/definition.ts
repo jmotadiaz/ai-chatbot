@@ -141,19 +141,16 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
     temperature: 0.3,
   },
-  "Qwen3 32B": {
-    model: groq("qwen/qwen3-32b"),
+  "Qwen3 Next Instruct": {
+    model: openrouter.chat("qwen/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
-    temperature: 0.6,
-    topP: 0.95,
+    temperature: 0.7,
+    topP: 0.8,
     topK: 20,
-    providerOptions: {
-      groq: { reasoningFormat: "parsed" },
-    },
   },
-  "Qwen3 235B": {
+  "Qwen3 Next Thinking": {
     model: wrapLanguageModel({
-      model: openrouter.chat("qwen/qwen3-235b-a22b-thinking-2507"),
+      model: openrouter.chat("qwen/qwen3-next-80b-a3b-thinking"),
       middleware: [reasoningMw],
     }),
     providerOptions: {
@@ -356,17 +353,16 @@ const pickModelConfigurations = <
 };
 
 export const chatModelKeys = [
+  "Llama 3.3",
   "Llama 4",
   "Kimi K2",
   "Qwen3 Coder",
-  "Qwen3 32B",
-  "Qwen3 235B",
+  "Qwen3 Next Instruct",
+  "Qwen3 Next Thinking",
   "Deepseek Chat",
   "Deepseek R1",
   "Sonar",
   "Sonar Pro",
-  "Sonar Reasoning",
-  "Claude Haiku 3.5",
   "Claude Sonnet 4",
   "Claude Opus 4.1",
   "Grok Code Fast",

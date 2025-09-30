@@ -100,7 +100,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
           disabled={isLoading}
           {...triggerModalProps()}
         >
-          Delete All
+          Delete {normalizedFilter.length > 0 ? "Selection" : "All"}
         </Button>
       </div>
       <ConfirmModal

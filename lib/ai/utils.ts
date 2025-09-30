@@ -297,6 +297,7 @@ export const handleFileUpload = async (
       ]);
       const blobPromise = upload(file.name, file, {
         access: "public",
+        contentType: file.type,
         handleUploadUrl: "/api/upload",
         onUploadProgress: ({ percentage }) => {
           setFiles((prevFiles) =>

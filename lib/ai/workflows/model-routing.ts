@@ -219,7 +219,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen3 32B",
+          "Qwen3 Next Thinking",
           "GPT 5 Mini"
         ),
       },
