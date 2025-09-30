@@ -6,20 +6,21 @@ import { PreviewFiles } from "@/components/attachments-preview";
 
 interface TextareaProps {
   input: string;
-  handleInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChangeInput: (input: string) => void;
   isLoading: boolean;
   isLoadingRefinedPrompt?: boolean;
-  onPaste?: React.ClipboardEventHandler<HTMLTextAreaElement>;
+  onPasteFiles?: (files: FileList) => void;
+  ref?: React.Ref<HTMLTextAreaElement>;
   containerClassName?: ClassValue;
   textAreaClassName?: ClassValue;
 }
 
 export const Textarea = ({
   input,
-  handleInputChange,
+  onChangeInput,
   isLoadingRefinedPrompt,
   isLoading,
-  onPaste,
+  onPasteFiles,
   containerClassName,
   textAreaClassName,
 }: TextareaProps) => {
@@ -73,10 +74,16 @@ export const Textarea = ({
         )}
         theme="outline"
         value={input}
-        onPaste={onPaste}
+        onPaste={(e) => {
+          e.preventDefault();
+          onPasteFiles?.(e.clipboardData.files);
+          textAreaRef.current?.setRangeText(
+            e.clipboardData.getData("text/plain")
+          );
+          onChangeInput(textAreaRef.current?.value || "");
+        }}
         placeholder={"Say something..."}
-        // @ts-expect-error err
-        onChange={handleInputChange}
+        onChange={(e) => onChangeInput(e.target.value)}
         onKeyDown={handleKeyDown}
       />
     </div>

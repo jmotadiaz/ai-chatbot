@@ -64,13 +64,13 @@ const EnglishHelperChat: React.FC = () => {
 
 type TranslateChatProps = Pick<
   UseCompletionHelpers,
-  "handleSubmit" | "input" | "handleInputChange" | "completion" | "isLoading"
+  "handleSubmit" | "input" | "setInput" | "completion" | "isLoading"
 >;
 
 export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
   handleSubmit,
   input,
-  handleInputChange,
+  setInput,
   completion,
   isLoading,
 }) => {
@@ -79,7 +79,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
       <div className="bg-(--background) w-full mb-9 pb-4">
         <form onSubmit={handleSubmit} className="relative w-full">
           <Textarea
-            handleInputChange={handleInputChange}
+            onChangeInput={setInput}
             input={input}
             isLoading={isLoading}
           />
@@ -120,14 +120,14 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
 
 type GrammarChatProps = Pick<
   UseObjectReturn<typeof grammarSchema>,
-  "object" | "handleSubmit" | "isLoading" | "input" | "handleInputChange"
+  "object" | "handleSubmit" | "isLoading" | "input" | "setInput"
 >;
 
 const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
   object,
   isLoading,
   input,
-  handleInputChange,
+  setInput,
   handleSubmit,
 }) => {
   return (
@@ -135,7 +135,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
       <div className="bg-(--background) w-full mb-9 pb-4">
         <form onSubmit={handleSubmit} className="relative w-full">
           <Textarea
-            handleInputChange={handleInputChange}
+            onChangeInput={setInput}
             input={input}
             isLoading={isLoading}
           />

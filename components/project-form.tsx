@@ -148,7 +148,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                   <Textarea
                     input={systemPrompt}
                     isLoadingRefinedPrompt={isLoadingRefinedPrompt}
-                    handleInputChange={(e) => setSystemPrompt(e.target.value)}
+                    onChangeInput={setSystemPrompt}
                     isLoading={true}
                     textAreaClassName="max-h-[80vh]"
                   />

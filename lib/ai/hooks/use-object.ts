@@ -17,6 +17,7 @@ export type UseObjectReturn<T> = Omit<
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
   submit: () => void;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
   handleSubmit: (e: React.FormEvent) => void;
 };
 
@@ -50,6 +51,7 @@ export const useObject = <T extends z3.Schema>(
   return {
     ...objectResult,
     input,
+    setInput,
     handleInputChange,
     handleSubmit,
     submit,

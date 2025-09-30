@@ -27,7 +27,6 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     messages,
     input,
     setInput,
-    handleInputChange,
     handleSubmit,
     title,
     status,
@@ -48,10 +47,10 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
     });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observeRef = useRef<HTMLDivElement>(null);
-  const onPaste: React.ClipboardEventHandler<HTMLTextAreaElement> = (e) => {
+  const onPasteFiles = (files: FileList) => {
     handleFileUpload(
       setFiles,
-      e.clipboardData.files,
+      files,
       getChatConfigurationByModelId(selectedModel).supportedFiles
     );
   };
@@ -102,10 +101,10 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
       >
         <div className="relative w-full">
           <Textarea
-            handleInputChange={handleInputChange}
+            onChangeInput={setInput}
             input={input}
             isLoading={isLoading}
-            onPaste={onPaste}
+            onPasteFiles={onPasteFiles}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
