@@ -15,6 +15,8 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const { temperature, topP, topK, setConfig, selectedModel } =
     useChatContext();
 
+  console.log(topP);
+
   const setTemperature = (value: number) => {
     setConfig({ temperature: value });
   };
@@ -25,7 +27,10 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
     setConfig({ topK: value });
   };
 
-  if (selectedModel === "Router") {
+  if (
+    selectedModel === "Router" ||
+    (!isDefined(temperature) && !isDefined(topP) && !isDefined(topK))
+  ) {
     return null;
   }
 
@@ -38,46 +43,56 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        <Dropdown.Item className="justify-between">
-          <Label className="mr-8" htmlFor="temperature">
-            Temperature
-          </Label>
-          <InputNumber
-            id="temperature"
-            value={temperature}
-            min={0}
-            max={2}
-            step={0.1}
-            onChange={setTemperature}
-          />
-        </Dropdown.Item>
-        <Dropdown.Item className="justify-between">
-          <Label className="mr-8" htmlFor="topP">
-            Top P
-          </Label>
-          <InputNumber
-            id="topP"
-            value={topP}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={setTopP}
-          />
-        </Dropdown.Item>
-        <Dropdown.Item className="justify-between">
-          <Label className="mr-8" htmlFor="topK">
-            Top K
-          </Label>
-          <InputNumber
-            id="topK"
-            value={topK}
-            min={0}
-            max={100}
-            step={5}
-            onChange={setTopK}
-          />
-        </Dropdown.Item>
+        {isDefined(temperature) && (
+          <Dropdown.Item className="justify-between">
+            <Label className="mr-8" htmlFor="temperature">
+              Temperature
+            </Label>
+            <InputNumber
+              id="temperature"
+              value={temperature}
+              min={0}
+              max={2}
+              step={0.1}
+              onChange={setTemperature}
+            />
+          </Dropdown.Item>
+        )}
+        {isDefined(topP) && (
+          <Dropdown.Item className="justify-between">
+            <Label className="mr-8" htmlFor="topP">
+              Top P
+            </Label>
+            <InputNumber
+              id="topP"
+              value={topP}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={setTopP}
+            />
+          </Dropdown.Item>
+        )}
+        {isDefined(topK) && (
+          <Dropdown.Item className="justify-between">
+            <Label className="mr-8" htmlFor="topK">
+              Top K
+            </Label>
+            <InputNumber
+              id="topK"
+              value={topK}
+              min={0}
+              max={100}
+              step={5}
+              onChange={setTopK}
+            />
+          </Dropdown.Item>
+        )}
       </Dropdown.Popup>
     </Dropdown.Container>
   );
+};
+
+const isDefined = <T,>(value: T | undefined | null): value is T => {
+  return value !== undefined && value !== null;
 };

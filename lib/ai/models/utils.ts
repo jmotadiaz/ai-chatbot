@@ -83,7 +83,25 @@ export const getChatConfigurationByModelId = (
       ] as Required<ModelConfiguration>["supportedOutput"],
     },
     modelId !== "Router"
-      ? chatModelConfigurations[modelId]
+      ? {
+          ...chatModelConfigurations[modelId],
+          temperature: chatModelConfigurations[
+            modelId
+          ].disabledConfig?.includes("temperature")
+            ? null
+            : chatModelConfigurations[modelId].temperature ??
+              defaultTemperature,
+          topK: chatModelConfigurations[modelId].disabledConfig?.includes(
+            "topK"
+          )
+            ? null
+            : chatModelConfigurations[modelId].topK ?? defaultTopK,
+          topP: chatModelConfigurations[modelId].disabledConfig?.includes(
+            "topP"
+          )
+            ? null
+            : chatModelConfigurations[modelId].topP ?? defaultTopP,
+        }
       : {
           supportedFiles: [
             "img",
