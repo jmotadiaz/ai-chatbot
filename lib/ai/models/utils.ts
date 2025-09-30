@@ -85,22 +85,24 @@ export const getChatConfigurationByModelId = (
     modelId !== "Router"
       ? {
           ...chatModelConfigurations[modelId],
-          temperature: chatModelConfigurations[
-            modelId
-          ].disabledConfig?.includes("temperature")
-            ? null
-            : chatModelConfigurations[modelId].temperature ??
-              defaultTemperature,
-          topK: chatModelConfigurations[modelId].disabledConfig?.includes(
-            "topK"
-          )
-            ? null
-            : chatModelConfigurations[modelId].topK ?? defaultTopK,
-          topP: chatModelConfigurations[modelId].disabledConfig?.includes(
-            "topP"
-          )
-            ? null
-            : chatModelConfigurations[modelId].topP ?? defaultTopP,
+          ...(chatModelConfigurations[modelId] && {
+            temperature: chatModelConfigurations[
+              modelId
+            ].disabledConfig?.includes("temperature")
+              ? null
+              : chatModelConfigurations[modelId].temperature ??
+                defaultTemperature,
+            topK: chatModelConfigurations[modelId].disabledConfig?.includes(
+              "topK"
+            )
+              ? null
+              : chatModelConfigurations[modelId].topK ?? defaultTopK,
+            topP: chatModelConfigurations[modelId].disabledConfig?.includes(
+              "topP"
+            )
+              ? null
+              : chatModelConfigurations[modelId].topP ?? defaultTopP,
+          }),
         }
       : {
           supportedFiles: [
