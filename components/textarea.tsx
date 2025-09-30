@@ -75,15 +75,12 @@ export const Textarea = ({
         theme="outline"
         value={input}
         onPaste={(e) => {
-          e.preventDefault();
           onPasteFiles?.(e.clipboardData.files);
-          textAreaRef.current?.setRangeText(
-            e.clipboardData.getData("text/plain")
-          );
-          onChangeInput(textAreaRef.current?.value || "");
         }}
         placeholder={"Say something..."}
-        onChange={(e) => onChangeInput(e.target.value)}
+        onChange={(e) => {
+          onChangeInput(e.target.value);
+        }}
         onKeyDown={handleKeyDown}
       />
     </div>
