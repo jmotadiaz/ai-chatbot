@@ -191,10 +191,11 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
   },
-  "Claude Sonnet 4": {
-    model: anthropic("claude-sonnet-4-20250514"),
+  "Claude Sonnet 4.5": {
+    model: anthropic("claude-sonnet-4-5-20250929"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
+    disabledConfig: ["topP", "topK"],
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -363,7 +364,7 @@ export const chatModelKeys = [
   "Deepseek R1",
   "Sonar",
   "Sonar Pro",
-  "Claude Sonnet 4",
+  "Claude Sonnet 4.5",
   "Claude Opus 4.1",
   "Grok Code Fast",
   "Grok 4 Fast",

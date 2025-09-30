@@ -247,7 +247,7 @@ const decisionTree = ({
         ),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4"),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4.5"),
       },
       advanced: {
         modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
