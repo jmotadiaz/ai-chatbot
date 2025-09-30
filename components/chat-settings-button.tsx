@@ -15,8 +15,6 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const { temperature, topP, topK, setConfig, selectedModel } =
     useChatContext();
 
-  console.log(topP);
-
   const setTemperature = (value: number) => {
     setConfig({ temperature: value });
   };

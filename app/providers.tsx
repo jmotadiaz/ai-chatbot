@@ -153,7 +153,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   preventChatPersistence = false,
   tools = [],
 }) => {
-  console.log("prop topP", { topP });
   const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
     Object.assign(
       getChatConfigurationByModelId(selectedModel),
