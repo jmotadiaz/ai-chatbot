@@ -2,6 +2,7 @@
 import { Edit } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import ChatLink from "@/components/chat-link";
@@ -37,20 +38,24 @@ const NewChat: React.FC<NewChatProps> = ({ children }) => {
 
 export const NewChatHeader = () => {
   return (
-    <NewChat>
-      <div className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors">
-        <Edit size={18} />
-      </div>
-    </NewChat>
+    <Suspense fallback={null}>
+      <NewChat>
+        <div className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors">
+          <Edit size={18} />
+        </div>
+      </NewChat>
+    </Suspense>
   );
 };
 
 export const NewChatSidebar: React.FC = () => {
   return (
-    <NewChat>
-      <SidebarSectionTitle>
-        New Chat <Edit className="h-4 w-4 ml-2" />
-      </SidebarSectionTitle>
-    </NewChat>
+    <Suspense fallback={null}>
+      <NewChat>
+        <SidebarSectionTitle>
+          New Chat <Edit className="h-4 w-4 ml-2" />
+        </SidebarSectionTitle>
+      </NewChat>
+    </Suspense>
   );
 };
