@@ -5,7 +5,7 @@ import pThrottle from "p-throttle";
 import { google } from "@/lib/ai/models/definition";
 
 const embeddingModel = google.textEmbeddingModel("gemini-embedding-001");
-const MAX_CALLS = 40;
+const MAX_CALLS = 90;
 const TIME_WINDOW = 60 * 1000;
 const markdownSplitter = new MarkdownNodeParser();
 
@@ -21,7 +21,7 @@ export async function generateEmbeddings(chunks: string[]) {
     console.log(`Generating embeddings for ${chunks.length} chunks...`);
     const { embeddings } = await embedMany({
       model: embeddingModel,
-      maxParallelCalls: 2,
+      maxParallelCalls: 1,
       providerOptions: {
         google: {
           outputDimensionality: 768,

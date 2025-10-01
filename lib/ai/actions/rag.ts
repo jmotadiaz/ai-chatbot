@@ -81,6 +81,10 @@ export async function uploadResources(
         return { success: false, error: "No URLs provided in JSON file" };
       }
 
+      if (process.env.NODE_ENV === "production" && urls.length > 100) {
+        return { success: false, error: "Max 100 URLs" };
+      }
+
       await forEachChunk(urls, async (chunkUrls) => {
         const resourcesChunk = await Promise.all(
           chunkUrls.map((url) => fetchAndConvertURL({ url, container }))
