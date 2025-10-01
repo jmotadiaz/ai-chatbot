@@ -6,8 +6,8 @@ import TurndownService from "turndown";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
-  generateEmbeddings,
   generateMarkdownChunks,
+  throttledGenerateEmbeddings,
 } from "@/lib/ai/rag/generate-embeddings";
 import {
   createEmbeddings,
@@ -31,6 +31,7 @@ export async function uploadResources(
   formData: FormData
 ): Promise<ProcessResult> {
   const session = await auth();
+  const result = { resourcesCreated: 0, embeddingsCreated: 0 };
 
   if (!session?.user) {
     redirect("/login");
@@ -47,12 +48,12 @@ export async function uploadResources(
       return { success: false, error: "No files provided" };
     }
 
-    const resources: Resource[] = [];
-
     if (url) {
       const urlResource = await fetchAndConvertURL({ url });
       if (urlResource) {
-        resources.push(urlResource);
+        const chunkResult = await saveResources([urlResource], session.user.id);
+        result.resourcesCreated += chunkResult.resourcesCreated;
+        result.embeddingsCreated += chunkResult.embeddingsCreated;
       }
     }
 
@@ -80,15 +81,25 @@ export async function uploadResources(
         return { success: false, error: "No URLs provided in JSON file" };
       }
 
-      const batchResults = await Promise.all(
-        urls.map((url) => fetchAndConvertURL({ url, container }))
-      );
-
-      resources.push(...batchResults.filter(isDefined));
+      await forEachChunk(urls, async (chunkUrls) => {
+        const resourcesChunk = await Promise.all(
+          chunkUrls.map((url) => fetchAndConvertURL({ url, container }))
+        );
+        console.log(
+          `Successfully processed ${resourcesChunk.length} resources, generating embeddings...`
+        );
+        const chunkResult = await saveResources(
+          resourcesChunk.filter(isDefined),
+          session.user.id
+        );
+        result.resourcesCreated += chunkResult.resourcesCreated;
+        result.embeddingsCreated += chunkResult.embeddingsCreated;
+      });
     }
 
     // Process markdown files if provided
     if (markdownFilesCount > 0) {
+      const resources: Resource[] = [];
       for (let i = 0; i < markdownFilesCount; i++) {
         const markdownFile = formData.get(`markdownFile_${i}`) as File;
 
@@ -104,55 +115,13 @@ export async function uploadResources(
           });
         }
       }
+      const chunkResult = await saveResources(
+        resources.filter(isDefined),
+        session.user.id
+      );
+      result.resourcesCreated += chunkResult.resourcesCreated;
+      result.embeddingsCreated += chunkResult.embeddingsCreated;
     }
-
-    if (resources.length === 0) {
-      return { success: false, error: "No valid resources could be processed" };
-    }
-
-    console.log(
-      `Successfully processed ${resources.length} resources, generating embeddings...`
-    );
-
-    const [result] = await transaction(async (tx) => {
-      const createdResources = [];
-      const allEmbeddings: Promise<InsertEmbedding[]>[] = [];
-
-      // Process each resource
-      for (const resource of resources) {
-        // Create resource
-        const newResource = await createResource({
-          title: resource.title,
-          url: resource.url,
-          userId: session.user.id,
-        })(tx);
-
-        createdResources.push(newResource);
-
-        allEmbeddings.push(
-          resourceToEmbeddings({
-            resource: newResource,
-            content: resource.content,
-          })
-        );
-      }
-
-      // Batch insert all embeddings
-      if (allEmbeddings.length > 0) {
-        const createdEmbeddings = await createEmbeddings(
-          (await Promise.all(allEmbeddings)).flat()
-        )(tx);
-        return {
-          resourcesCreated: createdResources.length,
-          embeddingsCreated: createdEmbeddings.length,
-        };
-      }
-
-      return {
-        resourcesCreated: createdResources.length,
-        embeddingsCreated: 0,
-      };
-    });
 
     revalidatePath("/rag");
 
@@ -315,7 +284,7 @@ const resourceToEmbeddings = async ({
   content: string;
 }): Promise<InsertEmbedding[]> => {
   const chunks = await generateMarkdownChunks(content);
-  const embeddingData = await generateEmbeddings(chunks);
+  const embeddingData = await throttledGenerateEmbeddings(chunks);
 
   // Prepare embeddings for database insertion
   return embeddingData.map(({ content, embedding }) => ({
@@ -323,4 +292,66 @@ const resourceToEmbeddings = async ({
     content,
     embedding,
   }));
+};
+
+const saveResources = async (
+  resources: Resource[],
+  userId: string
+): Promise<{ resourcesCreated: number; embeddingsCreated: number }> => {
+  const [result] = await transaction(async (tx) => {
+    const createdResources = [];
+    const allEmbeddings: Promise<InsertEmbedding[]>[] = [];
+
+    // Process each resource
+    for (const resource of resources) {
+      // Create resource
+      const newResource = await createResource({
+        title: resource.title,
+        url: resource.url,
+        userId,
+      })(tx);
+
+      createdResources.push(newResource);
+
+      allEmbeddings.push(
+        resourceToEmbeddings({
+          resource: newResource,
+          content: resource.content,
+        })
+      );
+    }
+
+    // Batch insert all embeddings
+    if (allEmbeddings.length > 0) {
+      const createdEmbeddings = await createEmbeddings(
+        (await Promise.all(allEmbeddings)).flat()
+      )(tx);
+      return {
+        resourcesCreated: createdResources.length,
+        embeddingsCreated: createdEmbeddings.length,
+      };
+    }
+
+    return {
+      resourcesCreated: createdResources.length,
+      embeddingsCreated: 0,
+    };
+  });
+
+  return result;
+};
+
+const forEachChunk = async <T>(
+  array: T[],
+  callback: (chunk: T[]) => Promise<void>,
+  n: number = 50
+): Promise<void> => {
+  if (n <= 0) {
+    throw new Error("El tamaño del subarray debe ser mayor que 0");
+  }
+
+  for (let i = 0; i < array.length; i += n) {
+    const chunk = array.slice(i, i + n);
+    await callback(chunk);
+  }
 };
