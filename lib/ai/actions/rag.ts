@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
   generateMarkdownChunks,
-  throttledGenerateEmbeddings,
+  generateEmbeddings,
 } from "@/lib/ai/rag/generate-embeddings";
 import {
   createEmbeddings,
@@ -288,7 +288,7 @@ const resourceToEmbeddings = async ({
   content: string;
 }): Promise<InsertEmbedding[]> => {
   const chunks = await generateMarkdownChunks(content);
-  const embeddingData = await throttledGenerateEmbeddings(chunks);
+  const embeddingData = await generateEmbeddings(chunks);
 
   // Prepare embeddings for database insertion
   return embeddingData.map(({ content, embedding }) => ({
