@@ -5,6 +5,7 @@ import React, {
   useState,
   createContext,
   useMemo,
+  useEffect,
 } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
@@ -372,6 +373,12 @@ export const SidebarProvider: React.FC<ProvidersProps> = ({ children }) => {
   const toggleSidebar = useCallback(() => {
     setShowSidebar((prev) => !prev);
   }, []);
+
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setShowSidebar(false);
+  }, [pathname]);
 
   return (
     <sidebarContext.Provider
