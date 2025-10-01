@@ -16,12 +16,12 @@ const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
       e.preventDefault();
       setShowSidebar(false);
     } else {
-      console.log("Navigating to a different path");
       onNavigate?.(e);
     }
   };
 
   useEffect(() => {
+    console.log("changed effect for pathname in ChatLink");
     setShowSidebar(false);
   }, [pathname, setShowSidebar]);
 
