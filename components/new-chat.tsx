@@ -1,5 +1,7 @@
 "use client";
 import { Edit } from "lucide-react";
+import { useQueryState } from "nuqs";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import ChatLink from "@/components/chat-link";
@@ -11,6 +13,8 @@ interface NewChatProps {
 
 const NewChat: React.FC<NewChatProps> = ({ children }) => {
   const { status, setMessages } = useChatContext();
+  const [, setChatId] = useQueryState("chatId");
+  const pathname = usePathname();
   return (
     <ChatLink
       href="/"
@@ -19,7 +23,12 @@ const NewChat: React.FC<NewChatProps> = ({ children }) => {
           ? "pointer-events-none opacity-50"
           : "cursor-pointer"
       )}
-      onClick={() => setMessages([])}
+      onClick={() => {
+        if (pathname === "/") {
+          setMessages([]);
+          setChatId(null);
+        }
+      }}
     >
       {children}
     </ChatLink>

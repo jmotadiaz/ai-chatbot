@@ -10,6 +10,7 @@ import {
   NoSuchToolError,
   InvalidArgumentError,
 } from "ai";
+import { revalidatePath } from "next/cache";
 import {
   chatModelId,
   languageModelConfigurations,
@@ -260,6 +261,7 @@ export async function POST(req: Request) {
                     },
                   });
                 }
+                revalidatePath("/");
               }
             } catch (error) {
               console.error("Error saving message:", error);

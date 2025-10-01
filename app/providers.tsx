@@ -13,6 +13,7 @@ import { DataUIPart, DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { v4, validate } from "uuid";
+import { useQueryState } from "nuqs";
 import {
   defaultModel,
   defaultTemperature,
@@ -173,6 +174,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   const [data, setData] = useState<DataUIPart<ChatbotDataPart> | undefined>(
     undefined
   );
+  const [, setChatId] = useQueryState("chatId");
   const pathname = usePathname();
   const sendEnabled =
     !!input.trim() || (files.length > 0 && files.every((f) => !f.loading));
@@ -187,11 +189,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     onData: (incomingData) => {
       setData(incomingData);
       if (incomingData.type === "data-chat") {
-        history.replaceState(
-          undefined,
-          incomingData.data.id,
-          `/${incomingData.data.id}`
-        );
+        setChatId(incomingData.data.id);
       }
     },
     onError: (error) => {
