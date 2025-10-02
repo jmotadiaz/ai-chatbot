@@ -1,7 +1,7 @@
 "use client";
 
 import { FileText, ImageIcon, Wrench } from "lucide-react";
-import { useChatContext } from "@/app/providers";
+import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Select, useSelect } from "@/components/ui/select";
 import { chatModelId, Company } from "@/lib/ai/models/definition";
 import { cn } from "@/lib/utils";

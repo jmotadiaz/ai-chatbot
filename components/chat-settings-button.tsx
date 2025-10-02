@@ -1,6 +1,6 @@
 import { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
-import { useChatContext } from "@/app/providers";
+import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";

@@ -22,7 +22,7 @@ import {
   defaultTopK,
   CHAT_MODELS,
 } from "@/lib/ai/models/definition";
-import { ChatProvider } from "@/app/providers";
+import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
 import { RAG_TOOL, WEB_SEARCH_TOOL, Tool, Tools } from "@/lib/ai/tools/types";
 import { Textarea } from "@/components/textarea";

@@ -10,7 +10,7 @@ import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ToolsControl } from "@/components/tools-control";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils";
-import { useChatContext } from "@/app/providers";
+import { useChatContext } from "@/app/(chat)/chat-provider";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";

@@ -1,6 +1,6 @@
 import { ClassValue } from "clsx";
 import { Wrench, Database, Globe } from "lucide-react";
-import { useChatContext } from "@/app/providers";
+import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";

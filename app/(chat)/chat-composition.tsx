@@ -23,7 +23,7 @@ import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { filterTools } from "@/lib/ai/tools/utils";
 import { dbMessageToChatbotMessage } from "@/lib/ai/utils";
-import { ChatProvider, ChatProviderProps } from "@/app/providers";
+import { ChatProvider, ChatProviderProps } from "@/app/(chat)/chat-provider";
 
 interface ChatCompositionProps {
   chatId?: string;

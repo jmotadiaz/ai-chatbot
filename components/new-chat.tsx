@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import ChatLink from "@/components/chat-link";
-import { useChatContext } from "@/app/providers";
+import { useChatContext } from "@/app/(chat)/chat-provider";
 
 interface NewChatProps {
   children: React.ReactNode;
