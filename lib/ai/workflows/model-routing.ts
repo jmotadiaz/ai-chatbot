@@ -339,20 +339,20 @@ const decisionTree = ({
     processing: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Scout",
+          "Llama 3.1 Instant",
           "GPT 5 Nano"
         ),
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Gemini 2.5 Flash Lite"
+          "Qwen3 Next Instruct"
         ),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.0 Flash"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
       },
     },
     image_generation: {

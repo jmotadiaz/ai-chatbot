@@ -175,7 +175,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   const [data, setData] = useState<DataUIPart<ChatbotDataPart> | undefined>(
     undefined
   );
-  const [, setChatId] = useQueryState("chatId");
+  const [queryParamChatId, setChatId] = useQueryState("chatId");
   const pathname = usePathname();
   const sendEnabled =
     !!input.trim() || (files.length > 0 && files.every((f) => !f.loading));
@@ -228,7 +228,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   }, [selectedTools, chatResult.messages, files]);
 
   const body = useMemo(() => {
-    const chatIdUrl = pathname.split("/").pop() || "";
+    const chatIdUrl = pathname.split("/").pop() || queryParamChatId || "";
     return {
       chatId: chatId || (validate(chatIdUrl) ? chatIdUrl : undefined),
       projectId,
@@ -237,11 +237,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       tools: selectedTools,
     };
   }, [
-    chatConfig,
+    pathname,
+    queryParamChatId,
     chatId,
     projectId,
     preventChatPersistence,
-    pathname,
+    chatConfig,
     selectedTools,
   ]);
 
