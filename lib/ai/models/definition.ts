@@ -93,7 +93,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     topP: 0.9,
     supportedFiles: ["img"],
   },
-  "Llama 4": {
+  "Llama 4 Maverick": {
     model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     company: "meta",
     temperature: 0.6,
@@ -120,15 +120,6 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: deepseek("deepseek-chat"),
     company: "deepseek",
     temperature: 0.6,
-  },
-  "Deepseek R1 Distill": {
-    model: groq("deepseek-r1-distill-llama-70b"),
-    company: "deepseek",
-    temperature: 0.6,
-    topP: 0.95,
-    providerOptions: {
-      groq: { reasoningFormat: "parsed" },
-    },
   },
   "Deepseek R1": {
     model: wrapLanguageModel({
@@ -354,8 +345,8 @@ const pickModelConfigurations = <
 };
 
 export const chatModelKeys = [
-  "Llama 3.3",
-  "Llama 4",
+  "Llama 4 Scout",
+  "Llama 4 Maverick",
   "Kimi K2",
   "Qwen3 Coder",
   "Qwen3 Next Instruct",

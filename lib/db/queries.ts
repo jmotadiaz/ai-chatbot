@@ -189,8 +189,8 @@ export async function getChatById(id: string): Promise<Chat | undefined> {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
     return selectedChat;
   } catch (error) {
-    console.error("Failed to get chat by id from database");
-    throw error;
+    console.error("Failed to get chat by id from database", error);
+    return undefined;
   }
 }
 
@@ -336,8 +336,8 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
       .where(eq(project.id, id));
     return selectedProject;
   } catch (error) {
-    console.error("Failed to get project by id from database");
-    throw error;
+    console.error("Failed to get project by id from database", error);
+    return undefined;
   }
 }
 

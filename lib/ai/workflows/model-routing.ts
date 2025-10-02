@@ -182,7 +182,7 @@ const decisionTree = ({
         tools: ["webSearch"],
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4"),
+        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Maverick"),
         tools: ["webSearch"],
       },
       advanced: {
@@ -198,7 +198,7 @@ const decisionTree = ({
         ),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4"),
+        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Maverick"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
@@ -213,7 +213,7 @@ const decisionTree = ({
     analytical: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4",
+          "Llama 4 Maverick",
           "Gemini 2.5 Flash Lite"
         ),
       },
@@ -272,7 +272,10 @@ const decisionTree = ({
       },
       complex: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Llama 4", "Gemini 2.5 Flash"),
+          ...findModelByRequestedFileTypes(
+            "Llama 4 Maverick",
+            "Gemini 2.5 Flash"
+          ),
           temperature: 1.5,
         },
       },
@@ -322,7 +325,7 @@ const decisionTree = ({
       },
       complex: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Llama 4"),
+          ...findModelByRequestedFileTypes("Llama 4 Maverick"),
           temperature: 1,
         },
       },
@@ -383,13 +386,13 @@ const decisionTree = ({
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4",
+          "Llama 4 Maverick",
           "GPT 5 Mini"
         ),
       },
       advanced: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4",
+          "Llama 4 Maverick",
           "GPT 5 Mini"
         ),
       },

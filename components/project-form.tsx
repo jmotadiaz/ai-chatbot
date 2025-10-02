@@ -119,25 +119,27 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
         <div className="px-6">
           <Tabs.Panel {...getPanelProps("configuration")}>
             <div className="flex flex-col gap-6 pb-8 lg:px-4">
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2" htmlFor="title">
-                  Title
-                </Label>
-                <Input
-                  id="title"
-                  placeholder="Project title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <div className="flex flex-col gap-2">
+                  <Label className="text-lg mb-2" htmlFor="title">
+                    Title
+                  </Label>
+                  <Input
+                    id="title"
+                    placeholder="Project title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <Label className="text-lg mb-2">Model</Label>
-                <ModelPickerSelector
-                  selectedModel={model}
-                  setSelectedModel={setModel}
-                  models={models}
-                />
+                <div className="flex flex-col gap-2">
+                  <Label className="text-lg mb-2">Model</Label>
+                  <ModelPickerSelector
+                    selectedModel={model}
+                    setSelectedModel={setModel}
+                    models={models}
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -150,7 +152,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                     isLoadingRefinedPrompt={isLoadingRefinedPrompt}
                     onChangeInput={setSystemPrompt}
                     isLoading={true}
-                    textAreaClassName="max-h-[80vh]"
                   />
                   <ChatControl
                     className="absolute bottom-2 right-4 z-2"
