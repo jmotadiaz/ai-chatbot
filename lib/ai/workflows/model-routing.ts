@@ -98,6 +98,7 @@ export async function modelRouting({
 
   const { object: classification } = await generateObject({
     ...languageModelConfigurations["GPT OSS Mini"],
+    temperature: 0.1,
     schema,
     system: systemPrompt,
     messages: convertToModelMessages(userMessages),
