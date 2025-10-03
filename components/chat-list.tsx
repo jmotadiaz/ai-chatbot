@@ -7,11 +7,13 @@ import { ChatListItem } from "@/components/chat-list-item";
 export interface ChatListProps {
   chats: Chat[];
   className?: ClassValue;
+  chatId?: string | null | undefined;
 }
 
 export const ChatList: React.FC<ChatListProps> = async ({
   chats,
   className,
+  chatId,
 }) => {
   if (!chats.length) return null;
 
@@ -19,9 +21,11 @@ export const ChatList: React.FC<ChatListProps> = async ({
     <div className={cn("my-4", className)}>
       <SidebarSectionTitle>Chats</SidebarSectionTitle>
       <div className="space-y-3">
-        {chats.map((chat) => (
-          <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
-        ))}
+        {chats
+          .filter(({ id }) => id !== chatId)
+          .map((chat) => (
+            <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
+          ))}
       </div>
     </div>
   );

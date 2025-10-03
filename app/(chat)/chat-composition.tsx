@@ -107,7 +107,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
   return (
     <ChatProvider {...chatConfig}>
       <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar projectId={chatConfig.projectId} />
+        <Sidebar projectId={chatConfig.projectId} chatId={chatConfig.chatId} />
         <Header.Container>
           <Header.Left>
             <Logo />
