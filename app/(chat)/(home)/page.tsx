@@ -13,7 +13,6 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
     redirect("/login");
   }
 
-  console.log("chatId from searchParams:", chatId);
   if (chatId) {
     redirect(`/${chatId}`);
   }
