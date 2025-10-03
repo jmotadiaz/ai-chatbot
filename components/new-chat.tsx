@@ -1,6 +1,5 @@
 "use client";
 import { Edit, MessageCircleDashed } from "lucide-react";
-import { useQueryState } from "nuqs";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 import { ClassValue } from "clsx";
@@ -16,12 +15,13 @@ interface NewChatProps {
 
 const NewChat: React.FC<NewChatProps> = ({ children, temporary }) => {
   const { status, setMessages } = useChatContext();
-  const [, setChatId] = useQueryState("chatId");
-  const [, setChatType] = useQueryState("chatType");
   const pathname = usePathname();
   return (
     <ChatLink
-      href="/"
+      href={{
+        pathname: "/",
+        query: temporary ? { chatType: "temporary" } : {},
+      }}
       className={cn(
         status === "streaming" || status === "submitted"
           ? "pointer-events-none opacity-50"
@@ -31,8 +31,6 @@ const NewChat: React.FC<NewChatProps> = ({ children, temporary }) => {
         if (pathname === "/") {
           setMessages([]);
         }
-        setChatId(null);
-        setChatType(temporary ? "temporary" : null);
       }}
     >
       {children}
