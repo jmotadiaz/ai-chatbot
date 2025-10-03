@@ -262,7 +262,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash Lite": {
-    model: google("gemini-2.5-flash-lite-preview-06-17"),
+    model: google("gemini-2.5-flash-lite"),
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
