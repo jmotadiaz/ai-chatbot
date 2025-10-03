@@ -7,7 +7,7 @@ export interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ searchParams }) => {
-  const { chatId } = await searchParams;
+  const { chatId, chatType } = await searchParams;
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
@@ -18,7 +18,7 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
     redirect(`/${chatId}`);
   }
 
-  return <ChatComposition />;
+  return <ChatComposition temporary={chatType === "temporary"} />;
 };
 
 export default Page;

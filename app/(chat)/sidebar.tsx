@@ -21,8 +21,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ projectId }) => {
   return (
     <SidebarComponent>
       <SidebarContent>
-        <NewChatSidebar />
-        <RAGNav />
+        <NewChatSidebar className="mb-3" />
+        <RAGNav className="mb-6" />
         <Suspense fallback={<ProjectListLoading />}>
           <ProjectList currentProjectId={projectId} />
         </Suspense>

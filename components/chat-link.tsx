@@ -8,21 +8,22 @@ import { useSidebarContext } from "@/app/providers";
 type LinkProps = ComponentProps<typeof NextLink>;
 
 const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
-  const pathname = usePathname();
   const { setShowSidebar } = useSidebarContext();
+  const pathname = usePathname();
+  const toPath =
+    typeof props.href === "string" ? props.href : props.href?.pathname;
   const handleNavigate: LinkProps["onNavigate"] = (e) => {
-    if (pathname === props.href) {
-      e.preventDefault();
+    if (toPath === pathname) {
       setShowSidebar(false);
-    } else {
-      onNavigate?.(e);
     }
+    console.log("ChatLink with props:", props.href);
+    onNavigate?.(e);
   };
 
   return (
     <NextLink
-      className={cn("cursor-pointer", className)}
       {...props}
+      className={cn("cursor-pointer", className)}
       onNavigate={handleNavigate}
     />
   );

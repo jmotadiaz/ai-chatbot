@@ -1,14 +1,18 @@
 "use client";
 
 import { Database } from "lucide-react";
+import { ClassValue } from "clsx";
 import ChatLink from "@/components/chat-link";
 import { Item } from "@/components/ui/item";
-import { SidebarSectionTitle } from "@/components/sidebar";
+import { cn } from "@/lib/utils";
 
-export const RAGNav = () => {
+export interface RAGNavProps {
+  className?: ClassValue;
+}
+
+export const RAGNav: React.FC<RAGNavProps> = ({ className }) => {
   return (
-    <div className="mb-6">
-      <SidebarSectionTitle>RAG</SidebarSectionTitle>
+    <div className={cn(className)}>
       <ChatLink href="/rag">
         <Item>
           <Database className="w-4 h-4" />

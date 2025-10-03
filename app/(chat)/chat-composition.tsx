@@ -28,11 +28,13 @@ import { ChatProvider, ChatProviderProps } from "@/app/(chat)/chat-provider";
 interface ChatCompositionProps {
   chatId?: string;
   projectId?: string;
+  temporary?: boolean;
 }
 
 export const ChatComposition: React.FC<ChatCompositionProps> = async ({
   chatId,
   projectId,
+  temporary = false,
 }) => {
   const session = await auth();
   if (!session?.user) {
@@ -45,6 +47,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     topP: defaultTopP,
     topK: defaultTopK,
     metaPrompt: defaultMetaPrompt,
+    preventChatPersistence: temporary,
   };
 
   if (chatId) {
@@ -79,6 +82,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       initialMessages,
       tools: filterTools(chat.tools || []),
       metaPrompt: metaPrompt,
+      preventChatPersistence: temporary,
     };
   } else if (projectId) {
     const project = await getProjectById(projectId);
@@ -96,6 +100,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       metaPrompt: project.hasPromptRefiner ? defaultMetaPrompt : null,
       title: project.name,
       tools: filterTools(project.tools || []),
+      preventChatPersistence: temporary,
     };
   }
 
