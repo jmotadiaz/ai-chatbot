@@ -6,7 +6,6 @@ import {
 } from "@/lib/ai/models/definition";
 import { ChatbotMessage } from "@/lib/ai/types";
 import { Tools } from "@/lib/ai/tools/types";
-import { zodToPrompt } from "@/lib/ai/utils";
 
 const CATEGORIES = [
   "current_news",
@@ -29,7 +28,6 @@ const COMPLEXITY_LEVELS = [
 ] as const;
 
 const schema = z.object({
-  reasoningText: z.string(),
   category: z.enum(CATEGORIES),
   complexity: z.enum(COMPLEXITY_LEVELS),
 });
@@ -108,7 +106,6 @@ export async function modelRouting({
       object: {
         category: "other",
         complexity: "simple",
-        reasoningText: "Default classification due to error",
       } satisfies z.infer<typeof schema>,
     } as const;
   });
@@ -433,12 +430,7 @@ const systemPrompt = `\n
   *   **Complex**: Multi-layered tasks needing deeper reasoning, domain-specific knowledge, or integration of multiple elements, resulting in detailed or nuanced outputs.
   *   **Advanced**: Highly intricate tasks demanding expert-level expertise, extensive multi-step reasoning, or innovative problem-solving, often with ambiguous or open-ended outputs requiring significant inference.
 
-  ### 3. Reasoning
-  Provide a brief reasoning (1-3 sentences) explaining only the classification and complexity drivers
 
-  ## 4 Additional Notes
+  ## 3 Additional Notes
   *   If the query is referencing an image or document, assume the image or document is available for context, even if you don't have it available.
-
-  ## 5 Output Format
-  ${zodToPrompt(schema)}
 `;
