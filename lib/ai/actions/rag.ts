@@ -81,7 +81,7 @@ export async function uploadResources(
         return { success: false, error: "No URLs provided in JSON file" };
       }
 
-      if (process.env.NODE_ENV === "production" && urls.length > 100) {
+      if (process.env.NODE_ENV === "production" && urls.length > 200) {
         return { success: false, error: "Max 100 URLs" };
       }
 
