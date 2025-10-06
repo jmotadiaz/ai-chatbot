@@ -64,7 +64,7 @@ export const getChatConfigurationByModelId = (
     topP,
     systemPrompt,
     disabledConfig,
-    disabledTools,
+    toolCalling,
     supportedFiles,
     supportedOutput,
     company,
@@ -75,7 +75,7 @@ export const getChatConfigurationByModelId = (
       topK: defaultTopK,
       systemPrompt: defaultSystemPrompt,
       disabledConfig: [],
-      disabledTools: [],
+      toolCalling: true,
       company: "ai chatbot" as const,
       supportedFiles: [],
       supportedOutput: [
@@ -123,7 +123,7 @@ export const getChatConfigurationByModelId = (
     topP,
     systemPrompt,
     disabledConfig,
-    disabledTools,
+    toolCalling,
     supportedFiles,
     supportedOutput,
   };

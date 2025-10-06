@@ -19,10 +19,7 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
 
   const isActive = tools.length > 0;
 
-  if (
-    modelConfig.disabledTools.includes(RAG_TOOL) &&
-    modelConfig.disabledTools.includes(WEB_SEARCH_TOOL)
-  ) {
+  if (!modelConfig.toolCalling) {
     return null;
   }
 
@@ -36,29 +33,25 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()}>
-        {!modelConfig.disabledTools.includes(RAG_TOOL) && (
-          <Dropdown.Item
-            as={Toggle}
-            id="rag-tool"
-            checked={hasTool(RAG_TOOL)}
-            onChange={() => toggleTool(RAG_TOOL)}
-          >
-            <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-            <span className="whitespace-nowrap">RAG (Document Search)</span>
-          </Dropdown.Item>
-        )}
+        <Dropdown.Item
+          as={Toggle}
+          id="rag-tool"
+          checked={hasTool(RAG_TOOL)}
+          onChange={() => toggleTool(RAG_TOOL)}
+        >
+          <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+          <span className="whitespace-nowrap">RAG (Document Search)</span>
+        </Dropdown.Item>
 
-        {!modelConfig.disabledTools.includes(WEB_SEARCH_TOOL) && (
-          <Dropdown.Item
-            as={Toggle}
-            id="web-search-tool"
-            checked={hasTool(WEB_SEARCH_TOOL)}
-            onChange={() => toggleTool(WEB_SEARCH_TOOL)}
-          >
-            <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-            <span className="whitespace-nowrap">Web Search</span>
-          </Dropdown.Item>
-        )}
+        <Dropdown.Item
+          as={Toggle}
+          id="web-search-tool"
+          checked={hasTool(WEB_SEARCH_TOOL)}
+          onChange={() => toggleTool(WEB_SEARCH_TOOL)}
+        >
+          <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+          <span className="whitespace-nowrap">Web Search</span>
+        </Dropdown.Item>
       </Dropdown.Popup>
     </Dropdown.Container>
   );

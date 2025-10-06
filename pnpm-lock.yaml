@@ -34,7 +34,7 @@ dependencies:
     version: 0.6.13
   '@openrouter/ai-sdk-provider':
     specifier: 1.0.0-beta.5
-    version: 1.0.0-beta.5(ai@5.0.56)(zod@3.25.76)
+    version: 1.0.0-beta.5(ai@5.0.60)(zod@3.25.76)
   '@opentelemetry/api-logs':
     specifier: ^0.200.0
     version: 0.200.0
@@ -60,8 +60,8 @@ dependencies:
     specifier: ^0.10.0
     version: 0.10.0
   ai:
-    specifier: 5.0.56
-    version: 5.0.56(zod@3.25.76)
+    specifier: 5.0.60
+    version: 5.0.60(zod@3.25.76)
   bcrypt:
     specifier: ^6.0.0
     version: 6.0.0
@@ -272,6 +272,18 @@ packages:
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.10(zod@3.25.76)
+      zod: 3.25.76
+    dev: false
+
+  /@ai-sdk/gateway@1.0.33(zod@3.25.76):
+    resolution: {integrity: sha512-v9i3GPEo4t3fGcSkQkc07xM6KJN75VUv7C1Mqmmsu2xD8lQwnQfsrgAXyNuWe20yGY0eHuheSPDZhiqsGKtH1g==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.10(zod@3.25.76)
+      '@vercel/oidc': 3.0.1
       zod: 3.25.76
     dev: false
 
@@ -1542,14 +1554,14 @@ packages:
     engines: {node: '>=12.4.0'}
     dev: true
 
-  /@openrouter/ai-sdk-provider@1.0.0-beta.5(ai@5.0.56)(zod@3.25.76):
+  /@openrouter/ai-sdk-provider@1.0.0-beta.5(ai@5.0.60)(zod@3.25.76):
     resolution: {integrity: sha512-KEsvc+6n80O7tPXanRelcoRvIv9RAVLFKQFKiQoXLDwVdxY9J/g8dNXVEfWsBOOSiyt/0N392RCku0TaYZIRlg==}
     engines: {node: '>=18'}
     peerDependencies:
       ai: ^5.0.0-beta.12
       zod: ^3.24.1 || ^v4
     dependencies:
-      ai: 5.0.56(zod@3.25.76)
+      ai: 5.0.60(zod@3.25.76)
       zod: 3.25.76
     dev: false
 
@@ -2765,6 +2777,11 @@ packages:
       undici: 5.29.0
     dev: false
 
+  /@vercel/oidc@3.0.1:
+    resolution: {integrity: sha512-V/YRVrJDqM6VaMBjRUrd6qRMrTKvZjHdVdEmdXsOZMulTa3iK98ijKTc3wldBmst6W5rHpqMoKllKcBAHgN7GQ==}
+    engines: {node: '>= 20'}
+    dev: false
+
   /@vercel/otel@1.10.4(@opentelemetry/api-logs@0.200.0)(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.200.0)(@opentelemetry/resources@1.30.1)(@opentelemetry/sdk-logs@0.200.0)(@opentelemetry/sdk-metrics@1.30.1)(@opentelemetry/sdk-trace-base@1.30.1):
     resolution: {integrity: sha512-X01cOLU2Aiku4y1Vn9HQ8VmkQEdIQiWhjHa7DEUspcNGNg0Xm7GYAU7ErZ0pH/5spsrvb2wpIIHSBFgs0M5p4g==}
     engines: {node: '>=18'}
@@ -2836,6 +2853,19 @@ packages:
       zod: ^3.25.76 || ^4.1.8
     dependencies:
       '@ai-sdk/gateway': 1.0.30(zod@3.25.76)
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.10(zod@3.25.76)
+      '@opentelemetry/api': 1.9.0
+      zod: 3.25.76
+    dev: false
+
+  /ai@5.0.60(zod@3.25.76):
+    resolution: {integrity: sha512-80U/3kmdBW6g+JkLXpz/P2EwkyEaWlPlYtuLUpx/JYK9F7WZh9NnkYoh1KvUi1Sbpo0NyurBTvX0a2AG9mmbDA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+    dependencies:
+      '@ai-sdk/gateway': 1.0.33(zod@3.25.76)
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.10(zod@3.25.76)
       '@opentelemetry/api': 1.9.0

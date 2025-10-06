@@ -153,7 +153,7 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
                   );
               }
             })}
-            {config.disabledTools.length === 0 && (
+            {config.toolCalling && (
               <>
                 <div className="font-mono font-medium mx-2">|</div>
                 <div>

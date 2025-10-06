@@ -17,12 +17,6 @@ import {
   createOpenRouter,
   OpenRouterProviderOptions,
 } from "@openrouter/ai-sdk-provider";
-import {
-  RAG_TOOL,
-  Tools,
-  URL_CONTEXT_TOOL,
-  WEB_SEARCH_TOOL,
-} from "@/lib/ai/tools/types";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -54,7 +48,7 @@ export interface ModelConfiguration {
     xai?: XaiProviderOptions;
   };
   disabledConfig?: ("temperature" | "topP" | "topK")[];
-  disabledTools?: Tools;
+  toolCalling?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;
   temperature?: number;
@@ -160,13 +154,13 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: perplexity("sonar"),
     company: "perplexity",
     supportedFiles: ["img"],
-    disabledTools: [WEB_SEARCH_TOOL, RAG_TOOL, URL_CONTEXT_TOOL],
+    toolCalling: false,
   },
   "Sonar Pro": {
     model: perplexity("sonar-pro"),
     company: "perplexity",
     supportedFiles: ["img"],
-    disabledTools: [WEB_SEARCH_TOOL, RAG_TOOL, URL_CONTEXT_TOOL],
+    toolCalling: false,
   },
   "Sonar Reasoning": {
     model: wrapLanguageModel({
@@ -175,7 +169,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     }),
     company: "perplexity",
     supportedFiles: ["img"],
-    disabledTools: [WEB_SEARCH_TOOL, RAG_TOOL, URL_CONTEXT_TOOL],
+    toolCalling: false,
   },
   "Claude Haiku 3.5": {
     model: anthropic("claude-3-5-haiku-latest"),
@@ -257,17 +251,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.0 Flash": {
-    model: google("gemini-2.0-flash"),
+    model: "google/gemini-2.0-flash",
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash Lite": {
-    model: google("gemini-2.5-flash-lite"),
+    model: "google/gemini-2.5-flash-lite",
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
-    model: google("gemini-2.5-flash"),
+    model: "google/gemini-2.5-flash",
     company: "google",
     supportedFiles: ["img", "pdf"],
     providerOptions: {
@@ -279,7 +273,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Gemini 2.5 Pro": {
-    model: google("gemini-2.5-pro"),
+    model: "google/gemini-2.5-pro",
     company: "google",
     supportedFiles: ["img", "pdf"],
     providerOptions: {

@@ -94,7 +94,9 @@ export async function POST(req: Request) {
           topK,
           tools: selectedTools,
         });
-      const executedTools = new Set<Tool>(modelConfiguration.disabledTools);
+      const executedTools = new Set<Tool>(
+        modelConfiguration.toolCalling ? [] : tools
+      );
       const lastMessage = messagePartsToText(messages[messages.length - 1]);
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
       let reasoning = false;

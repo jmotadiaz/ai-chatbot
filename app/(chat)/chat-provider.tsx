@@ -329,7 +329,7 @@ const useAvailableModels = ({
         ...files.map((file) => file.mediaType),
       ];
       return (
-        !tools.some((tool) => config.disabledTools.includes(tool)) &&
+        (!tools.length || config.toolCalling) &&
         mediaTypes.every((type) => {
           if (type.startsWith("image/"))
             return config.supportedFiles.includes("img");
