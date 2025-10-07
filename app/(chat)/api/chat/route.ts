@@ -95,7 +95,7 @@ export async function POST(req: Request) {
           tools: selectedTools,
         });
       const executedTools = new Set<Tool>(
-        modelConfiguration.toolCalling ? [] : tools
+        modelConfiguration.toolCalling === false ? tools : []
       );
       const lastMessage = messagePartsToText(messages[messages.length - 1]);
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
@@ -122,6 +122,8 @@ export async function POST(req: Request) {
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber, model }) => {
           const modelName = typeof model === "string" ? model : model.modelId;
+
+          console.log(tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL));
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
