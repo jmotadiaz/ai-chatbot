@@ -10,10 +10,7 @@ import {
   NoSuchToolError,
   InvalidArgumentError,
 } from "ai";
-import {
-  chatModelId,
-  languageModelConfigurations,
-} from "@/lib/ai/models/definition";
+import { chatModelId, google } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
   db,
@@ -126,10 +123,11 @@ export async function POST(req: Request) {
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber }) => {
+          console.log(tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL));
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
-              ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+              model: google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
             };
@@ -142,7 +140,7 @@ export async function POST(req: Request) {
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
             return {
-              ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+              model: google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
             };
@@ -154,7 +152,7 @@ export async function POST(req: Request) {
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
             return {
-              ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+              model: google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };
