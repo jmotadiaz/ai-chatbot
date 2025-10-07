@@ -285,7 +285,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Gemini Nano Banana": {
-    model: google("gemini-2.5-flash-image-preview"),
+    model: "google/gemini-2.5-flash-image-preview",
     company: "google",
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],

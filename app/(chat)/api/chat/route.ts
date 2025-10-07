@@ -27,6 +27,7 @@ import {
   messagePartsToText,
   chatbotMessageToDbMessage,
   generateTitle,
+  downloadFiles,
 } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/models/utils";
 import {
@@ -118,12 +119,14 @@ export async function POST(req: Request) {
         tools: toolSet,
         stopWhen: stepCountIs(4),
         activeTools: [],
+        experimental_download:
+          modelConfiguration.model === "google/gemini-2.5-flash-image-preview"
+            ? downloadFiles
+            : undefined,
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber, model }) => {
           const modelName = typeof model === "string" ? model : model.modelId;
-
-          console.log(tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL));
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
