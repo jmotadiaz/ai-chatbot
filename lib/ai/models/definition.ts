@@ -49,6 +49,7 @@ export interface ModelConfiguration {
   };
   disabledConfig?: ("temperature" | "topP" | "topK")[];
   toolCalling?: boolean;
+  reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;
   temperature?: number;
@@ -121,6 +122,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       middleware: [reasoningMw],
     }),
     company: "deepseek",
+    reasoning: true,
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
@@ -138,6 +140,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       model: openrouter.chat("qwen/qwen3-next-80b-a3b-thinking"),
       middleware: [reasoningMw],
     }),
+    reasoning: true,
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
@@ -167,6 +170,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       model: perplexity("sonar-pro"),
       middleware: [reasoningMw],
     }),
+    reasoning: true,
     company: "perplexity",
     supportedFiles: ["img"],
     toolCalling: false,
@@ -181,6 +185,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     disabledConfig: ["topP", "topK"],
+    reasoning: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -192,6 +197,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: anthropic("claude-opus-4-1-20250805"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
+    reasoning: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -202,20 +208,24 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "GPT OSS": {
     model: groq("openai/gpt-oss-120b"),
     company: "openai",
+    reasoning: true,
     providerOptions: {
       groq: { reasoningEffort: "high" },
     },
   },
   "GPT OSS Mini": {
     model: groq("openai/gpt-oss-20b"),
+    reasoning: true,
     company: "openai",
   },
   "o4 Mini": {
     model: openai("o4-mini"),
+    reasoning: true,
     company: "openai",
   },
   o3: {
     model: openai("o3"),
+    reasoning: true,
     company: "openai",
   },
   "GPT 5 Nano": {
@@ -230,6 +240,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   },
   "GPT 5 Mini": {
     model: openai("gpt-5-mini-2025-08-07"),
+    reasoning: true,
     company: "openai",
     providerOptions: {
       openai: {
@@ -240,6 +251,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   },
   "GPT 5": {
     model: openai("gpt-5-2025-08-07"),
+    reasoning: true,
     company: "openai",
     providerOptions: {
       openai: {
@@ -264,9 +276,11 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: "google/gemini-2.5-flash",
     company: "google",
     supportedFiles: ["img", "pdf"],
+    reasoning: true,
     providerOptions: {
       google: {
         thinkingConfig: {
+          thinkingBudget: 1024,
           includeThoughts: true,
         },
       },
@@ -276,9 +290,11 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: "google/gemini-2.5-pro",
     company: "google",
     supportedFiles: ["img", "pdf"],
+    reasoning: true,
     providerOptions: {
       google: {
         thinkingConfig: {
+          thinkingBudget: 1024,
           includeThoughts: true,
         },
       },
@@ -303,11 +319,13 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: xai("grok-4-fast"),
     company: "xai",
     supportedFiles: ["img"],
+    reasoning: true,
   },
   "Grok 4": {
     model: xai("grok-4-0709"),
     company: "xai",
     supportedFiles: ["img"],
+    reasoning: true,
   },
 } as const satisfies Record<string, ModelConfiguration>;
 

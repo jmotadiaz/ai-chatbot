@@ -55,7 +55,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
               case "data-reasoning":
                 if (data.data.status === "started") {
                   return (
-                    <ToolLoading key={`message-reasoning`} text="Reasoning" />
+                    <ToolLoading key={`message-reasoning`} text="Thinking" />
                   );
                 }
                 return null;

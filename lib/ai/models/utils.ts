@@ -68,6 +68,7 @@ export const getChatConfigurationByModelId = (
     supportedFiles,
     supportedOutput,
     company,
+    reasoning,
   } = Object.assign(
     {
       temperature: defaultTemperature,
@@ -78,6 +79,7 @@ export const getChatConfigurationByModelId = (
       toolCalling: true,
       company: "ai chatbot" as const,
       supportedFiles: [],
+      reasoning: false,
       supportedOutput: [
         "text",
       ] as Required<ModelConfiguration>["supportedOutput"],
@@ -105,6 +107,7 @@ export const getChatConfigurationByModelId = (
           }),
         }
       : {
+          reasoning: true,
           supportedFiles: [
             "img",
             "pdf",
@@ -119,6 +122,7 @@ export const getChatConfigurationByModelId = (
   return {
     company,
     temperature,
+    reasoning,
     topK,
     topP,
     systemPrompt,

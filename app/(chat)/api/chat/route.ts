@@ -125,9 +125,7 @@ export async function POST(req: Request) {
             : undefined,
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async ({ stepNumber, model }) => {
-          const modelName = typeof model === "string" ? model : model.modelId;
-
+        prepareStep: async ({ stepNumber }) => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
@@ -162,10 +160,7 @@ export async function POST(req: Request) {
             };
           }
 
-          if (
-            stepNumber >= tools.length &&
-            (modelName.includes("gpt-5") || modelName.includes("grok-4"))
-          ) {
+          if (stepNumber >= tools.length && modelConfiguration.reasoning) {
             writer.write({
               type: "data-reasoning",
               data: {
