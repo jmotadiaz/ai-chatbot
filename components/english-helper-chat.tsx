@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowDown, Speaker } from "lucide-react";
-import { useCompletion, UseCompletionHelpers } from "@ai-sdk/react";
+import type { UseCompletionHelpers } from "@ai-sdk/react";
+import { useCompletion } from "@ai-sdk/react";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { ChatControl } from "@/components/chat-control";
 import { LoadingAssistantMessageIcon, SpinnerIcon } from "@/components/icons";
@@ -9,7 +10,8 @@ import { Textarea } from "@/components/textarea";
 import { CopyBlock } from "@/components/copy-block";
 import { cn } from "@/lib/utils";
 import { grammarSchema } from "@/lib/ai/schemas/grammar";
-import { useObject, UseObjectReturn } from "@/lib/ai/hooks/use-object";
+import type { UseObjectReturn } from "@/lib/ai/hooks/use-object";
+import { useObject } from "@/lib/ai/hooks/use-object";
 import { useSpeech } from "@/lib/ai/hooks/use-speech";
 import { Button } from "@/components/ui/button";
 import { Response } from "@/components/response";

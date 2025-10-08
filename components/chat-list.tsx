@@ -1,6 +1,6 @@
-import { ClassValue } from "clsx";
+import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils";
-import { Chat } from "@/lib/db/schema";
+import type { Chat } from "@/lib/db/schema";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import { ChatListItem } from "@/components/chat-list-item";
 

@@ -1,10 +1,11 @@
-import { tool, UIMessageStreamWriter } from "ai";
+import type { UIMessageStreamWriter } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 
 import { retrieve } from "@/lib/ai/rag/retrieve";
-import { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/ai/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
-import { SimilarChunks } from "@/lib/db/queries";
+import type { SimilarChunks } from "@/lib/db/queries";
 
 export interface RagFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;

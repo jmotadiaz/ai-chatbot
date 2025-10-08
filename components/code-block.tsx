@@ -1,6 +1,7 @@
 "use client";
 import { useTheme } from "next-themes";
-import React, { ReactNode, useState, useEffect } from "react";
+import type { ReactNode} from "react";
+import React, { useState, useEffect } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   tomorrow,

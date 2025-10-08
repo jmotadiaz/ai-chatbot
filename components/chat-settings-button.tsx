@@ -1,4 +1,4 @@
-import { ClassValue } from "clsx";
+import type { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";

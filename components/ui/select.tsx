@@ -5,7 +5,8 @@ import { ChevronUp } from "lucide-react";
 import { startTransition, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { Dropdown, DropdownPopupProps } from "@/components/ui/dropdown";
+import type { DropdownPopupProps } from "@/components/ui/dropdown";
+import { Dropdown } from "@/components/ui/dropdown";
 
 export const useSelect = <T extends string>({
   value,

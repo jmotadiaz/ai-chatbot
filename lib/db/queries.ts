@@ -1,69 +1,33 @@
 // eslint-disable import-x/no-unresolved
 import "server-only";
 
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  ExtractTablesWithRelations,
-  gt,
-  isNull,
-  sql,
-} from "drizzle-orm";
-import { drizzle, PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import type { ExtractTablesWithRelations } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 
-import { PgTransaction } from "drizzle-orm/pg-core";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import {
   Chat,
-  chat,
   Message,
+  InsertMessage,
+  InsertChat,
+  InsertProject,
+  chat,
   message,
   user,
   type User,
   project,
   type Project,
-  InsertMessage,
-  InsertChat,
-  InsertProject,
-  projectRelations,
-  chatRelations,
-  messageRelations,
   resources,
   embeddings,
   type Resource,
   type Embedding,
   type InsertResource,
   type InsertEmbedding,
-  resourcesRelations,
-  embeddingsRelations,
 } from "@/lib/db/schema";
 import { generateHashedPassword } from "@/lib/db/utils";
-
-// Optionally, if not using email/pass login, you can
-// use the Drizzle adapter for Auth.js / NextAuth
-// https://authjs.dev/reference/adapter/drizzle
-
-// biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
-
-// Define the schema for drizzle
-const schema = {
-  user,
-  chat,
-  message,
-  project,
-  resources,
-  embeddings,
-  projectRelations,
-  chatRelations,
-  messageRelations,
-  resourcesRelations,
-  embeddingsRelations,
-} as const;
-
-export const db = drizzle(client, { schema });
+import type { schema } from "@/lib/db/db";
+import { getDb } from "@/lib/db/db";
 
 interface SafeTransaction {
   id: string;
@@ -89,7 +53,7 @@ export function transaction(
   ...fns: Transactional<unknown>[]
 ): Promise<unknown> {
   try {
-    return db.transaction(async (tx) => {
+    return getDb().transaction(async (tx) => {
       return Promise.all(fns.map((fn) => fn(tx)));
     });
   } catch (error) {
@@ -100,7 +64,7 @@ export function transaction(
 
 export function getUser(email: string): Promise<Array<User>> {
   try {
-    return db.select().from(user).where(eq(user.email, email));
+    return getDb().select().from(user).where(eq(user.email, email));
   } catch (error) {
     console.error("Failed to get user from database");
     throw error;
@@ -186,7 +150,10 @@ export const updateChat =
 
 export async function getChatById(id: string): Promise<Chat | undefined> {
   try {
-    const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
+    const [selectedChat] = await getDb()
+      .select()
+      .from(chat)
+      .where(eq(chat.id, id));
     return selectedChat;
   } catch (error) {
     console.error("Failed to get chat by id from database", error);
@@ -217,7 +184,7 @@ export async function getChats({
   try {
     const extendedLimit = limit + 1;
 
-    const chats = await db
+    const chats = await getDb()
       .select()
       .from(chat)
       .where(
@@ -285,7 +252,7 @@ export const deleteMessageById =
 
 export async function getMessagesByChatId(id: string): Promise<Array<Message>> {
   try {
-    return await db
+    return await getDb()
       .select()
       .from(message)
       .where(eq(message.chatId, id))
@@ -330,7 +297,7 @@ export const createProject =
 
 export async function getProjectById(id: string): Promise<Project | undefined> {
   try {
-    const [selectedProject] = await db
+    const [selectedProject] = await getDb()
       .select()
       .from(project)
       .where(eq(project.id, id));
@@ -363,7 +330,7 @@ export async function getProjectsByUserId({
 > {
   try {
     if (joinChats) {
-      return await db.query.project.findMany({
+      return await getDb().query.project.findMany({
         where: eq(project.userId, userId),
         with: {
           chats: {
@@ -375,7 +342,7 @@ export async function getProjectsByUserId({
         offset,
       });
     } else {
-      return await db
+      return await getDb()
         .select()
         .from(project)
         .where(eq(project.userId, userId))
@@ -470,7 +437,7 @@ export async function findSimilarChunks({
       embeddings.embedding
     } <=> ${JSON.stringify(embedding)}::vector)`;
 
-    return await db
+    return await getDb()
       .select({
         resourceUrl: resources.url,
         content: embeddings.content,
@@ -497,7 +464,7 @@ export async function getUniqueResourceTitlesByUserId(
   userId: string
 ): Promise<Array<{ title: string; url: string | null }>> {
   try {
-    return await db
+    return await getDb()
       .selectDistinctOn([resources.title], {
         title: resources.title,
         url: resources.url,

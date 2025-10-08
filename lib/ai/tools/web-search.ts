@@ -1,8 +1,9 @@
-import { tool, UIMessageStreamWriter, generateObject } from "ai";
+import type { UIMessageStreamWriter} from "ai";
+import { tool, generateObject } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
-import { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/ai/types";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
@@ -131,7 +132,7 @@ export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
 
 export const hasContextUrls = async (text: string): Promise<boolean> => {
   const { object } = await generateObject({
-    ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+    ...languageModelConfigurations("Gemini 2.5 Flash Lite"),
     system: `
     You are acting as a highly accurate intent classification engine. Your sole task is to analyze the user's prompt and determine the primary purpose of the URLs it contains.
     You must classify the intent into one of the following three categories:

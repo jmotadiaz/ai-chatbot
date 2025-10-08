@@ -1,5 +1,5 @@
-import { UIMessage } from "ai";
-import { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
+import type { UIMessage } from "ai";
+import type { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 
 export interface Resource {
   title: string;

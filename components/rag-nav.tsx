@@ -1,7 +1,7 @@
 "use client";
 
 import { Database } from "lucide-react";
-import { ClassValue } from "clsx";
+import type { ClassValue } from "clsx";
 import ChatLink from "@/components/chat-link";
 import { Item } from "@/components/ui/item";
 import { cn } from "@/lib/utils";

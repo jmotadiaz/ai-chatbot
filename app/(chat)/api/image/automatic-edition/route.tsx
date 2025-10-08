@@ -1,7 +1,8 @@
-import { convertToModelMessages, GeneratedFile, generateText } from "ai";
-import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import type { GeneratedFile} from "ai";
+import { convertToModelMessages, generateText } from "ai";
+import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { auth } from "@/auth";
-import { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/ai/types";
 import { downloadFiles } from "@/lib/ai/utils";
 
 export const maxDuration = 60;

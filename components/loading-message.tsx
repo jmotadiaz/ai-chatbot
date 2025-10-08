@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ChatStatus, DataUIPart } from "ai";
+import type { ChatStatus, DataUIPart } from "ai";
 import { memo } from "react";
-import { ChatbotDataPart, MessageMetadata } from "@/lib/ai/types";
+import type { ChatbotDataPart, MessageMetadata } from "@/lib/ai/types";
 import { DotsLoadingIcon } from "@/components/icons";
 
 interface LoadingMessageProps {

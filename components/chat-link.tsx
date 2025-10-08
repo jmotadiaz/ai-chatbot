@@ -1,6 +1,7 @@
 "use client";
 import NextLink from "next/link";
-import React, { ComponentProps } from "react";
+import type { ComponentProps } from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useSidebarContext } from "@/app/providers";

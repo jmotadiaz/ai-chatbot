@@ -1,29 +1,13 @@
-import { groq, GroqProviderOptions } from "@ai-sdk/groq";
-import {
-  extractReasoningMiddleware,
-  LanguageModel,
-  wrapLanguageModel,
-} from "ai";
-import { createXai, XaiProviderOptions } from "@ai-sdk/xai";
-import { openai, OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import {
-  createGoogleGenerativeAI,
-  GoogleGenerativeAIProviderOptions,
-} from "@ai-sdk/google";
-import { anthropic, AnthropicProviderOptions } from "@ai-sdk/anthropic";
-import { deepseek } from "@ai-sdk/deepseek";
-import { perplexity } from "@ai-sdk/perplexity";
-import {
-  createOpenRouter,
-  OpenRouterProviderOptions,
-} from "@openrouter/ai-sdk-provider";
+import type { GroqProviderOptions } from "@ai-sdk/groq";
+import type { LanguageModel } from "ai";
+import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
+import type { XaiProviderOptions } from "@ai-sdk/xai";
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
+import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
+import { providers } from "./providers";
 
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
-
-export const google = createGoogleGenerativeAI();
-export const xai = createXai();
 export type Company =
   | "meta"
   | "openai"
@@ -67,7 +51,7 @@ const reasoningMw = extractReasoningMiddleware({
 
 export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.1 Instant": {
-    model: groq("llama-3.1-8b-instant"),
+    model: providers.groq("llama-3.1-8b-instant"),
     company: "meta",
     providerOptions: {
       groq: {
@@ -76,49 +60,49 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Llama 3.3": {
-    model: groq("llama-3.3-70b-versatile"),
+    model: providers.groq("llama-3.3-70b-versatile"),
     company: "meta",
     temperature: 0.6,
     topP: 0.9,
   },
   "Llama 4 Scout": {
-    model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+    model: providers.groq("meta-llama/llama-4-scout-17b-16e-instruct"),
     company: "meta",
     temperature: 0.6,
     topP: 0.9,
     supportedFiles: ["img"],
   },
   "Llama 4 Maverick": {
-    model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+    model: providers.groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     company: "meta",
     temperature: 0.6,
     topP: 0.9,
     supportedFiles: ["img"],
   },
   "Kimi K2": {
-    model: groq("moonshotai/kimi-k2-instruct-0905"),
+    model: providers.groq("moonshotai/kimi-k2-instruct-0905"),
     company: "moonshotai",
     temperature: 0.6,
   },
   "Magistral Medium": {
-    model: openrouter.chat("mistralai/magistral-medium-2506:thinking"),
+    model: providers.openrouter("mistralai/magistral-medium-2506:thinking"),
     company: "mistral",
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
   },
   "Magistral Small": {
-    model: openrouter.chat("mistralai/magistral-small-2506"),
+    model: providers.openrouter("mistralai/magistral-small-2506"),
     company: "mistral",
   },
   "Deepseek Chat": {
-    model: deepseek("deepseek-chat"),
+    model: providers.deepseek("deepseek-chat"),
     company: "deepseek",
     temperature: 0.6,
   },
   "Deepseek R1": {
     model: wrapLanguageModel({
-      model: openrouter.chat("deepseek/deepseek-r1-0528"),
+      model: providers.openrouter("deepseek/deepseek-r1-0528"),
       middleware: [reasoningMw],
     }),
     company: "deepseek",
@@ -129,7 +113,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 0.3,
   },
   "Qwen3 Next Instruct": {
-    model: openrouter.chat("qwen/qwen3-next-80b-a3b-instruct"),
+    model: providers.openrouter("qwen/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
     topP: 0.8,
@@ -137,7 +121,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   },
   "Qwen3 Next Thinking": {
     model: wrapLanguageModel({
-      model: openrouter.chat("qwen/qwen3-next-80b-a3b-thinking"),
+      model: providers.openrouter("qwen/qwen3-next-80b-a3b-thinking"),
       middleware: [reasoningMw],
     }),
     reasoning: true,
@@ -150,24 +134,24 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     topK: 20,
   },
   "Qwen3 Coder": {
-    model: openrouter.chat("qwen/qwen3-coder"),
+    model: providers.openrouter("qwen/qwen3-coder"),
     company: "alibaba",
   },
   Sonar: {
-    model: perplexity("sonar"),
+    model: providers.perplexity("sonar"),
     company: "perplexity",
     supportedFiles: ["img"],
     toolCalling: false,
   },
   "Sonar Pro": {
-    model: perplexity("sonar-pro"),
+    model: providers.perplexity("sonar-pro"),
     company: "perplexity",
     supportedFiles: ["img"],
     toolCalling: false,
   },
   "Sonar Reasoning": {
     model: wrapLanguageModel({
-      model: perplexity("sonar-pro"),
+      model: providers.perplexity("sonar-pro"),
       middleware: [reasoningMw],
     }),
     reasoning: true,
@@ -176,12 +160,12 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     toolCalling: false,
   },
   "Claude Haiku 3.5": {
-    model: anthropic("claude-3-5-haiku-latest"),
+    model: providers.anthropic("claude-3-5-haiku-latest"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
   },
   "Claude Sonnet 4.5": {
-    model: anthropic("claude-sonnet-4-5-20250929"),
+    model: providers.anthropic("claude-sonnet-4-5-20250929"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     disabledConfig: ["topP", "topK"],
@@ -194,7 +178,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Claude Opus 4.1": {
-    model: anthropic("claude-opus-4-1-20250805"),
+    model: providers.anthropic("claude-opus-4-1-20250805"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -206,7 +190,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "GPT OSS": {
-    model: groq("openai/gpt-oss-120b"),
+    model: providers.groq("openai/gpt-oss-120b"),
     company: "openai",
     reasoning: true,
     providerOptions: {
@@ -214,22 +198,22 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "GPT OSS Mini": {
-    model: groq("openai/gpt-oss-20b"),
+    model: providers.groq("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
   },
   "o4 Mini": {
-    model: openai("o4-mini"),
+    model: providers.openai("o4-mini"),
     reasoning: true,
     company: "openai",
   },
   o3: {
-    model: openai("o3"),
+    model: providers.openai("o3"),
     reasoning: true,
     company: "openai",
   },
   "GPT 5 Nano": {
-    model: openai("gpt-5-nano-2025-08-07"),
+    model: providers.openai("gpt-5-nano-2025-08-07"),
     company: "openai",
     providerOptions: {
       openai: {
@@ -239,7 +223,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "GPT 5 Mini": {
-    model: openai("gpt-5-mini-2025-08-07"),
+    model: providers.openai("gpt-5-mini-2025-08-07"),
     reasoning: true,
     company: "openai",
     providerOptions: {
@@ -250,7 +234,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "GPT 5": {
-    model: openai("gpt-5-2025-08-07"),
+    model: providers.openai("gpt-5-2025-08-07"),
     reasoning: true,
     company: "openai",
     providerOptions: {
@@ -263,17 +247,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.0 Flash": {
-    model: "google/gemini-2.0-flash",
+    model: providers.gateway("google/gemini-2.0-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash Lite": {
-    model: "google/gemini-2.5-flash-lite",
+    model: providers.gateway("google/gemini-2.5-flash-lite"),
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
-    model: "google/gemini-2.5-flash",
+    model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -287,7 +271,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Gemini 2.5 Pro": {
-    model: "google/gemini-2.5-pro",
+    model: providers.gateway("google/gemini-2.5-pro"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -301,7 +285,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Gemini Nano Banana": {
-    model: "google/gemini-2.5-flash-image-preview",
+    model: providers.gateway("google/gemini-2.5-flash-image-preview"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],
@@ -312,17 +296,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Grok Code Fast": {
-    model: xai("grok-code-fast-1"),
+    model: providers.xai("grok-code-fast-1"),
     company: "xai",
   },
   "Grok 4 Fast": {
-    model: xai("grok-4-fast"),
+    model: providers.xai("grok-4-fast"),
     company: "xai",
     supportedFiles: ["img"],
     reasoning: true,
   },
   "Grok 4": {
-    model: xai("grok-4-0709"),
+    model: providers.xai("grok-4-0709"),
     company: "xai",
     supportedFiles: ["img"],
     reasoning: true,
@@ -332,29 +316,9 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
 export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
-export type ModelConfigurations = {
-  [K in LanguageModelKeys]: ModelConfiguration;
-};
-
-export const languageModelConfigurations: ModelConfigurations =
-  LANGUAGE_MODEL_CONFIGURATIONS_CONST;
-
-const pickModelConfigurations = <
-  T extends keyof typeof languageModelConfigurations
->(
-  modelKeys: T[]
-): Record<T, ModelConfiguration> => {
-  const models: Record<T, ModelConfiguration> = {} as Record<
-    T,
-    ModelConfiguration
-  >;
-  modelKeys.forEach((key) => {
-    if (languageModelConfigurations[key]) {
-      models[key] = languageModelConfigurations[key];
-    }
-  });
-  return models;
-};
+export const languageModelConfigurations = (
+  modelKey: LanguageModelKeys
+): ModelConfiguration => LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
 
 export const chatModelKeys = [
   "Llama 4 Scout",
@@ -382,13 +346,11 @@ export const chatModelKeys = [
   "Gemini 2.5 Pro",
 ] satisfies LanguageModelKeys[];
 
-export const chatModelConfigurations = pickModelConfigurations(chatModelKeys);
-
 export type chatModelId = (typeof chatModelKeys)[number] | "Router";
 
 export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 
 export const defaultModel: chatModelId = "Router";
-export const defaultTemperature = 0.3;
+export const defaultTemperature = 0.5;
 export const defaultTopP = 0.95;
 export const defaultTopK = 40;

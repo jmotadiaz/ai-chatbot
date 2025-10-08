@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { cn } from "@/lib/utils";
-import { FilePart } from "@/lib/ai/utils";
+import type { FilePart } from "@/lib/ai/utils";
 import { deleteFile } from "@/lib/ai/actions/files";
 import { CircleProgress } from "@/components/icons";
 

@@ -7,10 +7,11 @@ import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChatHeader } from "@/components/new-chat";
+import type {
+  chatModelId} from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
   defaultTopP,
-  chatModelId,
   defaultModel,
   defaultTopK,
 } from "@/lib/ai/models/definition";
@@ -23,7 +24,8 @@ import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { filterTools } from "@/lib/ai/tools/utils";
 import { dbMessageToChatbotMessage } from "@/lib/ai/utils";
-import { ChatProvider, ChatProviderProps } from "@/app/(chat)/chat-provider";
+import type { ChatProviderProps } from "@/app/(chat)/chat-provider";
+import { ChatProvider } from "@/app/(chat)/chat-provider";
 
 interface ChatCompositionProps {
   chatId?: string;

@@ -6,24 +6,28 @@ import React, {
   useMemo,
   useContext,
 } from "react";
-import { useChat, UseChatHelpers } from "@ai-sdk/react";
-import { DataUIPart, DefaultChatTransport } from "ai";
+import type { UseChatHelpers } from "@ai-sdk/react";
+import { useChat } from "@ai-sdk/react";
+import type { DataUIPart} from "ai";
+import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { v4, validate } from "uuid";
 import { useQueryState } from "nuqs";
+import type {
+  chatModelId} from "@/lib/ai/models/definition";
 import {
   defaultModel,
   defaultTemperature,
   defaultTopP,
-  chatModelId,
   defaultTopK,
   CHAT_MODELS,
 } from "@/lib/ai/models/definition";
-import { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
-import { Tool, Tools } from "@/lib/ai/tools/types";
+import type { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
+import type { Tool, Tools } from "@/lib/ai/tools/types";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
-import { FilePart, handleFileUpload } from "@/lib/ai/utils";
+import type { FilePart} from "@/lib/ai/utils";
+import { handleFileUpload } from "@/lib/ai/utils";
 
 export interface ChatConfig {
   selectedModel: chatModelId;

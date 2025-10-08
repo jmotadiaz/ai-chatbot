@@ -1,6 +1,6 @@
-import { ClassValue } from "clsx";
-import { ComponentType } from "react";
-import { LucideProps } from "lucide-react";
+import type { ClassValue } from "clsx";
+import type { ComponentType } from "react";
+import type { LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SpinnerIcon } from "@/components/icons";
 

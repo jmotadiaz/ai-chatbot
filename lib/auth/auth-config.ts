@@ -83,7 +83,6 @@ export const {
       return session;
     },
     async authorized({ auth }) {
-      // Logged in users are authenticated, otherwise redirect to login page
       return !!auth;
     },
   },

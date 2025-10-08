@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { FilePart } from "@/lib/ai/utils";
+import type { FilePart } from "@/lib/ai/utils";
 import { extractMediaType, removeExtension } from "@/lib/utils";
 
 interface FileThumbnailProps {

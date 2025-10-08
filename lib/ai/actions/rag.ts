@@ -16,9 +16,9 @@ import {
   deleteResourcesByTitle,
   transaction,
 } from "@/lib/db/queries";
-import { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
+import type { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
 import { isDefined } from "@/lib/utils";
-import { Resource } from "@/lib/ai/types";
+import type { Resource } from "@/lib/ai/types";
 
 export interface ProcessResult {
   success: boolean;

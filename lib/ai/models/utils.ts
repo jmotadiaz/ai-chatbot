@@ -1,20 +1,19 @@
-import {
-  chatModelConfigurations,
+import type {
   chatModelId,
+  ModelConfiguration,
+} from "@/lib/ai/models/definition";
+import {
   chatModelKeys,
   defaultTemperature,
   defaultTopK,
   defaultTopP,
   languageModelConfigurations,
-  ModelConfiguration,
 } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
-import { Tools } from "@/lib/ai/tools/types";
-import { ChatbotMessage } from "@/lib/ai/types";
-import {
-  modelRouting,
-  ModelRoutingMetadata,
-} from "@/lib/ai/workflows/model-routing";
+import type { Tools } from "@/lib/ai/tools/types";
+import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
+import { modelRouting } from "@/lib/ai/workflows/model-routing";
 
 export const calculateModelConfiguration = async ({
   selectedModel,
@@ -39,8 +38,8 @@ export const calculateModelConfiguration = async ({
     return modelRouting({ messages, tools });
   } else {
     const modelConfig: ModelConfiguration =
-      languageModelConfigurations[selectedModel] ||
-      languageModelConfigurations[chatModelKeys[0]];
+      languageModelConfigurations(selectedModel) ||
+      languageModelConfigurations(chatModelKeys[0]);
     return {
       modelConfiguration: {
         ...modelConfig,
@@ -86,24 +85,24 @@ export const getChatConfigurationByModelId = (
     },
     modelId !== "Router"
       ? {
-          ...chatModelConfigurations[modelId],
-          ...(chatModelConfigurations[modelId] && {
-            temperature: chatModelConfigurations[
+          ...languageModelConfigurations(modelId),
+          ...(languageModelConfigurations(modelId) && {
+            temperature: languageModelConfigurations(
               modelId
-            ].disabledConfig?.includes("temperature")
+            ).disabledConfig?.includes("temperature")
               ? null
-              : chatModelConfigurations[modelId].temperature ??
+              : languageModelConfigurations(modelId).temperature ??
                 defaultTemperature,
-            topK: chatModelConfigurations[modelId].disabledConfig?.includes(
+            topK: languageModelConfigurations(modelId).disabledConfig?.includes(
               "topK"
             )
               ? null
-              : chatModelConfigurations[modelId].topK ?? defaultTopK,
-            topP: chatModelConfigurations[modelId].disabledConfig?.includes(
+              : languageModelConfigurations(modelId).topK ?? defaultTopK,
+            topP: languageModelConfigurations(modelId).disabledConfig?.includes(
               "topP"
             )
               ? null
-              : chatModelConfigurations[modelId].topP ?? defaultTopP,
+              : languageModelConfigurations(modelId).topP ?? defaultTopP,
           }),
         }
       : {

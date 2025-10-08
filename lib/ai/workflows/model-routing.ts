@@ -1,11 +1,12 @@
 import { convertToModelMessages, generateObject } from "ai";
 import { z } from "zod";
-import {
-  languageModelConfigurations,
+import type {
+  LanguageModelKeys,
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
-import { ChatbotMessage } from "@/lib/ai/types";
-import { Tools } from "@/lib/ai/tools/types";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
+import type { ChatbotMessage } from "@/lib/ai/types";
+import type { Tools } from "@/lib/ai/tools/types";
 
 const CATEGORIES = [
   "current_news",
@@ -95,7 +96,7 @@ export async function modelRouting({
   }, [] as ChatbotMessage[]);
 
   const { object: classification } = await generateObject({
-    ...languageModelConfigurations["GPT OSS Mini"],
+    ...languageModelConfigurations("GPT OSS Mini"),
     temperature: 0.1,
     schema,
     system: systemPrompt,
@@ -135,18 +136,16 @@ const findModelWithSupportedFileTypes = (
   fileTypes: Set<Required<ModelConfiguration>["supportedFiles"][number]>
 ) => {
   const requestedFileTypes = [...fileTypes];
-  return (
-    ...modelIds: Array<keyof typeof languageModelConfigurations>
-  ): ModelConfiguration => {
+  return (...modelIds: Array<LanguageModelKeys>): ModelConfiguration => {
     const modelSelected =
       modelIds.find((modelId) =>
         requestedFileTypes.every((fileType) =>
-          languageModelConfigurations[modelId].supportedFiles?.includes(
+          languageModelConfigurations(modelId).supportedFiles?.includes(
             fileType
           )
         )
       ) || "GPT 5 Mini";
-    return languageModelConfigurations[modelSelected];
+    return languageModelConfigurations(modelSelected);
   };
 };
 

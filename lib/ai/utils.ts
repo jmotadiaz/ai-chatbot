@@ -1,11 +1,14 @@
-import {
+import type {
   FileUIPart,
   GenerateObjectResult,
-  generateText,
   SourceDocumentUIPart,
   SourceUrlUIPart,
-  TextUIPart,
+  TextUIPart} from "ai";
+import {
+  generateText
 } from "ai";
+import type {
+  ZodTypeAny} from "zod";
 import {
   ZodArray,
   ZodBoolean,
@@ -18,23 +21,24 @@ import {
   ZodObject,
   ZodOptional,
   ZodString,
-  ZodTypeAny,
   ZodUnion,
 } from "zod";
-import { put, PutBlobResult } from "@vercel/blob";
+import type { PutBlobResult } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
+import type {
+  ModelConfiguration} from "@/lib/ai/models/definition";
 import {
-  languageModelConfigurations,
-  ModelConfiguration,
+  languageModelConfigurations
 } from "@/lib/ai/models/definition";
-import { InsertMessage, Message } from "@/lib/db/schema";
-import { ChatbotMessage } from "@/lib/ai/types";
+import type { InsertMessage, Message } from "@/lib/db/schema";
+import type { ChatbotMessage } from "@/lib/ai/types";
 
 export async function generateTitle(messages: ChatbotMessage[]) {
   if (messages.length === 0) return "Unknown";
 
   const { text: title } = await generateText({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations("Llama 3.1 Instant"),
     system: `\n
     You are a chat title generator. Create a concise title (≤60 characters) summarizing the first user message. Follow these rules:
     1. Extract the core topic from the user's message
