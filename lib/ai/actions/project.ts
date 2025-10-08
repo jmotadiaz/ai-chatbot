@@ -8,7 +8,7 @@ import {
   updateProject as updateDBProject,
 } from "@/lib/db/queries";
 import { auth } from "@/auth";
-import { InsertProject } from "@/lib/db/schema";
+import type { InsertProject } from "@/lib/db/schema";
 
 export async function createProject(
   project: Omit<InsertProject, "id" | "userId">

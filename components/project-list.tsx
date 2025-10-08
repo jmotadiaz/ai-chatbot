@@ -1,4 +1,4 @@
-import { ClassNameValue } from "tailwind-merge";
+import type { ClassNameValue } from "tailwind-merge";
 import { CirclePlus, Edit } from "lucide-react";
 import { Item } from "@/components/ui/item";
 import ChatLink from "@/components/chat-link";

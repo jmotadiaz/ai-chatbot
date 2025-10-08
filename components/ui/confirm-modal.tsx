@@ -6,7 +6,8 @@ import React, {
   useCallback,
   useState,
 } from "react";
-import { Button, ButtonProps } from "@/components/ui/button"; // Assuming button component exists
+import type { ButtonProps } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Assuming button component exists
 
 interface ConfirmModalProps {
   isOpen: boolean;

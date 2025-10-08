@@ -1,7 +1,7 @@
-import { UseChatHelpers } from "@ai-sdk/react";
+import type { UseChatHelpers } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import { useGeneratedText } from "./use-generated-text";
-import { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/ai/types";
 
 export interface UseRefinePromptParams {
   input: string;

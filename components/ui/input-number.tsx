@@ -1,4 +1,5 @@
-import { ComponentProps, useMemo, useRef, useState } from "react";
+import type { ComponentProps} from "react";
+import { useMemo, useRef, useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";

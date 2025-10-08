@@ -1,8 +1,9 @@
 import { generateText } from "ai";
 import { generateEmbedding } from "@/lib/ai/rag/generate-embeddings";
-import { findSimilarChunks, SimilarChunks } from "@/lib/db/queries";
+import type { SimilarChunks } from "@/lib/db/queries";
+import { findSimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
-import { Resource } from "@/lib/ai/types";
+import type { Resource } from "@/lib/ai/types";
 
 export interface RetrieveResult {
   success: boolean;
@@ -17,7 +18,7 @@ export interface RetrieveResult {
 export async function translateToEnglish(text: string): Promise<string> {
   try {
     const { text: translatedText } = await generateText({
-      ...languageModelConfigurations["Gemini 2.5 Flash Lite"],
+      ...languageModelConfigurations("Gemini 2.5 Flash Lite"),
       system: `You are an expert from any language to English translator. Only return the translation, no explanations`,
       prompt: `Translate the following text to English: ${text}`,
     });

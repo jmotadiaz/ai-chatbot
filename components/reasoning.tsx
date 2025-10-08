@@ -1,4 +1,4 @@
-import { ReasoningUIPart } from "ai";
+import type { ReasoningUIPart } from "ai";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";

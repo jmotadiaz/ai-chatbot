@@ -1,7 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import { Streamdown, StreamdownProps } from "streamdown";
+import type { StreamdownProps } from "streamdown";
+import { Streamdown } from "streamdown";
 import addClasses from "rehype-class-names";
 import { cn } from "@/lib/utils";
 

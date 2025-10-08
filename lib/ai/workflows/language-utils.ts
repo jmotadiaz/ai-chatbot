@@ -42,7 +42,7 @@ const domainSchema = z.object({
 
 export const identifyTranslationDirection = (prompt: string) => {
   return generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations("Llama 3.1 Instant"),
     schema: translationDirectionSchema,
     system: `
       You are an expert detecting the language of a text.
@@ -65,7 +65,7 @@ export const identifyTranslationDirection = (prompt: string) => {
 
 export const identifyAudience = (prompt: string) => {
   return generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations("Llama 3.1 Instant"),
     schema: audienceSchema,
     system: `
     You are an expert communications analyst. Your task is to identify the primary audience that a given text is directed towards.
@@ -92,7 +92,7 @@ export const identifyAudience = (prompt: string) => {
 
 export const identifyDomain = (prompt: string) => {
   return generateObject({
-    ...languageModelConfigurations["Llama 3.1 Instant"],
+    ...languageModelConfigurations("Llama 3.1 Instant"),
     schema: domainSchema,
     system: `
       You are an expert detecting the main domain or context of a text. Be as specific as possible.

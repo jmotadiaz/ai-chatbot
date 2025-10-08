@@ -14,9 +14,10 @@ import Chat from "@/components/chat";
 import { ModelPickerSelector } from "@/components/model-picker";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { createProject, updateProject } from "@/lib/ai/actions/project";
-import { Project } from "@/lib/db/schema";
+import type { Project } from "@/lib/db/schema";
+import type {
+  chatModelId} from "@/lib/ai/models/definition";
 import {
-  chatModelId,
   defaultTemperature,
   defaultTopP,
   defaultTopK,
@@ -24,7 +25,8 @@ import {
 } from "@/lib/ai/models/definition";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
-import { RAG_TOOL, WEB_SEARCH_TOOL, Tool, Tools } from "@/lib/ai/tools/types";
+import type { Tool, Tools } from "@/lib/ai/tools/types";
+import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 import { Textarea } from "@/components/textarea";
 import { ChatControl } from "@/components/chat-control";
 

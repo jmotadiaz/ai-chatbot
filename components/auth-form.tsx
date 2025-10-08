@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LoginActionState, RegisterActionState } from "@/lib/auth/actions";
+import type { LoginActionState, RegisterActionState } from "@/lib/auth/actions";
 
 interface AuthFormProps {
   /** Function to handle form submission, receives FormData */

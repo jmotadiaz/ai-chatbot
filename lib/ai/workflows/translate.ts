@@ -32,7 +32,7 @@ export default async function translate(prompt: string) {
 
   // Translation
   return streamText({
-    ...languageModelConfigurations["Gemini 2.0 Flash"],
+    ...languageModelConfigurations("Gemini 2.0 Flash"),
     system: `
       You are an expert ${sourceLanguage} to ${targetLanguage} translator with native-level proficiency in both languages. Your task is to translate the user's text with the highest fidelity to the original, while adapting it to the specific context provided below.
 

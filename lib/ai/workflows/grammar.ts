@@ -23,7 +23,7 @@ export default async function correctGrammar(prompt: string) {
   });
 
   return streamObject({
-    ...languageModelConfigurations["Gemini 2.0 Flash"],
+    ...languageModelConfigurations("Gemini 2.0 Flash"),
     schema: grammarSchema,
     system: `
       You are an expert in **English** grammar, spelling, and style. Your task is to correct the user's text to ensure it is grammatically perfect, free of spelling errors, and stylistically appropriate for the given context. After providing the corrected text, you must provide a list of specific reasons for each significant correction made.

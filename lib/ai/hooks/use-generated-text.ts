@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { FilePart, handleFileUpload } from "@/lib/ai/utils";
+import type { FilePart} from "@/lib/ai/utils";
+import { handleFileUpload } from "@/lib/ai/utils";
 
 export interface UseGenerateTextParams {
   api: string;

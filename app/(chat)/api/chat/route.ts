@@ -1,4 +1,6 @@
 import { randomUUID } from "crypto";
+import type {
+  ToolSet} from "ai";
 import {
   streamText,
   convertToModelMessages,
@@ -6,20 +8,18 @@ import {
   createUIMessageStreamResponse,
   createUIMessageStream,
   smoothStream,
-  ToolSet,
   NoSuchToolError,
   InvalidArgumentError,
 } from "ai";
-import { chatModelId, google } from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/ai/models/definition";
+import { getProviders } from "@/lib/ai/models/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
-  db,
   deleteMessageById,
   saveChat,
   saveMessages,
   updateChat,
 } from "@/lib/db/queries";
-import { auth } from "@/auth";
 import {
   messagePartsToText,
   chatbotMessageToDbMessage,
@@ -27,11 +27,12 @@ import {
   downloadFiles,
 } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/models/utils";
+import type {
+  Tool} from "@/lib/ai/tools/types";
 import {
   WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
-  RAG_TOOL,
-  Tool,
+  RAG_TOOL
 } from "@/lib/ai/tools/types";
 import {
   hasContextUrls,
@@ -39,17 +40,14 @@ import {
   webSearchFactory,
 } from "@/lib/ai/tools/web-search";
 import { ragFactory } from "@/lib/ai/tools/rag";
-import { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/ai/types";
 import { hasUrls } from "@/lib/utils";
+import { getDb } from "@/lib/db/db";
+import { withAuth } from "@/lib/auth/handlers";
 
 export const maxDuration = 240;
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
+export const POST = withAuth(async (user, req) => {
   const {
     messages,
     selectedModel,
@@ -80,7 +78,7 @@ export async function POST(req: Request) {
     async execute({ writer }) {
       const toolSet: ToolSet = {
         ...webSearchFactory({ writer }),
-        ...ragFactory({ writer, userId: session.user.id }),
+        ...ragFactory({ writer, userId: user.id }),
         ...urlContextFactory({ writer }),
       };
       const { modelConfiguration, autoModelMetadata, tools } =
@@ -127,7 +125,7 @@ export async function POST(req: Request) {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
-              model: google("gemini-2.5-flash-lite"),
+              model: getProviders().google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
             };
@@ -140,7 +138,7 @@ export async function POST(req: Request) {
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
             return {
-              model: google("gemini-2.5-flash-lite"),
+              model: getProviders().google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
             };
@@ -152,7 +150,7 @@ export async function POST(req: Request) {
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
             return {
-              model: google("gemini-2.5-flash-lite"),
+              model: getProviders().google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };
@@ -219,10 +217,10 @@ export async function POST(req: Request) {
                 userMessage?.role === "user" &&
                 assistantMessage?.role === "assistant"
               ) {
-                const dbChatId = await db.transaction(async (tx) => {
+                const dbChatId = await getDb().transaction(async (tx) => {
                   const { id } = chatId
                     ? await updateChat(
-                        { id: chatId, userId: session.user.id },
+                        { id: chatId, userId: user.id },
                         {
                           defaultModel: selectedModel,
                           defaultTemperature: temperature,
@@ -232,7 +230,7 @@ export async function POST(req: Request) {
                         }
                       )(tx)
                     : await saveChat({
-                        userId: session.user.id,
+                        userId: user.id,
                         title: await generateTitle(messages),
                         projectId,
                         defaultModel: selectedModel,
@@ -280,4 +278,4 @@ export async function POST(req: Request) {
   });
 
   return createUIMessageStreamResponse({ stream });
-}
+});
