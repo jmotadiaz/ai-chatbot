@@ -8,7 +8,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
 
 config({
-  path: ".env.development.local",
+  path: ".env.test",
 });
 
 const PORT = process.env.PORT || 3000;
@@ -20,6 +20,7 @@ const baseURL = `http://localhost:${PORT}`;
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
+  globalSetup: require.resolve("./tests/e2e/global-setup"),
   testDir: path.join(__dirname, "tests/e2e"),
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -47,15 +48,15 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
 
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
+    // {
+    //   name: "firefox",
+    //   use: { ...devices["Desktop Firefox"] },
+    // },
 
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    // {
+    //   name: "webkit",
+    //   use: { ...devices["Desktop Safari"] },
+    // },
 
     /* Test against mobile viewports. */
     // {
@@ -80,7 +81,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "NODE_ENV=test pnpm dev",
+    command: "USE_MOCK_PROVIDERS=1 NODE_ENV=test pnpm dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

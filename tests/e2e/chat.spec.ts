@@ -4,15 +4,12 @@ import { ChatPage } from "./chat.page";
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
 
-  test.beforeEach(async ({ page, mockProviders, authenticatedUser }) => {
+  test.beforeEach(async ({ page, authenticatedUser }) => {
     // Initialize page object
     chatPage = new ChatPage(page);
 
     // Navigate to chat page
     await chatPage.goto();
-
-    // Verify fixtures are loaded
-    expect(mockProviders).toBeDefined();
     // ensure auth cookie fixture executed
     // (can't easily read httpOnly cookie from page script)
     expect(authenticatedUser.email).toBeDefined();

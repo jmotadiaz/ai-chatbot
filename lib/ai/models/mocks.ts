@@ -1,4 +1,8 @@
-import { EmbeddingModelV2, LanguageModelV2 } from "@/lib/ai/models/providers";
+import { EmbeddingModel, LanguageModel, simulateReadableStream } from "ai";
+
+export type LanguageModelV2 = Exclude<LanguageModel, string>;
+
+export type EmbeddingModelV2<T = string> = Exclude<EmbeddingModel<T>, string>;
 
 export class MockLanguageModelV2 implements LanguageModelV2 {
   readonly specificationVersion = "v2";
@@ -106,3 +110,46 @@ export class MockEmbeddingModelV2<VALUE> implements EmbeddingModelV2<VALUE> {
 function notImplemented(): never {
   throw new Error("Not implemented");
 }
+
+export const createMockModel = (modelId: string): LanguageModelV2 => {
+  return new MockLanguageModelV2({
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunks: [
+          { type: "text-start", id: "text-1" },
+          { type: "text-delta", id: "text-1", delta: "Hello" },
+          { type: "text-delta", id: "text-1", delta: ", I'm " },
+          { type: "text-delta", id: "text-1", delta: modelId },
+          { type: "text-end", id: "text-1" },
+          {
+            type: "finish",
+            finishReason: "stop",
+            logprobs: undefined,
+            usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
+          },
+        ],
+      }),
+      rawCall: { rawPrompt: null, rawSettings: {} },
+    }),
+    doGenerate: async () => ({
+      finishReason: "stop",
+      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      content: [
+        {
+          type: "text",
+          text: `{ "category": "factual", "complexity": "simple" }`,
+        },
+      ],
+      warnings: [],
+    }),
+  });
+};
+
+export const createMockEmbeddingModel = (): EmbeddingModelV2 => {
+  return new MockEmbeddingModelV2({
+    doEmbed: async () => ({
+      embeddings: [[0.1, 0.2, 0.3]],
+      usage: { tokens: 10 },
+    }),
+  });
+};

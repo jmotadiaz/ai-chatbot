@@ -2,7 +2,7 @@ import { embedMany, embed } from "ai";
 import { MarkdownNodeParser } from "@llamaindex/core/node-parser";
 import { Document } from "@llamaindex/core/schema";
 import pThrottle from "p-throttle";
-import { getProviders } from "@/lib/ai/models/providers";
+import { providers } from "@/lib/ai/models/providers";
 
 const MAX_CALLS = 90;
 const TIME_WINDOW = 60 * 1000;
@@ -27,7 +27,7 @@ export async function generateEmbeddings(chunks: string[]) {
     for (let i = 0; i < chunks.length; i += MAX_EMBEDDINGS) {
       const chunkGroup = chunks.slice(i, i + MAX_EMBEDDINGS);
       const { embeddings: embeddingsGroup } = await throttledEmbedMany({
-        model: getProviders().embedding(),
+        model: providers.embedding(),
         maxParallelCalls: 1,
         providerOptions: {
           google: {
@@ -52,7 +52,7 @@ export async function generateEmbeddings(chunks: string[]) {
 export const generateEmbedding = async (value: string): Promise<number[]> => {
   const input = value.replaceAll("\\n", " ");
   const { embedding } = await embed({
-    model: getProviders().embedding(),
+    model: providers.embedding(),
     providerOptions: {
       google: {
         outputDimensionality: 768,

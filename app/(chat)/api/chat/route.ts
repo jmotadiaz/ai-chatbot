@@ -1,6 +1,5 @@
 import { randomUUID } from "crypto";
-import type {
-  ToolSet} from "ai";
+import type { ToolSet } from "ai";
 import {
   streamText,
   convertToModelMessages,
@@ -12,7 +11,7 @@ import {
   InvalidArgumentError,
 } from "ai";
 import type { chatModelId } from "@/lib/ai/models/definition";
-import { getProviders } from "@/lib/ai/models/providers";
+import { providers } from "@/lib/ai/models/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
   deleteMessageById,
@@ -27,12 +26,11 @@ import {
   downloadFiles,
 } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/models/utils";
-import type {
-  Tool} from "@/lib/ai/tools/types";
+import type { Tool } from "@/lib/ai/tools/types";
 import {
   WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
-  RAG_TOOL
+  RAG_TOOL,
 } from "@/lib/ai/tools/types";
 import {
   hasContextUrls,
@@ -121,11 +119,10 @@ export const POST = withAuth(async (user, req) => {
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber }) => {
-          console.log(tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL));
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
-              model: getProviders().google("gemini-2.5-flash-lite"),
+              model: providers.google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
             };
@@ -138,7 +135,7 @@ export const POST = withAuth(async (user, req) => {
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
             return {
-              model: getProviders().google("gemini-2.5-flash-lite"),
+              model: providers.google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
             };
@@ -150,7 +147,7 @@ export const POST = withAuth(async (user, req) => {
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
             return {
-              model: getProviders().google("gemini-2.5-flash-lite"),
+              model: providers.google("gemini-2.5-flash-lite"),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };

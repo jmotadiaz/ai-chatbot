@@ -6,7 +6,7 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
-import { getProviders } from "./providers";
+import { providers } from "./providers";
 
 export type Company =
   | "meta"
@@ -50,61 +50,59 @@ const reasoningMw = extractReasoningMiddleware({
 });
 
 export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
-  "Llama 3.1 Instant": () => ({
-    model: getProviders().groq("llama-3.1-8b-instant"),
+  "Llama 3.1 Instant": {
+    model: providers.groq("llama-3.1-8b-instant"),
     company: "meta",
     providerOptions: {
       groq: {
         structuredOutputs: false,
       },
     },
-  }),
-  "Llama 3.3": () => ({
-    model: getProviders().groq("llama-3.3-70b-versatile"),
+  },
+  "Llama 3.3": {
+    model: providers.groq("llama-3.3-70b-versatile"),
     company: "meta",
     temperature: 0.6,
     topP: 0.9,
-  }),
-  "Llama 4 Scout": () => ({
-    model: getProviders().groq("meta-llama/llama-4-scout-17b-16e-instruct"),
-    company: "meta",
-    temperature: 0.6,
-    topP: 0.9,
-    supportedFiles: ["img"],
-  }),
-  "Llama 4 Maverick": () => ({
-    model: getProviders().groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+  },
+  "Llama 4 Scout": {
+    model: providers.groq("meta-llama/llama-4-scout-17b-16e-instruct"),
     company: "meta",
     temperature: 0.6,
     topP: 0.9,
     supportedFiles: ["img"],
-  }),
-  "Kimi K2": () => ({
-    model: getProviders().groq("moonshotai/kimi-k2-instruct-0905"),
+  },
+  "Llama 4 Maverick": {
+    model: providers.groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+    company: "meta",
+    temperature: 0.6,
+    topP: 0.9,
+    supportedFiles: ["img"],
+  },
+  "Kimi K2": {
+    model: providers.groq("moonshotai/kimi-k2-instruct-0905"),
     company: "moonshotai",
     temperature: 0.6,
-  }),
-  "Magistral Medium": () => ({
-    model: getProviders().openrouter(
-      "mistralai/magistral-medium-2506:thinking"
-    ),
+  },
+  "Magistral Medium": {
+    model: providers.openrouter("mistralai/magistral-medium-2506:thinking"),
     company: "mistral",
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
-  }),
-  "Magistral Small": () => ({
-    model: getProviders().openrouter("mistralai/magistral-small-2506"),
+  },
+  "Magistral Small": {
+    model: providers.openrouter("mistralai/magistral-small-2506"),
     company: "mistral",
-  }),
-  "Deepseek Chat": () => ({
-    model: getProviders().deepseek("deepseek-chat"),
+  },
+  "Deepseek Chat": {
+    model: providers.deepseek("deepseek-chat"),
     company: "deepseek",
     temperature: 0.6,
-  }),
-  "Deepseek R1": () => ({
+  },
+  "Deepseek R1": {
     model: wrapLanguageModel({
-      model: getProviders().openrouter("deepseek/deepseek-r1-0528"),
+      model: providers.openrouter("deepseek/deepseek-r1-0528"),
       middleware: [reasoningMw],
     }),
     company: "deepseek",
@@ -113,17 +111,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
     temperature: 0.3,
-  }),
-  "Qwen3 Next Instruct": () => ({
-    model: getProviders().openrouter("qwen/qwen3-next-80b-a3b-instruct"),
+  },
+  "Qwen3 Next Instruct": {
+    model: providers.openrouter("qwen/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
     topP: 0.8,
     topK: 20,
-  }),
-  "Qwen3 Next Thinking": () => ({
+  },
+  "Qwen3 Next Thinking": {
     model: wrapLanguageModel({
-      model: getProviders().openrouter("qwen/qwen3-next-80b-a3b-thinking"),
+      model: providers.openrouter("qwen/qwen3-next-80b-a3b-thinking"),
       middleware: [reasoningMw],
     }),
     reasoning: true,
@@ -134,40 +132,40 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 0.6,
     topP: 0.95,
     topK: 20,
-  }),
-  "Qwen3 Coder": () => ({
-    model: getProviders().openrouter("qwen/qwen3-coder"),
+  },
+  "Qwen3 Coder": {
+    model: providers.openrouter("qwen/qwen3-coder"),
     company: "alibaba",
-  }),
-  Sonar: () => ({
-    model: getProviders().perplexity("sonar"),
+  },
+  Sonar: {
+    model: providers.perplexity("sonar"),
     company: "perplexity",
     supportedFiles: ["img"],
     toolCalling: false,
-  }),
-  "Sonar Pro": () => ({
-    model: getProviders().perplexity("sonar-pro"),
+  },
+  "Sonar Pro": {
+    model: providers.perplexity("sonar-pro"),
     company: "perplexity",
     supportedFiles: ["img"],
     toolCalling: false,
-  }),
-  "Sonar Reasoning": () => ({
+  },
+  "Sonar Reasoning": {
     model: wrapLanguageModel({
-      model: getProviders().perplexity("sonar-pro"),
+      model: providers.perplexity("sonar-pro"),
       middleware: [reasoningMw],
     }),
     reasoning: true,
     company: "perplexity",
     supportedFiles: ["img"],
     toolCalling: false,
-  }),
-  "Claude Haiku 3.5": () => ({
-    model: getProviders().anthropic("claude-3-5-haiku-latest"),
+  },
+  "Claude Haiku 3.5": {
+    model: providers.anthropic("claude-3-5-haiku-latest"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
-  }),
-  "Claude Sonnet 4.5": () => ({
-    model: getProviders().anthropic("claude-sonnet-4-5-20250929"),
+  },
+  "Claude Sonnet 4.5": {
+    model: providers.anthropic("claude-sonnet-4-5-20250929"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     disabledConfig: ["topP", "topK"],
@@ -178,9 +176,9 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         thinking: { type: "enabled", budgetTokens: 10000 },
       },
     },
-  }),
-  "Claude Opus 4.1": () => ({
-    model: getProviders().anthropic("claude-opus-4-1-20250805"),
+  },
+  "Claude Opus 4.1": {
+    model: providers.anthropic("claude-opus-4-1-20250805"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -190,32 +188,32 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         thinking: { type: "enabled", budgetTokens: 10000 },
       },
     },
-  }),
-  "GPT OSS": () => ({
-    model: getProviders().groq("openai/gpt-oss-120b"),
+  },
+  "GPT OSS": {
+    model: providers.groq("openai/gpt-oss-120b"),
     company: "openai",
     reasoning: true,
     providerOptions: {
       groq: { reasoningEffort: "high" },
     },
-  }),
-  "GPT OSS Mini": () => ({
-    model: getProviders().groq("openai/gpt-oss-20b"),
+  },
+  "GPT OSS Mini": {
+    model: providers.groq("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
-  }),
-  "o4 Mini": () => ({
-    model: getProviders().openai("o4-mini"),
+  },
+  "o4 Mini": {
+    model: providers.openai("o4-mini"),
     reasoning: true,
     company: "openai",
-  }),
-  o3: () => ({
-    model: getProviders().openai("o3"),
+  },
+  o3: {
+    model: providers.openai("o3"),
     reasoning: true,
     company: "openai",
-  }),
-  "GPT 5 Nano": () => ({
-    model: getProviders().openai("gpt-5-nano-2025-08-07"),
+  },
+  "GPT 5 Nano": {
+    model: providers.openai("gpt-5-nano-2025-08-07"),
     company: "openai",
     providerOptions: {
       openai: {
@@ -223,9 +221,9 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         serviceTier: "priority",
       },
     },
-  }),
-  "GPT 5 Mini": () => ({
-    model: getProviders().openai("gpt-5-mini-2025-08-07"),
+  },
+  "GPT 5 Mini": {
+    model: providers.openai("gpt-5-mini-2025-08-07"),
     reasoning: true,
     company: "openai",
     providerOptions: {
@@ -234,9 +232,9 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       },
     },
     supportedFiles: ["img", "pdf"],
-  }),
-  "GPT 5": () => ({
-    model: getProviders().openai("gpt-5-2025-08-07"),
+  },
+  "GPT 5": {
+    model: providers.openai("gpt-5-2025-08-07"),
     reasoning: true,
     company: "openai",
     providerOptions: {
@@ -247,33 +245,19 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       },
     },
     supportedFiles: ["img", "pdf"],
-  }),
-  "Gemini 2.0 Flash": () => ({
-    model: getProviders().gateway("google/gemini-2.0-flash"),
+  },
+  "Gemini 2.0 Flash": {
+    model: providers.gateway("google/gemini-2.0-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
-  }),
-  "Gemini 2.5 Flash Lite": () => ({
-    model: getProviders().gateway("google/gemini-2.5-flash-lite"),
+  },
+  "Gemini 2.5 Flash Lite": {
+    model: providers.gateway("google/gemini-2.5-flash-lite"),
     company: "google",
     supportedFiles: ["img", "pdf"],
-  }),
-  "Gemini 2.5 Flash": () => ({
-    model: getProviders().gateway("google/gemini-2.5-flash"),
-    company: "google",
-    supportedFiles: ["img", "pdf"],
-    reasoning: true,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 1024,
-          includeThoughts: true,
-        },
-      },
-    },
-  }),
-  "Gemini 2.5 Pro": () => ({
-    model: getProviders().gateway("google/gemini-2.5-pro"),
+  },
+  "Gemini 2.5 Flash": {
+    model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -285,9 +269,23 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         },
       },
     },
-  }),
-  "Gemini Nano Banana": () => ({
-    model: getProviders().gateway("google/gemini-2.5-flash-image-preview"),
+  },
+  "Gemini 2.5 Pro": {
+    model: providers.gateway("google/gemini-2.5-pro"),
+    company: "google",
+    supportedFiles: ["img", "pdf"],
+    reasoning: true,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 1024,
+          includeThoughts: true,
+        },
+      },
+    },
+  },
+  "Gemini Nano Banana": {
+    model: providers.gateway("google/gemini-2.5-flash-image-preview"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],
@@ -296,31 +294,31 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         responseModalities: ["TEXT", "IMAGE"],
       },
     },
-  }),
-  "Grok Code Fast": () => ({
-    model: getProviders().xai("grok-code-fast-1"),
+  },
+  "Grok Code Fast": {
+    model: providers.xai("grok-code-fast-1"),
     company: "xai",
-  }),
-  "Grok 4 Fast": () => ({
-    model: getProviders().xai("grok-4-fast"),
-    company: "xai",
-    supportedFiles: ["img"],
-    reasoning: true,
-  }),
-  "Grok 4": () => ({
-    model: getProviders().xai("grok-4-0709"),
+  },
+  "Grok 4 Fast": {
+    model: providers.xai("grok-4-fast"),
     company: "xai",
     supportedFiles: ["img"],
     reasoning: true,
-  }),
-} as const satisfies Record<string, () => ModelConfiguration>;
+  },
+  "Grok 4": {
+    model: providers.xai("grok-4-0709"),
+    company: "xai",
+    supportedFiles: ["img"],
+    reasoning: true,
+  },
+} as const satisfies Record<string, ModelConfiguration>;
 
 export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const languageModelConfigurations = (
   modelKey: LanguageModelKeys
-): ModelConfiguration => LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey]();
+): ModelConfiguration => LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
 
 export const chatModelKeys = [
   "Llama 4 Scout",

@@ -145,11 +145,7 @@ const findModelWithSupportedFileTypes = (
           )
         )
       ) || "GPT 5 Mini";
-    const config = languageModelConfigurations(modelSelected);
-
-    console.log(config.model);
-
-    return config;
+    return languageModelConfigurations(modelSelected);
   };
 };
 
