@@ -30,7 +30,9 @@ test.describe("Chat functionality", () => {
     await chatPage.verifyAssistantResponded();
 
     // Verify the response contains the expected mock text
-    await chatPage.verifyAssistantResponseContains("Hello, I'm");
+    await chatPage.verifyAssistantResponseContains(
+      "Hello, I'm  meta-llama/llama-4-scout-17b-16e-instruct"
+    );
 
     // Additional verification: Check message count
     const userMessages = await chatPage.getUserMessages();

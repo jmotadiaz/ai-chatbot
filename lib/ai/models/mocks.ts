@@ -113,13 +113,20 @@ function notImplemented(): never {
 
 export const createMockModel = (modelId: string): LanguageModelV2 => {
   return new MockLanguageModelV2({
-    doStream: async () => ({
+    doStream: async ({ temperature, topP, topK }) => ({
       stream: simulateReadableStream({
         chunks: [
           { type: "text-start", id: "text-1" },
           { type: "text-delta", id: "text-1", delta: "Hello" },
           { type: "text-delta", id: "text-1", delta: ", I'm " },
-          { type: "text-delta", id: "text-1", delta: modelId },
+          { type: "text-delta", id: "text-1", delta: ` ${modelId} ` },
+          {
+            type: "text-delta",
+            id: "text-1",
+            delta: ` Temperature: ${temperature} `,
+          },
+          { type: "text-delta", id: "text-1", delta: ` TopP: ${topP} ` },
+          { type: "text-delta", id: "text-1", delta: ` TopK: ${topK} ` },
           { type: "text-end", id: "text-1" },
           {
             type: "finish",
