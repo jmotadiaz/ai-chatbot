@@ -9,8 +9,6 @@ async function globalSetup() {
   const client = postgres(process.env.POSTGRES_URL!);
   const db = drizzle(client);
 
-  console.log(process.env.POSTGRES_URL);
-
   try {
     // Ejecutar migraciones
     console.log("Ejecutando migraciones...");

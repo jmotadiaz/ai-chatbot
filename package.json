@@ -12,7 +12,7 @@
     "db:start": "docker-compose up -d",
     "db:stop": "docker-compose down",
     "db:test:start": "docker-compose -f docker-compose.test.yml up -d",
-    "db:db:stop": "docker-compose  -f docker-compose.test.yml down",
+    "db:test:stop": "docker-compose  -f docker-compose.test.yml down",
     "db:logs": "docker-compose logs -f",
     "lint": "next lint && tsc --noEmit",
     "lint:fix": "next lint --fix && tsc --noEmit",

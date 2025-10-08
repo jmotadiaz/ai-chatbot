@@ -1,12 +1,9 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
-import { eq } from "drizzle-orm";
-import { DB, getDb } from "@/lib/db/db";
-import { user } from "@/lib/db/schema";
+import { TEST_USER_EMAIL, TEST_USER_ID } from "@/tests/e2e/db-seed";
 
 interface TestFixtures {
-  testDb: DB;
   authenticatedUser: { id: string; email: string };
 }
 
@@ -16,22 +13,14 @@ interface TestFixtures {
  */
 export const test = base.extend<TestFixtures>({
   authenticatedUser: async ({ page, baseURL }, use) => {
-    const userTest = await getDb().query.user.findFirst({
-      where: eq(user.email, "test@test.com"),
-    });
-
-    if (!userTest) {
-      throw new Error("Test user not found in database");
-    }
-
     const secret = process.env.AUTH_SECRET;
     if (!secret) {
       throw new Error("AUTH_SECRET not set");
     }
 
     const token: DefaultJWT = {
-      id: userTest.id,
-      email: userTest.email,
+      id: TEST_USER_ID,
+      email: TEST_USER_EMAIL,
       type: "regular",
     };
 
@@ -64,7 +53,7 @@ export const test = base.extend<TestFixtures>({
     ]);
 
     // Provide the authenticated user to the test
-    await use(userTest);
+    await use({ id: TEST_USER_ID, email: TEST_USER_EMAIL });
   },
 });
 

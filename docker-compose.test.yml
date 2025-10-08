@@ -16,6 +16,7 @@ services:
       retries: 5
 
   neon-proxy:
+    container_name: neon-proxy-test
     image: ghcr.io/timowilhelm/local-neon-http-proxy:main
     environment:
       - PG_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/main

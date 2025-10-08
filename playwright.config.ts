@@ -81,9 +81,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "USE_MOCK_PROVIDERS=1 NODE_ENV=test pnpm dev",
+    command: "pnpm dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      USE_MOCK_PROVIDERS: "1",
+    },
   },
 });
