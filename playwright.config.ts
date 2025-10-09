@@ -85,7 +85,7 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
-    stdout: "pipe",
+    // stdout: "pipe",
     env: {
       USE_MOCK_PROVIDERS: "1",
     },
