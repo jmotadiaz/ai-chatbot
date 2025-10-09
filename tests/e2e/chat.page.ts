@@ -14,6 +14,9 @@ export class ChatPage {
   readonly loadingIndicator: Locator;
   readonly modelPicker: Locator;
   readonly settingsButton: Locator;
+  readonly toolsControl: Locator;
+  readonly ragToolToggle: Locator;
+  readonly webSearchToolToggle: Locator;
   readonly temperatureInput: Locator;
   readonly topPInput: Locator;
   readonly topKInput: Locator;
@@ -48,10 +51,36 @@ export class ChatPage {
     // Settings elements
     this.modelPicker = page.locator('[role="combobox"]');
     this.settingsButton = page.locator('button[aria-label="Chat settings"]');
+    this.toolsControl = page.locator('button[aria-label="Configure tools"]');
+    this.ragToolToggle = page.locator("#rag-tool");
+    this.webSearchToolToggle = page.locator("#web-search-tool");
     this.temperatureInput = page.locator("#temperature");
     this.topPInput = page.locator("#topP");
     this.topKInput = page.locator("#topK");
     this.dropdownBackdrop = page.locator('[data-testid="backdrop"]');
+  }
+
+  /**
+   * Get a locator for a model option by its name to check visibility
+   * @param modelName The name of the model
+   */
+  getModelOption(modelName: string): Locator {
+    return this.page.locator(`[role="option"]:has-text("${modelName}")`);
+  }
+
+  /**
+   * Toggle a tool by its name
+   * @param toolName The name of the tool to toggle
+   */
+  async toggleTool(toolName: "rag" | "web-search") {
+    await this.toolsControl.click();
+    if (toolName === "rag") {
+      await this.ragToolToggle.click();
+    } else if (toolName === "web-search") {
+      await this.webSearchToolToggle.click();
+    }
+    // Click backdrop to close dropdown
+    await this.dropdownBackdrop.click();
   }
 
   /**
