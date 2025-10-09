@@ -49,11 +49,13 @@ export class ChatPage {
     );
 
     // Settings elements
-    this.modelPicker = page.locator('[role="combobox"]');
+    this.modelPicker = page.locator(
+      '[role="combobox"][aria-controls="dropdown-header-model-picker"]'
+    );
     this.settingsButton = page.locator('button[aria-label="Chat settings"]');
     this.toolsControl = page.locator('button[aria-label="Configure tools"]');
-    this.ragToolToggle = page.locator("#rag-tool");
-    this.webSearchToolToggle = page.locator("#web-search-tool");
+    this.ragToolToggle = page.locator('label[for="rag-tool"]');
+    this.webSearchToolToggle = page.locator('label[for="rag-tool"]');
     this.temperatureInput = page.locator("#temperature");
     this.topPInput = page.locator("#topP");
     this.topKInput = page.locator("#topK");
@@ -80,7 +82,7 @@ export class ChatPage {
       await this.webSearchToolToggle.click();
     }
     // Click backdrop to close dropdown
-    await this.dropdownBackdrop.click();
+    await this.closeDropdown();
   }
 
   /**
@@ -202,7 +204,11 @@ export class ChatPage {
    */
   async selectModel(modelName: string) {
     await this.modelPicker.click();
-    await this.page.locator(`[role="option"]:has-text("${modelName}")`).click();
+    await this.page
+      .locator(
+        `#dropdown-header-model-picker [role="option"]:has-text("${modelName}")`
+      )
+      .click();
   }
 
   /**
