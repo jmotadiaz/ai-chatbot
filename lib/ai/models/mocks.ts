@@ -119,14 +119,14 @@ export const createMockModel = (modelId: string): LanguageModelV2 => {
           { type: "text-start", id: "text-1" },
           { type: "text-delta", id: "text-1", delta: "Hello" },
           { type: "text-delta", id: "text-1", delta: ", I'm " },
-          { type: "text-delta", id: "text-1", delta: ` ${modelId} ` },
+          { type: "text-delta", id: "text-1", delta: `${modelId}, ` },
           {
             type: "text-delta",
             id: "text-1",
-            delta: ` Temperature: ${temperature} `,
+            delta: `Temperature: ${temperature}, `,
           },
-          { type: "text-delta", id: "text-1", delta: ` TopP: ${topP} ` },
-          { type: "text-delta", id: "text-1", delta: ` TopK: ${topK} ` },
+          { type: "text-delta", id: "text-1", delta: `TopP: ${topP}, ` },
+          { type: "text-delta", id: "text-1", delta: `TopK: ${topK} ` },
           { type: "text-end", id: "text-1" },
           {
             type: "finish",
