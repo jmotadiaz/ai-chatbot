@@ -21,12 +21,17 @@ import {
   MistralIcon,
 } from "@/components/icons";
 
-export const ModelPicker = () => {
+interface ModelPickerProps {
+  id: string;
+}
+
+export const ModelPicker: React.FC<ModelPickerProps> = ({ id }) => {
   const { selectedModel, setSelectedModel } = useModelPicker();
   const { availableModels } = useChatContext();
 
   return (
     <ModelPickerSelector
+      id={id}
       {...{ selectedModel, setSelectedModel, models: availableModels }}
     />
   );
@@ -52,17 +57,20 @@ export interface ModelPickerSelectorProps {
   selectedModel: chatModelId;
   setSelectedModel: (model: chatModelId) => void;
   models: chatModelId[];
+  id: string;
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   selectedModel,
   setSelectedModel,
   models,
+  id,
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
       value: selectedModel,
       onValueChange: setSelectedModel,
+      id,
     });
 
   return (
@@ -168,7 +176,10 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
   );
 };
 
-export const useModelPicker = (): Omit<ModelPickerSelectorProps, "models"> => {
+export const useModelPicker = (): Omit<
+  ModelPickerSelectorProps,
+  "models" | "id"
+> => {
   const { selectedModel, setConfig } = useChatContext();
 
   const setSelectedModel = (model: chatModelId) => {

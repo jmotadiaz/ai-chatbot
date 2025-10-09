@@ -38,6 +38,7 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         Icon={Settings2}
         type="button"
         className={className}
+        aria-label="Chat settings"
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">

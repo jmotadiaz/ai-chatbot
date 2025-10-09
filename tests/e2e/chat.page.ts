@@ -12,13 +12,21 @@ export class ChatPage {
   readonly userMessages: Locator;
   readonly assistantMessages: Locator;
   readonly loadingIndicator: Locator;
+  readonly modelPicker: Locator;
+  readonly settingsButton: Locator;
+  readonly temperatureInput: Locator;
+  readonly topPInput: Locator;
+  readonly topKInput: Locator;
+  readonly dropdownBackdrop: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
     // Main chat elements
     this.chatInput = page.locator("[data-testid='chat-input']");
-    this.submitButton = page.locator('button[type="submit"]').last();
+    this.submitButton = page
+      .locator('button[type="submit"]:not(:disabled)')
+      .last();
     this.messagesContainer = page
       .locator('[data-testid="messages"], .messages, div')
       .filter({ hasText: /user|assistant/i })
@@ -36,6 +44,14 @@ export class ChatPage {
     this.loadingIndicator = page.locator(
       '[data-testid="loading"], .loading, [aria-busy="true"]'
     );
+
+    // Settings elements
+    this.modelPicker = page.locator('[role="combobox"]');
+    this.settingsButton = page.locator('button[aria-label="Chat settings"]');
+    this.temperatureInput = page.locator("#temperature");
+    this.topPInput = page.locator("#topP");
+    this.topKInput = page.locator("#topK");
+    this.dropdownBackdrop = page.locator('[data-testid="backdrop"]');
   }
 
   /**
@@ -150,5 +166,89 @@ export class ChatPage {
   async verifyAssistantResponseContains(expectedText: string) {
     const lastMessage = await this.getLastAssistantMessage();
     expect(lastMessage).toContain(expectedText);
+  }
+
+  /**
+   * Select a model from the model picker
+   */
+  async selectModel(modelName: string) {
+    await this.modelPicker.click();
+    await this.page.locator(`[role="option"]:has-text("${modelName}")`).click();
+  }
+
+  /**
+   * Open the settings dropdown
+   */
+  async openSettings() {
+    await this.settingsButton.click();
+  }
+
+  async closeDropdown() {
+    await this.dropdownBackdrop.click();
+  }
+
+  /**
+   * Set the value of a number input
+   */
+  private async setInputValue(input: Locator, value: number) {
+    await input.click();
+    await input.fill(value.toString());
+  }
+
+  /**
+   * Set the temperature value
+   */
+  async setTemperature(value: number) {
+    await this.setInputValue(this.temperatureInput, value);
+  }
+
+  /**
+   * Set the topP value
+   */
+  async setTopP(value: number) {
+    await this.setInputValue(this.topPInput, value);
+  }
+
+  /**
+   * Set the topK value
+   */
+  async setTopK(value: number) {
+    await this.setInputValue(this.topKInput, value);
+  }
+
+  /**
+   * Get the value of an input
+   */
+  private async getInputValue(input: Locator): Promise<number> {
+    const value = await input.inputValue();
+    return parseFloat(value);
+  }
+
+  /**
+   * Get the temperature value
+   */
+  async getTemperature(): Promise<number> {
+    return this.getInputValue(this.temperatureInput);
+  }
+
+  /**
+   * Get the topP value
+   */
+  async getTopP(): Promise<number> {
+    return this.getInputValue(this.topPInput);
+  }
+
+  /**
+   * Get the topK value
+   */
+  async getTopK(): Promise<number> {
+    return this.getInputValue(this.topKInput);
+  }
+
+  /**
+   * Check if the settings button is visible
+   */
+  async areSettingsVisible(): Promise<boolean> {
+    return this.settingsButton.isVisible();
   }
 }

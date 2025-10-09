@@ -15,8 +15,7 @@ import { ModelPickerSelector } from "@/components/model-picker";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { createProject, updateProject } from "@/lib/ai/actions/project";
 import type { Project } from "@/lib/db/schema";
-import type {
-  chatModelId} from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
   defaultTopP,
@@ -137,6 +136,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-lg mb-2">Model</Label>
                   <ModelPickerSelector
+                    id="project-form-model-picker"
                     selectedModel={model}
                     setSelectedModel={setModel}
                     models={models}

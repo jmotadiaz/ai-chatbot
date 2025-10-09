@@ -7,8 +7,7 @@ import { Logo } from "@/components/logo";
 import { ModelPicker } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChatHeader } from "@/components/new-chat";
-import type {
-  chatModelId} from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
   defaultTopP,
@@ -114,7 +113,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
           <Header.Left>
             <Logo />
             <NewChatHeader />
-            <ModelPicker />
+            <ModelPicker id="header-model-picker" />
           </Header.Left>
           <Header.Right>
             <ThemeToggle />

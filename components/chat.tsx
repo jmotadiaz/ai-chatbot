@@ -18,11 +18,7 @@ import { ChatReload } from "@/components/chat-reload";
 import { handleFileUpload } from "@/lib/ai/utils";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 
-export interface ChatProps {
-  saveChat?: React.ReactNode;
-}
-
-const Chat: React.FC<ChatProps> = ({ saveChat }) => {
+const Chat: React.FC = () => {
   const {
     messages,
     input,
@@ -109,9 +105,8 @@ const Chat: React.FC<ChatProps> = ({ saveChat }) => {
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
             <ChatSettingsButton />
-            {saveChat}
-            <ToolsControl />
             <AttachmentsControl />
+            <ToolsControl />
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
