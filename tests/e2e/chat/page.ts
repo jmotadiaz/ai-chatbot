@@ -130,16 +130,6 @@ export class ChatPage {
   }
 
   /**
-   * Wait for assistant response to appear
-   */
-  async waitForAssistantResponse(timeout = 30000) {
-    await this.page.waitForTimeout(1000);
-
-    // Wait for at least one assistant message to be visible
-    await expect(this.assistantMessages.first()).toBeVisible({ timeout });
-  }
-
-  /**
    * Get all user messages text
    */
   async getUserMessages(): Promise<string[]> {
