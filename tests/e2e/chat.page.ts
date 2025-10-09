@@ -18,6 +18,9 @@ export class ChatPage {
   readonly topPInput: Locator;
   readonly topKInput: Locator;
   readonly dropdownBackdrop: Locator;
+  readonly attachmentButton: Locator;
+  readonly attachmentMenu: Locator;
+  readonly fileInput: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -52,6 +55,12 @@ export class ChatPage {
     this.topPInput = page.locator("#topP");
     this.topKInput = page.locator("#topK");
     this.dropdownBackdrop = page.locator('[data-testid="backdrop"]');
+    // Attachment elements
+    this.attachmentButton = page.locator(
+      'button[aria-label="Attach files"]'
+    );
+    this.attachmentMenu = page.locator('[aria-label="Attachment options"]');
+    this.fileInput = page.locator('input[type="file"]');
   }
 
   /**
@@ -250,5 +259,58 @@ export class ChatPage {
    */
   async areSettingsVisible(): Promise<boolean> {
     return this.settingsButton.isVisible();
+  }
+
+  /**
+   * Check if the attachment button is visible
+   */
+  async isAttachmentButtonVisible(): Promise<boolean> {
+    return this.attachmentButton.isVisible();
+  }
+
+  /**
+   * Open the attachment menu
+   */
+  async openAttachmentMenu() {
+    await this.attachmentButton.click();
+  }
+
+  /**
+   * Get the options from the attachment menu
+   */
+  async getAttachmentMenuOptions(): Promise<string[]> {
+    await this.openAttachmentMenu();
+    const options = await this.attachmentMenu.locator("button").allInnerTexts();
+    await this.closeDropdown();
+    return options;
+  }
+
+  /**
+   * Upload a file
+   * @param filePath - The path to the file to upload
+   * @param fileType - The type of file to upload
+   */
+  async uploadFile(filePath: string, fileType: "image" | "pdf") {
+    await this.page.route("**/api/upload", async (route) => {
+      const json = {
+        url: `https://fake-blob-storage.com/${filePath}`,
+        pathname: filePath,
+        contentType: fileType === "image" ? "image/png" : "application/pdf",
+        contentDisposition: `attachment; filename="${filePath}"`,
+      };
+      await route.fulfill({ json });
+    });
+
+    await this.fileInput.setInputFiles(filePath);
+  }
+
+  /**
+   * Get the available models from the model picker
+   */
+  async getAvailableModels(): Promise<string[]> {
+    await this.modelPicker.click();
+    const options = await this.page.locator('[role="option"]').allInnerTexts();
+    await this.closeDropdown();
+    return options;
   }
 }
