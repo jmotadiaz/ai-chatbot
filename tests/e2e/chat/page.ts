@@ -29,6 +29,8 @@ export class ChatPage {
   readonly pdfInputLabel: Locator;
   readonly imageInputFile: Locator;
   readonly pdfInputFile: Locator;
+  readonly refineButton: Locator;
+  readonly undoButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -74,6 +76,10 @@ export class ChatPage {
     this.pdfInputLabel = page.locator('label[for="document-input"]');
     this.imageInputFile = page.locator("#image-input");
     this.pdfInputFile = page.locator("#document-input");
+
+    // Refine elements
+    this.refineButton = page.locator('button[aria-label="Refine prompt"]');
+    this.undoButton = page.locator('button[aria-label="Undo refined prompt"]');
   }
 
   /**
@@ -335,5 +341,33 @@ export class ChatPage {
     const options = await this.page.locator('[role="option"]').allInnerTexts();
     await this.closeDropdown();
     return options;
+  }
+
+  /**
+   * Click the refine button
+   */
+  async clickRefineButton() {
+    await this.refineButton.click();
+  }
+
+  /**
+   * Click the undo button
+   */
+  async clickUndoButton() {
+    await this.undoButton.click();
+  }
+
+  /**
+   * Check if the refine button is visible
+   */
+  async isRefineButtonVisible(): Promise<boolean> {
+    return this.refineButton.isVisible();
+  }
+
+  /**
+   * Check if the undo button is visible
+   */
+  async isUndoButtonVisible(): Promise<boolean> {
+    return this.undoButton.isVisible();
   }
 }

@@ -110,13 +110,20 @@ const Chat: React.FC = () => {
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
-            {hasPreviousMessage && <ChatControl Icon={Undo} onClick={undo} />}
+            {hasPreviousMessage && (
+              <ChatControl
+                Icon={Undo}
+                onClick={undo}
+                aria-label="Undo refined prompt"
+              />
+            )}
             {metaPrompt && (
               <ChatControl
                 Icon={WandSparkles}
                 onClick={refinePrompt}
                 disabled={!input.length}
                 isLoading={isLoadingRefinedPrompt}
+                aria-label="Refine prompt"
               />
             )}
             <ChatControl
