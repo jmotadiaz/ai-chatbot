@@ -28,9 +28,17 @@ export const AttachmentsControl: React.FC = () => {
 
   return (
     <div className="relative">
-      <ChatControl Icon={Paperclip} {...getDropdownTriggerProps()} />
+      <ChatControl
+        Icon={Paperclip}
+        aria-label="Attach files"
+        {...getDropdownTriggerProps()}
+      />
 
-      <Dropdown.Popup {...getDropdownPopupProps()}>
+      <Dropdown.Popup
+        {...getDropdownPopupProps()}
+        aria-label="Attachment options"
+        data-testid="attachment-menu"
+      >
         {supportedFiles.includes("img") && (
           <>
             <Dropdown.Item as={Label} className="text-sm" htmlFor="image-input">
