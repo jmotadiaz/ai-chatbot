@@ -8,14 +8,13 @@ import React, {
 } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
-import type { DataUIPart} from "ai";
+import type { DataUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { v4, validate } from "uuid";
 import { useQueryState } from "nuqs";
-import type {
-  chatModelId} from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultModel,
   defaultTemperature,
@@ -26,7 +25,7 @@ import {
 import type { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import type { Tool, Tools } from "@/lib/ai/tools/types";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
-import type { FilePart} from "@/lib/ai/utils";
+import type { FilePart } from "@/lib/ai/utils";
 import { handleFileUpload } from "@/lib/ai/utils";
 
 export interface ChatConfig {
@@ -79,7 +78,7 @@ interface ChatContext
   projectId?: string;
   reload: (reloadConfig?: Partial<ChatConfig>) => void;
   sendEnabled: boolean;
-  data: DataUIPart<ChatbotDataPart> | undefined;
+  dataPart: DataUIPart<ChatbotDataPart> | undefined;
   setConfig: SetChatConfig;
   availableModels: chatModelId[];
 }
@@ -117,7 +116,7 @@ const chatContext = createContext<ChatContext>({
   hasTool: () => false,
   setTools: () => {},
   availableModels: CHAT_MODELS,
-  data: undefined,
+  dataPart: undefined,
 });
 
 export interface ChatProviderProps {
@@ -159,9 +158,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     systemPrompt,
   });
   const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);
-  const [data, setData] = useState<DataUIPart<ChatbotDataPart> | undefined>(
-    undefined
-  );
+  const [dataPart, setDataPart] = useState<
+    DataUIPart<ChatbotDataPart> | undefined
+  >(undefined);
   const [queryParamChatId, setChatId] = useQueryState("chatId");
   const pathname = usePathname();
 
@@ -172,10 +171,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     transport: new DefaultChatTransport({
       api: "/api/chat",
     }),
-    onData: (incomingData) => {
-      setData(incomingData);
-      if (incomingData.type === "data-chat") {
-        setChatId(incomingData.data.id);
+    onData: (incoming) => {
+      const incomingDataPart = incoming as DataUIPart<ChatbotDataPart>;
+      setDataPart(incomingDataPart);
+      if (incomingDataPart.type === "data-chat") {
+        setChatId(incomingDataPart.data.id);
       }
     },
     onError: (error) => {
@@ -258,7 +258,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         setInput,
         setFiles,
         files,
-        data,
+        dataPart,
         handleInputChange,
         handleFileChange,
         handleSubmit,

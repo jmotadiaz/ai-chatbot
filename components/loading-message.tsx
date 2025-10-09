@@ -9,11 +9,11 @@ import { DotsLoadingIcon } from "@/components/icons";
 interface LoadingMessageProps {
   metadata: MessageMetadata | undefined;
   status: ChatStatus;
-  data?: DataUIPart<Omit<ChatbotDataPart, "chat">> | undefined;
+  dataPart?: DataUIPart<Omit<ChatbotDataPart, "chat">> | undefined;
 }
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
-  ({ metadata, status, data }) => {
+  ({ metadata, status, dataPart }) => {
     if (
       status === "ready" ||
       status === "error" ||
@@ -28,22 +28,23 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
+        data-testid="loading-message"
       >
         <div className="mr-4">
           <DotsLoadingIcon />
         </div>
-        {data &&
+        {dataPart &&
           (() => {
-            switch (data.type) {
+            switch (dataPart.type) {
               case "data-web-search":
-                if (data.data.status === "loading") {
+                if (dataPart.data.status === "loading") {
                   return (
                     <ToolLoading key={`message-web`} text="Searching the web" />
                   );
                 }
                 return null;
               case "data-rag":
-                if (data.data.status === "loading") {
+                if (dataPart.data.status === "loading") {
                   return (
                     <ToolLoading
                       key={`message-rag`}
@@ -53,7 +54,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
                 }
                 return null;
               case "data-reasoning":
-                if (data.data.status === "started") {
+                if (dataPart.data.status === "started") {
                   return (
                     <ToolLoading key={`message-reasoning`} text="Thinking" />
                   );
@@ -70,7 +71,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
     return (
       prevProps.status === nextProps.status &&
       prevProps.metadata?.status === nextProps.metadata?.status &&
-      prevProps.data?.data.status === nextProps.data?.data.status
+      prevProps.dataPart?.data.status === nextProps.dataPart?.data.status
     );
   }
 );

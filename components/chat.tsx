@@ -28,7 +28,7 @@ const Chat: React.FC = () => {
     status,
     sendEnabled,
     stop,
-    data,
+    dataPart,
     selectedModel,
     setFiles,
     metaPrompt,
@@ -73,7 +73,7 @@ const Chat: React.FC = () => {
                 <LoadingMessage
                   metadata={messages[messages.length - 1]?.metadata}
                   status={status}
-                  {...(data?.type !== "data-chat" && { data })}
+                  {...(dataPart?.type !== "data-chat" && { dataPart })}
                 />
                 {(status === "ready" || status === "error") && (
                   <div className="mt-1 ml-4">
