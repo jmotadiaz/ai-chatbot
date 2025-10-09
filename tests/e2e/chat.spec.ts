@@ -92,4 +92,36 @@ test.describe("Chat functionality", () => {
       "Hello, I'm qwen/qwen3-next-80b-a3b-instruct, Temperature: 0.6, TopP: 0.7, TopK: 15"
     );
   });
+
+  test("should handle tool configuration and model filtering correctly", async () => {
+    // 1. Select a model that does not support tools ("Sonar Pro")
+    await chatPage.selectModel("Sonar Pro");
+
+    // 2. Verify that the tools control button is not visible
+    await expect(chatPage.toolsControl).not.toBeVisible();
+
+    // 3. Select a model that supports tools ("Claude Sonnet 4.5")
+    await chatPage.selectModel("Claude Sonnet 4.5");
+
+    // 4. Verify that the tools control button is visible
+    await expect(chatPage.toolsControl).toBeVisible();
+
+    // 5. Enable the RAG tool
+    await chatPage.toggleTool("rag");
+
+    // 6. Open the model picker and verify that only models with tool support are visible
+    await chatPage.modelPicker.click();
+    await expect(chatPage.getModelOption("Sonar Pro")).not.toBeVisible();
+    await expect(chatPage.getModelOption("Claude Sonnet 4.5")).toBeVisible();
+    await chatPage.closeDropdown(); // Close the dropdown
+
+    // 7. Disable the RAG tool
+    await chatPage.toggleTool("rag");
+
+    // 8. Open the model picker and verify that all models are visible again
+    await chatPage.modelPicker.click();
+    await expect(chatPage.getModelOption("Sonar Pro")).toBeVisible();
+    await expect(chatPage.getModelOption("Claude Sonnet 4.5")).toBeVisible();
+    await chatPage.closeDropdown(); // Close the dropdown
+  });
 });
