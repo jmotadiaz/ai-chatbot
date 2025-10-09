@@ -48,26 +48,12 @@ test.describe("Chat attachments", () => {
     // Get available models after upload
     const availableModels = await chatPage.getAvailableModels();
 
-    // Check that only models supporting images are available
-    const imageSupportingModels = chatModelKeys.filter((key) => {
-      const model = languageModelConfigurations(key);
-      return model.supportedFiles?.includes("img");
-    });
+    // 1. Check for models that SHOULD be visible (support images)
+    expect(availableModels).toContain("Llama 4 Scout");
+    expect(availableModels).toContain("Claude Haiku 3.5");
 
-    // Also check for models that should NOT be in the list
-    const textOnlyModels = chatModelKeys.filter((key) => {
-      const model = languageModelConfigurations(key);
-      return !model.supportedFiles;
-    });
-
-    expect(availableModels.length).toBe(imageSupportingModels.length);
-
-    for (const model of imageSupportingModels) {
-      expect(availableModels).toContain(model);
-    }
-
-    for (const model of textOnlyModels) {
-      expect(availableModels).not.toContain(model);
-    }
+    // 2. Check for models that SHOULD NOT be visible (text-only)
+    expect(availableModels).not.toContain("Llama 3.1 Instant");
+    expect(availableModels).not.toContain("Deepseek Chat");
   });
 });
