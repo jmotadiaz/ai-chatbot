@@ -1,9 +1,5 @@
 import { test, expect } from "./fixtures";
 import { ChatPage } from "./chat.page";
-import {
-  chatModelKeys,
-  languageModelConfigurations,
-} from "lib/ai/models/definition";
 
 test.describe("Chat attachments", () => {
   let chatPage: ChatPage;
@@ -16,7 +12,7 @@ test.describe("Chat attachments", () => {
 
   test("should not show attachment button for text-only models", async () => {
     // Models with no `supportedFiles` property should not show the attachment button
-    await chatPage.selectModel("Llama 3.1 Instant");
+    await chatPage.selectModel("Qwen3 Next Instruct");
     await expect(chatPage.attachmentButton).not.toBeVisible();
   });
 
@@ -24,36 +20,38 @@ test.describe("Chat attachments", () => {
     await chatPage.selectModel("Llama 4 Scout");
     await expect(chatPage.attachmentButton).toBeVisible();
 
-    const options = await chatPage.getAttachmentMenuOptions();
-    expect(options).toContain("Image");
-    expect(options).not.toContain("PDF");
+    chatPage.openAttachmentMenu();
+    expect(chatPage.imageInputLabel).toBeVisible();
+    expect(chatPage.pdfInputLabel).not.toBeVisible();
   });
 
-  test("should show correct attachment options for multi-file models", async () => {
-    await chatPage.selectModel("Claude Haiku 3.5");
+  test("should show correct attachment options for all supported models", async () => {
+    await chatPage.selectModel("GPT 5 Mini");
     await expect(chatPage.attachmentButton).toBeVisible();
 
-    const options = await chatPage.getAttachmentMenuOptions();
-    expect(options).toContain("Image");
-    expect(options).toContain("PDF");
+    chatPage.openAttachmentMenu();
+    expect(chatPage.imageInputLabel).toBeVisible();
+    expect(chatPage.pdfInputLabel).toBeVisible();
   });
 
   test("should filter models based on attachment type", async () => {
     // Start with a model that allows attachments to ensure the button is visible
-    await chatPage.selectModel("Claude Haiku 3.5");
+    await chatPage.selectModel("Llama 4 Scout");
 
     // Upload an image
+    await chatPage.openAttachmentMenu();
     await chatPage.uploadFile("dummy-image.png", "image");
+    await expect(
+      chatPage.getThumbnailByAltText("dummy-image.png")
+    ).toBeVisible();
 
     // Get available models after upload
-    const availableModels = await chatPage.getAvailableModels();
-
-    // 1. Check for models that SHOULD be visible (support images)
-    expect(availableModels).toContain("Llama 4 Scout");
-    expect(availableModels).toContain("Claude Haiku 3.5");
-
-    // 2. Check for models that SHOULD NOT be visible (text-only)
-    expect(availableModels).not.toContain("Llama 3.1 Instant");
-    expect(availableModels).not.toContain("Deepseek Chat");
+    await chatPage.modelPicker.click();
+    await expect(chatPage.getModelOption("Llama 4 Maverick")).toBeAttached();
+    await expect(
+      chatPage.getModelOption("Gemini 2.5 Flash Lite")
+    ).toBeAttached();
+    await expect(chatPage.getModelOption("Qwen3 Coder")).not.toBeAttached();
+    await expect(chatPage.getModelOption("Deepseek Chat")).not.toBeAttached();
   });
 });

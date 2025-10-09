@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from "@playwright/test";
+import type { chatModelId } from "@/lib/ai/models/definition";
 
 /**
  * Page Object Model for Chat functionality
@@ -15,8 +16,8 @@ export class ChatPage {
   readonly modelPicker: Locator;
   readonly settingsButton: Locator;
   readonly toolsControl: Locator;
-  readonly ragToolToggle: Locator;
-  readonly webSearchToolToggle: Locator;
+  readonly ragToolLabel: Locator;
+  readonly webSearchToolLabel: Locator;
   readonly temperatureInput: Locator;
   readonly topPInput: Locator;
   readonly topKInput: Locator;
@@ -24,6 +25,10 @@ export class ChatPage {
   readonly attachmentButton: Locator;
   readonly attachmentMenu: Locator;
   readonly fileInput: Locator;
+  readonly imageInputLabel: Locator;
+  readonly pdfInputLabel: Locator;
+  readonly imageInputFile: Locator;
+  readonly pdfInputFile: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -57,25 +62,27 @@ export class ChatPage {
     );
     this.settingsButton = page.locator('button[aria-label="Chat settings"]');
     this.toolsControl = page.locator('button[aria-label="Configure tools"]');
-    this.ragToolToggle = page.locator('label[for="rag-tool"]');
-    this.webSearchToolToggle = page.locator('label[for="rag-tool"]');
+    this.ragToolLabel = page.locator('label[for="rag-tool"]');
+    this.webSearchToolLabel = page.locator('label[for="rag-tool"]');
     this.temperatureInput = page.locator("#temperature");
     this.topPInput = page.locator("#topP");
     this.topKInput = page.locator("#topK");
     this.dropdownBackdrop = page.locator('[data-testid="backdrop"]');
     // Attachment elements
-    this.attachmentButton = page.locator(
-      'button[aria-label="Attach files"]'
-    );
+    this.attachmentButton = page.locator('button[aria-label="Attach files"]');
     this.attachmentMenu = page.locator('[aria-label="Attachment options"]');
     this.fileInput = page.locator('input[type="file"]');
+    this.imageInputLabel = page.locator('label[for="image-input"]');
+    this.pdfInputLabel = page.locator('label[for="document-input"]');
+    this.imageInputFile = page.locator("#image-input");
+    this.pdfInputFile = page.locator("#document-input");
   }
 
   /**
    * Get a locator for a model option by its name to check visibility
    * @param modelName The name of the model
    */
-  getModelOption(modelName: string): Locator {
+  getModelOption(modelName: chatModelId): Locator {
     return this.page.locator(`[role="option"]:has-text("${modelName}")`);
   }
 
@@ -86,9 +93,9 @@ export class ChatPage {
   async toggleTool(toolName: "rag" | "web-search") {
     await this.toolsControl.click();
     if (toolName === "rag") {
-      await this.ragToolToggle.click();
+      await this.ragToolLabel.click();
     } else if (toolName === "web-search") {
-      await this.webSearchToolToggle.click();
+      await this.webSearchToolLabel.click();
     }
     // Click backdrop to close dropdown
     await this.closeDropdown();
@@ -211,7 +218,7 @@ export class ChatPage {
   /**
    * Select a model from the model picker
    */
-  async selectModel(modelName: string) {
+  async selectModel(modelName: chatModelId) {
     await this.modelPicker.click();
     await this.page
       .locator(
@@ -311,16 +318,6 @@ export class ChatPage {
   }
 
   /**
-   * Get the options from the attachment menu
-   */
-  async getAttachmentMenuOptions(): Promise<string[]> {
-    await this.openAttachmentMenu();
-    const options = await this.attachmentMenu.locator("button").allInnerTexts();
-    await this.closeDropdown();
-    return options;
-  }
-
-  /**
    * Upload a file
    * @param filePath - The path to the file to upload
    * @param fileType - The type of file to upload
@@ -336,7 +333,15 @@ export class ChatPage {
       await route.fulfill({ json });
     });
 
-    await this.fileInput.setInputFiles(filePath);
+    if (fileType === "image") {
+      await this.imageInputFile.setInputFiles(filePath);
+    } else if (fileType === "pdf") {
+      await this.pdfInputFile.setInputFiles(filePath);
+    }
+  }
+
+  getThumbnailByAltText(altText: string): Locator {
+    return this.page.locator(`img[alt="${altText}"]`);
   }
 
   /**

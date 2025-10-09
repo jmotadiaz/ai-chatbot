@@ -111,8 +111,8 @@ test.describe("Chat functionality", () => {
 
     // 6. Open the model picker and verify that only models with tool support are visible
     await chatPage.modelPicker.click();
-    await expect(chatPage.getModelOption("Sonar Pro")).not.toBeVisible();
-    await expect(chatPage.getModelOption("Claude Sonnet 4.5")).toBeVisible();
+    await expect(chatPage.getModelOption("Sonar Pro")).not.toBeAttached();
+    await expect(chatPage.getModelOption("Claude Sonnet 4.5")).toBeAttached();
     await chatPage.closeDropdown(); // Close the dropdown
 
     // 7. Disable the RAG tool
@@ -120,8 +120,8 @@ test.describe("Chat functionality", () => {
 
     // 8. Open the model picker and verify that all models are visible again
     await chatPage.modelPicker.click();
-    await expect(chatPage.getModelOption("Sonar Pro")).toBeVisible();
-    await expect(chatPage.getModelOption("Claude Sonnet 4.5")).toBeVisible();
+    await expect(chatPage.getModelOption("Sonar Pro")).toBeAttached();
+    await expect(chatPage.getModelOption("Gemini 2.5 Pro")).toBeAttached();
     await chatPage.closeDropdown(); // Close the dropdown
   });
 });

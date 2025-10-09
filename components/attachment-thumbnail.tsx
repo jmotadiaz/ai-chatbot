@@ -15,7 +15,7 @@ export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
           width={56}
           height={56}
           className="h-full w-full object-cover object-center"
-          alt="attachment"
+          alt={file.filename || "attachment"}
         />
       </div>
     );
