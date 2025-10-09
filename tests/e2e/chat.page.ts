@@ -17,13 +17,16 @@ export class ChatPage {
   readonly temperatureInput: Locator;
   readonly topPInput: Locator;
   readonly topKInput: Locator;
+  readonly dropdownBackdrop: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
     // Main chat elements
     this.chatInput = page.locator("[data-testid='chat-input']");
-    this.submitButton = page.locator('button[type="submit"]').last();
+    this.submitButton = page
+      .locator('button[type="submit"]:not(:disabled)')
+      .last();
     this.messagesContainer = page
       .locator('[data-testid="messages"], .messages, div')
       .filter({ hasText: /user|assistant/i })
@@ -44,10 +47,11 @@ export class ChatPage {
 
     // Settings elements
     this.modelPicker = page.locator('[role="combobox"]');
-    this.settingsButton = page.locator('button:has([data-lucide="settings-2"])');
+    this.settingsButton = page.locator('button[aria-label="Chat settings"]');
     this.temperatureInput = page.locator("#temperature");
     this.topPInput = page.locator("#topP");
     this.topKInput = page.locator("#topK");
+    this.dropdownBackdrop = page.locator('[data-testid="backdrop"]');
   }
 
   /**
@@ -179,13 +183,16 @@ export class ChatPage {
     await this.settingsButton.click();
   }
 
+  async closeDropdown() {
+    await this.dropdownBackdrop.click();
+  }
+
   /**
    * Set the value of a number input
    */
   private async setInputValue(input: Locator, value: number) {
     await input.click();
     await input.fill(value.toString());
-    await this.page.keyboard.press("Enter");
   }
 
   /**

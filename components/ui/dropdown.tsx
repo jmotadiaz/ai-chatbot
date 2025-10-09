@@ -19,7 +19,8 @@ const DropdownContainer: React.FC<DropdownContainerProps> = ({
   return <div className={cn("relative", className)}>{children}</div>;
 };
 
-export interface DropdownPopupProps {
+export interface DropdownPopupProps
+  extends React.HtmlHTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   isShown: boolean;
   close: () => void;
@@ -39,13 +40,19 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   isShown,
   close,
   variant = "top",
+  ...props
 }) => {
   return (
     <>
       {isShown && (
         <ViewTransition enter="dropdown-enter" exit="dropdown-exit">
-          <div className="fixed inset-0 z-40 bg-transparent" onClick={close} />
           <div
+            data-testid="backdrop"
+            className="fixed inset-0 z-40 bg-transparent"
+            onClick={close}
+          />
+          <div
+            {...props}
             className={cn(
               "fixed w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-50 overflow-hidden pb-4 lg:pb-0",
               variants[variant],

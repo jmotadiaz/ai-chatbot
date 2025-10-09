@@ -31,7 +31,7 @@ test.describe("Chat functionality", () => {
 
     // Verify the response contains the expected mock text
     await chatPage.verifyAssistantResponseContains(
-      "Hello, I'm  meta-llama/llama-4-scout-17b-16e-instruct"
+      "Hello, I'm meta-llama/llama-4-scout-17b-16e-instruct"
     );
 
     // Additional verification: Check message count
@@ -56,16 +56,17 @@ test.describe("Chat functionality", () => {
 
     // 3. Open settings and check defaults.
     await chatPage.openSettings();
-    await expect(chatPage.temperatureInput).toHaveValue("1");
+    await expect(chatPage.temperatureInput).toHaveValue("0.5");
     await expect(chatPage.topPInput).not.toBeVisible();
     await expect(chatPage.topKInput).not.toBeVisible();
 
     // 4. Modify temperature and verify response
     await chatPage.setTemperature(0.8);
+    await chatPage.closeDropdown();
     await chatPage.sendMessage("Hello with custom temperature");
     await chatPage.waitForAssistantResponse();
     await chatPage.verifyAssistantResponseContains(
-      "Hello, I'm claude-sonnet-4-5-20250929, temperature: 0.8"
+      "Hello, I'm claude-sonnet-4-5-20250929, Temperature: 0.8"
     );
 
     // 5. Switch to a model with all settings enabled ("Qwen3 Next Instruct")
@@ -82,12 +83,13 @@ test.describe("Chat functionality", () => {
     await chatPage.setTemperature(0.6);
     await chatPage.setTopP(0.7);
     await chatPage.setTopK(15);
+    await chatPage.closeDropdown();
 
     // 8. Send message and verify response includes all modified settings
     await chatPage.sendMessage("Hello with all custom settings");
     await chatPage.waitForAssistantResponse();
     await chatPage.verifyAssistantResponseContains(
-      "Hello, I'm qwen/qwen3-next-80b-a3b-instruct, temperature: 0.6, topP: 0.7, topK: 15"
+      "Hello, I'm qwen/qwen3-next-80b-a3b-instruct, Temperature: 0.6, TopP: 0.7, TopK: 15"
     );
   });
 });

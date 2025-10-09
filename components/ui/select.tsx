@@ -11,8 +11,10 @@ import { Dropdown } from "@/components/ui/dropdown";
 export const useSelect = <T extends string>({
   value,
   onValueChange,
+  id,
 }: {
   value: T;
+  id: string;
   onValueChange: (value: T) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,10 +43,12 @@ export const useSelect = <T extends string>({
       toggle,
       isOpen,
       value,
+      id,
     }),
     getSelectContentProps: () => ({
       isShown: isOpen,
       close,
+      id,
     }),
     getSelectItemProps: (itemValue: T) => ({
       value: itemValue,
@@ -74,6 +78,7 @@ export interface SelectTriggerProps<T extends string>
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isOpen?: boolean;
   value: T;
+  id: string;
   className?: string;
   toggle?: () => void;
 }
@@ -83,11 +88,15 @@ function SelectTriggerComponent<T extends string>({
   isOpen,
   value,
   toggle,
+  id,
   ...props
 }: SelectTriggerProps<T>) {
   return (
     <button
       type="button"
+      role="combobox"
+      aria-controls={`dropdown-${id}`}
+      aria-expanded={isOpen}
       className={cn(
         "flex items-center space-x-3 font-semibold text-black dark:text-white select-none cursor-pointer",
         className
@@ -112,6 +121,7 @@ export interface SelectContentProps {
   className?: string;
   isShown: boolean;
   close: () => void;
+  id: string;
   variant?: DropdownPopupProps["variant"];
 }
 
@@ -120,10 +130,12 @@ const SelectDropdownComponent: React.FC<SelectContentProps> = ({
   className,
   isShown,
   close,
+  id,
   variant = "bottom",
 }) => {
   return (
     <Dropdown.Popup
+      id={`dropdown-${id}`}
       isShown={isShown}
       close={close}
       variant={variant}
