@@ -30,6 +30,7 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
         type="button"
         className={className}
         isActive={isActive}
+        aria-label="Configure tools"
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()}>
