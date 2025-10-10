@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { randomUUID } from "crypto";
 import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq } from "drizzle-orm";
 import { user, User } from "@/lib/db/schema";
 import { schema } from "@/lib/db/db";
 
@@ -24,7 +24,7 @@ export const test = base.extend<TestFixtures>({
     const [testUser] = await db
       .insert(user)
       .values({
-        email: "test@test.com",
+        email: `${randomUUID()}@test.com`,
         password:
           "$2b$10$testtestsalt123456789012uG9dWQd8U1xMOPuQJxFr7eETeM2Yy",
       })
@@ -32,7 +32,6 @@ export const test = base.extend<TestFixtures>({
 
     // Provide the authenticated user to the test
     await use({ testUser });
-    await db.delete(user).where(eq(user.id, testUser.id));
     await client.end();
   },
   authenticatedUser: async ({ page, baseURL, db }, use) => {
