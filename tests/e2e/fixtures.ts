@@ -1,10 +1,15 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
-import { TEST_USER_EMAIL, TEST_USER_ID } from "@/tests/e2e/db-seed";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { eq } from "drizzle-orm";
+import { user, User } from "@/lib/db/schema";
+import { schema } from "@/lib/db/db";
 
 interface TestFixtures {
   authenticatedUser: { id: string; email: string };
+  db: { testUser: User };
 }
 
 /**
@@ -12,15 +17,35 @@ interface TestFixtures {
  * This allows dependency injection for testing
  */
 export const test = base.extend<TestFixtures>({
-  authenticatedUser: async ({ page, baseURL }, use) => {
+  db: async ({}, use) => {
+    const client = postgres(process.env.POSTGRES_URL!);
+    const db = drizzle(client, { schema });
+
+    const [testUser] = await db
+      .insert(user)
+      .values({
+        email: "test@test.com",
+        password:
+          "$2b$10$testtestsalt123456789012uG9dWQd8U1xMOPuQJxFr7eETeM2Yy",
+      })
+      .returning();
+
+    // Provide the authenticated user to the test
+    await use({ testUser });
+    await db.delete(user).where(eq(user.id, testUser.id));
+    await client.end();
+  },
+  authenticatedUser: async ({ page, baseURL, db }, use) => {
     const secret = process.env.AUTH_SECRET;
     if (!secret) {
       throw new Error("AUTH_SECRET not set");
     }
 
+    const { testUser } = db;
+
     const token: DefaultJWT = {
-      id: TEST_USER_ID,
-      email: TEST_USER_EMAIL,
+      id: testUser.id,
+      email: testUser.email,
       type: "regular",
     };
 
@@ -53,7 +78,7 @@ export const test = base.extend<TestFixtures>({
     ]);
 
     // Provide the authenticated user to the test
-    await use({ id: TEST_USER_ID, email: TEST_USER_EMAIL });
+    await use({ id: testUser.id, email: testUser.email });
   },
 });
 

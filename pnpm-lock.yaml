@@ -86,6 +86,9 @@ dependencies:
   drizzle-orm:
     specifier: ^0.44.6
     version: 0.44.6(@electric-sql/pglite@0.3.10)(@opentelemetry/api@1.9.0)(@vercel/postgres@0.10.0)(postgres@3.4.5)
+  drizzle-seed:
+    specifier: ^0.3.1
+    version: 0.3.1(drizzle-orm@0.44.6)
   exa-js:
     specifier: ^1.8.22
     version: 1.8.22
@@ -3832,6 +3835,18 @@ packages:
       postgres: 3.4.5
     dev: false
 
+  /drizzle-seed@0.3.1(drizzle-orm@0.44.6):
+    resolution: {integrity: sha512-F/0lgvfOAsqlYoHM/QAGut4xXIOXoE5VoAdv2FIl7DpGYVXlAzKuJO+IphkKUFK3Dz+rFlOsQLnMNrvoQ0cx7g==}
+    peerDependencies:
+      drizzle-orm: '>=0.36.4'
+    peerDependenciesMeta:
+      drizzle-orm:
+        optional: true
+    dependencies:
+      drizzle-orm: 0.44.6(@electric-sql/pglite@0.3.10)(@opentelemetry/api@1.9.0)(@vercel/postgres@0.10.0)(postgres@3.4.5)
+      pure-rand: 6.1.0
+    dev: false
+
   /dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -6953,6 +6968,10 @@ packages:
   /punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
+
+  /pure-rand@6.1.0:
+    resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+    dev: false
 
   /quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}

@@ -21,6 +21,7 @@ const baseURL = `http://localhost:${PORT}`;
  */
 export default defineConfig({
   globalSetup: require.resolve("./tests/e2e/global-setup"),
+  globalTeardown: require.resolve("./tests/e2e/global-teardown"),
   testDir: path.join(__dirname, "tests/e2e"),
   /* Run tests in files in parallel */
   fullyParallel: true,
