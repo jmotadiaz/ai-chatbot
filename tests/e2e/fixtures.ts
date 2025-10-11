@@ -4,12 +4,23 @@ import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { user, User } from "@/lib/db/schema";
+import { user, User, chat, message, Chat } from "@/lib/db/schema";
 import { schema } from "@/lib/db/db";
+
+type NewChat = {
+  title: string;
+  messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+  }>;
+};
 
 interface TestFixtures {
   authenticatedUser: { id: string; email: string };
-  db: { testUser: User };
+  db: {
+    testUser: User;
+    addChats: (newChats: NewChat[]) => Promise<Chat[]>;
+  };
 }
 
 /**
@@ -30,8 +41,31 @@ export const test = base.extend<TestFixtures>({
       })
       .returning();
 
+    const addChats = async (newChats: NewChat[]) => {
+      const insertedChats: Chat[] = [];
+      for (const newChat of newChats) {
+        const [insertedChat] = await db
+          .insert(chat)
+          .values({
+            title: newChat.title,
+            userId: testUser.id,
+          })
+          .returning();
+
+        await db.insert(message).values(
+          newChat.messages.map(({ role, content }) => ({
+            role,
+            parts: [{ type: "text", text: content }],
+            chatId: insertedChat.id,
+          }))
+        );
+        insertedChats.push(insertedChat);
+      }
+      return insertedChats;
+    };
+
     // Provide the authenticated user to the test
-    await use({ testUser });
+    await use({ testUser, addChats });
     await client.end();
   },
   authenticatedUser: async ({ page, baseURL, db }, use) => {

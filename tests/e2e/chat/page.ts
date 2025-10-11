@@ -29,6 +29,10 @@ export class ChatPage {
   readonly pdfInputLabel: Locator;
   readonly imageInputFile: Locator;
   readonly pdfInputFile: Locator;
+  // Sidebar elements
+  readonly sidebarToggleButton: Locator;
+  readonly chatList: Locator;
+  readonly sidebar: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -74,6 +78,11 @@ export class ChatPage {
     this.pdfInputLabel = page.locator('label[for="document-input"]');
     this.imageInputFile = page.locator("#image-input");
     this.pdfInputFile = page.locator("#document-input");
+    this.sidebarToggleButton = page.locator('[aria-label="Toggle sidebar"]');
+    this.chatList = page.locator(
+      '[aria-label="Chat history"][role="list"]'
+    );
+    this.sidebar = page.locator('[data-testid="sidebar"]');
   }
 
   /**
@@ -335,5 +344,37 @@ export class ChatPage {
     const options = await this.page.locator('[role="option"]').allInnerTexts();
     await this.closeDropdown();
     return options;
+  }
+  /**
+   * Toggle the sidebar
+   */
+  async toggleSidebar() {
+    await this.sidebarToggleButton.click();
+  }
+
+  /**
+   * Get all chat titles from the sidebar
+   */
+  async getChatTitles(): Promise<string[]> {
+    return this.chatList.getByRole("listitem").allInnerTexts();
+  }
+
+  /**
+   * Delete a chat by its title
+   * @param title The title of the chat to delete
+   */
+  async deleteChat(title: string) {
+    await this.chatList
+      .getByRole("listitem", { name: title })
+      .getByRole("button", { name: "Delete chat" })
+      .click();
+  }
+
+  /**
+   * Click on a chat in the sidebar by its title
+   * @param title The title of the chat to click
+   */
+  async clickChatByTitle(title: string) {
+    await this.chatList.getByRole("listitem", { name: title }).click();
   }
 }
