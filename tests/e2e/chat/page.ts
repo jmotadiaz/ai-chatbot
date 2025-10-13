@@ -79,9 +79,7 @@ export class ChatPage {
     this.imageInputFile = page.locator("#image-input");
     this.pdfInputFile = page.locator("#document-input");
     this.sidebarToggleButton = page.locator('[aria-label="Toggle sidebar"]');
-    this.chatList = page.locator(
-      '[aria-label="Chat history"][role="list"]'
-    );
+    this.chatList = page.locator('[aria-label="Chat history"]');
     this.sidebar = page.locator('[data-testid="sidebar"]');
   }
 
@@ -355,8 +353,10 @@ export class ChatPage {
   /**
    * Get all chat titles from the sidebar
    */
-  async getChatTitles(): Promise<string[]> {
-    return this.chatList.getByRole("listitem").allInnerTexts();
+  getChatItemByTitle(title: string): Locator {
+    return this.chatList.getByRole("listitem", {
+      name: title,
+    });
   }
 
   /**
@@ -364,10 +364,7 @@ export class ChatPage {
    * @param title The title of the chat to delete
    */
   async deleteChat(title: string) {
-    await this.chatList
-      .getByRole("listitem", { name: title })
-      .getByRole("button", { name: "Delete chat" })
-      .click();
+    await this.getChatItemByTitle(title).getByLabel("Delete chat").click();
   }
 
   /**

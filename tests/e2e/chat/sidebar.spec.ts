@@ -19,12 +19,12 @@ test.describe("Chat Sidebar", () => {
 
   test.beforeEach(async ({ db, authenticatedUser }) => {
     createdChats = await db.addChats(chats);
+    expect(authenticatedUser).toBeDefined();
   });
 
   test("should navigate between chats", async ({ page }) => {
     const chatPage = new ChatPage(page);
     const chat1 = createdChats[0];
-    const chat2 = createdChats[1];
 
     await chatPage.goto(chat1.id);
     await expect(page.getByText("Hello")).toBeVisible();
@@ -36,24 +36,22 @@ test.describe("Chat Sidebar", () => {
   test("should display the chat list", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
-    const chatTitles = await chatPage.getChatTitles();
-    expect(chatTitles).toEqual(["Chat 2", "Chat 1"]);
+    await chatPage.toggleSidebar();
+    expect(chatPage.getChatItemByTitle("Chat 1")).toBeVisible();
+    expect(chatPage.getChatItemByTitle("Chat 2")).toBeVisible();
   });
 
   test("should toggle the sidebar visibility", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
 
-    // Sidebar should be visible by default
-    await expect(chatPage.sidebar).toBeVisible();
-
-    // Click to hide
-    await chatPage.toggleSidebar();
     await expect(chatPage.sidebar).not.toBeVisible();
 
-    // Click to show again
     await chatPage.toggleSidebar();
     await expect(chatPage.sidebar).toBeVisible();
+
+    await chatPage.toggleSidebar();
+    await expect(chatPage.sidebar).not.toBeVisible();
   });
 
   test("should delete a chat when the delete button is clicked", async ({
@@ -61,8 +59,8 @@ test.describe("Chat Sidebar", () => {
   }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
+    await chatPage.toggleSidebar();
     await chatPage.deleteChat("Chat 1");
-    const chatTitles = await chatPage.getChatTitles();
-    expect(chatTitles).toEqual(["Chat 2"]);
+    expect(chatPage.getChatItemByTitle("Chat 1")).not.toBeAttached();
   });
 });

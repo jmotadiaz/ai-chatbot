@@ -37,7 +37,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
           Projects <CirclePlus className="h-4 w-4 ml-2" />
         </SidebarSectionTitle>
       </ChatLink>
-      <div className="space-y-2">
+      <div role="list" className="space-y-2">
         <ChatLink href="/english-helper">
           <Item>English Helper</Item>
         </ChatLink>

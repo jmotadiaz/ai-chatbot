@@ -43,28 +43,29 @@ export const test = base.extend<TestFixtures>({
 
     const addChats = async (newChats: NewChat[]) => {
       const insertedChats: Chat[] = [];
-      for (const newChat of newChats) {
-        const [insertedChat] = await db
-          .insert(chat)
-          .values({
-            title: newChat.title,
-            userId: testUser.id,
-          })
-          .returning();
+      await db.transaction(async (tx) => {
+        for (const newChat of newChats) {
+          const [insertedChat] = await tx
+            .insert(chat)
+            .values({
+              title: newChat.title,
+              userId: testUser.id,
+            })
+            .returning();
 
-        await db.insert(message).values(
-          newChat.messages.map(({ role, content }) => ({
-            role,
-            parts: [{ type: "text", text: content }],
-            chatId: insertedChat.id,
-          }))
-        );
-        insertedChats.push(insertedChat);
-      }
+          await tx.insert(message).values(
+            newChat.messages.map(({ role, content }) => ({
+              role,
+              parts: [{ type: "text", text: content }],
+              chatId: insertedChat.id,
+            }))
+          );
+          insertedChats.push(insertedChat);
+        }
+      });
       return insertedChats;
     };
 
-    // Provide the authenticated user to the test
     await use({ testUser, addChats });
     await client.end();
   },
