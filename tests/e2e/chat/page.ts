@@ -354,9 +354,9 @@ export class ChatPage {
    * Get all chat titles from the sidebar
    */
   getChatItemByTitle(title: string): Locator {
-    return this.chatList.getByRole("listitem", {
-      name: title,
-    });
+    return this.chatList
+      .getByText(title, { exact: true })
+      .locator('xpath=ancestor::div[@role="listitem"]');
   }
 
   /**
@@ -372,6 +372,6 @@ export class ChatPage {
    * @param title The title of the chat to click
    */
   async clickChatByTitle(title: string) {
-    await this.chatList.getByRole("listitem", { name: title }).click();
+    await this.chatList.getByText(title, { exact: true }).click();
   }
 }

@@ -29,6 +29,7 @@ test.describe("Chat Sidebar", () => {
     await chatPage.goto(chat1.id);
     await expect(page.getByText("Hello")).toBeVisible();
 
+    await chatPage.toggleSidebar();
     await chatPage.clickChatByTitle("Chat 2");
     await expect(page.getByText("Hi")).toBeVisible();
   });
@@ -37,8 +38,8 @@ test.describe("Chat Sidebar", () => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
     await chatPage.toggleSidebar();
-    expect(chatPage.getChatItemByTitle("Chat 1")).toBeVisible();
-    expect(chatPage.getChatItemByTitle("Chat 2")).toBeVisible();
+    await expect(chatPage.getChatItemByTitle("Chat 1")).toBeVisible();
+    await expect(chatPage.getChatItemByTitle("Chat 2")).toBeVisible();
   });
 
   test("should toggle the sidebar visibility", async ({ page }) => {
@@ -61,6 +62,6 @@ test.describe("Chat Sidebar", () => {
     await chatPage.goto();
     await chatPage.toggleSidebar();
     await chatPage.deleteChat("Chat 1");
-    expect(chatPage.getChatItemByTitle("Chat 1")).not.toBeAttached();
+    await expect(chatPage.getChatItemByTitle("Chat 1")).not.toBeAttached();
   });
 });
