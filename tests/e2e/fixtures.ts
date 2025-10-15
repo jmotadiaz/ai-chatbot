@@ -1,10 +1,26 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { randomUUID } from "crypto";
 import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
-import { TEST_USER_EMAIL, TEST_USER_ID } from "@/tests/e2e/db-seed";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { user, User, chat, message, Chat } from "@/lib/db/schema";
+import { schema } from "@/lib/db/db";
+
+type NewChat = {
+  title: string;
+  messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+  }>;
+};
 
 interface TestFixtures {
   authenticatedUser: { id: string; email: string };
+  db: {
+    testUser: User;
+    addChats: (newChats: NewChat[]) => Promise<Chat[]>;
+  };
 }
 
 /**
@@ -12,15 +28,58 @@ interface TestFixtures {
  * This allows dependency injection for testing
  */
 export const test = base.extend<TestFixtures>({
-  authenticatedUser: async ({ page, baseURL }, use) => {
+  db: async ({}, use) => {
+    const client = postgres(process.env.POSTGRES_URL!);
+    const db = drizzle(client, { schema });
+
+    const [testUser] = await db
+      .insert(user)
+      .values({
+        email: `${randomUUID()}@test.com`,
+        password:
+          "$2b$10$testtestsalt123456789012uG9dWQd8U1xMOPuQJxFr7eETeM2Yy",
+      })
+      .returning();
+
+    const addChats = async (newChats: NewChat[]) => {
+      const insertedChats: Chat[] = [];
+      await db.transaction(async (tx) => {
+        for (const newChat of newChats) {
+          const [insertedChat] = await tx
+            .insert(chat)
+            .values({
+              title: newChat.title,
+              userId: testUser.id,
+            })
+            .returning();
+
+          await tx.insert(message).values(
+            newChat.messages.map(({ role, content }) => ({
+              role,
+              parts: [{ type: "text", text: content }],
+              chatId: insertedChat.id,
+            }))
+          );
+          insertedChats.push(insertedChat);
+        }
+      });
+      return insertedChats;
+    };
+
+    await use({ testUser, addChats });
+    await client.end();
+  },
+  authenticatedUser: async ({ page, baseURL, db }, use) => {
     const secret = process.env.AUTH_SECRET;
     if (!secret) {
       throw new Error("AUTH_SECRET not set");
     }
 
+    const { testUser } = db;
+
     const token: DefaultJWT = {
-      id: TEST_USER_ID,
-      email: TEST_USER_EMAIL,
+      id: testUser.id,
+      email: testUser.email,
       type: "regular",
     };
 
@@ -53,7 +112,7 @@ export const test = base.extend<TestFixtures>({
     ]);
 
     // Provide the authenticated user to the test
-    await use({ id: TEST_USER_ID, email: TEST_USER_EMAIL });
+    await use({ id: testUser.id, email: testUser.email });
   },
 });
 

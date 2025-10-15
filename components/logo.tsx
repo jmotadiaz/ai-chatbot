@@ -8,6 +8,7 @@ export const Logo = () => {
     <div
       className="text-zinc-800 dark:text-zinc-100 -translate-y-[.5px] cursor-pointer"
       onClick={toggleSidebar}
+      aria-label="Toggle sidebar"
     >
       <LogoIcon />
     </div>

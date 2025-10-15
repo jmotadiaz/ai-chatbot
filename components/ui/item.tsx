@@ -24,6 +24,7 @@ export const Item: React.FC<ItemProps> = ({
         className={cn("flex items-center gap-3", {
           "opacity-0": loading,
         })}
+        role="listitem"
       >
         {children}
       </div>

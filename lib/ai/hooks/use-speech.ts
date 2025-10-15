@@ -32,8 +32,9 @@ export const useSpeech = ({ input, api = "/api/speech" }: UseSpeechParams) => {
       });
 
       if (response.ok) {
-        const audioBlob = await response.blob();
-        const url = URL.createObjectURL(audioBlob);
+        const { url } = (await response.json()) as {
+          url: string;
+        };
         setAudioUrl(url);
       } else {
         console.error("Error generating speech");

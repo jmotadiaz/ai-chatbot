@@ -40,7 +40,7 @@ test.describe("Chat attachments", () => {
 
     // Upload an image
     await chatPage.openAttachmentMenu();
-    await chatPage.uploadFile("dummy-image.png", "image");
+    await chatPage.uploadFile("./tests/mocks/dummy-image.png", "image");
     await expect(
       chatPage.getThumbnailByAltText("dummy-image.png")
     ).toBeVisible();

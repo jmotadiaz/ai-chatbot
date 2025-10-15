@@ -20,7 +20,11 @@ export const ChatList: React.FC<ChatListProps> = async ({
   return (
     <div className={cn("my-4", className)}>
       <SidebarSectionTitle>Chats</SidebarSectionTitle>
-      <div className="space-y-3">
+      <div
+        className="space-y-3"
+        role="list"
+        aria-label="Chat history"
+      >
         {chats
           .filter(({ id }) => id !== chatId)
           .map((chat) => (

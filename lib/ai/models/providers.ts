@@ -8,10 +8,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import {
-  createMockEmbeddingModel,
-  createMockModel,
-} from "@/lib/ai/models/mocks";
+import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
