@@ -11,13 +11,13 @@ test.describe("Chat functionality", () => {
   });
 
   test("should allow modifying chat settings for different models", async () => {
-    await chatPage.selectModel("Router");
+    await chatPage.header.selectModel("Router");
     await expect(chatPage.settingsButton).not.toBeVisible();
 
-    await chatPage.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.selectModel("Claude Sonnet 4.5");
     await expect(chatPage.settingsButton).toBeVisible();
 
-    await chatPage.selectModel("Qwen3 Next Instruct");
+    await chatPage.header.selectModel("Qwen3 Next Instruct");
     await expect(chatPage.settingsButton).toBeVisible();
 
     await chatPage.openSettings();
@@ -30,7 +30,7 @@ test.describe("Chat functionality", () => {
     await chatPage.setTopK(15);
     await chatPage.closeDropdown();
 
-    await chatPage.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.selectModel("Claude Sonnet 4.5");
     await chatPage.openSettings();
     await expect(chatPage.temperatureInput).toHaveValue("0.5");
     await expect(chatPage.topPInput).not.toBeVisible();
@@ -38,7 +38,7 @@ test.describe("Chat functionality", () => {
   });
 
   test("should send config to the assistant correctly", async () => {
-    await chatPage.selectModel("Qwen3 Next Instruct");
+    await chatPage.header.selectModel("Qwen3 Next Instruct");
 
     await chatPage.openSettings();
 

@@ -1,6 +1,6 @@
 import { Page, Locator, expect } from "@playwright/test";
-import type { chatModelId } from "@/lib/ai/models/definition";
 import { SidebarComponent } from "@/tests/e2e/chat/sidebar.component";
+import { HeaderComponent } from "@/tests/e2e/chat/header.component";
 
 /**
  * Page Object Model for Chat functionality
@@ -8,13 +8,14 @@ import { SidebarComponent } from "@/tests/e2e/chat/sidebar.component";
  */
 export class ChatPage {
   readonly page: Page;
+  readonly header: HeaderComponent;
+  readonly sidebar: SidebarComponent;
   readonly chatInput: Locator;
   readonly submitButton: Locator;
   readonly messagesContainer: Locator;
   readonly userMessages: Locator;
   readonly assistantMessages: Locator;
   readonly loadingIndicator: Locator;
-  readonly modelPicker: Locator;
   readonly settingsButton: Locator;
   readonly toolsControl: Locator;
   readonly ragToolLabel: Locator;
@@ -30,12 +31,13 @@ export class ChatPage {
   readonly pdfInputLabel: Locator;
   readonly imageInputFile: Locator;
   readonly pdfInputFile: Locator;
-  readonly sidebar: SidebarComponent;
   readonly refineButton: Locator;
   readonly undoButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.header = new HeaderComponent(page);
+    this.sidebar = new SidebarComponent(page);
 
     // Main chat elements
     this.chatInput = page.locator("[data-testid='chat-input']");
@@ -58,10 +60,6 @@ export class ChatPage {
     // Loading state
     this.loadingIndicator = page.locator('[data-testid="loading-message"]');
 
-    // Settings elements
-    this.modelPicker = page.locator(
-      '[role="combobox"][aria-controls="dropdown-header-model-picker"]'
-    );
     this.settingsButton = page.locator('button[aria-label="Chat settings"]');
     this.toolsControl = page.locator('button[aria-label="Configure tools"]');
     this.ragToolLabel = page.locator('label[for="rag-tool"]');
@@ -78,19 +76,10 @@ export class ChatPage {
     this.pdfInputLabel = page.locator('label[for="document-input"]');
     this.imageInputFile = page.locator("#image-input");
     this.pdfInputFile = page.locator("#document-input");
-    this.sidebar = new SidebarComponent(page);
 
     // Refine elements
     this.refineButton = page.locator('button[aria-label="Refine prompt"]');
     this.undoButton = page.locator('button[aria-label="Undo refined prompt"]');
-  }
-
-  /**
-   * Get a locator for a model option by its name to check visibility
-   * @param modelName The name of the model
-   */
-  getModelOption(modelName: chatModelId): Locator {
-    return this.page.locator(`[role="option"]:has-text("${modelName}")`);
   }
 
   /**
@@ -201,22 +190,6 @@ export class ChatPage {
   async verifyAssistantResponseContains(expectedText: string) {
     const lastMessage = await this.getLastAssistantMessage();
     expect(lastMessage).toContain(expectedText);
-  }
-
-  async openSelectModelDropdown() {
-    await this.modelPicker.click();
-  }
-
-  /**
-   * Select a model from the model picker
-   */
-  async selectModel(modelName: chatModelId) {
-    await this.openSelectModelDropdown();
-    await this.page
-      .locator(
-        `#dropdown-header-model-picker [role="option"]:has-text("${modelName}")`
-      )
-      .click();
   }
 
   /**
@@ -336,15 +309,6 @@ export class ChatPage {
     return this.page.locator(`img[alt="${altText}"]`);
   }
 
-  /**
-   * Get the available models from the model picker
-   */
-  async getAvailableModels(): Promise<string[]> {
-    await this.modelPicker.click();
-    const options = await this.page.locator('[role="option"]').allInnerTexts();
-    await this.closeDropdown();
-    return options;
-  }
   /**
    * Click the refine button
    */
