@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from "@playwright/test";
 import type { chatModelId } from "@/lib/ai/models/definition";
+import { SidebarComponent } from "@/tests/e2e/chat/sidebar.component";
 
 /**
  * Page Object Model for Chat functionality
@@ -29,10 +30,7 @@ export class ChatPage {
   readonly pdfInputLabel: Locator;
   readonly imageInputFile: Locator;
   readonly pdfInputFile: Locator;
-  // Sidebar elements
-  readonly sidebarToggleButton: Locator;
-  readonly chatList: Locator;
-  readonly sidebar: Locator;
+  readonly sidebar: SidebarComponent;
   readonly refineButton: Locator;
   readonly undoButton: Locator;
 
@@ -80,9 +78,7 @@ export class ChatPage {
     this.pdfInputLabel = page.locator('label[for="document-input"]');
     this.imageInputFile = page.locator("#image-input");
     this.pdfInputFile = page.locator("#document-input");
-    this.sidebarToggleButton = page.locator('[aria-label="Toggle sidebar"]');
-    this.chatList = page.locator('[aria-label="Chat history"]');
-    this.sidebar = page.locator('[data-testid="sidebar"]');
+    this.sidebar = new SidebarComponent(page);
 
     // Refine elements
     this.refineButton = page.locator('button[aria-label="Refine prompt"]');
@@ -349,38 +345,6 @@ export class ChatPage {
     await this.closeDropdown();
     return options;
   }
-  /**
-   * Toggle the sidebar
-   */
-  async toggleSidebar() {
-    await this.sidebarToggleButton.click();
-  }
-
-  /**
-   * Get all chat titles from the sidebar
-   */
-  getChatItemByTitle(title: string): Locator {
-    return this.chatList
-      .getByText(title, { exact: true })
-      .locator('xpath=ancestor::div[@role="listitem"]');
-  }
-
-  /**
-   * Delete a chat by its title
-   * @param title The title of the chat to delete
-   */
-  async deleteChat(title: string) {
-    await this.getChatItemByTitle(title).getByLabel("Delete chat").click();
-  }
-
-  /**
-   * Click on a chat in the sidebar by its title
-   * @param title The title of the chat to click
-   */
-  async clickChatByTitle(title: string) {
-    await this.chatList.getByText(title, { exact: true }).click();
-  }
-
   /**
    * Click the refine button
    */

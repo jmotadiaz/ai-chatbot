@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./chat.page";
 
 const chats = [
   {
@@ -29,30 +29,30 @@ test.describe("Chat Sidebar", () => {
     await chatPage.goto(chat1.id);
     await expect(page.getByText("Hello")).toBeVisible();
 
-    await chatPage.toggleSidebar();
-    await chatPage.clickChatByTitle("Chat 2");
+    await chatPage.sidebar.toggleSidebar();
+    await chatPage.sidebar.clickChatByTitle("Chat 2");
     await expect(page.getByText("Hi")).toBeVisible();
   });
 
   test("should display the chat list", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
-    await chatPage.toggleSidebar();
-    await expect(chatPage.getChatItemByTitle("Chat 1")).toBeVisible();
-    await expect(chatPage.getChatItemByTitle("Chat 2")).toBeVisible();
+    await chatPage.sidebar.toggleSidebar();
+    await expect(chatPage.sidebar.getChatItemByTitle("Chat 1")).toBeVisible();
+    await expect(chatPage.sidebar.getChatItemByTitle("Chat 2")).toBeVisible();
   });
 
   test("should toggle the sidebar visibility", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
 
-    await expect(chatPage.sidebar).not.toBeVisible();
+    await expect(chatPage.sidebar.sidebarContainer).not.toBeVisible();
 
-    await chatPage.toggleSidebar();
-    await expect(chatPage.sidebar).toBeVisible();
+    await chatPage.sidebar.toggleSidebar();
+    await expect(chatPage.sidebar.sidebarContainer).toBeVisible();
 
-    await chatPage.toggleSidebar();
-    await expect(chatPage.sidebar).not.toBeVisible();
+    await chatPage.sidebar.toggleSidebar();
+    await expect(chatPage.sidebar.sidebarContainer).not.toBeVisible();
   });
 
   test("should delete a chat when the delete button is clicked", async ({
@@ -60,8 +60,10 @@ test.describe("Chat Sidebar", () => {
   }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
-    await chatPage.toggleSidebar();
-    await chatPage.deleteChat("Chat 1");
-    await expect(chatPage.getChatItemByTitle("Chat 1")).not.toBeAttached();
+    await chatPage.sidebar.toggleSidebar();
+    await chatPage.sidebar.deleteChat("Chat 1");
+    await expect(
+      chatPage.sidebar.getChatItemByTitle("Chat 1")
+    ).not.toBeAttached();
   });
 });
