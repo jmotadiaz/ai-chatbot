@@ -16,11 +16,8 @@ export async function POST(req: Request) {
       text: input,
     });
 
-    return new Response(result.audio.uint8Array, {
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Disposition": 'inline; filename="speech.mp3"',
-      },
+    return Response.json({
+      url: `data:audio/mpeg;base64,${result.audio.base64}`,
     });
   } catch (error) {
     console.error("Error generating speech:", error);
