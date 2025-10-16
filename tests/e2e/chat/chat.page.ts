@@ -26,11 +26,10 @@ export class ChatPage {
   readonly dropdownBackdrop: Locator;
   readonly attachmentButton: Locator;
   readonly attachmentMenu: Locator;
-  readonly fileInput: Locator;
-  readonly imageInputLabel: Locator;
-  readonly pdfInputLabel: Locator;
   readonly imageInputFile: Locator;
   readonly pdfInputFile: Locator;
+  readonly imageInputLabel: Locator;
+  readonly pdfInputLabel: Locator;
   readonly refineButton: Locator;
   readonly undoButton: Locator;
 
@@ -56,30 +55,27 @@ export class ChatPage {
     );
 
     // Loading state
-    this.loadingIndicator = page.locator('[data-testid="loading-message"]');
+    this.loadingIndicator = page.getByTestId("loading-message");
 
-    this.settingsButton = page.locator('button[aria-label="Chat settings"]');
-    this.toolsControl = page.locator('button[aria-label="Configure tools"]');
+    this.settingsButton = page.getByLabel("Chat settings");
+    this.toolsControl = page.getByLabel("Configure tools");
     this.ragToolLabel = page.locator('label[for="rag-tool"]');
     this.webSearchToolLabel = page.locator('label[for="rag-tool"]');
-    this.temperatureInput = page.locator("#temperature");
-    this.topPInput = page.locator("#topP");
-    this.topKInput = page.locator("#topK");
-    this.dropdownBackdrop = page.locator('[data-testid="backdrop"]');
+    this.temperatureInput = page.getByLabel("Temperature");
+    this.topPInput = page.getByLabel("Top P");
+    this.topKInput = page.getByLabel("Top K");
+    this.dropdownBackdrop = page.getByTestId("backdrop");
     // Attachment elements
-    this.attachmentButton = page.locator('button[aria-label="Attach files"]');
-    this.attachmentMenu = page.locator('[aria-label="Attachment options"]');
-    this.fileInput = page.locator('input[type="file"]');
-    this.imageInputLabel = page.locator('label[for="image-input"]');
-    this.pdfInputLabel = page.locator('label[for="document-input"]');
-    this.imageInputFile = page.locator("#image-input");
-    this.pdfInputFile = page.locator("#document-input");
+    this.attachmentButton = page.getByLabel("Attach files");
+    this.attachmentMenu = page.getByLabel("Attachment options");
+    this.imageInputFile = page.getByLabel("Image");
+    this.pdfInputFile = page.getByLabel("Document");
+    this.imageInputLabel = this.attachmentMenu.getByText("Image");
+    this.pdfInputLabel = this.attachmentMenu.getByText("Document");
 
     // Refine elements
-    this.refineButton = page.locator(
-      'button[aria-label="Refine prompt"]:not(:disabled)'
-    );
-    this.undoButton = page.locator('button[aria-label="Undo refined prompt"]');
+    this.refineButton = page.getByLabel("Refine prompt");
+    this.undoButton = page.getByLabel("Undo refined prompt");
   }
 
   async toggleTool(toolName: "rag" | "web-search") {
@@ -103,7 +99,7 @@ export class ChatPage {
   }
 
   async submitMessage() {
-    await expect(this.submitButton).toBeEnabled();
+    await this.submitButton.isEnabled({ timeout: 5000 });
     await this.submitButton.click();
   }
 
@@ -210,7 +206,7 @@ export class ChatPage {
    * Click the refine button
    */
   async clickRefineButton() {
-    await expect(this.refineButton).toBeEnabled();
+    await this.refineButton.isEnabled({ timeout: 5000 });
     await this.refineButton.click();
   }
 
