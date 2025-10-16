@@ -36,5 +36,6 @@ export class HeaderComponent {
   async selectModel(modelName: chatModelId) {
     await this.openSelectModelDropdown();
     await this.getModelOption(modelName).click();
+    await this.modelDropdown.waitFor({ state: "detached" });
   }
 }

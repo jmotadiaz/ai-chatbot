@@ -78,14 +78,12 @@ export class ChatPage {
     this.pdfInputFile = page.locator("#document-input");
 
     // Refine elements
-    this.refineButton = page.locator('button[aria-label="Refine prompt"]');
+    this.refineButton = page.locator(
+      'button[aria-label="Refine prompt"]:not(:disabled)'
+    );
     this.undoButton = page.locator('button[aria-label="Undo refined prompt"]');
   }
 
-  /**
-   * Toggle a tool by its name
-   * @param toolName The name of the tool to toggle
-   */
   async toggleTool(toolName: "rag" | "web-search") {
     await this.toolsControl.click();
     if (toolName === "rag") {
@@ -93,43 +91,28 @@ export class ChatPage {
     } else if (toolName === "web-search") {
       await this.webSearchToolLabel.click();
     }
-    // Click backdrop to close dropdown
     await this.closeDropdown();
   }
 
-  /**
-   * Navigate to the chat page
-   */
   async goto(chatId?: string) {
     const url = chatId ? `/${chatId}` : "/";
     await this.page.goto(url);
   }
 
-  /**
-   * Type a message in the chat input
-   */
   async typeMessage(message: string) {
     await this.chatInput.fill(message);
   }
 
-  /**
-   * Submit the current message
-   */
   async submitMessage() {
+    await this.submitButton.waitFor({ state: "visible" });
     await this.submitButton.click();
   }
 
-  /**
-   * Send a message (type + submit)
-   */
   async sendMessage(message: string) {
     await this.typeMessage(message);
     await this.submitMessage();
   }
 
-  /**
-   * Get all user messages text
-   */
   async getUserMessages(): Promise<string[]> {
     const count = await this.userMessages.count();
     const messages: string[] = [];
@@ -142,9 +125,6 @@ export class ChatPage {
     return messages;
   }
 
-  /**
-   * Get all assistant messages text
-   */
   async getAssistantMessages(): Promise<string[]> {
     const count = await this.assistantMessages.count();
     const messages: string[] = [];
@@ -157,17 +137,11 @@ export class ChatPage {
     return messages;
   }
 
-  /**
-   * Get the last assistant message
-   */
   async getLastAssistantMessage(): Promise<string | null> {
     const messages = await this.getAssistantMessages();
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }
 
-  /**
-   * Wait for loading to complete
-   */
   async waitForLoadingComplete(timeout = 30000) {
     try {
       await this.loadingIndicator.waitFor({ state: "attached", timeout });
@@ -177,116 +151,45 @@ export class ChatPage {
     }
   }
 
-  /**
-   * Check if chat input is enabled
-   */
-  async isChatInputEnabled(): Promise<boolean> {
-    return await this.chatInput.isEnabled();
-  }
-
-  /**
-   * Verify assistant response contains specific text
-   */
   async verifyAssistantResponseContains(expectedText: string) {
     const lastMessage = await this.getLastAssistantMessage();
     expect(lastMessage).toContain(expectedText);
   }
 
-  /**
-   * Open the settings dropdown
-   */
+  async closeDropdown() {
+    await this.dropdownBackdrop.click({ position: { x: 10, y: 10 } });
+  }
+
   async openSettings() {
     await this.settingsButton.click();
-  }
-
-  async closeDropdown() {
-    await this.dropdownBackdrop.click();
-  }
-
-  /**
-   * Set the value of a number input
-   */
-  private async setInputValue(input: Locator, value: number) {
-    await input.click();
-    await input.fill(value.toString());
   }
 
   /**
    * Set the temperature value
    */
   async setTemperature(value: number) {
-    await this.setInputValue(this.temperatureInput, value);
+    await this.setInputNumberValue(this.temperatureInput, value);
   }
 
   /**
    * Set the topP value
    */
   async setTopP(value: number) {
-    await this.setInputValue(this.topPInput, value);
+    await this.setInputNumberValue(this.topPInput, value);
   }
 
   /**
    * Set the topK value
    */
   async setTopK(value: number) {
-    await this.setInputValue(this.topKInput, value);
+    await this.setInputNumberValue(this.topKInput, value);
   }
 
-  /**
-   * Get the value of an input
-   */
-  private async getInputValue(input: Locator): Promise<number> {
-    const value = await input.inputValue();
-    return parseFloat(value);
-  }
-
-  /**
-   * Get the temperature value
-   */
-  async getTemperature(): Promise<number> {
-    return this.getInputValue(this.temperatureInput);
-  }
-
-  /**
-   * Get the topP value
-   */
-  async getTopP(): Promise<number> {
-    return this.getInputValue(this.topPInput);
-  }
-
-  /**
-   * Get the topK value
-   */
-  async getTopK(): Promise<number> {
-    return this.getInputValue(this.topKInput);
-  }
-
-  /**
-   * Check if the settings button is visible
-   */
-  async areSettingsVisible(): Promise<boolean> {
-    return this.settingsButton.isVisible();
-  }
-
-  /**
-   * Check if the attachment button is visible
-   */
-  async isAttachmentButtonVisible(): Promise<boolean> {
-    return this.attachmentButton.isVisible();
-  }
-
-  /**
-   * Open the attachment menu
-   */
   async openAttachmentMenu() {
     await this.attachmentButton.click();
+    await this.attachmentMenu.waitFor({ state: "visible", timeout: 1000 });
   }
 
-  /**
-   * Upload a file
-   * @param filePath - The path to the file to upload
-   * @param fileType - The type of file to upload
-   */
   async uploadFile(filePath: string, fileType: "image" | "pdf") {
     await this.page.route("**/api/upload", async (route) => {
       const json = {
@@ -320,20 +223,11 @@ export class ChatPage {
    * Click the undo button
    */
   async clickUndoButton() {
+    await this.undoButton.waitFor({ state: "visible" });
     await this.undoButton.click();
   }
 
-  /**
-   * Check if the refine button is visible
-   */
-  async isRefineButtonVisible(): Promise<boolean> {
-    return this.refineButton.isVisible();
-  }
-
-  /**
-   * Check if the undo button is visible
-   */
-  async isUndoButtonVisible(): Promise<boolean> {
-    return this.undoButton.isVisible();
+  private async setInputNumberValue(input: Locator, value: number) {
+    await input.fill(value.toString());
   }
 }
