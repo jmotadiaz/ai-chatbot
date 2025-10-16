@@ -152,6 +152,39 @@ export const createMockModel = (modelId: string): LanguageModelV2 => {
   });
 };
 
+export const createRouterMock = () => {
+  return new MockLanguageModelV2({
+    doGenerate: async ({ messages }) => {
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageContent =
+        typeof lastMessage.content === "string"
+          ? lastMessage.content
+          : lastMessage.content
+              .filter((part) => part.type === "text")
+              .map((part) => (part.type === "text" ? part.text : ""))
+              .join(" ");
+
+      const categoryMatch = lastMessageContent.match(/category=(\w+)/);
+      const complexityMatch = lastMessageContent.match(/complexity=(\w+)/);
+
+      const category = categoryMatch ? categoryMatch[1] : "other";
+      const complexity = complexityMatch ? complexityMatch[1] : "simple";
+
+      return {
+        finishReason: "stop",
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+        content: [
+          {
+            type: "text",
+            text: `{ "category": "${category}", "complexity": "${complexity}" }`,
+          },
+        ],
+        warnings: [],
+      };
+    },
+  });
+};
+
 export const createMockEmbeddingModel = (): EmbeddingModelV2 => {
   return new MockEmbeddingModelV2({
     doEmbed: async () => ({
