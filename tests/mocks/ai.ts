@@ -113,6 +113,7 @@ function notImplemented(): never {
 
 export const createMockModel = (modelId: string): LanguageModelV2 => {
   return new MockLanguageModelV2({
+    modelId,
     doStream: async ({ temperature, topP, topK }) => ({
       stream: simulateReadableStream({
         chunks: [
@@ -138,31 +139,15 @@ export const createMockModel = (modelId: string): LanguageModelV2 => {
       }),
       rawCall: { rawPrompt: null, rawSettings: {} },
     }),
-    doGenerate: async ({}) => ({
-      finishReason: "stop",
-      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
-      content: [
-        {
-          type: "text",
-          text: `{ "category": "factual", "complexity": "simple" }`,
-        },
-      ],
-      warnings: [],
-    }),
-  });
-};
-
-export const createRouterMock = () => {
-  return new MockLanguageModelV2({
-    doGenerate: async ({ messages }) => {
-      const lastMessage = messages[messages.length - 1];
+    doGenerate: async ({ prompt }) => {
+      const lastPrompt = prompt[prompt.length - 1];
       const lastMessageContent =
-        typeof lastMessage.content === "string"
-          ? lastMessage.content
-          : lastMessage.content
+        lastPrompt.role === "user"
+          ? lastPrompt.content
               .filter((part) => part.type === "text")
-              .map((part) => (part.type === "text" ? part.text : ""))
-              .join(" ");
+              .map((part) => part.text)
+              .join(" ")
+          : "";
 
       const categoryMatch = lastMessageContent.match(/category=(\w+)/);
       const complexityMatch = lastMessageContent.match(/complexity=(\w+)/);

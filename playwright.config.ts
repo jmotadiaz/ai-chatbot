@@ -86,10 +86,11 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: "pnpm dev",
+    // stdout: "pipe",
+    // stderr: "pipe",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
-    // stdout: "pipe",
     env: {
       USE_MOCK_PROVIDERS: "1",
     },

@@ -17,7 +17,7 @@
     "lint": "next lint && tsc --noEmit",
     "lint:fix": "next lint --fix && tsc --noEmit",
     "type:check": "tsc --noEmit",
-    "test": "npm run db:test:start && npm run test:e2e && npm run db:test:stop",
+    "test": "npm run db:test:start && npx playwright test --reporter=line && npm run db:test:stop",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

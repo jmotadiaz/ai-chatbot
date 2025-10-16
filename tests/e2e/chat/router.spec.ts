@@ -1,101 +1,112 @@
-import { expect, test } from "tests/e2e/fixtures";
-import { createRouterMock, createMockModel } from "tests/mocks/ai";
-import { ChatPage } from "tests/e2e/chat/chat.page";
-import {
-  languageModelConfigurations,
-  LanguageModelKeys,
-} from "@/lib/ai/models/definition";
+import { expect, test } from "../fixtures";
+import { ChatPage } from "./chat.page";
 
-const modelRouterTestCases: {
-  category: string;
-  complexity: string;
-  expected: LanguageModelKeys;
-}[] = [
-  {
-    category: "factual",
-    complexity: "simple",
-    expected: "Llama 4 Scout",
+type Category =
+  | "current_news"
+  | "factual"
+  | "analytical"
+  | "technical"
+  | "creative"
+  | "prompt_engineering"
+  | "conversational"
+  | "processing"
+  | "image_generation"
+  | "other";
+
+type Complexity = "simple" | "moderate" | "complex" | "advanced";
+
+const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
+  current_news: {
+    simple: "llama-3.1-8b-instant",
+    moderate: "meta-llama/llama-4-scout-17b-16e-instruct",
+    complex: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    advanced: "google/gemini-2.5-pro",
   },
-  {
-    category: "factual",
-    complexity: "moderate",
-    expected: "Llama 4 Maverick",
+  factual: {
+    simple: "meta-llama/llama-4-scout-17b-16e-instruct",
+    moderate: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    complex: "moonshotai/kimi-k2-instruct-0905",
+    advanced: "google/gemini-2.5-flash",
   },
-  {
-    category: "factual",
-    complexity: "complex",
-    expected: "Kimi K2",
+  analytical: {
+    simple: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    moderate: "qwen/qwen3-next-80b-a3b-thinking",
+    complex: "grok-4-fast",
+    advanced: "grok-4-0709",
   },
-  {
-    category: "factual",
-    complexity: "advanced",
-    expected: "Gemini 2.5 Flash",
+  technical: {
+    simple: "meta-llama/llama-4-scout-17b-16e-instruct",
+    moderate: "qwen/qwen3-coder",
+    complex: "claude-sonnet-4-5-20250929",
+    advanced: "gpt-5-2025-08-07",
   },
-  {
-    category: "analytical",
-    complexity: "simple",
-    expected: "Llama 4 Maverick",
+  creative: {
+    simple: "llama-3.1-8b-instant",
+    moderate: "google/gemini-2.5-flash-lite",
+    complex: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    advanced: "google/gemini-2.5-flash",
   },
-  {
-    category: "analytical",
-    complexity: "moderate",
-    expected: "Qwen3 Next Thinking",
+  prompt_engineering: {
+    simple: "meta-llama/llama-4-scout-17b-16e-instruct",
+    moderate: "moonshotai/kimi-k2-instruct-0905",
+    complex: "openai/gpt-oss-120b",
+    advanced: "google/gemini-2.5-pro",
   },
-  {
-    category: "analytical",
-    complexity: "complex",
-    expected: "Grok 4 Fast",
+  conversational: {
+    simple: "llama-3.1-8b-instant",
+    moderate: "meta-llama/llama-4-scout-17b-16e-instruct",
+    complex: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    advanced: "google/gemini-2.5-flash",
   },
-  {
-    category: "analytical",
-    complexity: "advanced",
-    expected: "Grok 4",
+  processing: {
+    simple: "llama-3.1-8b-instant",
+    moderate: "qwen/qwen3-next-80b-a3b-instruct",
+    complex: "google/gemini-2.5-flash",
+    advanced: "google/gemini-2.5-pro",
   },
-];
+  image_generation: {
+    simple: "google/gemini-2.5-flash-image-preview",
+    moderate: "google/gemini-2.5-flash-image-preview",
+    complex: "google/gemini-2.5-flash-image-preview",
+    advanced: "google/gemini-2.5-flash-image-preview",
+  },
+  other: {
+    simple: "llama-3.1-8b-instant",
+    moderate: "llama-3.1-8b-instant",
+    complex: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    advanced: "meta-llama/llama-4-maverick-17b-128e-instruct",
+  },
+};
+
+const modelRouterTestCases: Array<{
+  category: Category;
+  complexity: Complexity;
+  expected: string;
+}> = [];
+
+for (const category of Object.keys(modelRoutingExpectations) as Category[]) {
+  const complexities = modelRoutingExpectations[category];
+
+  for (const complexity of Object.keys(complexities) as Complexity[]) {
+    modelRouterTestCases.push({
+      category,
+      complexity,
+      expected: complexities[complexity],
+    });
+  }
+}
 
 test.describe("Model Router", () => {
+  let chatPage: ChatPage;
+
+  test.beforeEach(async ({ page, authenticatedUser }) => {
+    chatPage = new ChatPage(page);
+    await chatPage.goto();
+    expect(authenticatedUser.email).toBeDefined();
+  });
+
   modelRouterTestCases.forEach(({ category, complexity, expected }) => {
-    test(`should use ${expected} for category ${category} and complexity ${complexity}`, async ({
-      page,
-      authenticatedUser,
-    }) => {
-      const chatPage = new ChatPage(page);
-      const routerMock = createRouterMock();
-      const expectedModelId = languageModelConfigurations(expected).model.modelId;
-      const finalModelMock = createMockModel(expectedModelId);
-
-      await page.route("**/api/ai/generation", async (route) => {
-        const requestBody = route.request().postDataJSON();
-        const model = requestBody.options.model;
-
-        if (model === "openai/gpt-oss-20b") {
-          // Mock for the router classification model
-          const mockResponse = await routerMock.doGenerate(requestBody.options);
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify(mockResponse),
-          });
-        } else {
-          // Mock for the final selected model
-          const mockResponse = await finalModelMock.doStream(
-            requestBody.options
-          );
-          const stream = new ReadableStream({
-            start(controller) {
-              mockResponse.stream.on("data", (chunk) =>
-                controller.enqueue(chunk)
-              );
-              mockResponse.stream.on("end", () => controller.close());
-            },
-          });
-          return route.fulfill({
-            status: 200,
-            body: stream,
-          });
-        }
-      });
-
+    test(`should use ${expected} for category ${category} and complexity ${complexity}`, async () => {
       await chatPage.goto();
       await chatPage.sendMessage(
         `category=${category} complexity=${complexity}`
@@ -103,7 +114,7 @@ test.describe("Model Router", () => {
       await chatPage.waitForLoadingComplete();
 
       const lastMessage = await chatPage.getLastAssistantMessage();
-      expect(lastMessage).toContain(expectedModelId);
+      expect(lastMessage).toContain(expected);
     });
   });
 });
