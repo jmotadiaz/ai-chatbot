@@ -129,6 +129,7 @@ const Chat: React.FC = () => {
             <ChatControl
               Icon={ArrowUp}
               type="submit"
+              aria-label="Send message"
               disabled={!sendEnabled || isLoadingRefinedPrompt}
               isLoading={isLoading}
               onLoadingClick={stop}

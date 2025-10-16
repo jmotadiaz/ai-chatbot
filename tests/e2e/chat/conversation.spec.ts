@@ -16,9 +16,10 @@ test.describe("Chat functionality", () => {
     await chatPage.header.selectModel("Llama 4 Scout");
 
     await chatPage.sendMessage(userQuery);
-    await chatPage.waitForLoadingComplete();
 
-    await chatPage.verifyAssistantResponseContains(
+    await chatPage.waitForLoadingComplete();
+    const lastMessage = await chatPage.getLastAssistantMessage();
+    expect(lastMessage).toContain(
       "Hello, I'm meta-llama/llama-4-scout-17b-16e-instruct"
     );
 

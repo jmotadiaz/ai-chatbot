@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Globe, Save, WandSparkles } from "lucide-react";
+import { Database, Globe, Save, Settings, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
@@ -112,7 +112,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     <div className="overflow-x-hidden h-full">
       <div className="px-6">
         <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
-          <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
+          <Tabs.Tab {...getTabProps("configuration")}>
+            <Settings /> Configuration
+          </Tabs.Tab>
           <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
         </Tabs.Container>
       </div>

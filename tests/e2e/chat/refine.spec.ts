@@ -27,12 +27,12 @@ test.describe("Prompt Refiner", () => {
     await chatPage.typeMessage(initialPrompt);
     await chatPage.clickRefineButton();
 
-    await expect(chatPage.chatInput).toHaveValue(refinedPrompt);
-    await expect(chatPage.undoButton).toBeVisible();
+    await expect.soft(chatPage.chatInput).toHaveValue(refinedPrompt);
+    await expect.soft(chatPage.undoButton).toBeVisible();
 
     await chatPage.clickUndoButton();
 
-    await expect(chatPage.chatInput).toHaveValue(initialPrompt);
-    await expect(chatPage.undoButton).not.toBeVisible();
+    await expect.soft(chatPage.chatInput).toHaveValue(initialPrompt);
+    await expect.soft(chatPage.undoButton).not.toBeVisible();
   });
 });

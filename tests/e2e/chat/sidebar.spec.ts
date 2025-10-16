@@ -27,32 +27,36 @@ test.describe("Chat Sidebar", () => {
     const chat1 = createdChats[0];
 
     await chatPage.goto(chat1.id);
-    await expect(page.getByText("Hello")).toBeVisible();
+    await expect.soft(page.getByText("Hello")).toBeVisible();
 
     await chatPage.sidebar.toggleSidebar();
     await chatPage.sidebar.clickChatByTitle("Chat 2");
-    await expect(page.getByText("Hi")).toBeVisible();
+    await expect.soft(page.getByText("Hi")).toBeVisible();
   });
 
   test("should display the chat list", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
     await chatPage.sidebar.toggleSidebar();
-    await expect(chatPage.sidebar.getChatItemByTitle("Chat 1")).toBeVisible();
-    await expect(chatPage.sidebar.getChatItemByTitle("Chat 2")).toBeVisible();
+    await expect
+      .soft(chatPage.sidebar.getChatItemByTitle("Chat 1"))
+      .toBeVisible();
+    await expect
+      .soft(chatPage.sidebar.getChatItemByTitle("Chat 2"))
+      .toBeVisible();
   });
 
   test("should toggle the sidebar visibility", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
 
-    await expect(chatPage.sidebar.sidebarContainer).not.toBeVisible();
+    await expect.soft(chatPage.sidebar.sidebarContainer).not.toBeVisible();
 
     await chatPage.sidebar.toggleSidebar();
-    await expect(chatPage.sidebar.sidebarContainer).toBeVisible();
+    await expect.soft(chatPage.sidebar.sidebarContainer).toBeVisible();
 
     await chatPage.sidebar.toggleSidebar();
-    await expect(chatPage.sidebar.sidebarContainer).not.toBeVisible();
+    await expect.soft(chatPage.sidebar.sidebarContainer).not.toBeVisible();
   });
 
   test("should delete a chat when the delete button is clicked", async ({
@@ -62,8 +66,8 @@ test.describe("Chat Sidebar", () => {
     await chatPage.goto();
     await chatPage.sidebar.toggleSidebar();
     await chatPage.sidebar.deleteChat("Chat 1");
-    await expect(
-      chatPage.sidebar.getChatItemByTitle("Chat 1")
-    ).not.toBeAttached();
+    await expect
+      .soft(chatPage.sidebar.getChatItemByTitle("Chat 1"))
+      .not.toBeAttached();
   });
 });

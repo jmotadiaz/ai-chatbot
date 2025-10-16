@@ -56,7 +56,7 @@ test.describe("Model Router", () => {
       await chatPage.waitForLoadingComplete();
 
       const lastMessage = await chatPage.getLastAssistantMessage();
-      expect(lastMessage).toContain(expected);
+      expect.soft(lastMessage).toContain(expected);
     });
   });
 
@@ -68,7 +68,9 @@ test.describe("Model Router", () => {
     await chatPage.waitForLoadingComplete();
 
     const lastMessage = await chatPage.getLastAssistantMessage();
-    expect(lastMessage).not.toContain("meta-llama/llama-3.1-8b-instant");
-    expect(lastMessage).toContain("meta-llama/llama-4-scout-17b-16e-instruct");
+    expect.soft(lastMessage).not.toContain("meta-llama/llama-3.1-8b-instant");
+    expect
+      .soft(lastMessage)
+      .toContain("meta-llama/llama-4-scout-17b-16e-instruct");
   });
 });

@@ -41,9 +41,7 @@ export class ChatPage {
 
     // Main chat elements
     this.chatInput = page.locator("[data-testid='chat-input']");
-    this.submitButton = page
-      .locator('button[type="submit"]:not(:disabled)')
-      .last();
+    this.submitButton = page.getByLabel("Send message");
     this.messagesContainer = page
       .locator('[data-testid="messages"], .messages, div')
       .filter({ hasText: /user|assistant/i })
@@ -101,10 +99,11 @@ export class ChatPage {
 
   async typeMessage(message: string) {
     await this.chatInput.fill(message);
+    expect(await this.chatInput.inputValue()).toBe(message);
   }
 
   async submitMessage() {
-    await this.submitButton.waitFor({ state: "visible" });
+    await expect(this.submitButton).toBeEnabled();
     await this.submitButton.click();
   }
 
@@ -149,11 +148,6 @@ export class ChatPage {
     } catch {
       // If no loading indicator exists, that's fine
     }
-  }
-
-  async verifyAssistantResponseContains(expectedText: string) {
-    const lastMessage = await this.getLastAssistantMessage();
-    expect(lastMessage).toContain(expectedText);
   }
 
   async closeDropdown() {
@@ -216,6 +210,7 @@ export class ChatPage {
    * Click the refine button
    */
   async clickRefineButton() {
+    await expect(this.refineButton).toBeEnabled();
     await this.refineButton.click();
   }
 
@@ -223,7 +218,7 @@ export class ChatPage {
    * Click the undo button
    */
   async clickUndoButton() {
-    await this.undoButton.waitFor({ state: "visible" });
+    await expect(this.undoButton).toBeVisible();
     await this.undoButton.click();
   }
 

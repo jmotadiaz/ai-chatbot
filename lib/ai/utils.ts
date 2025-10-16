@@ -3,12 +3,10 @@ import type {
   GenerateObjectResult,
   SourceDocumentUIPart,
   SourceUrlUIPart,
-  TextUIPart} from "ai";
-import {
-  generateText
+  TextUIPart,
 } from "ai";
-import type {
-  ZodTypeAny} from "zod";
+import { generateText } from "ai";
+import type { ZodTypeAny } from "zod";
 import {
   ZodArray,
   ZodBoolean,
@@ -26,11 +24,8 @@ import {
 import type { PutBlobResult } from "@vercel/blob";
 import { put } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
-import type {
-  ModelConfiguration} from "@/lib/ai/models/definition";
-import {
-  languageModelConfigurations
-} from "@/lib/ai/models/definition";
+import type { ModelConfiguration } from "@/lib/ai/models/definition";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/ai/types";
 
