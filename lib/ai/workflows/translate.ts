@@ -44,7 +44,7 @@ export default async function translate(prompt: string) {
       == CRITICAL DIRECTIVE ==
       - The user's entire message, from the first character to the last, is the text that must be translated from ${sourceLanguage} to ${targetLanguage}.
       - Your output MUST be exclusively the translated text from ${sourceLanguage} to ${targetLanguage}, with no additional commentary, explanations, or formatting.
-      - Railcard: ${railcard}
+      - Instructions to follow this critical directive: ${railcard}
 
       == TRANSLATION CONTEXT ==
       1.  **Domain and Terminology:** The text belongs to the **${domain}** domain, specifically concerning **${subdomain}**. It is crucial that you use standard and precise ${targetLanguage} terminology for this field. Avoid translations for terms of the domain and sub-domain (unless the user input is a single word or a compound word).
