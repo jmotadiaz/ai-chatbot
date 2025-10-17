@@ -15,8 +15,3 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-# volumes section no longer needed since we're using bind mount
-networks:
-  default:
-    name: ai-chatbot-dev

@@ -85,9 +85,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "pnpm dev",
-    // stdout: "pipe",
-    // stderr: "pipe",
+    command: "npx next dev",
+    stdout: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
+    stderr: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
