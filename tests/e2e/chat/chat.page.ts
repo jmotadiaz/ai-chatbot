@@ -99,7 +99,7 @@ export class ChatPage {
   }
 
   async submitMessage() {
-    await this.submitButton.isEnabled({ timeout: 5000 });
+    await this.submitButton.isEnabled({ timeout: 10000 });
     await this.submitButton.click();
   }
 
@@ -206,7 +206,7 @@ export class ChatPage {
    * Click the refine button
    */
   async clickRefineButton() {
-    await this.refineButton.isEnabled({ timeout: 5000 });
+    await this.refineButton.isEnabled({ timeout: 10000 });
     await this.refineButton.click();
   }
 

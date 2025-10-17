@@ -3,6 +3,8 @@ services:
     container_name: postgres-test
     image: pgvector/pgvector:pg17
     command: '-d 1'
+    volumes:
+      - ./postgres-test-data:/var/lib/postgresql/data
     ports:
       - '5434:5432'
     environment:
@@ -15,13 +17,6 @@ services:
       timeout: 5s
       retries: 5
 
-  neon-proxy:
-    container_name: neon-proxy-test
-    image: ghcr.io/timowilhelm/local-neon-http-proxy:main
-    environment:
-      - PG_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/main
-    ports:
-      - '4444:4444'
-    depends_on:
-      postgres:
-        condition: service_healthy
+networks:
+  default:
+    name: ai-chatbot-test

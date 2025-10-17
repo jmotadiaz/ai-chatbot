@@ -50,6 +50,7 @@ next-env.d.ts
 
 # local PostgreSQL data
 postgres-data/
+postgres-test-data/
 
 # Playwright
 node_modules/
