@@ -1,3 +1,4 @@
+name: ai-chatbot-test-db
 services:
   postgres:
     container_name: postgres-test

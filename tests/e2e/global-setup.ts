@@ -4,17 +4,15 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 async function globalSetup() {
-  // Conexión a la base de datos de prueba
   const client = postgres(process.env.POSTGRES_URL!);
   const db = drizzle(client);
 
   try {
-    // Ejecutar migraciones
-    console.log("Ejecutando migraciones...");
+    console.log("Executing migrations...");
     await migrate(db, {
       migrationsFolder: path.join(__dirname, "../../lib/db/migrations"),
     });
-    console.log("Migraciones completadas");
+    console.log("Migrations completed");
   } catch (error) {
     console.error("Error en setup global:", error);
     throw error;

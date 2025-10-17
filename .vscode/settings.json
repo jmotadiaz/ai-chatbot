@@ -1,10 +1,17 @@
 {
   "cSpell.words": [
+    "debe",
     "Kimi",
     "logprobs",
     "ministral",
     "mistralai",
     "nuqs",
-    "Qwen"
+    "PGDATABASE",
+    "PGHOST",
+    "PGPASSWORD",
+    "PGUSER",
+    "pgvector",
+    "Qwen",
+    "UNPOOLED"
   ]
 }
