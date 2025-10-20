@@ -126,9 +126,10 @@ export const translatorGuardrail = (prompt: string) => {
     ## 4. Output Constraints
     - Your output must be a maximum of one paragraph.
     - The text must be a direct and unambiguous directive.
-    - It must specifically reference the nature of the user prompt (e.g., "The user prompt includes a specific question ...", "The user prompt includes a JSON formatting command").
+    - It must specifically reference the nature of the user prompt (e.g., "The user prompt includes a specific question...", "The user prompt includes a JSON formatting command...").
     - Talk to the translator in second person (e.g., "You must...", "Your task is...").
     - Do not include a translation example; this is the role of the translator.
+    
     `,
     prompt,
   });
