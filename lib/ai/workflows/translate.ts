@@ -5,25 +5,25 @@ import {
   identifyAudience,
   identifyDomain,
   identifyTranslationDirection,
-  translatorRailcard,
+  translatorGuardrail,
 } from "@/lib/ai/workflows/language-utils";
 
 export default async function translate(prompt: string) {
   const translationDirectionResult = identifyTranslationDirection(prompt);
   const audienceResult = identifyAudience(prompt);
   const domainResult = identifyDomain(prompt);
-  const railcardResult = translatorRailcard(prompt);
+  const guardrailResult = translatorGuardrail(prompt);
 
   const [
     { sourceLanguage, targetLanguage },
     { audience },
     { domain, subdomain },
-    { text: railcard },
+    { text: guardrail },
   ] = await Promise.all([
     translationDirectionResult,
     audienceResult,
     domainResult,
-    railcardResult,
+    guardrailResult,
   ]);
 
   console.log("translation context", {
@@ -32,7 +32,7 @@ export default async function translate(prompt: string) {
     audience,
     domain,
     subdomain,
-    railcard,
+    guardrail,
   });
 
   // Translation
@@ -44,7 +44,7 @@ export default async function translate(prompt: string) {
       == CRITICAL DIRECTIVE ==
       - The user's entire message, from the first character to the last, is the text that must be translated from ${sourceLanguage} to ${targetLanguage}.
       - Your output MUST be exclusively the translated text from ${sourceLanguage} to ${targetLanguage}, with no additional commentary, explanations, or formatting.
-      - Instructions to follow this critical directive: ${railcard}
+      - Specific guardrail: ${guardrail}
 
       == TRANSLATION CONTEXT ==
       1.  **Domain and Terminology:** The text belongs to the **${domain}** domain, specifically concerning **${subdomain}**. It is crucial that you use standard and precise ${targetLanguage} terminology for this field. Avoid translations for terms of the domain and sub-domain (unless the user input is a single word or a compound word).

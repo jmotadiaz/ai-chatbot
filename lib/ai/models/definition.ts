@@ -159,8 +159,8 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img"],
     toolCalling: false,
   },
-  "Claude Haiku 3.5": {
-    model: providers.anthropic("claude-3-5-haiku-latest"),
+  "Claude Haiku 4.5": {
+    model: providers.anthropic("claude-haiku-4-5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
   },
@@ -331,6 +331,7 @@ export const chatModelKeys = [
   "Deepseek R1",
   "Sonar",
   "Sonar Pro",
+  "Claude Haiku 4.5",
   "Claude Sonnet 4.5",
   "Claude Opus 4.1",
   "Grok Code Fast",
