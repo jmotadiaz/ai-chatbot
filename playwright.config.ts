@@ -30,7 +30,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: 1,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 5,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [["html", { open: "never" }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -90,7 +90,7 @@ export default defineConfig({
     stderr: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 240 * 1000,
+    timeout: 120 * 1000,
     env: {
       USE_MOCK_PROVIDERS: "1",
     },
