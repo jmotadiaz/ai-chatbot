@@ -90,7 +90,7 @@ export default defineConfig({
     stderr: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 240 * 1000,
     env: {
       USE_MOCK_PROVIDERS: "1",
     },
