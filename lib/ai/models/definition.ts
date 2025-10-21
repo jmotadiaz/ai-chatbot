@@ -163,6 +163,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.anthropic("claude-haiku-4-5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
+    disabledConfig: ["topP", "topK"],
   },
   "Claude Sonnet 4.5": {
     model: providers.anthropic("claude-sonnet-4-5-20250929"),
@@ -181,6 +182,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.anthropic("claude-opus-4-1-20250805"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
+    disabledConfig: ["topP", "topK"],
     reasoning: true,
     providerOptions: {
       anthropic: {
@@ -333,7 +335,6 @@ export const chatModelKeys = [
   "Sonar Pro",
   "Claude Haiku 4.5",
   "Claude Sonnet 4.5",
-  "Claude Opus 4.1",
   "Grok Code Fast",
   "Grok 4 Fast",
   "Grok 4",
