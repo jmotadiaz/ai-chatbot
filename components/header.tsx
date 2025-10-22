@@ -4,7 +4,10 @@ export interface HeaderContainerProps {
 
 const Container: React.FC<HeaderContainerProps> = ({ children }) => {
   return (
-    <header className="fixed right-0 left-0 w-full top-0 bg-(--background) z-30">
+    <header
+      data-testid="header-container"
+      className="fixed right-0 left-0 w-full top-0 bg-(--background) z-30"
+    >
       <div className="flex justify-between items-center py-4 px-6 lg:px-10">
         {children}
       </div>

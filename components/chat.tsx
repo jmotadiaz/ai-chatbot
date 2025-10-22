@@ -53,7 +53,7 @@ const Chat: React.FC = () => {
 
   const isLoading = status === "streaming" || status === "submitted";
   return (
-    <>
+    <div data-testid="chat-container">
       <div
         className={cn(
           "w-full pt-16 overflow-hidden relative",
@@ -137,7 +137,7 @@ const Chat: React.FC = () => {
           </div>
         </div>
       </form>
-    </>
+    </div>
   );
 };
 

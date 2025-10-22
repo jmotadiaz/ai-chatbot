@@ -1,0 +1,183 @@
+import { Locator } from "@playwright/test";
+
+/**
+ * Component Object Model for Chat functionality
+ * Encapsulates chat message interactions and elements
+ */
+export class ChatComponent {
+  readonly container: Locator;
+  readonly chatInput: Locator;
+  readonly submitButton: Locator;
+  readonly messagesContainer: Locator;
+  readonly userMessages: Locator;
+  readonly assistantMessages: Locator;
+  readonly loadingIndicator: Locator;
+  readonly refineButton: Locator;
+  readonly undoButton: Locator;
+  readonly attachmentButton: Locator;
+  readonly attachmentMenu: Locator;
+  readonly imageInputFile: Locator;
+  readonly pdfInputFile: Locator;
+  readonly imageInputLabel: Locator;
+  readonly pdfInputLabel: Locator;
+  readonly settingsButton: Locator;
+  readonly temperatureInput: Locator;
+  readonly topPInput: Locator;
+  readonly topKInput: Locator;
+  readonly toolsControl: Locator;
+  readonly ragToolLabel: Locator;
+  readonly webSearchToolLabel: Locator;
+
+  constructor(container: Locator) {
+    this.container = container;
+
+    this.chatInput = container.locator("[data-testid='chat-input']");
+    this.submitButton = container.getByLabel("Send message");
+    this.messagesContainer = container
+      .locator('[data-testid="messages"], .messages, div')
+      .filter({ hasText: /user|assistant/i })
+      .first();
+
+    this.userMessages = container.locator(
+      '[data-role="user"], [data-message-role="user"]'
+    );
+    this.assistantMessages = container.locator(
+      '[data-role="assistant"], [data-message-role="assistant"]'
+    );
+
+    this.loadingIndicator = container.getByTestId("loading-message");
+
+    this.refineButton = container.getByLabel("Refine prompt");
+    this.undoButton = container.getByLabel("Undo refined prompt");
+
+    this.attachmentButton = container.getByLabel("Attach files");
+    this.attachmentMenu = container.getByLabel("Attachment options");
+    this.imageInputFile = container.getByLabel("Image");
+    this.pdfInputFile = container.getByLabel("Document");
+    this.imageInputLabel = this.attachmentMenu.getByText("Image");
+    this.pdfInputLabel = this.attachmentMenu.getByText("Document");
+
+    this.settingsButton = container.getByLabel("Chat settings");
+    this.temperatureInput = container.getByLabel("Temperature");
+    this.topPInput = container.getByLabel("Top P");
+    this.topKInput = container.getByLabel("Top K");
+
+    this.toolsControl = container.getByLabel("Configure tools");
+    this.ragToolLabel = container.locator('label[for="rag-tool"]');
+    this.webSearchToolLabel = container.locator('label[for="rag-tool"]');
+  }
+
+  async getUserMessages(): Promise<string[]> {
+    const count = await this.userMessages.count();
+    const messages: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const text = await this.userMessages.nth(i).textContent();
+      if (text) messages.push(text.trim());
+    }
+
+    return messages;
+  }
+
+  async getAssistantMessages(): Promise<string[]> {
+    const count = await this.assistantMessages.count();
+    const messages: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const text = await this.assistantMessages.nth(i).textContent();
+      if (text) messages.push(text.trim());
+    }
+
+    return messages;
+  }
+
+  async getLastAssistantMessage(): Promise<string | null> {
+    const messages = await this.getAssistantMessages();
+    return messages.length > 0 ? messages[messages.length - 1] : null;
+  }
+
+  async waitForLoadingComplete(timeout = 30000) {
+    try {
+      await this.loadingIndicator.waitFor({ state: "attached", timeout });
+      await this.loadingIndicator.waitFor({ state: "detached", timeout });
+    } catch {
+      // If no loading indicator exists, that's fine
+    }
+  }
+
+  async typeMessage(message: string) {
+    await this.chatInput.fill(message);
+  }
+
+  async submitMessage() {
+    await this.submitButton.click();
+  }
+
+  async sendMessage(message: string) {
+    await this.typeMessage(message);
+    await this.submitMessage();
+  }
+
+  async clickRefineButton() {
+    await this.refineButton.click();
+  }
+
+  async clickUndoButton() {
+    await this.undoButton.click();
+  }
+
+  async openAttachmentMenu() {
+    await this.attachmentButton.click();
+    await this.attachmentMenu.waitFor({ state: "visible", timeout: 1000 });
+  }
+
+  async uploadFile(filePath: string, fileType: "image" | "pdf") {
+    await this.container.page().route("**/api/upload", async (route) => {
+      const json = {
+        url: `https://fake-blob-storage.com/${filePath}`,
+        pathname: filePath,
+        contentType: fileType === "image" ? "image/png" : "application/pdf",
+        contentDisposition: `attachment; filename="${filePath}"`,
+      };
+      await route.fulfill({ json });
+    });
+
+    if (fileType === "image") {
+      await this.imageInputFile.setInputFiles(filePath);
+    } else if (fileType === "pdf") {
+      await this.pdfInputFile.setInputFiles(filePath);
+    }
+  }
+
+  getImgPreviewByAltText(altText: string): Locator {
+    return this.container
+      .getByTestId("attachments-preview")
+      .locator(`img[alt="${altText}"]`);
+  }
+
+  async openSettings() {
+    await this.settingsButton.click();
+  }
+
+  async setTemperature(value: number) {
+    await this.temperatureInput.fill(value.toString());
+  }
+
+  async setTopP(value: number) {
+    await this.topPInput.fill(value.toString());
+  }
+
+  async setTopK(value: number) {
+    await this.topKInput.fill(value.toString());
+  }
+
+  async toggleTool(toolName: "rag" | "web-search", dropdownBackdrop: Locator) {
+    await this.toolsControl.click();
+    if (toolName === "rag") {
+      await this.ragToolLabel.click();
+    } else if (toolName === "web-search") {
+      await this.webSearchToolLabel.click();
+    }
+    await dropdownBackdrop.click({ position: { x: 10, y: 10 } });
+  }
+}

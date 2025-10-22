@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 type Category = "technical" | "prompt_engineering";
 
@@ -50,24 +50,24 @@ test.describe("Model Router", () => {
   modelRouterTestCases.forEach(({ category, complexity, expected }) => {
     test(`should use ${expected} for category ${category} and complexity ${complexity}`, async () => {
       await chatPage.goto();
-      await chatPage.sendMessage(
+      await chatPage.chat.sendMessage(
         `category=${category} complexity=${complexity}`
       );
-      await chatPage.waitForLoadingComplete();
+      await chatPage.chat.waitForLoadingComplete();
 
-      const lastMessage = await chatPage.getLastAssistantMessage();
+      const lastMessage = await chatPage.chat.getLastAssistantMessage();
       expect.soft(lastMessage).toContain(expected);
     });
   });
 
   test(`should adapt model when an is included in the prompt`, async () => {
     await chatPage.goto();
-    await chatPage.openAttachmentMenu();
-    await chatPage.uploadFile("./tests/mocks/dummy-image.png", "image");
-    await chatPage.sendMessage(`category=factual complexity=simple`);
-    await chatPage.waitForLoadingComplete();
+    await chatPage.chat.openAttachmentMenu();
+    await chatPage.chat.uploadFile("./tests/mocks/dummy-image.png", "image");
+    await chatPage.chat.sendMessage(`category=factual complexity=simple`);
+    await chatPage.chat.waitForLoadingComplete();
 
-    const lastMessage = await chatPage.getLastAssistantMessage();
+    const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect.soft(lastMessage).not.toContain("meta-llama/llama-3.1-8b-instant");
     expect
       .soft(lastMessage)

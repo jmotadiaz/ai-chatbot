@@ -10,7 +10,7 @@ export const Sidebar = ({ children }: SidebarProps) => {
   const { showSidebar, setShowSidebar } = useSidebarContext();
 
   return (
-    <>
+    <div>
       <div
         onClick={() => setShowSidebar(false)}
         className={cn(
@@ -20,7 +20,7 @@ export const Sidebar = ({ children }: SidebarProps) => {
       />
       <div className="fixed h-screen z-20 top-0 left-0">
         <div
-          data-testid="sidebar"
+          data-testid="sidebar-container"
           className={cn(
             "flex flex-col justify-between h-full pt-24 bg-secondary transition-all duration-300 overflow-hidden shadow-lg",
             showSidebar ? "w-80" : "w-0"
@@ -29,7 +29,7 @@ export const Sidebar = ({ children }: SidebarProps) => {
           {children}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

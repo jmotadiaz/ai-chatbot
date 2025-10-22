@@ -22,7 +22,10 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
     return null;
   }
   return (
-    <div className={cn("flex space-x-3 items-center", className)}>
+    <div
+      data-testid="attachments-preview"
+      className={cn("flex space-x-3 items-center", className)}
+    >
       {files.map((file, idx) => (
         <div
           className="relative cursor-pointer"

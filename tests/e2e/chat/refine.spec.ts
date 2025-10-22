@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 test.describe("Prompt Refiner", () => {
   let chatPage: ChatPage;
@@ -24,15 +24,15 @@ test.describe("Prompt Refiner", () => {
       }
     });
 
-    await chatPage.typeMessage(initialPrompt);
-    await chatPage.clickRefineButton();
+    await chatPage.chat.typeMessage(initialPrompt);
+    await chatPage.chat.clickRefineButton();
 
-    await expect.soft(chatPage.chatInput).toHaveValue(refinedPrompt);
-    await expect.soft(chatPage.undoButton).toBeVisible();
+    await expect.soft(chatPage.chat.chatInput).toHaveValue(refinedPrompt);
+    await expect.soft(chatPage.chat.undoButton).toBeVisible();
 
-    await chatPage.clickUndoButton();
+    await chatPage.chat.clickUndoButton();
 
-    await expect.soft(chatPage.chatInput).toHaveValue(initialPrompt);
-    await expect.soft(chatPage.undoButton).not.toBeVisible();
+    await expect.soft(chatPage.chat.chatInput).toHaveValue(initialPrompt);
+    await expect.soft(chatPage.chat.undoButton).not.toBeVisible();
   });
 });

@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 const chats = [
   {
@@ -29,7 +29,7 @@ test.describe("Chat Sidebar", () => {
     await chatPage.goto(chat1.id);
     await expect.soft(page.getByText("Hello")).toBeVisible();
 
-    await chatPage.sidebar.toggleSidebar();
+    await chatPage.toggleSidebar();
     await chatPage.sidebar.clickChatByTitle("Chat 2");
     await expect.soft(page.getByText("Hi")).toBeVisible();
   });
@@ -37,7 +37,7 @@ test.describe("Chat Sidebar", () => {
   test("should display the chat list", async ({ page }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
-    await chatPage.sidebar.toggleSidebar();
+    await chatPage.toggleSidebar();
     await expect
       .soft(chatPage.sidebar.getChatItemByTitle("Chat 1"))
       .toBeVisible();
@@ -50,13 +50,13 @@ test.describe("Chat Sidebar", () => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
 
-    await expect.soft(chatPage.sidebar.sidebarContainer).not.toBeVisible();
+    await expect.soft(chatPage.sidebar.container).not.toBeVisible();
 
-    await chatPage.sidebar.toggleSidebar();
-    await expect.soft(chatPage.sidebar.sidebarContainer).toBeVisible();
+    await chatPage.toggleSidebar();
+    await expect.soft(chatPage.sidebar.container).toBeVisible();
 
-    await chatPage.sidebar.toggleSidebar();
-    await expect.soft(chatPage.sidebar.sidebarContainer).not.toBeVisible();
+    await chatPage.toggleSidebar();
+    await expect.soft(chatPage.sidebar.container).not.toBeVisible();
   });
 
   test("should delete a chat when the delete button is clicked", async ({
@@ -64,7 +64,7 @@ test.describe("Chat Sidebar", () => {
   }) => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
-    await chatPage.sidebar.toggleSidebar();
+    await chatPage.toggleSidebar();
     await chatPage.sidebar.deleteChat("Chat 1");
     await expect
       .soft(chatPage.sidebar.getChatItemByTitle("Chat 1"))

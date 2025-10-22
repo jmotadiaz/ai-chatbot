@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
@@ -15,16 +15,16 @@ test.describe("Chat functionality", () => {
 
     await chatPage.header.selectModel("Llama 4 Scout");
 
-    await chatPage.sendMessage(userQuery);
+    await chatPage.chat.sendMessage(userQuery);
 
-    await chatPage.waitForLoadingComplete();
-    const lastMessage = await chatPage.getLastAssistantMessage();
+    await chatPage.chat.waitForLoadingComplete();
+    const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect(lastMessage).toContain(
       "Hello, I'm meta-llama/llama-4-scout-17b-16e-instruct"
     );
 
-    const userMessages = await chatPage.getUserMessages();
-    const assistantMessages = await chatPage.getAssistantMessages();
+    const userMessages = await chatPage.chat.getUserMessages();
+    const assistantMessages = await chatPage.chat.getAssistantMessages();
 
     expect(userMessages.length).toBeGreaterThanOrEqual(1);
     expect(assistantMessages.length).toBeGreaterThanOrEqual(1);

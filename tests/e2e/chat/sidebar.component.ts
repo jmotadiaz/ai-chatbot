@@ -1,28 +1,18 @@
-import { Page, Locator } from "@playwright/test";
+import { Locator } from "@playwright/test";
 
 /**
  * Component Object Model for Sidebar functionality
  * Encapsulates sidebar interactions and elements
  */
 export class SidebarComponent {
-  readonly page: Page;
+  readonly container: Locator;
   // Sidebar elements
-  readonly sidebarToggleButton: Locator;
   readonly chatList: Locator;
-  readonly sidebarContainer: Locator;
 
-  constructor(page: Page) {
-    this.page = page;
+  constructor(container: Locator) {
+    this.container = container;
 
-    this.sidebarToggleButton = page.locator('[aria-label="Toggle sidebar"]');
-    this.chatList = page.locator('[aria-label="Chat history"]');
-    this.sidebarContainer = page.locator('[data-testid="sidebar"]');
-  }
-  /**
-   * Toggle the sidebar
-   */
-  async toggleSidebar() {
-    await this.sidebarToggleButton.click();
+    this.chatList = container.getByRole("list", { name: "Chat history" });
   }
 
   /**

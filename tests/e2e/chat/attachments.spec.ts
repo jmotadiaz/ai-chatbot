@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 test.describe("Chat attachments", () => {
   let chatPage: ChatPage;
@@ -13,25 +13,25 @@ test.describe("Chat attachments", () => {
   test("should not show attachment button for text-only models", async () => {
     // Models with no `supportedFiles` property should not show the attachment button
     await chatPage.header.selectModel("Qwen3 Next Instruct");
-    await expect.soft(chatPage.attachmentButton).not.toBeVisible();
+    await expect.soft(chatPage.chat.attachmentButton).not.toBeVisible();
   });
 
   test("should show correct attachment options for image-only models", async () => {
     await chatPage.header.selectModel("Llama 4 Scout");
-    await expect.soft(chatPage.attachmentButton).toBeVisible();
+    await expect.soft(chatPage.chat.attachmentButton).toBeVisible();
 
-    await chatPage.openAttachmentMenu();
-    expect.soft(chatPage.imageInputLabel).toBeVisible();
-    expect.soft(chatPage.pdfInputLabel).not.toBeVisible();
+    await chatPage.chat.openAttachmentMenu();
+    expect.soft(chatPage.chat.imageInputLabel).toBeVisible();
+    expect.soft(chatPage.chat.pdfInputLabel).not.toBeVisible();
   });
 
   test("should show correct attachment options for all supported models", async () => {
     await chatPage.header.selectModel("GPT 5 Mini");
-    await expect.soft(chatPage.attachmentButton).toBeVisible();
+    await expect.soft(chatPage.chat.attachmentButton).toBeVisible();
 
-    await chatPage.openAttachmentMenu();
-    expect.soft(chatPage.imageInputLabel).toBeVisible();
-    expect.soft(chatPage.pdfInputLabel).toBeVisible();
+    await chatPage.chat.openAttachmentMenu();
+    expect.soft(chatPage.chat.imageInputLabel).toBeVisible();
+    expect.soft(chatPage.chat.pdfInputLabel).toBeVisible();
   });
 
   test("should filter models based on attachment type", async () => {
@@ -39,10 +39,10 @@ test.describe("Chat attachments", () => {
     await chatPage.header.selectModel("Llama 4 Scout");
 
     // Upload an image
-    await chatPage.openAttachmentMenu();
-    await chatPage.uploadFile("./tests/mocks/dummy-image.png", "image");
+    await chatPage.chat.openAttachmentMenu();
+    await chatPage.chat.uploadFile("./tests/mocks/dummy-image.png", "image");
     await expect
-      .soft(chatPage.getThumbnailByAltText("dummy-image.png"))
+      .soft(chatPage.chat.getImgPreviewByAltText("dummy-image.png"))
       .toBeVisible();
 
     // Get available models after upload

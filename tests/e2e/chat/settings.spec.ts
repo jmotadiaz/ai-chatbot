@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
@@ -12,44 +12,44 @@ test.describe("Chat functionality", () => {
 
   test("should allow modifying chat settings for different models", async () => {
     await chatPage.header.selectModel("Router");
-    await expect.soft(chatPage.settingsButton).not.toBeVisible();
+    await expect.soft(chatPage.chat.settingsButton).not.toBeVisible();
 
     await chatPage.header.selectModel("Claude Sonnet 4.5");
-    await expect.soft(chatPage.settingsButton).toBeVisible();
+    await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.header.selectModel("Qwen3 Next Instruct");
-    await expect.soft(chatPage.settingsButton).toBeVisible();
+    await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
-    await chatPage.openSettings();
-    await expect.soft(chatPage.temperatureInput).toHaveValue("0.7");
-    await expect.soft(chatPage.topPInput).toHaveValue("0.8");
-    await expect.soft(chatPage.topKInput).toHaveValue("20");
+    await chatPage.chat.openSettings();
+    await expect.soft(chatPage.chat.temperatureInput).toHaveValue("0.7");
+    await expect.soft(chatPage.chat.topPInput).toHaveValue("0.8");
+    await expect.soft(chatPage.chat.topKInput).toHaveValue("20");
 
-    await chatPage.setTemperature(0.6);
-    await chatPage.setTopP(0.7);
-    await chatPage.setTopK(15);
+    await chatPage.chat.setTemperature(0.6);
+    await chatPage.chat.setTopP(0.7);
+    await chatPage.chat.setTopK(15);
     await chatPage.closeDropdown();
 
     await chatPage.header.selectModel("Claude Sonnet 4.5");
-    await chatPage.openSettings();
-    await expect.soft(chatPage.temperatureInput).toHaveValue("0.5");
-    await expect.soft(chatPage.topPInput).not.toBeVisible();
-    await expect.soft(chatPage.topKInput).not.toBeVisible();
+    await chatPage.chat.openSettings();
+    await expect.soft(chatPage.chat.temperatureInput).toHaveValue("0.5");
+    await expect.soft(chatPage.chat.topPInput).not.toBeVisible();
+    await expect.soft(chatPage.chat.topKInput).not.toBeVisible();
   });
 
   test("should send config to the assistant correctly", async () => {
     await chatPage.header.selectModel("Qwen3 Next Instruct");
 
-    await chatPage.openSettings();
+    await chatPage.chat.openSettings();
 
-    await chatPage.setTemperature(0.6);
-    await chatPage.setTopP(0.7);
-    await chatPage.setTopK(15);
+    await chatPage.chat.setTemperature(0.6);
+    await chatPage.chat.setTopP(0.7);
+    await chatPage.chat.setTopK(15);
     await chatPage.closeDropdown();
 
-    await chatPage.sendMessage("Hello with all custom settings");
-    await chatPage.waitForLoadingComplete();
-    const lastMessage = await chatPage.getLastAssistantMessage();
+    await chatPage.chat.sendMessage("Hello with all custom settings");
+    await chatPage.chat.waitForLoadingComplete();
+    const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect
       .soft(lastMessage)
       .toContain(

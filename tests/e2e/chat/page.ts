@@ -1,0 +1,41 @@
+import { Page, Locator } from "@playwright/test";
+import { SidebarComponent } from "@/tests/e2e/chat/sidebar.component";
+import { HeaderComponent } from "@/tests/e2e/chat/header.component";
+import { ChatComponent } from "@/tests/e2e/chat/chat.component";
+
+/**
+ * Page Object Model for Chat functionality
+ * Encapsulates chat page interactions and elements
+ */
+export class ChatPage {
+  readonly page: Page;
+  readonly header: HeaderComponent;
+  readonly sidebar: SidebarComponent;
+  readonly chat: ChatComponent;
+
+  readonly dropdownBackdrop: Locator;
+  readonly sidebarToggleButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.header = new HeaderComponent(page.getByTestId("header-container"));
+    this.sidebar = new SidebarComponent(page.getByTestId("sidebar-container"));
+    this.chat = new ChatComponent(page.getByTestId("chat-container"));
+
+    this.sidebarToggleButton = page.getByLabel("Toggle sidebar");
+    this.dropdownBackdrop = page.getByTestId("backdrop");
+  }
+
+  async goto(chatId?: string) {
+    const url = chatId ? `/${chatId}` : "/";
+    await this.page.goto(url);
+  }
+
+  async toggleSidebar() {
+    await this.sidebarToggleButton.click();
+  }
+
+  async closeDropdown() {
+    await this.dropdownBackdrop.click({ position: { x: 10, y: 10 } });
+  }
+}

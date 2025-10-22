@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./chat.page";
+import { ChatPage } from "./page";
 
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
@@ -12,12 +12,12 @@ test.describe("Chat functionality", () => {
 
   test("should handle tool configuration and model filtering correctly", async () => {
     await chatPage.header.selectModel("Sonar Pro");
-    await expect.soft(chatPage.toolsControl).not.toBeVisible();
+    await expect.soft(chatPage.chat.toolsControl).not.toBeVisible();
 
     await chatPage.header.selectModel("Claude Sonnet 4.5");
-    await expect.soft(chatPage.toolsControl).toBeVisible();
+    await expect.soft(chatPage.chat.toolsControl).toBeVisible();
 
-    await chatPage.toggleTool("rag");
+    await chatPage.chat.toggleTool("rag", chatPage.dropdownBackdrop);
     await chatPage.header.openSelectModelDropdown();
     await expect
       .soft(chatPage.header.getModelOption("Sonar Pro"))
@@ -27,7 +27,7 @@ test.describe("Chat functionality", () => {
       .toBeAttached();
     await chatPage.closeDropdown();
 
-    await chatPage.toggleTool("rag");
+    await chatPage.chat.toggleTool("rag", chatPage.dropdownBackdrop);
     await chatPage.header.openSelectModelDropdown();
     await expect
       .soft(chatPage.header.getModelOption("Sonar Pro"))
