@@ -9,6 +9,7 @@ export class HeaderComponent {
   readonly container: Locator;
   readonly modelPicker: Locator;
   readonly modelDropdown: Locator;
+  readonly sidebarToggleButton: Locator;
 
   constructor(container: Locator) {
     this.container = container;
@@ -16,9 +17,12 @@ export class HeaderComponent {
     this.modelPicker = container.locator(
       '[role="combobox"][aria-controls="dropdown-header-model-picker"]'
     );
-    this.modelDropdown = container.locator(
-      "#dropdown-header-model-picker"
-    );
+    this.modelDropdown = container.locator("#dropdown-header-model-picker");
+    this.sidebarToggleButton = container.getByLabel("Toggle sidebar");
+  }
+
+  async toggleSidebar() {
+    await this.sidebarToggleButton.click();
   }
 
   getModelOption(modelName: chatModelId): Locator {

@@ -14,25 +14,18 @@ export class ChatPage {
   readonly chat: ChatComponent;
 
   readonly dropdownBackdrop: Locator;
-  readonly sidebarToggleButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.header = new HeaderComponent(page.getByTestId("header-container"));
     this.sidebar = new SidebarComponent(page.getByTestId("sidebar-container"));
     this.chat = new ChatComponent(page.getByTestId("chat-container"));
-
-    this.sidebarToggleButton = page.getByLabel("Toggle sidebar");
     this.dropdownBackdrop = page.getByTestId("backdrop");
   }
 
   async goto(chatId?: string) {
     const url = chatId ? `/${chatId}` : "/";
     await this.page.goto(url);
-  }
-
-  async toggleSidebar() {
-    await this.sidebarToggleButton.click();
   }
 
   async closeDropdown() {
