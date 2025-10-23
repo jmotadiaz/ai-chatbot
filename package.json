@@ -44,7 +44,7 @@
     "@vercel/otel": "^1.10.4",
     "@vercel/postgres": "^0.10.0",
     "add": "^2.0.6",
-    "ai": "5.0.63",
+    "ai": "5.0.76",
     "bcrypt": "^6.0.0",
     "bcrypt-ts": "^7.0.0",
     "class-variance-authority": "^0.7.1",
