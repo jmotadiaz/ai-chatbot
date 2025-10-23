@@ -16,7 +16,7 @@ const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
     simple: "meta-llama/llama-4-scout-17b-16e-instruct",
     moderate: "moonshotai/kimi-k2-instruct-0905",
     complex: "openai/gpt-oss-120b",
-    advanced: "google/gemini-2.5-pro",
+    advanced: "gemini-2.5-pro",
   },
 };
 
