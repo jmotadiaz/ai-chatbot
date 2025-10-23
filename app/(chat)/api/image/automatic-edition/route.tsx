@@ -1,9 +1,9 @@
-import type { GeneratedFile} from "ai";
+import type { GeneratedFile } from "ai";
 import { convertToModelMessages, generateText } from "ai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { auth } from "@/auth";
 import type { ChatbotMessage } from "@/lib/ai/types";
-import { downloadFiles } from "@/lib/ai/utils";
+import { languageModelConfigurations } from "@/lib/ai/models/definition";
 
 export const maxDuration = 60;
 
@@ -149,8 +149,7 @@ const generateImages = async (
       - If the composition is already adequate, only subtle improvements will be applied.
       - In low-quality images, prioritise noise reduction and focus enhancement before other adjustments.
       `,
-    model: "google/gemini-2.5-flash-image-preview",
-    experimental_download: downloadFiles,
+    ...languageModelConfigurations("Gemini Nano Banana"),
     providerOptions: {
       google: {
         responseModalities: ["IMAGE"],

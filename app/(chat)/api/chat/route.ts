@@ -23,7 +23,6 @@ import {
   messagePartsToText,
   chatbotMessageToDbMessage,
   generateTitle,
-  downloadFiles,
 } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/ai/models/utils";
 import type { Tool } from "@/lib/ai/tools/types";
@@ -112,10 +111,6 @@ export const POST = withAuth(async (user, req) => {
         tools: toolSet,
         stopWhen: stepCountIs(4),
         activeTools: [],
-        experimental_download:
-          modelConfiguration.model === "google/gemini-2.5-flash-image-preview"
-            ? downloadFiles
-            : undefined,
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber }) => {
