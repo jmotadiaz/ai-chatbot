@@ -18,7 +18,7 @@
     "lint:fix": "next lint --fix && tsc --noEmit",
     "type:check": "tsc --noEmit",
     "test": "npm run test:e2e",
-    "test:e2e": "npm run db:test:start && playwright test \"%*\"  && npm run db:test:stop",
+    "test:e2e": "npm run db:test:start && playwright test && npm run db:test:stop",
     "test:e2e:ui": "npm run db:test:start && playwright test --ui && npm run db:test:stop",
     "test:e2e:headed": "npm run db:test:start && playwright test --headed && npm run db:test:stop",
     "test:e2e:jules": "sudo docker compose  -f docker-compose.test.yml down && sudo docker compose -f docker-compose.test.yml up -d && playwright test",
