@@ -53,7 +53,7 @@ const Chat: React.FC = () => {
 
   const isLoading = status === "streaming" || status === "submitted";
   return (
-    <div data-testid="chat-container">
+    <div data-testid="chat-container" className="flex flex-col h-full">
       <div
         className={cn(
           "w-full pt-16 overflow-hidden relative",
