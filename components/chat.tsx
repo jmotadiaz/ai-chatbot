@@ -53,18 +53,16 @@ const Chat: React.FC = () => {
 
   const isLoading = status === "streaming" || status === "submitted";
   return (
-    <div data-testid="chat-container" className="flex flex-col h-full">
-      <div
-        className={cn(
-          "w-full pt-16 overflow-hidden relative",
-          messages.length && "h-full"
-        )}
-      >
+    <div
+      data-testid="chat-container"
+      className={cn("flex flex-col", messages.length ? "h-full" : "h-vh")}
+    >
+      <div className={cn("w-full pt-16 overflow-hidden relative")}>
         <div
           className="h-full overflow-y-auto pb-8 pt-4"
           ref={scrollContainerRef}
         >
-          <div className="w-full max-w-4xl px-4 mx-auto">
+          <div className={cn("w-full max-w-4xl px-4 mx-auto")}>
             {messages.length === 0 ? (
               <ProjectOverview title={title} />
             ) : (
