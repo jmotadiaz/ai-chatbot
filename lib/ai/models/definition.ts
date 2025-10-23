@@ -273,7 +273,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Gemini 2.5 Pro": {
-    model: providers.google("gemini-2.5-pro"),
+    model: providers.gateway("google/gemini-2.5-pro"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
