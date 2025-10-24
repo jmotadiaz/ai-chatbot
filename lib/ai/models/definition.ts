@@ -249,17 +249,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.0 Flash": {
-    model: providers.google("gemini-2.0-flash"),
+    model: providers.gateway("google/gemini-2.0-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash Lite": {
-    model: providers.google("gemini-2.5-flash-lite"),
+    model: providers.gateway("google/gemini-2.5-flash-lite"),
     company: "google",
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
-    model: providers.google("gemini-2.5-flash"),
+    model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -287,7 +287,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Gemini Nano Banana": {
-    model: providers.google("gemini-2.5-flash-image-preview"),
+    model: providers.gateway("google/gemini-2.5-flash-image-preview"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],
