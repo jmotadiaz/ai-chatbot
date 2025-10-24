@@ -39,6 +39,7 @@ html, body {
   text-size-adjust: 100%;
   font-family: var(--font-albert-sans);
   font-weight: 450;
+  font-size: 17px;
 }
 
 .w-md-editor,
@@ -127,6 +128,10 @@ input[type=number] {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  [data-streamdown="code-block"] > pre {
+    background-color: transparent !important;
   }
 }
 
