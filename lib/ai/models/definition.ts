@@ -195,6 +195,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.groq("openai/gpt-oss-120b"),
     company: "openai",
     reasoning: true,
+    disabledConfig: ["topK"],
     providerOptions: {
       groq: { reasoningEffort: "high" },
     },
@@ -203,6 +204,7 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.groq("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
+    disabledConfig: ["topK"],
   },
   "o4 Mini": {
     model: providers.openai("o4-mini"),
