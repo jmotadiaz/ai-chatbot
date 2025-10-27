@@ -107,12 +107,12 @@ const Chat: React.FC = () => {
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
-            <ChatSettingsButton />
             <AttachmentsControl />
             <ToolsControl />
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            <ChatSettingsButton />
             {hasPreviousMessage && (
               <ChatControl
                 Icon={Undo}

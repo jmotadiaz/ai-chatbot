@@ -32,6 +32,11 @@ import {
   RAG_TOOL,
 } from "@/lib/ai/tools/types";
 import {
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
+  defaultWebSearchNumResults,
+} from "@/lib/ai/models/definition";
+import {
   hasContextUrls,
   urlContextFactory,
   webSearchFactory,
@@ -49,33 +54,54 @@ export const POST = withAuth(async (user, req) => {
     messages,
     selectedModel,
     temperature,
-    topP,
-    topK,
     chatId,
     systemPrompt,
     tools: selectedTools = [],
     messageId,
     projectId,
     preventChatPersistence = false,
+    ragSimilarityPercentage = defaultRagSimilarityPercentage,
+    ragMaxResources = defaultRagMaxResources,
+    webSearchNumResults = defaultWebSearchNumResults,
   }: {
     messages: ChatbotMessage[];
     selectedModel: chatModelId;
     temperature?: number;
-    topP?: number;
-    topK?: number;
     chatId?: string;
     systemPrompt?: string;
     tools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
+    ragSimilarityPercentage?: number;
+    ragMaxResources?: number;
+    webSearchNumResults?: number;
   } = await req.json();
+
+  // Clamp incoming tool configuration values to safe ranges
+  const safeRagSimilarityPercentage = Math.min(
+    Math.max(ragSimilarityPercentage, 0),
+    100
+  );
+  const safeRagMaxResources = Math.min(Math.max(ragMaxResources, 1), 50);
+  const safeWebSearchNumResults = Math.min(
+    Math.max(webSearchNumResults, 1),
+    10
+  );
 
   const stream = createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
       const toolSet: ToolSet = {
-        ...webSearchFactory({ writer }),
-        ...ragFactory({ writer, userId: user.id }),
+        ...webSearchFactory({
+          writer,
+          webSearchNumResults: safeWebSearchNumResults,
+        }),
+        ...ragFactory({
+          writer,
+          userId: user.id,
+          ragMaxResources: safeRagMaxResources,
+          ragSimilarityPercentage: safeRagSimilarityPercentage,
+        }),
         ...urlContextFactory({ writer }),
       };
       const { modelConfiguration, autoModelMetadata, tools } =
@@ -83,8 +109,6 @@ export const POST = withAuth(async (user, req) => {
           selectedModel,
           messages,
           temperature,
-          topP,
-          topK,
           tools: selectedTools,
         });
       const executedTools = new Set<Tool>(
@@ -216,8 +240,6 @@ export const POST = withAuth(async (user, req) => {
                         {
                           defaultModel: selectedModel,
                           defaultTemperature: temperature,
-                          defaultTopP: topP,
-                          defaultTopK: topK,
                           tools,
                         }
                       )(tx)
@@ -227,8 +249,6 @@ export const POST = withAuth(async (user, req) => {
                         projectId,
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
-                        defaultTopP: topP,
-                        defaultTopK: topK,
                         tools,
                       })(tx);
                   await deleteMessageById(messageId)(tx);

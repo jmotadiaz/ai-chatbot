@@ -5,8 +5,6 @@ import type {
 import {
   chatModelKeys,
   defaultTemperature,
-  defaultTopK,
-  defaultTopP,
   languageModelConfigurations,
 } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
@@ -19,15 +17,11 @@ export const calculateModelConfiguration = async ({
   selectedModel,
   messages,
   temperature,
-  topK,
-  topP,
   tools,
 }: {
   selectedModel: chatModelId;
   messages: ChatbotMessage[];
   temperature?: number;
-  topP?: number;
-  topK?: number;
   tools: Tools;
 }): Promise<{
   modelConfiguration: ModelConfiguration;
@@ -36,22 +30,18 @@ export const calculateModelConfiguration = async ({
 }> => {
   if (selectedModel === "Router") {
     return modelRouting({ messages, tools });
-  } else {
-    const modelConfig: ModelConfiguration =
-      languageModelConfigurations(selectedModel) ||
-      languageModelConfigurations(chatModelKeys[0]);
-    return {
-      modelConfiguration: {
-        ...modelConfig,
-        temperature: modelConfig.disabledConfig?.includes("temperature")
-          ? undefined
-          : temperature,
-        topP: modelConfig.disabledConfig?.includes("topP") ? undefined : topP,
-        topK: modelConfig.disabledConfig?.includes("topK") ? undefined : topK,
-      },
-      tools,
-    };
   }
+  const modelConfig: ModelConfiguration =
+    languageModelConfigurations(selectedModel) ||
+    languageModelConfigurations(chatModelKeys[0]);
+  return {
+    modelConfiguration: {
+      ...modelConfig,
+      // If a temperature override is provided, use it; otherwise keep modelConfig.temperature
+      temperature: temperature ?? modelConfig.temperature,
+    },
+    tools,
+  };
 };
 
 export const getChatConfigurationByModelId = (
@@ -59,10 +49,7 @@ export const getChatConfigurationByModelId = (
 ): Required<Omit<ModelConfiguration, "model" | "providerOptions">> => {
   const {
     temperature,
-    topK,
-    topP,
     systemPrompt,
-    disabledConfig,
     toolCalling,
     supportedFiles,
     supportedOutput,
@@ -71,10 +58,7 @@ export const getChatConfigurationByModelId = (
   } = Object.assign(
     {
       temperature: defaultTemperature,
-      topP: defaultTopP,
-      topK: defaultTopK,
       systemPrompt: defaultSystemPrompt,
-      disabledConfig: [],
       toolCalling: true,
       company: "ai chatbot" as const,
       supportedFiles: [],
@@ -86,24 +70,6 @@ export const getChatConfigurationByModelId = (
     modelId !== "Router"
       ? {
           ...languageModelConfigurations(modelId),
-          ...(languageModelConfigurations(modelId) && {
-            temperature: languageModelConfigurations(
-              modelId
-            ).disabledConfig?.includes("temperature")
-              ? null
-              : languageModelConfigurations(modelId).temperature ??
-                defaultTemperature,
-            topK: languageModelConfigurations(modelId).disabledConfig?.includes(
-              "topK"
-            )
-              ? null
-              : languageModelConfigurations(modelId).topK ?? defaultTopK,
-            topP: languageModelConfigurations(modelId).disabledConfig?.includes(
-              "topP"
-            )
-              ? null
-              : languageModelConfigurations(modelId).topP ?? defaultTopP,
-          }),
         }
       : {
           reasoning: true,
@@ -122,10 +88,7 @@ export const getChatConfigurationByModelId = (
     company,
     temperature,
     reasoning,
-    topK,
-    topP,
     systemPrompt,
-    disabledConfig,
     toolCalling,
     supportedFiles,
     supportedOutput,

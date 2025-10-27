@@ -22,8 +22,6 @@ export class ChatComponent {
   readonly pdfInputLabel: Locator;
   readonly settingsButton: Locator;
   readonly temperatureInput: Locator;
-  readonly topPInput: Locator;
-  readonly topKInput: Locator;
   readonly toolsControl: Locator;
   readonly ragToolLabel: Locator;
   readonly webSearchToolLabel: Locator;
@@ -59,8 +57,6 @@ export class ChatComponent {
 
     this.settingsButton = container.getByLabel("Chat settings");
     this.temperatureInput = container.getByLabel("Temperature");
-    this.topPInput = container.getByLabel("Top P");
-    this.topKInput = container.getByLabel("Top K");
 
     this.toolsControl = container.getByLabel("Configure tools");
     this.ragToolLabel = container.locator('label[for="rag-tool"]');
@@ -161,14 +157,6 @@ export class ChatComponent {
 
   async setTemperature(value: number) {
     await this.temperatureInput.fill(value.toString());
-  }
-
-  async setTopP(value: number) {
-    await this.topPInput.fill(value.toString());
-  }
-
-  async setTopK(value: number) {
-    await this.topKInput.fill(value.toString());
   }
 
   async toggleTool(toolName: "rag" | "web-search", dropdownBackdrop: Locator) {

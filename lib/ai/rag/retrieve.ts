@@ -36,10 +36,12 @@ export async function retrieve({
   query,
   userId,
   limit = 5,
+  similarityPercentage = 60,
 }: {
   query: string;
   userId: string;
   limit?: number;
+  similarityPercentage?: number; // 0-100
 }): Promise<RetrieveResult> {
   try {
     const userQueryEmbedded = await generateEmbedding(query);
@@ -47,6 +49,10 @@ export async function retrieve({
       embedding: userQueryEmbedded,
       userId,
       limit,
+      similarityThresholdDecimal: Math.min(
+        Math.max(similarityPercentage / 100, 0),
+        1
+      ),
     });
 
     if (similarChunks.length === 0) {

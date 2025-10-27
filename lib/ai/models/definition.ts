@@ -31,14 +31,11 @@ export interface ModelConfiguration {
     openrouter?: OpenRouterProviderOptions;
     xai?: XaiProviderOptions;
   };
-  disabledConfig?: ("temperature" | "topP" | "topK")[];
   toolCalling?: boolean;
   reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;
   temperature?: number;
-  topP?: number;
-  topK?: number;
   company: Company;
   systemPrompt?: string;
 }
@@ -63,20 +60,17 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.groq("llama-3.3-70b-versatile"),
     company: "meta",
     temperature: 0.6,
-    topP: 0.9,
   },
   "Llama 4 Scout": {
     model: providers.groq("meta-llama/llama-4-scout-17b-16e-instruct"),
     company: "meta",
     temperature: 0.6,
-    topP: 0.9,
     supportedFiles: ["img"],
   },
   "Llama 4 Maverick": {
     model: providers.groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
     company: "meta",
     temperature: 0.6,
-    topP: 0.9,
     supportedFiles: ["img"],
   },
   "Kimi K2": {
@@ -116,8 +110,6 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.openrouter("qwen/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
-    topP: 0.8,
-    topK: 20,
   },
   "Qwen3 Next Thinking": {
     model: wrapLanguageModel({
@@ -130,8 +122,6 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
     company: "alibaba",
     temperature: 0.6,
-    topP: 0.95,
-    topK: 20,
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),
@@ -163,13 +153,11 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.anthropic("claude-haiku-4-5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
-    disabledConfig: ["topP", "topK"],
   },
   "Claude Sonnet 4.5": {
     model: providers.anthropic("claude-sonnet-4-5-20250929"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
-    disabledConfig: ["topP", "topK"],
     reasoning: true,
     providerOptions: {
       anthropic: {
@@ -182,7 +170,6 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.anthropic("claude-opus-4-1-20250805"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
-    disabledConfig: ["topP", "topK"],
     reasoning: true,
     providerOptions: {
       anthropic: {
@@ -195,7 +182,6 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.groq("openai/gpt-oss-120b"),
     company: "openai",
     reasoning: true,
-    disabledConfig: ["topK"],
     providerOptions: {
       groq: { reasoningEffort: "high" },
     },
@@ -204,7 +190,6 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.groq("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
-    disabledConfig: ["topK"],
   },
   "o4 Mini": {
     model: providers.openai("o4-mini"),
@@ -356,5 +341,7 @@ export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 
 export const defaultModel: chatModelId = "Router";
 export const defaultTemperature = 0.5;
-export const defaultTopP = 0.95;
-export const defaultTopK = 40;
+// Tool configuration defaults (extracted from previous literals)
+export const defaultRagSimilarityPercentage = 70; // percent 0-100
+export const defaultRagMaxResources = 5; // number of chunks/resources
+export const defaultWebSearchNumResults = 3; // number of web search results

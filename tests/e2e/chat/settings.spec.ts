@@ -22,19 +22,13 @@ test.describe("Chat functionality", () => {
 
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.temperatureInput).toHaveValue("0.7");
-    await expect.soft(chatPage.chat.topPInput).toHaveValue("0.8");
-    await expect.soft(chatPage.chat.topKInput).toHaveValue("20");
 
     await chatPage.chat.setTemperature(0.6);
-    await chatPage.chat.setTopP(0.7);
-    await chatPage.chat.setTopK(15);
     await chatPage.closeDropdown();
 
     await chatPage.header.selectModel("Claude Sonnet 4.5");
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.temperatureInput).toHaveValue("0.5");
-    await expect.soft(chatPage.chat.topPInput).not.toBeVisible();
-    await expect.soft(chatPage.chat.topKInput).not.toBeVisible();
   });
 
   test("should send config to the assistant correctly", async () => {
@@ -43,8 +37,6 @@ test.describe("Chat functionality", () => {
     await chatPage.chat.openSettings();
 
     await chatPage.chat.setTemperature(0.6);
-    await chatPage.chat.setTopP(0.7);
-    await chatPage.chat.setTopK(15);
     await chatPage.closeDropdown();
 
     await chatPage.chat.sendMessage("Hello with all custom settings");
@@ -53,7 +45,7 @@ test.describe("Chat functionality", () => {
     expect
       .soft(lastMessage)
       .toContain(
-        "Hello, I'm qwen/qwen3-next-80b-a3b-instruct, Temperature: 0.6, TopP: 0.7, TopK: 15"
+        "Hello, I'm qwen/qwen3-next-80b-a3b-instruct, Temperature: 0.6"
       );
   });
 });

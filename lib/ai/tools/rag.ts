@@ -10,9 +10,21 @@ import type { SimilarChunks } from "@/lib/db/queries";
 export interface RagFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;
   userId: string;
+  ragMaxResources?: number;
+  ragSimilarityPercentage?: number; // 0-100
 }
 
-export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
+import {
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
+} from "@/lib/ai/models/definition";
+
+export const ragFactory = ({
+  writer,
+  userId,
+  ragMaxResources = defaultRagMaxResources,
+  ragSimilarityPercentage = defaultRagSimilarityPercentage,
+}: RagFactoryArgs) => ({
   [RAG_TOOL]: tool({
     description:
       "Get information from your knowledge base to answer questions.",
@@ -44,7 +56,8 @@ export const ragFactory = ({ writer, userId }: RagFactoryArgs) => ({
       const { resources, similarChunks } = await retrieve({
         query,
         userId,
-        limit: 10,
+        limit: ragMaxResources,
+        similarityPercentage: ragSimilarityPercentage,
       });
 
       writer.write({

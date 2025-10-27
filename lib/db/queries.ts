@@ -427,10 +427,12 @@ export async function findSimilarChunks({
   embedding,
   userId,
   limit = 5,
+  similarityThresholdDecimal = 0.6,
 }: {
   embedding: number[];
   userId: string;
   limit?: number;
+  similarityThresholdDecimal?: number; // value between 0 and 1
 }): Promise<SimilarChunks> {
   try {
     const similarity = sql<number>`1 - (${
@@ -446,7 +448,12 @@ export async function findSimilarChunks({
       })
       .from(embeddings)
       .innerJoin(resources, eq(embeddings.resourceId, resources.id))
-      .where(and(gt(similarity, 0.6), eq(resources.userId, userId)))
+      .where(
+        and(
+          gt(similarity, similarityThresholdDecimal),
+          eq(resources.userId, userId)
+        )
+      )
       .orderBy(desc(similarity))
       .limit(limit);
   } catch (error) {

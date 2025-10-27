@@ -18,9 +18,10 @@ import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultModel,
   defaultTemperature,
-  defaultTopP,
-  defaultTopK,
   CHAT_MODELS,
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
+  defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
 import type { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import type { Tool, Tools } from "@/lib/ai/tools/types";
@@ -31,9 +32,11 @@ import { handleFileUpload } from "@/lib/ai/utils";
 export interface ChatConfig {
   selectedModel: chatModelId;
   temperature: number;
-  topP: number;
   systemPrompt?: string;
-  topK: number;
+  // Tool-specific configuration (only used if tool active)
+  ragSimilarityPercentage: number; // 0-100 percentage threshold
+  ragMaxResources: number; // max number of RAG chunks/resources returned
+  webSearchNumResults: number; // number of web search results
 }
 
 interface SetChatConfig {
@@ -86,8 +89,9 @@ interface ChatContext
 const chatContext = createContext<ChatContext>({
   selectedModel: defaultModel,
   temperature: defaultTemperature,
-  topP: defaultTopP,
-  topK: defaultTopK,
+  ragSimilarityPercentage: defaultRagSimilarityPercentage,
+  ragMaxResources: defaultRagMaxResources,
+  webSearchNumResults: defaultWebSearchNumResults,
   setConfig: () => {},
   input: "",
   files: [],
@@ -126,13 +130,14 @@ export interface ChatProviderProps {
   chatId?: string;
   selectedModel?: chatModelId;
   temperature?: number;
-  topP?: number;
-  topK?: number;
   systemPrompt?: string;
   metaPrompt?: string | null;
   title?: string;
   tools?: Tools;
   preventChatPersistence?: boolean;
+  ragSimilarityPercentage?: number;
+  ragMaxResources?: number;
+  webSearchNumResults?: number;
 }
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({
@@ -140,8 +145,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   initialMessages,
   selectedModel = defaultModel,
   temperature,
-  topP,
-  topK,
   systemPrompt,
   metaPrompt,
   chatId,
@@ -149,13 +152,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   title,
   preventChatPersistence = false,
   tools: initialTools = [],
+  ragSimilarityPercentage = defaultRagSimilarityPercentage,
+  ragMaxResources = defaultRagMaxResources,
+  webSearchNumResults = defaultWebSearchNumResults,
 }) => {
   const { chatConfig, setConfig } = useChatConfig({
     selectedModel,
     temperature,
-    topP,
-    topK,
     systemPrompt,
+    ragSimilarityPercentage,
+    ragMaxResources,
+    webSearchNumResults,
   });
   const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);
   const [dataPart, setDataPart] = useState<
@@ -280,9 +287,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
 const useChatConfig = ({
   selectedModel = defaultModel,
   temperature,
-  topP,
-  topK,
   systemPrompt,
+  ragSimilarityPercentage,
+  ragMaxResources,
+  webSearchNumResults,
 }: Partial<ChatConfig>): {
   chatConfig: ChatConfig;
   setConfig: SetChatConfig;
@@ -293,12 +301,29 @@ const useChatConfig = ({
       Object.fromEntries(
         Object.entries({
           temperature,
-          topP,
-          topK,
           systemPrompt,
+          ragSimilarityPercentage,
+          ragMaxResources,
+          webSearchNumResults,
         }).filter(([, value]) => value !== undefined && value !== null)
       ),
-      { selectedModel, useRAG: false, useWebSearch: false }
+      {
+        selectedModel,
+        useRAG: false,
+        useWebSearch: false,
+        ragSimilarityPercentage:
+          ragSimilarityPercentage !== undefined
+            ? ragSimilarityPercentage
+            : defaultRagSimilarityPercentage,
+        ragMaxResources:
+          ragMaxResources !== undefined
+            ? ragMaxResources
+            : defaultRagMaxResources,
+        webSearchNumResults:
+          webSearchNumResults !== undefined
+            ? webSearchNumResults
+            : defaultWebSearchNumResults,
+      }
     )
   );
 

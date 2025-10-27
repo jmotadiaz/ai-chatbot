@@ -1,5 +1,6 @@
 import type { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
+import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Label } from "@/components/ui/label";
@@ -12,28 +13,35 @@ export interface ChatSettingsButtonProps {
 
 export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
-  const { temperature, topP, topK, setConfig, selectedModel } =
-    useChatContext();
+  const {
+    temperature,
+    setConfig,
+    selectedModel,
+    tools,
+    hasTool,
+    ragSimilarityPercentage,
+    ragMaxResources,
+    webSearchNumResults,
+  } = useChatContext();
 
-  const setTemperature = (value: number) => {
-    setConfig({ temperature: value });
-  };
-  const setTopP = (value: number) => {
-    setConfig({ topP: value });
-  };
-  const setTopK = (value: number) => {
-    setConfig({ topK: value });
-  };
+  const setTemperature = (value: number) => setConfig({ temperature: value });
+  const setRagSimilarity = (value: number) =>
+    setConfig({ ragSimilarityPercentage: value });
+  const setRagMaxResources = (value: number) =>
+    setConfig({ ragMaxResources: value });
+  const setWebSearchNumResults = (value: number) =>
+    setConfig({ webSearchNumResults: value });
 
-  if (
-    selectedModel === "Router" ||
-    (!isDefined(temperature) && !isDefined(topP) && !isDefined(topK))
-  ) {
+  const showToolConfig = tools.length > 0;
+  const showTemperatureSetting =
+    isDefined(temperature) && selectedModel !== "Router";
+
+  if (!showTemperatureSetting && !showToolConfig) {
     return null;
   }
 
   return (
-    <Dropdown.Container>
+    <Dropdown.Container data-testid="chat-settings-dropdown">
       <ChatControl
         Icon={Settings2}
         type="button"
@@ -42,9 +50,9 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()} className="space-y-4">
-        {isDefined(temperature) && (
+        {showTemperatureSetting && (
           <Dropdown.Item className="justify-between">
-            <Label className="mr-8" htmlFor="temperature">
+            <Label className="mr-8 text-nowrap" htmlFor="temperature">
               Temperature
             </Label>
             <InputNumber
@@ -57,35 +65,57 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             />
           </Dropdown.Item>
         )}
-        {isDefined(topP) && (
-          <Dropdown.Item className="justify-between">
-            <Label className="mr-8" htmlFor="topP">
-              Top P
-            </Label>
-            <InputNumber
-              id="topP"
-              value={topP}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={setTopP}
-            />
-          </Dropdown.Item>
-        )}
-        {isDefined(topK) && (
-          <Dropdown.Item className="justify-between">
-            <Label className="mr-8" htmlFor="topK">
-              Top K
-            </Label>
-            <InputNumber
-              id="topK"
-              value={topK}
-              min={0}
-              max={100}
-              step={5}
-              onChange={setTopK}
-            />
-          </Dropdown.Item>
+        {showToolConfig && (
+          <>
+            {hasTool(RAG_TOOL) && (
+              <>
+                <Dropdown.Item className="justify-between">
+                  <Label className="mr-8 text-nowrap" htmlFor="ragSimilarity">
+                    RAG Similarity %
+                  </Label>
+                  <InputNumber
+                    id="ragSimilarity"
+                    value={ragSimilarityPercentage}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onChange={setRagSimilarity}
+                  />
+                </Dropdown.Item>
+                <Dropdown.Item className="justify-between">
+                  <Label className="mr-8 text-nowrap" htmlFor="ragMaxResources">
+                    RAG Max Resources
+                  </Label>
+                  <InputNumber
+                    id="ragMaxResources"
+                    value={ragMaxResources}
+                    min={1}
+                    max={50}
+                    step={1}
+                    onChange={setRagMaxResources}
+                  />
+                </Dropdown.Item>
+              </>
+            )}
+            {hasTool(WEB_SEARCH_TOOL) && (
+              <Dropdown.Item className="justify-between">
+                <Label
+                  className="mr-8 text-nowrap"
+                  htmlFor="webSearchNumResults"
+                >
+                  Web Search Results
+                </Label>
+                <InputNumber
+                  id="webSearchNumResults"
+                  value={webSearchNumResults}
+                  min={1}
+                  max={10}
+                  step={1}
+                  onChange={setWebSearchNumResults}
+                />
+              </Dropdown.Item>
+            )}
+          </>
         )}
       </Dropdown.Popup>
     </Dropdown.Container>

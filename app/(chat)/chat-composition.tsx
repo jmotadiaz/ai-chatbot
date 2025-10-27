@@ -10,9 +10,10 @@ import { NewChatHeader } from "@/components/new-chat";
 import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
-  defaultTopP,
   defaultModel,
-  defaultTopK,
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
+  defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
 import {
   getChatById,
@@ -45,10 +46,11 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
   let chatConfig: Omit<ChatProviderProps, "children"> = {
     selectedModel: defaultModel,
     temperature: defaultTemperature,
-    topP: defaultTopP,
-    topK: defaultTopK,
     metaPrompt: defaultMetaPrompt,
     preventChatPersistence: temporary,
+    ragSimilarityPercentage: defaultRagSimilarityPercentage,
+    ragMaxResources: defaultRagMaxResources,
+    webSearchNumResults: defaultWebSearchNumResults,
   };
 
   if (chatId) {
@@ -76,14 +78,15 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     chatConfig = {
       selectedModel: chat.defaultModel as chatModelId,
       temperature: chat.defaultTemperature ?? defaultTemperature,
-      topP: chat.defaultTopP ?? defaultTopP,
-      topK: chat.defaultTopK ?? defaultTopK,
       chatId,
       projectId: chat.projectId ?? undefined,
       initialMessages,
       tools: filterTools(chat.tools || []),
       metaPrompt: metaPrompt,
       preventChatPersistence: temporary,
+      ragSimilarityPercentage: defaultRagSimilarityPercentage,
+      ragMaxResources: defaultRagMaxResources,
+      webSearchNumResults: defaultWebSearchNumResults,
     };
   } else if (projectId) {
     const project = await getProjectById(projectId);
@@ -96,12 +99,14 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       projectId: project.id,
       selectedModel: (project.defaultModel as chatModelId) || undefined,
       temperature: project.defaultTemperature || undefined,
-      topP: project.defaultTopP || undefined,
       systemPrompt: project.systemPrompt,
       metaPrompt: project.hasPromptRefiner ? defaultMetaPrompt : null,
       title: project.name,
       tools: filterTools(project.tools || []),
       preventChatPersistence: temporary,
+      ragSimilarityPercentage: defaultRagSimilarityPercentage,
+      ragMaxResources: defaultRagMaxResources,
+      webSearchNumResults: defaultWebSearchNumResults,
     };
   }
 
@@ -124,7 +129,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     </ChatProvider>
   );
 };
-
 
 export const ChatLoading: React.FC = () => {
   return (

@@ -18,9 +18,10 @@ import type { Project } from "@/lib/db/schema";
 import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
-  defaultTopP,
-  defaultTopK,
   CHAT_MODELS,
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
+  defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
@@ -51,8 +52,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   const [temperature, setTemperature] = useState<number>(
     project?.defaultTemperature ?? defaultTemperature
   );
-  const [topP, setTopP] = useState<number>(project?.defaultTopP ?? defaultTopP);
-  const [topK, setTopK] = useState<number>(project?.defaultTopK ?? defaultTopK);
+  // Tool configuration (not persisted yet - schema unchanged)
+  const [ragSimilarityPercentage, setRagSimilarityPercentage] =
+    useState<number>(defaultRagSimilarityPercentage);
+  const [ragMaxResources, setRagMaxResources] = useState<number>(
+    defaultRagMaxResources
+  );
+  const [webSearchNumResults, setWebSearchNumResults] = useState<number>(
+    defaultWebSearchNumResults
+  );
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
 
@@ -82,11 +90,14 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
         name: title,
         defaultModel: model,
         defaultTemperature: temperature,
-        defaultTopP: topP,
-        defaultTopK: topK,
+        // Removed topP/topK from persisted data (columns remain optional)
         systemPrompt,
         tools,
         hasPromptRefiner,
+        // New tool config not persisted until DB schema updated
+        // ragSimilarityPercentage,
+        // ragMaxResources,
+        // webSearchNumResults,
       };
 
       if (project) {
@@ -213,34 +224,71 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                       onChange={setTemperature}
                     />
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Label className="text-base" htmlFor="topP">
-                      Top P
-                    </Label>
-                    <InputNumber
-                      id="topP"
-                      value={topP}
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      onChange={setTopP}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label className="text-base" htmlFor="topK">
-                      Top K
-                    </Label>
-                    <InputNumber
-                      id="topK"
-                      value={topK}
-                      min={0}
-                      max={100}
-                      step={1}
-                      onChange={setTopK}
-                    />
-                  </div>
                 </div>
               </div>
+              {(hasTool(RAG_TOOL) || hasTool(WEB_SEARCH_TOOL)) && (
+                <div className="flex flex-col mt-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Tool Configuration
+                  </h3>
+                  <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-10">
+                    {hasTool(RAG_TOOL) && (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            className="text-base"
+                            htmlFor="ragSimilarityPercentage"
+                          >
+                            RAG Similarity %
+                          </Label>
+                          <InputNumber
+                            id="ragSimilarityPercentage"
+                            value={ragSimilarityPercentage}
+                            min={0}
+                            max={100}
+                            step={1}
+                            onChange={setRagSimilarityPercentage}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            className="text-base"
+                            htmlFor="ragMaxResources"
+                          >
+                            RAG Max Resources
+                          </Label>
+                          <InputNumber
+                            id="ragMaxResources"
+                            value={ragMaxResources}
+                            min={1}
+                            max={50}
+                            step={1}
+                            onChange={setRagMaxResources}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {hasTool(WEB_SEARCH_TOOL) && (
+                      <div className="flex flex-col gap-2">
+                        <Label
+                          className="text-base"
+                          htmlFor="webSearchNumResults"
+                        >
+                          Web Search Results
+                        </Label>
+                        <InputNumber
+                          id="webSearchNumResults"
+                          value={webSearchNumResults}
+                          min={1}
+                          max={10}
+                          step={1}
+                          onChange={setWebSearchNumResults}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 text-right">
                 <Button
@@ -259,14 +307,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
           <Tabs.Panel {...getPanelProps("testChat")}>
             <ChatProvider
               temperature={temperature}
-              topP={topP}
-              topK={topK}
               selectedModel={model}
               systemPrompt={systemPrompt}
               tools={tools}
               metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
               title={title}
               preventChatPersistence={true}
+              ragSimilarityPercentage={ragSimilarityPercentage}
+              ragMaxResources={ragMaxResources}
+              webSearchNumResults={webSearchNumResults}
             >
               <Chat />
             </ChatProvider>

@@ -1,16 +1,27 @@
-import type { UIMessageStreamWriter} from "ai";
+import type { UIMessageStreamWriter } from "ai";
 import { tool, generateObject } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
+import { defaultWebSearchNumResults, languageModelConfigurations  } from "@/lib/ai/models/definition";
 import type { ChatbotMessage } from "@/lib/ai/types";
-import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
-const exa = new Exa(process.env.EXA_API_KEY);
+// Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY
+const getExaClient = () => {
+  const key = process.env.EXASEARCH_API_KEY || process.env.EXA_API_KEY;
+  if (!key) return null;
+  try {
+    return new Exa(key);
+  } catch (e) {
+    console.warn("Failed to initialize Exa client", e);
+    return null;
+  }
+};
 
 export interface WebSearchFactoryArgs {
   writer: UIMessageStreamWriter<ChatbotMessage>;
+  webSearchNumResults?: number;
 }
 
 const webSearchInputSchema = z.object({
@@ -37,7 +48,10 @@ const outputSchema = z.array(
   })
 );
 
-export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
+export const webSearchFactory = ({
+  writer,
+  webSearchNumResults = defaultWebSearchNumResults,
+}: WebSearchFactoryArgs) => ({
   [WEB_SEARCH_TOOL]: tool({
     description: `
     Search the web for up-to-date information
@@ -54,9 +68,23 @@ export const webSearchFactory = ({ writer }: WebSearchFactoryArgs) => ({
         data: { status: "loading" },
       });
 
+      const exa = getExaClient();
+      if (!exa) {
+        console.warn(
+          "Web Search skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results."
+        );
+        writer.write({
+          type: "data-web-search",
+          id: toolCallId,
+          data: { status: "loaded" },
+        });
+        return [];
+      }
+
+      const clampedResults = Math.min(Math.max(webSearchNumResults, 1), 10);
       const { results } = await exa.searchAndContents(query, {
         livecrawl: "preferred",
-        numResults: 3,
+        numResults: clampedResults,
       });
 
       console.log("Web Search results:", results.length);
@@ -100,6 +128,19 @@ export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
         id: toolCallId,
         data: { status: "loading" },
       });
+
+      const exa = getExaClient();
+      if (!exa) {
+        console.warn(
+          "URL Context skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results."
+        );
+        writer.write({
+          type: "data-web-search",
+          id: toolCallId,
+          data: { status: "loaded" },
+        });
+        return [];
+      }
 
       const { results } = await exa.getContents(urls, {
         livecrawl: "always",
