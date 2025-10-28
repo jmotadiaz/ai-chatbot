@@ -24,7 +24,7 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
   }
 
   return (
-    <Dropdown.Container>
+    <Dropdown.Container data-testid="tools-control-dropdown">
       <ChatControl
         Icon={Wrench}
         type="button"

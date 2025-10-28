@@ -227,7 +227,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 </div>
               </div>
               {(hasTool(RAG_TOOL) || hasTool(WEB_SEARCH_TOOL)) && (
-                <div className="flex flex-col mt-6">
+                <div className="flex flex-col mt-4">
                   <h3 className="text-lg font-semibold mb-4">
                     Tool Configuration
                   </h3>

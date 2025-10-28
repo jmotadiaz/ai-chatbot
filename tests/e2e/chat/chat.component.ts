@@ -1,4 +1,6 @@
 import { Locator } from "@playwright/test";
+import { ToolsComponent } from "@/tests/e2e/chat/tools.component";
+import { SettingsComponent } from "@/tests/e2e/chat/settings.component";
 
 /**
  * Component Object Model for Chat functionality
@@ -21,10 +23,9 @@ export class ChatComponent {
   readonly imageInputLabel: Locator;
   readonly pdfInputLabel: Locator;
   readonly settingsButton: Locator;
-  readonly temperatureInput: Locator;
   readonly toolsControl: Locator;
-  readonly ragToolLabel: Locator;
-  readonly webSearchToolLabel: Locator;
+  readonly tools: ToolsComponent;
+  readonly settings: SettingsComponent;
 
   constructor(container: Locator) {
     this.container = container;
@@ -56,11 +57,10 @@ export class ChatComponent {
     this.pdfInputLabel = this.attachmentMenu.getByText("Document");
 
     this.settingsButton = container.getByLabel("Chat settings");
-    this.temperatureInput = container.getByLabel("Temperature");
 
     this.toolsControl = container.getByLabel("Configure tools");
-    this.ragToolLabel = container.locator('label[for="rag-tool"]');
-    this.webSearchToolLabel = container.locator('label[for="rag-tool"]');
+    this.tools = new ToolsComponent(container);
+    this.settings = new SettingsComponent(container);
   }
 
   async getUserMessages(): Promise<string[]> {
@@ -153,19 +153,5 @@ export class ChatComponent {
 
   async openSettings() {
     await this.settingsButton.click();
-  }
-
-  async setTemperature(value: number) {
-    await this.temperatureInput.fill(value.toString());
-  }
-
-  async toggleTool(toolName: "rag" | "web-search", dropdownBackdrop: Locator) {
-    await this.toolsControl.click();
-    if (toolName === "rag") {
-      await this.ragToolLabel.click();
-    } else if (toolName === "web-search") {
-      await this.webSearchToolLabel.click();
-    }
-    await dropdownBackdrop.click({ position: { x: 10, y: 10 } });
   }
 }

@@ -21,14 +21,18 @@ test.describe("Chat functionality", () => {
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
-    await expect.soft(chatPage.chat.temperatureInput).toHaveValue("0.7");
+    await expect
+      .soft(chatPage.chat.settings.temperatureInput)
+      .toHaveValue("0.7");
 
-    await chatPage.chat.setTemperature(0.6);
+    await chatPage.chat.settings.setTemperature(0.6);
     await chatPage.closeDropdown();
 
     await chatPage.header.selectModel("Claude Sonnet 4.5");
     await chatPage.chat.openSettings();
-    await expect.soft(chatPage.chat.temperatureInput).toHaveValue("0.5");
+    await expect
+      .soft(chatPage.chat.settings.temperatureInput)
+      .toHaveValue("0.5");
   });
 
   test("should send config to the assistant correctly", async () => {
@@ -36,7 +40,7 @@ test.describe("Chat functionality", () => {
 
     await chatPage.chat.openSettings();
 
-    await chatPage.chat.setTemperature(0.6);
+    await chatPage.chat.settings.setTemperature(0.6);
     await chatPage.closeDropdown();
 
     await chatPage.chat.sendMessage("Hello with all custom settings");
