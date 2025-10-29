@@ -66,7 +66,9 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
           </Item>
         </NewChat>
         <NewChat temporary>
-          <MessageCircleDashed className="h-5 w-5" />
+          <div className="p-2">
+            <MessageCircleDashed className="h-5 w-5" />
+          </div>
         </NewChat>
       </div>
     </Suspense>
