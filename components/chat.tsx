@@ -67,7 +67,7 @@ const Chat: React.FC = () => {
           className="h-full overflow-y-auto pb-8 pt-4"
           ref={scrollContainerRef}
         >
-          <div className={cn("w-full max-w-4xl px-4 mx-auto")}>
+          <div className={cn("w-full max-w-5xl px-4 mx-auto")}>
             {messages.length === 0 ? (
               <ProjectOverview title={title} />
             ) : (
@@ -96,7 +96,7 @@ const Chat: React.FC = () => {
       </div>
       <form
         onSubmit={handleSubmit}
-        className="bg-(--background) w-full max-w-4xl mx-auto pb-4 px-4"
+        className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4"
       >
         <div className="relative w-full">
           <Textarea
