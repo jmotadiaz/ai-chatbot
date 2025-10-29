@@ -144,6 +144,33 @@ const generateImages = async (
 
       *   **Output**: \`[EDITED_IMAGE]\`
 
+      ### Example 4
+      *   **Input**: \`[INPUT_IMAGE]\` (Indoor portrait with significant out-of-focus blur; soft details throughout face and hair; possible camera shake or missed autofocus; adequate lighting but lacks definition; minor noise in shadows.)
+
+      *   **Analysis**:
+          1) Ingest image at original pixel dimensions; set 16-bit depth, sRGB working space; disable any initial resampling.
+          2) Pre-sharpening assessment: Analyze blur type — determine if caused by motion blur (directional), defocus blur (uniform softness), or missed autofocus (focal plane shifted); estimate blur radius 3-5 px.
+          3) Lens profile corrections: Apply automatic geometric distortion and chromatic aberration removal; Defringe: Purple Amount 2, Green Amount 2.
+          4) Global tone baseline: Exposure +0.10 EV; Highlights -20; Shadows +15; Whites +10; Blacks -8; Contrast +12 to establish base dynamic range before sharpening.
+          5) Deconvolution sharpening (primary correction): Apply advanced sharpening with deconvolution algorithm — Amount 120, Radius 1.8 px, Threshold 0; target facial features, hair strands, and eye details; use frequency separation if available to protect skin texture.
+          6) Frequency separation (if severe blur): Split image into high-frequency (detail) and low-frequency (color/tone) layers; on high-frequency layer: apply targeted Unsharp Mask Amount 90, Radius 1.2 px; on low-frequency layer: slight Gaussian Blur 2 px to smooth skin tones without affecting recovered detail.
+          7) Localized sharpening hierarchy:
+              - Eyes (critical focus point): Create precision mask — Sharpen Amount 150, Radius 0.6 px, Clarity +25, Texture +20; enhance catchlights with micro dodging +0.15 EV.
+              - Hair and edges: Mask hair strands and facial edges — Sharpen Amount 100, Radius 1.4 px, Texture +15.
+              - Skin (controlled enhancement): Mask skin areas — Texture -5, Clarity +8 only; protect skin from over-sharpening to maintain natural appearance.
+          8) Residual blur reduction: If motion blur detected, apply directional deblur at estimated angle ±2° with 2.5 px strength; verify no artificial ringing artifacts.
+          9) Noise reduction (post-sharpening): Luminance 25 (Detail 65, Contrast 15), Color NR 30; apply selectively to shadow areas only to avoid softening recovered details.
+          10) Micro-contrast enhancement: Apply local contrast boost — Clarity +15 globally, Structure +10 on facial features; use high-radius sharpening (Radius 40 px, Amount 10) for acutance perception.
+          11) Color and tone refinement: White Balance Temperature 4800 K, Tint +5; Skin tone mask: Orange Hue -3, Sat +5, Lum +6; Global Vibrance +12, Saturation -3.
+          12) Detail recovery verification: Zoom to 200% on eyes and hair; confirm edge transitions are crisp without halos or oversharpening artifacts; if halos present, reduce Radius by 0.2-0.4 px and reprocess affected masks.
+          13) Edge protection: Apply edge-aware mask to sharpening effects — protect 60% of flat areas, allow 100% on edges with gradient >15% luminance change.
+          14) Final polish: Subtle vignette Amount -8, Midpoint 50 to guide focus to face; optional micro-dodge on eyes +0.10 EV.
+          15) Artifact check: Review at 300% zoom for sharpening halos, ringing, or artificial texture patterns; reduce problematic areas by 20-30% if detected.
+          16) Export: Original pixel dimensions, sRGB, JPEG 92 quality or PNG if critical; embed ICC profile; disable output sharpening (already applied); verify edge transitions remain natural.
+
+      *   **Output**: \`[EDITED_IMAGE]\`
+
+
       ## Notes
       - Radically changing the background is not permitted (e.g., replacing a room with a beach).
       - If the composition is already adequate, only subtle improvements will be applied.
