@@ -56,7 +56,7 @@ export const generateEmbedding = async (value: string): Promise<number[]> => {
     providerOptions: {
       google: {
         outputDimensionality: 768,
-        taskType: "RETRIEVAL_QUERY",
+        taskType: "QUESTION_ANSWERING",
       },
     },
     value: input,
