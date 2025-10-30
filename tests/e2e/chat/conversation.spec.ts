@@ -13,7 +13,7 @@ test.describe("Chat functionality", () => {
   test("user sends a message and assistant responds correctly", async () => {
     const userQuery = "What is the capital of France?";
 
-    await chatPage.header.selectModel("Llama 4 Scout");
+    await chatPage.header.modelPicker.selectModel("Llama 4 Scout");
 
     await chatPage.chat.sendMessage(userQuery);
 

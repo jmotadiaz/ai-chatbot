@@ -13,5 +13,6 @@
     "pgvector",
     "Qwen",
     "UNPOOLED"
-  ]
+  ],
+  "editor.formatOnSave": true
 }

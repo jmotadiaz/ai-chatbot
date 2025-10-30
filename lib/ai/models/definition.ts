@@ -21,16 +21,18 @@ export type Company =
   | "moonshotai"
   | "ai chatbot";
 
+export type ProviderOptions = {
+  anthropic?: AnthropicProviderOptions;
+  groq?: GroqProviderOptions;
+  google?: GoogleGenerativeAIProviderOptions;
+  openai?: OpenAIResponsesProviderOptions;
+  openrouter?: OpenRouterProviderOptions;
+  xai?: XaiProviderOptions;
+};
+
 export interface ModelConfiguration {
   model: LanguageModel;
-  providerOptions?: {
-    anthropic?: AnthropicProviderOptions;
-    groq?: GroqProviderOptions;
-    google?: GoogleGenerativeAIProviderOptions;
-    openai?: OpenAIResponsesProviderOptions;
-    openrouter?: OpenRouterProviderOptions;
-    xai?: XaiProviderOptions;
-  };
+  providerOptions?: ProviderOptions;
   toolCalling?: boolean;
   reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
@@ -46,7 +48,7 @@ const reasoningMw = extractReasoningMiddleware({
   startWithReasoning: false,
 });
 
-export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
+const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.1 Instant": {
     model: providers.groq("llama-3.1-8b-instant"),
     company: "meta",
@@ -306,8 +308,16 @@ export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const languageModelConfigurations = (
-  modelKey: LanguageModelKeys
-): ModelConfiguration => LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
+  modelKey: LanguageModelKeys,
+  { providerOptions }: { providerOptions?: ProviderOptions } = {}
+): ModelConfiguration => {
+  const baseConfig: ModelConfiguration =
+    LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
+  return {
+    ...baseConfig,
+    ...(providerOptions && { providerOptions: { ...providerOptions } }),
+  };
+};
 
 export const chatModelKeys = [
   "Llama 4 Scout",

@@ -11,10 +11,10 @@ test.describe("Chat functionality", () => {
   });
 
   test("should handle tool configuration and model filtering correctly", async () => {
-    await chatPage.header.selectModel("Sonar Pro");
+    await chatPage.header.modelPicker.selectModel("Sonar Pro");
     await expect.soft(chatPage.chat.toolsControl).not.toBeVisible();
 
-    await chatPage.header.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
     await expect.soft(chatPage.chat.toolsControl).toBeVisible();
 
     // First, click on toolsControl to open the dropdown
@@ -22,12 +22,12 @@ test.describe("Chat functionality", () => {
     // Then use toggleTool to enable the RAG tool
     await chatPage.chat.tools.toggleTool("rag", chatPage.dropdownBackdrop);
 
-    await chatPage.header.openSelectModelDropdown();
+    await chatPage.header.modelPicker.openSelectModelDropdown();
     await expect
-      .soft(chatPage.header.getModelOption("Sonar Pro"))
+      .soft(chatPage.header.modelPicker.getModelOption("Sonar Pro"))
       .not.toBeAttached();
     await expect
-      .soft(chatPage.header.getModelOption("Claude Sonnet 4.5"))
+      .soft(chatPage.header.modelPicker.getModelOption("Claude Sonnet 4.5"))
       .toBeAttached();
     await chatPage.closeDropdown();
 
@@ -36,18 +36,18 @@ test.describe("Chat functionality", () => {
     // Then use toggleTool to disable the RAG tool
     await chatPage.chat.tools.toggleTool("rag", chatPage.dropdownBackdrop);
 
-    await chatPage.header.openSelectModelDropdown();
+    await chatPage.header.modelPicker.openSelectModelDropdown();
     await expect
-      .soft(chatPage.header.getModelOption("Sonar Pro"))
+      .soft(chatPage.header.modelPicker.getModelOption("Sonar Pro"))
       .toBeAttached();
     await expect
-      .soft(chatPage.header.getModelOption("Gemini 2.5 Pro"))
+      .soft(chatPage.header.modelPicker.getModelOption("Gemini 2.5 Pro"))
       .toBeAttached();
   });
 
   test("should show tool configuration options when tools are enabled", async () => {
     // Select a model that supports tools
-    await chatPage.header.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
 
     // Enable RAG tool
     await chatPage.chat.toolsControl.click();
