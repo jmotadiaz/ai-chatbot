@@ -18,6 +18,7 @@ import {
   defaultRagSimilarityPercentage,
   defaultRagMaxResources,
 } from "@/lib/ai/models/definition";
+import { QUERY_TYPES } from "@/lib/ai/rag/generate-embeddings";
 
 export const ragFactory = ({
   writer,
@@ -36,6 +37,12 @@ export const ragFactory = ({
         .describe(
           "The search query. It should be in english and optimized for rag search."
         ),
+      queryType: z
+        .enum(QUERY_TYPES)
+        .default("RETRIEVAL_QUERY")
+        .describe(
+          "The type of the query, which can be either 'RETRIEVAL_QUERY' (general search queries) or 'CODE_RETRIEVAL_QUERY' (for retrieval of code blocks based on natural language queries)."
+        ),
     }),
     outputSchema: z.array(
       z.object({
@@ -45,8 +52,12 @@ export const ragFactory = ({
         similarity: z.number().describe("The similarity score of the chunk."),
       })
     ),
-    execute: async ({ query }, { toolCallId }): Promise<SimilarChunks> => {
+    execute: async (
+      { query, queryType },
+      { toolCallId }
+    ): Promise<SimilarChunks> => {
       console.log("RAG tool called with query:", query);
+      console.log("RAG tool called with queryType:", queryType);
       writer.write({
         type: "data-rag",
         id: toolCallId,
@@ -55,6 +66,7 @@ export const ragFactory = ({
 
       const { resources, similarChunks } = await retrieve({
         query,
+        queryType,
         userId,
         limit: ragMaxResources,
         similarityPercentage: ragSimilarityPercentage,

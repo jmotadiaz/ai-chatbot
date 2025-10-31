@@ -7,6 +7,8 @@ import { providers } from "@/lib/ai/models/providers";
 const MAX_CALLS = 1000;
 const TIME_WINDOW = 60 * 1000;
 const markdownSplitter = new MarkdownNodeParser();
+export const QUERY_TYPES = ["RETRIEVAL_QUERY", "CODE_RETRIEVAL_QUERY"] as const;
+export type QueryType = (typeof QUERY_TYPES)[number];
 
 export async function generateMarkdownChunks(text: string): Promise<string[]> {
   const nodes = markdownSplitter.getNodesFromDocuments([
@@ -43,14 +45,17 @@ export async function generateEmbeddings(chunks: string[]) {
   return [];
 }
 
-export const generateEmbedding = async (value: string): Promise<number[]> => {
+export const generateEmbedding = async (
+  value: string,
+  queryType: QueryType
+): Promise<number[]> => {
   const input = value.replaceAll("\\n", " ");
   const { embedding } = await embed({
     model: providers.embedding(),
     providerOptions: {
       google: {
         outputDimensionality: 768,
-        taskType: "QUESTION_ANSWERING",
+        taskType: queryType,
       },
     },
     value: input,

@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { generateEmbedding } from "@/lib/ai/rag/generate-embeddings";
+import { generateEmbedding, QueryType } from "@/lib/ai/rag/generate-embeddings";
 import type { SimilarChunks } from "@/lib/db/queries";
 import { findSimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
@@ -34,17 +34,19 @@ export async function translateToEnglish(text: string): Promise<string> {
  */
 export async function retrieve({
   query,
+  queryType = "RETRIEVAL_QUERY",
   userId,
   limit = 5,
   similarityPercentage = 60,
 }: {
   query: string;
+  queryType?: QueryType;
   userId: string;
   limit?: number;
   similarityPercentage?: number; // 0-100
 }): Promise<RetrieveResult> {
   try {
-    const userQueryEmbedded = await generateEmbedding(query);
+    const userQueryEmbedded = await generateEmbedding(query, queryType);
     const similarChunks = await findSimilarChunks({
       embedding: userQueryEmbedded,
       userId,
