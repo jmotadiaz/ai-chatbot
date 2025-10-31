@@ -82,7 +82,7 @@ export async function uploadResources(
       }
 
       if (process.env.NODE_ENV === "production" && urls.length > 200) {
-        return { success: false, error: "Max 100 URLs" };
+        return { success: false, error: "Max 200 URLs" };
       }
 
       await forEachChunk(urls, async (chunkUrls) => {
@@ -95,6 +95,9 @@ export async function uploadResources(
         const chunkResult = await saveResources(
           resourcesChunk.filter(isDefined),
           session.user.id
+        );
+        console.log(
+          `Created ${chunkResult.resourcesCreated} resources and ${chunkResult.embeddingsCreated} embeddings`
         );
         result.resourcesCreated += chunkResult.resourcesCreated;
         result.embeddingsCreated += chunkResult.embeddingsCreated;
@@ -231,7 +234,7 @@ async function fetchAndConvertURL({
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; RAG-Bot/1.0)",
       },
-      signal: AbortSignal.timeout(30000), // 30 second timeout
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {

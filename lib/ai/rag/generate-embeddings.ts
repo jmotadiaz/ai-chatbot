@@ -4,9 +4,8 @@ import { Document } from "@llamaindex/core/schema";
 import pThrottle from "p-throttle";
 import { providers } from "@/lib/ai/models/providers";
 
-const MAX_CALLS = 90;
+const MAX_CALLS = 1000;
 const TIME_WINDOW = 60 * 1000;
-const MAX_EMBEDDINGS = 99;
 const markdownSplitter = new MarkdownNodeParser();
 
 export async function generateMarkdownChunks(text: string): Promise<string[]> {
@@ -23,22 +22,17 @@ const throttledEmbedMany = pThrottle({
 
 export async function generateEmbeddings(chunks: string[]) {
   if (chunks.length) {
-    const embeddings: Array<number>[] = [];
-    for (let i = 0; i < chunks.length; i += MAX_EMBEDDINGS) {
-      const chunkGroup = chunks.slice(i, i + MAX_EMBEDDINGS);
-      const { embeddings: embeddingsGroup } = await throttledEmbedMany({
-        model: providers.embedding(),
-        maxParallelCalls: 1,
-        providerOptions: {
-          google: {
-            outputDimensionality: 768,
-            taskType: "RETRIEVAL_DOCUMENT",
-          },
+    const { embeddings } = await throttledEmbedMany({
+      model: providers.embedding(),
+      maxParallelCalls: 1,
+      providerOptions: {
+        google: {
+          outputDimensionality: 768,
+          taskType: "RETRIEVAL_DOCUMENT",
         },
-        values: chunkGroup,
-      });
-      embeddings.push(...embeddingsGroup);
-    }
+      },
+      values: chunks,
+    });
 
     return embeddings.map((embedding, index) => ({
       content: chunks[index],

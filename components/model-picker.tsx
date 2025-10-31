@@ -19,6 +19,7 @@ import {
   GeminiIcon,
   TextIcon,
   MistralIcon,
+  MiniMaxIcon,
 } from "@/components/icons";
 
 interface ModelPickerProps {
@@ -105,6 +106,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   alibaba: QwenIcon,
   moonshotai: MoonshotIcon,
   mistral: MistralIcon,
+  minimax: MiniMaxIcon,
   "ai chatbot": LogoIcon,
 };
 

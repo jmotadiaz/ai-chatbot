@@ -19,6 +19,7 @@ export type Company =
   | "perplexity"
   | "alibaba"
   | "moonshotai"
+  | "minimax"
   | "ai chatbot";
 
 export type ProviderOptions = {
@@ -128,6 +129,11 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),
     company: "alibaba",
+  },
+  "MiniMax M2": {
+    model: providers.gateway("minimax/minimax-m2"),
+    reasoning: true,
+    company: "minimax",
   },
   Sonar: {
     model: providers.perplexity("sonar"),
@@ -326,6 +332,7 @@ export const chatModelKeys = [
   "Qwen3 Coder",
   "Qwen3 Next Instruct",
   "Qwen3 Next Thinking",
+  "MiniMax M2",
   "Deepseek Chat",
   "Deepseek R1",
   "Sonar",
