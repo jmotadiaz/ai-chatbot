@@ -1,13 +1,13 @@
-import { ImageEditorLayout } from "@/app/(chat)/image-editor/component";
+import ImageEditorSkeleton from "@/components/image-editor-skeleton";
 import { Sidebar } from "@/components/sidebar";
 
-const LoadingImageEditorPage: React.FC = () => {
+const Loading: React.FC = () => {
   return (
     <>
       <Sidebar />
-      <ImageEditorLayout />;
+      <ImageEditorSkeleton />
     </>
   );
 };
 
-export default LoadingImageEditorPage;
+export default Loading;

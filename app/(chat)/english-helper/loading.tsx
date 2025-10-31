@@ -1,11 +1,11 @@
-import { EnglishHelper } from "@/app/(chat)/english-helper/component";
+import EnglishHelperSkeleton from "@/components/english-helper-skeleton";
 import { Sidebar } from "@/components/sidebar";
 
 const Loading: React.FC = () => {
   return (
     <>
       <Sidebar />
-      <EnglishHelper />
+      <EnglishHelperSkeleton />
     </>
   );
 };

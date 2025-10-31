@@ -1,11 +1,11 @@
-import { RAGManager } from "@/app/(chat)/rag/component";
+import RAGSkeleton from "@/components/rag-skeleton";
 import { Sidebar } from "@/components/sidebar";
 
 const Loading: React.FC = () => {
   return (
     <>
       <Sidebar />
-      <RAGManager />
+      <RAGSkeleton />
     </>
   );
 };
