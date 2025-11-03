@@ -17,9 +17,9 @@ export class ToolsComponent {
 
   async toggleTool(toolName: "rag" | "web-search") {
     if (toolName === "rag") {
-      await this.ragToolLabel.click();
+      return await this.ragToolLabel.click();
     } else if (toolName === "web-search") {
-      await this.webSearchToolLabel.click();
+      return await this.webSearchToolLabel.click();
     }
   }
 }

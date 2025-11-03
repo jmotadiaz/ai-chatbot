@@ -29,6 +29,6 @@ export class ChatPage {
   }
 
   async closeDropdown() {
-    await this.dropdownBackdrop.click({ position: { x: 10, y: 10 } });
+    await this.dropdownBackdrop.click({ position: { x: 5, y: 5 } });
   }
 }

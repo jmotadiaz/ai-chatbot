@@ -17,8 +17,9 @@ test.describe("Chat functionality", () => {
     await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
     await expect.soft(chatPage.chat.toolsControl).toBeVisible();
 
-    await chatPage.chat.toolsControl.click();
+    await chatPage.chat.openTools();
     await chatPage.chat.tools.toggleTool("web-search");
+    await chatPage.closeDropdown();
 
     await chatPage.header.modelPicker.openSelectModelDropdown();
     await expect
@@ -27,11 +28,11 @@ test.describe("Chat functionality", () => {
     await expect
       .soft(chatPage.header.modelPicker.getModelOption("Claude Sonnet 4.5"))
       .toBeAttached();
-
     await chatPage.closeDropdown();
 
-    await chatPage.chat.toolsControl.click();
+    await chatPage.chat.openTools();
     await chatPage.chat.tools.toggleTool("web-search");
+    await chatPage.closeDropdown();
 
     await chatPage.header.modelPicker.openSelectModelDropdown();
     await expect

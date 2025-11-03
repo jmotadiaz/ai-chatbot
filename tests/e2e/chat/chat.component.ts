@@ -122,6 +122,10 @@ export class ChatComponent {
     await this.undoButton.click();
   }
 
+  async openTools() {
+    await this.toolsControl.click();
+  }
+
   async openAttachmentMenu() {
     await this.attachmentButton.click();
     await this.attachmentMenu.waitFor({ state: "visible", timeout: 1000 });

@@ -30,6 +30,7 @@ import {
   WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
   RAG_TOOL,
+  TOOLS,
 } from "@/lib/ai/tools/types";
 import { defaultWebSearchNumResults } from "@/lib/ai/models/definition";
 import {
@@ -97,9 +98,14 @@ export const POST = withAuth(async (user, req) => {
           temperature,
           tools: selectedTools,
         });
+      console.log("Use mock providers:", !!process.env.USE_MOCK_PROVIDERS);
       const executedTools = new Set<Tool>(
-        modelConfiguration.toolCalling === false ? tools : []
+        !!process.env.USE_MOCK_PROVIDERS ||
+        modelConfiguration.toolCalling === false
+          ? TOOLS
+          : []
       );
+      console.log("Tools to be used in this chat:", executedTools);
       const lastMessage = messagePartsToText(messages[messages.length - 1]);
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
       let reasoning = false;

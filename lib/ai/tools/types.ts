@@ -8,3 +8,5 @@ export type Tool =
   | typeof URL_CONTEXT_TOOL;
 
 export type Tools = Array<Tool>;
+
+export const TOOLS: Tools = [RAG_TOOL, WEB_SEARCH_TOOL, URL_CONTEXT_TOOL];
