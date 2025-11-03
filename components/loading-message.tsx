@@ -43,16 +43,6 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
                   );
                 }
                 return null;
-              case "data-rag":
-                if (dataPart.data.status === "loading") {
-                  return (
-                    <ToolLoading
-                      key={`message-rag`}
-                      text="Searching documents"
-                    />
-                  );
-                }
-                return null;
               case "data-reasoning":
                 if (dataPart.data.status === "started") {
                   return (

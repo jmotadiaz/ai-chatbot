@@ -415,45 +415,60 @@ export const createEmbeddings =
     }
   };
 
-export type SimilarChunks = Array<
-  Pick<Embedding, "content"> & {
-    similarity: number;
-    resourceTitle: string;
-    resourceUrl: string | null;
-  }
->;
+export type SimilarChunk = Pick<Embedding, "content"> & {
+  id: string;
+  similarity: number;
+  resourceTitle: string;
+  resourceUrl: string | null;
+  embeddingId: string;
+};
+
+export type SimilarChunks = Array<SimilarChunk>;
 
 export async function findSimilarChunks({
   embedding,
   userId,
   limit = 5,
-  similarityThresholdDecimal = 0.6,
+  similarityThreshold = 0.7,
+  excludeEmbeddingIds = [],
 }: {
   embedding: number[];
   userId: string;
   limit?: number;
-  similarityThresholdDecimal?: number; // value between 0 and 1
+  similarityThreshold?: number; // value between 0 and 1
+  excludeEmbeddingIds?: string[];
 }): Promise<SimilarChunks> {
   try {
     const similarity = sql<number>`1 - (${
       embeddings.embedding
     } <=> ${JSON.stringify(embedding)}::vector)`;
 
+    const whereConditions = [
+      gt(similarity, similarityThreshold),
+      eq(resources.userId, userId),
+    ];
+
+    // Add exclusion condition if embedding IDs are provided
+    if (excludeEmbeddingIds.length > 0) {
+      whereConditions.push(
+        sql`${embeddings.id} NOT IN (${sql.raw(
+          excludeEmbeddingIds.map((id) => `'${id}'`).join(", ")
+        )})`
+      );
+    }
+
     return await getDb()
       .select({
+        id: embeddings.id,
         resourceUrl: resources.url,
         content: embeddings.content,
         similarity,
         resourceTitle: resources.title,
+        embeddingId: embeddings.id,
       })
       .from(embeddings)
       .innerJoin(resources, eq(embeddings.resourceId, resources.id))
-      .where(
-        and(
-          gt(similarity, similarityThresholdDecimal),
-          eq(resources.userId, userId)
-        )
-      )
+      .where(and(...whereConditions))
       .orderBy(desc(similarity))
       .limit(limit);
   } catch (error) {

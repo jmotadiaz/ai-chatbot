@@ -31,11 +31,7 @@ import {
   URL_CONTEXT_TOOL,
   RAG_TOOL,
 } from "@/lib/ai/tools/types";
-import {
-  defaultRagSimilarityPercentage,
-  defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/ai/models/definition";
+import { defaultWebSearchNumResults } from "@/lib/ai/models/definition";
 import {
   hasContextUrls,
   urlContextFactory,
@@ -60,8 +56,6 @@ export const POST = withAuth(async (user, req) => {
     messageId,
     projectId,
     preventChatPersistence = false,
-    ragSimilarityPercentage = defaultRagSimilarityPercentage,
-    ragMaxResources = defaultRagMaxResources,
     webSearchNumResults = defaultWebSearchNumResults,
   }: {
     messages: ChatbotMessage[];
@@ -78,12 +72,6 @@ export const POST = withAuth(async (user, req) => {
     webSearchNumResults?: number;
   } = await req.json();
 
-  // Clamp incoming tool configuration values to safe ranges
-  const safeRagSimilarityPercentage = Math.min(
-    Math.max(ragSimilarityPercentage, 0),
-    100
-  );
-  const safeRagMaxResources = Math.min(Math.max(ragMaxResources, 1), 50);
   const safeWebSearchNumResults = Math.min(
     Math.max(webSearchNumResults, 1),
     10
@@ -97,10 +85,8 @@ export const POST = withAuth(async (user, req) => {
           webSearchNumResults: safeWebSearchNumResults,
         }),
         ...ragFactory({
-          writer,
+          messages,
           userId: user.id,
-          ragMaxResources: safeRagMaxResources,
-          ragSimilarityPercentage: safeRagSimilarityPercentage,
         }),
         ...urlContextFactory({ writer }),
       };
@@ -138,7 +124,7 @@ export const POST = withAuth(async (user, req) => {
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ stepNumber }) => {
-          if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
+          if (!executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
               model: providers.google("gemini-2.5-flash-lite"),
@@ -217,7 +203,10 @@ export const POST = withAuth(async (user, req) => {
               case "text-start":
                 return { status: "streaming" };
               case "finish":
-                return { status: "finished", autoModel: autoModelMetadata };
+                return {
+                  status: "finished",
+                  autoModel: autoModelMetadata,
+                };
               default:
                 return undefined;
             }

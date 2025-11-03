@@ -1,6 +1,6 @@
 import type { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
+import { WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Label } from "@/components/ui/label";
@@ -19,16 +19,10 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
     selectedModel,
     tools,
     hasTool,
-    ragSimilarityPercentage,
-    ragMaxResources,
     webSearchNumResults,
   } = useChatContext();
 
   const setTemperature = (value: number) => setConfig({ temperature: value });
-  const setRagSimilarity = (value: number) =>
-    setConfig({ ragSimilarityPercentage: value });
-  const setRagMaxResources = (value: number) =>
-    setConfig({ ragMaxResources: value });
   const setWebSearchNumResults = (value: number) =>
     setConfig({ webSearchNumResults: value });
 
@@ -67,36 +61,6 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
         )}
         {showToolConfig && (
           <>
-            {hasTool(RAG_TOOL) && (
-              <>
-                <Dropdown.Item className="justify-between">
-                  <Label className="mr-8 text-nowrap" htmlFor="ragSimilarity">
-                    RAG Similarity %
-                  </Label>
-                  <InputNumber
-                    id="ragSimilarity"
-                    value={ragSimilarityPercentage}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onChange={setRagSimilarity}
-                  />
-                </Dropdown.Item>
-                <Dropdown.Item className="justify-between">
-                  <Label className="mr-8 text-nowrap" htmlFor="ragMaxResources">
-                    RAG Max Resources
-                  </Label>
-                  <InputNumber
-                    id="ragMaxResources"
-                    value={ragMaxResources}
-                    min={1}
-                    max={50}
-                    step={1}
-                    onChange={setRagMaxResources}
-                  />
-                </Dropdown.Item>
-              </>
-            )}
             {hasTool(WEB_SEARCH_TOOL) && (
               <Dropdown.Item className="justify-between">
                 <Label

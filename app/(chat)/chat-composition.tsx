@@ -11,8 +11,6 @@ import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
   defaultModel,
-  defaultRagSimilarityPercentage,
-  defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
 import {
@@ -48,8 +46,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     temperature: defaultTemperature,
     metaPrompt: defaultMetaPrompt,
     preventChatPersistence: temporary,
-    ragSimilarityPercentage: defaultRagSimilarityPercentage,
-    ragMaxResources: defaultRagMaxResources,
     webSearchNumResults: defaultWebSearchNumResults,
   };
 
@@ -84,8 +80,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       tools: filterTools(chat.tools || []),
       metaPrompt: metaPrompt,
       preventChatPersistence: temporary,
-      ragSimilarityPercentage: defaultRagSimilarityPercentage,
-      ragMaxResources: defaultRagMaxResources,
       webSearchNumResults: defaultWebSearchNumResults,
     };
   } else if (projectId) {
@@ -104,8 +98,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       title: project.name,
       tools: filterTools(project.tools || []),
       preventChatPersistence: temporary,
-      ragSimilarityPercentage: defaultRagSimilarityPercentage,
-      ragMaxResources: defaultRagMaxResources,
       webSearchNumResults: defaultWebSearchNumResults,
     };
   }

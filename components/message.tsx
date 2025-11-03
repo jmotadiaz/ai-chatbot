@@ -58,8 +58,8 @@ interface UserMessageProps {
 
 const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const { textParts, fileParts: files } = useMemo(
-    () => segregateMessageParts(message.parts),
-    [message.parts]
+    () => segregateMessageParts(message),
+    [message]
   );
   const text = textParts[0].text ?? "";
   const isLongMessage = text.length > 350;
@@ -128,8 +128,8 @@ interface AssistantMessageProps {
 
 const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
   const { sourceParts } = useMemo(
-    () => segregateMessageParts(message.parts),
-    [message.parts]
+    () => segregateMessageParts(message),
+    [message]
   );
   return (
     <div className={cn("flex gap-4 w-full")}>

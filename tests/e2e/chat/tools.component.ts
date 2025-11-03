@@ -15,12 +15,11 @@ export class ToolsComponent {
     this.webSearchToolLabel = container.locator('label[for="web-search-tool"]');
   }
 
-  async toggleTool(toolName: "rag" | "web-search", dropdownBackdrop: Locator) {
+  async toggleTool(toolName: "rag" | "web-search") {
     if (toolName === "rag") {
       await this.ragToolLabel.click();
     } else if (toolName === "web-search") {
       await this.webSearchToolLabel.click();
     }
-    await dropdownBackdrop.click({ position: { x: 10, y: 10 } });
   }
 }

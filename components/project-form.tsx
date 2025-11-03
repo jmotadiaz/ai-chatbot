@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Globe, Save, WandSparkles } from "lucide-react";
+import { Globe, Save, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
@@ -19,8 +19,6 @@ import type { chatModelId } from "@/lib/ai/models/definition";
 import {
   defaultTemperature,
   CHAT_MODELS,
-  defaultRagSimilarityPercentage,
-  defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
@@ -51,12 +49,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   );
   const [temperature, setTemperature] = useState<number>(
     project?.defaultTemperature ?? defaultTemperature
-  );
-  // Tool configuration (not persisted yet - schema unchanged)
-  const [ragSimilarityPercentage, setRagSimilarityPercentage] =
-    useState<number>(defaultRagSimilarityPercentage);
-  const [ragMaxResources, setRagMaxResources] = useState<number>(
-    defaultRagMaxResources
   );
   const [webSearchNumResults, setWebSearchNumResults] = useState<number>(
     defaultWebSearchNumResults
@@ -180,17 +172,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 <h3 className="text-lg font-semibold mb-6">Tools</h3>
                 <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
                   <Toggle
-                    id="rag-tool"
-                    checked={hasTool(RAG_TOOL)}
-                    onChange={handleToggleTool(RAG_TOOL)}
-                  >
-                    <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                    <span className="whitespace-nowrap">
-                      RAG (Document Search)
-                    </span>
-                  </Toggle>
-
-                  <Toggle
                     id="web-search-tool"
                     checked={hasTool(WEB_SEARCH_TOOL)}
                     onChange={handleToggleTool(WEB_SEARCH_TOOL)}
@@ -232,42 +213,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                     Tool Configuration
                   </h3>
                   <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-10">
-                    {hasTool(RAG_TOOL) && (
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-2">
-                          <Label
-                            className="text-base"
-                            htmlFor="ragSimilarityPercentage"
-                          >
-                            RAG Similarity %
-                          </Label>
-                          <InputNumber
-                            id="ragSimilarityPercentage"
-                            value={ragSimilarityPercentage}
-                            min={0}
-                            max={100}
-                            step={1}
-                            onChange={setRagSimilarityPercentage}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Label
-                            className="text-base"
-                            htmlFor="ragMaxResources"
-                          >
-                            RAG Max Resources
-                          </Label>
-                          <InputNumber
-                            id="ragMaxResources"
-                            value={ragMaxResources}
-                            min={1}
-                            max={50}
-                            step={1}
-                            onChange={setRagMaxResources}
-                          />
-                        </div>
-                      </div>
-                    )}
                     {hasTool(WEB_SEARCH_TOOL) && (
                       <div className="flex flex-col gap-2">
                         <Label
@@ -313,8 +258,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
               title={title}
               preventChatPersistence={true}
-              ragSimilarityPercentage={ragSimilarityPercentage}
-              ragMaxResources={ragMaxResources}
               webSearchNumResults={webSearchNumResults}
             >
               <Chat />

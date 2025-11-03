@@ -3,12 +3,10 @@ import { generateEmbedding, QueryType } from "@/lib/ai/rag/generate-embeddings";
 import type { SimilarChunks } from "@/lib/db/queries";
 import { findSimilarChunks } from "@/lib/db/queries";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
-import type { Resource } from "@/lib/ai/types";
 
 export interface RetrieveResult {
   success: boolean;
   similarChunks?: SimilarChunks;
-  resources?: Pick<Resource, "title" | "url">[];
   error?: string;
 }
 
@@ -36,14 +34,16 @@ export async function retrieve({
   query,
   queryType = "RETRIEVAL_QUERY",
   userId,
-  limit = 5,
-  similarityPercentage = 60,
+  limit = 10,
+  similarityThreshold = 0.7,
+  excludeEmbeddingIds = [],
 }: {
   query: string;
   queryType?: QueryType;
   userId: string;
   limit?: number;
-  similarityPercentage?: number; // 0-100
+  similarityThreshold?: number; // 0-100
+  excludeEmbeddingIds?: string[];
 }): Promise<RetrieveResult> {
   try {
     const userQueryEmbedded = await generateEmbedding(query, queryType);
@@ -51,10 +51,8 @@ export async function retrieve({
       embedding: userQueryEmbedded,
       userId,
       limit,
-      similarityThresholdDecimal: Math.min(
-        Math.max(similarityPercentage / 100, 0),
-        1
-      ),
+      similarityThreshold,
+      excludeEmbeddingIds,
     });
 
     if (similarChunks.length === 0) {
@@ -67,16 +65,6 @@ export async function retrieve({
     return {
       success: true,
       similarChunks,
-      resources: [
-        ...new Set(
-          similarChunks.map(({ resourceTitle, resourceUrl }) =>
-            JSON.stringify({
-              title: resourceTitle,
-              url: resourceUrl || "",
-            })
-          )
-        ),
-      ].map((item) => JSON.parse(item)),
     };
   } catch (error) {
     console.error("Error in retrieve function:", error);

@@ -28,6 +28,7 @@ import type { ModelConfiguration } from "@/lib/ai/models/definition";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/ai/types";
+import { RagChunk } from "@/lib/ai/tools/rag";
 
 export async function generateTitle(messages: ChatbotMessage[]) {
   if (messages.length === 0) return "Unknown";
@@ -182,14 +183,37 @@ export interface SegregatedMessagePartsReturn {
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
 }
 
+const ragChunksToSourceParts = (
+  chunks: RagChunk[] = [],
+  toolCallId: string
+): Array<SourceUrlUIPart | SourceDocumentUIPart> => {
+  const uniqueChunks = new Map<string, RagChunk>();
+  for (const chunk of chunks) {
+    uniqueChunks.set(chunk.resourceUrl || chunk.resourceTitle, chunk);
+  }
+
+  return Array.from(uniqueChunks.values()).map((chunk, idx) => {
+    return {
+      sourceId: `rag-source-${toolCallId}-${idx}`,
+      title: chunk.resourceTitle,
+      ...(chunk.resourceUrl
+        ? { type: "source-url", url: chunk.resourceUrl }
+        : {
+            type: "source-document",
+            mediaType: "text/plain",
+          }),
+    };
+  });
+};
+
 export const segregateMessageParts = (
-  parts: ChatbotMessage["parts"]
+  message: ChatbotMessage
 ): {
   textParts: TextUIPart[];
   fileParts: FileUIPart[];
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
 } => {
-  return parts?.reduce<SegregatedMessagePartsReturn>(
+  return message.parts?.reduce<SegregatedMessagePartsReturn>(
     (acc, part) => {
       switch (part.type) {
         case "text":
@@ -201,6 +225,11 @@ export const segregateMessageParts = (
           break;
         case "file":
           acc.fileParts.push(part);
+          break;
+        case "tool-rag":
+          acc.sourceParts.push(
+            ...ragChunksToSourceParts(part.output, part.toolCallId)
+          );
           break;
       }
       return acc;

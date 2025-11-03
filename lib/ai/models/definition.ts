@@ -359,6 +359,4 @@ export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 export const defaultModel: chatModelId = "Router";
 export const defaultTemperature = 0.5;
 // Tool configuration defaults (extracted from previous literals)
-export const defaultRagSimilarityPercentage = 70; // percent 0-100
-export const defaultRagMaxResources = 5; // number of chunks/resources
 export const defaultWebSearchNumResults = 3; // number of web search results
