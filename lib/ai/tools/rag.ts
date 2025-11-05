@@ -6,17 +6,23 @@ import type { ChatbotMessage } from "@/lib/ai/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
 import type { SimilarChunk } from "@/lib/db/queries";
 
-export interface RagFactoryArgs {
-  messages: ChatbotMessage[];
-  userId: string;
-}
-
+import {
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
+} from "@/lib/ai/models/definition";
 import { QUERY_TYPES } from "@/lib/ai/rag/generate-embeddings";
 
 export type RagChunk = Pick<
   SimilarChunk,
   "id" | "content" | "resourceTitle" | "resourceUrl"
 >;
+
+export interface RagFactoryArgs {
+  messages: ChatbotMessage[];
+  userId: string;
+  ragMaxResources?: number;
+  ragSimilarityPercentage?: number;
+}
 
 /**
  * Extract embedding IDs from previous messages
@@ -35,7 +41,12 @@ function extractEmbeddingIdsFromMessages(messages: ChatbotMessage[]): string[] {
   return [...new Set(embeddingIds)]; // Remove duplicates
 }
 
-export const ragFactory = ({ userId, messages }: RagFactoryArgs) =>
+export const ragFactory = ({
+  userId,
+  messages,
+  ragMaxResources = defaultRagMaxResources,
+  ragSimilarityPercentage = defaultRagSimilarityPercentage,
+}: RagFactoryArgs) =>
   ({
     [RAG_TOOL]: tool({
       description:
@@ -74,6 +85,8 @@ export const ragFactory = ({ userId, messages }: RagFactoryArgs) =>
           query,
           queryType,
           userId,
+          limit: ragMaxResources,
+          similarityThreshold: ragSimilarityPercentage / 100,
           excludeEmbeddingIds: extractEmbeddingIdsFromMessages(messages),
         });
 

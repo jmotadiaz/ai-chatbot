@@ -24,12 +24,13 @@ export interface DropdownPopupProps
   children: React.ReactNode;
   isShown: boolean;
   close: () => void;
-  variant?: "top" | "bottom" | "center";
+  variant?: "top-left" | "top-right" | "bottom" | "center";
   className?: string;
 }
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
-  top: "lg:absolute lg:bottom-full lg:mb-2",
+  "top-right": "lg:absolute lg:bottom-full lg:mb-2",
+  "top-left": "lg:absolute lg:bottom-full lg:right-0 lg:left-auto lg:mb-2",
   bottom: "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
   center: "lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
 };
@@ -39,7 +40,7 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   className,
   isShown,
   close,
-  variant = "top",
+  variant = "top-right",
   ...props
 }) => {
   return (

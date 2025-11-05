@@ -27,7 +27,6 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
       </button>
       <Dropdown.Popup
         {...getDropdownPopupProps()}
-        variant="top"
         className="lg:w-full p-0 border-2 border-gray-300 dark:border-zinc-700"
       >
         <button

@@ -19,6 +19,8 @@ import {
   defaultModel,
   defaultTemperature,
   CHAT_MODELS,
+  defaultRagSimilarityPercentage,
+  defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
 import type { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
@@ -32,6 +34,8 @@ export interface ChatConfig {
   temperature: number;
   systemPrompt?: string;
   // Tool-specific configuration (only used if tool active)
+  ragSimilarityPercentage: number; // 0-100 percentage threshold
+  ragMaxResources: number; // max number of RAG chunks/resources returned
   webSearchNumResults: number; // number of web search results
 }
 
@@ -85,6 +89,8 @@ interface ChatContext
 const chatContext = createContext<ChatContext>({
   selectedModel: defaultModel,
   temperature: defaultTemperature,
+  ragSimilarityPercentage: defaultRagSimilarityPercentage,
+  ragMaxResources: defaultRagMaxResources,
   webSearchNumResults: defaultWebSearchNumResults,
   setConfig: () => {},
   input: "",
@@ -146,6 +152,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   title,
   preventChatPersistence = false,
   tools: initialTools = [],
+  ragSimilarityPercentage = defaultRagSimilarityPercentage,
+  ragMaxResources = defaultRagMaxResources,
   webSearchNumResults = defaultWebSearchNumResults,
 }) => {
   console.log("ChatProvider rendered", initialMessages);
@@ -154,6 +162,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     selectedModel,
     temperature,
     systemPrompt,
+    ragSimilarityPercentage,
+    ragMaxResources,
     webSearchNumResults,
   });
   const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);
@@ -280,6 +290,8 @@ const useChatConfig = ({
   selectedModel = defaultModel,
   temperature,
   systemPrompt,
+  ragSimilarityPercentage,
+  ragMaxResources,
   webSearchNumResults,
 }: Partial<ChatConfig>): {
   chatConfig: ChatConfig;
@@ -292,6 +304,8 @@ const useChatConfig = ({
         Object.entries({
           temperature,
           systemPrompt,
+          ragSimilarityPercentage,
+          ragMaxResources,
           webSearchNumResults,
         }).filter(([, value]) => value !== undefined && value !== null)
       ),
@@ -299,6 +313,14 @@ const useChatConfig = ({
         selectedModel,
         useRAG: false,
         useWebSearch: false,
+        ragSimilarityPercentage:
+          ragSimilarityPercentage !== undefined
+            ? ragSimilarityPercentage
+            : defaultRagSimilarityPercentage,
+        ragMaxResources:
+          ragMaxResources !== undefined
+            ? ragMaxResources
+            : defaultRagMaxResources,
         webSearchNumResults:
           webSearchNumResults !== undefined
             ? webSearchNumResults

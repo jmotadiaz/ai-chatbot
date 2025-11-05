@@ -1,4 +1,4 @@
-import type { ComponentProps} from "react";
+import type { ComponentProps } from "react";
 import { useMemo, useRef, useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,7 @@ export function InputNumber({
   return (
     <div className={cn("flex items-center space-x-2", className)}>
       <Button
+        type="button"
         onClick={() => change(value - step)}
         onTouchStart={decrement}
         onMouseDown={decrement}
@@ -125,6 +126,7 @@ export function InputNumber({
         {...props}
       />
       <Button
+        type="button"
         onClick={() => change(value + step)}
         onTouchStart={increment}
         onMouseDown={increment}
