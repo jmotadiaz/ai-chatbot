@@ -51,12 +51,6 @@ test.describe("Chat attachments", () => {
       .soft(chatPage.header.modelPicker.getModelOption("Llama 4 Maverick"))
       .toBeAttached();
     await expect
-      .soft(chatPage.header.modelPicker.getModelOption("Gemini 2.5 Flash Lite"))
-      .toBeAttached();
-    await expect
-      .soft(chatPage.header.modelPicker.getModelOption("Qwen3 Coder"))
-      .not.toBeAttached();
-    await expect
       .soft(chatPage.header.modelPicker.getModelOption("Deepseek Chat"))
       .not.toBeAttached();
   });

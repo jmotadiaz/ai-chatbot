@@ -343,7 +343,6 @@ export const chatModelKeys = [
   "Llama 4 Scout",
   "Llama 4 Maverick",
   "Kimi K2",
-  "Qwen3 Coder",
   "Qwen3 Next Instruct",
   "Qwen3 Next Thinking",
   "MiniMax M2",
@@ -354,17 +353,15 @@ export const chatModelKeys = [
   "Sonar Pro",
   "Claude Haiku 4.5",
   "Claude Sonnet 4.5",
-  "Grok Code Fast",
   "Grok 4 Fast",
   "Grok 4",
   "GPT OSS Mini",
   "GPT OSS",
   "GPT 5 Mini",
   "GPT 5",
-  "Gemini 2.5 Flash Lite",
   "Gemini 2.5 Flash",
-  "Gemini Nano Banana",
   "Gemini 2.5 Pro",
+  "Gemini Nano Banana",
 ] satisfies LanguageModelKeys[];
 
 export type chatModelId = (typeof chatModelKeys)[number] | "Router";
