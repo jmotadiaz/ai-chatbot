@@ -20,6 +20,7 @@ import {
   TextIcon,
   MistralIcon,
   MiniMaxIcon,
+  ZaiIcon,
 } from "@/components/icons";
 
 interface ModelPickerProps {
@@ -107,6 +108,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   moonshotai: MoonshotIcon,
   mistral: MistralIcon,
   minimax: MiniMaxIcon,
+  "z-ai": ZaiIcon,
   "ai chatbot": LogoIcon,
 };
 

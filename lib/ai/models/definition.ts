@@ -20,6 +20,7 @@ export type Company =
   | "alibaba"
   | "moonshotai"
   | "minimax"
+  | "z-ai"
   | "ai chatbot";
 
 export type ProviderOptions = {
@@ -39,6 +40,8 @@ export interface ModelConfiguration {
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;
   temperature?: number;
+  topP?: number;
+  topK?: number;
   company: Company;
   systemPrompt?: string;
 }
@@ -134,6 +137,17 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.gateway("minimax/minimax-m2"),
     reasoning: true,
     company: "minimax",
+    temperature: 1,
+    topP: 0.9,
+    topK: 40,
+  },
+  "GLM-4.6": {
+    model: providers.openrouter("z-ai/glm-4.6"),
+    reasoning: true,
+    company: "z-ai",
+    temperature: 1,
+    topP: 0.9,
+    topK: 40,
   },
   Sonar: {
     model: providers.perplexity("sonar"),
@@ -333,6 +347,7 @@ export const chatModelKeys = [
   "Qwen3 Next Instruct",
   "Qwen3 Next Thinking",
   "MiniMax M2",
+  "GLM-4.6",
   "Deepseek Chat",
   "Deepseek R1",
   "Sonar",
