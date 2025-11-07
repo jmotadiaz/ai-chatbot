@@ -11,6 +11,10 @@ test.describe("Chat functionality", () => {
   });
 
   test("should handle tool configuration and model filtering correctly", async () => {
+    await chatPage.chat.openTools();
+    await chatPage.chat.tools.toggleTool("rag");
+    await chatPage.closeDropdown();
+
     await chatPage.header.modelPicker.selectModel("Sonar Pro");
     await expect.soft(chatPage.chat.toolsControl).not.toBeVisible();
 
@@ -46,13 +50,25 @@ test.describe("Chat functionality", () => {
   test("should show tool configuration options when tools are enabled", async () => {
     await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
 
-    await chatPage.chat.toolsControl.click();
-    await chatPage.chat.tools.toggleTool("web-search");
+    await chatPage.chat.openSettings();
+    await expect(chatPage.chat.settings.ragMaxResourcesInput).toBeVisible();
+    await expect(chatPage.chat.settings.ragSimilarityInput).toBeVisible();
+    await chatPage.closeDropdown();
 
+    await chatPage.chat.openTools();
+    await chatPage.chat.tools.toggleTool("rag");
     await chatPage.closeDropdown();
 
     await chatPage.chat.openSettings();
+    await expect(chatPage.chat.settings.ragMaxResourcesInput).not.toBeVisible();
+    await expect(chatPage.chat.settings.ragSimilarityInput).not.toBeVisible();
+    await chatPage.closeDropdown();
 
+    await chatPage.chat.openTools();
+    await chatPage.chat.tools.toggleTool("web-search");
+    await chatPage.closeDropdown();
+
+    await chatPage.chat.openSettings();
     await expect(chatPage.chat.settings.webSearchNumResultsInput).toBeVisible();
   });
 });
