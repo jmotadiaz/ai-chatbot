@@ -6,10 +6,9 @@ import type {
 } from "@/lib/ai/models/definition";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import type { ChatbotMessage } from "@/lib/ai/types";
-import type { Tools } from "@/lib/ai/tools/types";
+import { WEB_SEARCH_TOOL, type Tools } from "@/lib/ai/tools/types";
 
 const CATEGORIES = [
-  "current_news",
   "factual",
   "analytical",
   "technical",
@@ -31,6 +30,10 @@ const COMPLEXITY_LEVELS = [
 const schema = z.object({
   category: z.enum(CATEGORIES),
   complexity: z.enum(COMPLEXITY_LEVELS),
+});
+
+const toolsSchema = z.object({
+  tools: z.array(z.enum([WEB_SEARCH_TOOL])),
 });
 
 export interface ModelRoutingMetadata {
@@ -95,12 +98,14 @@ export async function modelRouting({
     return memo;
   }, [] as ChatbotMessage[]);
 
-  const { object: classification } = await generateObject({
+  const modelMessages = convertToModelMessages(userMessages);
+
+  const modelRouterResponse = generateObject({
     ...languageModelConfigurations("GPT OSS Mini"),
     temperature: 0.1,
     schema,
-    system: systemPrompt,
-    messages: convertToModelMessages(userMessages),
+    system: modelRouterSystemPrompt,
+    messages: modelMessages,
   }).catch((error) => {
     console.error("Error during model generation:", error);
     return {
@@ -111,16 +116,40 @@ export async function modelRouting({
     } as const;
   });
 
+  const toolsResponse = generateObject({
+    ...languageModelConfigurations("GPT OSS Mini"),
+    temperature: 0.1,
+    schema: toolsSchema,
+    system: toolsSystemPrompt,
+    messages: modelMessages,
+  }).catch((error) => {
+    console.error("Error during model generation:", error);
+    return {
+      object: {
+        tools: [],
+      } satisfies z.infer<typeof toolsSchema>,
+    } as const;
+  });
+
+  const [modelResult, toolsResult] = await Promise.all([
+    modelRouterResponse,
+    toolsResponse,
+  ]);
+
+  const { object: classification } = modelResult;
+  const { object: toolsDecision } = toolsResult;
+
   console.log("Classification Result:", classification);
+  console.log("Tools Decision Result:", toolsDecision);
 
   const { category, complexity } = classification;
-  const { modelConfiguration, tools = [] } = decisionTree({
+  const { modelConfiguration } = decisionTree({
     requestedFileTypes,
   })[category][complexity];
 
   return {
     modelConfiguration,
-    tools: [...new Set([...previousTools, ...tools])],
+    tools: [...new Set([...previousTools, ...toolsDecision.tools])],
     autoModelMetadata: {
       category,
       complexity,
@@ -159,34 +188,12 @@ const decisionTree = ({
   (typeof CATEGORIES)[number],
   Record<
     (typeof COMPLEXITY_LEVELS)[number],
-    { modelConfiguration: ModelConfiguration; tools?: Tools }
+    { modelConfiguration: ModelConfiguration }
   >
 > => {
   const findModelByRequestedFileTypes =
     findModelWithSupportedFileTypes(requestedFileTypes);
   return {
-    current_news: {
-      simple: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 3.1 Instant",
-          "Llama 4 Scout",
-          "GPT 5 Nano"
-        ),
-        tools: ["webSearch"],
-      },
-      moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Scout"),
-        tools: ["webSearch"],
-      },
-      complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Maverick"),
-        tools: ["webSearch"],
-      },
-      advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
-        tools: ["webSearch"],
-      },
-    },
     factual: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
@@ -397,7 +404,7 @@ const decisionTree = ({
   };
 };
 
-const systemPrompt = `\n
+const modelRouterSystemPrompt = `\n
   # Query Classification for LLM Routing
   Analyze the user query, and classify it to determine the most appropriate LLM routing.
 
@@ -406,8 +413,7 @@ const systemPrompt = `\n
   ### 1. Categories
   Choose the **primary category** based on the query's main intent. If the query fits multiple categories, select the most dominant one and note secondary categories in the reasoning.
 
-  *   **current_news**: Requests for information about recent events, breaking news, current developments, updates, latest versions, real-time status, or any topic requiring up-to-date data subject to rapid changes. Excludes stable, timeless, or historical knowledge not dependent on immediacy.
-  *   **factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge. Does not apply to latest updates, current news, ongoing developments, or anything requiring real-time verification.
+  *   **factual**: Direct requests for specific and verifiable information that is timeless, consolidated, or not subject to rapid changes, such as definitions, historical facts, scientific principles, or general knowledge.
   *   **analytical**: Multi-step reasoning, problem-solving, or logical analysis.
   *   **technical**: Programming, debugging, system design, or technical implementation.
   *   **prompt_engineering**: Requests related to designing, optimizing, or analyzing prompts for AI models, including prompt templates, prompt tuning, or prompt best practices.
@@ -432,4 +438,17 @@ const systemPrompt = `\n
 
   ## 3 Additional Notes
   *   If the query is referencing an image or document, assume the image or document is available for context, even if you don't have it available.
+`;
+
+const toolsSystemPrompt = `
+  Determine if a user's request necessitates the use of the 'web search' tool.
+
+  The 'web search' tool is designed to perform external web searches to acquire current, dynamic, or specific contextual information that is beyond general model knowledge. Its primary purpose is to provide up-to-date or detailed information to an AI assistant.
+
+  ## Criteria for requiring the 'web search' tool
+  -   The request seeks information that is likely to be very recent (e.g., news, current events, latest developments).
+  -   The request asks for highly specific data, statistics, or details that may not be part of common general knowledge.
+  -   The request implies a need for external validation or up-to-date facts.
+
+  If the request can be adequately and accurately answered using the AI assistant's internal knowledge without needing external verification, the 'web search' tool is NOT required.
 `;
