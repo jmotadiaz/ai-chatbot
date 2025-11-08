@@ -15,7 +15,9 @@ export const ChatList: React.FC<ChatListProps> = async ({
   className,
   chatId,
 }) => {
-  if (!chats.length) return null;
+  const filteredChats = chats.filter(({ id }) => id !== chatId);
+
+  if (!filteredChats.length) return null;
 
   return (
     <div className={cn("my-4", className)}>
@@ -25,11 +27,9 @@ export const ChatList: React.FC<ChatListProps> = async ({
         role="list"
         aria-label="Chat history"
       >
-        {chats
-          .filter(({ id }) => id !== chatId)
-          .map((chat) => (
-            <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
-          ))}
+        {filteredChats.map((chat) => (
+          <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
+        ))}
       </div>
     </div>
   );
