@@ -334,6 +334,7 @@ export async function getProjectsByUserId({
         where: eq(project.userId, userId),
         with: {
           chats: {
+            orderBy: desc(chat.updatedAt),
             limit: 20,
           },
         },

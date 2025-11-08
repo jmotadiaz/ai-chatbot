@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId }) => {
         <NewChatSidebar className="mb-3" />
         <RAGNav className="mb-6" />
         <Suspense fallback={<ProjectListLoading />}>
-          <ProjectList currentProjectId={projectId} />
+          <ProjectList currentProjectId={projectId} chatId={chatId} />
         </Suspense>
         <Suspense fallback={<ChatListLoading />}>
           <Chats chatId={chatId} />
