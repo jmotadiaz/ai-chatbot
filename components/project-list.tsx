@@ -14,12 +14,14 @@ export interface ProjectListProps {
   limit?: number;
   className?: ClassNameValue;
   currentProjectId?: string | null | undefined;
+  chatId?: string | null | undefined;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = async ({
   className,
   limit = 10,
   currentProjectId,
+  chatId,
 }) => {
   const session = await auth();
   if (!session?.user) return null;
@@ -53,7 +55,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
                 name={project.name}
                 currentProjectId={currentProjectId}
                 deleteProject={deleteProject.bind(null, project.id)}
-                chatList={<ChatList chats={project.chats} />}
+                chatList={<ChatList chats={project.chats} chatId={chatId} />}
               />
             ))}
           </>
