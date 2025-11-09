@@ -44,7 +44,7 @@ interface SetChatConfig {
 }
 
 interface ChatBody extends ChatConfig {
-  chatId?: string;
+  chatId?: string | null;
   projectId?: string;
   preventChatPersistence?: boolean;
   tools: Tools;
@@ -156,8 +156,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   ragMaxResources = defaultRagMaxResources,
   webSearchNumResults = defaultWebSearchNumResults,
 }) => {
-  console.log("ChatProvider rendered", initialMessages);
-
   const { chatConfig, setConfig } = useChatConfig({
     selectedModel,
     temperature,
@@ -198,9 +196,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
   });
 
   const body = useMemo(() => {
-    const chatIdUrl = pathname.split("/").pop() || queryParamChatId || "";
     return {
-      chatId: chatId || (validate(chatIdUrl) ? chatIdUrl : undefined),
+      chatId:
+        chatId || (validate(queryParamChatId) ? queryParamChatId : undefined),
       projectId,
       preventChatPersistence,
       ...chatConfig,

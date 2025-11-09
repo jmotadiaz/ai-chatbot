@@ -240,6 +240,7 @@ export const POST = withAuth(async (user, req) => {
                 userMessage?.role === "user" &&
                 assistantMessage?.role === "assistant"
               ) {
+                console.log("Saving chat and messages...", chatId);
                 const dbChatId = await getDb().transaction(async (tx) => {
                   const { id } = chatId
                     ? await updateChat(
