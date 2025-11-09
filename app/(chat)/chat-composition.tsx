@@ -82,6 +82,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       temperature: chat.defaultTemperature ?? defaultTemperature,
       chatId,
       projectId: chat.projectId ?? undefined,
+      systemPrompt: project ? project.systemPrompt : undefined,
       initialMessages,
       tools: filterTools(chat.tools || []),
       metaPrompt: metaPrompt,
