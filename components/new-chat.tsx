@@ -11,15 +11,20 @@ import { Item } from "@/components/ui/item";
 interface NewChatProps {
   children: React.ReactNode;
   temporary?: boolean;
+  projectId?: string | null;
 }
 
-const NewChat: React.FC<NewChatProps> = ({ children, temporary }) => {
+const NewChat: React.FC<NewChatProps> = ({
+  children,
+  temporary,
+  projectId,
+}) => {
   const { status, setMessages } = useChatContext();
   const pathname = usePathname();
   return (
     <ChatLink
       href={{
-        pathname: "/",
+        pathname: projectId ? `project/${projectId}/chat` : "/",
         query: temporary ? { chatType: "temporary" } : {},
       }}
       className={cn(
@@ -38,10 +43,14 @@ const NewChat: React.FC<NewChatProps> = ({ children, temporary }) => {
   );
 };
 
-export const NewChatHeader = () => {
+export interface NewChatHeaderProps {
+  projectId?: string | null;
+}
+
+export const NewChatHeader = ({ projectId }: NewChatHeaderProps) => {
   return (
     <Suspense fallback={null}>
-      <NewChat>
+      <NewChat projectId={projectId}>
         <div className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors">
           <Edit size={18} />
         </div>

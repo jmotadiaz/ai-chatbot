@@ -1,7 +1,7 @@
-import { ChatLoading } from "@/app/(chat)/chat-composition";
+import { ChatComposition } from "@/app/(chat)/chat-composition";
 
 const Loading: React.FC = () => {
-  return <ChatLoading />;
+  return <ChatComposition />;
 };
 
 export default Loading;

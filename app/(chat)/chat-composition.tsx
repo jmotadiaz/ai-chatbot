@@ -116,7 +116,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
         <Header.Container>
           <Header.Left>
             <Logo />
-            <NewChatHeader />
+            <NewChatHeader projectId={chatConfig.projectId} />
             <ModelPicker id="header-model-picker" />
           </Header.Left>
           <Header.Right>
