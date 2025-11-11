@@ -24,7 +24,7 @@ const NewChat: React.FC<NewChatProps> = ({
   return (
     <ChatLink
       href={{
-        pathname: projectId ? `project/${projectId}/chat` : "/",
+        pathname: projectId ? `/project/${projectId}/chat` : "/",
         query: temporary ? { chatType: "temporary" } : {},
       }}
       className={cn(
