@@ -84,6 +84,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "moonshotai",
     temperature: 0.6,
   },
+  "Kimi K2 Thinking": {
+    model: providers.gateway("moonshotai/kimi-k2-thinking-turbo"),
+    company: "moonshotai",
+    reasoning: true,
+    temperature: 1.0,
+  },
   "Magistral Medium": {
     model: providers.openrouter("mistralai/magistral-medium-2506:thinking"),
     company: "mistral",
@@ -343,6 +349,7 @@ export const chatModelKeys = [
   "Llama 4 Scout",
   "Llama 4 Maverick",
   "Kimi K2",
+  "Kimi K2 Thinking",
   "Qwen3 Next Instruct",
   "Qwen3 Next Thinking",
   "MiniMax M2",
