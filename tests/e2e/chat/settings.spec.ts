@@ -57,7 +57,7 @@ test.describe("Chat functionality", () => {
     expect
       .soft(lastMessage)
       .toContain(
-        "Hello, I'm qwen/qwen3-next-80b-a3b-instruct, Temperature: 0.6"
+        "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6"
       );
   });
 });
