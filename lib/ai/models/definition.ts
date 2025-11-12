@@ -65,12 +65,10 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.3": {
     model: providers.groq("llama-3.3-70b-versatile"),
     company: "meta",
-    temperature: 0.6,
   },
   "Llama 4 Scout": {
     model: providers.groq("meta-llama/llama-4-scout-17b-16e-instruct"),
     company: "meta",
-    temperature: 0.6,
     supportedFiles: ["img"],
   },
   "Llama 4 Maverick": {
@@ -107,30 +105,26 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 0.6,
   },
   "Deepseek R1": {
-    model: wrapLanguageModel({
-      model: providers.openrouter("deepseek/deepseek-r1-0528"),
-      middleware: [reasoningMw],
-    }),
+    model: providers.gateway("deepseek/deepseek-r1"),
     company: "deepseek",
     reasoning: true,
-    providerOptions: {
-      openrouter: { reasoning: { enabled: true, effort: "high" } },
-    },
-    temperature: 0.3,
+    temperature: 0.6,
+    topP: 0.95,
   },
   "Qwen3 Next Instruct": {
     model: providers.gateway("alibaba/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
+    topP: 0.8,
+    topK: 20,
   },
   "Qwen3 Next Thinking": {
     model: providers.gateway("alibaba/qwen3-next-80b-a3b-thinking"),
     reasoning: true,
-    providerOptions: {
-      openrouter: { reasoning: { enabled: true, effort: "high" } },
-    },
     company: "alibaba",
     temperature: 0.6,
+    topP: 0.95,
+    topK: 20,
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),
