@@ -20,7 +20,7 @@ export type Company =
   | "alibaba"
   | "moonshotai"
   | "minimax"
-  | "z-ai"
+  | "zai"
   | "ai chatbot";
 
 export type ProviderOptions = {
@@ -141,7 +141,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "GLM-4.6": {
     model: providers.gateway("zai/glm-4.6"),
     reasoning: true,
-    company: "z-ai",
+    company: "zai",
     temperature: 1,
     topP: 0.9,
     topK: 40,
@@ -337,8 +337,8 @@ export const languageModelConfigurations = (
 };
 
 export const chatModelKeys = [
-  "Llama 4 Scout",
-  "Llama 4 Maverick",
+  "GPT OSS Mini",
+  "GPT OSS",
   "Kimi K2",
   "Kimi K2 Thinking",
   "Qwen3 Next Instruct",
@@ -347,14 +347,14 @@ export const chatModelKeys = [
   "GLM-4.6",
   "Deepseek Chat",
   "Deepseek R1",
+  "Llama 4 Scout",
+  "Llama 4 Maverick",
   "Sonar",
   "Sonar Pro",
   "Claude Haiku 4.5",
   "Claude Sonnet 4.5",
   "Grok 4 Fast",
   "Grok 4",
-  "GPT OSS Mini",
-  "GPT OSS",
   "GPT 5 Mini",
   "GPT 5",
   "Gemini 2.5 Flash",

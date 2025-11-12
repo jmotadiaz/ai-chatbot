@@ -108,7 +108,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   moonshotai: MoonshotIcon,
   mistral: MistralIcon,
   minimax: MiniMaxIcon,
-  "z-ai": ZaiIcon,
+  zai: ZaiIcon,
   "ai chatbot": LogoIcon,
 };
 
