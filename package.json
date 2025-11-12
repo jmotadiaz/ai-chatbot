@@ -14,8 +14,8 @@
     "db:test:start": "docker compose -f docker-compose.test.yml up -d",
     "db:test:stop": "docker compose  -f docker-compose.test.yml down",
     "db:logs": "docker-compose logs -f",
-    "lint": "next lint && tsc --noEmit",
-    "lint:fix": "next lint --fix && tsc --noEmit",
+    "lint": "next lint && npm run type:check",
+    "lint:fix": "next lint --fix && npm run type:check",
     "type:check": "tsc --noEmit",
     "test": "npm run test:e2e",
     "test:e2e": "npm run db:test:start && playwright test $PLAYWRIGHT_ARGS && npm run db:test:stop",
@@ -111,8 +111,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "next lint --fix --file",
-      "tsc-files --noEmit"
+      "next lint --fix --file"
     ]
   }
 }
