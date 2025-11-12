@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/app/(chat)/sidebar";
 import Chat from "@/components/chat";
@@ -110,22 +110,27 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
   }
 
   return (
-    <ChatProvider {...chatConfig}>
-      <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar projectId={chatConfig.projectId} chatId={chatConfig.chatId} />
-        <Header.Container>
-          <Header.Left>
-            <Logo />
-            <NewChatHeader projectId={chatConfig.projectId} />
-            <ModelPicker id="header-model-picker" />
-          </Header.Left>
-          <Header.Right>
-            <ThemeToggle />
-          </Header.Right>
-        </Header.Container>
-        <Chat />
-      </div>
-    </ChatProvider>
+    <Suspense fallback={<ChatLoading />}>
+      <ChatProvider {...chatConfig}>
+        <div className="h-svh flex flex-col justify-center w-full stretch">
+          <Sidebar
+            projectId={chatConfig.projectId}
+            chatId={chatConfig.chatId}
+          />
+          <Header.Container>
+            <Header.Left>
+              <Logo />
+              <NewChatHeader projectId={chatConfig.projectId} />
+              <ModelPicker id="header-model-picker" />
+            </Header.Left>
+            <Header.Right>
+              <ThemeToggle />
+            </Header.Right>
+          </Header.Container>
+          <Chat />
+        </div>
+      </ChatProvider>
+    </Suspense>
   );
 };
 
