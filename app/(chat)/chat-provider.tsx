@@ -199,8 +199,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
         chatId || (validate(queryParamChatId) ? queryParamChatId : undefined),
       projectId,
       preventChatPersistence,
-      ...chatConfig,
       tools,
+      ...chatConfig,
     };
   }, [
     queryParamChatId,
