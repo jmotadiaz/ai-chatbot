@@ -1,4 +1,4 @@
-import React, { startTransition, useRef } from "react";
+import React, { startTransition, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { cn } from "@/lib/utils";
@@ -41,15 +41,17 @@ export interface PanelProps {
   children: React.ReactNode;
   active: boolean;
   value: string;
+  mounted: boolean;
 }
 
-const Panel: React.FC<PanelProps> = ({ children, active, value }) => {
-  return active ? (
-    <InternalPanel value={value}>{children}</InternalPanel>
-  ) : null;
+const Panel: React.FC<PanelProps> = ({ children, active, value, mounted }) => {
+  if (!active) return null;
+  if (!mounted) return <>{children}</>;
+
+  return <InternalPanel value={value}>{children}</InternalPanel>;
 };
 
-const InternalPanel: React.FC<Omit<PanelProps, "active">> = ({
+const InternalPanel: React.FC<Pick<PanelProps, "value" | "children">> = ({
   children,
   value,
 }) => {
@@ -100,11 +102,14 @@ export const useTabs = <T extends string>({
   );
 
   // Track transition count to ensure unique keys even when returning to a tab
-  const transitionCountRef = useRef(0);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+  }, []);
 
   const handleTabClick = (tab: T) => {
     startTransition(() => {
-      transitionCountRef.current += 1;
       setActiveTab(tab);
     });
   };
@@ -116,8 +121,8 @@ export const useTabs = <T extends string>({
 
   const getPanelProps = (tab: T) => ({
     active: activeTab === tab,
-    transitionKey: `${tab}-${transitionCountRef.current}`,
     value: tab,
+    mounted: mounted.current,
   });
 
   return {
