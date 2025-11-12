@@ -8,12 +8,14 @@ export interface MarkdownEditorProps {
   onChange: (value: string) => void;
   isLoading?: boolean;
   extraCommands?: commands.ICommand[];
+  commands?: commands.ICommand[];
 }
 
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   value,
   onChange,
   extraCommands,
+  commands: _commands = [],
   isLoading = false,
 }) => {
   return (
@@ -26,23 +28,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         textarea: isLoading ? LoadingComponent : undefined,
         preview: isLoading ? LoadingComponent : undefined,
       }}
-      commands={[
-        commands.bold,
-        commands.italic,
-        commands.strikethrough,
-        commands.divider,
-        commands.hr,
-        commands.title,
-        commands.divider,
-        commands.link,
-        commands.code,
-        commands.codeBlock,
-        commands.table,
-        commands.divider,
-        commands.unorderedListCommand,
-        commands.orderedListCommand,
-        commands.checkedListCommand,
-      ]}
+      commands={_commands}
       extraCommands={[
         ...(extraCommands ? [...extraCommands, commands.divider] : []),
         {

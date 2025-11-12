@@ -47,8 +47,12 @@ html, body {
 .w-md-editor,
 .w-md-editor-toolbar,
 .wmde-markdown {
-  background-color: var(--color-secondary) !important;
+  background-color: transparent !important;
 }
+
+.w-md-editor-toolbar {
+  padding: 0.5rem !important;
+  }
 
 /* Hide native number input spinners for consistent UX */
 input[type=number]::-webkit-outer-spin-button,

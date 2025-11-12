@@ -25,8 +25,10 @@ import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
 import type { Tool, Tools } from "@/lib/ai/tools/types";
 import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
-import { Textarea } from "@/components/textarea";
-import { ChatControl } from "@/components/chat-control";
+import {
+  markdownCommandStyle,
+  MarkdownEditor,
+} from "@/components/ui/markdown-editor";
 
 const tabs = ["configuration", "testChat"] as const;
 
@@ -151,21 +153,25 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 <Label className="text-lg mb-2" htmlFor="systemPrompt">
                   System Prompt
                 </Label>
-                <div className="relative">
-                  <Textarea
-                    input={systemPrompt}
-                    isLoadingRefinedPrompt={isLoadingRefinedPrompt}
-                    onChangeInput={setSystemPrompt}
-                    isLoading={true}
-                  />
-                  <ChatControl
-                    className="absolute bottom-2 right-4 z-2"
-                    onClick={refinePrompt}
-                    Icon={WandSparkles}
-                    disabled={!systemPrompt.trim()}
-                    isLoading={isLoadingRefinedPrompt}
-                  />
-                </div>
+                <MarkdownEditor
+                  onChange={setSystemPrompt}
+                  value={systemPrompt}
+                  isLoading={isLoadingRefinedPrompt}
+                  extraCommands={[
+                    {
+                      name: "refine",
+                      keyCommand: "refine",
+                      icon: (
+                        <div
+                          className={markdownCommandStyle}
+                          onClick={refinePrompt}
+                        >
+                          <WandSparkles size={12} />
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
               </div>
 
               <div className="flex flex-col space-y-4">
