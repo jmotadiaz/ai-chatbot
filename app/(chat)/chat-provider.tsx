@@ -11,7 +11,6 @@ import { useChat } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
-import { usePathname } from "next/navigation";
 import { v4, validate } from "uuid";
 import { useQueryState } from "nuqs";
 import type { chatModelId } from "@/lib/ai/models/definition";
@@ -169,7 +168,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
     DataUIPart<ChatbotDataPart> | undefined
   >(undefined);
   const [queryParamChatId, setChatId] = useQueryState("chatId");
-  const pathname = usePathname();
 
   const chatResult = useChat({
     messages: initialMessages,
@@ -205,7 +203,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({
       tools,
     };
   }, [
-    pathname,
     queryParamChatId,
     chatId,
     projectId,
