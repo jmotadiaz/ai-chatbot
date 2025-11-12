@@ -139,7 +139,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     topK: 40,
   },
   "GLM-4.6": {
-    model: providers.openrouter("z-ai/glm-4.6"),
+    model: providers.gateway("zai/glm-4.6"),
     reasoning: true,
     company: "z-ai",
     temperature: 1,
