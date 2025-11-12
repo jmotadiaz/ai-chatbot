@@ -127,7 +127,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
               <ThemeToggle />
             </Header.Right>
           </Header.Container>
-          <Chat />
+          <Chat className="pt-16" />
         </div>
       </ChatProvider>
     </Suspense>

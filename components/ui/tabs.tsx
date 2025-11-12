@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useRef } from "react";
+import React, { startTransition } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { cn } from "@/lib/utils";
@@ -41,20 +41,27 @@ export interface PanelProps {
   children: React.ReactNode;
   active: boolean;
   value: string;
-  mounted: boolean;
+  className?: string;
 }
 
-const Panel: React.FC<PanelProps> = ({ children, active, value, mounted }) => {
+const Panel: React.FC<PanelProps> = ({
+  children,
+  active,
+  value,
+  className,
+}) => {
   if (!active) return null;
-  if (!mounted) return <>{children}</>;
 
-  return <InternalPanel value={value}>{children}</InternalPanel>;
+  return (
+    <InternalPanel value={value} className={className}>
+      {children}
+    </InternalPanel>
+  );
 };
 
-const InternalPanel: React.FC<Pick<PanelProps, "value" | "children">> = ({
-  children,
-  value,
-}) => {
+const InternalPanel: React.FC<
+  Pick<PanelProps, "value" | "children" | "className">
+> = ({ children, value, className }) => {
   return (
     <AnimatePresence key={value}>
       <motion.div
@@ -62,6 +69,7 @@ const InternalPanel: React.FC<Pick<PanelProps, "value" | "children">> = ({
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 20, opacity: 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
+        className={className}
       >
         {children}
       </motion.div>
@@ -101,13 +109,6 @@ export const useTabs = <T extends string>({
     parseAsStringLiteral(tabs).withDefault(initialTab)
   );
 
-  // Track transition count to ensure unique keys even when returning to a tab
-  const mounted = useRef(false);
-
-  useEffect(() => {
-    mounted.current = true;
-  }, []);
-
   const handleTabClick = (tab: T) => {
     startTransition(() => {
       setActiveTab(tab);
@@ -122,7 +123,6 @@ export const useTabs = <T extends string>({
   const getPanelProps = (tab: T) => ({
     active: activeTab === tab,
     value: tab,
-    mounted: mounted.current,
   });
 
   return {

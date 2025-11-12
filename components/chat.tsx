@@ -18,7 +18,11 @@ import { ChatReload } from "@/components/chat-reload";
 import { handleFileUpload } from "@/lib/ai/utils";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 
-const Chat: React.FC = () => {
+export interface ChatProps {
+  className?: string;
+}
+
+const Chat: React.FC<ChatProps> = ({ className }) => {
   const {
     messages,
     input,
@@ -55,11 +59,15 @@ const Chat: React.FC = () => {
   return (
     <div
       data-testid="chat-container"
-      className={cn("flex flex-col", messages.length ? "h-full" : "h-vh")}
+      className={cn(
+        "flex flex-col",
+        messages.length ? "h-full" : "h-vh",
+        className
+      )}
     >
       <div
         className={cn(
-          "w-full pt-16 overflow-hidden relative",
+          "w-full overflow-hidden relative",
           messages.length && "h-full"
         )}
       >

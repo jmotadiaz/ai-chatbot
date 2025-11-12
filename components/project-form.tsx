@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Globe, Save, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -84,14 +84,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
         name: title,
         defaultModel: model,
         defaultTemperature: temperature,
-        // Removed topP/topK from persisted data (columns remain optional)
         systemPrompt,
         tools,
         hasPromptRefiner,
-        // New tool config not persisted until DB schema updated
-        // ragSimilarityPercentage,
-        // ragMaxResources,
-        // webSearchNumResults,
       };
 
       if (project) {
@@ -114,14 +109,14 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   };
 
   return (
-    <div className="overflow-x-hidden h-full">
+    <div className="overflow-x-hidden h-full flex stretch flex-col">
       <div className="px-6">
         <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
           <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
           <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
         </Tabs.Container>
       </div>
-      <div className="w-full max-w-4xl mx-auto pt-6">
+      <div className="w-full max-w-4xl mx-auto pt-6 flex flex-1 flex-col">
         <div className="px-6">
           <Tabs.Panel {...getPanelProps("configuration")}>
             <div className="flex flex-col gap-6 pb-8 lg:px-4">
@@ -254,20 +249,25 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
             </div>
           </Tabs.Panel>
         </div>
-        <div className="px-2">
-          <Tabs.Panel {...getPanelProps("testChat")}>
-            <ChatProvider
-              temperature={temperature}
-              selectedModel={model}
-              systemPrompt={systemPrompt}
-              tools={tools}
-              metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
-              title={title}
-              preventChatPersistence={true}
-              webSearchNumResults={webSearchNumResults}
-            >
-              <Chat />
-            </ChatProvider>
+        <div className="px-2 flex-1 flex flex-col overflow-auto">
+          <Tabs.Panel
+            className="flex flex-1 flex-col"
+            {...getPanelProps("testChat")}
+          >
+            <Suspense fallback={null}>
+              <ChatProvider
+                temperature={temperature}
+                selectedModel={model}
+                systemPrompt={systemPrompt}
+                tools={tools}
+                metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
+                title={title}
+                preventChatPersistence={true}
+                webSearchNumResults={webSearchNumResults}
+              >
+                <Chat className="flex-1 justify-center" />
+              </ChatProvider>
+            </Suspense>
           </Tabs.Panel>
         </div>
       </div>
