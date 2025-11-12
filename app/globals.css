@@ -47,12 +47,32 @@ html, body {
 .w-md-editor,
 .w-md-editor-toolbar,
 .wmde-markdown {
-  background-color: transparent !important;
+  background-color: var(--color-background) !important;
+  border: none !important;
 }
 
 .w-md-editor-toolbar {
   padding: 0.5rem !important;
-  }
+}
+
+.w-md-editor {
+  overflow: hidden !important;
+  border-radius: var(--radius-lg) !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: var(--border) !important;
+  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.05));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
+}
+
+.w-md-editor-area {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.w-md-editor-area:-webkit-scrollbar {
+  display: none;  /* Chrome, Safari y Opera */
+}
 
 /* Hide native number input spinners for consistent UX */
 input[type=number]::-webkit-outer-spin-button,

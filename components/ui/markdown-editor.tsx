@@ -22,6 +22,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     <MDEditor
       preview="edit"
       className="relative"
+      height={400}
       value={value}
       onChange={(value) => onChange(value ?? "")}
       components={{
