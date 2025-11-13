@@ -169,12 +169,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     toolCalling: false,
   },
   "Claude Haiku 4.5": {
-    model: providers.anthropic("claude-haiku-4-5"),
+    model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
   },
   "Claude Sonnet 4.5": {
-    model: providers.anthropic("claude-sonnet-4-5-20250929"),
+    model: providers.gateway("anthropic/claude-sonnet-4.5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -186,7 +186,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Claude Opus 4.1": {
-    model: providers.anthropic("claude-opus-4-1-20250805"),
+    model: providers.gateway("anthropic/claude-opus-4.1"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
