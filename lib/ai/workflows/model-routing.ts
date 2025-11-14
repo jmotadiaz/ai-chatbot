@@ -234,7 +234,7 @@ const decisionTree = ({
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Grok 4", "GPT 5"),
+        modelConfiguration: findModelByRequestedFileTypes("Grok 4", "GPT 5.1"),
       },
     },
     technical: {
@@ -254,7 +254,7 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4.5"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5"),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5.1"),
       },
     },
     creative: {

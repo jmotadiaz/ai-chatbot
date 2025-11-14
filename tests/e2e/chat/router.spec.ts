@@ -9,8 +9,8 @@ const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
   technical: {
     simple: "meta-llama/llama-4-scout-17b-16e-instruct",
     moderate: "grok-code-fast-1",
-    complex: "claude-sonnet-4-5-20250929",
-    advanced: "gpt-5-2025-08-07",
+    complex: "anthropic/claude-sonnet-4.5",
+    advanced: "gpt-5.1",
   },
   prompt_engineering: {
     simple: "meta-llama/llama-4-scout-17b-16e-instruct",

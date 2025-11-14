@@ -241,8 +241,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
     supportedFiles: ["img", "pdf"],
   },
-  "GPT 5": {
-    model: providers.openai("gpt-5-2025-08-07"),
+  "GPT 5.1": {
+    model: providers.openai("gpt-5.1"),
     reasoning: true,
     company: "openai",
     providerOptions: {
@@ -356,7 +356,7 @@ export const chatModelKeys = [
   "Grok 4 Fast",
   "Grok 4",
   "GPT 5 Mini",
-  "GPT 5",
+  "GPT 5.1",
   "Gemini 2.5 Flash",
   "Gemini 2.5 Pro",
   "Gemini Nano Banana",
