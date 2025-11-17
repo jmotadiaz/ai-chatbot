@@ -94,6 +94,7 @@ export default defineConfig({
     timeout: 120 * 1000,
     env: {
       USE_MOCK_PROVIDERS: "1",
+      DISABLE_DEV_INDICATOR: "1",
     },
   },
 });
