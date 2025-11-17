@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { FilePart } from "@/lib/ai/utils";
-import { extractMediaType, removeExtension } from "@/lib/utils";
+import { extractMediaType, formatFilename } from "@/lib/utils";
 
 interface FileThumbnailProps {
   file: FilePart;
@@ -23,7 +23,7 @@ export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
     return (
       <div className="h-12 flex rounded-xl bg-zinc-500  dark:bg-zinc-700 text-gray-100 flex-col justify-center pl-4 pr-12 py-2 text-sm font-semibold">
         <span className="whitespace-nowrap mb-0.5">
-          {removeExtension(file.filename)}
+          {formatFilename(file.filename)}
         </span>
         <span className="whitespace-nowrap uppercase text-xs opacity-60">
           {extractMediaType(file.mediaType)}

@@ -60,7 +60,15 @@ export const hasUrls = (text: string): boolean => {
 };
 
 export const removeExtension = (filename: string = ""): string => {
-  return filename.replace(/\.[^/.]+$/, "").slice(0, 100);
+  return filename.replace(/\.[^/.]+$/, "");
+};
+
+export const formatFilename = (filename: string = ""): string => {
+  const filenameWithoutExtension = removeExtension(filename);
+
+  return filenameWithoutExtension.length > 30
+    ? `${filenameWithoutExtension.slice(0, 30)}...`
+    : filenameWithoutExtension;
 };
 
 export const extractMediaType = (mediaType: string): string => {
