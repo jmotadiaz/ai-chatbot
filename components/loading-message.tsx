@@ -3,21 +3,21 @@
 import { motion } from "motion/react";
 import type { ChatStatus, DataUIPart } from "ai";
 import { memo } from "react";
-import type { ChatbotDataPart, MessageMetadata } from "@/lib/ai/types";
+import type { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import { DotsLoadingIcon } from "@/components/icons";
 
 interface LoadingMessageProps {
-  metadata: MessageMetadata | undefined;
+  message: ChatbotMessage;
   status: ChatStatus;
   dataPart?: DataUIPart<Omit<ChatbotDataPart, "chat">> | undefined;
 }
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
-  ({ metadata, status, dataPart }) => {
+  ({ message, status, dataPart }) => {
     if (
       status === "ready" ||
       status === "error" ||
-      metadata?.status === "finished"
+      (message.role === "assistant" && message.metadata?.status === "finished")
     ) {
       return null;
     }
@@ -60,7 +60,8 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
   (prevProps, nextProps) => {
     return (
       prevProps.status === nextProps.status &&
-      prevProps.metadata?.status === nextProps.metadata?.status &&
+      prevProps.message.metadata?.status ===
+        nextProps.message.metadata?.status &&
       prevProps.dataPart?.data.status === nextProps.dataPart?.data.status
     );
   }

@@ -82,7 +82,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               <>
                 <Messages messages={messages} />
                 <LoadingMessage
-                  metadata={messages[messages.length - 1]?.metadata}
+                  message={messages[messages.length - 1]}
                   status={status}
                   {...(dataPart?.type !== "data-chat" && { dataPart })}
                 />

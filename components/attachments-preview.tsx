@@ -35,7 +35,10 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
           {!file.loading && (
             <div
               className={cn(
-                "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80"
+                "bg-secondary absolute p-1 rounded-full opacity-80",
+                file.mediaType.startsWith("image/")
+                  ? "top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
+                  : "top-1/2 right-2 transform -translate-y-1/2"
               )}
             >
               <X size={15} />
