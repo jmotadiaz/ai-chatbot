@@ -62,6 +62,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
     [message]
   );
   const text = textParts[0].text ?? "";
+  const textFiles = message.metadata?.textFiles || [];
   const isLongMessage = text.length > 350;
   const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
@@ -76,10 +77,21 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
     <>
       <div className={cn("flex gap-4 w-full ml-auto max-w-4xl mt-4", "w-fit")}>
         <div className="flex flex-col w-full space-y-2">
-          {files.length > 0 && (
+          {(files.length > 0 || textFiles.length > 0) && (
             <div className="flex space-x-2 items-center justify-end">
               {files.map((part, i) => (
                 <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
+              ))}
+              {textFiles.map((file, i) => (
+                <FileThumbnail
+                  key={`message-${message.id}-text-${i}`}
+                  file={{
+                    type: "file",
+                    filename: file.filename,
+                    mediaType: file.mediaType,
+                    url: "",
+                  }}
+                />
               ))}
             </div>
           )}

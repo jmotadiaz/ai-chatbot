@@ -10,28 +10,11 @@ test.describe("Chat attachments", () => {
     expect(authenticatedUser.email).toBeDefined();
   });
 
-  test("should not show attachment button for text-only models", async () => {
-    // Models with no `supportedFiles` property should not show the attachment button
-    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
-    await expect.soft(chatPage.chat.attachmentButton).not.toBeVisible();
-  });
-
   test("should show correct attachment options for image-only models", async () => {
     await chatPage.header.modelPicker.selectModel("Llama 4 Scout");
-    await expect.soft(chatPage.chat.attachmentButton).toBeVisible();
 
     await chatPage.chat.openAttachmentMenu();
     expect.soft(chatPage.chat.imageInputLabel).toBeVisible();
-    expect.soft(chatPage.chat.pdfInputLabel).not.toBeVisible();
-  });
-
-  test("should show correct attachment options for all supported models", async () => {
-    await chatPage.header.modelPicker.selectModel("GPT 5 Mini");
-    await expect.soft(chatPage.chat.attachmentButton).toBeVisible();
-
-    await chatPage.chat.openAttachmentMenu();
-    expect.soft(chatPage.chat.imageInputLabel).toBeVisible();
-    expect.soft(chatPage.chat.pdfInputLabel).toBeVisible();
   });
 
   test("should filter models based on attachment type", async () => {

@@ -22,10 +22,6 @@ export const AttachmentsControl: React.FC = () => {
 
   const { supportedFiles } = getChatConfigurationByModelId(selectedModel);
 
-  if (!supportedFiles || supportedFiles.length === 0) {
-    return null;
-  }
-
   return (
     <div className="relative">
       <ChatControl
@@ -74,24 +70,22 @@ export const AttachmentsControl: React.FC = () => {
             </>
           </>
         )}
-        {supportedFiles.includes("pdf") && (
-          <Dropdown.Item
-            as={Label}
-            className="text-sm"
-            htmlFor="document-input"
-          >
-            <FileText className="w-5 h-5" /> <span>Document</span>
-            <input
-              id="document-input"
-              type="file"
-              accept="application/pdf"
-              className="absolute w-0 h-0 overflow-hidden opacity-0"
-              onChange={onChange}
-              capture="environment"
-              multiple
-            />
-          </Dropdown.Item>
-        )}
+        <Dropdown.Item as={Label} className="text-sm" htmlFor="document-input">
+          <FileText className="w-5 h-5" /> <span>Document</span>
+          <input
+            id="document-input"
+            type="file"
+            accept={
+              supportedFiles.includes("pdf")
+                ? "application/pdf,.md,.txt,.xml"
+                : ".md,.txt,.xml"
+            }
+            className="absolute w-0 h-0 overflow-hidden opacity-0"
+            onChange={onChange}
+            capture="environment"
+            multiple
+          />
+        </Dropdown.Item>
       </Dropdown.Popup>
     </div>
   );

@@ -122,6 +122,27 @@ export const POST = withAuth(async (user, req) => {
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
       let reasoning = false;
 
+      // Process messages to attach text file contents from metadata
+      const processedMessages = messages.map((msg) => {
+        if (msg.role === "user" && msg.metadata?.textFiles?.length) {
+          const textFileContents = msg.metadata.textFiles
+            .map(
+              (f) => `\n\n---\nAttached File: ${f.filename}\n${f.content}\n---`
+            )
+            .join("");
+
+          return {
+            ...msg,
+            parts: msg.parts.map((part) =>
+              part.type === "text"
+                ? { ...part, text: part.text + textFileContents }
+                : part
+            ),
+          };
+        }
+        return msg;
+      });
+
       const result = streamText({
         ...modelConfiguration,
         ...((tools.length > 0 || isUrlPresentInLastMessage) && {
@@ -135,7 +156,7 @@ export const POST = withAuth(async (user, req) => {
           },
         }),
         system: systemPrompt,
-        messages: convertToModelMessages(messages),
+        messages: convertToModelMessages(processedMessages),
         tools: toolSet,
         stopWhen: stepCountIs(4),
         activeTools: [],

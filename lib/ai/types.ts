@@ -8,9 +8,16 @@ export interface Resource {
   content: string;
 }
 
+export interface TextFile {
+  filename: string;
+  content: string;
+  mediaType: string;
+}
+
 export interface MessageMetadata {
   status: "started" | "streaming" | "finished";
   autoModel?: ModelRoutingMetadata;
+  textFiles?: TextFile[];
 }
 
 export interface WebSearchDataPart {

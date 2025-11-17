@@ -153,7 +153,7 @@ export const once = <T>(fn: () => T): (() => T) => {
 export type FilePart = Pick<
   FileUIPart,
   "type" | "mediaType" | "url" | "filename"
-> & { loading?: { percentage: number } };
+> & { loading?: { percentage: number }; textContent?: string };
 
 export const convertFilesToDataURLs = async (
   files: FileList
@@ -175,6 +175,22 @@ export const convertFileToDataURLs = async (file: File): Promise<FilePart> => {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+};
+
+export const readTextFile = async (file: File): Promise<string> => {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+};
+
+const isTextFile = (filename: string): boolean => {
+  const extension = filename.split(".").pop()?.toLowerCase();
+  return extension === "md" || extension === "txt" || extension === "xml";
 };
 
 export interface SegregatedMessagePartsReturn {
@@ -312,6 +328,22 @@ export const handleFileUpload = async (
 ) => {
   if (fileList) {
     for (const file of fileList) {
+      // Check if it's a text file (.md, .txt, .xml)
+      if (isTextFile(file.name)) {
+        // Read text content directly
+        const textContent = await readTextFile(file);
+        const textFilePart: FilePart = {
+          type: "file",
+          mediaType: file.type || "text/plain",
+          filename: file.name,
+          url: "", // No URL needed for text files
+          textContent,
+        };
+        setFiles((prevFiles) => [...prevFiles, textFilePart]);
+        continue;
+      }
+
+      // Handle images and PDFs (existing logic)
       if (
         (!supportedFiles.includes("img") && file.type.startsWith("image/")) ||
         (!supportedFiles.includes("pdf") && file.type === "application/pdf")

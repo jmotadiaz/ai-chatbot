@@ -416,14 +416,29 @@ const useChatForm = ({
       if (sendEnabled) {
         setInput("");
         setFiles([]);
+
+        // Separate text files from other files
+        const textFiles = files.filter((f) => f.textContent);
+        const otherFiles = files.filter((f) => !f.textContent);
+
         await chatResult.sendMessage(
           {
             role: "user",
             parts: [
               { type: "text", text: input },
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              ...files.map(({ loading, ...file }) => file),
+              ...otherFiles.map(({ loading, textContent, ...file }) => file),
             ],
+            metadata: {
+              status: "finished",
+              ...(textFiles.length > 0 && {
+                textFiles: textFiles.map((f) => ({
+                  filename: f.filename || "",
+                  content: f.textContent || "",
+                  mediaType: f.mediaType || "text/plain",
+                })),
+              }),
+            },
           },
           {
             body,
