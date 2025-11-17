@@ -361,7 +361,7 @@ const useAvailableModels = ({
             return config.supportedFiles.includes("img");
           if (type === "application/pdf")
             return config.supportedFiles.includes("pdf");
-          return false;
+          return true;
         })
       );
     });
