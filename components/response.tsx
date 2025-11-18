@@ -14,7 +14,13 @@ export const Response = memo(
         className
       )}
       rehypePlugins={[
-        [addClasses, { "h1,h2,h3,h4,h5,h6,p,li,code,pre": "animate-fade", "td": "wrap-break-word" }],
+        [
+          addClasses,
+          {
+            "h1,h2,h3,h4,h5,h6,p,li,span.line": "animate-fade",
+            td: "wrap-break-word",
+          },
+        ],
       ]}
       {...props}
     />

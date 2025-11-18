@@ -150,18 +150,16 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
           switch (part.type) {
             case "text":
               return (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <div
                   key={`message-${message.id}-part-${i}`}
-                  className="flex flex-row gap-2 items-start w-full"
+                  className={cn("max-w-full")}
                 >
-                  <div className={cn("max-w-full")}>
+                  <CopyBlock className="pt-2" text={part.text}>
                     <Response className="[&>*:first-child]:mt-6 [&>*:last-child]:mb-6">
                       {part.text}
                     </Response>
-                  </div>
-                </motion.div>
+                  </CopyBlock>
+                </div>
               );
             case "file":
               return (
