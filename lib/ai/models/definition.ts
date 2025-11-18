@@ -242,7 +242,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "GPT 5.1": {
-    model: providers.openai("gpt-5.1"),
+    model: providers.gateway("openai/gpt-5.1-thinking"),
     reasoning: true,
     company: "openai",
     providerOptions: {
