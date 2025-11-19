@@ -43,7 +43,7 @@ test.describe("Chat functionality", () => {
       .soft(chatPage.header.modelPicker.getModelOption("Sonar Pro"))
       .toBeAttached();
     await expect
-      .soft(chatPage.header.modelPicker.getModelOption("Gemini 2.5 Pro"))
+      .soft(chatPage.header.modelPicker.getModelOption("Gemini 3 Pro"))
       .toBeAttached();
   });
 

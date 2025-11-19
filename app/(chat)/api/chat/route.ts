@@ -166,7 +166,9 @@ export const POST = withAuth(async (user, req) => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
-              model: providers.google("gemini-2.5-flash-lite"),
+              ...(!modelConfiguration.nativeToolCalling && {
+                model: providers.google("gemini-2.5-flash-lite"),
+              }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
             };
@@ -179,7 +181,9 @@ export const POST = withAuth(async (user, req) => {
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
             return {
-              model: providers.google("gemini-2.5-flash-lite"),
+              ...(!modelConfiguration.nativeToolCalling && {
+                model: providers.google("gemini-2.5-flash-lite"),
+              }),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
             };
@@ -191,7 +195,9 @@ export const POST = withAuth(async (user, req) => {
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
             return {
-              model: providers.google("gemini-2.5-flash-lite"),
+              ...(!modelConfiguration.nativeToolCalling && {
+                model: providers.google("gemini-2.5-flash-lite"),
+              }),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };

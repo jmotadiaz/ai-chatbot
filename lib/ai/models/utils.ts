@@ -56,12 +56,14 @@ export const getChatConfigurationByModelId = (
     supportedFiles,
     supportedOutput,
     company,
+    nativeToolCalling,
     reasoning,
   } = Object.assign(
     {
       temperature: defaultTemperature,
       systemPrompt: defaultSystemPrompt,
       toolCalling: true,
+      nativeToolCalling: false,
       company: "ai chatbot" as const,
       supportedFiles: [],
       reasoning: false,
@@ -92,6 +94,7 @@ export const getChatConfigurationByModelId = (
     reasoning,
     systemPrompt,
     toolCalling,
+    nativeToolCalling,
     supportedFiles,
     supportedOutput,
   };

@@ -36,6 +36,7 @@ export interface ModelConfiguration {
   model: LanguageModel;
   providerOptions?: ProviderOptions;
   toolCalling?: boolean;
+  nativeToolCalling?: boolean;
   reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;
@@ -292,6 +293,14 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       },
     },
   },
+  "Gemini 3 Pro": {
+    model: providers.gateway("google/gemini-3-pro-preview"),
+    company: "google",
+    supportedFiles: ["img", "pdf"],
+    reasoning: true,
+    temperature: 1,
+    nativeToolCalling: true,
+  },
   "Gemini Nano Banana": {
     model: providers.gateway("google/gemini-2.5-flash-image-preview"),
     company: "google",
@@ -358,7 +367,7 @@ export const chatModelKeys = [
   "GPT 5 Mini",
   "GPT 5.1",
   "Gemini 2.5 Flash",
-  "Gemini 2.5 Pro",
+  "Gemini 3 Pro",
   "Gemini Nano Banana",
 ] satisfies LanguageModelKeys[];
 

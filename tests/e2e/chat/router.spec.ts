@@ -8,7 +8,7 @@ type Complexity = "simple" | "moderate" | "complex" | "advanced";
 const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
   technical: {
     simple: "meta-llama/llama-4-scout-17b-16e-instruct",
-    moderate: "grok-code-fast-1",
+    moderate: "minimax/minimax-m2",
     complex: "anthropic/claude-sonnet-4.5",
     advanced: "gpt-5.1",
   },
