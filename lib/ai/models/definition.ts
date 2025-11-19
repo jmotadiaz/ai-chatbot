@@ -140,7 +140,10 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     topK: 40,
   },
   "GLM-4.6": {
-    model: providers.gateway("zai/glm-4.6"),
+    model: wrapLanguageModel({
+      model: providers.gateway("zai/glm-4.6"),
+      middleware: [reasoningMw],
+    }),
     reasoning: true,
     company: "zai",
     temperature: 1,
