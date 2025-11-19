@@ -31,28 +31,38 @@ import type { ChatbotMessage } from "@/lib/ai/types";
 import { RagChunk } from "@/lib/ai/tools/rag";
 
 export async function generateTitle(messages: ChatbotMessage[]) {
-  if (messages.length === 0) return "Unknown";
+  const userMessage = messages.find(({ role }) => role === "user");
 
-  const { text: title } = await generateText({
-    ...languageModelConfigurations("Llama 3.1 Instant"),
-    system: `\n
-    You are a chat title generator. Create a concise title (≤60 characters) summarizing the first user message. Follow these rules:
-    1. Extract the core topic from the user's message
-    2. Use only essential keywords (no filler words)
-    3. Never include:
-      - Markdown formatting
-      - Prefixes/suffixes (e.g., "Title:")
-      - Quotation marks
-      - Unrelated content
-    4. Strictly output only the generated title
+  if (!userMessage) return "Unknown";
 
-    Example:
-    User message: "Can you help debug my Python script? It's throwing index errors"
-    Output: Python script debugging help`,
-    prompt: JSON.stringify(messages.find(({ role }) => role === "user")),
-  });
+  const { parts } = userMessage;
 
-  return title;
+  try {
+    const { text: title } = await generateText({
+      ...languageModelConfigurations("Llama 3.1 Instant"),
+      system: `\n
+      You are a chat title generator. Create a concise title (≤60 characters) summarizing the first user message. Follow these rules:
+      1. Extract the core topic from the user's message
+      2. Use only essential keywords (no filler words)
+      3. Never include:
+        - Markdown formatting
+        - Prefixes/suffixes (e.g., "Title:")
+        - Quotation marks
+        - Unrelated content
+      4. Strictly output only the generated title
+
+      Example:
+      User message: "Can you help debug my Python script? It's throwing index errors"
+      Output: Python script debugging help`,
+      prompt: JSON.stringify(parts),
+    });
+
+    return title;
+  } catch (error) {
+    console.error("Error generating title:", error);
+
+    return "Unknown";
+  }
 }
 
 const isBase64URI = (str: string) => {
