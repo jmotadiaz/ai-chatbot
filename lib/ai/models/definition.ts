@@ -319,8 +319,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.xai("grok-code-fast-1"),
     company: "xai",
   },
-  "Grok 4 Fast": {
-    model: providers.xai("grok-4-fast"),
+  "Grok 4.1 Fast": {
+    model: providers.xai("grok-4-1-fast"),
     company: "xai",
     supportedFiles: ["img"],
     reasoning: true,
@@ -365,7 +365,7 @@ export const chatModelKeys = [
   "Sonar Pro",
   "Claude Haiku 4.5",
   "Claude Sonnet 4.5",
-  "Grok 4 Fast",
+  "Grok 4.1 Fast",
   "Grok 4",
   "GPT 5 Mini",
   "GPT 5.1",

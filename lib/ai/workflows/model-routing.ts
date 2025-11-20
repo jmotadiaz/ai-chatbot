@@ -229,7 +229,7 @@ const decisionTree = ({
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Grok 4 Fast",
+          "Grok 4.1 Fast",
           "Gemini 2.5 Flash"
         ),
       },
