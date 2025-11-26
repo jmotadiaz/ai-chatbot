@@ -85,7 +85,7 @@ const generateImages = async (
       - If the composition is already adequate, only subtle improvements will be applied.
       - In low-quality images, prioritise noise reduction and focus enhancement before other adjustments.
       `,
-    ...languageModelConfigurations("Gemini Nano Banana", {
+    ...languageModelConfigurations("Nano Banana", {
       providerOptions: {
         google: { responseModalities: ["IMAGE"] },
       },

@@ -304,7 +304,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 1,
     nativeToolCalling: true,
   },
-  "Gemini Nano Banana": {
+  "Nano Banana": {
     model: providers.gateway("google/gemini-2.5-flash-image"),
     company: "google",
     supportedFiles: ["img", "pdf"],
@@ -372,7 +372,7 @@ export const chatModelKeys = [
   "GPT 5.1",
   "Gemini 2.5 Flash",
   "Gemini 3 Pro",
-  "Gemini Nano Banana",
+  "Nano Banana",
 ] satisfies LanguageModelKeys[];
 
 export type chatModelId = (typeof chatModelKeys)[number] | "Router";

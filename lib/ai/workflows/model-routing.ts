@@ -361,16 +361,16 @@ const decisionTree = ({
     },
     image_generation: {
       simple: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+        modelConfiguration: findModelByRequestedFileTypes("Nano Banana"),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+        modelConfiguration: findModelByRequestedFileTypes("Nano Banana"),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+        modelConfiguration: findModelByRequestedFileTypes("Nano Banana"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini Nano Banana"),
+        modelConfiguration: findModelByRequestedFileTypes("Nano Banana"),
       },
     },
     other: {
