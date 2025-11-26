@@ -171,6 +171,15 @@ input[type=number] {
   .scrollbar-none::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Edge */
   }
+
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  .scrollbar-custom:-webkit-scrollbar {
+    display: none;  /* Chrome, Safari y Opera */
+  }
 }
 
 .toggle-bg:after {

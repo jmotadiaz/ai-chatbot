@@ -1,4 +1,4 @@
-import React, { startTransition } from "react";
+import React, { useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,7 @@ export interface PanelProps {
   active: boolean;
   value: string;
   className?: string;
+  hasChangedTab?: boolean;
 }
 
 const Panel: React.FC<PanelProps> = ({
@@ -49,26 +50,19 @@ const Panel: React.FC<PanelProps> = ({
   active,
   value,
   className,
+  hasChangedTab,
 }) => {
   if (!active) return null;
 
   return (
-    <InternalPanel value={value} className={className}>
-      {children}
-    </InternalPanel>
-  );
-};
-
-const InternalPanel: React.FC<
-  Pick<PanelProps, "value" | "children" | "className">
-> = ({ children, value, className }) => {
-  return (
     <AnimatePresence key={value}>
       <motion.div
-        initial={{ x: 20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: 20, opacity: 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+        {...(hasChangedTab && {
+          initial: { x: 20, opacity: 0 },
+          animate: { x: 0, opacity: 1 },
+          exit: { x: 20, opacity: 0 },
+          transition: { duration: 0.3, ease: "easeInOut" },
+        })}
         className={className}
       >
         {children}
@@ -108,11 +102,11 @@ export const useTabs = <T extends string>({
     "tab",
     parseAsStringLiteral(tabs).withDefault(initialTab)
   );
+  const hasChangedTab = useRef(false);
 
   const handleTabClick = (tab: T) => {
-    startTransition(() => {
-      setActiveTab(tab);
-    });
+    setActiveTab(tab);
+    hasChangedTab.current = true;
   };
 
   const getTabProps = (tab: T) => ({
@@ -123,6 +117,7 @@ export const useTabs = <T extends string>({
   const getPanelProps = (tab: T) => ({
     active: activeTab === tab,
     value: tab,
+    hasChangedTab: hasChangedTab.current,
   });
 
   return {
