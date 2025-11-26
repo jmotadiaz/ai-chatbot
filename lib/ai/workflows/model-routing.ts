@@ -102,7 +102,6 @@ export async function modelRouting({
 
   const modelRouterResponse = generateObject({
     ...languageModelConfigurations("GPT OSS Mini"),
-    temperature: 0.1,
     schema,
     system: modelRouterSystemPrompt,
     messages: modelMessages,
