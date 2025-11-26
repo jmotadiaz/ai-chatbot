@@ -305,7 +305,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     nativeToolCalling: true,
   },
   "Gemini Nano Banana": {
-    model: providers.gateway("google/gemini-2.5-flash-image-preview"),
+    model: providers.gateway("google/gemini-2.5-flash-image"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],
