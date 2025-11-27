@@ -245,7 +245,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "MiniMax M2",
+          "Grok 4.1 Fast",
           "GPT 5 Mini"
         ),
       },
@@ -253,7 +253,7 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4.5"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT 5.1"),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Opus 4.5"),
       },
     },
     creative: {
