@@ -245,7 +245,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Grok 4.1 Fast",
+          "Claude Haiku 4.5",
           "GPT 5 Mini"
         ),
       },
