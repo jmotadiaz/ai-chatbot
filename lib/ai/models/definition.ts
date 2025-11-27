@@ -101,7 +101,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "mistral",
   },
   "Deepseek Chat": {
-    model: providers.deepseek("deepseek-chat"),
+    model: providers.gateway("deepseek/deepseek-v3.2-exp"),
     company: "deepseek",
     temperature: 0.6,
   },
