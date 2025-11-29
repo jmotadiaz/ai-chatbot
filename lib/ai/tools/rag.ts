@@ -50,7 +50,7 @@ export const ragFactory = ({
   ({
     [RAG_TOOL]: tool({
       description:
-        "Get information from your knowledge base to answer questions.",
+        "Get information from your knowledge base to answer questions. the description must be in english.",
       inputSchema: z.object({
         query: z
           .string()

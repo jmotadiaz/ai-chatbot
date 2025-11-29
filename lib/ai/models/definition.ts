@@ -175,6 +175,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Claude Haiku 4.5": {
     model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
+    nativeToolCalling: true,
     supportedFiles: ["img", "pdf"],
   },
   "Claude Sonnet 4.5": {
@@ -182,6 +183,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
+    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -194,6 +196,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
+    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -272,6 +275,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
+    nativeToolCalling: true,
     reasoning: true,
     providerOptions: {
       google: {
@@ -382,6 +386,6 @@ export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 export const defaultModel: chatModelId = "Router";
 export const defaultTemperature = 0.5;
 // Tool configuration defaults (extracted from previous literals)
-export const defaultRagSimilarityPercentage = 70; // percent 0-100
-export const defaultRagMaxResources = 10;
-export const defaultWebSearchNumResults = 3; // number of web search results
+export const defaultRagSimilarityPercentage = 65; // percent 0-100
+export const defaultRagMaxResources = 6;
+export const defaultWebSearchNumResults = 5; // number of web search results
