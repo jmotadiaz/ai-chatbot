@@ -1,4 +1,6 @@
-import fs from "fs";
+
+// import fs from "fs";
+
 import type {
   FileUIPart,
   GenerateObjectResult,
@@ -427,14 +429,3 @@ export const downloadFile = async ({
     throw new Error(`Error downloading file: ${error}`);
   }
 };
-
-export const fileLog = (filename: string, data: unknown) => {
-  try {
-    fs.writeFileSync(
-      filename,
-      JSON.stringify(data, null, 2)
-    );
-  } catch (error) {
-    console.error(`Error writing ${filename} to file:`, error);
-  }
-}

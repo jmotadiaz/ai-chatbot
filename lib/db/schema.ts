@@ -105,9 +105,12 @@ export const embeddings = pgTable(
     resourceId: uuid("resourceId")
       .notNull()
       .references(() => resources.id, { onDelete: "cascade" }),
+
     content: text("content").notNull(),
     embedding: vector("embedding", { dimensions: 768 }).notNull(),
+    metadata: json("metadata"),
   },
+
   (table) => ({
     embeddingIndex: index("embeddingIndex").using(
       "hnsw",

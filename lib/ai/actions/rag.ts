@@ -72,9 +72,10 @@ export async function uploadResources(
         return { success: false, error: "JSON must contain 'urls' array" };
       }
 
-      const { urls, container } = jsonData as {
+      const { urls, container, excludeSelectors } = jsonData as {
         urls: string[];
         container?: string;
+        excludeSelectors?: string[];
       };
 
       if (urls.length === 0) {
@@ -87,7 +88,7 @@ export async function uploadResources(
 
       await forEachChunk(urls, async (chunkUrls) => {
         const resourcesChunk = await Promise.all(
-          chunkUrls.map((url) => fetchAndConvertURL({ url, container }))
+          chunkUrls.map((url) => fetchAndConvertURL({ url, container, excludeSelectors }))
         );
         console.log(
           `Successfully processed ${resourcesChunk.length} resources, generating embeddings...`
@@ -216,16 +217,42 @@ const turndownService = new TurndownService({
 });
 
 turndownService.addRule("removeDistractions", {
-  filter: ["script", "style", "nav", "header", "footer", "aside", "form", "iframe"],
+  filter: ["script", "style", "nav", "header", "footer", "aside", "form", "iframe", "button", "input", "select", "textarea", "noscript", "canvas", "dialog", "menu"],
   replacement: () => "",
+});
+
+turndownService.addRule("removeGenericDistractions", {
+  filter: function (node) {
+    // Solo aplicamos esto a bloques genéricos, no a parrafos de texto real
+    if (node.nodeName === 'P' || node.nodeName === 'H1' || node.nodeName === 'H2') return false;
+
+    // Obtenemos clases e IDs
+    const attrs = (node.getAttribute("class") || "") + " " + (node.getAttribute("id") || "");
+    const lowerAttrs = attrs.toLowerCase();
+
+    // Palabras clave de cosas que NO queremos indexar
+    const noiseKeywords = [
+      "share", "social", "cookie", "banner", "popup", "modal",
+      "newsletter", "promo", "advert", "related", "recommend",
+      "sidebar", "comment", "feedback", "meta", "hidden", "toc"
+    ];
+
+    // Si contiene alguna palabra clave de ruido, lo borramos
+    return noiseKeywords.some(keyword => lowerAttrs.includes(keyword));
+  },
+  replacement: function () {
+    return "";
+  }
 });
 
 async function fetchAndConvertURL({
   url,
   container,
+  excludeSelectors,
 }: {
   url: string;
   container?: string;
+  excludeSelectors?: string[];
 }): Promise<Resource | null> {
   try {
     console.log(`Fetching URL: ${url}`);
@@ -246,7 +273,7 @@ async function fetchAndConvertURL({
 
     // Convert HTML to Markdown
     const markdown = turndownService
-      .turndown(extractContainer({ container, html }))
+      .turndown(extractContainer({ container, html, excludeSelectors }))
       .replace(/\n{3,}/g, "\n\n")
       .replace(/^\s+|\s+$/g, "")
       .trim();
@@ -267,51 +294,64 @@ const extractTitle = (html: string): string | null => {
   return match ? match[1].trim() : null;
 };
 
+interface ExtractOptions {
+  html: string;
+  container?: string;
+  excludeSelectors?: string[]; // Nueva propiedad opcional
+}
+
 const extractContainer = ({
   container,
   html,
-}: {
-  container?: string;
-  html: string;
-}): HTMLElement | string => {
-  if (!container) {
-    return html;
-  }
+  excludeSelectors = [],
+}: ExtractOptions): HTMLElement => {
   const dom = new JSDOM(html);
-  const el = dom.window.document.querySelector<HTMLElement>(container);
+  const doc = dom.window.document;
 
-  return el ?? dom.window.document.body;
+  // 1. Seleccionar el elemento raíz (Container o Body)
+  let rootElement: HTMLElement | null = null;
+
+  if (container) {
+    rootElement = doc.querySelector<HTMLElement>(container);
+  }
+
+  // Si no se especificó container o no se encontró, usamos el body
+  const finalElement = rootElement ?? doc.body;
+
+  // 2. Limpieza de Ruido (Sanitización del DOM)
+  if (excludeSelectors.length > 0 && finalElement) {
+    try {
+      // Unimos todos los selectores en un solo string (ej: "nav, .footer, .ad-banner")
+      // Esto es más eficiente que hacer un querySelectorAll por cada selector.
+      const combinedSelector = excludeSelectors.join(", ");
+
+      // Buscamos los elementos a eliminar SOLO dentro de nuestro finalElement
+      const elementsToRemove = finalElement.querySelectorAll(combinedSelector);
+
+      elementsToRemove.forEach((el) => {
+        el.remove(); // Eliminación segura del nodo del árbol DOM
+      });
+    } catch (error) {
+      console.warn("Error cleaning DOM selectors:", error);
+      // Continuamos sin limpiar si falla un selector mal formado
+    }
+  }
+
+  return finalElement;
 };
 
-const resourceToEmbeddings = async ({
-  resource,
-  content,
-}: {
-  resource: DBResource;
-  content: string;
-}): Promise<InsertEmbedding[]> => {
-  const chunks = await generateChunks(content);
-  const embeddingData = await generateEmbeddings(chunks);
-
-  // Prepare embeddings for database insertion
-  return embeddingData.map(({ content, embedding }) => ({
-    resourceId: resource.id,
-    content,
-    embedding,
-  }));
-};
+import { Chunk } from "@/lib/ai/rag/chunking";
 
 const saveResources = async (
   resources: Resource[],
   userId: string
 ): Promise<{ resourcesCreated: number; embeddingsCreated: number }> => {
   const [result] = await transaction(async (tx) => {
-    const createdResources = [];
-    const allEmbeddings: Promise<InsertEmbedding[]>[] = [];
+    const createdResources: DBResource[] = [];
+    const chunksToEmbed: Chunk[] = [];
 
-    // Process each resource
+    // 1. Create all resources and generate chunks
     for (const resource of resources) {
-      // Create resource
       const newResource = await createResource({
         title: resource.title,
         url: resource.url,
@@ -320,22 +360,40 @@ const saveResources = async (
 
       createdResources.push(newResource);
 
-      allEmbeddings.push(
-        resourceToEmbeddings({
-          resource: newResource,
-          content: resource.content,
-        })
-      );
+      const resourceChunks = await generateChunks(resource.content);
+
+      // Attach resourceId to metadata so we can map it back later
+      const chunksWithId = resourceChunks.map((chunk) => ({
+        ...chunk,
+        metadata: {
+          ...chunk.metadata,
+          resourceId: newResource.id,
+        },
+      }));
+
+      chunksToEmbed.push(...chunksWithId);
     }
 
-    // Batch insert all embeddings
-    if (allEmbeddings.length > 0) {
-      const createdEmbeddings = await createEmbeddings(
-        (await Promise.all(allEmbeddings)).flat()
-      )(tx);
+    // 2. Generate embeddings for ALL chunks in one go (batched internally)
+    // This maximizes the "100 values per request" limit
+    const embeddings = await generateEmbeddings(chunksToEmbed);
+
+    // 3. Insert all embeddings
+    if (embeddings.length > 0) {
+      const insertEmbeddings: InsertEmbedding[] = embeddings.map(
+        ({ content, embedding, metadata }) => ({
+          resourceId: metadata.resourceId as string,
+          content,
+          embedding,
+          metadata,
+        })
+      );
+
+      await createEmbeddings(insertEmbeddings)(tx);
+
       return {
         resourcesCreated: createdResources.length,
-        embeddingsCreated: createdEmbeddings.length,
+        embeddingsCreated: insertEmbeddings.length,
       };
     }
 

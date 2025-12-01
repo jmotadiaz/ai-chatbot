@@ -64,6 +64,13 @@
       "when": 1756360238701,
       "tag": "0008_complete_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1764619321941,
+      "tag": "0009_medical_iron_lad",
+      "breakpoints": true
     }
   ]
 }
