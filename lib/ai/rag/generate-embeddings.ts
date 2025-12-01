@@ -1,22 +1,32 @@
 import { embedMany, embed } from "ai";
-import { MarkdownNodeParser } from "@llamaindex/core/node-parser";
+import { SentenceSplitter } from "@llamaindex/core/node-parser";
 import { Document } from "@llamaindex/core/schema";
 import pThrottle from "p-throttle";
 import { providers } from "@/lib/ai/models/providers";
 
-const MAX_CALLS = 1000;
+const MAX_CALLS = 400;
 const TIME_WINDOW = 60 * 1000;
-const markdownSplitter = new MarkdownNodeParser();
+const splitter = new SentenceSplitter({
+  // Aumentamos a 1024 caracteres (aprox) para capturar explicaciones + bloques de código enteros.
+  // 512 suele ser muy poco para documentación técnica densa.
+  chunkSize: 1800,
+  // Un overlap generoso asegura que si cortamos un método largo,
+  // el contexto (nombre de la función) se repita en el siguiente chunk.
+  chunkOverlap: 250,
+});
+
 export const QUERY_TYPES = ["RETRIEVAL_QUERY", "CODE_RETRIEVAL_QUERY"] as const;
 export type QueryType = (typeof QUERY_TYPES)[number];
 
-export async function generateMarkdownChunks(text: string): Promise<string[]> {
-  const nodes = markdownSplitter.getNodesFromDocuments([
-    new Document({ text }),
+export async function generateChunks(text: string): Promise<string[]> {
+  // Limpieza previa: MDN y docs a veces tienen excesivos saltos de línea
+  const cleanText = text.replace(/\n{3,}/g, "\n\n");
+
+  const nodes = await splitter.getNodesFromDocuments([
+    new Document({ text: cleanText }),
   ]);
   return nodes.map((node) => node.text.trim()).filter(Boolean);
 }
-
 const throttledEmbedMany = pThrottle({
   limit: MAX_CALLS,
   interval: TIME_WINDOW,

@@ -6,7 +6,7 @@ import TurndownService from "turndown";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
-  generateMarkdownChunks,
+  generateChunks,
   generateEmbeddings,
 } from "@/lib/ai/rag/generate-embeddings";
 import {
@@ -215,8 +215,8 @@ const turndownService = new TurndownService({
   codeBlockStyle: "fenced",
 });
 
-turndownService.addRule("removeScriptAndStyle", {
-  filter: ["script", "style", "nav", "header", "footer", "aside"],
+turndownService.addRule("removeDistractions", {
+  filter: ["script", "style", "nav", "header", "footer", "aside", "form", "iframe"],
   replacement: () => "",
 });
 
@@ -290,7 +290,7 @@ const resourceToEmbeddings = async ({
   resource: DBResource;
   content: string;
 }): Promise<InsertEmbedding[]> => {
-  const chunks = await generateMarkdownChunks(content);
+  const chunks = await generateChunks(content);
   const embeddingData = await generateEmbeddings(chunks);
 
   // Prepare embeddings for database insertion

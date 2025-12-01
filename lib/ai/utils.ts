@@ -1,3 +1,4 @@
+import fs from "fs";
 import type {
   FileUIPart,
   GenerateObjectResult,
@@ -28,7 +29,7 @@ import type { ModelConfiguration } from "@/lib/ai/models/definition";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/ai/types";
-import { RagChunk } from "@/lib/ai/tools/rag";
+import { RagChunk } from "@/lib/ai/rag/types";
 
 export async function generateTitle(messages: ChatbotMessage[]) {
   const userMessage = messages.find(({ role }) => role === "user");
@@ -426,3 +427,14 @@ export const downloadFile = async ({
     throw new Error(`Error downloading file: ${error}`);
   }
 };
+
+export const fileLog = (filename: string, data: unknown) => {
+  try {
+    fs.writeFileSync(
+      filename,
+      JSON.stringify(data, null, 2)
+    );
+  } catch (error) {
+    console.error(`Error writing ${filename} to file:`, error);
+  }
+}
