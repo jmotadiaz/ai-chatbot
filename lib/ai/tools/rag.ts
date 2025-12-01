@@ -50,14 +50,14 @@ export const ragFactory = ({
   ({
     [RAG_TOOL]: tool({
       description:
-        "Get information from your knowledge base to answer questions. the description must be in english.",
+        "Get information from your knowledge base to answer questions. The agent must decompose the user's question into 3 concrete sub-questions or tasks to perform a Multi-hop QA. Each query MUST be in english.",
       inputSchema: z.object({
-        query: z
-          .string()
+        queries: z
+          .array(z.string())
           .min(1)
-          .max(500)
+          .max(5)
           .describe(
-            "The search query. It should be in english and optimized for rag search."
+            "An array of search queries. Each query MUST be in english and optimized for rag search."
           ),
         queryType: z
           .enum(QUERY_TYPES)
@@ -77,32 +77,44 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         })
       ),
-      execute: async ({ query, queryType }): Promise<Array<RagChunk>> => {
-        console.log("RAG tool called with query:", query);
+      execute: async ({ queries, queryType }): Promise<Array<RagChunk>> => {
+        console.log("RAG tool called with queries:", queries);
         console.log("RAG tool called with queryType:", queryType);
 
-        const { similarChunks } = await retrieve({
-          query,
-          queryType,
-          userId,
-          limit: ragMaxResources,
-          similarityThreshold: ragSimilarityPercentage / 100,
-          excludeEmbeddingIds: extractEmbeddingIdsFromMessages(messages),
-        });
+        const results = await Promise.all(
+          queries.map((query) =>
+            retrieve({
+              query,
+              queryType,
+              userId,
+              limit: ragMaxResources,
+              similarityThreshold: ragSimilarityPercentage / 100,
+              excludeEmbeddingIds: extractEmbeddingIdsFromMessages(messages),
+            })
+          )
+        );
 
-        if (!similarChunks) {
-          console.error("No resources or similar chunks found");
+        const allChunks: SimilarChunk[] = [];
+
+        for (const result of results) {
+          if (result.success && result.similarChunks) {
+            allChunks.push(...result.similarChunks);
+          } else if (!result.success) {
+            console.warn("One of the RAG queries failed:", result.error);
+          }
+        }
+
+        if (allChunks.length === 0) {
+          console.error("No resources or similar chunks found for any query");
           return [];
         }
 
-        return similarChunks.map(
-          ({ id, content, resourceTitle, resourceUrl }) => ({
+        return [...new Set<RagChunk>(allChunks.map(({ id, content, resourceTitle, resourceUrl }) => ({
             id,
             content,
             resourceTitle,
             resourceUrl,
-          })
-        );
+          })))];
       },
     }),
   } satisfies ToolSet);

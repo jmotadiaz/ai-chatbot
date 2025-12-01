@@ -175,7 +175,6 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Claude Haiku 4.5": {
     model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
-    nativeToolCalling: true,
     supportedFiles: ["img", "pdf"],
   },
   "Claude Sonnet 4.5": {
@@ -183,7 +182,6 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -196,7 +194,6 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
