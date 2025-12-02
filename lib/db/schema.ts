@@ -88,7 +88,7 @@ export const message = pgTable("Message", {
     .notNull(),
 });
 
-export const resources = pgTable("resources", {
+export const resource = pgTable("Resource", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   userId: uuid("userId")
     .notNull()
@@ -103,20 +103,36 @@ export const resources = pgTable("resources", {
     .notNull(),
 });
 
-export const embeddings = pgTable(
-  "embeddings",
+export const chunk = pgTable("Chunk", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  resourceId: uuid("resourceId")
+    .notNull()
+    .references(() => resource.id, { onDelete: "cascade" }),
+  content: text("content").notNull(), // Stores the parent content
+  type: varchar("type", { length: 50 }).notNull(), // 'text' or 'code'
+  language: varchar("language", { length: 50 }),
+  boundaryType: varchar("boundaryType", { length: 50 }),
+  boundaryName: text("boundaryName"),
+  createdAt: timestamp("createdAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const embedding = pgTable(
+  "Embedding",
   {
     id: uuid("id").primaryKey().notNull().defaultRandom(),
-    resourceId: uuid("resourceId")
+    chunkId: uuid("chunkId")
       .notNull()
-      .references(() => resources.id, { onDelete: "cascade" }),
-
-    content: text("content").notNull(),
-    parent: text("parent").notNull(),
+      .references(() => chunk.id, { onDelete: "cascade" }),
     embedding: vector("embedding", { dimensions: 768 }).notNull(),
-    metadata: json("metadata"),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
-
   (table) => ({
     embeddingIndex: index("embeddingIndex").using(
       "hnsw",
@@ -130,7 +146,7 @@ export const projectRelations = relations(project, ({ many }) => ({
 }));
 
 export const userRelations = relations(user, ({ many }) => ({
-  resources: many(resources),
+  resources: many(resource),
 }));
 
 export const chatRelations = relations(chat, ({ one, many }) => ({
@@ -148,18 +164,26 @@ export const messageRelations = relations(message, ({ one }) => ({
   }),
 }));
 
-export const resourcesRelations = relations(resources, ({ many, one }) => ({
+export const resourceRelations = relations(resource, ({ many, one }) => ({
   user: one(user, {
-    fields: [resources.userId],
+    fields: [resource.userId],
     references: [user.id],
   }),
-  embeddings: many(embeddings),
+  chunks: many(chunk),
 }));
 
-export const embeddingsRelations = relations(embeddings, ({ one }) => ({
-  resource: one(resources, {
-    fields: [embeddings.resourceId],
-    references: [resources.id],
+export const chunkRelations = relations(chunk, ({ one, many }) => ({
+  resource: one(resource, {
+    fields: [chunk.resourceId],
+    references: [resource.id],
+  }),
+  embeddings: many(embedding),
+}));
+
+export const embeddingRelations = relations(embedding, ({ one }) => ({
+  chunk: one(chunk, {
+    fields: [embedding.chunkId],
+    references: [chunk.id],
   }),
 }));
 
@@ -181,10 +205,20 @@ export type InsertMessage = Omit<
   InferInsertModel<typeof message>,
   "createdAt" | "serial"
 >;
-export type Resource = InferSelectModel<typeof resources>;
+export type Resource = InferSelectModel<typeof resource>;
 export type InsertResource = Omit<
-  InferInsertModel<typeof resources>,
+  InferInsertModel<typeof resource>,
   "createdAt" | "updatedAt" | "id"
 >;
-export type Embedding = InferSelectModel<typeof embeddings>;
-export type InsertEmbedding = Omit<InferInsertModel<typeof embeddings>, "id">;
+
+export type Chunk = InferSelectModel<typeof chunk>;
+export type InsertChunk = Omit<
+  InferInsertModel<typeof chunk>,
+  "createdAt" | "updatedAt"
+>;
+
+export type Embedding = InferSelectModel<typeof embedding>;
+export type InsertEmbedding = Omit<
+  InferInsertModel<typeof embedding>,
+  "createdAt" | "id"
+>;

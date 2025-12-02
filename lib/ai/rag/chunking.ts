@@ -2,15 +2,13 @@ import { marked } from "marked";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { parseCodeAndChunk, createParserFactory, LanguageEnum } from "code-chopper";
 
-export interface Chunk {
-  content: string;
-  parent: string;
-  metadata: {
-    type: "text" | "code";
-    language?: string;
-    boundary?: unknown; // Para chunks de código
-    [key: string]: unknown;
-  };
+export interface ChunkGroup {
+  content: string; // Parent content (Context) -> Stored in Chunk table
+  type: "text" | "code";
+  language?: string;
+  boundaryType?: string;
+  boundaryName?: string;
+  embeddableContent: string[]; // Content to be embedded -> Stored in Embedding table (vectors)
 }
 
 const parserFactory = createParserFactory();
@@ -29,9 +27,9 @@ const childSplitter = new RecursiveCharacterTextSplitter({
   chunkOverlap: 50,
 });
 
-async function generateHybridChunks(text: string): Promise<Chunk[]> {
+async function generateHybridChunks(text: string): Promise<ChunkGroup[]> {
   const tokens = marked.lexer(text);
-  const chunks: Chunk[] = [];
+  const chunks: ChunkGroup[] = [];
 
   let currentTextBuffer = "";
 
@@ -63,35 +61,27 @@ async function generateHybridChunks(text: string): Promise<Chunk[]> {
   return chunks;
 }
 
-async function processText(text: string): Promise<Chunk[]> {
+async function processText(text: string): Promise<ChunkGroup[]> {
   // Paso 1: Generar Documentos Padre (Contexto)
   const parents = await parentSplitter.createDocuments([text]);
 
-  const chunks: Chunk[] = [];
+  const chunks: ChunkGroup[] = [];
 
   for (const parent of parents) {
     // Paso 2: Generar Documentos Hijos (Índice) desde el Padre
     const children = await childSplitter.createDocuments([parent.pageContent]);
 
-    children.forEach((child) => {
-      // CORRECCIÓN: No inyectamos contexto en 'content'.
-      // El 'content' debe ser limpio para que el vector sea preciso.
-      chunks.push({
-        content: child.pageContent,
-        parent: parent.pageContent,
-        metadata: {
-          type: "text",
-          // Guardamos el padre completo. Al recuperar, decidirás si usas
-          // el child (para citar) o el parent (para razonar).
-        },
-      });
+    chunks.push({
+      content: parent.pageContent,
+      type: "text",
+      embeddableContent: children.map((child) => child.pageContent),
     });
   }
 
   return chunks;
 }
 
-async function processCode(code: string, language: string): Promise<Chunk[]> {
+async function processCode(code: string, language: string): Promise<ChunkGroup[]> {
   try {
     const mappedLang = mapLanguage(language);
     if (!mappedLang) {
@@ -100,25 +90,25 @@ async function processCode(code: string, language: string): Promise<Chunk[]> {
 
     const boundaryChunks = await parseCodeAndChunk(code, mappedLang, parserFactory, {});
 
+    if (boundaryChunks.length === 0) {
+        return processText(code);
+    }
+
     return boundaryChunks.map((bc) => {
-      // Para código, SI mantenemos cierta inyección de metadatos en el contenido
-      // porque un trozo de código sin su nombre de función pierde significado semántico.
       const type = bc.boundary.type.replace(/_/g, " ");
       const name = bc.boundary.name || "anonymous";
       const injectedContent = `[${type}: ${name}] (${language})\n${bc.content}`;
 
       return {
-        content: injectedContent,
-        parent: code,
-        metadata: {
-          type: "code",
-          language: mappedLang,
-          boundary: bc.boundary,
-          // En código, el "padre" podría ser el archivo entero o el bloque,
-          // aquí simplificamos manteniendo el boundary como contexto específico.
-        },
+        content: bc.content, // The function/class code itself is the parent context
+        type: "code",
+        language: mappedLang,
+        boundaryType: bc.boundary.type,
+        boundaryName: bc.boundary.name,
+        embeddableContent: [injectedContent],
       };
     });
+
   } catch (error) {
     console.error("Error processing code chunk:", error);
     return processText(code);
@@ -140,7 +130,7 @@ function mapLanguage(lang: string): LanguageEnum | null {
   return map[lang.toLowerCase()] || null;
 }
 
-export async function generateChunks(text: string): Promise<Chunk[]> {
+export async function generateChunks(text: string): Promise<ChunkGroup[]> {
   // Limpieza previa: MDN y docs a veces tienen excesivos saltos de línea
   const cleanText = text.replace(/\n{3,}/g, "\n\n");
 

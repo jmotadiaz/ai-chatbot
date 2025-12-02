@@ -2,26 +2,38 @@
 
 
 import { embedMany, embed } from "ai";
-import { Chunk  } from "./chunking";
 import { providers } from "@/lib/ai/models/providers";
 
 export const QUERY_TYPES = ["RETRIEVAL_QUERY", "CODE_RETRIEVAL_QUERY"] as const;
 export type QueryType = (typeof QUERY_TYPES)[number];
 
-export interface Embedding extends Chunk {
+interface EmbeddingInput {
+  chunkId: string;
+  content: string;
+}
+
+// Nuevo output explícito
+interface EmbeddingOutput {
+  chunkId: string;
   embedding: number[];
 }
 
-export async function generateEmbeddings(chunks: Chunk[]): Promise<Embedding[]> {
-  const BATCH_SIZE = 99;
-  if (chunks.length === 0) {
+export async function generateEmbeddings(
+  inputs: EmbeddingInput[]
+): Promise<EmbeddingOutput[]> {
+  const BATCH_SIZE = 99; // Límite común de APIs
+  if (inputs.length === 0) {
     return [];
   }
-  console.log("Generating embeddings for", chunks.length, "chunks");
+  console.log("Generating embeddings for", inputs.length, "items");
 
-  const allEmbeddings: Embedding[] = [];
+  const results: EmbeddingOutput[] = [];
 
-  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+  // Procesamos en lotes
+  for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
+    const batch = inputs.slice(i, i + BATCH_SIZE);
+
+    // Solo enviamos el texto al modelo
     const { embeddings } = await embedMany({
       model: providers.embedding(),
       maxParallelCalls: 1,
@@ -31,18 +43,20 @@ export async function generateEmbeddings(chunks: Chunk[]): Promise<Embedding[]> 
           taskType: "RETRIEVAL_DOCUMENT",
         },
       },
-      values: chunks.slice(i, i + BATCH_SIZE).map((c) => c.content),
+      values: batch.map((item) => item.content),
     });
 
-    allEmbeddings.push(...embeddings.map((embedding, index) => ({
-      content: chunks[i + index].content,
-      embedding,
-      parent: chunks[i + index].parent,
-      metadata: chunks[i + index].metadata,
-    })));
+    // Mapeamos de vuelta usando la posición en el lote (garantizada por la API de AI SDK)
+    // pero vinculando explícitamente al ID del input original.
+    const batchResults = batch.map((item, index) => ({
+      chunkId: item.chunkId,
+      embedding: embeddings[index],
+    }));
+
+    results.push(...batchResults);
   }
 
-  return allEmbeddings;
+  return results;
 }
 
 

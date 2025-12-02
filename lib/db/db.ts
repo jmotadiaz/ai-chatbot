@@ -5,13 +5,15 @@ import {
   user,
   message,
   project,
-  resources,
-  embeddings,
+  resource,
+  chunk,
+  embedding,
   projectRelations,
   chatRelations,
   messageRelations,
-  resourcesRelations,
-  embeddingsRelations,
+  resourceRelations,
+  chunkRelations,
+  embeddingRelations,
 } from "@/lib/db/schema";
 
 // Define the schema for drizzle
@@ -20,13 +22,15 @@ export const schema = {
   chat,
   message,
   project,
-  resources,
-  embeddings,
+  resource,
+  chunk,
+  embedding,
   projectRelations,
   chatRelations,
   messageRelations,
-  resourcesRelations,
-  embeddingsRelations,
+  resourceRelations,
+  chunkRelations,
+  embeddingRelations,
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

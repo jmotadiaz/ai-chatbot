@@ -18,11 +18,14 @@ import {
   type User,
   project,
   type Project,
-  resources,
-  embeddings,
+  resource,
+  chunk,
+  embedding,
   type Resource,
+  type Chunk,
   type Embedding,
   type InsertResource,
+  type InsertChunk,
   type InsertEmbedding,
 } from "@/lib/db/schema";
 import { generateHashedPassword } from "@/lib/db/utils";
@@ -396,12 +399,12 @@ export const deleteProject =
 
 // RAG Database Operations
 
-export const createResource =
+export const saveResource =
   (data: InsertResource & { userId: string }): Transactional<Resource> =>
   async (tx) => {
     try {
       const [newResource] = await tx
-        .insert(resources)
+        .insert(resource)
         .values({
           ...data,
           createdAt: new Date(),
@@ -415,71 +418,94 @@ export const createResource =
     }
   };
 
+export const saveChunks =
+  (data: InsertChunk[]): Transactional<Chunk[]> =>
+  async (tx) => {
+    try {
+      return await tx.insert(chunk).values(data).returning();
+    } catch (error) {
+      console.error("Failed to create chunks");
+      throw error;
+    }
+  };
+
 export const createEmbeddings =
   (data: InsertEmbedding[]): Transactional<Embedding[]> =>
   async (tx) => {
     try {
-      return await tx.insert(embeddings).values(data).returning();
+      return await tx.insert(embedding).values(data).returning();
     } catch (error) {
       console.error("Failed to create embeddings");
       throw error;
     }
   };
 
-export type SimilarChunk = Pick<Embedding, "content" | "parent" | "metadata"> & {
+export type SimilarChunk = {
   id: string;
+  chunkId: string;
   similarity: number;
   resourceTitle: string;
   resourceUrl: string | null;
   embeddingId: string;
+  content: string;
+  type: string;
+  language: string | null;
+  boundaryType: string | null;
+  boundaryName: string | null;
 };
 
 export type SimilarChunks = Array<SimilarChunk>;
 
 export async function findSimilarChunks({
-  embedding,
+  embedding: queryEmbedding,
   userId,
   limit = 10,
   similarityThreshold = 0.6,
-  excludeParents = [],
+  previousChunkIds = [],
 }: {
   embedding: number[];
   userId: string;
   limit?: number;
   similarityThreshold?: number; // value between 0 and 1
-  excludeParents?: string[];
+  previousChunkIds?: string[];
 }): Promise<SimilarChunks> {
   try {
     const similarity = sql<number>`1 - (${
-      embeddings.embedding
-    } <=> ${JSON.stringify(embedding)}::vector)`;
+      embedding.embedding
+    } <=> ${JSON.stringify(queryEmbedding)}::vector)`;
 
     const whereConditions = [
       gt(similarity, similarityThreshold),
-      eq(resources.userId, userId),
+      eq(resource.userId, userId),
     ];
 
-    // Add exclusion condition if embedding IDs are provided
-    if (excludeParents.length > 0) {
-      whereConditions.push(notInArray(embeddings.parent, excludeParents));
+    // Add exclusion condition if chunk contents (parents) are provided
+    if (previousChunkIds.length > 0) {
+      whereConditions.push(notInArray(chunk.id, previousChunkIds));
     }
 
-    return await getDb()
+    const results = await getDb()
       .select({
-        id: embeddings.id,
-        resourceUrl: resources.url,
-        content: embeddings.content,
-        parent: embeddings.parent,
+        id: chunk.id,
+        chunkId: chunk.id,
+        resourceUrl: resource.url,
+        content: chunk.content,
         similarity,
-        resourceTitle: resources.title,
-        embeddingId: embeddings.id,
-        metadata: embeddings.metadata,
+        resourceTitle: resource.title,
+        embeddingId: embedding.id,
+        type: chunk.type,
+        language: chunk.language,
+        boundaryType: chunk.boundaryType,
+        boundaryName: chunk.boundaryName,
       })
-      .from(embeddings)
-      .innerJoin(resources, eq(embeddings.resourceId, resources.id))
+      .from(embedding)
+      .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
+      .innerJoin(resource, eq(chunk.resourceId, resource.id))
       .where(and(...whereConditions))
       .orderBy(desc(similarity))
       .limit(limit);
+
+    return results;
   } catch (error) {
     console.error("Failed to find similar chunks");
     throw error;
@@ -489,20 +515,20 @@ export async function findSimilarChunks({
 export const deleteResources =
   ({ userId }: { userId: string }): Transactional<Resource[]> =>
   async (tx) =>
-    tx.delete(resources).where(eq(resources.userId, userId)).returning();
+    tx.delete(resource).where(eq(resource.userId, userId)).returning();
 
 export async function getUniqueResourceTitlesByUserId(
   userId: string
 ): Promise<Array<{ title: string; url: string | null }>> {
   try {
     return await getDb()
-      .selectDistinctOn([resources.title], {
-        title: resources.title,
-        url: resources.url,
+      .selectDistinctOn([resource.title], {
+        title: resource.title,
+        url: resource.url,
       })
-      .from(resources)
-      .where(eq(resources.userId, userId))
-      .orderBy(resources.title);
+      .from(resource)
+      .where(eq(resource.userId, userId))
+      .orderBy(resource.title);
   } catch (error) {
     console.error("Failed to get unique resource titles by user id");
     throw error;
@@ -520,8 +546,8 @@ export const deleteResourcesByTitle =
   async (tx) => {
     try {
       return await tx
-        .delete(resources)
-        .where(and(eq(resources.title, title), eq(resources.userId, userId)))
+        .delete(resource)
+        .where(and(eq(resource.title, title), eq(resource.userId, userId)))
         .returning();
     } catch (error) {
       console.error("Failed to delete resource by title");

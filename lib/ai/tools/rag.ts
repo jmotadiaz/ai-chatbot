@@ -12,6 +12,20 @@ export interface RagFactoryArgs {
   ragMaxResources?: number;
 }
 
+function extractChunkIdsFromMessages(messages: ChatbotMessage[]): string[] {
+  const chunkIds: string[] = [];
+
+  for (const message of messages) {
+    for (const part of message.parts) {
+      if (part.type === "tool-rag") {
+        chunkIds.push(...(part.output?.map(({ chunkId }) => chunkId) || []));
+      }
+    }
+  }
+
+  return [...new Set(chunkIds)]; // Remove duplicates
+}
+
 export const ragFactory = ({
   userId,
   messages,
@@ -43,10 +57,9 @@ export const ragFactory = ({
       }),
       outputSchema: z.array(
         z.object({
-          id: z.string().describe("Embedding ID of the chunk."),
+          chunkId: z.string().describe("Embedding ID of the chunk."),
           content: z.string().describe("The content of the chunk."),
           resourceTitle: z.string().describe("The title of the resource."),
-          metadata: z.string().describe("Metadata of the resource."),
           resourceUrl: z
             .string()
             .nullable()
@@ -66,7 +79,7 @@ export const ragFactory = ({
           multiHopQueries,
           queryRewriting,
           queryType,
-          messages,
+          previousChunks: extractChunkIdsFromMessages(messages),
           userId,
           limit: ragMaxResources,
         });

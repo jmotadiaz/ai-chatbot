@@ -15,7 +15,7 @@ export interface VectorSearchInput {
   userId: string;
   limit?: number;
   similarityThreshold?: number; // 0-100
-  excludeParents?: string[];
+  previousChunkIds?: string[];
 }
 
 /**
@@ -27,7 +27,7 @@ export async function vectorSearch({
   userId,
   limit = 10,
   similarityThreshold = 0.6,
-  excludeParents = [],
+  previousChunkIds = [],
 }: VectorSearchInput): Promise<VectorSearchResult> {
   try {
     const userQueryEmbedded = await generateEmbedding(query, queryType);
@@ -36,7 +36,7 @@ export async function vectorSearch({
       userId,
       limit,
       similarityThreshold,
-      excludeParents,
+      previousChunkIds,
     });
 
     if (similarChunks.length === 0) {
@@ -73,7 +73,7 @@ const rerank = providers.rerank();
 const getUniqueResources = (resources: SimilarChunks) => {
   const map = new Map<string, SimilarChunk>();
   resources.forEach((doc) => {
-    map.set(doc.parent, doc);
+    map.set(doc.content, doc);
   });
   return Array.from(map.values());
 };
@@ -96,7 +96,7 @@ export async function rerankResources({
     // 2. Llamada a la API
     const results = await rerank({
       query: query,
-      documents: uniqueResources.map(({parent}) => parent),
+      documents: uniqueResources.map(({content}) => content),
       topN: topN,
     });
 

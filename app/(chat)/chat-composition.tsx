@@ -26,7 +26,6 @@ import { filterTools } from "@/lib/ai/tools/utils";
 import { dbMessageToChatbotMessage } from "@/lib/ai/utils";
 import type { ChatProviderProps } from "@/app/(chat)/chat-provider";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
-import { RAG_TOOL } from "@/lib/ai/tools/types";
 
 interface ChatCompositionProps {
   chatId?: string;
@@ -52,7 +51,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     webSearchNumResults: defaultWebSearchNumResults,
     ragSimilarityPercentage: defaultRagSimilarityPercentage,
     ragMaxResources: defaultRagMaxResources,
-    tools: [RAG_TOOL],
+    tools: [],
   };
 
   if (chatId) {
