@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Upload, FileText, Link as LinkIcon } from "lucide-react";
-import { useUploadRagResources } from "@/lib/ai/hooks/use-upload-rag-resources";
+import { uploadResources } from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ export const RAGUploadForm = () => {
   const [url, setUrl] = useState("");
   const [container, setContainer] = useState("");
   const [excludeSelectors, setExcludeSelectors] = useState("");
-  const { upload, isLoading } = useUploadRagResources();
+  const [isLoading, startTransition] = useTransition();
 
   const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -28,7 +28,7 @@ export const RAGUploadForm = () => {
 
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!jsonFile && !url) {
       toast.error(
@@ -37,34 +37,41 @@ export const RAGUploadForm = () => {
       return;
     }
 
-    try {
-      const formData = new FormData();
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
 
-      if (jsonFile) {
-        formData.append("jsonFile", jsonFile);
+        if (jsonFile) {
+          formData.append("jsonFile", jsonFile);
+        }
+
+        if (url) {
+          formData.append("url", url);
+          if (container) formData.append("container", container);
+          if (excludeSelectors)
+            formData.append("excludeSelectors", excludeSelectors);
+        }
+
+        const result = await uploadResources(formData);
+
+        if (result.success) {
+          toast.success(
+            `Successfully processed ${result.resourcesCreated} resources`
+          );
+          setJsonFile(null);
+          setUrl("");
+          setContainer("");
+          setExcludeSelectors("");
+          const form = e.target as HTMLFormElement;
+          form.reset();
+        } else {
+          toast.error(result.error || "Failed to process resources");
+        }
+      } catch (error) {
+        console.error("Error uploading RAG resources:", error);
+        toast.error("An error occurred while uploading resources");
       }
-
-      if (url) {
-        formData.append("url", url);
-        if (container) formData.append("container", container);
-        if (excludeSelectors)
-          formData.append("excludeSelectors", excludeSelectors);
-      }
-
-      const result = await upload(formData);
-
-      if (result.success) {
-        setJsonFile(null);
-        setUrl("");
-        setContainer("");
-        setExcludeSelectors("");
-        const form = e.target as HTMLFormElement;
-        form.reset();
-      }
-    } catch (error) {
-      console.error("Error uploading RAG resources:", error);
-      toast.error("An error occurred while uploading resources");
-    }
+    });
   };
 
   return (

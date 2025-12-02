@@ -1,6 +1,5 @@
 import { marked } from "marked";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { parseCodeAndChunk, createParserFactory, LanguageEnum } from "code-chopper";
+import { RecursiveCharacterTextSplitter, SupportedTextSplitterLanguages } from "@langchain/textsplitters";
 
 export interface ChunkGroup {
   content: string; // Parent content (Context) -> Stored in Chunk table
@@ -11,7 +10,7 @@ export interface ChunkGroup {
   embeddableContent: string[]; // Content to be embedded -> Stored in Embedding table (vectors)
 }
 
-const parserFactory = createParserFactory();
+export type SupportedLanguage = typeof SupportedTextSplitterLanguages[number];
 
 // 1. Splitter Padre: Define la "Ventana de Contexto" para el LLM.
 // Mantenemos 2000 caracteres, que es un buen tamaño para pasar al LLM como respuesta.
@@ -26,6 +25,26 @@ const childSplitter = new RecursiveCharacterTextSplitter({
   chunkSize: 400,
   chunkOverlap: 50,
 });
+
+const mapLanguage = (lang: string): SupportedLanguage | null => {
+  const normalized = lang.toLowerCase();
+
+  const map: Record<string, SupportedLanguage> = {
+    ts: "js", typescript: "js", // LangChain usa 'js' para TS también
+    js: "js", javascript: "js",
+    py: "python", python: "python",
+    go: "go",
+    java: "java",
+    cpp: "cpp", "c++": "cpp",
+    rb: "ruby", ruby: "ruby",
+    html: "html",
+    php: "php",
+    rust: "rust",
+    // Puedes añadir más según la documentación de LangChain
+  };
+
+  return map[normalized] || null;
+}
 
 async function generateHybridChunks(text: string): Promise<ChunkGroup[]> {
   const tokens = marked.lexer(text);
@@ -84,47 +103,44 @@ async function processText(text: string): Promise<ChunkGroup[]> {
 async function processCode(code: string, language: string): Promise<ChunkGroup[]> {
   try {
     const mappedLang = mapLanguage(language);
+
+    // Si el lenguaje no es soportado por LangChain, lo tratamos como texto normal
     if (!mappedLang) {
        return processText(code);
     }
 
-    // 1. Obtenemos los bloques lógicos (funciones, clases)
-    const boundaryChunks = await parseCodeAndChunk(code, mappedLang, parserFactory, {});
+    // 1. Splitter INTELIGENTE (Code-Aware)
+    // Cortará preferentemente en definiciones de clases/funciones
+    const parentSplitter = RecursiveCharacterTextSplitter.fromLanguage(mappedLang, {
+      chunkSize: 2000,
+      chunkOverlap: 200
+    });
 
-    if (boundaryChunks.length === 0) {
-        return processText(code);
-    }
+    // 2. Splitter Hijo (Para embeddings pequeños dentro del bloque de código)
+    const childSplitter = RecursiveCharacterTextSplitter.fromLanguage(mappedLang, {
+        chunkSize: 400,
+        chunkOverlap: 50
+    });
 
+    const parentDocs = await parentSplitter.createDocuments([code]);
     const chunks: ChunkGroup[] = [];
 
-    // 2. Iteramos sobre cada bloque lógico
-    for (const bc of boundaryChunks) {
-      const type = bc.boundary.type.replace(/_/g, " ");
-      const name = bc.boundary.name || "anonymous";
-      // Cabecera de contexto: ej: "[function: calculateTotal] (typescript)"
-      const header = `[${type}: ${name}] (${language})`;
+    for (const parent of parentDocs) {
+        // Estrategia Small-to-Big dentro del código:
+        // Dividimos el bloque grande (función/clase) en trozos pequeños para el vector search
+        const childDocs = await childSplitter.createDocuments([parent.pageContent]);
 
-      const fullContent = bc.content; // El bloque completo (Padre)
+        // Inyectamos una cabecera simple para dar contexto al embedding huérfano
+        const embeddableContent = childDocs.map(child =>
+            `[${mappedLang} snippet]\n${child.pageContent}`
+        );
 
-      // 3. Aplicamos Small-to-Big: Generamos hijos pequeños usando el childSplitter
-      //    Esto divide el cuerpo de la función si es muy larga.
-      const childDocs = await childSplitter.createDocuments([fullContent]);
-
-      // 4. Preparamos los contenidos para embeddings
-      const embeddableContent = childDocs.map(doc => {
-          // TRUCO: A cada trozo pequeño le pegamos la cabecera.
-          // Así, si el trozo es de la línea 50 a la 60, el embedding sabe que pertenece a la función X.
-          return `${header}\n${doc.pageContent}`;
-      });
-
-      chunks.push({
-        content: fullContent, // Contexto completo para el LLM
-        type: "code",
-        language: mappedLang,
-        boundaryType: bc.boundary.type,
-        boundaryName: bc.boundary.name,
-        embeddableContent: embeddableContent, // Múltiples vectores pequeños apuntando al padre
-      });
+        chunks.push({
+            content: parent.pageContent, // El LLM recibe el bloque completo
+            type: "code",
+            language: mappedLang,
+            embeddableContent: embeddableContent
+        });
     }
 
     return chunks;
@@ -133,21 +149,6 @@ async function processCode(code: string, language: string): Promise<ChunkGroup[]
     console.error("Error processing code chunk:", error);
     return processText(code);
   }
-}
-
-function mapLanguage(lang: string): LanguageEnum | null {
-  const map: Record<string, LanguageEnum> = {
-    ts: "typescript", typescript: "typescript",
-    js: "javascript", javascript: "javascript",
-    py: "python", python: "python",
-    go: "go", rust: "rust", java: "java",
-    c: "c", cpp: "cpp", "c++": "cpp",
-    cs: "csharp", csharp: "csharp",
-    rb: "ruby", ruby: "ruby",
-    html: "html", css: "css",
-    sh: "bash", bash: "bash", shell: "bash",
-  };
-  return map[lang.toLowerCase()] || null;
 }
 
 export async function generateChunks(text: string): Promise<ChunkGroup[]> {

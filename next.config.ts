@@ -15,15 +15,6 @@ const nextConfig: NextConfig = {
   },
 
   ...(disableDevIndicators && { devIndicators: false }),
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.node$/,
-      use: "node-loader",
-    });
-    // Exclude tree-sitter binaries from being bundled by webpack
-    config.externals = [...(config.externals || []), "tree-sitter", "tree-sitter-bash", "tree-sitter-typescript", "code-chopper"];
-    return config;
-  },
 };
 
 
