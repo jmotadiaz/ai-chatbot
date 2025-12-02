@@ -88,26 +88,46 @@ async function processCode(code: string, language: string): Promise<ChunkGroup[]
        return processText(code);
     }
 
+    // 1. Obtenemos los bloques lógicos (funciones, clases)
     const boundaryChunks = await parseCodeAndChunk(code, mappedLang, parserFactory, {});
 
     if (boundaryChunks.length === 0) {
         return processText(code);
     }
 
-    return boundaryChunks.map((bc) => {
+    const chunks: ChunkGroup[] = [];
+
+    // 2. Iteramos sobre cada bloque lógico
+    for (const bc of boundaryChunks) {
       const type = bc.boundary.type.replace(/_/g, " ");
       const name = bc.boundary.name || "anonymous";
-      const injectedContent = `[${type}: ${name}] (${language})\n${bc.content}`;
+      // Cabecera de contexto: ej: "[function: calculateTotal] (typescript)"
+      const header = `[${type}: ${name}] (${language})`;
 
-      return {
-        content: bc.content, // The function/class code itself is the parent context
+      const fullContent = bc.content; // El bloque completo (Padre)
+
+      // 3. Aplicamos Small-to-Big: Generamos hijos pequeños usando el childSplitter
+      //    Esto divide el cuerpo de la función si es muy larga.
+      const childDocs = await childSplitter.createDocuments([fullContent]);
+
+      // 4. Preparamos los contenidos para embeddings
+      const embeddableContent = childDocs.map(doc => {
+          // TRUCO: A cada trozo pequeño le pegamos la cabecera.
+          // Así, si el trozo es de la línea 50 a la 60, el embedding sabe que pertenece a la función X.
+          return `${header}\n${doc.pageContent}`;
+      });
+
+      chunks.push({
+        content: fullContent, // Contexto completo para el LLM
         type: "code",
         language: mappedLang,
         boundaryType: bc.boundary.type,
         boundaryName: bc.boundary.name,
-        embeddableContent: [injectedContent],
-      };
-    });
+        embeddableContent: embeddableContent, // Múltiples vectores pequeños apuntando al padre
+      });
+    }
+
+    return chunks;
 
   } catch (error) {
     console.error("Error processing code chunk:", error);

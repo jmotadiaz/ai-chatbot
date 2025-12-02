@@ -128,9 +128,9 @@ export const retrieveResources = async ({
       topN: limit,
     });
 
-  return finalResults.map(({chunkId, content, resourceTitle, resourceUrl}) => {
+  return finalResults.map(({id, content, resourceTitle, resourceUrl}) => {
     return ({
-      chunkId,
+      id,
       resourceTitle,
       resourceUrl,
       content,

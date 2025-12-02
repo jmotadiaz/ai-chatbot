@@ -18,7 +18,7 @@ function extractChunkIdsFromMessages(messages: ChatbotMessage[]): string[] {
   for (const message of messages) {
     for (const part of message.parts) {
       if (part.type === "tool-rag") {
-        chunkIds.push(...(part.output?.map(({ chunkId }) => chunkId) || []));
+        chunkIds.push(...(part.output?.map(({ id }) => id) || []));
       }
     }
   }
@@ -57,7 +57,7 @@ export const ragFactory = ({
       }),
       outputSchema: z.array(
         z.object({
-          chunkId: z.string().describe("Embedding ID of the chunk."),
+          id: z.string().describe("Embedding ID of the chunk."),
           content: z.string().describe("The content of the chunk."),
           resourceTitle: z.string().describe("The title of the resource."),
           resourceUrl: z

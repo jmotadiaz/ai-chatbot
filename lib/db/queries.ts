@@ -442,7 +442,6 @@ export const createEmbeddings =
 
 export type SimilarChunk = {
   id: string;
-  chunkId: string;
   similarity: number;
   resourceTitle: string;
   resourceUrl: string | null;
@@ -487,7 +486,6 @@ export async function findSimilarChunks({
     const results = await getDb()
       .select({
         id: chunk.id,
-        chunkId: chunk.id,
         resourceUrl: resource.url,
         content: chunk.content,
         similarity,
