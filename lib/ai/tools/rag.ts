@@ -1,37 +1,15 @@
 import { InferUITools, tool, ToolSet } from "ai";
 import { z } from "zod";
-import { retrieve } from "@/lib/ai/rag/retrieve";
 import type { ChatbotMessage } from "@/lib/ai/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
-import type { SimilarChunk } from "@/lib/db/queries";
-import { QUERY_TYPES } from "@/lib/ai/rag/generate-embeddings";
+import { QUERY_TYPES } from "@/lib/ai/rag/embeddings";
 import { RagChunk } from "@/lib/ai/rag/types";
-import { rerankDocuments } from "@/lib/ai/rag/rerank";
+import { retrieveResources } from "@/lib/ai/rag/pipelines";
 
 export interface RagFactoryArgs {
   messages: ChatbotMessage[];
   userId: string;
   ragMaxResources?: number;
-}
-
-const K_VECTOR_SEARCHES = 10;
-const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.50;
-
-/**
- * Extract embedding IDs from previous messages
- */
-function extractEmbeddingParentsFromMessages(messages: ChatbotMessage[]): string[] {
-  const embeddingIds: string[] = [];
-
-  for (const message of messages) {
-    for (const part of message.parts) {
-      if (part.type === "tool-rag") {
-        embeddingIds.push(...(part.output?.map(({ content }) => content) || []));
-      }
-    }
-  }
-
-  return [...new Set(embeddingIds)]; // Remove duplicates
 }
 
 export const ragFactory = ({
@@ -84,47 +62,13 @@ export const ragFactory = ({
         console.log("RAG tool called with queryRewriting:", queryRewriting);
         console.log("RAG tool called with queryType:", queryType);
 
-        const results = await Promise.all(
-          multiHopQueries.map((query) =>
-            retrieve({
-              query,
-              queryType,
-              userId,
-              limit: K_VECTOR_SEARCHES,
-              similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
-              excludeParents: extractEmbeddingParentsFromMessages(messages),
-            })
-          )
-        );
-
-        const vectorSearchResults: SimilarChunk[] = [];
-
-        for (const result of results) {
-          if (result.success && result.similarChunks) {
-            vectorSearchResults.push(...result.similarChunks);
-          } else if (!result.success) {
-            console.warn("One of the RAG queries failed:", result.error);
-          }
-        }
-
-        if (vectorSearchResults.length === 0) {
-          console.error("No resources or similar chunks found for any query");
-          return [];
-        }
-
-        const finalResults = await rerankDocuments({
-            query: queryRewriting,
-            documents: vectorSearchResults,
-            topN: ragMaxResources,
-          });
-
-        return finalResults.map(({parent, metadata, resourceTitle, resourceUrl}) => {
-          return ({
-            resourceTitle,
-            resourceUrl,
-            content: parent,
-            metadata: JSON.stringify(metadata),
-          })
+        return retrieveResources({
+          multiHopQueries,
+          queryRewriting,
+          queryType,
+          messages,
+          userId,
+          limit: ragMaxResources,
         });
       },
     }),

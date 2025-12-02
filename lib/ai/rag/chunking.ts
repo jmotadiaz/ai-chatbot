@@ -29,7 +29,7 @@ const childSplitter = new RecursiveCharacterTextSplitter({
   chunkOverlap: 50,
 });
 
-export async function generateHybridChunks(text: string): Promise<Chunk[]> {
+async function generateHybridChunks(text: string): Promise<Chunk[]> {
   const tokens = marked.lexer(text);
   const chunks: Chunk[] = [];
 
@@ -138,4 +138,12 @@ function mapLanguage(lang: string): LanguageEnum | null {
     sh: "bash", bash: "bash", shell: "bash",
   };
   return map[lang.toLowerCase()] || null;
+}
+
+export async function generateChunks(text: string): Promise<Chunk[]> {
+  // Limpieza previa: MDN y docs a veces tienen excesivos saltos de línea
+  const cleanText = text.replace(/\n{3,}/g, "\n\n");
+
+  const chunks = await generateHybridChunks(cleanText);
+  return chunks;
 }

@@ -2,7 +2,7 @@
 
 
 import { embedMany, embed } from "ai";
-import { generateHybridChunks, Chunk  } from "./chunking";
+import { Chunk  } from "./chunking";
 import { providers } from "@/lib/ai/models/providers";
 
 export const QUERY_TYPES = ["RETRIEVAL_QUERY", "CODE_RETRIEVAL_QUERY"] as const;
@@ -10,14 +10,6 @@ export type QueryType = (typeof QUERY_TYPES)[number];
 
 export interface Embedding extends Chunk {
   embedding: number[];
-}
-
-export async function generateChunks(text: string): Promise<Chunk[]> {
-  // Limpieza previa: MDN y docs a veces tienen excesivos saltos de línea
-  const cleanText = text.replace(/\n{3,}/g, "\n\n");
-
-  const chunks = await generateHybridChunks(cleanText);
-  return chunks;
 }
 
 export async function generateEmbeddings(chunks: Chunk[]): Promise<Embedding[]> {
