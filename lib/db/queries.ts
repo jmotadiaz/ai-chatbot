@@ -90,6 +90,8 @@ export const saveChat =
     defaultTemperature,
     defaultTopP,
     defaultTopK,
+    ragMaxResources,
+    webSearchNumResults,
     tools,
     projectId,
   }: InsertChat): Transactional<Chat> =>
@@ -105,6 +107,8 @@ export const saveChat =
           defaultTemperature,
           defaultTopP,
           defaultTopK,
+          ragMaxResources,
+          webSearchNumResults,
           tools,
           projectId,
           createdAt: new Date(),
@@ -130,6 +134,8 @@ export const updateChat =
         | "defaultTemperature"
         | "defaultTopP"
         | "defaultTopK"
+        | "ragMaxResources"
+        | "webSearchNumResults"
         | "tools"
         | "projectId"
       >
@@ -273,6 +279,8 @@ export const createProject =
     defaultTopK,
     systemPrompt,
     hasPromptRefiner,
+    ragMaxResources,
+    webSearchNumResults,
     tools,
   }: InsertProject): Transactional<Project> =>
   (tx) => {
@@ -287,6 +295,8 @@ export const createProject =
         defaultTopK,
         systemPrompt,
         hasPromptRefiner,
+        ragMaxResources,
+        webSearchNumResults,
         tools,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -416,7 +426,7 @@ export const createEmbeddings =
     }
   };
 
-export type SimilarChunk = Pick<Embedding, "content" | "parent"> & {
+export type SimilarChunk = Pick<Embedding, "content" | "parent" | "metadata"> & {
   id: string;
   similarity: number;
   resourceTitle: string;
@@ -463,6 +473,7 @@ export async function findSimilarChunks({
         similarity,
         resourceTitle: resources.title,
         embeddingId: embeddings.id,
+        metadata: embeddings.metadata,
       })
       .from(embeddings)
       .innerJoin(resources, eq(embeddings.resourceId, resources.id))

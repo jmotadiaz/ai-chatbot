@@ -68,6 +68,7 @@ export const ragFactory = ({
           id: z.string().describe("Embedding ID of the chunk."),
           content: z.string().describe("The content of the chunk."),
           resourceTitle: z.string().describe("The title of the resource."),
+          metadata: z.string().describe("Metadata of the resource."),
           resourceUrl: z
             .string()
             .nullable()
@@ -117,10 +118,14 @@ export const ragFactory = ({
             topN: ragMaxResources,
           });
 
-        return finalResults.map(({parent, ...chunk}) => ({
-          ...chunk,
-          content: parent,
-        }));
+        return finalResults.map(({parent, metadata, resourceTitle, resourceUrl}) => {
+          return ({
+            resourceTitle,
+            resourceUrl,
+            content: parent,
+            metadata: JSON.stringify(metadata),
+          })
+        });
       },
     }),
   } satisfies ToolSet);

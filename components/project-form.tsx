@@ -20,6 +20,7 @@ import {
   defaultTemperature,
   CHAT_MODELS,
   defaultWebSearchNumResults,
+  defaultRagMaxResources,
 } from "@/lib/ai/models/definition";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
@@ -53,7 +54,10 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     project?.defaultTemperature ?? defaultTemperature
   );
   const [webSearchNumResults, setWebSearchNumResults] = useState<number>(
-    defaultWebSearchNumResults
+    project?.webSearchNumResults ?? defaultWebSearchNumResults
+  );
+  const [ragMaxResources, setRagMaxResources] = useState<number>(
+    project?.ragMaxResources ?? defaultRagMaxResources
   );
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
@@ -87,6 +91,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
         systemPrompt,
         tools,
         hasPromptRefiner,
+        ragMaxResources,
+        webSearchNumResults,
       };
 
       if (project) {
@@ -214,6 +220,21 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                     Tool Configuration
                   </h3>
                   <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-10">
+                    {hasTool(RAG_TOOL) && (
+                      <div className="flex flex-col gap-2">
+                        <Label className="text-base" htmlFor="ragMaxResources">
+                          RAG Max Resources
+                        </Label>
+                        <InputNumber
+                          id="ragMaxResources"
+                          value={ragMaxResources}
+                          min={1}
+                          max={50}
+                          step={1}
+                          onChange={setRagMaxResources}
+                        />
+                      </div>
+                    )}
                     {hasTool(WEB_SEARCH_TOOL) && (
                       <div className="flex flex-col gap-2">
                         <Label
@@ -264,6 +285,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 title={title}
                 preventChatPersistence={true}
                 webSearchNumResults={webSearchNumResults}
+                ragMaxResources={ragMaxResources}
               >
                 <Chat className="flex-1 justify-center" />
               </ChatProvider>

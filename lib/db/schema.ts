@@ -12,6 +12,7 @@ import {
   index,
   serial,
   boolean,
+  integer,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
@@ -36,6 +37,8 @@ export const project = pgTable("Project", {
   defaultTemperature: real("defaultTemperature"),
   defaultTopP: real("defaultTopP"),
   defaultTopK: real("defaultTopK"),
+  ragMaxResources: integer("ragMaxResources"),
+  webSearchNumResults: integer("webSearchNumResults"),
   systemPrompt: text("systemPrompt").notNull(),
   hasPromptRefiner: boolean("hasMetaPrompt").default(false).notNull(),
   tools: varchar("tools", { length: 100 }).array(),
@@ -60,6 +63,8 @@ export const chat = pgTable("Chat", {
   defaultTemperature: real("defaultTemperature"),
   defaultTopP: real("defaultTopP"),
   defaultTopK: real("defaultTopK"),
+  ragMaxResources: integer("ragMaxResources"),
+  webSearchNumResults: integer("webSearchNumResults"),
   tools: varchar("tools", { length: 100 }).array(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()

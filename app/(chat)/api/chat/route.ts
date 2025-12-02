@@ -266,6 +266,8 @@ export const POST = withAuth(async (user, req) => {
                         {
                           defaultModel: selectedModel,
                           defaultTemperature: temperature,
+                          ragMaxResources: safeRagMaxResources,
+                          webSearchNumResults: safeWebSearchNumResults,
                           tools,
                         }
                       )(tx)
@@ -275,6 +277,8 @@ export const POST = withAuth(async (user, req) => {
                         projectId,
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
+                        ragMaxResources: safeRagMaxResources,
+                        webSearchNumResults: safeWebSearchNumResults,
                         tools,
                       })(tx);
                   await deleteMessageById(messageId)(tx);

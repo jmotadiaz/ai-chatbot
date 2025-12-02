@@ -87,7 +87,9 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       tools: filterTools(chat.tools || []),
       metaPrompt: metaPrompt,
       preventChatPersistence: temporary,
-      webSearchNumResults: defaultWebSearchNumResults,
+      webSearchNumResults:
+        chat.webSearchNumResults ?? defaultWebSearchNumResults,
+      ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,
     };
   } else if (projectId) {
     const project = await getProjectById(projectId);
@@ -105,7 +107,9 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       title: project.name,
       tools: filterTools(project.tools || []),
       preventChatPersistence: temporary,
-      webSearchNumResults: defaultWebSearchNumResults,
+      webSearchNumResults:
+        project.webSearchNumResults ?? defaultWebSearchNumResults,
+      ragMaxResources: project.ragMaxResources ?? defaultRagMaxResources,
     };
   }
 
