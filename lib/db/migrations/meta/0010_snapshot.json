@@ -1,5 +1,5 @@
 {
-  "id": "395e3ff0-2723-4303-9c71-e91c9c76c9e8",
+  "id": "cd2ea568-e3ed-4d0a-a528-e8538ae03659",
   "prevId": "0d69cdaf-cba6-4cdf-8a09-14d95309393f",
   "version": "7",
   "dialect": "postgresql",
@@ -54,6 +54,18 @@
         "defaultTopK": {
           "name": "defaultTopK",
           "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ragMaxResources": {
+          "name": "ragMaxResources",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webSearchNumResults": {
+          "name": "webSearchNumResults",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -113,8 +125,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.embeddings": {
-      "name": "embeddings",
+    "public.Chunk": {
+      "name": "Chunk",
       "schema": "",
       "columns": {
         "id": {
@@ -136,9 +148,81 @@
           "primaryKey": false,
           "notNull": true
         },
-        "parent": {
-          "name": "parent",
+        "type": {
+          "name": "type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boundaryType": {
+          "name": "boundaryType",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boundaryName": {
+          "name": "boundaryName",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Chunk_resourceId_Resource_id_fk": {
+          "name": "Chunk_resourceId_Resource_id_fk",
+          "tableFrom": "Chunk",
+          "tableTo": "Resource",
+          "columnsFrom": [
+            "resourceId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Embedding": {
+      "name": "Embedding",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "chunkId": {
+          "name": "chunkId",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -148,11 +232,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "metadata": {
-          "name": "metadata",
-          "type": "json",
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
@@ -174,12 +259,12 @@
         }
       },
       "foreignKeys": {
-        "embeddings_resourceId_resources_id_fk": {
-          "name": "embeddings_resourceId_resources_id_fk",
-          "tableFrom": "embeddings",
-          "tableTo": "resources",
+        "Embedding_chunkId_Chunk_id_fk": {
+          "name": "Embedding_chunkId_Chunk_id_fk",
+          "tableFrom": "Embedding",
+          "tableTo": "Chunk",
           "columnsFrom": [
-            "resourceId"
+            "chunkId"
           ],
           "columnsTo": [
             "id"
@@ -320,6 +405,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "ragMaxResources": {
+          "name": "ragMaxResources",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webSearchNumResults": {
+          "name": "webSearchNumResults",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "systemPrompt": {
           "name": "systemPrompt",
           "type": "text",
@@ -376,8 +473,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.resources": {
-      "name": "resources",
+    "public.Resource": {
+      "name": "Resource",
       "schema": "",
       "columns": {
         "id": {
@@ -422,9 +519,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "resources_userId_User_id_fk": {
-          "name": "resources_userId_User_id_fk",
-          "tableFrom": "resources",
+        "Resource_userId_User_id_fk": {
+          "name": "Resource_userId_User_id_fk",
+          "tableFrom": "Resource",
           "tableTo": "User",
           "columnsFrom": [
             "userId"

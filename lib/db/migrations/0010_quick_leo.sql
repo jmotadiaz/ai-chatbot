@@ -28,6 +28,10 @@ CREATE TABLE "Resource" (
 --> statement-breakpoint
 DROP TABLE "embeddings" CASCADE;--> statement-breakpoint
 DROP TABLE "resources" CASCADE;--> statement-breakpoint
+ALTER TABLE "Chat" ADD COLUMN "ragMaxResources" integer;--> statement-breakpoint
+ALTER TABLE "Chat" ADD COLUMN "webSearchNumResults" integer;--> statement-breakpoint
+ALTER TABLE "Project" ADD COLUMN "ragMaxResources" integer;--> statement-breakpoint
+ALTER TABLE "Project" ADD COLUMN "webSearchNumResults" integer;--> statement-breakpoint
 ALTER TABLE "Chunk" ADD CONSTRAINT "Chunk_resourceId_Resource_id_fk" FOREIGN KEY ("resourceId") REFERENCES "public"."Resource"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "Embedding" ADD CONSTRAINT "Embedding_chunkId_Chunk_id_fk" FOREIGN KEY ("chunkId") REFERENCES "public"."Chunk"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "Resource" ADD CONSTRAINT "Resource_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
