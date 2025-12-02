@@ -2,7 +2,7 @@
 import "server-only";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
-import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, sql, notInArray } from "drizzle-orm";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 
 import type { PgTransaction } from "drizzle-orm/pg-core";
@@ -416,7 +416,7 @@ export const createEmbeddings =
     }
   };
 
-export type SimilarChunk = Pick<Embedding, "content"> & {
+export type SimilarChunk = Pick<Embedding, "content" | "parent"> & {
   id: string;
   similarity: number;
   resourceTitle: string;
@@ -429,15 +429,15 @@ export type SimilarChunks = Array<SimilarChunk>;
 export async function findSimilarChunks({
   embedding,
   userId,
-  limit = 5,
-  similarityThreshold = 0.7,
-  excludeEmbeddingIds = [],
+  limit = 10,
+  similarityThreshold = 0.6,
+  excludeParents = [],
 }: {
   embedding: number[];
   userId: string;
   limit?: number;
   similarityThreshold?: number; // value between 0 and 1
-  excludeEmbeddingIds?: string[];
+  excludeParents?: string[];
 }): Promise<SimilarChunks> {
   try {
     const similarity = sql<number>`1 - (${
@@ -450,12 +450,8 @@ export async function findSimilarChunks({
     ];
 
     // Add exclusion condition if embedding IDs are provided
-    if (excludeEmbeddingIds.length > 0) {
-      whereConditions.push(
-        sql`${embeddings.id} NOT IN (${sql.raw(
-          excludeEmbeddingIds.map((id) => `'${id}'`).join(", ")
-        )})`
-      );
+    if (excludeParents.length > 0) {
+      whereConditions.push(notInArray(embeddings.parent, excludeParents));
     }
 
     return await getDb()
@@ -463,6 +459,7 @@ export async function findSimilarChunks({
         id: embeddings.id,
         resourceUrl: resources.url,
         content: embeddings.content,
+        parent: embeddings.parent,
         similarity,
         resourceTitle: resources.title,
         embeddingId: embeddings.id,

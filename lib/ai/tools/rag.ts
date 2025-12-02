@@ -12,23 +12,21 @@ export interface RagFactoryArgs {
   messages: ChatbotMessage[];
   userId: string;
   ragMaxResources?: number;
-  ragSimilarityPercentage?: number;
 }
 
-const K_VECTOR_SEARCHES = 50;
+const K_VECTOR_SEARCHES = 10;
 const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.50;
-const K_RERANK = 15;
 
 /**
  * Extract embedding IDs from previous messages
  */
-function extractEmbeddingIdsFromMessages(messages: ChatbotMessage[]): string[] {
+function extractEmbeddingParentsFromMessages(messages: ChatbotMessage[]): string[] {
   const embeddingIds: string[] = [];
 
   for (const message of messages) {
     for (const part of message.parts) {
       if (part.type === "tool-rag") {
-        embeddingIds.push(...(part.output?.map(({ id }) => id) || []));
+        embeddingIds.push(...(part.output?.map(({ content }) => content) || []));
       }
     }
   }
@@ -39,6 +37,7 @@ function extractEmbeddingIdsFromMessages(messages: ChatbotMessage[]): string[] {
 export const ragFactory = ({
   userId,
   messages,
+  ragMaxResources = 6,
 }: RagFactoryArgs) =>
   ({
     [RAG_TOOL]: tool({
@@ -48,9 +47,9 @@ export const ragFactory = ({
         multiHopQueries: z
           .array(z.string())
           .min(1)
-          .max(3)
+          .max(5)
           .describe(
-            "An array of search queries to perform a Multi-hop QA (max 3 queries), maximizing relevant keywords to retrieve relevant corpus segments. Each query MUST be in english and optimized for rag search."
+            "An array of search queries to perform a Multi-hop QA (max 5 queries), maximizing relevant keywords to retrieve relevant corpus segments. Each query MUST be in english and optimized for rag search."
           ),
         queryRewriting: z
           .string()
@@ -92,50 +91,36 @@ export const ragFactory = ({
               userId,
               limit: K_VECTOR_SEARCHES,
               similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
-              excludeEmbeddingIds: extractEmbeddingIdsFromMessages(messages),
+              excludeParents: extractEmbeddingParentsFromMessages(messages),
             })
           )
         );
 
-        const allChunks: SimilarChunk[] = [];
+        const vectorSearchResults: SimilarChunk[] = [];
 
         for (const result of results) {
           if (result.success && result.similarChunks) {
-            allChunks.push(...result.similarChunks);
+            vectorSearchResults.push(...result.similarChunks);
           } else if (!result.success) {
             console.warn("One of the RAG queries failed:", result.error);
           }
         }
 
-        if (allChunks.length === 0) {
+        if (vectorSearchResults.length === 0) {
           console.error("No resources or similar chunks found for any query");
           return [];
         }
 
-        const uniqueChunksMap = new Map<string, RagChunk>();
-
-        for (const chunk of allChunks) {
-          if (!uniqueChunksMap.has(chunk.id)) {
-            uniqueChunksMap.set(chunk.id, {
-              id: chunk.id,
-              content: chunk.content,
-              resourceTitle: chunk.resourceTitle,
-              resourceUrl: chunk.resourceUrl,
-            });
-          }
-        }
-
-        const vectorSearchResults = Array.from(uniqueChunksMap.values());
-
-        const finalResults = vectorSearchResults.length > K_RERANK
-          ? await rerankDocuments({
+        const finalResults = await rerankDocuments({
             query: queryRewriting,
             documents: vectorSearchResults,
-            topN: K_RERANK,
-          })
-          : vectorSearchResults;
+            topN: ragMaxResources,
+          });
 
-        return finalResults;
+        return finalResults.map(({parent, ...chunk}) => ({
+          ...chunk,
+          content: parent,
+        }));
       },
     }),
   } satisfies ToolSet);

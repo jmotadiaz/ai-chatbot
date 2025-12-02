@@ -52,7 +52,6 @@ test.describe("Chat functionality", () => {
 
     await chatPage.chat.openSettings();
     await expect(chatPage.chat.settings.ragMaxResourcesInput).toBeVisible();
-    await expect(chatPage.chat.settings.ragSimilarityInput).toBeVisible();
     await chatPage.closeDropdown();
 
     await chatPage.chat.openTools();
@@ -61,7 +60,6 @@ test.describe("Chat functionality", () => {
 
     await chatPage.chat.openSettings();
     await expect(chatPage.chat.settings.ragMaxResourcesInput).not.toBeVisible();
-    await expect(chatPage.chat.settings.ragSimilarityInput).not.toBeVisible();
     await chatPage.closeDropdown();
 
     await chatPage.chat.openTools();

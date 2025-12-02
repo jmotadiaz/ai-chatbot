@@ -4,10 +4,10 @@ import { parseCodeAndChunk, createParserFactory, LanguageEnum } from "code-chopp
 
 export interface Chunk {
   content: string;
+  parent: string;
   metadata: {
     type: "text" | "code";
     language?: string;
-    parent?: string; // Contendrá el contexto completo para el LLM
     boundary?: unknown; // Para chunks de código
     [key: string]: unknown;
   };
@@ -48,9 +48,8 @@ export async function generateHybridChunks(text: string): Promise<Chunk[]> {
       const codeChunks = await processCode(token.text, token.lang || "typescript");
       chunks.push(...codeChunks);
     } else {
-      // Acumulamos texto plano (párrafos, listas, headers) para no fragmentar oraciones
-      if ('text' in token) {
-         currentTextBuffer += token.text + "\n";
+      if (token.raw) {
+        currentTextBuffer += token.raw;
       }
     }
   }
@@ -79,11 +78,11 @@ async function processText(text: string): Promise<Chunk[]> {
       // El 'content' debe ser limpio para que el vector sea preciso.
       chunks.push({
         content: child.pageContent,
+        parent: parent.pageContent,
         metadata: {
           type: "text",
           // Guardamos el padre completo. Al recuperar, decidirás si usas
           // el child (para citar) o el parent (para razonar).
-          parent: parent.pageContent,
         },
       });
     });
@@ -110,13 +109,13 @@ async function processCode(code: string, language: string): Promise<Chunk[]> {
 
       return {
         content: injectedContent,
+        parent: code,
         metadata: {
           type: "code",
           language: mappedLang,
           boundary: bc.boundary,
           // En código, el "padre" podría ser el archivo entero o el bloque,
           // aquí simplificamos manteniendo el boundary como contexto específico.
-          parent: code,
         },
       };
     });

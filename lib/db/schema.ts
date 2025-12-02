@@ -107,6 +107,7 @@ export const embeddings = pgTable(
       .references(() => resources.id, { onDelete: "cascade" }),
 
     content: text("content").notNull(),
+    parent: text("parent").notNull(),
     embedding: vector("embedding", { dimensions: 768 }).notNull(),
     metadata: json("metadata"),
   },

@@ -1,0 +1,1 @@
+ALTER TABLE "embeddings" ADD COLUMN "parent" text NOT NULL;

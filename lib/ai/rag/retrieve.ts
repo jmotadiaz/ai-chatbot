@@ -35,15 +35,15 @@ export async function retrieve({
   queryType = "RETRIEVAL_QUERY",
   userId,
   limit = 10,
-  similarityThreshold = 0.7,
-  excludeEmbeddingIds = [],
+  similarityThreshold = 0.6,
+  excludeParents = [],
 }: {
   query: string;
   queryType?: QueryType;
   userId: string;
   limit?: number;
   similarityThreshold?: number; // 0-100
-  excludeEmbeddingIds?: string[];
+  excludeParents?: string[];
 }): Promise<RetrieveResult> {
   try {
     const userQueryEmbedded = await generateEmbedding(query, queryType);
@@ -52,7 +52,7 @@ export async function retrieve({
       userId,
       limit,
       similarityThreshold,
-      excludeEmbeddingIds,
+      excludeParents,
     });
 
     if (similarChunks.length === 0) {

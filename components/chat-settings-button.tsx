@@ -19,14 +19,11 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
     selectedModel,
     tools,
     hasTool,
-    ragSimilarityPercentage,
     ragMaxResources,
     webSearchNumResults,
   } = useChatContext();
 
   const setTemperature = (value: number) => setConfig({ temperature: value });
-  const setRagSimilarity = (value: number) =>
-    setConfig({ ragSimilarityPercentage: value });
   const setRagMaxResources = (value: number) =>
     setConfig({ ragMaxResources: value });
   const setWebSearchNumResults = (value: number) =>
@@ -73,19 +70,6 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
           <>
             {hasTool(RAG_TOOL) && (
               <>
-                <Dropdown.Item className="justify-between">
-                  <Label className="mr-8 text-nowrap" htmlFor="ragSimilarity">
-                    RAG Similarity %
-                  </Label>
-                  <InputNumber
-                    id="ragSimilarity"
-                    value={ragSimilarityPercentage}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onChange={setRagSimilarity}
-                  />
-                </Dropdown.Item>
                 <Dropdown.Item className="justify-between">
                   <Label className="mr-8 text-nowrap" htmlFor="ragMaxResources">
                     RAG Max Resources

@@ -33,7 +33,6 @@ import {
   TOOLS,
 } from "@/lib/ai/tools/types";
 import {
-  defaultRagSimilarityPercentage,
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/ai/models/definition";
@@ -61,7 +60,6 @@ export const POST = withAuth(async (user, req) => {
     messageId,
     projectId,
     preventChatPersistence = false,
-    ragSimilarityPercentage = defaultRagSimilarityPercentage,
     ragMaxResources = defaultRagMaxResources,
     webSearchNumResults = defaultWebSearchNumResults,
   }: {
@@ -74,16 +72,10 @@ export const POST = withAuth(async (user, req) => {
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
-    ragSimilarityPercentage?: number;
     ragMaxResources?: number;
     webSearchNumResults?: number;
   } = await req.json();
 
-  // Clamp incoming tool configuration values to safe ranges
-  const safeRagSimilarityPercentage = Math.min(
-    Math.max(ragSimilarityPercentage, 0),
-    100
-  );
   const safeRagMaxResources = Math.min(Math.max(ragMaxResources, 1), 50);
   const safeWebSearchNumResults = Math.min(
     Math.max(webSearchNumResults, 1),
@@ -101,7 +93,6 @@ export const POST = withAuth(async (user, req) => {
           messages,
           userId: user.id,
           ragMaxResources: safeRagMaxResources,
-          ragSimilarityPercentage: safeRagSimilarityPercentage,
         }),
         ...urlContextFactory({ writer }),
       };

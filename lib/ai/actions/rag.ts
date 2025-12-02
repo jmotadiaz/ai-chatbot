@@ -17,7 +17,7 @@ import {
   transaction,
 } from "@/lib/db/queries";
 import type { InsertEmbedding, Resource as DBResource } from "@/lib/db/schema";
-import { isDefined } from "@/lib/utils";
+
 import type { Resource } from "@/lib/ai/types";
 
 export interface ProcessResult {
@@ -49,9 +49,10 @@ export async function uploadResources(
     }
 
     if (url) {
-      const urlResource = await fetchAndConvertURL({ url });
+      const urlResource = await fetchAndConvertURL({ url, container: "#content",
+  excludeSelectors: ["[aria-labelledby=\"see_also\"]", "[aria-labelledby=\"feedback\"]"], });
       if (urlResource) {
-        const chunkResult = await saveResources([urlResource], session.user.id);
+        const chunkResult = await saveResource(urlResource, session.user.id);
         result.resourcesCreated += chunkResult.resourcesCreated;
         result.embeddingsCreated += chunkResult.embeddingsCreated;
       }
@@ -86,23 +87,24 @@ export async function uploadResources(
         return { success: false, error: "Max 200 URLs" };
       }
 
-      await forEachChunk(urls, async (chunkUrls) => {
-        const resourcesChunk = await Promise.all(
-          chunkUrls.map((url) => fetchAndConvertURL({ url, container, excludeSelectors }))
-        );
-        console.log(
-          `Successfully processed ${resourcesChunk.length} resources, generating embeddings...`
-        );
-        const chunkResult = await saveResources(
-          resourcesChunk.filter(isDefined),
-          session.user.id
-        );
-        console.log(
-          `Created ${chunkResult.resourcesCreated} resources and ${chunkResult.embeddingsCreated} embeddings`
-        );
-        result.resourcesCreated += chunkResult.resourcesCreated;
-        result.embeddingsCreated += chunkResult.embeddingsCreated;
-      });
+      console.log(`Processing ${urls.length} URLs...`);
+
+      for (const url of urls) {
+        const urlResource = await fetchAndConvertURL({
+          url,
+          container,
+          excludeSelectors,
+        });
+
+        if (urlResource) {
+          const chunkResult = await saveResource(
+            urlResource,
+            session.user.id
+          );
+          result.resourcesCreated += chunkResult.resourcesCreated;
+          result.embeddingsCreated += chunkResult.embeddingsCreated;
+        }
+      }
     }
 
     // Process markdown files if provided
@@ -123,12 +125,11 @@ export async function uploadResources(
           });
         }
       }
-      const chunkResult = await saveResources(
-        resources.filter(isDefined),
-        session.user.id
-      );
-      result.resourcesCreated += chunkResult.resourcesCreated;
-      result.embeddingsCreated += chunkResult.embeddingsCreated;
+      for (const resource of resources) {
+        const chunkResult = await saveResource(resource, session.user.id);
+        result.resourcesCreated += chunkResult.resourcesCreated;
+        result.embeddingsCreated += chunkResult.embeddingsCreated;
+      }
     }
 
     revalidatePath("/rag");
@@ -340,49 +341,37 @@ const extractContainer = ({
   return finalElement;
 };
 
-import { Chunk } from "@/lib/ai/rag/chunking";
 
-const saveResources = async (
-  resources: Resource[],
+
+const saveResource = async (
+  resource: Resource,
   userId: string
 ): Promise<{ resourcesCreated: number; embeddingsCreated: number }> => {
   const [result] = await transaction(async (tx) => {
     const createdResources: DBResource[] = [];
-    const chunksToEmbed: Chunk[] = [];
+
 
     // 1. Create all resources and generate chunks
-    for (const resource of resources) {
-      const newResource = await createResource({
-        title: resource.title,
-        url: resource.url,
-        userId,
-      })(tx);
+    const newResource = await createResource({
+      title: resource.title,
+      url: resource.url,
+      userId,
+    })(tx);
 
-      createdResources.push(newResource);
+    createdResources.push(newResource);
 
-      const resourceChunks = await generateChunks(resource.content);
-
-      // Attach resourceId to metadata so we can map it back later
-      const chunksWithId = resourceChunks.map((chunk) => ({
-        ...chunk,
-        metadata: {
-          ...chunk.metadata,
-          resourceId: newResource.id,
-        },
-      }));
-
-      chunksToEmbed.push(...chunksWithId);
-    }
+    const resourceChunks = await generateChunks(resource.content);
 
     // 2. Generate embeddings for ALL chunks in one go (batched internally)
     // This maximizes the "100 values per request" limit
-    const embeddings = await generateEmbeddings(chunksToEmbed);
+    const embeddings = await generateEmbeddings(resourceChunks);
 
     // 3. Insert all embeddings
     if (embeddings.length > 0) {
       const insertEmbeddings: InsertEmbedding[] = embeddings.map(
-        ({ content, embedding, metadata }) => ({
-          resourceId: metadata.resourceId as string,
+        ({ content, embedding, metadata, parent }) => ({
+          resourceId: newResource.id,
+          parent,
           content,
           embedding,
           metadata,
@@ -406,17 +395,4 @@ const saveResources = async (
   return result;
 };
 
-const forEachChunk = async <T>(
-  array: T[],
-  callback: (chunk: T[]) => Promise<void>,
-  n: number = 50
-): Promise<void> => {
-  if (n <= 0) {
-    throw new Error("El tamaño del subarray debe ser mayor que 0");
-  }
 
-  for (let i = 0; i < array.length; i += n) {
-    const chunk = array.slice(i, i + n);
-    await callback(chunk);
-  }
-};
