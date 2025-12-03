@@ -8,7 +8,6 @@ import { deleteAllResources, deleteResource } from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
-import { DotsLoadingIcon } from "@/components/icons";
 import { useIntersectionObserver } from "@/lib/hooks/intersection";
 import { normalize, toWords } from "@/lib/utils";
 
