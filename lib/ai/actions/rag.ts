@@ -98,18 +98,27 @@ export async function uploadResources(
 
         console.log(`Processing ${urls.length} URLs from ${jsonFile.name}...`);
 
-        for (const url of urls) {
-          const { success } = await saveUrlResource(
-            {
-              url,
-              container,
-              excludeSelectors,
-            },
-            session.user.id
+        console.log(`Processing ${urls.length} URLs from ${jsonFile.name}...`);
+
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+          const batchUrls = urls.slice(i, i + BATCH_SIZE);
+
+          await Promise.all(
+            batchUrls.map(async (url) => {
+              const { success } = await saveUrlResource(
+                {
+                  url,
+                  container,
+                  excludeSelectors,
+                },
+                session.user.id
+              );
+              if (success) {
+                result.resourcesCreated++;
+              }
+            })
           );
-          if (success) {
-            result.resourcesCreated++;
-          }
         }
       }
     }
