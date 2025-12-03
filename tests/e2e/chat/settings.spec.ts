@@ -11,10 +11,6 @@ test.describe("Chat functionality", () => {
   });
 
   test("should allow modifying chat settings for different models", async () => {
-    await chatPage.chat.openTools();
-    await chatPage.chat.tools.toggleTool("rag");
-    await chatPage.closeDropdown();
-
     await chatPage.header.modelPicker.selectModel("Router");
     await expect.soft(chatPage.chat.settingsButton).not.toBeVisible();
 

@@ -2,7 +2,17 @@
 import "server-only";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
-import { and, asc, desc, eq, gt, isNull, sql, notInArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  isNull,
+  sql,
+  notInArray,
+  inArray,
+} from "drizzle-orm";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 
 import type { PgTransaction } from "drizzle-orm/pg-core";
@@ -549,6 +559,28 @@ export const deleteResourcesByTitle =
         .returning();
     } catch (error) {
       console.error("Failed to delete resource by title");
+      throw error;
+    }
+  };
+
+export const deleteResourcesByTitles =
+  ({
+    titles,
+    userId,
+  }: {
+    titles: string[];
+    userId: string;
+  }): Transactional<Resource[]> =>
+  async (tx) => {
+    try {
+      return await tx
+        .delete(resource)
+        .where(
+          and(inArray(resource.title, titles), eq(resource.userId, userId))
+        )
+        .returning();
+    } catch (error) {
+      console.error("Failed to delete resources by titles");
       throw error;
     }
   };

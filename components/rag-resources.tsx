@@ -4,7 +4,11 @@ import { useState, useTransition, useCallback, Fragment } from "react";
 import { toast } from "sonner";
 import { SearchIcon } from "lucide-react";
 import { RagResourceItem } from "./rag-resource-item";
-import { deleteAllResources, deleteResource } from "@/lib/ai/actions/rag";
+import {
+  deleteAllResources,
+  deleteResource,
+  deleteSelectedResources,
+} from "@/lib/ai/actions/rag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
@@ -54,22 +58,6 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
     });
   };
 
-  const handleDeleteAllResources = () => {
-    startTransition(async () => {
-      try {
-        const result = await deleteAllResources();
-        if (result.success) {
-          toast.success("All resources deleted successfully");
-        } else {
-          toast.error(result.error || "Failed to delete all resources");
-        }
-      } catch (error) {
-        console.error("Error deleting all resources:", error);
-        toast.error("An error occurred while deleting all resources");
-      }
-    });
-  };
-
   const normalizedFilter = normalize(filter);
 
   const filteredResources =
@@ -81,6 +69,32 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
             normalizedTitle.includes(word)
           );
         });
+
+  const handleBulkDelete = () => {
+    startTransition(async () => {
+      try {
+        if (normalizedFilter.length > 0) {
+          const titlesToDelete = filteredResources.map((r) => r.title);
+          const result = await deleteSelectedResources(titlesToDelete);
+          if (result.success) {
+            toast.success("Selected resources deleted successfully");
+          } else {
+            toast.error(result.error || "Failed to delete selected resources");
+          }
+        } else {
+          const result = await deleteAllResources();
+          if (result.success) {
+            toast.success("All resources deleted successfully");
+          } else {
+            toast.error(result.error || "Failed to delete all resources");
+          }
+        }
+      } catch (error) {
+        console.error("Error deleting resources:", error);
+        toast.error("An error occurred while deleting resources");
+      }
+    });
+  };
 
   return (
     <div className="w-full pb-6">
@@ -105,10 +119,18 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
       </div>
       <ConfirmModal
         {...modalProps()}
-        onConfirm={handleDeleteAllResources}
+        onConfirm={handleBulkDelete}
         isLoading={isLoading}
-        title="Delete All Resources"
-        message="Are you sure you want to delete all resources? This action cannot be undone."
+        title={
+          normalizedFilter.length > 0
+            ? "Delete Selected Resources"
+            : "Delete All Resources"
+        }
+        message={
+          normalizedFilter.length > 0
+            ? "Are you sure you want to delete the selected resources? This action cannot be undone."
+            : "Are you sure you want to delete all resources? This action cannot be undone."
+        }
       />
       <ul
         ref={scrollContainer}
