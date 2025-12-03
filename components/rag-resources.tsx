@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, Fragment } from "react";
 import { toast } from "sonner";
 import { SearchIcon } from "lucide-react";
 import { RagResourceItem } from "./rag-resource-item";
@@ -22,6 +22,7 @@ interface RAGResourcesProps {
 }
 
 const ITEMS_PER_PAGE = 20;
+const ITEMS_TO_TRIGGER_PAGINATION = 10;
 
 export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
   const [isLoading, startTransition] = useTransition();
@@ -114,21 +115,23 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({ resources }) => {
         ref={scrollContainer}
         className="space-y-3 max-h-[70dvh] overflow-auto scrollbar-none"
       >
-        {filteredResources.slice(0, offset).map((resource) => (
-          <RagResourceItem
-            key={resource.title}
-            resource={resource}
-            isLoading={isLoading}
-            onDelete={handleDeleteResource}
-          />
+        {filteredResources.slice(0, offset).map((resource, idx) => (
+          <Fragment key={resource.title}>
+            <RagResourceItem
+              resource={resource}
+              isLoading={isLoading}
+              onDelete={handleDeleteResource}
+            />
+            {idx === offset - ITEMS_TO_TRIGGER_PAGINATION &&
+              offset < filteredResources.length && (
+                <li
+                  ref={loader}
+                  className="h-px w-full opacity-0 pointer-events-none"
+                  aria-hidden="true"
+                />
+              )}
+          </Fragment>
         ))}
-        {offset < filteredResources.length && (
-          <li ref={loader}>
-            <div>
-              <DotsLoadingIcon />
-            </div>
-          </li>
-        )}
       </ul>
     </div>
   );

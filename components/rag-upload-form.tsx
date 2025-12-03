@@ -9,20 +9,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const RAGUploadForm = () => {
-  const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [jsonFiles, setJsonFiles] = useState<File[]>([]);
   const [url, setUrl] = useState("");
   const [container, setContainer] = useState("");
   const [excludeSelectors, setExcludeSelectors] = useState("");
   const [isLoading, startTransition] = useTransition();
 
   const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== "application/json") {
-        toast.error("Please select a JSON file");
-        return;
+    const selectedFiles = e.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      const validFiles: File[] = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        if (file.type !== "application/json") {
+          toast.error(`File ${file.name} is not a JSON file`);
+          continue;
+        }
+        validFiles.push(file);
       }
-      setJsonFile(selectedFile);
+      setJsonFiles(validFiles);
     }
   };
 
@@ -30,9 +35,9 @@ export const RAGUploadForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!jsonFile && !url) {
+    if (jsonFiles.length === 0 && !url) {
       toast.error(
-        "Please provide a source: a JSON file or a URL."
+        "Please provide a source: JSON file(s) or a URL."
       );
       return;
     }
@@ -41,8 +46,10 @@ export const RAGUploadForm = () => {
       try {
         const formData = new FormData();
 
-        if (jsonFile) {
-          formData.append("jsonFile", jsonFile);
+        if (jsonFiles.length > 0) {
+          jsonFiles.forEach((file) => {
+            formData.append("jsonFile", file);
+          });
         }
 
         if (url) {
@@ -58,7 +65,7 @@ export const RAGUploadForm = () => {
           toast.success(
             `Successfully processed ${result.resourcesCreated} resources`
           );
-          setJsonFile(null);
+          setJsonFiles([]);
           setUrl("");
           setContainer("");
           setExcludeSelectors("");
@@ -130,13 +137,14 @@ export const RAGUploadForm = () => {
         </div>
         <div className="space-y-4">
           <Label className="mb-2" htmlFor="jsonFile">
-            JSON File (URLs) - Optional
+            JSON File(s) (URLs) - Optional
           </Label>
           <div className="relative">
             <Input
               id="jsonFile"
               type="file"
               accept=".json"
+              multiple
               onChange={handleJsonFileChange}
               disabled={isLoading}
               className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
@@ -156,13 +164,17 @@ export const RAGUploadForm = () => {
           </div>
         )}
 
-        {jsonFile && (
-          <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <FileText className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-semibold">{jsonFile.name}</span>
-            <span className="text-xs text-gray-500">
-              ({(jsonFile.size / 1024).toFixed(1)} KB)
-            </span>
+        {jsonFiles.length > 0 && (
+          <div className="space-y-2">
+            {jsonFiles.map((file, index) => (
+              <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <FileText className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-semibold">{file.name}</span>
+                <span className="text-xs text-gray-500">
+                  ({(file.size / 1024).toFixed(1)} KB)
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
@@ -171,7 +183,7 @@ export const RAGUploadForm = () => {
         <div className="text-right mt-4">
           <Button
             type="submit"
-            disabled={(!jsonFile && !url) || isLoading}
+            disabled={(jsonFiles.length === 0 && !url) || isLoading}
             isLoading={isLoading}
           >
             <Upload className="w-4 h-4 mr-2" />

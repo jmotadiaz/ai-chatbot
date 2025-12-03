@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface UseIntersectionObserverParams {
   onIntersect: () => void;
@@ -12,7 +12,7 @@ export interface UseIntersectionObserverReturn<
   TLoaderElement
 > {
   scrollContainer: React.RefObject<TScrollContainerElement | null>;
-  loader: React.RefObject<TLoaderElement | null>;
+  loader: React.RefCallback<TLoaderElement>;
 }
 
 export const useIntersectionObserver = <
@@ -27,11 +27,11 @@ export const useIntersectionObserver = <
   TScrollContainerElement,
   TLoaderElement
 > => {
-  const loader = useRef<TLoaderElement | null>(null);
+  const [loader, setLoader] = useState<TLoaderElement | null>(null);
   const scrollContainer = useRef<TScrollContainerElement | null>(null);
 
   useEffect(() => {
-    if (!scrollContainer.current) return;
+    if (!scrollContainer.current || !loader) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -44,19 +44,15 @@ export const useIntersectionObserver = <
       { threshold, root: scrollContainer.current, rootMargin }
     );
 
-    const currentLoader = loader.current;
-    if (currentLoader) {
-      console.log("observe");
-      observer.observe(currentLoader);
-    }
+    observer.observe(loader);
 
     return () => {
       observer.disconnect();
     };
-  }, [onIntersect, once, rootMargin, threshold]);
+  }, [onIntersect, loader, once, rootMargin, threshold]);
 
   return {
-    loader,
+    loader: setLoader,
     scrollContainer,
   };
 };

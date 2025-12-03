@@ -117,7 +117,6 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "alibaba",
     temperature: 0.7,
     topP: 0.8,
-    topK: 20,
   },
   "Qwen3 Next Thinking": {
     model: providers.gateway("alibaba/qwen3-next-80b-a3b-thinking"),
@@ -125,7 +124,6 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "alibaba",
     temperature: 0.6,
     topP: 0.95,
-    topK: 20,
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),

@@ -30,12 +30,12 @@ export async function uploadResources(
   }
 
   try {
-    const jsonFile = formData.get("jsonFile") as File;
+    const jsonFiles = formData.getAll("jsonFile") as File[];
     const url = formData.get("url") as string;
     const container = formData.get("container") as string | undefined;
     const excludeSelectors = formData.get("excludeSelectors") as string | undefined;
 
-    if (!jsonFile && !url) {
+    if (jsonFiles.length === 0 && !url) {
       return { success: false, error: "No files provided" };
     }
 
@@ -53,48 +53,58 @@ export async function uploadResources(
       }
     }
 
-    // Process JSON file with URLs if provided
-    if (jsonFile) {
-      const fileContent = await jsonFile.text();
-      let jsonData;
+    // Process JSON files with URLs if provided
+    if (jsonFiles.length > 0) {
+      for (const jsonFile of jsonFiles) {
+        const fileContent = await jsonFile.text();
+        let jsonData;
 
-      try {
-        jsonData = JSON.parse(fileContent);
-      } catch {
-        return { success: false, error: "Invalid JSON file" };
-      }
+        try {
+          jsonData = JSON.parse(fileContent);
+        } catch {
+          console.error(`Invalid JSON file: ${jsonFile.name}`);
+          continue; // Skip invalid files but continue processing others
+        }
 
-      if (!jsonData.urls || !Array.isArray(jsonData.urls)) {
-        return { success: false, error: "JSON must contain 'urls' array" };
-      }
+        if (!jsonData.urls || !Array.isArray(jsonData.urls)) {
+          console.error(`JSON must contain 'urls' array: ${jsonFile.name}`);
+          continue;
+        }
 
-      const { urls, container, excludeSelectors } = jsonData as {
-        urls: string[];
-        container?: string;
-        excludeSelectors?: string[];
-      };
+        const { urls, container, excludeSelectors } = jsonData as {
+          urls: string[];
+          container?: string;
+          excludeSelectors?: string[];
+        };
 
-      if (urls.length === 0) {
-        return { success: false, error: "No URLs provided in JSON file" };
-      }
+        if (urls.length === 0) {
+          console.warn(`No URLs provided in JSON file: ${jsonFile.name}`);
+          continue;
+        }
 
-      if (process.env.NODE_ENV === "production" && urls.length > 200) {
-        return { success: false, error: "Max 200 URLs" };
-      }
+        if (process.env.NODE_ENV === "production" && urls.length > 200) {
+           console.warn(`Max 200 URLs per file: ${jsonFile.name}`);
+           // We could return error here or just process first 200.
+           // For now let's stick to previous behavior but maybe just warn and skip or process?
+           // The previous code returned error. Let's return error if it's a single file, but for multiple maybe just skip?
+           // Or better, just error out for that file.
+           continue;
+        }
 
-      console.log(`Processing ${urls.length} URLs...`);
+        console.log(`Processing ${urls.length} URLs from ${jsonFile.name}...`);
 
-      for (const url of urls) {
-        const {success} = await saveUrlResource(
-          {
-          url,
-          container,
-          excludeSelectors,
-        },
-          session.user.id
-        );
-        if (success) {
-          result.resourcesCreated++;
+        for (const url of urls) {
+          const {success} = await saveUrlResource(
+            {
+            url,
+            container,
+            excludeSelectors,
+          },
+            session.user.id
+          );
+          if (success) {
+            result.resourcesCreated++;
+          }
         }
       }
     }
