@@ -5,36 +5,29 @@ import {
 } from "@langchain/textsplitters";
 
 export interface ChunkGroup {
-  content: string; // Parent content (Context) -> Stored in Chunk table
-  type: "text" | "code";
+  content: string;
+  type: "text" | "code"; // Tipo predominante
   language?: string;
-  boundaryType?: string;
-  boundaryName?: string;
-  embeddableContent: string[]; // Content to be embedded -> Stored in Embedding table (vectors)
+  embeddableContent: string[];
 }
 
-export type SupportedLanguage = (typeof SupportedTextSplitterLanguages)[number];
+type SupportedLanguages = (typeof SupportedTextSplitterLanguages)[number];
 
-// 1. Splitter Padre: Define la "Ventana de Contexto" para el LLM.
-// Mantenemos 2000 caracteres, que es un buen tamaño para pasar al LLM como respuesta.
-const parentSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 2000,
-  chunkOverlap: 200,
-});
+const PARENT_CHUNK_SIZE = 2000;
+const CHILD_CHUNK_SIZE = 400;
+const CHILD_OVERLAP = 50;
 
-// 2. Splitter Hijo: Define la "Precisión de Búsqueda".
-// 400 caracteres es ideal para que el embedding capture una idea específica sin ruido.
+// Splitter para generar los hijos (vectores de búsqueda)
 const childSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 400,
-  chunkOverlap: 50,
+  chunkSize: CHILD_CHUNK_SIZE,
+  chunkOverlap: CHILD_OVERLAP,
 });
 
-const mapLanguage = (lang: string): SupportedLanguage | null => {
-  const normalized = lang.toLowerCase();
-
-  const map: Record<string, SupportedLanguage> = {
+// Función auxiliar para mapear lenguajes para LangChain
+const mapLanguage = (lang: string): SupportedLanguages | undefined => {
+  const map: Record<string, SupportedLanguages> = {
     ts: "js",
-    typescript: "js", // LangChain usa 'js' para TS también
+    typescript: "js",
     js: "js",
     javascript: "js",
     py: "python",
@@ -43,139 +36,116 @@ const mapLanguage = (lang: string): SupportedLanguage | null => {
     java: "java",
     cpp: "cpp",
     "c++": "cpp",
-    rb: "ruby",
-    ruby: "ruby",
     html: "html",
     php: "php",
     rust: "rust",
-    // Puedes añadir más según la documentación de LangChain
   };
-
-  return map[normalized] || null;
+  return map[lang.toLowerCase()];
 };
 
-async function generateHybridChunks(text: string): Promise<ChunkGroup[]> {
+export async function generateChunks(text: string): Promise<ChunkGroup[]> {
+  // 1. Tokenizar con marked para detectar bloques
   const tokens = marked.lexer(text);
   const chunks: ChunkGroup[] = [];
 
-  let currentTextBuffer = "";
+  // Buffer para acumular contenido hasta llegar a PARENT_CHUNK_SIZE
+  let currentBuffer = "";
+  let bufferType: "text" | "code" = "text"; // Predeterminado
 
-  for (const token of tokens) {
-    if (token.type === "code") {
-      // Si encontramos código, procesamos el texto acumulado hasta ahora
-      if (currentTextBuffer.trim()) {
-        const textChunks = await processText(currentTextBuffer);
-        chunks.push(...textChunks);
-        currentTextBuffer = "";
-      }
+  // Función para procesar y vaciar el buffer actual
+  const flushBuffer = async () => {
+    if (!currentBuffer.trim()) return;
 
-      // Procesamos el bloque de código independientemente
-      const codeChunks = await processCode(
-        token.text,
-        token.lang || "typescript"
-      );
-      chunks.push(...codeChunks);
-    } else {
-      if (token.raw) {
-        currentTextBuffer += token.raw;
-      }
-    }
-  }
-
-  // Procesar cualquier texto restante al final del archivo
-  if (currentTextBuffer.trim()) {
-    const textChunks = await processText(currentTextBuffer);
-    chunks.push(...textChunks);
-  }
-
-  return chunks;
-}
-
-async function processText(text: string): Promise<ChunkGroup[]> {
-  // Paso 1: Generar Documentos Padre (Contexto)
-  const parents = await parentSplitter.createDocuments([text]);
-
-  const chunks: ChunkGroup[] = [];
-
-  for (const parent of parents) {
-    // Paso 2: Generar Documentos Hijos (Índice) desde el Padre
-    const children = await childSplitter.createDocuments([parent.pageContent]);
+    // Generamos hijos pequeños para el vector search
+    const childrenDocs = await childSplitter.createDocuments([currentBuffer]);
 
     chunks.push({
-      content: parent.pageContent,
-      type: "text",
-      embeddableContent: children.map((child) => child.pageContent),
+      content: currentBuffer, // El padre grande (~2000 chars)
+      type: bufferType,
+      embeddableContent: childrenDocs.map((c) => c.pageContent),
     });
+
+    currentBuffer = "";
+    bufferType = "text"; // Reset
+  };
+
+  for (const token of tokens) {
+    const tokenText = token.raw;
+
+    // CASO A: El token cabe en el buffer actual
+    if (currentBuffer.length + tokenText.length <= PARENT_CHUNK_SIZE) {
+      currentBuffer += tokenText;
+      // Si entra código, marcamos el buffer como mixto/código si es relevante,
+      // pero generalmente lo dejamos como está o "text" para RAG general.
+      if (token.type === "code") bufferType = "code";
+    }
+    // CASO B: El token desborda el buffer
+    else {
+      // 1. Guardamos lo que ya teníamos acumulado
+      await flushBuffer();
+
+      // 2. Analizamos el token nuevo que provocó el desborde
+      // ¿Es este token individual MÁS GRANDE que el límite máximo?
+      if (tokenText.length > PARENT_CHUNK_SIZE) {
+        // Es un bloque gigante (ej: un archivo de código de 500 líneas).
+        // AQUI SÍ debemos dividirlo forzosamente, pero usamos un splitter inteligente.
+        if (token.type === "code") {
+          const lang = mapLanguage(token.lang || "") || "js";
+          const codeSplitter = RecursiveCharacterTextSplitter.fromLanguage(
+            lang,
+            {
+              chunkSize: PARENT_CHUNK_SIZE,
+              chunkOverlap: 200,
+            }
+          );
+
+          const codeDocs = await codeSplitter.createDocuments([token.text]);
+
+          for (const doc of codeDocs) {
+            // Tratamos cada sub-fragmento como un parent independiente
+            // Reconstruimos el bloque de código md para mantener formato si queremos
+            // o guardamos el contenido raw. Para RAG de código, raw suele ser mejor.
+            const content = `\`\`\`${token.lang || ""}\n${
+              doc.pageContent
+            }\n\`\`\``;
+            const children = await childSplitter.createDocuments([content]);
+
+            chunks.push({
+              content: content,
+              type: "code",
+              language: token.lang,
+              embeddableContent: children.map((c) => c.pageContent),
+            });
+          }
+        } else {
+          // Es texto plano gigante
+          const textDocs = await new RecursiveCharacterTextSplitter({
+            chunkSize: PARENT_CHUNK_SIZE,
+            chunkOverlap: 200,
+          }).createDocuments([tokenText]);
+
+          for (const doc of textDocs) {
+            const children = await childSplitter.createDocuments([
+              doc.pageContent,
+            ]);
+            chunks.push({
+              content: doc.pageContent,
+              type: "text",
+              embeddableContent: children.map((c) => c.pageContent),
+            });
+          }
+        }
+      } else {
+        // El token no es gigante, solo no cabía en el anterior.
+        // Iniciamos el buffer nuevo con este token.
+        currentBuffer = tokenText;
+        if (token.type === "code") bufferType = "code";
+      }
+    }
   }
 
-  return chunks;
-}
+  // Vaciar cualquier remanente final
+  await flushBuffer();
 
-async function processCode(
-  code: string,
-  language: string
-): Promise<ChunkGroup[]> {
-  try {
-    const mappedLang = mapLanguage(language);
-
-    // Si el lenguaje no es soportado por LangChain, lo tratamos como texto normal
-    if (!mappedLang) {
-      return processText(code);
-    }
-
-    // 1. Splitter INTELIGENTE (Code-Aware)
-    // Cortará preferentemente en definiciones de clases/funciones
-    const parentSplitter = RecursiveCharacterTextSplitter.fromLanguage(
-      mappedLang,
-      {
-        chunkSize: 2000,
-        chunkOverlap: 200,
-      }
-    );
-
-    // 2. Splitter Hijo (Para embeddings pequeños dentro del bloque de código)
-    const childSplitter = RecursiveCharacterTextSplitter.fromLanguage(
-      mappedLang,
-      {
-        chunkSize: 400,
-        chunkOverlap: 50,
-      }
-    );
-
-    const parentDocs = await parentSplitter.createDocuments([code]);
-    const chunks: ChunkGroup[] = [];
-
-    for (const parent of parentDocs) {
-      // Estrategia Small-to-Big dentro del código:
-      // Dividimos el bloque grande (función/clase) en trozos pequeños para el vector search
-      const childDocs = await childSplitter.createDocuments([
-        parent.pageContent,
-      ]);
-
-      // Inyectamos una cabecera simple para dar contexto al embedding huérfano
-      const embeddableContent = childDocs.map(
-        (child) => `[${mappedLang} snippet]\n${child.pageContent}`
-      );
-
-      chunks.push({
-        content: parent.pageContent, // El LLM recibe el bloque completo
-        type: "code",
-        language: mappedLang,
-        embeddableContent: embeddableContent,
-      });
-    }
-
-    return chunks;
-  } catch (error) {
-    console.error("Error processing code chunk:", error);
-    return processText(code);
-  }
-}
-
-export async function generateChunks(text: string): Promise<ChunkGroup[]> {
-  // Limpieza previa: MDN y docs a veces tienen excesivos saltos de línea
-  const cleanText = text.replace(/\n{3,}/g, "\n\n");
-
-  const chunks = await generateHybridChunks(cleanText);
   return chunks;
 }

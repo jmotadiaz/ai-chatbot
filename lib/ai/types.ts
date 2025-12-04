@@ -24,6 +24,10 @@ export interface WebSearchDataPart {
   status: "loading" | "loaded";
 }
 
+export interface RagDataPart {
+  status: "loading" | "loaded";
+}
+
 export interface ChatDataPart {
   id: string;
 }
@@ -36,6 +40,7 @@ export type ChatbotDataPart = {
   ["web-search"]: WebSearchDataPart;
   ["reasoning"]: ReasoningPart;
   ["chat"]: ChatDataPart;
+  ["rag"]: RagDataPart;
 };
 
 export type ChatbotMessage = UIMessage<

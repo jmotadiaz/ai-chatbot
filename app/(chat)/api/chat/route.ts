@@ -90,6 +90,7 @@ export const POST = withAuth(async (user, req) => {
           webSearchNumResults: safeWebSearchNumResults,
         }),
         ...ragFactory({
+          writer,
           messages,
           userId: user.id,
           ragMaxResources: safeRagMaxResources,

@@ -1,4 +1,4 @@
-import { InferUITools, tool, ToolSet } from "ai";
+import { InferUITools, tool, ToolSet, UIMessageStreamWriter } from "ai";
 import { z } from "zod";
 import type { ChatbotMessage } from "@/lib/ai/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
@@ -7,6 +7,7 @@ import { RagChunk } from "@/lib/ai/rag/types";
 import { retrieveResources } from "@/lib/ai/rag/pipelines";
 
 export interface RagFactoryArgs {
+  writer: UIMessageStreamWriter<ChatbotMessage>;
   messages: ChatbotMessage[];
   userId: string;
   ragMaxResources?: number;
@@ -27,6 +28,7 @@ function extractChunkIdsFromMessages(messages: ChatbotMessage[]): string[] {
 }
 
 export const ragFactory = ({
+  writer,
   userId,
   messages,
   ragMaxResources = 6,
@@ -66,16 +68,21 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         })
       ),
-      execute: async ({
-        multiHopQueries,
-        queryRewriting,
-        queryType,
-      }): Promise<Array<RagChunk>> => {
+      execute: async (
+        { multiHopQueries, queryRewriting, queryType },
+        { toolCallId }
+      ): Promise<Array<RagChunk>> => {
         console.log("RAG tool called with multiHopQueries:", multiHopQueries);
         console.log("RAG tool called with queryRewriting:", queryRewriting);
         console.log("RAG tool called with queryType:", queryType);
 
-        return retrieveResources({
+        writer.write({
+          type: "data-rag",
+          id: toolCallId,
+          data: { status: "loading" },
+        });
+
+        const resources = await retrieveResources({
           multiHopQueries,
           queryRewriting,
           queryType,
@@ -83,6 +90,14 @@ export const ragFactory = ({
           userId,
           limit: ragMaxResources,
         });
+
+        writer.write({
+          type: "data-rag",
+          id: toolCallId,
+          data: { status: "loaded" },
+        });
+
+        return resources;
       },
     }),
   } satisfies ToolSet);

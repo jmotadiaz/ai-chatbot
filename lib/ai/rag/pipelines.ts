@@ -1,6 +1,12 @@
 import { randomUUID } from "crypto"; // Node.js crypto nativo
 import { generateEmbeddings, QueryType } from "@/lib/ai/rag/embeddings";
-import { createEmbeddings, saveResource, saveChunks, SimilarChunks, transaction } from "@/lib/db/queries";
+import {
+  createEmbeddings,
+  saveResource,
+  saveChunks,
+  SimilarChunks,
+  transaction,
+} from "@/lib/db/queries";
 import type { InsertChunk } from "@/lib/db/schema";
 import { fetchAndConvertURL, UrlResource } from "@/lib/ai/rag/fetch";
 import { rerankResources, vectorSearch } from "@/lib/ai/rag/search";
@@ -32,7 +38,7 @@ export const saveUrlResource = async (
     const chunksToInsert: InsertChunk[] = [];
     const contentToEmbed: { chunkId: string; content: string }[] = [];
 
-    for (const {content, type, language, boundaryType, boundaryName, embeddableContent} of chunkGroups) {
+    for (const { content, type, language, embeddableContent } of chunkGroups) {
       // Generamos el ID aquí, explícitamente
       const chunkId = randomUUID();
 
@@ -43,8 +49,6 @@ export const saveUrlResource = async (
         content,
         type,
         language,
-        boundaryType,
-        boundaryName,
       });
 
       // Preparamos los hijos para Embeddings vinculados a ese ID
@@ -84,7 +88,7 @@ export interface RetrieveResourcesInput {
 }
 
 const K_VECTOR_SEARCHES = 10;
-const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.50;
+const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 export const retrieveResources = async ({
   multiHopQueries,
@@ -123,17 +127,17 @@ export const retrieveResources = async ({
   }
 
   const finalResults = await rerankResources({
-      query: queryRewriting,
-      resources: vectorSearchResults,
-      topN: limit,
-    });
+    query: queryRewriting,
+    resources: vectorSearchResults,
+    topN: limit,
+  });
 
-  return finalResults.map(({id, content, resourceTitle, resourceUrl}) => {
-    return ({
+  return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {
+    return {
       id,
       resourceTitle,
       resourceUrl,
       content,
-    })
+    };
   });
-}
+};
