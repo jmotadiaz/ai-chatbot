@@ -30,6 +30,7 @@ export async function uploadResources(
   }
 
   try {
+    const startTime = Date.now();
     const jsonFiles = formData.getAll("jsonFile") as File[];
     const url = formData.get("url") as string;
     const container = formData.get("container") as string | undefined;
@@ -126,6 +127,11 @@ export async function uploadResources(
     revalidatePath("/rag");
 
     console.log(`Completed: ${result.resourcesCreated} resources`);
+
+    const duration = Date.now() - startTime;
+    const minutes = Math.floor(duration / 60000);
+    const seconds = ((duration % 60000) / 1000).toFixed(0);
+    console.log(`Total duration: ${minutes}m ${seconds}s (${duration}ms)`);
 
     return {
       success: true,
