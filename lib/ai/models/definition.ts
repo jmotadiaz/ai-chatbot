@@ -101,12 +101,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "mistral",
   },
   "Deepseek Chat": {
-    model: providers.gateway("deepseek/deepseek-v3.2-exp"),
+    model: providers.deepseek("deepseek-chat"),
     company: "deepseek",
     temperature: 0.6,
   },
-  "Deepseek R1": {
-    model: providers.gateway("deepseek/deepseek-r1"),
+  "Deepseek Reasoner": {
+    model: providers.deepseek("deepseek-reasoner"),
     company: "deepseek",
     reasoning: true,
     temperature: 0.6,
@@ -357,7 +357,7 @@ export const chatModelKeys = [
   "MiniMax M2",
   "GLM-4.6",
   "Deepseek Chat",
-  "Deepseek R1",
+  "Deepseek Reasoner",
   "Llama 4 Scout",
   "Llama 4 Maverick",
   "Sonar",
