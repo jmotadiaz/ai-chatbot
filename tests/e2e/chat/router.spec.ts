@@ -49,7 +49,6 @@ test.describe("Model Router", () => {
 
   modelRouterTestCases.forEach(({ category, complexity, expected }) => {
     test(`should use ${expected} for category ${category} and complexity ${complexity}`, async () => {
-      await chatPage.goto();
       await chatPage.chat.sendMessage(
         `category=${category} complexity=${complexity}`
       );
@@ -60,8 +59,7 @@ test.describe("Model Router", () => {
     });
   });
 
-  test(`should adapt model when an is included in the prompt`, async () => {
-    await chatPage.goto();
+  test(`should adapt model when an attachment is included in the prompt`, async () => {
     await chatPage.chat.openAttachmentMenu();
     await chatPage.chat.uploadFile("./tests/mocks/dummy-image.png", "image");
     await chatPage.chat.sendMessage(`category=factual complexity=simple`);

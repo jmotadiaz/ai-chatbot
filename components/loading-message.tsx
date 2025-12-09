@@ -37,6 +37,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
           for (const part of message.parts) {
             switch (part.type) {
               case "tool-rag":
+                console.log("tool-rag", part);
                 if (isToolLoading(part.state)) {
                   return (
                     <ToolLoading
@@ -69,10 +70,14 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
     );
   },
   (prevProps, nextProps) => {
+    const nextToolPart = nextProps.message.parts.find(
+      (part) => part.type === "tool-rag" || part.type === "tool-webSearch"
+    );
     return (
       prevProps.status === nextProps.status &&
       prevProps.message.metadata?.status ===
         nextProps.message.metadata?.status &&
+      !isToolLoading(nextToolPart?.state) &&
       prevProps.dataPart?.data.status === nextProps.dataPart?.data.status
     );
   }
@@ -98,6 +103,6 @@ const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
   );
 };
 
-const isToolLoading = (state: UIToolInvocation<UITool>["state"]) => {
+const isToolLoading = (state?: UIToolInvocation<UITool>["state"]) => {
   return state === "input-available" || state === "input-streaming";
 };
