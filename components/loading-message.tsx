@@ -33,18 +33,14 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
         <div className="mr-4">
           <DotsLoadingIcon />
         </div>
-        {dataPart &&
-          (() => {
-            switch (dataPart.type) {
-              case "data-web-search":
-                if (dataPart.data.status === "loading") {
-                  return (
-                    <ToolLoading key={`message-web`} text="Searching the web" />
-                  );
-                }
-                return null;
-              case "data-rag":
-                if (dataPart.data.status === "loading") {
+        {(() => {
+          for (const part of message.parts) {
+            switch (part.type) {
+              case "tool-rag":
+                if (
+                  part.state === "input-available" ||
+                  part.state === "input-streaming"
+                ) {
                   return (
                     <ToolLoading
                       key={`message-rag`}
@@ -52,18 +48,34 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
                     />
                   );
                 }
-                return null;
-              case "data-reasoning":
-                if (dataPart.data.status === "started") {
+                break;
+              case "tool-webSearch":
+                if (
+                  part.state === "input-available" ||
+                  part.state === "input-streaming"
+                ) {
                   return (
-                    <ToolLoading key={`message-reasoning`} text="Thinking" />
+                    <ToolLoading key={`message-web`} text="Searching the web" />
                   );
                 }
-                return null;
-              default:
-                return null;
+                break;
             }
-          })()}
+          }
+
+          if (!dataPart) return null;
+
+          switch (dataPart.type) {
+            case "data-reasoning":
+              if (dataPart.data.status === "started") {
+                return (
+                  <ToolLoading key={`message-reasoning`} text="Thinking" />
+                );
+              }
+              return null;
+            default:
+              return null;
+          }
+        })()}
       </motion.div>
     );
   },

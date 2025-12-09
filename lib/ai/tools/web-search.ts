@@ -1,9 +1,12 @@
-import type { UIMessageStreamWriter } from "ai";
+import type { InferUITools, UIMessageStreamWriter } from "ai";
 import { tool, generateObject } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
-import { defaultWebSearchNumResults, languageModelConfigurations  } from "@/lib/ai/models/definition";
+import {
+  defaultWebSearchNumResults,
+  languageModelConfigurations,
+} from "@/lib/ai/models/definition";
 import type { ChatbotMessage } from "@/lib/ai/types";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
@@ -60,24 +63,14 @@ export const webSearchFactory = ({
     `,
     inputSchema: webSearchInputSchema,
     outputSchema,
-    execute: async ({ query }, { toolCallId }) => {
+    execute: async ({ query }) => {
       console.log("Web Search tool called with query:", query);
-      writer.write({
-        type: "data-web-search",
-        id: toolCallId,
-        data: { status: "loading" },
-      });
 
       const exa = getExaClient();
       if (!exa) {
         console.warn(
           "Web Search skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results."
         );
-        writer.write({
-          type: "data-web-search",
-          id: toolCallId,
-          data: { status: "loaded" },
-        });
         return [];
       }
 
@@ -88,13 +81,6 @@ export const webSearchFactory = ({
       });
 
       console.log("Web Search results:", results.length);
-
-      writer.write({
-        type: "data-web-search",
-        id: toolCallId,
-        data: { status: "loaded" },
-      });
-
       return results.map((result) => {
         writer.write({
           type: "source-url",
@@ -122,35 +108,18 @@ export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
     `,
     inputSchema: urlContextInputSchema,
     outputSchema: outputSchema,
-    execute: async ({ urls }, { toolCallId }) => {
-      writer.write({
-        type: "data-web-search",
-        id: toolCallId,
-        data: { status: "loading" },
-      });
-
+    execute: async ({ urls }) => {
       const exa = getExaClient();
       if (!exa) {
         console.warn(
           "URL Context skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results."
         );
-        writer.write({
-          type: "data-web-search",
-          id: toolCallId,
-          data: { status: "loaded" },
-        });
         return [];
       }
 
       const { results } = await exa.getContents(urls, {
         livecrawl: "always",
         text: true,
-      });
-
-      writer.write({
-        type: "data-web-search",
-        id: toolCallId,
-        data: { status: "loaded" },
       });
 
       return results.map((result) => {
@@ -204,3 +173,6 @@ export const hasContextUrls = async (text: string): Promise<boolean> => {
 
   return object.intent === "CONTEXT_EXTRACTION";
 };
+
+export type WebSearchTool = InferUITools<ReturnType<typeof webSearchFactory>>;
+export type URLContextTool = InferUITools<ReturnType<typeof urlContextFactory>>;

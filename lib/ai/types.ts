@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 import type { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { RagTool } from "@/lib/ai/tools/rag";
+import { URLContextTool, WebSearchTool } from "@/lib/ai/tools/web-search";
 
 export interface Resource {
   title: string;
@@ -20,14 +21,6 @@ export interface MessageMetadata {
   textFiles?: TextFile[];
 }
 
-export interface WebSearchDataPart {
-  status: "loading" | "loaded";
-}
-
-export interface RagDataPart {
-  status: "loading" | "loaded";
-}
-
 export interface ChatDataPart {
   id: string;
 }
@@ -37,14 +30,12 @@ export interface ReasoningPart {
 }
 
 export type ChatbotDataPart = {
-  ["web-search"]: WebSearchDataPart;
   ["reasoning"]: ReasoningPart;
   ["chat"]: ChatDataPart;
-  ["rag"]: RagDataPart;
 };
 
 export type ChatbotMessage = UIMessage<
   MessageMetadata,
   ChatbotDataPart,
-  RagTool
+  RagTool & WebSearchTool & URLContextTool
 >;
