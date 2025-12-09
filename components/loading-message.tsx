@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import type { ChatStatus, DataUIPart } from "ai";
+import type { ChatStatus, DataUIPart, UITool, UIToolInvocation } from "ai";
 import { memo } from "react";
 import type { ChatbotDataPart, ChatbotMessage } from "@/lib/ai/types";
 import { DotsLoadingIcon } from "@/components/icons";
@@ -37,10 +37,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
           for (const part of message.parts) {
             switch (part.type) {
               case "tool-rag":
-                if (
-                  part.state === "input-available" ||
-                  part.state === "input-streaming"
-                ) {
+                if (isToolLoading(part.state)) {
                   return (
                     <ToolLoading
                       key={`message-rag`}
@@ -50,10 +47,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
                 }
                 break;
               case "tool-webSearch":
-                if (
-                  part.state === "input-available" ||
-                  part.state === "input-streaming"
-                ) {
+                if (isToolLoading(part.state)) {
                   return (
                     <ToolLoading key={`message-web`} text="Searching the web" />
                   );
@@ -62,19 +56,14 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
             }
           }
 
-          if (!dataPart) return null;
-
-          switch (dataPart.type) {
-            case "data-reasoning":
-              if (dataPart.data.status === "started") {
-                return (
-                  <ToolLoading key={`message-reasoning`} text="Thinking" />
-                );
-              }
-              return null;
-            default:
-              return null;
+          if (
+            dataPart?.type === "data-reasoning" &&
+            dataPart.data.status === "started"
+          ) {
+            return <ToolLoading key={`message-reasoning`} text="Thinking" />;
           }
+
+          return null;
         })()}
       </motion.div>
     );
@@ -107,4 +96,8 @@ const ToolLoading: React.FC<ToolLoadingProps> = ({ text }) => {
       {text}
     </motion.div>
   );
+};
+
+const isToolLoading = (state: UIToolInvocation<UITool>["state"]) => {
+  return state === "input-available" || state === "input-streaming";
 };
