@@ -1,6 +1,6 @@
 import { InferUITools, tool, ToolSet } from "ai";
 import { z } from "zod";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { RAG_TOOL } from "@/lib/ai/tools/types";
 import { QUERY_TYPES } from "@/lib/ai/rag/embeddings";
 import { RagChunk } from "@/lib/ai/rag/types";

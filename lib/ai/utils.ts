@@ -1,4 +1,3 @@
-
 // import fs from "fs";
 
 import type {
@@ -30,7 +29,7 @@ import { upload } from "@vercel/blob/client";
 import type { ModelConfiguration } from "@/lib/ai/models/definition";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
 import type { InsertMessage, Message } from "@/lib/db/schema";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { RagChunk } from "@/lib/ai/rag/types";
 
 export async function generateTitle(messages: ChatbotMessage[]) {

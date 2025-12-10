@@ -9,7 +9,7 @@ import {
   originalPrompt,
 } from "@/lib/ai/prompts";
 import { scapeXML } from "@/lib/utils";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/ai/utils";
 
 export async function POST(req: Request) {

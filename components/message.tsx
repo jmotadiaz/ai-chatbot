@@ -8,7 +8,7 @@ import type { SourceDocumentUIPart, SourceUrlUIPart } from "ai";
 import Image from "next/image";
 import { capitalize, cn } from "@/lib/utils";
 import { CopyBlock } from "@/components/copy-block";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";

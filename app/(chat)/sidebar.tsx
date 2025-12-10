@@ -7,15 +7,11 @@ import {
   SidebarFooter,
 } from "@/components/sidebar";
 import { ProjectList, ProjectListLoading } from "@/components/project-list";
-import type {
-  ChatListProps} from "@/components/chat-list";
-import {
-  ChatList,
-  ChatListLoading
-} from "@/components/chat-list";
+import type { ChatListProps } from "@/components/chat-list";
+import { ChatList, ChatListLoading } from "@/components/chat-list";
 import { UserMenu } from "@/components/user-menu";
 import { RAGNav } from "@/components/rag-nav";
-import { getChats } from "@/lib/db/queries";
+import { getChats } from "@/lib/features/chat/queries";
 import { NewChatSidebar } from "@/components/new-chat";
 
 export interface SidebarProps {

@@ -7,7 +7,7 @@ import {
   defaultWebSearchNumResults,
   languageModelConfigurations,
 } from "@/lib/ai/models/definition";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
 // Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY

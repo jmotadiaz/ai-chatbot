@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
-import type { Resource } from "@/lib/ai/types";
+import type { Resource } from "@/lib/features/chat/types";
 
 export interface UrlResource {
   url: string;
@@ -14,32 +14,71 @@ const turndownService = new TurndownService({
 });
 
 turndownService.addRule("removeDistractions", {
-  filter: ["script", "style", "nav", "header", "footer", "aside", "form", "iframe", "button", "input", "select", "textarea", "noscript", "canvas", "dialog", "menu"],
+  filter: [
+    "script",
+    "style",
+    "nav",
+    "header",
+    "footer",
+    "aside",
+    "form",
+    "iframe",
+    "button",
+    "input",
+    "select",
+    "textarea",
+    "noscript",
+    "canvas",
+    "dialog",
+    "menu",
+  ],
   replacement: () => "",
 });
 
 turndownService.addRule("removeGenericDistractions", {
   filter: function (node) {
     // Solo aplicamos esto a bloques genéricos, no a parrafos de texto real
-    if (node.nodeName === 'P' || node.nodeName === 'H1' || node.nodeName === 'H2') return false;
+    if (
+      node.nodeName === "P" ||
+      node.nodeName === "H1" ||
+      node.nodeName === "H2"
+    )
+      return false;
 
     // Obtenemos clases e IDs
-    const attrs = (node.getAttribute("class") || "") + " " + (node.getAttribute("id") || "");
+    const attrs =
+      (node.getAttribute("class") || "") +
+      " " +
+      (node.getAttribute("id") || "");
     const lowerAttrs = attrs.toLowerCase();
 
     // Palabras clave de cosas que NO queremos indexar
     const noiseKeywords = [
-      "share", "social", "cookie", "banner", "popup", "modal",
-      "newsletter", "promo", "advert", "related", "recommend",
-      "sidebar", "comment", "feedback", "meta", "hidden", "toc"
+      "share",
+      "social",
+      "cookie",
+      "banner",
+      "popup",
+      "modal",
+      "newsletter",
+      "promo",
+      "advert",
+      "related",
+      "recommend",
+      "sidebar",
+      "comment",
+      "feedback",
+      "meta",
+      "hidden",
+      "toc",
     ];
 
     // Si contiene alguna palabra clave de ruido, lo borramos
-    return noiseKeywords.some(keyword => lowerAttrs.includes(keyword));
+    return noiseKeywords.some((keyword) => lowerAttrs.includes(keyword));
   },
   replacement: function () {
     return "";
-  }
+  },
 });
 
 interface ExtractOptions {
@@ -53,7 +92,6 @@ const extractContainer = ({
   doc,
   excludeSelectors = [],
 }: ExtractOptions): HTMLElement => {
-
   // 1. Seleccionar el elemento raíz (Container o Body)
   let rootElement: HTMLElement | null = null;
 

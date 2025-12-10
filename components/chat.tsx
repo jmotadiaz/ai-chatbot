@@ -15,6 +15,7 @@ import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
+
 import { handleFileUpload } from "@/lib/ai/utils";
 import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
 

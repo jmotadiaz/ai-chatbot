@@ -5,7 +5,7 @@ import type {
   ModelConfiguration,
 } from "@/lib/ai/models/definition";
 import { languageModelConfigurations } from "@/lib/ai/models/definition";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { WEB_SEARCH_TOOL, type Tools } from "@/lib/ai/tools/types";
 
 const CATEGORIES = [

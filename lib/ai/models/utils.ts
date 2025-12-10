@@ -9,7 +9,7 @@ import {
 } from "@/lib/ai/models/definition";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import type { Tools } from "@/lib/ai/tools/types";
-import type { ChatbotMessage } from "@/lib/ai/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
 import { modelRouting } from "@/lib/ai/workflows/model-routing";
 

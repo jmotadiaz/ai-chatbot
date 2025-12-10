@@ -3,7 +3,7 @@ import { XIcon } from "lucide-react";
 import { useTransition } from "react";
 import ChatLink from "@/components/chat-link";
 import { Item } from "@/components/ui/item";
-import { deleteChat } from "@/lib/ai/actions/chat";
+import { deleteChat } from "@/lib/features/chat/actions";
 
 interface ChatListItemProps {
   id: string;

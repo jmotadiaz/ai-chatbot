@@ -1,6 +1,6 @@
 import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils";
-import type { Chat } from "@/lib/db/schema";
+import { type Chat } from "@/lib/features/chat/types";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import { ChatListItem } from "@/components/chat-list-item";
 
@@ -22,11 +22,7 @@ export const ChatList: React.FC<ChatListProps> = async ({
   return (
     <div className={cn("my-4", className)}>
       <SidebarSectionTitle>Chats</SidebarSectionTitle>
-      <div
-        className="space-y-3"
-        role="list"
-        aria-label="Chat history"
-      >
+      <div className="space-y-3" role="list" aria-label="Chat history">
         {filteredChats.map((chat) => (
           <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
         ))}

@@ -15,11 +15,8 @@ import {
   defaultRagSimilarityPercentage,
   defaultRagMaxResources,
 } from "@/lib/ai/models/definition";
-import {
-  getChatById,
-  getMessagesByChatId,
-  getProjectById,
-} from "@/lib/db/queries";
+import { getProjectById } from "@/lib/db/queries";
+import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import { auth } from "@/auth";
 import { defaultMetaPrompt } from "@/lib/ai/prompts";
 import { filterTools } from "@/lib/ai/tools/utils";
