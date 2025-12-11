@@ -3,10 +3,8 @@ import { tool, generateObject } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
-import {
-  defaultWebSearchNumResults,
-  languageModelConfigurations,
-} from "@/lib/ai/models/definition";
+import { defaultWebSearchNumResults } from "@/lib/features/models/constants";
+import { languageModelConfigurations } from "@/lib/features/models/config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 

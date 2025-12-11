@@ -1,5 +1,5 @@
 import { Locator } from "@playwright/test";
-import type { chatModelId } from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/features/models/constants";
 
 /**
  * Component Object Model for Header functionality

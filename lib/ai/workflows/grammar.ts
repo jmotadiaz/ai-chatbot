@@ -1,5 +1,5 @@
 import { streamObject } from "ai";
-import { languageModelConfigurations } from "@/lib/ai/models/definition";
+import { languageModelConfigurations } from "@/lib/features/models/config";
 import {
   audienceInstructions,
   grammarCorrectorGuardrail,

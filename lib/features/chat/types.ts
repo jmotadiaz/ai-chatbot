@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import type { ModelRoutingMetadata } from "@/lib/ai/workflows/model-routing";
+import type { ModelRoutingMetadata } from "@/lib/features/models/types";
 import { RagTool } from "@/lib/ai/tools/rag";
 import { URLContextTool, WebSearchTool } from "@/lib/ai/tools/web-search";
 import { Chat, Message } from "@/lib/db/schema";

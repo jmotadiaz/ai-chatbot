@@ -1,5 +1,5 @@
 import { embedMany, embed } from "ai";
-import { providers } from "@/lib/ai/models/providers";
+import { providers } from "@/lib/features/models/providers";
 import { embeddingRateLimiter } from "@/lib/ai/rag/rate-limiter";
 
 export const QUERY_TYPES = ["RETRIEVAL_QUERY", "CODE_RETRIEVAL_QUERY"] as const;

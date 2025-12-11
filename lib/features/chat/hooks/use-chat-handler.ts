@@ -2,15 +2,15 @@
 
 import { useCallback, useState, useMemo } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import type { chatModelId } from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/features/models/constants";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import {
   defaultModel,
   CHAT_MODELS,
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/ai/models/definition";
-import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
+} from "@/lib/features/models/constants";
+import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 import type { FilePart } from "@/lib/ai/utils";
 import { handleFileUpload } from "@/lib/ai/utils";
 import type { Tool, Tools } from "@/lib/ai/tools/types";

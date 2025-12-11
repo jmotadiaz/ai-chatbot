@@ -15,13 +15,13 @@ import { ModelPickerSelector } from "@/components/model-picker";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { createProject, updateProject } from "@/lib/ai/actions/project";
 import type { Project } from "@/lib/db/schema";
-import type { chatModelId } from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/features/models/constants";
 import {
   defaultTemperature,
   CHAT_MODELS,
   defaultWebSearchNumResults,
   defaultRagMaxResources,
-} from "@/lib/ai/models/definition";
+} from "@/lib/features/models/constants";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
 import type { Tool, Tools } from "@/lib/ai/tools/types";

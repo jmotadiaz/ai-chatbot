@@ -5,7 +5,7 @@ import { ChatControl } from "@/components/chat-control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
-import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
+import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 
 export interface ToolsControlProps {
   className?: ClassValue;

@@ -3,9 +3,10 @@
 import { FileText, ImageIcon, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Select, useSelect } from "@/components/ui/select";
-import type { chatModelId, Company } from "@/lib/ai/models/definition";
+import type { Company } from "@/lib/features/models/types";
+import type { chatModelId } from "@/lib/features/models/constants";
 import { cn } from "@/lib/utils";
-import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
+import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 import {
   MetaIcon,
   ClaudeIcon,

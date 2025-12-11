@@ -1,7 +1,7 @@
 import { generateEmbedding, QueryType } from "@/lib/ai/rag/embeddings";
 import type { SimilarChunk, SimilarChunks } from "@/lib/db/queries";
 import { findSimilarChunks } from "@/lib/db/queries";
-import { providers } from "@/lib/ai/models/providers";
+import { providers } from "@/lib/features/models/providers";
 
 export interface VectorSearchResult {
   success: boolean;
@@ -84,7 +84,7 @@ const getUniqueResources = (resources: SimilarChunks) => {
 export async function rerankResources({
   query,
   resources,
-  topN
+  topN,
 }: RerankInput): Promise<SimilarChunks> {
   const uniqueResources = getUniqueResources(resources);
 
@@ -96,15 +96,13 @@ export async function rerankResources({
     // 2. Llamada a la API
     const results = await rerank({
       query: query,
-      documents: uniqueResources.map(({content}) => content),
+      documents: uniqueResources.map(({ content }) => content),
       topN: topN,
     });
 
-    return results.map(({index}) => uniqueResources[index]);
-
+    return results.map(({ index }) => uniqueResources[index]);
   } catch (error) {
     console.error("Error al reordenar documentos con Cohere:", error);
     return [];
   }
 }
-

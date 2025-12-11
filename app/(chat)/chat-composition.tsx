@@ -7,14 +7,14 @@ import { Logo } from "@/components/logo";
 import { ModelPicker, ModelPickerLoading } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChatHeader } from "@/components/new-chat";
-import type { chatModelId } from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/features/models/constants";
 import {
   defaultTemperature,
   defaultModel,
   defaultWebSearchNumResults,
   defaultRagSimilarityPercentage,
   defaultRagMaxResources,
-} from "@/lib/ai/models/definition";
+} from "@/lib/features/models/constants";
 import { getProjectById } from "@/lib/db/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import { auth } from "@/auth";

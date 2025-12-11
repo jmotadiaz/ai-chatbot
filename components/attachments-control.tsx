@@ -2,7 +2,7 @@ import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
-import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
+import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
 export const AttachmentsControl: React.FC = () => {

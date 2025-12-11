@@ -1,11 +1,11 @@
 import { createUIMessageStreamResponse } from "ai";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
-import type { chatModelId } from "@/lib/ai/models/definition";
+import type { chatModelId } from "@/lib/features/models/constants";
 import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/ai/models/definition";
+} from "@/lib/features/models/constants";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/auth/handlers";
 import { processChatResponse } from "@/lib/features/chat/actions";

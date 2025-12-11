@@ -17,7 +17,7 @@ import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
 
 import { handleFileUpload } from "@/lib/ai/utils";
-import { getChatConfigurationByModelId } from "@/lib/ai/models/utils";
+import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 
 export interface ChatProps {
   className?: string;

@@ -26,8 +26,8 @@ import {
 import type { PutBlobResult } from "@vercel/blob";
 import { put } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
-import type { ModelConfiguration } from "@/lib/ai/models/definition";
-import { languageModelConfigurations } from "@/lib/ai/models/definition";
+import type { ModelConfiguration } from "@/lib/features/models/types";
+import { languageModelConfigurations } from "@/lib/features/models/config";
 import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { RagChunk } from "@/lib/ai/rag/types";

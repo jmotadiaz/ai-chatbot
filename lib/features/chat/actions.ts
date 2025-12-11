@@ -15,8 +15,8 @@ import {
 } from "ai";
 import { auth } from "@/auth";
 
-import type { chatModelId } from "@/lib/ai/models/definition";
-import { providers } from "@/lib/ai/models/providers";
+import type { chatModelId } from "@/lib/features/models/constants";
+import { providers } from "@/lib/features/models/providers";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import {
   deleteChat as deleteDBChat,
@@ -31,7 +31,7 @@ import {
   chatbotMessageToDbMessage,
   generateTitle,
 } from "@/lib/ai/utils";
-import { calculateModelConfiguration } from "@/lib/ai/models/utils";
+import { calculateModelConfiguration } from "@/lib/features/models/router";
 import type { Tool } from "@/lib/ai/tools/types";
 import {
   WEB_SEARCH_TOOL,
@@ -42,7 +42,7 @@ import {
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/ai/models/definition";
+} from "@/lib/features/models/constants";
 import {
   hasContextUrls,
   urlContextFactory,
