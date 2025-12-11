@@ -1,4 +1,3 @@
-
 // import fs from "fs";
 
 import type {
@@ -203,7 +202,12 @@ export const readTextFile = async (file: File): Promise<string> => {
 
 const isTextFile = (filename: string): boolean => {
   const extension = filename.split(".").pop()?.toLowerCase();
-  return extension === "md" || extension === "txt" || extension === "xml";
+  return (
+    extension === "md" ||
+    extension === "txt" ||
+    extension === "xml" ||
+    extension === "json"
+  );
 };
 
 export interface SegregatedMessagePartsReturn {

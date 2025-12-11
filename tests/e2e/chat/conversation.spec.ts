@@ -19,9 +19,7 @@ test.describe("Chat functionality", () => {
 
     await chatPage.chat.waitForLoadingComplete();
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
-    expect(lastMessage).toContain(
-      "Hello, I'm meta-llama/llama-4-scout-17b-16e-instruct"
-    );
+    expect(lastMessage).toContain("Hello, I'm meta/llama-4-scout");
 
     const userMessages = await chatPage.chat.getUserMessages();
     const assistantMessages = await chatPage.chat.getAssistantMessages();

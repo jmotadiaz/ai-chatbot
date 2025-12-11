@@ -77,8 +77,8 @@ export const AttachmentsControl: React.FC = () => {
             type="file"
             accept={
               supportedFiles.includes("pdf")
-                ? "application/pdf,.md,.txt,.xml"
-                : ".md,.txt,.xml"
+                ? "application/pdf,.md,.txt,.xml,.json"
+                : ".md,.txt,.xml,.json"
             }
             className="absolute w-0 h-0 overflow-hidden opacity-0"
             onChange={onChange}

@@ -78,7 +78,7 @@ Running 53 tests using 7 workers
 
 [1A[2K[2m[WebServer] [22m [32m[1m✓[22m[39m Compiled /api/auth/[...nextauth] in 1532ms (8360 modules)
 
-[1A[2K[8/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category current_news and complexity moderate
+[1A[2K[8/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category current_news and complexity moderate
 [1A[2K[9/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category current_news and complexity complex
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 2638ms
 
@@ -107,7 +107,7 @@ Running 53 tests using 7 workers
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 2066ms
 
-[1A[2K[11/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category factual and complexity simple
+[1A[2K[11/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category factual and complexity simple
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 1303ms
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 1344ms
@@ -174,7 +174,7 @@ category=current_news complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 511ms
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category current_news and complexity moderate
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category current_news and complexity moderate
 category=current_news complexity=moderate
 
 [1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category current_news and complexity complex
@@ -209,7 +209,7 @@ category=current_news complexity=complex
 [1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use google/gemini-2.5-pro for category current_news and complexity advanced
 category=current_news complexity=advanced
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category factual and complexity simple
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category factual and complexity simple
 category=factual complexity=simple
 
 [1A[2K[2m[WebServer] [22mClassification Result: { category: [32m'factual'[39m, complexity: [32m'simple'[39m }
@@ -222,7 +222,7 @@ category=factual complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 29ms
 
-[1A[2K[14/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category current_news and complexity moderate (retry #1)
+[1A[2K[14/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category current_news and complexity moderate (retry #1)
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 17ms
 
 [1A[2K[2m[WebServer] [22m POST /api/chat [32m200[39m in 156ms
@@ -291,7 +291,7 @@ category=current_news complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 898ms
 
-[1A[2K  1) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use llama-3.1-8b-instant for category current_news and complexity simple 
+[1A[2K  1) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use llama-3.1-8b-instant for category current_news and complexity simple
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
 
@@ -382,7 +382,7 @@ category=factual complexity=advanced
 
 [1A[2K[2m[WebServer] [22mRequested File Types: Set(0) {}
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category current_news and complexity moderate
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category current_news and complexity moderate
 category=current_news complexity=moderate
 
 [1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category current_news and complexity complex
@@ -417,11 +417,11 @@ category=current_news complexity=advanced
 [1A[2K[2m[WebServer] [22m POST /api/chat [32m200[39m in 288ms
 
 [1A[2K[21/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use grok-4-fast for category analytical and complexity complex
-[1A[2K  2) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category current_news and complexity moderate 
+[1A[2K  2) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category current_news and complexity moderate
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
 
-    Expected substring: [32m"meta-llama/llama-4-scout-17b-16e-instruct"[39m
+    Expected substring: [32m"meta/llama-4-scout"[39m
     Received string:    [31m"Hello, I'm gemini-2.5-flash-lite, Temperature: 0.6, TopP: 0.9, TopK: undefinedRouter DetailsCategory: Current_newsComplexity: ModerateModel: mock-model-id"[39m
 
       116 |
@@ -439,7 +439,7 @@ category=current_news complexity=advanced
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
 
-    Expected substring: [32m"meta-llama/llama-4-scout-17b-16e-instruct"[39m
+    Expected substring: [32m"meta/llama-4-scout"[39m
     Received string:    [31m"Hello, I'm gemini-2.5-flash-lite, Temperature: 0.6, TopP: 0.9, TopK: undefinedRouter DetailsCategory: Current_newsComplexity: ModerateModel: mock-model-id"[39m
 
       116 |
@@ -462,7 +462,7 @@ category=current_news complexity=advanced
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
 
-[1A[2K  3) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category current_news and complexity complex 
+[1A[2K  3) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category current_news and complexity complex
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
 
@@ -507,7 +507,7 @@ category=current_news complexity=advanced
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
 
-[1A[2K  4) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use google/gemini-2.5-pro for category current_news and complexity advanced 
+[1A[2K  4) [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use google/gemini-2.5-pro for category current_news and complexity advanced
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
 
@@ -555,7 +555,7 @@ category=current_news complexity=advanced
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 22ms
 
 [1A[2K[22/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use grok-4-0709 for category analytical and complexity advanced
-[1A[2K[23/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category technical and complexity simple
+[1A[2K[23/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category technical and complexity simple
 [1A[2K[24/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use qwen/qwen3-coder for category technical and complexity moderate
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 284ms
 
@@ -656,7 +656,7 @@ category=analytical complexity=advanced
 [1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use qwen/qwen3-coder for category technical and complexity moderate
 category=technical complexity=moderate
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category technical and complexity simple
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category technical and complexity simple
 category=technical complexity=simple
 
 [1A[2K[2m[WebServer] [22mClassification Result: { category: [32m'analytical'[39m, complexity: [32m'complex'[39m }
@@ -713,7 +713,7 @@ category=technical complexity=complex
 
 [1A[2K[2m[WebServer] [22m POST /api/chat [32m200[39m in 208ms
 
-[1A[2K[31/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category prompt_engineering and complexity simple
+[1A[2K[31/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category prompt_engineering and complexity simple
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 190ms
 
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 135ms
@@ -828,12 +828,12 @@ category=creative complexity=moderate
 
 [1A[2K[35/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use google/gemini-2.5-pro for category prompt_engineering and complexity advanced
 [1A[2K[36/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use llama-3.1-8b-instant for category conversational and complexity simple
-[1A[2K[37/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category conversational and complexity moderate
+[1A[2K[37/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category conversational and complexity moderate
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 185ms
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 785ms
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category prompt_engineering and complexity simple
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category prompt_engineering and complexity simple
 category=prompt_engineering complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 1042ms
@@ -859,7 +859,7 @@ category=prompt_engineering complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 55ms
 
-[1A[2K  5) [chromium] › tests/e2e/chat/refine.spec.ts:13:7 › Prompt Refiner › should refine the prompt and allow undoing 
+[1A[2K  5) [chromium] › tests/e2e/chat/refine.spec.ts:13:7 › Prompt Refiner › should refine the prompt and allow undoing
 
     [31mTest timeout of 30000ms exceeded.[39m
 
@@ -960,7 +960,7 @@ category=prompt_engineering complexity=advanced
 [1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use llama-3.1-8b-instant for category conversational and complexity simple
 category=conversational complexity=simple
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-scout-17b-16e-instruct for category conversational and complexity moderate
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta/llama-4-scout for category conversational and complexity moderate
 category=conversational complexity=moderate
 
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 254ms

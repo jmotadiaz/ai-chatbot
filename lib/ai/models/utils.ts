@@ -47,7 +47,9 @@ export const calculateModelConfiguration = async ({
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
 ): Required<
-  Omit<ModelConfiguration, "model" | "providerOptions" | "topP" | "topK">
+  Omit<ModelConfiguration, "model" | "providerOptions" | "topP" | "topK"> & {
+    zeroDataRetention?: boolean;
+  }
 > => {
   const {
     temperature,
@@ -57,6 +59,7 @@ export const getChatConfigurationByModelId = (
     supportedOutput,
     company,
     nativeToolCalling,
+    zeroDataRetention,
     reasoning,
   } = Object.assign(
     {
@@ -67,6 +70,7 @@ export const getChatConfigurationByModelId = (
       company: "ai chatbot" as const,
       supportedFiles: [],
       reasoning: false,
+      zeroDataRetention: false,
       supportedOutput: [
         "text",
       ] as Required<ModelConfiguration>["supportedOutput"],
@@ -74,6 +78,9 @@ export const getChatConfigurationByModelId = (
     modelId !== "Router"
       ? {
           ...languageModelConfigurations(modelId),
+          zeroDataRetention:
+            languageModelConfigurations(modelId)?.providerOptions?.gateway
+              ?.zeroDataRetention,
         }
       : {
           reasoning: true,
@@ -95,6 +102,7 @@ export const getChatConfigurationByModelId = (
     systemPrompt,
     toolCalling,
     nativeToolCalling,
+    zeroDataRetention,
     supportedFiles,
     supportedOutput,
   };

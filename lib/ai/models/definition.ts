@@ -6,6 +6,7 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
+import { GatewayProviderOptions } from "@ai-sdk/gateway";
 import { providers } from "./providers";
 
 export type Company =
@@ -30,6 +31,9 @@ export type ProviderOptions = {
   openai?: OpenAIResponsesProviderOptions;
   openrouter?: OpenRouterProviderOptions;
   xai?: XaiProviderOptions;
+  gateway?: Omit<GatewayProviderOptions, "byok"> & {
+    zeroDataRetention?: boolean;
+  };
 };
 
 export interface ModelConfiguration {
@@ -68,15 +72,29 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "meta",
   },
   "Llama 4 Scout": {
-    model: providers.groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+    model: providers.gateway("meta/llama-4-scout"),
     company: "meta",
     supportedFiles: ["img"],
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        order: ["deepinfra", "bedrock"],
+        only: ["deepinfra", "bedrock"],
+      },
+    },
   },
   "Llama 4 Maverick": {
-    model: providers.groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+    model: providers.gateway("meta/llama-4-maverick"),
     company: "meta",
     temperature: 0.6,
     supportedFiles: ["img"],
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        order: ["deepinfra", "bedrock"],
+        only: ["deepinfra", "bedrock"],
+      },
+    },
   },
   "Kimi K2": {
     model: providers.groq("moonshotai/kimi-k2-instruct-0905"),
@@ -112,18 +130,31 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 0.6,
     topP: 0.95,
   },
-  "Qwen3 Next Instruct": {
-    model: providers.gateway("alibaba/qwen3-next-80b-a3b-instruct"),
+  "Qwen3 Instruct": {
+    model: providers.gateway("alibaba/qwen-3-235b"),
     company: "alibaba",
     temperature: 0.7,
     topP: 0.8,
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        order: ["baseten", "deepinfra"],
+        only: ["baseten", "deepinfra"],
+      },
+    },
   },
-  "Qwen3 Next Thinking": {
-    model: providers.gateway("alibaba/qwen3-next-80b-a3b-thinking"),
+  "Qwen3 Thinking": {
+    model: providers.gateway("alibaba/qwen3-235b-a22b-thinking"),
     reasoning: true,
     company: "alibaba",
     temperature: 0.6,
     topP: 0.95,
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        only: ["deepinfra"],
+      },
+    },
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),
@@ -136,6 +167,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 1,
     topP: 0.9,
     topK: 40,
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        only: ["deepinfra"],
+      },
+    },
   },
   "GLM-4.6": {
     model: wrapLanguageModel({
@@ -147,6 +184,13 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 1,
     topP: 0.9,
     topK: 40,
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        order: ["cerebras", "deepinfra", "baseten"],
+        only: ["cerebras", "deepinfra", "baseten"],
+      },
+    },
   },
   Sonar: {
     model: providers.perplexity("sonar"),
@@ -174,6 +218,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        only: ["anthropic"],
+      },
+    },
   },
   "Claude Sonnet 4.5": {
     model: providers.gateway("anthropic/claude-sonnet-4.5"),
@@ -184,6 +234,10 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       anthropic: {
         sendReasoning: true,
         thinking: { type: "enabled", budgetTokens: 10000 },
+      },
+      gateway: {
+        zeroDataRetention: true,
+        only: ["anthropic"],
       },
     },
   },
@@ -197,20 +251,36 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         sendReasoning: true,
         thinking: { type: "enabled", budgetTokens: 10000 },
       },
+      gateway: {
+        zeroDataRetention: true,
+        only: ["anthropic"],
+      },
     },
   },
   "GPT OSS": {
-    model: providers.groq("openai/gpt-oss-120b"),
+    model: providers.gateway("openai/gpt-oss-120b"),
     company: "openai",
     reasoning: true,
     providerOptions: {
-      groq: { reasoningEffort: "high" },
+      openai: { reasoningEffort: "high" },
+      gateway: {
+        zeroDataRetention: true,
+        order: ["cerebras", "baseten", "bedrock"],
+        only: ["cerebras", "baseten", "bedrock"],
+      },
     },
   },
   "GPT OSS Mini": {
-    model: providers.groq("openai/gpt-oss-20b"),
+    model: providers.gateway("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+        order: ["cerebras", "baseten", "bedrock"],
+        only: ["cerebras", "baseten", "bedrock"],
+      },
+    },
   },
   "o4 Mini": {
     model: providers.openai("o4-mini"),
@@ -352,8 +422,8 @@ export const chatModelKeys = [
   "GPT OSS",
   "Kimi K2",
   "Kimi K2 Thinking",
-  "Qwen3 Next Instruct",
-  "Qwen3 Next Thinking",
+  "Qwen3 Instruct",
+  "Qwen3 Thinking",
   "MiniMax M2",
   "GLM-4.6",
   "Deepseek Chat",

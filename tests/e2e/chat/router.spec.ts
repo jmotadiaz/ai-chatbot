@@ -7,13 +7,13 @@ type Complexity = "simple" | "moderate" | "complex" | "advanced";
 
 const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
   technical: {
-    simple: "meta-llama/llama-4-scout-17b-16e-instruct",
+    simple: "meta/llama-4-scout",
     moderate: "anthropic/claude-haiku-4.5",
     complex: "anthropic/claude-sonnet-4.5",
     advanced: "anthropic/claude-opus-4.5",
   },
   prompt_engineering: {
-    simple: "meta-llama/llama-4-scout-17b-16e-instruct",
+    simple: "meta/llama-4-scout",
     moderate: "moonshotai/kimi-k2-instruct-0905",
     complex: "openai/gpt-oss-120b",
     advanced: "gemini-2.5-pro",
@@ -67,8 +67,6 @@ test.describe("Model Router", () => {
 
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect.soft(lastMessage).not.toContain("meta-llama/llama-3.1-8b-instant");
-    expect
-      .soft(lastMessage)
-      .toContain("meta-llama/llama-4-scout-17b-16e-instruct");
+    expect.soft(lastMessage).toContain("meta/llama-4-scout");
   });
 });
