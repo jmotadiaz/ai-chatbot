@@ -30,7 +30,7 @@ import type { ModelConfiguration } from "@/lib/features/models/types";
 import { languageModelConfigurations } from "@/lib/features/models/config";
 import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { RagChunk } from "@/lib/ai/rag/types";
+import { RagChunk } from "@/lib/features/rag/types";
 
 const filterTextParts = (parts: ChatbotMessage["parts"] = []) => {
   return parts.filter((part) => part.type === "text") as TextUIPart[];

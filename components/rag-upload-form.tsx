@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Upload, FileText, Link as LinkIcon } from "lucide-react";
-import { uploadResources } from "@/lib/ai/actions/rag";
+import { uploadResources } from "@/lib/features/rag/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,14 +31,10 @@ export const RAGUploadForm = () => {
     }
   };
 
-
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (jsonFiles.length === 0 && !url) {
-      toast.error(
-        "Please provide a source: JSON file(s) or a URL."
-      );
+      toast.error("Please provide a source: JSON file(s) or a URL.");
       return;
     }
 
@@ -156,7 +152,6 @@ export const RAGUploadForm = () => {
           </p>
         </div>
 
-
         {url && (
           <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
             <LinkIcon className="w-4 h-4 text-gray-500" />
@@ -167,7 +162,10 @@ export const RAGUploadForm = () => {
         {jsonFiles.length > 0 && (
           <div className="space-y-2">
             {jsonFiles.map((file, index) => (
-              <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div
+                key={index}
+                className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+              >
                 <FileText className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-semibold">{file.name}</span>
                 <span className="text-xs text-gray-500">
@@ -177,8 +175,6 @@ export const RAGUploadForm = () => {
             ))}
           </div>
         )}
-
-
 
         <div className="text-right mt-4">
           <Button

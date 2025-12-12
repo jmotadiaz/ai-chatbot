@@ -48,7 +48,7 @@ import {
   urlContextFactory,
   webSearchFactory,
 } from "@/lib/ai/tools/web-search";
-import { ragFactory } from "@/lib/ai/tools/rag";
+import { ragFactory } from "@/lib/features/rag/tool";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { hasUrls } from "@/lib/utils";
 import { getDb } from "@/lib/db/db";

@@ -1,14 +1,8 @@
 import type { UIMessage } from "ai";
 import type { ModelRoutingMetadata } from "@/lib/features/models/types";
-import { RagTool } from "@/lib/ai/tools/rag";
+import { RagTool } from "@/lib/features/rag/tool";
 import { URLContextTool, WebSearchTool } from "@/lib/ai/tools/web-search";
 import { Chat, Message } from "@/lib/db/schema";
-
-export interface Resource {
-  title: string;
-  url?: string;
-  content: string;
-}
 
 export interface TextFile {
   filename: string;

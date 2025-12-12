@@ -1,6 +1,6 @@
 import { RAGResources } from "@/components/rag-resources";
 import { auth } from "@/auth";
-import { getUniqueResourceTitlesByUserId } from "@/lib/db/queries";
+import { getUniqueResourceTitlesByUserId } from "@/lib/features/rag/queries";
 export const Resources: React.FC = async () => {
   const session = await auth();
   if (!session?.user) {

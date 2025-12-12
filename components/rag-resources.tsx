@@ -8,7 +8,7 @@ import {
   deleteAllResources,
   deleteResource,
   deleteSelectedResources,
-} from "@/lib/ai/actions/rag";
+} from "@/lib/features/rag/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
