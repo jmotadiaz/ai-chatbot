@@ -229,7 +229,7 @@ category=factual complexity=simple
 
 [1A[2K[2m[WebServer] [22m POST /api/chat [32m200[39m in 173ms
 
-[1A[2K[15/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-instruct-0905 for category factual and complexity complex
+[1A[2K[15/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-0905 for category factual and complexity complex
 [1A[2K[16/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category current_news and complexity complex (retry #1)
 [1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use meta-llama/llama-4-maverick-17b-128e-instruct for category factual and complexity moderate
 category=factual complexity=moderate
@@ -363,7 +363,7 @@ category=current_news complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 24ms
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-instruct-0905 for category factual and complexity complex
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-0905 for category factual and complexity complex
 category=factual complexity=complex
 
 [1A[2K[2m[WebServer] [22mClassification Result: { category: [32m'factual'[39m, complexity: [32m'complex'[39m }
@@ -746,7 +746,7 @@ category=technical complexity=advanced
 
 [1A[2K[2m[WebServer] [22m POST /api/chat [32m200[39m in 445ms
 
-[1A[2K[32/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-instruct-0905 for category prompt_engineering and complexity moderate
+[1A[2K[32/53] [chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-0905 for category prompt_engineering and complexity moderate
 [1A[2K[2m[WebServer] [22m GET /api/auth/session [32m200[39m in 352ms
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 1157ms
@@ -900,7 +900,7 @@ category=prompt_engineering complexity=simple
 
 [1A[2K[2m[WebServer] [22m GET / [32m200[39m in 401ms
 
-[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-instruct-0905 for category prompt_engineering and complexity moderate
+[1A[2K[chromium] › tests/e2e/chat/router.spec.ts:109:9 › Model Router › should use moonshotai/kimi-k2-0905 for category prompt_engineering and complexity moderate
 category=prompt_engineering complexity=moderate
 
 [1A[2K[2m[WebServer] [22mClassification Result: { category: [32m'prompt_engineering'[39m, complexity: [32m'moderate'[39m }
