@@ -158,7 +158,7 @@ export const POST = withAuth(async (user, req) => {
             executedTools.add(RAG_TOOL);
             return {
               ...(!modelConfiguration.nativeToolCalling && {
-                model: providers.gateway("google/gemini-2.5-flash"),
+                model: providers.google("gemini-2.5-flash"),
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
