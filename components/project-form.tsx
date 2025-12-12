@@ -1,14 +1,8 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense } from "react";
 import { Globe, Save, WandSparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { usePromptRefiner } from "@/lib/features/meta-prompting/hooks/use-prompt-refiner";
-import {
-  defaultMetaPrompt,
-  systemMetaPrompt,
-} from "@/lib/features/meta-prompting/prompts";
+import { defaultMetaPrompt } from "@/lib/features/meta-prompting/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
@@ -16,23 +10,15 @@ import { Button } from "@/components/ui/button";
 import Chat from "@/components/chat";
 import { ModelPickerSelector } from "@/components/model-picker";
 import { Tabs, useTabs } from "@/components/ui/tabs";
-import { createProject, updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
-import type { chatModelId } from "@/lib/features/models/constants";
-import {
-  defaultTemperature,
-  CHAT_MODELS,
-  defaultWebSearchNumResults,
-  defaultRagMaxResources,
-} from "@/lib/features/models/constants";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
-import type { Tool, Tools } from "@/lib/ai/tools/types";
 import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 import {
   markdownCommandStyle,
   MarkdownEditor,
 } from "@/components/ui/markdown-editor";
+import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-project-form";
 
 const tabs = ["configuration", "testChat"] as const;
 
@@ -40,82 +26,33 @@ export interface ProjectFormProps {
   project?: Project;
 }
 
-const models = CHAT_MODELS.filter((model) => model !== "Router");
-
 export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
-  const [title, setTitle] = useState(project?.name || "");
-  const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
-  const [hasPromptRefiner, setHasPromptRefiner] = useState(
-    project?.hasPromptRefiner || false
-  );
-  const [tools, setTools] = useState<Tools>((project?.tools as Tools) || []);
-  const [model, setModel] = useState<chatModelId>(
-    (project?.defaultModel as chatModelId) || models[0]
-  );
-  const [temperature, setTemperature] = useState<number>(
-    project?.defaultTemperature ?? defaultTemperature
-  );
-  const [webSearchNumResults, setWebSearchNumResults] = useState<number>(
-    project?.webSearchNumResults ?? defaultWebSearchNumResults
-  );
-  const [ragMaxResources, setRagMaxResources] = useState<number>(
-    project?.ragMaxResources ?? defaultRagMaxResources
-  );
-  const [isCreating, setIsCreating] = useState(false);
-  const router = useRouter();
 
-  const { refinePrompt, isLoadingRefinedPrompt } = usePromptRefiner({
-    input: systemPrompt,
-    setInput: setSystemPrompt,
-    metaPrompt: systemMetaPrompt,
-  });
-
-  const handleToggleTool = (tool: Tool) => () => {
-    setTools((prev) =>
-      prev.includes(tool) ? prev.filter((t) => t !== tool) : [...prev, tool]
-    );
-  };
-
-  const hasTool = (tool: Tool) => tools.includes(tool);
-
-  const handleSaveProject = async () => {
-    if (!title.trim() || !systemPrompt.trim()) {
-      toast.error("Please fill in required fields (Title and System Prompt)");
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      const projectData = {
-        name: title,
-        defaultModel: model,
-        defaultTemperature: temperature,
-        systemPrompt,
-        tools,
-        hasPromptRefiner,
-        ragMaxResources,
-        webSearchNumResults,
-      };
-
-      if (project) {
-        await updateProject(project.id, projectData);
-        toast.success("Project updated successfully!");
-        router.push(`/project/${project.id}/chat`);
-      } else {
-        const newProject = await createProject(projectData);
-        toast.success("Project created successfully!");
-        router.push(`/project/${newProject.id}/chat`);
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create project"
-      );
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  const {
+    title,
+    setTitle,
+    systemPrompt,
+    setSystemPrompt,
+    hasPromptRefiner,
+    setHasPromptRefiner,
+    tools,
+    handleToggleTool,
+    hasTool,
+    model,
+    setModel,
+    temperature,
+    setTemperature,
+    webSearchNumResults,
+    setWebSearchNumResults,
+    ragMaxResources,
+    setRagMaxResources,
+    isCreating,
+    handleSaveProject,
+    refinePrompt,
+    isLoadingRefinedPrompt,
+    models,
+  } = useHandleProjectForm({ project });
 
   return (
     <div className="overflow-x-hidden h-full flex stretch flex-col">
