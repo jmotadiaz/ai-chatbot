@@ -59,11 +59,13 @@ const reasoningMw = extractReasoningMiddleware({
 
 const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.1 Instant": {
-    model: providers.groq("llama-3.1-8b-instant"),
+    model: providers.gateway("meta/llama-3.1-8b"),
     company: "meta",
     providerOptions: {
-      groq: {
-        structuredOutputs: false,
+      gateway: {
+        zeroDataRetention: true,
+        order: ["cerebras", "deepinfra", "bedrock"],
+        only: ["cerebras", "deepinfra", "bedrock"],
       },
     },
   },
@@ -161,6 +163,10 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         only: ["deepinfra"],
       },
     },
+  },
+  "Qwen3 30b": {
+    model: providers.lmstudio("qwen/qwen3-30b-a3b-2507"),
+    company: "alibaba",
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),

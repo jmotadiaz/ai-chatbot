@@ -32,12 +32,20 @@ import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/ai/types";
 import { RagChunk } from "@/lib/ai/rag/types";
 
+const filterTextParts = (parts: ChatbotMessage["parts"] = []) => {
+  return parts.filter((part) => part.type === "text") as TextUIPart[];
+};
+
 export async function generateTitle(messages: ChatbotMessage[]) {
   const userMessage = messages.find(({ role }) => role === "user");
+  const assistantMessage = messages.find(({ role }) => role === "assistant");
 
-  if (!userMessage) return "Unknown";
+  if (!userMessage && !assistantMessage) return "Unknown";
 
-  const { parts } = userMessage;
+  const parts = [
+    ...filterTextParts(userMessage?.parts),
+    ...filterTextParts(assistantMessage?.parts),
+  ];
 
   try {
     const { text: title } = await generateText({
