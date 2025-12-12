@@ -1,16 +1,8 @@
-import { convertToModelMessages, generateText } from "ai";
 import { auth } from "@/auth";
-import { languageModelConfigurations } from "@/lib/features/models/config";
-import {
-  chatHistoryPrompt,
-  defaultMetaPrompt,
-  metaPromptInputFormat,
-  metaPromptOutputFormat,
-  originalPrompt,
-} from "@/lib/ai/prompts";
-import { scapeXML } from "@/lib/utils";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/ai/utils";
+import { refinePrompt } from "@/lib/features/meta-prompting/actions";
+import { defaultMetaPrompt } from "@/lib/features/meta-prompting/prompts";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -24,32 +16,16 @@ export async function POST(req: Request) {
     metaPrompt = defaultMetaPrompt,
   }: {
     message: ChatbotMessage;
-    messages?: ChatbotMessage[];
+    messages?: ChatbotMessage[]; // Using generic type from features/chat/types matching route expectation
     metaPrompt?: string;
   } = await req.json();
 
-  const chatHistory = convertToModelMessages(messages || []).reduce(
-    (acc, message) => {
-      const role = message.role === "user" ? "user" : "assistant";
-      const content =
-        typeof message.content === "string"
-          ? message.content.replace(/<[^>]+>/g, "").trim()
-          : "";
-      return `${acc}
-      <${role}>
-        ${scapeXML(content)}
-      </${role}>
-  `;
-    },
-    ""
-  );
+  const input = messagePartsToText(message);
 
-  const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
-
-  const { text } = await generateText({
-    ...languageModelConfigurations("GPT OSS"),
-    system: metaPrompt + metaPromptInputFormat + metaPromptOutputFormat,
-    prompt: initialPrompt + originalPrompt(messagePartsToText(message)),
+  const text = await refinePrompt({
+    input,
+    messages,
+    metaPrompt,
   });
 
   return Response.json({ text });

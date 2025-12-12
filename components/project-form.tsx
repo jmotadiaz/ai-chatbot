@@ -4,8 +4,11 @@ import React, { Suspense, useState } from "react";
 import { Globe, Save, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
-import { defaultMetaPrompt, systemMetaPrompt } from "@/lib/ai/prompts";
+import { usePromptRefiner } from "@/lib/features/meta-prompting/hooks/use-prompt-refiner";
+import {
+  defaultMetaPrompt,
+  systemMetaPrompt,
+} from "@/lib/features/meta-prompting/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
@@ -62,7 +65,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
 
-  const { refinePrompt, isLoadingRefinedPrompt } = useRefinePrompt({
+  const { refinePrompt, isLoadingRefinedPrompt } = usePromptRefiner({
     input: systemPrompt,
     setInput: setSystemPrompt,
     metaPrompt: systemMetaPrompt,

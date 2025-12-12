@@ -11,7 +11,7 @@ import { ToolsControl } from "@/components/tools-control";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/app/(chat)/chat-provider";
-import { useRefinePrompt } from "@/lib/ai/hooks/use-refine-prompt";
+import { usePromptRefiner } from "@/lib/features/meta-prompting/hooks/use-prompt-refiner";
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
@@ -39,7 +39,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     metaPrompt,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
-    useRefinePrompt({
+    usePromptRefiner({
       input,
       setInput,
       messages,

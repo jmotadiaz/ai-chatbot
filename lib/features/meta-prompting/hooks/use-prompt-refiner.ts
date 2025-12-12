@@ -1,9 +1,9 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
-import { useGeneratedText } from "./use-generated-text";
+import { useGeneratedText } from "@/lib/ai/hooks/use-generated-text";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
-export interface UseRefinePromptParams {
+export interface UsePromptRefinerParams {
   input: string;
   setInput: (value: string) => void;
   messages?: ChatbotMessage[];
@@ -11,20 +11,20 @@ export interface UseRefinePromptParams {
   status?: UseChatHelpers<never>["status"];
 }
 
-export interface RefinePromptReturn {
+export interface UsePromptRefinerReturn {
   isLoadingRefinedPrompt: boolean;
   refinePrompt: () => void;
   undo: () => void;
   hasPreviousMessage: boolean;
 }
 
-export const useRefinePrompt = ({
+export const usePromptRefiner = ({
   input,
   setInput,
   messages,
   metaPrompt,
   status,
-}: UseRefinePromptParams): RefinePromptReturn => {
+}: UsePromptRefinerParams): UsePromptRefinerReturn => {
   const [previousMessage, setPreviousMessage] = useState<string | null>(null);
   const { generate, isLoading } = useGeneratedText({
     api: "/api/refine-prompt",
