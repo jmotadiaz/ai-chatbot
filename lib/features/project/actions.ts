@@ -2,13 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  deleteProject as deleteDBProject,
-  transaction,
   createProject as createDBProject,
   updateProject as updateDBProject,
-} from "@/lib/db/queries";
+  deleteProject as deleteDBProject,
+} from "./queries";
+import {
+  createProjectSchema,
+  updateProjectSchema,
+  type InsertProject,
+} from "./types";
 import { auth } from "@/auth";
-import type { InsertProject } from "@/lib/db/schema";
+import { transaction } from "@/lib/db/queries";
 
 export async function createProject(
   project: Omit<InsertProject, "id" | "userId">
@@ -16,6 +20,14 @@ export async function createProject(
   const session = await auth();
   if (!session?.user) {
     throw new Error("Unauthorized");
+  }
+
+  // Validate input
+  const validatedFields = createProjectSchema.safeParse(project);
+  if (!validatedFields.success) {
+    throw new Error(
+      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`
+    );
   }
 
   const projectWithUserId = { ...project, userId: session.user.id };
@@ -38,6 +50,14 @@ export async function updateProject(
   const session = await auth();
   if (!session?.user) {
     throw new Error("Unauthorized");
+  }
+
+  // Validate input
+  const validatedFields = updateProjectSchema.safeParse(project);
+  if (!validatedFields.success) {
+    throw new Error(
+      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`
+    );
   }
 
   try {

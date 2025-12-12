@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import Chat from "@/components/chat";
 import { ModelPickerSelector } from "@/components/model-picker";
 import { Tabs, useTabs } from "@/components/ui/tabs";
-import { createProject, updateProject } from "@/lib/ai/actions/project";
-import type { Project } from "@/lib/db/schema";
+import { createProject, updateProject } from "@/lib/features/project/actions";
+import type { Project } from "@/lib/features/project/types";
 import type { chatModelId } from "@/lib/features/models/constants";
 import {
   defaultTemperature,

@@ -6,8 +6,8 @@ import { ProjectListItem } from "@/components/project-list-item";
 import { ChatList } from "@/components/chat-list";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
-import { getProjectsByUserId } from "@/lib/db/queries";
-import { deleteProject } from "@/lib/ai/actions/project";
+import { getProjectsByUserId } from "@/lib/features/project/queries";
+import { deleteProject } from "@/lib/features/project/actions";
 import { SidebarSectionTitle } from "@/components/sidebar";
 
 export interface ProjectListProps {

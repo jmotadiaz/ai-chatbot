@@ -6,7 +6,7 @@ import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import { NewChatHeader } from "@/components/new-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getProjectById } from "@/lib/db/queries";
+import { getProjectById } from "@/lib/features/project/queries";
 
 interface EditProjectPageProps {
   params: Promise<{
