@@ -17,7 +17,7 @@ test.describe("Chat functionality", () => {
     await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
-    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
+    await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
@@ -40,7 +40,7 @@ test.describe("Chat functionality", () => {
     await chatPage.chat.tools.toggleTool("rag");
     await chatPage.closeDropdown();
 
-    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
+    await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
 
     await chatPage.chat.openSettings();
 
@@ -52,8 +52,6 @@ test.describe("Chat functionality", () => {
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect
       .soft(lastMessage)
-      .toContain(
-        "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6"
-      );
+      .toContain("Hello, I'm alibaba/qwen-3-235b, Temperature: 0.6");
   });
 });

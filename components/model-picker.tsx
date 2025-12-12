@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, ImageIcon, Wrench } from "lucide-react";
+import { FileText, ImageIcon, Shield, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Select, useSelect } from "@/components/ui/select";
 import type { Company } from "@/lib/features/models/types";
@@ -171,6 +171,14 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
                 <div className="font-mono font-medium mx-2">|</div>
                 <div>
                   <Wrench size={16} />
+                </div>
+              </>
+            )}
+            {config.zeroDataRetention && (
+              <>
+                <div className="font-mono font-medium mx-2">|</div>
+                <div>
+                  <Shield size={16} />
                 </div>
               </>
             )}

@@ -6,6 +6,7 @@ import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
 import type { RerankResponseResultsItem } from "cohere-ai/api";
+import { GatewayProviderOptions } from "@ai-sdk/gateway";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { Tools } from "@/lib/ai/tools/types";
 // Types definitions for the models feature
@@ -34,6 +35,9 @@ export type ProviderOptions = {
   openai?: OpenAIResponsesProviderOptions;
   openrouter?: OpenRouterProviderOptions;
   xai?: XaiProviderOptions;
+  gateway?: Omit<GatewayProviderOptions, "byok"> & {
+    zeroDataRetention?: boolean;
+  };
 };
 
 export interface ModelConfiguration {

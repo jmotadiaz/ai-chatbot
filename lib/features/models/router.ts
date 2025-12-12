@@ -135,7 +135,7 @@ const decisionTree = ({
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen3 Next Thinking",
+          "Qwen3 Thinking",
           "GPT 5 Mini"
         ),
       },
@@ -260,9 +260,7 @@ const decisionTree = ({
         ),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen3 Next Instruct"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Qwen3 Instruct"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
