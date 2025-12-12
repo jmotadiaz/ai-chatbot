@@ -33,7 +33,7 @@ const NewChat: React.FC<NewChatProps> = ({
           : "cursor-pointer"
       )}
       onNavigate={() => {
-        if (pathname === "/") {
+        if (pathname === "/" || pathname === `/project/${projectId}/chat`) {
           setMessages([]);
         }
       }}
