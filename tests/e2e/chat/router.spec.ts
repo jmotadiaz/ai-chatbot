@@ -66,7 +66,7 @@ test.describe("Model Router", () => {
     await chatPage.chat.waitForLoadingComplete();
 
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
-    expect.soft(lastMessage).not.toContain("meta-llama/llama-3.1-8b-instant");
+    expect.soft(lastMessage).not.toContain("meta-llama/meta/llama-3.1-8b");
     expect.soft(lastMessage).toContain("meta/llama-4-scout");
   });
 });

@@ -10,11 +10,13 @@ const reasoningMw = extractReasoningMiddleware({
 
 const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.1 Instant": {
-    model: providers.groq("llama-3.1-8b-instant"),
+    model: providers.gateway("meta/llama-3.1-8b"),
     company: "meta",
     providerOptions: {
-      groq: {
-        structuredOutputs: false,
+      gateway: {
+        zeroDataRetention: true,
+        order: ["cerebras", "deepinfra", "bedrock"],
+        only: ["cerebras", "deepinfra", "bedrock"],
       },
     },
   },
@@ -112,6 +114,10 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
         only: ["deepinfra"],
       },
     },
+  },
+  "Qwen3 30b": {
+    model: providers.lmstudio("qwen/qwen3-30b-a3b-2507"),
+    company: "alibaba",
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),
@@ -270,8 +276,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
     supportedFiles: ["img", "pdf"],
   },
-  "GPT 5.1": {
-    model: providers.gateway("openai/gpt-5.1-thinking"),
+  "GPT 5.2": {
+    model: providers.gateway("openai/gpt-5.2"),
     reasoning: true,
     company: "openai",
     providerOptions: {
@@ -386,7 +392,7 @@ export const chatModelKeys = [
   "Grok 4.1 Fast",
   "Grok 4",
   "GPT 5 Mini",
-  "GPT 5.1",
+  "GPT 5.2",
   "Gemini 2.5 Flash",
   "Gemini 3 Pro",
   "Nano Banana",

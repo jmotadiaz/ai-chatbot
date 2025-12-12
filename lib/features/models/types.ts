@@ -102,6 +102,7 @@ export interface Providers {
   deepseek: (modelId: string) => LanguageModelV2;
   perplexity: (modelId: string) => LanguageModelV2;
   gateway: (modelId: string) => LanguageModelV2;
+  lmstudio: (modelId: string) => LanguageModelV2;
   embedding: () => EmbeddingModelV2;
   rerank: () => (args: RerankArgs) => Promise<RerankResponseResultsItem[]>;
 }
