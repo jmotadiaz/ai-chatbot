@@ -13,7 +13,7 @@ import {
   NoSuchToolError,
   InvalidArgumentError,
 } from "ai";
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 
 import type { chatModelId } from "@/lib/features/models/constants";
 import { providers } from "@/lib/features/models/providers";

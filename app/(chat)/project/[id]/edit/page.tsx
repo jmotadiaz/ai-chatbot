@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "../../../sidebar";
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 import { ProjectForm } from "@/components/project-form";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 
 const _AuthCheck: React.FC = async () => {
   const session = await auth();

@@ -2,8 +2,8 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { auth } from "@/auth";
-import { login } from "@/lib/auth/actions";
+import { auth } from "@/lib/features/auth/auth-config";
+import { login } from "@/lib/features/auth/actions";
 
 const Page: React.FC = async () => {
   const session = await auth();

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 import { ChatComposition } from "@/app/(chat)/chat-composition";
 
 export interface PageProps {

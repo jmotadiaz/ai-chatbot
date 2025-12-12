@@ -11,7 +11,7 @@ import {
   updateProjectSchema,
   type InsertProject,
 } from "./types";
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 import { transaction } from "@/lib/db/queries";
 
 export async function createProject(

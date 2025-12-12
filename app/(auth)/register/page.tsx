@@ -2,7 +2,7 @@ import React from "react";
 import { forbidden } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { register } from "@/lib/auth/actions";
+import { register } from "@/lib/features/auth/actions";
 
 const Page: React.FC = async () => {
   if (process.env.PRIVATE_BEHAVIOR !== "enabled") {

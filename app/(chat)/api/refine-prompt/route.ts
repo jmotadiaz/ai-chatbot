@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/ai/utils";
 import { refinePrompt } from "@/lib/features/meta-prompting/actions";

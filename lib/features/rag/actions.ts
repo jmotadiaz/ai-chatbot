@@ -2,15 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { transaction } from "@/lib/db/queries";
 import {
   deleteResources,
   deleteResourcesByTitle,
   deleteResourcesByTitles,
 } from "./queries";
-
 import { saveUrlResource } from "./ingestion/pipeline";
+import { auth } from "@/lib/features/auth/auth-config";
+import { transaction } from "@/lib/db/queries";
+
 
 export interface ProcessResult {
   success: boolean;

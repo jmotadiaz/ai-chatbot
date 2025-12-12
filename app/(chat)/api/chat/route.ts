@@ -7,7 +7,7 @@ import {
   defaultWebSearchNumResults,
 } from "@/lib/features/models/constants";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { withAuth } from "@/lib/auth/handlers";
+import { withAuth } from "@/lib/features/auth/handlers";
 import { processChatResponse } from "@/lib/features/chat/actions";
 
 export const maxDuration = 240;

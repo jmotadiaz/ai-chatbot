@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/features/auth/auth-config";
 import translate from "@/lib/ai/workflows/translate";
 
 export async function POST(req: Request) {
