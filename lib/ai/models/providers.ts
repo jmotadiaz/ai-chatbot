@@ -10,11 +10,17 @@ import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { CohereClient } from "cohere-ai";
 import { RerankResponseResultsItem } from "cohere-ai/api";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 
+const lmstudio = createOpenAICompatible({
+  name: "lmstudio",
+  baseURL: "http://localhost:1234/v1",
+});
+
 const cohere = new CohereClient({
-    token: process.env.COHERE_API_KEY,
-  });
+  token: process.env.COHERE_API_KEY,
+});
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -43,6 +49,7 @@ export interface Providers {
   deepseek: (modelId: string) => LanguageModelV2;
   perplexity: (modelId: string) => LanguageModelV2;
   gateway: (modelId: string) => LanguageModelV2;
+  lmstudio: (modelId: string) => LanguageModelV2;
   embedding: () => EmbeddingModelV2;
   rerank: () => (args: RerankArgs) => Promise<RerankResponseResultsItem[]>;
 }
@@ -62,6 +69,7 @@ export const providers: Providers = process.env.USE_MOCK_PROVIDERS
       deepseek: (modelId: string) => createMockModel(modelId),
       perplexity: (modelId: string) => createMockModel(modelId),
       gateway: (modelId: string) => createMockModel(modelId),
+      lmstudio: (modelId: string) => createMockModel(modelId),
       embedding: () => createMockEmbeddingModel(),
       rerank: () => () => Promise.resolve([]),
     }
@@ -75,6 +83,7 @@ export const providers: Providers = process.env.USE_MOCK_PROVIDERS
       deepseek: (modelId: string) => deepseek(modelId),
       perplexity: (modelId: string) => perplexity(modelId),
       gateway: (modelId: string) => gateway(modelId),
+      lmstudio: (modelId: string) => lmstudio(modelId),
       embedding: () => google.textEmbeddingModel("gemini-embedding-001"),
       rerank: () => async (args: RerankArgs) => {
         const response = await cohere.rerank({
