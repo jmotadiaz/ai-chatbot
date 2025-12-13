@@ -1,22 +1,27 @@
-import { tool, ToolSet } from "ai";
+import { InferUITools, tool, ToolSet, ToolUIPart, UIMessage } from "ai";
 import { z } from "zod";
 import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
-import { ChatbotMessage } from "@/lib/features/chat/types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 
 export interface RagFactoryArgs {
-  messages: ChatbotMessage[];
+  messages: UIMessage[];
   userId: string;
   ragMaxResources?: number;
 }
 
-function extractChunkIdsFromMessages(messages: ChatbotMessage[]): string[] {
+function isRagPart(
+  part: UIMessage["parts"][number]
+): part is ToolUIPart<InferUITools<RagTool>> {
+  return part.type === "tool-rag";
+}
+
+function extractChunkIdsFromMessages(messages: UIMessage[]): string[] {
   const chunkIds: string[] = [];
 
   for (const message of messages) {
     for (const part of message.parts) {
-      if (part.type === "tool-rag") {
+      if (isRagPart(part)) {
         chunkIds.push(
           ...(part.output?.map(({ id }: { id: string }) => id) || [])
         );
