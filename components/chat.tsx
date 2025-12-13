@@ -11,13 +11,13 @@ import { ToolsControl } from "@/components/tools-control";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
 import { cn } from "@/lib/utils/helpers";
 import { useChatContext } from "@/app/(chat)/chat-provider";
-import { usePromptRefiner } from "@/lib/features/meta-prompting/hooks/use-prompt-refiner";
+import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import { getChatConfigurationByModelId } from "@/lib/features/models/config";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 
 export interface ChatProps {
   className?: string;

@@ -14,7 +14,7 @@ import {
   ZodString,
   ZodUnion,
 } from "zod";
-import { languageModelConfigurations } from "@/lib/features/models/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
 
 // --- Generic Helpers (only used in this feature) ---
 

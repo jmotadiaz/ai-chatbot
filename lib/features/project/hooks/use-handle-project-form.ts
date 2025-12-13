@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { usePromptRefiner } from "@/lib/features/meta-prompting/hooks/use-prompt-refiner";
-import { systemMetaPrompt } from "@/lib/features/meta-prompting/prompts";
+import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
+import { systemMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { createProject, updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
-import type { chatModelId } from "@/lib/features/models/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/constants";
 import {
   defaultTemperature,
   CHAT_MODELS,
   defaultWebSearchNumResults,
   defaultRagMaxResources,
-} from "@/lib/features/models/constants";
+} from "@/lib/features/foundation-model/constants";
 import type { Tool, Tools } from "@/lib/features/chat/types";
 
 const models = CHAT_MODELS.filter((model) => model !== "Router");

@@ -15,7 +15,7 @@ import {
 } from "ai";
 import { auth } from "@/lib/features/auth/auth-config";
 
-import type { chatModelId } from "@/lib/features/models/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/constants";
 import { providers } from "@/lib/infrastructure/ai/providers";
 import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
@@ -31,7 +31,7 @@ import {
   chatbotMessageToDbMessage,
   generateTitle,
 } from "@/lib/features/chat/utils";
-import { calculateModelConfiguration } from "@/lib/features/models/router";
+import { calculateModelConfiguration } from "@/lib/features/foundation-model/router";
 import {
   URL_CONTEXT_TOOL,
   WEB_SEARCH_TOOL,
@@ -45,7 +45,7 @@ import {
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/models/constants";
+} from "@/lib/features/foundation-model/constants";
 import {
   webSearchFactory,
   urlContextFactory,

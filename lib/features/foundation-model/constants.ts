@@ -1,6 +1,6 @@
 import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import { providers } from "@/lib/infrastructure/ai/providers";
-import { ModelConfiguration } from "@/lib/features/models/types";
+import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 const reasoningMw = extractReasoningMiddleware({
   tagName: "think",

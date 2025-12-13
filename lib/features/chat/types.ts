@@ -1,5 +1,5 @@
 import type { InferUITools, UIMessage } from "ai";
-import type { ModelRoutingMetadata } from "@/lib/features/models/types";
+import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import { RagTool } from "@/lib/features/rag/tool";
 import { URLContextTool, WebSearchTool } from "@/lib/features/web-search/tools";
 import { Chat, Message } from "@/lib/infrastructure/db/schema";

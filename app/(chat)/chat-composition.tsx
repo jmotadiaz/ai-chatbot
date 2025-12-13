@@ -7,18 +7,18 @@ import { Logo } from "@/components/logo";
 import { ModelPicker, ModelPickerLoading } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChatHeader } from "@/components/new-chat";
-import type { chatModelId } from "@/lib/features/models/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/constants";
 import {
   defaultTemperature,
   defaultModel,
   defaultWebSearchNumResults,
   defaultRagSimilarityPercentage,
   defaultRagMaxResources,
-} from "@/lib/features/models/constants";
+} from "@/lib/features/foundation-model/constants";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import { auth } from "@/lib/features/auth/auth-config";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompting/prompts";
+import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import {
   filterTools,
   dbMessageToChatbotMessage,

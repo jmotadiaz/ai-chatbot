@@ -9,7 +9,10 @@ import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { CohereClient } from "cohere-ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { Providers, RerankArgs } from "@/lib/features/models/types";
+import type {
+  Providers,
+  RerankArgs,
+} from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 
 const lmstudio = createOpenAICompatible({

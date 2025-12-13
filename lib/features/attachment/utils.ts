@@ -1,7 +1,7 @@
 import type { PutBlobResult } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
 import type { FilePart } from "./types";
-import type { ModelConfiguration } from "@/lib/features/models/types";
+import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 export const convertFilesToDataURLs = async (
   files: FileList

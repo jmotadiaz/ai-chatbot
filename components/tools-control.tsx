@@ -6,7 +6,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
-import { getChatConfigurationByModelId } from "@/lib/features/models/config";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 
 export interface ToolsControlProps {
   className?: ClassValue;

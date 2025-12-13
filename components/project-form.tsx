@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import { Globe, Save, WandSparkles } from "lucide-react";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompting/prompts";
+import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";

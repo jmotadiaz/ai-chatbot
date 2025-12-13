@@ -7,7 +7,7 @@ import {
   CHAT_MODELS,
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/models/constants";
+} from "@/lib/features/foundation-model/constants";
 import {
   UseChatResult,
   UseChatArgs,

@@ -9,7 +9,7 @@ import Image from "next/image";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import type { ModelRoutingMetadata } from "@/lib/features/models/types";
+import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
 import { segregateMessageParts } from "@/lib/features/chat/utils";

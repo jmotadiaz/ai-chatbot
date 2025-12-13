@@ -18,12 +18,12 @@ import {
   useChatHandler,
   useAvailableModels,
 } from "./use-chat-handler";
-import type { chatModelId } from "@/lib/features/models/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/constants";
 import {
   defaultModel,
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/models/constants";
+} from "@/lib/features/foundation-model/constants";
 import type {
   ChatbotDataPart,
   ChatbotMessage,

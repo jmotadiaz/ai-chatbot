@@ -3,10 +3,10 @@
 import { FileText, ImageIcon, Shield, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Select, useSelect } from "@/components/ui/select";
-import type { Company } from "@/lib/features/models/types";
-import type { chatModelId } from "@/lib/features/models/constants";
+import type { Company } from "@/lib/features/foundation-model/types";
+import type { chatModelId } from "@/lib/features/foundation-model/constants";
 import { cn } from "@/lib/utils/helpers";
-import { getChatConfigurationByModelId } from "@/lib/features/models/config";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 import {
   MetaIcon,
   ClaudeIcon,
