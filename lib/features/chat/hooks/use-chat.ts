@@ -24,8 +24,7 @@ import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/models/constants";
-import type { ChatbotDataPart, ChatbotMessage } from "@/lib/types";
-import type { Tools } from "@/lib/ai/tools/types";
+import type { ChatbotDataPart, ChatbotMessage, Tools } from "@/lib/types";
 
 export interface UseChatArgs {
   initialMessages?: ChatbotMessage[];

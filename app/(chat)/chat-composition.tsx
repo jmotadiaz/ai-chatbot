@@ -19,8 +19,7 @@ import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import { auth } from "@/lib/features/auth/auth-config";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompting/prompts";
-import { filterTools } from "@/lib/ai/tools/utils";
-import { dbMessageToChatbotMessage } from "@/lib/ai/utils";
+import { filterTools, dbMessageToChatbotMessage } from "@/lib/ai/utils";
 import type { ChatProviderProps } from "@/app/(chat)/chat-provider";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 

@@ -2,8 +2,8 @@ import { tool, ToolSet } from "ai";
 import { z } from "zod";
 import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
-import { RAG_TOOL } from "@/lib/ai/tools/types";
 import { ChatbotMessage } from "@/lib/types";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
 
 export interface RagFactoryArgs {
   messages: ChatbotMessage[];

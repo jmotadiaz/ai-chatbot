@@ -1,8 +1,13 @@
 import type { InferUITools, UIMessage } from "ai";
 import type { ModelRoutingMetadata } from "@/lib/features/models/types";
 import { RagTool } from "@/lib/features/rag/tool";
-import { URLContextTool, WebSearchTool } from "@/lib/ai/tools/web-search";
+import { URLContextTool, WebSearchTool } from "@/lib/features/web-search/tools";
 import { Chat, Message } from "@/lib/db/schema";
+import {
+  URL_CONTEXT_TOOL,
+  WEB_SEARCH_TOOL,
+} from "@/lib/features/web-search/constants";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
 
 export interface TextFile {
   filename: string;
@@ -34,6 +39,15 @@ export type ChatbotMessage = UIMessage<
   ChatbotDataPart,
   InferUITools<RagTool & WebSearchTool & URLContextTool>
 >;
+
+export type Tool =
+  | typeof RAG_TOOL
+  | typeof WEB_SEARCH_TOOL
+  | typeof URL_CONTEXT_TOOL;
+
+export type Tools = Array<Tool>;
+
+export const TOOLS: Tools = [RAG_TOOL, WEB_SEARCH_TOOL, URL_CONTEXT_TOOL];
 
 // Re-export specific database types for domain usage
 export type { Chat, Message };

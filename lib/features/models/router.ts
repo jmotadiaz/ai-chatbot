@@ -9,9 +9,8 @@ import type {
   ModelRoutingResult,
 } from "./types";
 import { languageModelConfigurations } from "./config";
-import { WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
-import type { Tools } from "@/lib/ai/tools/types";
-import type { ChatbotMessage } from "@/lib/types";
+import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
+import type { Tools, ChatbotMessage } from "@/lib/types";
 
 // --- Model Routing Logic ---
 

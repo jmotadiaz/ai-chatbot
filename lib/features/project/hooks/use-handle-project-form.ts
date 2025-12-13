@@ -14,7 +14,7 @@ import {
   defaultWebSearchNumResults,
   defaultRagMaxResources,
 } from "@/lib/features/models/constants";
-import type { Tool, Tools } from "@/lib/ai/tools/types";
+import type { Tool, Tools } from "@/lib/types";
 
 const models = CHAT_MODELS.filter((model) => model !== "Router");
 

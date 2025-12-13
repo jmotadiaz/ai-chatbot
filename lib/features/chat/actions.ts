@@ -32,24 +32,22 @@ import {
   generateTitle,
 } from "@/lib/ai/utils";
 import { calculateModelConfiguration } from "@/lib/features/models/router";
-import type { Tool } from "@/lib/ai/tools/types";
 import {
-  WEB_SEARCH_TOOL,
   URL_CONTEXT_TOOL,
-  RAG_TOOL,
-  TOOLS,
-} from "@/lib/ai/tools/types";
+  WEB_SEARCH_TOOL,
+} from "@/lib/features/web-search/constants";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { TOOLS, type Tool, type ChatbotMessage } from "@/lib/types";
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/models/constants";
 import {
-  hasContextUrls,
-  urlContextFactory,
   webSearchFactory,
-} from "@/lib/ai/tools/web-search";
+  urlContextFactory,
+} from "@/lib/features/web-search/tools";
+import { hasContextUrls } from "@/lib/features/web-search/utils";
 import { ragFactory } from "@/lib/features/rag/tool";
-import type { ChatbotMessage } from "@/lib/types";
 import { hasUrls } from "@/lib/utils";
 import { getDb } from "@/lib/db/db";
 

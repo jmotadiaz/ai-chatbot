@@ -1,6 +1,7 @@
 import type { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Label } from "@/components/ui/label";

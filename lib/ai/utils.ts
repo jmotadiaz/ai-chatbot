@@ -26,6 +26,7 @@ import { languageModelConfigurations } from "@/lib/features/models/config";
 import type { InsertMessage, Message } from "@/lib/db/schema";
 import type { ChatbotMessage } from "@/lib/types";
 import { RagChunk } from "@/lib/features/rag/types";
+import { Tool, TOOLS } from "@/lib/types";
 
 const filterTextParts = (parts: ChatbotMessage["parts"] = []) => {
   return parts.filter((part) => part.type === "text") as TextUIPart[];
@@ -308,4 +309,8 @@ export const downloadFile = async ({
   } catch (error) {
     throw new Error(`Error downloading file: ${error}`);
   }
+};
+
+export const filterTools = (tools: string[]): Tool[] => {
+  return tools.filter((tool): tool is Tool => TOOLS.includes(tool as Tool));
 };

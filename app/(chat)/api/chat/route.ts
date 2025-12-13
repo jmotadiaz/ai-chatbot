@@ -1,7 +1,8 @@
 import { createUIMessageStreamResponse } from "ai";
 import { defaultSystemPrompt } from "@/lib/ai/prompts";
 import type { chatModelId } from "@/lib/features/models/constants";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,

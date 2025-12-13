@@ -3,7 +3,7 @@
 import { useCallback, useState, useMemo } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { chatModelId } from "@/lib/features/models/constants";
-import type { ChatbotMessage } from "@/lib/types";
+import type { ChatbotMessage, Tool, Tools } from "@/lib/types";
 import {
   defaultModel,
   CHAT_MODELS,
@@ -13,7 +13,6 @@ import {
 import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import type { Tool, Tools } from "@/lib/ai/tools/types";
 
 // -- Config Hook --
 

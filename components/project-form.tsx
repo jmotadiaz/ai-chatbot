@@ -13,7 +13,8 @@ import { Tabs, useTabs } from "@/components/ui/tabs";
 import type { Project } from "@/lib/features/project/types";
 import { ChatProvider } from "@/app/(chat)/chat-provider";
 import { Toggle } from "@/components/ui/toggle";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {
   markdownCommandStyle,
   MarkdownEditor,

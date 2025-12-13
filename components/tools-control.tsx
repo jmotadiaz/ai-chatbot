@@ -4,7 +4,8 @@ import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 
 export interface ToolsControlProps {
