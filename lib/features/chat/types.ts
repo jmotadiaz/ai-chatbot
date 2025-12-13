@@ -2,7 +2,7 @@ import type { InferUITools, UIMessage } from "ai";
 import type { ModelRoutingMetadata } from "@/lib/features/models/types";
 import { RagTool } from "@/lib/features/rag/tool";
 import { URLContextTool, WebSearchTool } from "@/lib/features/web-search/tools";
-import { Chat, Message } from "@/lib/db/schema";
+import { Chat, Message } from "@/lib/infrastructure/db/schema";
 import {
   URL_CONTEXT_TOOL,
   WEB_SEARCH_TOOL,

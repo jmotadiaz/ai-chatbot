@@ -12,7 +12,7 @@ const chats = [
   },
 ];
 
-import type { Chat } from "@/lib/db/schema";
+import type { Chat } from "@/lib/infrastructure/db/schema";
 
 test.describe("Chat Sidebar", () => {
   let createdChats: Chat[];

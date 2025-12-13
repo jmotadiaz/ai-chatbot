@@ -14,7 +14,7 @@ import {
   resourceRelations,
   chunkRelations,
   embeddingRelations,
-} from "@/lib/db/schema";
+} from "@/lib/infrastructure/db/schema";
 
 // Define the schema for drizzle
 export const schema = {

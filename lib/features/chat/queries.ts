@@ -2,10 +2,18 @@ import "server-only";
 
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 
-import type { Chat, Message, InsertMessage, InsertChat } from "@/lib/db/schema";
-import { chat, message } from "@/lib/db/schema";
-import { getDb } from "@/lib/db/db";
-import type { Transactional, SafeTransaction } from "@/lib/db/queries";
+import type {
+  Chat,
+  Message,
+  InsertMessage,
+  InsertChat,
+} from "@/lib/infrastructure/db/schema";
+import { chat, message } from "@/lib/infrastructure/db/schema";
+import { getDb } from "@/lib/infrastructure/db/db";
+import type {
+  Transactional,
+  SafeTransaction,
+} from "@/lib/infrastructure/db/queries";
 
 export const saveChat =
   ({

@@ -4,8 +4,14 @@ import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { user, User, chat, message, Chat } from "@/lib/db/schema";
-import { schema } from "@/lib/db/db";
+import {
+  user,
+  User,
+  chat,
+  message,
+  Chat,
+} from "@/lib/infrastructure/db/schema";
+import { schema } from "@/lib/infrastructure/db/db";
 
 type NewChat = {
   title: string;

@@ -3,8 +3,8 @@ import { createEmbeddings, saveResource, saveChunks } from "../queries";
 import { generateEmbeddings } from "./embeddings";
 import { fetchAndConvertURL, UrlResource } from "./fetch";
 import { generateChunks } from "./chunking";
-import { transaction } from "@/lib/db/queries";
-import type { InsertChunk } from "@/lib/db/schema";
+import { transaction } from "@/lib/infrastructure/db/queries";
+import type { InsertChunk } from "@/lib/infrastructure/db/schema";
 
 export const saveUrlResource = async (
   urlResource: UrlResource,

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { createUser, getUser } from "./queries";
 import { signIn } from "@/lib/features/auth/auth-config";
-import { transaction } from "@/lib/db/queries";
+import { transaction } from "@/lib/infrastructure/db/queries";
 
 const authFormSchema = z.object({
   email: z.string().email(),

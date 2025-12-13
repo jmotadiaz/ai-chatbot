@@ -1,6 +1,6 @@
 import { embedMany } from "ai";
 import { embeddingRateLimiter } from "./rate-limiter";
-import { providers } from "@/lib/ai/providers";
+import { providers } from "@/lib/infrastructure/ai/providers";
 
 interface EmbeddingInput {
   chunkId: string;

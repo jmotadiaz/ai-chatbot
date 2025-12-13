@@ -1,9 +1,9 @@
 import "server-only";
 import { eq } from "drizzle-orm";
-import { user, type User } from "@/lib/db/schema";
+import { user, type User } from "@/lib/infrastructure/db/schema";
 import { generateHashedPassword } from "@/lib/features/auth/utils";
-import { getDb } from "@/lib/db/db";
-import type { Transactional } from "@/lib/db/queries";
+import { getDb } from "@/lib/infrastructure/db/db";
+import type { Transactional } from "@/lib/infrastructure/db/queries";
 
 export function getUser(email: string): Promise<Array<User>> {
   try {

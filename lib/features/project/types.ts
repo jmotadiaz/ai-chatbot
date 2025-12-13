@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Project, InsertProject } from "@/lib/db/schema";
+import { Project, InsertProject } from "@/lib/infrastructure/db/schema";
 import { CHAT_MODELS } from "@/lib/features/models/constants";
 
 // Re-export database types

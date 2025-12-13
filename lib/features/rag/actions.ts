@@ -9,8 +9,7 @@ import {
 } from "./queries";
 import { saveUrlResource } from "./ingestion/pipeline";
 import { auth } from "@/lib/features/auth/auth-config";
-import { transaction } from "@/lib/db/queries";
-
+import { transaction } from "@/lib/infrastructure/db/queries";
 
 export interface ProcessResult {
   success: boolean;

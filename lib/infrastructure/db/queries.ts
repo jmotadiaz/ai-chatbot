@@ -5,8 +5,8 @@ import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 
 import type { PgTransaction } from "drizzle-orm/pg-core";
-import type { schema } from "@/lib/db/db";
-import { getDb } from "@/lib/db/db";
+import type { schema } from "@/lib/infrastructure/db/db";
+import { getDb } from "@/lib/infrastructure/db/db";
 
 export interface SafeTransaction {
   id: string;

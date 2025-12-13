@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "npm run db:start && next dev",
-    "build": "npx tsx lib/db/migrate.ts && next build",
+    "build": "npx tsx lib/infrastructure/db/migrate.ts && next build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx lib/db/migrate.ts",
+    "db:migrate": "npx tsx lib/infrastructure/db/migrate.ts",
     "db:setup": "./scripts/setup-local-db.sh",
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",

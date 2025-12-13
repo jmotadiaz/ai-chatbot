@@ -12,7 +12,7 @@ import {
   type InsertProject,
 } from "./types";
 import { auth } from "@/lib/features/auth/auth-config";
-import { transaction } from "@/lib/db/queries";
+import { transaction } from "@/lib/infrastructure/db/queries";
 
 export async function createProject(
   project: Omit<InsertProject, "id" | "userId">

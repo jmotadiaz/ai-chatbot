@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@/db/*": ["./lib/db/*"],
+      "@/db/*": ["./lib/infrastructure/db/*"],
       "@/auth": ["./lib/features/auth/auth-config"],
     }
   },

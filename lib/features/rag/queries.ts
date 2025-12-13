@@ -11,9 +11,9 @@ import {
   type InsertResource,
   type InsertChunk,
   type InsertEmbedding,
-} from "@/lib/db/schema";
-import { getDb } from "@/lib/db/db";
-import { Transactional } from "@/lib/db/queries";
+} from "@/lib/infrastructure/db/schema";
+import { getDb } from "@/lib/infrastructure/db/db";
+import { Transactional } from "@/lib/infrastructure/db/queries";
 
 export const saveResource =
   (data: InsertResource & { userId: string }): Transactional<Resource> =>

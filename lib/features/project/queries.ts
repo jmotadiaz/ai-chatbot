@@ -1,14 +1,17 @@
 import "server-only";
 import { and, desc, eq } from "drizzle-orm";
-import { getDb } from "@/lib/db/db";
+import { getDb } from "@/lib/infrastructure/db/db";
 import {
   project,
   chat,
   type Chat,
   type Project,
   type InsertProject,
-} from "@/lib/db/schema";
-import { type Transactional, type SafeTransaction } from "@/lib/db/queries";
+} from "@/lib/infrastructure/db/schema";
+import {
+  type Transactional,
+  type SafeTransaction,
+} from "@/lib/infrastructure/db/queries";
 
 export const createProject =
   ({

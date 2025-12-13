@@ -10,7 +10,10 @@ async function globalSetup() {
   try {
     console.log("Executing migrations...");
     await migrate(db, {
-      migrationsFolder: path.join(__dirname, "../../lib/db/migrations"),
+      migrationsFolder: path.join(
+        __dirname,
+        "../../lib/infrastructure/db/migrations"
+      ),
     });
     console.log("Migrations completed");
   } catch (error) {

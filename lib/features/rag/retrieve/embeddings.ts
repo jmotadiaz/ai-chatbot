@@ -1,5 +1,5 @@
 import { embed } from "ai";
-import { providers } from "@/lib/ai/providers";
+import { providers } from "@/lib/infrastructure/ai/providers";
 import { QueryType } from "@/lib/features/rag/types";
 
 export const generateEmbedding = async (

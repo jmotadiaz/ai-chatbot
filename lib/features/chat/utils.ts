@@ -7,7 +7,7 @@ import type {
 import { generateText } from "ai";
 import { put } from "@vercel/blob";
 import { languageModelConfigurations } from "@/lib/features/models/config";
-import type { InsertMessage, Message } from "@/lib/db/schema";
+import type { InsertMessage, Message } from "@/lib/infrastructure/db/schema";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { RagChunk } from "@/lib/features/rag/types";
 import { Tool, TOOLS } from "@/lib/features/chat/types";
