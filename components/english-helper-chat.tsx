@@ -9,7 +9,7 @@ import { LoadingAssistantMessageIcon, SpinnerIcon } from "@/components/icons";
 import { Textarea } from "@/components/textarea";
 import { CopyBlock } from "@/components/copy-block";
 import { cn } from "@/lib/utils";
-import { grammarSchema } from "@/lib/ai/schemas/grammar";
+import { grammarSchema } from "@/lib/features/english/schemas";
 import type { UseObjectReturn } from "@/lib/ai/hooks/use-object";
 import { useObject } from "@/lib/ai/hooks/use-object";
 import { useSpeech } from "@/lib/ai/hooks/use-speech";

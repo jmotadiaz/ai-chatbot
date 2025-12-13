@@ -1,5 +1,5 @@
 import { auth } from "@/lib/features/auth/auth-config";
-import translate from "@/lib/ai/workflows/translate";
+import { translate } from "@/lib/features/english/workflows";
 
 export async function POST(req: Request) {
   const session = await auth();
