@@ -1,7 +1,11 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import type { FilePart} from "@/lib/ai/utils";
-import { handleFileUpload } from "@/lib/ai/utils";
+import type {
+  FilePart,
+  ImageFile,
+  ImageResponse,
+} from "@/lib/features/attachment/types";
+import { handleFileUpload } from "@/lib/features/attachment/utils";
 
 export interface UseGenerateTextParams {
   api: string;
@@ -24,15 +28,7 @@ export interface UseGenerateTextReturn {
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export interface ImageResponse {
-  base64Data: string;
-  mediaType: string;
-}
-
-export interface ImageFile {
-  url: string;
-  mediaType: string;
-}
+export type { ImageFile };
 
 export const useGeneratedText = ({ api }: UseGenerateTextParams) => {
   const [text, setText] = useState("");

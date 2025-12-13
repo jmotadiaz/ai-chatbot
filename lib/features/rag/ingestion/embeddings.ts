@@ -1,7 +1,6 @@
-import { embedMany, embed } from "ai";
-import { providers } from "@/lib/features/models/providers";
+import { embedMany } from "ai";
 import { embeddingRateLimiter } from "./rate-limiter";
-import { QueryType } from "@/lib/features/rag/types";
+import { providers } from "@/lib/features/models/providers";
 
 interface EmbeddingInput {
   chunkId: string;

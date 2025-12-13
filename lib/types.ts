@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { InferUITools, UIMessage } from "ai";
 import type { ModelRoutingMetadata } from "@/lib/features/models/types";
 import { RagTool } from "@/lib/features/rag/tool";
 import { URLContextTool, WebSearchTool } from "@/lib/ai/tools/web-search";
@@ -32,7 +32,7 @@ export type ChatbotDataPart = {
 export type ChatbotMessage = UIMessage<
   MessageMetadata,
   ChatbotDataPart,
-  RagTool & WebSearchTool & URLContextTool
+  InferUITools<RagTool & WebSearchTool & URLContextTool>
 >;
 
 // Re-export specific database types for domain usage

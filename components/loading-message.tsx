@@ -3,10 +3,7 @@
 import { motion } from "motion/react";
 import type { ChatStatus, DataUIPart, UITool, UIToolInvocation } from "ai";
 import { memo } from "react";
-import type {
-  ChatbotDataPart,
-  ChatbotMessage,
-} from "@/lib/features/chat/types";
+import type { ChatbotDataPart, ChatbotMessage } from "@/lib/types";
 import { DotsLoadingIcon } from "@/components/icons";
 
 interface LoadingMessageProps {

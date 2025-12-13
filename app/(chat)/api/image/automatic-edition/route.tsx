@@ -1,7 +1,7 @@
 import type { GeneratedFile } from "ai";
 import { convertToModelMessages, generateText } from "ai";
 import { auth } from "@/lib/features/auth/auth-config";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatbotMessage } from "@/lib/types";
 import { languageModelConfigurations } from "@/lib/features/models/config";
 
 export const maxDuration = 60;

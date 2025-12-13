@@ -1,16 +1,17 @@
-import { InferUITools, tool, ToolSet, UIDataTypes, UIMessage } from "ai";
+import { tool, ToolSet } from "ai";
 import { z } from "zod";
-import { RAG_TOOL } from "@/lib/ai/tools/types";
 import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
+import { RAG_TOOL } from "@/lib/ai/tools/types";
+import { ChatbotMessage } from "@/lib/types";
 
 export interface RagFactoryArgs {
-  messages: MessageWithRag[];
+  messages: ChatbotMessage[];
   userId: string;
   ragMaxResources?: number;
 }
 
-function extractChunkIdsFromMessages(messages: MessageWithRag[]): string[] {
+function extractChunkIdsFromMessages(messages: ChatbotMessage[]): string[] {
   const chunkIds: string[] = [];
 
   for (const message of messages) {
@@ -89,5 +90,4 @@ export const ragFactory = ({
     }),
   } satisfies ToolSet);
 
-export type RagTool = InferUITools<ReturnType<typeof ragFactory>>;
-type MessageWithRag = UIMessage<unknown, UIDataTypes, any>;
+export type RagTool = ReturnType<typeof ragFactory>;

@@ -6,7 +6,7 @@ import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/models/constants";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatbotMessage } from "@/lib/types";
 import { withAuth } from "@/lib/features/auth/handlers";
 import { processChatResponse } from "@/lib/features/chat/actions";
 

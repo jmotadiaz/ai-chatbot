@@ -16,7 +16,7 @@ import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
 
-import { handleFileUpload } from "@/lib/ai/utils";
+import { handleFileUpload } from "@/lib/features/attachment/utils";
 import { getChatConfigurationByModelId } from "@/lib/features/models/config";
 
 export interface ChatProps {

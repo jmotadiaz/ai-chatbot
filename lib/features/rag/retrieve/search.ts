@@ -1,7 +1,7 @@
 import type { SimilarChunk, SimilarChunks } from "../queries";
 import { findSimilarChunks } from "../queries";
-import { providers } from "@/lib/features/models/providers";
 import { QueryType, RagChunk } from "../types";
+import { providers } from "@/lib/features/models/providers";
 import { generateEmbedding } from "@/lib/features/rag/retrieve/embeddings";
 
 export interface VectorSearchResult {

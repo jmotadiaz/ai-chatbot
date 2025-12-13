@@ -1,11 +1,11 @@
-import type { InferUITools, UIMessageStreamWriter } from "ai";
+import type { UIMessageStreamWriter } from "ai";
 import { tool, generateObject } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
 import { defaultWebSearchNumResults } from "@/lib/features/models/constants";
 import { languageModelConfigurations } from "@/lib/features/models/config";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatbotMessage } from "@/lib/types";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
 // Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY
@@ -172,5 +172,5 @@ export const hasContextUrls = async (text: string): Promise<boolean> => {
   return object.intent === "CONTEXT_EXTRACTION";
 };
 
-export type WebSearchTool = InferUITools<ReturnType<typeof webSearchFactory>>;
-export type URLContextTool = InferUITools<ReturnType<typeof urlContextFactory>>;
+export type WebSearchTool = ReturnType<typeof webSearchFactory>;
+export type URLContextTool = ReturnType<typeof urlContextFactory>;

@@ -11,7 +11,7 @@ import type {
 import { languageModelConfigurations } from "./config";
 import { WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 import type { Tools } from "@/lib/ai/tools/types";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatbotMessage } from "@/lib/types";
 
 // --- Model Routing Logic ---
 

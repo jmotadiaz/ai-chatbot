@@ -34,31 +34,27 @@ The application follows a standard Next.js App Router structure.
     ```bash
     pnpm install
     ```
-2.  **Start the database:**
+2.  **Run the development server:**
     ```bash
-    pnpm run db:start
-    ```
-3.  **Run the development server:**
-    ```bash
-    pnpm run dev
+    pnpm dev
     ```
 
 ### Build
 
 ```bash
-pnpm run build
+pnpm build
 ```
 
 ### Testing
 
 ```bash
-pnpm run test
+pnpm test
 ```
 
 ## Development Conventions
 
-*   **Linting:** The project uses ESLint and Prettier for code formatting and linting. Run `pnpm run lint:fix` to check for issues.
-*   **Database Migrations:** Database schema changes are managed with Drizzle Kit. Use `pnpm run db:generate` to create new migrations.
+*   **Linting:** The project uses ESLint and Prettier for code formatting and linting. Run `pnpm lint:fix` to check for issues.
+*   **Database Migrations:** Database schema changes are managed with Drizzle Kit. Use `pnpm db:generate` to create new migrations.
 *   **Testing:** End-to-end tests are written with Playwright.
 *   **Path Aliases:** Use path aliases for imports, such as `@/components`, `@/lib/utils`, instead of relative imports.
 

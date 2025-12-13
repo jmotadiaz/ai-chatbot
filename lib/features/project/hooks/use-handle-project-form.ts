@@ -15,7 +15,6 @@ import {
   defaultRagMaxResources,
 } from "@/lib/features/models/constants";
 import type { Tool, Tools } from "@/lib/ai/tools/types";
-import { RAG_TOOL, WEB_SEARCH_TOOL } from "@/lib/ai/tools/types";
 
 const models = CHAT_MODELS.filter((model) => model !== "Router");
 
