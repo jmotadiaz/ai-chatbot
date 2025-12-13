@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { Button } from "@/components/ui/button";
 
 interface ScrollToBottomButtonProps {

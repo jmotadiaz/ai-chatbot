@@ -1,7 +1,7 @@
 "use client";
 import { signOut } from "next-auth/react";
 import { ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 export interface UserDropdownProps {
   email: string;

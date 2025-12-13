@@ -16,8 +16,8 @@ import {
 import { auth } from "@/lib/features/auth/auth-config";
 
 import type { chatModelId } from "@/lib/features/models/constants";
-import { providers } from "@/lib/features/models/providers";
-import { defaultSystemPrompt } from "@/lib/ai/prompts";
+import { providers } from "@/lib/ai/providers";
+import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
   deleteChat as deleteDBChat,
   deleteMessageById,
@@ -30,7 +30,7 @@ import {
   messagePartsToText,
   chatbotMessageToDbMessage,
   generateTitle,
-} from "@/lib/ai/utils";
+} from "@/lib/features/chat/utils";
 import { calculateModelConfiguration } from "@/lib/features/models/router";
 import {
   URL_CONTEXT_TOOL,
@@ -52,7 +52,7 @@ import {
 } from "@/lib/features/web-search/tools";
 import { hasContextUrls } from "@/lib/features/web-search/utils";
 import { ragFactory } from "@/lib/features/rag/tool";
-import { hasUrls } from "@/lib/utils";
+import { hasUrls } from "@/lib/utils/helpers";
 import { getDb } from "@/lib/db/db";
 
 // -- Server Actions --

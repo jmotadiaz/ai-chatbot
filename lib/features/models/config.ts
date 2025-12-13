@@ -5,7 +5,7 @@ import {
   LanguageModelKeys,
 } from "./constants";
 import type { ModelConfiguration, ProviderOptions } from "./types";
-import { defaultSystemPrompt } from "@/lib/ai/prompts";
+import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 
 // --- Helpers ---
 

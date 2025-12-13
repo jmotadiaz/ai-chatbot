@@ -9,7 +9,7 @@ import { ChatControl } from "@/components/chat-control";
 import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ToolsControl } from "@/components/tools-control";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { usePromptRefiner } from "@/lib/features/meta-prompting/hooks/use-prompt-refiner";
 import { LoadingMessage } from "@/components/loading-message";

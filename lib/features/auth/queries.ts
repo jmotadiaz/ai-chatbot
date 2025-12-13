@@ -1,7 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { user, type User } from "@/lib/db/schema";
-import { generateHashedPassword } from "@/lib/db/utils";
+import { generateHashedPassword } from "@/lib/features/auth/utils";
 import { getDb } from "@/lib/db/db";
 import type { Transactional } from "@/lib/db/queries";
 

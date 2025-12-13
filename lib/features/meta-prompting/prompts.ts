@@ -1,4 +1,4 @@
-import { scapeXML } from "@/lib/utils";
+import { scapeXML } from "@/lib/utils/helpers";
 
 export const defaultMetaPrompt = `
   Imagine yourself as a "Prompt Architect." Your role is analogous to a code compiler: you take a user's initial idea (source code) and translate it into a perfectly structured, optimized prompt (machine code) for a subsequent LLM to execute.

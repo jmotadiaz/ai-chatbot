@@ -2,7 +2,7 @@ import type { ReasoningUIPart } from "ai";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { SpinnerIcon } from "@/components/icons";
 import { Response } from "@/components/response";
 

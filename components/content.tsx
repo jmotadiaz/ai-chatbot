@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export interface ContentProps {
   children: React.ReactNode;

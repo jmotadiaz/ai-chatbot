@@ -1,6 +1,6 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
-import { cn, handleCopy } from "@/lib/utils";
+import { cn, handleCopy } from "@/lib/utils/helpers";
 
 export interface CopyBlockProps {
   children?: React.ReactNode;

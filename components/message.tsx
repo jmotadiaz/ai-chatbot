@@ -6,13 +6,13 @@ import { useCollapse } from "react-collapsed";
 import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
 import type { SourceDocumentUIPart, SourceUrlUIPart } from "ai";
 import Image from "next/image";
-import { capitalize, cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/features/models/types";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
-import { segregateMessageParts } from "@/lib/ai/utils";
+import { segregateMessageParts } from "@/lib/features/chat/utils";
 
 export interface MessagesProps {
   messages: ChatbotMessage[];

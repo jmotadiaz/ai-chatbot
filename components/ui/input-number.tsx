@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import { useMemo, useRef, useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { Button } from "@/components/ui/button";
 
 interface InputNumberProps

@@ -1,26 +1,10 @@
 import type {
   FileUIPart,
-  GenerateObjectResult,
   SourceDocumentUIPart,
   SourceUrlUIPart,
   TextUIPart,
 } from "ai";
 import { generateText } from "ai";
-import type { ZodTypeAny } from "zod";
-import {
-  ZodArray,
-  ZodBoolean,
-  ZodDate,
-  ZodDefault,
-  ZodEnum,
-  ZodLiteral,
-  ZodNullable,
-  ZodNumber,
-  ZodObject,
-  ZodOptional,
-  ZodString,
-  ZodUnion,
-} from "zod";
 import { put } from "@vercel/blob";
 import { languageModelConfigurations } from "@/lib/features/models/config";
 import type { InsertMessage, Message } from "@/lib/db/schema";
@@ -109,6 +93,7 @@ const buildBlobPart = async (part: FileUIPart): Promise<FileUIPart> => {
     url: blob.url,
   };
 };
+
 export const chatbotMessageToDbMessage =
   (chatId: string) =>
   async ({
@@ -149,21 +134,6 @@ export const messagePartsToText = (message: ChatbotMessage): string => {
     }
     return content;
   }, "");
-};
-
-export const getObject = <T>({ object }: GenerateObjectResult<T>) => object;
-
-export const once = <T>(fn: () => T): (() => T) => {
-  let called = false;
-  let result: T;
-
-  return () => {
-    if (!called) {
-      called = true;
-      result = fn();
-    }
-    return result;
-  };
 };
 
 export interface SegregatedMessagePartsReturn {
@@ -225,90 +195,6 @@ export const segregateMessageParts = (
     },
     { textParts: [], sourceParts: [], fileParts: [] }
   );
-};
-
-export function zodToPrompt(schema: ZodTypeAny): string {
-  const indent = (lvl: number) => "  ".repeat(lvl);
-
-  const format = (s: ZodTypeAny, lvl: number): string => {
-    if (s instanceof ZodString) return `"string"`;
-    if (s instanceof ZodNumber) return `"number"`;
-    if (s instanceof ZodBoolean) return `"boolean"`;
-    if (s instanceof ZodDate) return `"date"`;
-
-    if (s instanceof ZodLiteral) return JSON.stringify(s._def.value);
-
-    if (s instanceof ZodEnum) {
-      return s._def.values.map((v: string) => `"${v}"`).join(" | ");
-    }
-
-    if (s instanceof ZodUnion) {
-      return s._def.options
-        .map((opt: ZodTypeAny) => format(opt, lvl))
-        .join(" | ");
-    }
-
-    if (s instanceof ZodArray) {
-      return `${format(s._def.type, lvl)}[]`;
-    }
-
-    if (s instanceof ZodObject) {
-      const shape = s._def.shape();
-      const entries = Object.entries(shape);
-      const lines = entries.map(([key, subSchema], i) => {
-        const value = format(subSchema as ZodTypeAny, lvl + 1);
-        const comma = i < entries.length - 1 ? "," : "";
-        return `${indent(lvl + 1)}"${key}": ${value}${comma}`;
-      });
-      return `{\n${lines.join("\n")}\n${indent(lvl)}}`;
-    }
-
-    if (
-      s instanceof ZodOptional ||
-      s instanceof ZodNullable ||
-      s instanceof ZodDefault
-    ) {
-      const inner = s._def.innerType ?? s._def.typeName;
-      return format(inner as ZodTypeAny, lvl);
-    }
-
-    // ---------- Otros ----------
-    return `"unknown"`;
-  };
-
-  return `Your output should be in the following JSON format:\n${format(
-    schema,
-    0
-  )}`;
-}
-
-export const downloadFiles = async (options: { url: URL }[]) =>
-  Promise.all(options.map(downloadFile));
-
-export const downloadFile = async ({
-  url,
-}: {
-  url: URL;
-}): Promise<{ data: Uint8Array; mediaType: string }> => {
-  try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const mediaType = response.headers.get("content-type") || "";
-
-    const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-
-    return {
-      data: uint8Array,
-      mediaType: mediaType,
-    };
-  } catch (error) {
-    throw new Error(`Error downloading file: ${error}`);
-  }
 };
 
 export const filterTools = (tools: string[]): Tool[] => {

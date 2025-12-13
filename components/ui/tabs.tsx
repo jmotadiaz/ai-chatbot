@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export interface ContainerProps {
   className?: string;

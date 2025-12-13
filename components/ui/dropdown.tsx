@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 import type { ClassValue } from "clsx";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export interface DropdownContainerProps {
   children: React.ReactNode;

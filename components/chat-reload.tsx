@@ -1,7 +1,7 @@
 import { ChevronUpIcon, RefreshCcw } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { ModelItem } from "@/components/model-picker";
 
 export const ChatReload: React.FC = () => {

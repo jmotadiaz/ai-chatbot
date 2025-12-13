@@ -1,7 +1,7 @@
 "use client";
 import MDEditor, { commands } from "@uiw/react-md-editor";
 import { Copy } from "lucide-react";
-import { cn, handleCopy } from "@/lib/utils";
+import { cn, handleCopy } from "@/lib/utils/helpers";
 
 export interface MarkdownEditorProps {
   value: string;

@@ -1,5 +1,5 @@
 import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
-import { providers } from "./providers";
+import { providers } from "../../ai/providers";
 import { ModelConfiguration } from "@/lib/features/models/types";
 
 const reasoningMw = extractReasoningMiddleware({

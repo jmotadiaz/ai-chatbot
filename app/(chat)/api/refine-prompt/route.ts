@@ -1,6 +1,6 @@
 import { auth } from "@/lib/features/auth/auth-config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { messagePartsToText } from "@/lib/ai/utils";
+import { messagePartsToText } from "@/lib/features/chat/utils";
 import { refinePrompt } from "@/lib/features/meta-prompting/actions";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompting/prompts";
 

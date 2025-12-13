@@ -4,7 +4,7 @@ import { Database } from "lucide-react";
 import type { ClassValue } from "clsx";
 import ChatLink from "@/components/chat-link";
 import { Item } from "@/components/ui/item";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export interface RAGNavProps {
   className?: ClassValue;

@@ -1,5 +1,5 @@
 import { Circle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export const LogoIcon = ({ size = 24, className = "", strokeWidth = 2.5 }) => (
   <svg

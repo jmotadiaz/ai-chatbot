@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
-import { useIntersectionObserver } from "@/lib/hooks/intersection";
-import { normalize, toWords } from "@/lib/utils";
+import { useIntersectionObserver } from "@/lib/utils/hooks/intersection";
+import { normalize, toWords } from "@/lib/utils/helpers";
 
 interface Resource {
   title: string;

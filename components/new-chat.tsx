@@ -3,7 +3,7 @@ import { Edit, MessageCircleDashed } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat-link";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Item } from "@/components/ui/item";

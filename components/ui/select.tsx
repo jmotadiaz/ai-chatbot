@@ -4,7 +4,7 @@ import * as React from "react";
 import { ChevronUp } from "lucide-react";
 import { startTransition, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import type { DropdownPopupProps } from "@/components/ui/dropdown";
 import { Dropdown } from "@/components/ui/dropdown";
 

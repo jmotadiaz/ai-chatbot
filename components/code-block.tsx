@@ -1,6 +1,6 @@
 "use client";
 import { useTheme } from "next-themes";
-import type { ReactNode} from "react";
+import type { ReactNode } from "react";
 import React, { useState, useEffect } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
@@ -8,7 +8,7 @@ import {
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { CopyBlock } from "@/components/copy-block";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 interface CodeBlockProps {
   className?: string;

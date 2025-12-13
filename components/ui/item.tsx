@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export interface ItemProps extends React.ComponentProps<"div"> {
   children?: React.ReactNode;

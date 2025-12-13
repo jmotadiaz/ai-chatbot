@@ -3,14 +3,14 @@ import Image from "next/image";
 import { Download } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Content } from "@/components/content";
-import { useGeneratedText } from "@/lib/ai/hooks/use-generated-text";
+import { useGeneratedText } from "@/lib/utils/hooks/use-generated-text";
 import {
   CircleProgress,
   ImageIcon,
   ImageSparkleIcon,
   SpinnerIcon,
 } from "@/components/icons";
-import { cn, removeExtension } from "@/lib/utils";
+import { cn, removeExtension } from "@/lib/utils/helpers";
 
 export const ImageAutomaticEdition: React.FC = () => {
   const {

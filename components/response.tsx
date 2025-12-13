@@ -4,7 +4,7 @@ import { memo } from "react";
 import type { StreamdownProps } from "streamdown";
 import { Streamdown } from "streamdown";
 import addClasses from "rehype-class-names";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 
 export const Response = memo(
   ({ className, ...props }: StreamdownProps) => (

@@ -3,7 +3,7 @@
 import { startTransition, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useCollapse } from "react-collapsed";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat-link";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";

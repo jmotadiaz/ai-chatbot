@@ -1,7 +1,7 @@
 import type { ClassValue } from "clsx";
 import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { SpinnerIcon } from "@/components/icons";
 
 export interface ChatControlProps

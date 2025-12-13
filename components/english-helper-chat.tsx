@@ -8,11 +8,11 @@ import { ChatControl } from "@/components/chat-control";
 import { LoadingAssistantMessageIcon, SpinnerIcon } from "@/components/icons";
 import { Textarea } from "@/components/textarea";
 import { CopyBlock } from "@/components/copy-block";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { grammarSchema } from "@/lib/features/english/schemas";
-import type { UseObjectReturn } from "@/lib/ai/hooks/use-object";
-import { useObject } from "@/lib/ai/hooks/use-object";
-import { useSpeech } from "@/lib/ai/hooks/use-speech";
+import type { UseObjectReturn } from "@/lib/utils/hooks/use-object";
+import { useObject } from "@/lib/utils/hooks/use-object";
+import { useSpeech } from "@/lib/features/english/hooks/use-speech";
 import { Button } from "@/components/ui/button";
 import { Response } from "@/components/response";
 

@@ -3,7 +3,7 @@ import NextLink from "next/link";
 import type { ComponentProps } from "react";
 import React from "react";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { useSidebarContext } from "@/app/providers";
 
 type LinkProps = ComponentProps<typeof NextLink>;

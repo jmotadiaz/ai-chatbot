@@ -1,5 +1,5 @@
 import type { ClassValue } from "clsx";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import { ChatListItem } from "@/components/chat-list-item";

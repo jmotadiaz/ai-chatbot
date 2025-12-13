@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { FilePart } from "@/lib/features/attachment/types";
-import { extractMediaType, formatFilename } from "@/lib/utils";
+import { extractMediaType, formatFilename } from "@/lib/utils/helpers";
 
 interface FileThumbnailProps {
   file: FilePart;
