@@ -24,9 +24,9 @@ import {
 import { put } from "@vercel/blob";
 import { languageModelConfigurations } from "@/lib/features/models/config";
 import type { InsertMessage, Message } from "@/lib/db/schema";
-import type { ChatbotMessage } from "@/lib/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { RagChunk } from "@/lib/features/rag/types";
-import { Tool, TOOLS } from "@/lib/types";
+import { Tool, TOOLS } from "@/lib/features/chat/types";
 
 const filterTextParts = (parts: ChatbotMessage["parts"] = []) => {
   return parts.filter((part) => part.type === "text") as TextUIPart[];

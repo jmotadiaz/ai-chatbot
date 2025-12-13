@@ -1,7 +1,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import { useGeneratedText } from "@/lib/ai/hooks/use-generated-text";
-import type { ChatbotMessage } from "@/lib/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 export interface UsePromptRefinerParams {
   input: string;

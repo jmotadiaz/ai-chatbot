@@ -1,5 +1,5 @@
 import { type GeneratedFile, convertToModelMessages, generateText } from "ai";
-import { type ChatbotMessage } from "@/lib/types";
+import { type ChatbotMessage } from "@/lib/features/chat/types";
 import { languageModelConfigurations } from "@/lib/features/models/config";
 
 export const generateImages = async (

@@ -3,7 +3,7 @@
 import { useCallback, useState, useMemo } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { chatModelId } from "@/lib/features/models/constants";
-import type { ChatbotMessage, Tool, Tools } from "@/lib/types";
+import type { ChatbotMessage, Tool, Tools } from "@/lib/features/chat/types";
 import {
   defaultModel,
   CHAT_MODELS,

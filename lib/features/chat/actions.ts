@@ -37,7 +37,11 @@ import {
   WEB_SEARCH_TOOL,
 } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
-import { TOOLS, type Tool, type ChatbotMessage } from "@/lib/types";
+import {
+  TOOLS,
+  type Tool,
+  type ChatbotMessage,
+} from "@/lib/features/chat/types";
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,

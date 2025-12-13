@@ -7,7 +7,7 @@ import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
 import type { RerankResponseResultsItem } from "cohere-ai/api";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
-import type { ChatbotMessage, Tools } from "@/lib/types";
+import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 // Types definitions for the models feature
 
 // --- From definition.ts ---

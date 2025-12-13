@@ -5,7 +5,7 @@ import { z } from "zod";
 import Exa from "exa-js";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "./constants";
 import { defaultWebSearchNumResults } from "@/lib/features/models/constants";
-import type { ChatbotMessage } from "@/lib/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 // Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY
 const getExaClient = () => {

@@ -1,6 +1,6 @@
 import type { GeneratedFile } from "ai";
 import { auth } from "@/lib/features/auth/auth-config";
-import type { ChatbotMessage } from "@/lib/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { generateImages } from "@/lib/features/image-editor/actions";
 
 export const maxDuration = 60;

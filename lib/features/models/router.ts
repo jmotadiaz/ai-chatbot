@@ -10,7 +10,7 @@ import type {
 } from "./types";
 import { languageModelConfigurations } from "./config";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
-import type { Tools, ChatbotMessage } from "@/lib/types";
+import type { Tools, ChatbotMessage } from "@/lib/features/chat/types";
 
 // --- Model Routing Logic ---
 
