@@ -7,7 +7,6 @@ import { ChatList } from "@/components/chat-list";
 import { auth } from "@/lib/features/auth/auth-config";
 import { cn } from "@/lib/utils/helpers";
 import { getProjectsByUserId } from "@/lib/features/project/queries";
-import { deleteProject } from "@/lib/features/project/actions";
 import { SidebarSectionTitle } from "@/components/sidebar";
 
 export interface ProjectListProps {
@@ -54,7 +53,6 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
                 id={project.id}
                 name={project.name}
                 currentProjectId={currentProjectId}
-                deleteProject={deleteProject.bind(null, project.id)}
                 chatList={<ChatList chats={project.chats} chatId={chatId} />}
               />
             ))}
