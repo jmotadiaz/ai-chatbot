@@ -14,7 +14,7 @@ interface NewChatProps {
   projectId?: string | null;
 }
 
-const NewChat: React.FC<NewChatProps> = ({
+export const NewChatLink: React.FC<NewChatProps> = ({
   children,
   temporary,
   projectId,
@@ -50,11 +50,11 @@ export interface NewChatHeaderProps {
 export const NewChatHeader = ({ projectId }: NewChatHeaderProps) => {
   return (
     <Suspense fallback={null}>
-      <NewChat projectId={projectId}>
+      <NewChatLink projectId={projectId}>
         <div className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors">
           <Edit size={18} />
         </div>
-      </NewChat>
+      </NewChatLink>
     </Suspense>
   );
 };
@@ -69,16 +69,16 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
   return (
     <Suspense fallback={null}>
       <div className={cn("flex items-center justify-between", className)}>
-        <NewChat>
+        <NewChatLink>
           <Item>
             <Edit className="h-4 w-4" /> New Chat
           </Item>
-        </NewChat>
-        <NewChat temporary>
+        </NewChatLink>
+        <NewChatLink temporary>
           <div className="p-2">
             <MessageCircleDashed className="h-5 w-5" />
           </div>
-        </NewChat>
+        </NewChatLink>
       </div>
     </Suspense>
   );

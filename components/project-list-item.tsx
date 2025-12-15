@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Item } from "@/components/ui/item";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { deleteProject } from "@/lib/features/project/actions";
+import { NewChatLink } from "@/components/new-chat";
 
 export interface ProjectListItemProps {
   id: string;
@@ -47,16 +48,16 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">
-            <ChatLink href={`/project/${id}/chat`}>
+            <NewChatLink projectId={id}>
               <Button variant="outline">
                 <MessageCircle className="h-4 w-4" />
               </Button>
-            </ChatLink>
-            <ChatLink href={`/project/${id}/chat?chatType=temporary`}>
+            </NewChatLink>
+            <NewChatLink projectId={id} temporary>
               <Button variant="outline">
                 <MessageCircleDashed className="h-4 w-4" />
               </Button>
-            </ChatLink>
+            </NewChatLink>
             <ChatLink href={`/project/${id}/edit`}>
               <Button variant="outline">
                 <Pencil className="h-4 w-4" />
