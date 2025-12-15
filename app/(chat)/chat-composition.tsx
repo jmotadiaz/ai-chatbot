@@ -150,9 +150,9 @@ export const ChatLoading: React.FC = () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <div className="h-svh flex flex-col items-center justify-center w-full max-w-4xl px-4 mx-auto pt-24 relative overflow-hidden">
-        <div className="h-7 bg-gray-200 dark:bg-zinc-700 rounded-md py-1 animate-pulse w-3/5 mb-12" />
-        <div className="w-full h-[136px] bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse px-4" />
+      <div className="h-svh flex flex-col items-center justify-center w-full max-w-5xl px-4 mx-auto pt-24 relative overflow-hidden">
+        <div className="h-9 bg-gray-200 dark:bg-zinc-700 rounded-md py-1 animate-pulse w-3/5 mb-12" />
+        <div className="w-full h-[152px] bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse px-4" />
       </div>
     </>
   );

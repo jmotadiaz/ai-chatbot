@@ -80,7 +80,6 @@ export const useChat = ({
   const { chatConfig, setConfig } = useChatConfig({
     selectedModel,
     temperature,
-    systemPrompt,
     ragMaxResources,
     webSearchNumResults,
   });
@@ -121,6 +120,7 @@ export const useChat = ({
       projectId,
       preventChatPersistence,
       tools,
+      systemPrompt,
       ...chatConfig,
     };
   }, [
@@ -128,6 +128,7 @@ export const useChat = ({
     chatId,
     projectId,
     preventChatPersistence,
+    systemPrompt,
     chatConfig,
     tools,
   ]);

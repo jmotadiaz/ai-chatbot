@@ -5,7 +5,6 @@ import {
   LanguageModelKeys,
 } from "./constants";
 import type { ModelConfiguration, ProviderOptions } from "./types";
-import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 
 // --- Helpers ---
 
@@ -30,7 +29,6 @@ export const getChatConfigurationByModelId = (
 > => {
   const {
     temperature,
-    systemPrompt,
     toolCalling,
     supportedFiles,
     supportedOutput,
@@ -41,7 +39,6 @@ export const getChatConfigurationByModelId = (
   } = Object.assign(
     {
       temperature: defaultTemperature,
-      systemPrompt: defaultSystemPrompt,
       toolCalling: true,
       nativeToolCalling: false,
       company: "ai chatbot" as const,
@@ -76,7 +73,6 @@ export const getChatConfigurationByModelId = (
     company,
     temperature,
     reasoning,
-    systemPrompt,
     toolCalling,
     nativeToolCalling,
     zeroDataRetention,

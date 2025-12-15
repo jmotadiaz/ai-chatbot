@@ -51,7 +51,6 @@ export interface ModelConfiguration {
   topP?: number;
   topK?: number;
   company: Company;
-  systemPrompt?: string;
 }
 
 // We need to define LanguageModelKeys here or allow a circular dependency if we define it in constants.

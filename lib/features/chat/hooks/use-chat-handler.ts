@@ -19,7 +19,6 @@ import { handleFileUpload } from "@/lib/features/attachment/utils";
 export interface ChatConfig {
   selectedModel: chatModelId;
   temperature: number;
-  systemPrompt?: string;
   // Tool-specific configuration (only used if tool active)
   ragMaxResources: number; // max number of RAG chunks/resources returned
   webSearchNumResults: number; // number of web search results
@@ -32,7 +31,6 @@ export interface SetChatConfig {
 export const useChatConfig = ({
   selectedModel = defaultModel,
   temperature,
-  systemPrompt,
   ragMaxResources,
   webSearchNumResults,
 }: Partial<ChatConfig>): {
@@ -45,7 +43,6 @@ export const useChatConfig = ({
       Object.fromEntries(
         Object.entries({
           temperature,
-          systemPrompt,
           ragMaxResources,
           webSearchNumResults,
         }).filter(([, value]) => value !== undefined && value !== null)

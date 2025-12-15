@@ -19,11 +19,11 @@ export const ProjectOverview = ({ title }: ProjectOverviewProps) => {
             <div className="flex items-center gap-2">
               <LogoIcon className="mr-1" strokeWidth={2} size={42} /> Chatbot
             </div>
-            {chatType === "temporary" && (
-              <div className="text-base text-zinc-500 dark:text-zinc-400">
-                Temporary chat
-              </div>
-            )}
+          </div>
+        )}
+        {chatType === "temporary" && (
+          <div className="text-base text-zinc-500 dark:text-zinc-400">
+            Temporary chat
           </div>
         )}
       </h1>
