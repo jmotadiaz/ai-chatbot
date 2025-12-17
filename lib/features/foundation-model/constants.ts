@@ -300,7 +300,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
-    model: providers.gateway("google/gemini-2.5-flash"),
+    model: providers.gateway("google/gemini-3-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
