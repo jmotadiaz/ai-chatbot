@@ -8,7 +8,7 @@ import { Messages } from "@/components/message";
 import { ChatControl } from "@/components/chat-control";
 import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ToolsControl } from "@/components/tools-control";
-import { ScrollToBottomButton } from "@/components/scroll-to-bottom-btn";
+import { ChatNavigation } from "@/components/chat-navigation";
 import { cn } from "@/lib/utils/helpers";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
@@ -98,9 +98,9 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
             <div className="h1" ref={observeRef}></div>
           </div>
         </div>
-        <ScrollToBottomButton
+        <ChatNavigation
           scrollContainerRef={scrollContainerRef}
-          observeRef={observeRef}
+          messages={messages}
         />
       </div>
       <form
