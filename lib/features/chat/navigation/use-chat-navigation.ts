@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 interface UseChatNavigationProps {
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  messages?: any[];
+  messages?: Array<ChatbotMessage>;
 }
 
 export const useChatNavigation = ({

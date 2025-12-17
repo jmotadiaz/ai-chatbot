@@ -1,11 +1,11 @@
 import { ChevronUp, ChevronDown, ChevronsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatNavigation } from "@/lib/features/chat/navigation/use-chat-navigation";
-import type { Message } from "ai";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 interface ChatNavigationProps {
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  messages?: Array<Message>;
+  messages?: Array<ChatbotMessage>;
 }
 
 export const ChatNavigation: React.FC<ChatNavigationProps> = ({
