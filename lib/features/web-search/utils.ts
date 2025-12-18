@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/helpers";
 
 export const hasContextUrls = async (text: string): Promise<boolean> => {
   const { object } = await generateObject({

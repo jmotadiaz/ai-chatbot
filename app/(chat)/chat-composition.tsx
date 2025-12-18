@@ -7,7 +7,7 @@ import { Logo } from "@/components/logo";
 import { ModelPicker, ModelPickerLoading } from "@/components/model-picker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChatHeader } from "@/components/new-chat";
-import type { chatModelId } from "@/lib/features/foundation-model/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
   defaultTemperature,
   defaultModel,

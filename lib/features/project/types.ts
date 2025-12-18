@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Project, InsertProject } from "@/lib/infrastructure/db/schema";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/constants";
+import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 
 // Re-export database types
 export type { Project, InsertProject };

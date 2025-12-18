@@ -8,7 +8,7 @@ import {
   translatorGuardrail,
 } from "./utils";
 import { grammarSchema } from "./schemas";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/helpers";
 
 export async function correctGrammar(prompt: string) {
   const audienceResult = identifyAudience(prompt);

@@ -1,6 +1,6 @@
 import { createUIMessageStreamResponse } from "ai";
 import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
-import type { chatModelId } from "@/lib/features/foundation-model/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {

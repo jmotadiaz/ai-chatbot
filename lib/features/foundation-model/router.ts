@@ -1,6 +1,10 @@
 import { convertToModelMessages, generateObject } from "ai";
 import { z } from "zod";
-import { chatModelId, chatModelKeys, LanguageModelKeys } from "./constants";
+import {
+  chatModelId,
+  chatModelKeys,
+  LanguageModelKeys,
+} from "./config";
 import { CATEGORIES, COMPLEXITY_LEVELS } from "./types";
 import type {
   ModelConfiguration,
@@ -8,7 +12,7 @@ import type {
   ModelRoutingMetadata,
   ModelRoutingResult,
 } from "./types";
-import { languageModelConfigurations } from "./config";
+import { languageModelConfigurations } from "./helpers";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import type { Tools, ChatbotMessage } from "@/lib/features/chat/types";
 

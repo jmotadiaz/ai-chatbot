@@ -18,7 +18,7 @@ import {
   useChatHandler,
   useAvailableModels,
 } from "./use-chat-handler";
-import type { chatModelId } from "@/lib/features/foundation-model/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
   defaultModel,
   defaultRagMaxResources,

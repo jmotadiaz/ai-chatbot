@@ -7,10 +7,10 @@ import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-re
 import { systemMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { createProject, updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
-import type { chatModelId } from "@/lib/features/foundation-model/constants";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
+import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import {
   defaultTemperature,
-  CHAT_MODELS,
   defaultWebSearchNumResults,
   defaultRagMaxResources,
 } from "@/lib/features/foundation-model/constants";
