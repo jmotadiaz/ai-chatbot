@@ -300,7 +300,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
-    model: providers.gateway("google/gemini-3-flash"),
+    model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
@@ -318,6 +318,21 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.gateway("google/gemini-2.5-pro"),
     company: "google",
     supportedFiles: ["img", "pdf"],
+    reasoning: true,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 1024,
+          includeThoughts: true,
+        },
+      },
+    },
+  },
+  "Gemini 3 Flash": {
+    model: providers.gateway("google/gemini-3-flash"),
+    company: "google",
+    supportedFiles: ["img", "pdf"],
+    nativeToolCalling: true,
     reasoning: true,
     providerOptions: {
       google: {
@@ -393,7 +408,7 @@ export const chatModelKeys = [
   "Grok 4",
   "GPT 5 Mini",
   "GPT 5.2",
-  "Gemini 2.5 Flash",
+  "Gemini 3 Flash",
   "Gemini 3 Pro",
   "Nano Banana",
 ] satisfies LanguageModelKeys[];
