@@ -129,7 +129,7 @@ export async function processChatResponse({
         });
       const executedTools = new Set<Tool>(
         !!process.env.USE_MOCK_PROVIDERS ||
-        modelConfiguration.toolCalling === false
+          modelConfiguration.toolCalling === false
           ? TOOLS
           : []
       );
@@ -182,7 +182,7 @@ export async function processChatResponse({
             executedTools.add(RAG_TOOL);
             return {
               ...(!modelConfiguration.nativeToolCalling && {
-                model: providers.gateway("google/gemini-2.5-flash"),
+                model: providers.google("gemini-2.5-flash"),
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
@@ -286,25 +286,25 @@ export async function processChatResponse({
                 const dbChatId = await getDb().transaction(async (tx) => {
                   const { id } = chatId
                     ? await updateChat(
-                        { id: chatId, userId: user.id },
-                        {
-                          defaultModel: selectedModel,
-                          defaultTemperature: temperature,
-                          ragMaxResources: safeRagMaxResources,
-                          webSearchNumResults: safeWebSearchNumResults,
-                          tools,
-                        }
-                      )(tx)
-                    : await saveChat({
-                        userId: user.id,
-                        title: await generateTitle(messages),
-                        projectId,
+                      { id: chatId, userId: user.id },
+                      {
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
                         ragMaxResources: safeRagMaxResources,
                         webSearchNumResults: safeWebSearchNumResults,
                         tools,
-                      })(tx);
+                      }
+                    )(tx)
+                    : await saveChat({
+                      userId: user.id,
+                      title: await generateTitle(messages),
+                      projectId,
+                      defaultModel: selectedModel,
+                      defaultTemperature: temperature,
+                      ragMaxResources: safeRagMaxResources,
+                      webSearchNumResults: safeWebSearchNumResults,
+                      tools,
+                    })(tx);
                   await deleteMessageById(messageId)(tx);
                   await saveMessages(
                     await Promise.all(

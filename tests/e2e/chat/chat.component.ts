@@ -1,6 +1,7 @@
 import { Locator } from "@playwright/test";
 import { ToolsComponent } from "@/tests/e2e/chat/tools.component";
 import { SettingsComponent } from "@/tests/e2e/chat/settings.component";
+import { NavigationComponent } from "@/tests/e2e/chat/navigation.component";
 
 /**
  * Component Object Model for Chat functionality
@@ -26,6 +27,7 @@ export class ChatComponent {
   readonly toolsControl: Locator;
   readonly tools: ToolsComponent;
   readonly settings: SettingsComponent;
+  readonly navigation: NavigationComponent;
 
   constructor(container: Locator) {
     this.container = container;
@@ -61,6 +63,7 @@ export class ChatComponent {
     this.toolsControl = container.getByLabel("Configure tools");
     this.tools = new ToolsComponent(container);
     this.settings = new SettingsComponent(container);
+    this.navigation = new NavigationComponent(container);
   }
 
   async getUserMessages(): Promise<string[]> {
