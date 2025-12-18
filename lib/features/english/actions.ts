@@ -5,7 +5,7 @@ import { openai } from "@ai-sdk/openai";
 
 export async function generateSpeech(text: string) {
   const result = await aiGenerateSpeech({
-    model: openai.speech("gpt-4o-mini-tts"),
+    model: openai.speech("gpt-4o-mini-tts-2025-03-20"),
     speed: 0.9,
     voice: "alloy",
     instructions: `
