@@ -36,7 +36,9 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
   return (
     <AnimatePresence key={message.id}>
       <motion.div
-        className="w-full mx-auto px-4 wrap-anywhere"
+        className={cn("w-full mx-auto px-4 wrap-anywhere", {
+          "pt-4": message.role === "user",
+        })}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         key={`message-${message.id}`}
@@ -75,7 +77,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
 
   return (
     <>
-      <div className={cn("flex gap-4 w-full ml-auto max-w-4xl mt-4", "w-fit")}>
+      <div className={cn("flex gap-4 w-full ml-auto max-w-4xl", "w-fit")}>
         <div className="flex flex-col w-full space-y-2">
           {(files.length > 0 || textFiles.length > 0) && (
             <div className="flex space-x-2 items-center justify-end">

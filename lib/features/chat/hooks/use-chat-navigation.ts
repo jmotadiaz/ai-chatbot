@@ -6,6 +6,14 @@ interface UseChatNavigationProps {
   messages?: Array<ChatbotMessage>;
 }
 
+const getScrollPosition = (element: HTMLElement, container: HTMLElement) => {
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  return elementRect.top - containerRect.top + container.scrollTop;
+};
+
+
+
 export const useChatNavigation = ({
   scrollContainerRef,
   messages = [],
@@ -22,15 +30,6 @@ export const useChatNavigation = ({
   // Filter user messages from the messages prop
   const userMessages = messages.filter((m) => m.role === "user");
   const userMessageCount = userMessages.length;
-
-  const getScrollPosition = useCallback(
-    (element: HTMLElement, container: HTMLElement) => {
-      const elementRect = element.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      return elementRect.top - containerRect.top + container.scrollTop;
-    },
-    []
-  );
 
   const scrollToLastUserMessage = useCallback(
     (behavior: ScrollBehavior = "smooth") => {
@@ -50,7 +49,7 @@ export const useChatNavigation = ({
         }
       });
     },
-    [scrollContainerRef, getScrollPosition]
+    [scrollContainerRef]
   );
 
   // Initial scroll to last user message when loading existing chat
@@ -190,41 +189,39 @@ export const useChatNavigation = ({
     const container = scrollContainerRef.current;
     if (!container) return;
     const { scrollTop } = container;
-    const epsilon = 10;
     const userMessageElements = Array.from(
       container.querySelectorAll('[data-role="user"]')
     ) as HTMLElement[];
 
-    // Find closest message above
+    // Find closest message above current scroll position
     const target = userMessageElements
       .map((m) => ({ el: m, top: getScrollPosition(m, container) }))
-      .filter((item) => item.top < scrollTop - epsilon)
+      .filter((item) => item.top < scrollTop - 10)
       .sort((a, b) => b.top - a.top)[0];
 
     if (target) {
       container.scrollTo({ top: target.top, behavior: "smooth" });
     }
-  }, [scrollContainerRef, getScrollPosition]);
+  }, [scrollContainerRef]);
 
   const scrollToNext = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
     const { scrollTop } = container;
-    const epsilon = 10;
     const userMessageElements = Array.from(
       container.querySelectorAll('[data-role="user"]')
     ) as HTMLElement[];
 
-    // Find closest message below
+    // Find closest message below current scroll position
     const target = userMessageElements
       .map((m) => ({ el: m, top: getScrollPosition(m, container) }))
-      .filter((item) => item.top > scrollTop + epsilon)
+      .filter((item) => item.top > scrollTop + 10)
       .sort((a, b) => a.top - b.top)[0];
 
     if (target) {
       container.scrollTo({ top: target.top, behavior: "smooth" });
     }
-  }, [scrollContainerRef, getScrollPosition]);
+  }, [scrollContainerRef]);
 
   const scrollToBottom = useCallback(() => {
     const container = scrollContainerRef.current;

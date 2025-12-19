@@ -16,9 +16,35 @@ const buttonVariants = {
 };
 
 const buttonTransition = {
-  duration: 0.15,
-  ease: "easeOut" as const,
+  duration: 0.25,
+  ease: "easeInOut" as const,
 };
+
+const ChatNavigationButton: React.FC<{
+  onClick: () => void;
+  ariaLabel: string;
+  children: React.ReactNode;
+}> = ({ onClick, ariaLabel, children }) => (
+  <motion.div
+    key="prev"
+    variants={buttonVariants}
+    initial="initial"
+    animate="animate"
+    exit="exit"
+    transition={buttonTransition}
+    className="pointer-events-auto"
+  >
+    <Button
+      variant="secondary"
+      size="icon"
+      className="rounded-full shadow-md h-8 w-8 bg-secondary border border-border opacity-90"
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
+      {children}
+    </Button>
+  </motion.div>
+);
 
 export const ChatNavigation: React.FC<ChatNavigationProps> = ({
   scrollContainerRef,
@@ -34,90 +60,43 @@ export const ChatNavigation: React.FC<ChatNavigationProps> = ({
   } = useChatNavigation({ scrollContainerRef, messages });
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-      {/* Fixed-width grid with 3 columns to keep buttons at stable x positions */}
-      <div className="grid grid-cols-3 gap-2 w-[112px]">
-        {/* Prev button slot - always at left */}
-        <div className="flex justify-center items-center h-8 w-8">
-          <AnimatePresence>
+    <AnimatePresence>
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+        <div className="grid grid-cols-3 gap-2 w-[112px]">
+          <div className="flex justify-center items-center w-8">
             {showPrev && (
-              <motion.div
-                key="prev"
-                variants={buttonVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={buttonTransition}
-                className="pointer-events-auto"
+              <ChatNavigationButton
+                onClick={scrollToPrev}
+                ariaLabel="Previous message"
               >
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="rounded-full shadow-md h-8 w-8 bg-background border border-border"
-                  onClick={scrollToPrev}
-                  aria-label="Previous message"
-                >
-                  <ChevronUp className="h-4 w-4" />
-                </Button>
-              </motion.div>
+                <ChevronUp className="h-4 w-4" />
+              </ChatNavigationButton>
             )}
-          </AnimatePresence>
-        </div>
+          </div>
 
-        {/* Next button slot - always at center */}
-        <div className="flex justify-center items-center h-8 w-8">
-          <AnimatePresence>
-            {showNext && (
-              <motion.div
-                key="next"
-                variants={buttonVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={buttonTransition}
-                className="pointer-events-auto"
-              >
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="rounded-full shadow-md h-8 w-8 bg-background border border-border"
-                  onClick={scrollToNext}
-                  aria-label="Next message"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Bottom button slot - always at right */}
-        <div className="flex justify-center items-center h-8 w-8">
-          <AnimatePresence>
+          <div className="flex justify-center items-center w-8">
             {showBottom && (
-              <motion.div
-                key="bottom"
-                variants={buttonVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={buttonTransition}
-                className="pointer-events-auto"
+              <ChatNavigationButton
+                onClick={scrollToBottom}
+                ariaLabel="Scroll to bottom"
               >
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="rounded-full shadow-md h-8 w-8 bg-background border border-border"
-                  onClick={scrollToBottom}
-                  aria-label="Scroll to bottom"
-                >
-                  <ChevronsDown className="h-4 w-4" />
-                </Button>
-              </motion.div>
+                <ChevronsDown className="h-4 w-4" />
+              </ChatNavigationButton>
             )}
-          </AnimatePresence>
+          </div>
+
+          <div className="flex justify-center items-center w-8">
+            {showNext && (
+              <ChatNavigationButton
+                onClick={scrollToNext}
+                ariaLabel="Next message"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </ChatNavigationButton>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </AnimatePresence>
   );
 };
