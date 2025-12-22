@@ -182,7 +182,7 @@ export async function processChatResponse({
             executedTools.add(RAG_TOOL);
             return {
               ...(!modelConfiguration.nativeToolCalling && {
-                model: providers.gateway("google/gemini-3-flash"),
+                model: providers.google("gemini-3-flash"),
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
