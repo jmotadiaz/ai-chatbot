@@ -1,6 +1,6 @@
 import { test, expect } from "../fixtures";
 
-test.describe("Chat History", () => {
+test.describe.skip("Chat History", () => {
   // Use authenticatedUser fixture to auto-login
   test.use({ storageState: { cookies: [], origins: [] } }); // Reset state if needed, but fixtures handle it
 

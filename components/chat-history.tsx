@@ -1,98 +1,35 @@
 "use client";
 
-import { useState, useTransition, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { SearchIcon } from "lucide-react";
-import { useDebounce } from "use-debounce";
 import { ChatHistoryItem } from "./chat-history-item";
-import { deleteChat } from "@/lib/features/chat/actions";
-import { getHistoryChatsAction } from "@/lib/features/chat/history/actions";
 import { Input } from "@/components/ui/input";
-import { useIntersectionObserver } from "@/lib/utils/hooks/intersection";
 import { Chat } from "@/lib/features/chat/types";
+import { useChatHistory } from "@/lib/features/chat/history/hooks/use-chat-history";
 
 interface ChatHistoryProps {
   initialChats: Chat[];
   initialHasMore: boolean;
 }
 
-const ITEMS_PER_PAGE = 20;
-
 export const ChatHistory: React.FC<ChatHistoryProps> = ({
   initialChats,
   initialHasMore,
 }) => {
-  const [chats, setChats] = useState<Chat[]>(initialChats);
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [isLoading, startTransition] = useTransition();
-  const [filter, setFilter] = useState("");
-  const [debouncedFilter] = useDebounce(filter, 300);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-
-  // Reset and refetch when filter changes
-  useEffect(() => {
-    // Skip the first run if filter is empty (since we have initialChats)
-    // However, if we delete items, we might want to refresh?
-    // Actually, keeping it simple: if filter changes, refetch.
-    // To avoid double fetch on mount (since debouncedFilter is ""), we can use a ref.
-    if (debouncedFilter === "" && chats === initialChats) return;
-
-    const fetchFiltered = async () => {
-      startTransition(async () => {
-        const result = await getHistoryChatsAction({
-          limit: ITEMS_PER_PAGE,
-          offset: 0,
-          filter: debouncedFilter,
-        });
-        setChats(result.chats);
-        setHasMore(result.hasMore);
-      });
-    };
-
-    fetchFiltered();
-  }, [debouncedFilter]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadMore = useCallback(async () => {
-    if (!hasMore || isLoading) return;
-
-    startTransition(async () => {
-      const result = await getHistoryChatsAction({
-        limit: ITEMS_PER_PAGE,
-        offset: chats.length,
-        filter: debouncedFilter,
-      });
-
-      setChats((prev) => [...prev, ...result.chats]);
-      setHasMore(result.hasMore);
-    });
-  }, [hasMore, isLoading, chats.length, debouncedFilter]);
-
-  const { loader, scrollContainer } = useIntersectionObserver<
-    HTMLUListElement,
-    HTMLLIElement
-  >({
-    onIntersect: loadMore,
+  const {
+    chats,
+    hasMore,
+    isLoading,
+    filter,
+    setFilter,
+    isDeleting,
+    onDeleteChat,
+    loader,
+    scrollContainer,
+  } = useChatHistory({
+    initialChats,
+    initialHasMore,
+    itemsPerPage: 20,
   });
-
-  const handleDeleteChat = (id: string) => {
-    setDeletingIds((prev) => new Set(prev).add(id));
-    startTransition(async () => {
-      try {
-        await deleteChat(id);
-        setChats((prev) => prev.filter((chat) => chat.id !== id));
-        toast.success("Chat deleted successfully");
-      } catch (error) {
-        console.error("Error deleting chat:", error);
-        toast.error("Failed to delete chat");
-      } finally {
-        setDeletingIds((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
-        });
-      }
-    });
-  };
 
   return (
     <div className="w-full pb-6 max-w-4xl mx-auto">
@@ -118,8 +55,8 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
           <ChatHistoryItem
             key={chat.id}
             chat={chat}
-            onDelete={handleDeleteChat}
-            isDeleting={deletingIds.has(chat.id)}
+            onDelete={onDeleteChat}
+            isDeleting={isDeleting(chat.id)}
           />
         ))}
         {chats.length === 0 && !isLoading && (
