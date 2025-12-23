@@ -90,15 +90,14 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     topP: 0.95,
   },
   "Qwen3 Instruct": {
-    model: providers.gateway("alibaba/qwen-3-235b"),
+    model: providers.gateway("alibaba/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
     topP: 0.8,
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        order: ["baseten", "deepinfra"],
-        only: ["baseten", "deepinfra"],
+        only: ["deepinfra"],
       },
     },
   },

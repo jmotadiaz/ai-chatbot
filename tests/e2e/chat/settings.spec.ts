@@ -52,6 +52,6 @@ test.describe("Chat functionality", () => {
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect
       .soft(lastMessage)
-      .toContain("Hello, I'm alibaba/qwen-3-235b, Temperature: 0.6");
+      .toContain("Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6");
   });
 });
