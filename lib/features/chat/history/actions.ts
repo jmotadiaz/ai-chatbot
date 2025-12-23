@@ -1,7 +1,7 @@
 "use server";
 
-import { auth } from "@/lib/features/auth/auth-config";
 import { getHistoryChats } from "./queries";
+import { auth } from "@/lib/features/auth/auth-config";
 
 export async function getHistoryChatsAction({
   limit = 20,

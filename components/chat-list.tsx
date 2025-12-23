@@ -1,10 +1,10 @@
 import type { ClassValue } from "clsx";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { SidebarSectionTitle } from "@/components/sidebar";
 import { ChatListItem } from "@/components/chat-list-item";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 export interface ChatListProps {
   chats: Chat[];

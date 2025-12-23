@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useTransition, useCallback, Fragment, useEffect } from "react";
+import { useState, useTransition, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { SearchIcon } from "lucide-react";
+import { useDebounce } from "use-debounce";
 import { ChatHistoryItem } from "./chat-history-item";
 import { deleteChat } from "@/lib/features/chat/actions";
 import { getHistoryChatsAction } from "@/lib/features/chat/history/actions";
 import { Input } from "@/components/ui/input";
 import { useIntersectionObserver } from "@/lib/utils/hooks/intersection";
 import { Chat } from "@/lib/features/chat/types";
-import { useDebounce } from "use-debounce";
 
 interface ChatHistoryProps {
   initialChats: Chat[];

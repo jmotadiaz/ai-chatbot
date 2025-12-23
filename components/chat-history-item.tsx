@@ -2,9 +2,9 @@
 
 import React, { memo } from "react";
 import { Trash2 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Chat } from "@/lib/features/chat/types";
-import Link from "next/link";
 import { cn } from "@/lib/utils/helpers";
 
 interface ChatHistoryItemProps {
