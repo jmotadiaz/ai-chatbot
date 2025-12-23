@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/features/auth/auth-config";
 import { getHistoryChatsAction } from "@/lib/features/chat/history/actions";
 import { ChatHistory } from "@/components/chat-history";
+import { Header } from "@/components/header";
+import { Logo } from "@/components/logo";
+import { NewChatHeader } from "@/components/new-chat";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Sidebar } from "@/app/(chat)/sidebar";
 
 const ChatHistoryPage: React.FC = async () => {
   const session = await auth();
@@ -17,9 +22,21 @@ const ChatHistoryPage: React.FC = async () => {
   });
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center p-4 pt-8">
+    <>
+      <Sidebar />
+      <Header.Container>
+        <Header.Left>
+          <Logo />
+          <NewChatHeader />
+        </Header.Left>
+        <Header.Right>
+          <ThemeToggle />
+        </Header.Right>
+      </Header.Container>
+      <div className="flex-1 w-full flex flex-col items-center p-4 pt-28">
         <ChatHistory initialChats={chats} initialHasMore={hasMore} />
-    </div>
+      </div>
+    </>
   );
 };
 

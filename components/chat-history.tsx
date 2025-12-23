@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { SearchIcon } from "lucide-react";
 import { ChatHistoryItem } from "./chat-history-item";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,9 @@ interface ChatHistoryProps {
   initialChats: Chat[];
   initialHasMore: boolean;
 }
+
+const ITEMS_PER_PAGE = 20;
+const ITEMS_TO_TRIGGER_PAGINATION = ITEMS_PER_PAGE / 2;
 
 export const ChatHistory: React.FC<ChatHistoryProps> = ({
   initialChats,
@@ -28,7 +32,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   } = useChatHistory({
     initialChats,
     initialHasMore,
-    itemsPerPage: 20,
+    itemsPerPage: ITEMS_PER_PAGE,
   });
 
   return (
@@ -51,26 +55,33 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
         className="space-y-3 max-h-[70dvh] overflow-auto scrollbar-none"
         aria-label="Chat history list"
       >
-        {chats.map((chat) => (
-          <ChatHistoryItem
-            key={chat.id}
-            chat={chat}
-            onDelete={onDeleteChat}
-            isDeleting={isDeleting(chat.id)}
-          />
+        {chats.map((chat, idx) => (
+          <Fragment key={chat.id}>
+            <ChatHistoryItem
+              chat={chat}
+              onDelete={onDeleteChat}
+              isDeleting={isDeleting(chat.id)}
+            />
+            {hasMore &&
+              chats.length >= ITEMS_TO_TRIGGER_PAGINATION &&
+              idx === chats.length - ITEMS_TO_TRIGGER_PAGINATION && (
+                <li
+                  ref={loader}
+                  className="h-px w-full opacity-0 pointer-events-none"
+                  aria-hidden="true"
+                />
+              )}
+          </Fragment>
         ))}
         {chats.length === 0 && !isLoading && (
             <div className="text-center text-muted-foreground py-8">
                 No chats found.
             </div>
         )}
-        {hasMore && (
-           <li
-             ref={loader}
-             className="h-8 w-full flex items-center justify-center text-muted-foreground text-sm"
-           >
-             {isLoading ? "Loading more..." : ""}
-           </li>
+        {hasMore && isLoading && (
+          <li className="h-8 w-full flex items-center justify-center text-muted-foreground text-sm">
+            Loading more...
+          </li>
         )}
       </ul>
     </div>
