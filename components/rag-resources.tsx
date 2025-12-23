@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchIcon, Trash2 } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { RagResourceItem } from "./rag-resource-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,17 +48,12 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
           <SearchIcon className="absolute top-1/2 left-3 w-4 h-4 transform -translate-y-1/2 text-muted-foreground" />
         </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          className="flex-1 w-full"
+          variant="destructive"
           disabled={isLoading}
           {...triggerModalProps()}
-          aria-label={hasFilter ? "Delete selection" : "Delete all"}
         >
-          <Trash2 className="w-5 h-5" />
-          <span className="sr-only">
-            Delete {hasFilter ? "Selection" : "All"}
-          </span>
+          Delete {hasFilter ? "Selection" : "All"}
         </Button>
       </div>
       <ConfirmModal
