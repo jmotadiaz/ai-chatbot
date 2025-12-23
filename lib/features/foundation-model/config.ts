@@ -334,14 +334,6 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
     reasoning: true,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 1024,
-          includeThoughts: true,
-        },
-      },
-    },
   },
   "Gemini 3 Pro": {
     model: providers.gateway("google/gemini-3-pro-preview"),
