@@ -44,7 +44,7 @@ export const useChatHistory = (initialChats: Chat[]) => {
     normalizedFilter.length === 0
       ? chats
       : chats.filter(({ title }) => {
-          const normalizedTitle = normalize(title);
+          const normalizedTitle = normalize(title || "");
           return toWords(normalizedFilter).every((word) =>
             normalizedTitle.includes(word)
           );
