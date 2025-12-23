@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   deleteResources,
+  deleteResourcesByTitleFilter,
   deleteResourcesByTitle,
   deleteResourcesByTitles,
+  getUniqueResourceTitlesByUserIdPaginated,
 } from "./queries";
 import { saveUrlResource } from "./ingestion/pipeline";
 import { auth } from "@/lib/features/auth/auth-config";
@@ -205,6 +207,38 @@ export async function deleteSelectedResources(
   }
 }
 
+export async function deleteResourcesByFilter(
+  filter: string
+): Promise<ProcessResult> {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  try {
+    const [result] = await transaction(
+      deleteResourcesByTitleFilter({
+        filter,
+        userId: session.user.id,
+      })
+    );
+
+    if (result.length === 0) {
+      return { success: false, error: "No resources found to delete" };
+    }
+
+    revalidatePath("/rag");
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteResourcesByFilter:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
 export async function deleteAllResources(): Promise<ProcessResult> {
   const session = await auth();
   if (!session?.user) {
@@ -233,4 +267,33 @@ export async function deleteAllResources(): Promise<ProcessResult> {
       error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
+}
+
+export async function getRagResourcesAction({
+  limit = 20,
+  offset = 0,
+  filter = "",
+}: {
+  limit?: number;
+  offset?: number;
+  filter?: string;
+}): Promise<{
+  resources: Array<{ title: string; url: string | null }>;
+  hasMore: boolean;
+}> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      resources: [],
+      hasMore: false,
+    };
+  }
+
+  return getUniqueResourceTitlesByUserIdPaginated({
+    userId: session.user.id,
+    limit,
+    offset,
+    filter,
+  });
 }

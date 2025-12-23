@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, gt, sql, notInArray, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, sql, notInArray, inArray } from "drizzle-orm";
 import {
   resource,
   chunk,
@@ -148,6 +148,78 @@ export async function getUniqueResourceTitlesByUserId(
     throw error;
   }
 }
+
+export async function getUniqueResourceTitlesByUserIdPaginated({
+  userId,
+  limit,
+  offset,
+  filter,
+}: {
+  userId: string;
+  limit: number;
+  offset: number;
+  filter?: string;
+}): Promise<{
+  resources: Array<{ title: string; url: string | null }>;
+  hasMore: boolean;
+}> {
+  try {
+    const extendedLimit = limit + 1;
+    const words = (filter ?? "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const whereClause = and(
+      eq(resource.userId, userId),
+      ...words.map((w) => ilike(resource.title, `%${w}%`))
+    );
+
+    const rows = await getDb()
+      .selectDistinctOn([resource.title], {
+        title: resource.title,
+        url: resource.url,
+      })
+      .from(resource)
+      .where(whereClause)
+      .orderBy(resource.title, desc(resource.updatedAt))
+      .limit(extendedLimit)
+      .offset(offset);
+
+    const hasMore = rows.length > limit;
+    return {
+      resources: hasMore ? rows.slice(0, limit) : rows,
+      hasMore,
+    };
+  } catch (error) {
+    console.error("Failed to get paginated resource titles by user id");
+    throw error;
+  }
+}
+
+export const deleteResourcesByTitleFilter =
+  ({
+    userId,
+    filter,
+  }: {
+    userId: string;
+    filter: string;
+  }): Transactional<Resource[]> =>
+  async (tx) => {
+    try {
+      const words = filter.trim().split(/\s+/).filter(Boolean);
+
+      const whereClause = and(
+        eq(resource.userId, userId),
+        ...words.map((w) => ilike(resource.title, `%${w}%`))
+      );
+
+      return await tx.delete(resource).where(whereClause).returning();
+    } catch (error) {
+      console.error("Failed to delete resources by title filter");
+      throw error;
+    }
+  };
 
 export const deleteResourcesByTitle =
   ({
