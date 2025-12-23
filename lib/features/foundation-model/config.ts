@@ -234,16 +234,9 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "GPT OSS Mini": {
-    model: providers.gateway("openai/gpt-oss-20b"),
+    model: providers.groq("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-        order: ["cerebras", "baseten"],
-        only: ["cerebras", "baseten"],
-      },
-    },
   },
   "o4 Mini": {
     model: providers.openai("o4-mini"),
