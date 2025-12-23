@@ -9,12 +9,12 @@ interface RagResourceItemProps {
     title: string;
     url: string | null;
   };
-  isLoading: boolean;
+  isDeleting: boolean;
   onDelete: (title: string) => void;
 }
 
 export const RagResourceItem: React.FC<RagResourceItemProps> = memo(
-  ({ resource, isLoading, onDelete }) => {
+  ({ resource, isDeleting, onDelete }) => {
     return (
       <li className="flex items-center justify-between p-3 bg-secondary rounded-lg">
         <>
@@ -36,7 +36,7 @@ export const RagResourceItem: React.FC<RagResourceItemProps> = memo(
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={() => onDelete(resource.title)}
-          disabled={isLoading}
+          disabled={isDeleting}
           aria-label={`Delete resource ${resource.title}`}
         >
           <Trash2 className="w-4 h-4" />

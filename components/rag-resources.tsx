@@ -20,9 +20,11 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
   const {
     resources,
     hasMore,
-    isLoading,
+    isFetching,
+    isMutating,
     filter,
     setFilter,
+    isDeleting,
     loader,
     scrollContainer,
     onDeleteResource,
@@ -50,7 +52,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
         <Button
           className="flex-1 w-full"
           variant="destructive"
-          disabled={isLoading}
+          disabled={isMutating}
           {...triggerModalProps()}
         >
           Delete {hasFilter ? "Selection" : "All"}
@@ -59,7 +61,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
       <ConfirmModal
         {...modalProps()}
         onConfirm={onBulkDelete}
-        isLoading={isLoading}
+        isLoading={isMutating}
         title={
           hasFilter
             ? "Delete Selected Resources"
@@ -79,7 +81,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
           <RagResourceItem
             key={resource.title}
             resource={resource}
-            isLoading={isLoading}
+            isDeleting={isDeleting(resource.title)}
             onDelete={onDeleteResource}
           />
         ))}
@@ -88,7 +90,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
             ref={loader}
             className="h-8 w-full flex items-center justify-center text-muted-foreground text-sm"
           >
-            {isLoading ? "Loading more..." : ""}
+            {isFetching ? "Loading more..." : ""}
           </li>
         )}
       </ul>

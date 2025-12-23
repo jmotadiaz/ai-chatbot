@@ -26,9 +26,11 @@ export interface UseRagResourcesParams {
 export interface UseRagResourcesReturn {
   resources: RagResourceListItem[];
   hasMore: boolean;
-  isLoading: boolean;
+  isFetching: boolean;
+  isMutating: boolean;
   filter: string;
   setFilter: (value: string) => void;
+  isDeleting: (title: string) => boolean;
   onDeleteResource: (title: string) => void;
   onBulkDelete: () => void;
   scrollContainer: React.RefObject<HTMLUListElement | null>;
@@ -43,9 +45,11 @@ export const useRagResources = ({
   const [resources, setResources] =
     useState<RagResourceListItem[]>(initialResources);
   const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
-  const [isLoading, startTransition] = useTransition();
+  const [isFetching, startFetchTransition] = useTransition();
+  const [isMutating, startMutateTransition] = useTransition();
   const [filter, setFilter] = useState<string>("");
   const [debouncedFilter] = useDebounce(filter, 300);
+  const [deletingTitles, setDeletingTitles] = useState<Set<string>>(new Set());
 
   const resourcesRef = useRef<RagResourceListItem[]>(initialResources);
   useEffect(() => {
@@ -60,7 +64,7 @@ export const useRagResources = ({
       if (debouncedFilter.trim() === "") return;
     }
 
-    startTransition(async () => {
+    startFetchTransition(async () => {
       const result = await getRagResourcesAction({
         limit: itemsPerPage,
         offset: 0,
@@ -70,13 +74,13 @@ export const useRagResources = ({
       setResources(result.resources);
       setHasMore(result.hasMore);
     });
-  }, [debouncedFilter, itemsPerPage, startTransition]);
+  }, [debouncedFilter, itemsPerPage, startFetchTransition]);
 
   const loadMore = useCallback(() => {
-    if (!hasMore || isLoading) return;
+    if (!hasMore || isFetching) return;
 
     const offset = resourcesRef.current.length;
-    startTransition(async () => {
+    startFetchTransition(async () => {
       const result = await getRagResourcesAction({
         limit: itemsPerPage,
         offset,
@@ -86,7 +90,7 @@ export const useRagResources = ({
       setResources((prev) => [...prev, ...result.resources]);
       setHasMore(result.hasMore);
     });
-  }, [debouncedFilter, hasMore, isLoading, itemsPerPage, startTransition]);
+  }, [debouncedFilter, hasMore, isFetching, itemsPerPage, startFetchTransition]);
 
   const { loader, scrollContainer } = useIntersectionObserver<
     HTMLUListElement,
@@ -97,7 +101,8 @@ export const useRagResources = ({
 
   const onDeleteResource = useCallback(
     (title: string) => {
-      startTransition(async () => {
+      setDeletingTitles((prev) => new Set(prev).add(title));
+      startMutateTransition(async () => {
         try {
           const result = await deleteResource(title);
           if (result.success) {
@@ -109,14 +114,25 @@ export const useRagResources = ({
         } catch (error) {
           console.error("Error deleting resource:", error);
           toast.error("An error occurred while deleting the resource");
+        } finally {
+          setDeletingTitles((prev) => {
+            const next = new Set(prev);
+            next.delete(title);
+            return next;
+          });
         }
       });
     },
-    [startTransition]
+    [startMutateTransition]
+  );
+
+  const isDeleting = useCallback(
+    (title: string) => deletingTitles.has(title),
+    [deletingTitles]
   );
 
   const onBulkDelete = useCallback(() => {
-    startTransition(async () => {
+    startMutateTransition(async () => {
       try {
         const trimmed = debouncedFilter.trim();
         if (trimmed.length > 0) {
@@ -144,21 +160,34 @@ export const useRagResources = ({
         toast.error("An error occurred while deleting resources");
       }
     });
-  }, [debouncedFilter, startTransition]);
+  }, [debouncedFilter, startMutateTransition]);
 
   return useMemo(
     () => ({
       resources,
       hasMore,
-      isLoading,
+      isFetching,
+      isMutating,
       filter,
       setFilter,
+      isDeleting,
       onDeleteResource,
       onBulkDelete,
       scrollContainer,
       loader,
     }),
-    [resources, hasMore, isLoading, filter, onDeleteResource, onBulkDelete, scrollContainer, loader]
+    [
+      resources,
+      hasMore,
+      isFetching,
+      isMutating,
+      filter,
+      isDeleting,
+      onDeleteResource,
+      onBulkDelete,
+      scrollContainer,
+      loader,
+    ]
   );
 };
 
