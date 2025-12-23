@@ -228,8 +228,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       openai: { reasoningEffort: "high" },
       gateway: {
         zeroDataRetention: true,
-        order: ["cerebras", "baseten", "bedrock"],
-        only: ["cerebras", "baseten", "bedrock"],
+        order: ["cerebras", "baseten"],
+        only: ["cerebras", "baseten"],
       },
     },
   },
@@ -240,8 +240,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        order: ["cerebras", "baseten", "bedrock"],
-        only: ["cerebras", "baseten", "bedrock"],
+        order: ["cerebras", "baseten"],
+        only: ["cerebras", "baseten"],
       },
     },
   },
