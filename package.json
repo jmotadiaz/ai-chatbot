@@ -9,6 +9,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/infrastructure/db/migrate.ts",
     "db:setup": "./scripts/setup-local-db.sh",
+    "seed": "tsx scripts/seed.ts",
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",
     "db:test:start": "docker compose -f docker-compose.test.yml up -d",
@@ -92,6 +93,7 @@
   "devDependencies": {
     "@eslint/compat": "^1.4.1",
     "@eslint/eslintrc": "^3.3.1",
+    "@faker-js/faker": "^10.1.0",
     "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.1.3",
     "@types/bcrypt": "^5.0.2",
