@@ -182,7 +182,12 @@ export async function processChatResponse({
             executedTools.add(RAG_TOOL);
             return {
               ...(!modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash"),
+                model: providers.groq("openai/gpt-oss-120b"),
+                providerOptions: {
+                  groq: {
+                    reasoningEffort: "none",
+                  },
+                },
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
