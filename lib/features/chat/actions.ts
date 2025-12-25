@@ -183,6 +183,13 @@ export async function processChatResponse({
             return {
               ...(!modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash"),
+                providerOptions: {
+                  google: {
+                    thinkingConfig: {
+                      thinkingBudget: 0,
+                    },
+                  },
+                },
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
