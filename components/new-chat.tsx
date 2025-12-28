@@ -1,5 +1,5 @@
 "use client";
-import { Edit, MessageCircleDashed } from "lucide-react";
+import { Edit, MessageCircleDashed, LayoutGrid } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
@@ -68,17 +68,25 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
 }) => {
   return (
     <Suspense fallback={null}>
-      <div className={cn("flex items-center justify-between", className)}>
-        <NewChatLink>
+      <div className={cn("flex flex-col gap-1", className)}>
+        <div className="flex items-center justify-between">
+          <NewChatLink>
+            <Item>
+              <Edit className="h-4 w-4" /> New Chat
+            </Item>
+          </NewChatLink>
+          <NewChatLink temporary>
+            <div className="p-2">
+              <MessageCircleDashed className="h-5 w-5" />
+            </div>
+          </NewChatLink>
+        </div>
+
+        <ChatLink href="/chat/hub">
           <Item>
-            <Edit className="h-4 w-4" /> New Chat
+            <LayoutGrid className="h-4 w-4" /> Chat Hub
           </Item>
-        </NewChatLink>
-        <NewChatLink temporary>
-          <div className="p-2">
-            <MessageCircleDashed className="h-5 w-5" />
-          </div>
-        </NewChatLink>
+        </ChatLink>
       </div>
     </Suspense>
   );

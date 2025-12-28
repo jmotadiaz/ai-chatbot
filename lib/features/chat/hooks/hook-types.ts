@@ -42,5 +42,3 @@ export interface InputState {
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
   sendEnabled: boolean;
 }
-
-

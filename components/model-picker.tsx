@@ -61,6 +61,9 @@ export interface ModelPickerSelectorProps {
   setSelectedModel: (model: chatModelId) => void;
   models: chatModelId[];
   id: string;
+  dropdownVariant?: React.ComponentProps<
+    typeof Select.Dropdown
+  >["variant"];
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
@@ -68,6 +71,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   setSelectedModel,
   models,
   id,
+  dropdownVariant,
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -81,6 +85,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
       <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
       <Select.Dropdown
         {...getSelectContentProps()}
+        {...(dropdownVariant && { variant: dropdownVariant })}
         className="max-h-[400px] lg:max-h-[600px] min-w-64 overflow-auto scrollbar-none"
       >
         {models.map((modelId) => (
