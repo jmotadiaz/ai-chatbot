@@ -1,13 +1,7 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { useChat as useAiSdkChat } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
-import { DefaultChatTransport } from "ai";
-import { toast } from "sonner";
-import { useQueryState } from "nuqs";
-import { v4, validate } from "uuid";
 import {
   ChatConfig,
   ChatTools,
@@ -18,6 +12,11 @@ import {
   useChatHandler,
   useAvailableModels,
 } from "./use-chat-handler";
+import { useChatDataPartState } from "./use-chat-data-part-state";
+import { useChatQueryParamId } from "./use-chat-query-param-id";
+import { useChatReload } from "./use-chat-reload";
+import { useChatRequestBody } from "./use-chat-request-body";
+import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
   defaultModel,
@@ -84,54 +83,28 @@ export const useChat = ({
     webSearchNumResults,
   });
   const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);
-  const [dataPart, setDataPart] = useState<
-    DataUIPart<ChatbotDataPart> | undefined
-  >(undefined);
-  const [queryParamChatId, setChatId] = useQueryState("chatId");
+  const { setQueryParamChatId, validQueryParamChatId } = useChatQueryParamId();
+  const { dataPart, setDataPart } = useChatDataPartState();
 
-  const chatResult = useAiSdkChat({
-    messages: initialMessages,
-    generateId: v4,
-    experimental_throttle: 200,
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-    }),
-    onData: (incoming) => {
-      const incomingDataPart = incoming as DataUIPart<ChatbotDataPart>;
-      setDataPart(incomingDataPart);
-      if (incomingDataPart.type === "data-chat") {
-        setChatId(incomingDataPart.data.id);
-      }
-    },
-    onError: (error) => {
-      toast.error(
-        error.message.length > 0
-          ? error.message
-          : "An error happened, please try again later.",
-        { position: "top-center", richColors: true }
-      );
+  const chatResult = useChatSession({
+    initialMessages,
+    api: "/api/chat",
+    throttleMs: 200,
+    onDataPart: setDataPart,
+    onChatId: async (newChatId) => {
+      await setQueryParamChatId(newChatId);
     },
   });
 
-  const body = useMemo(() => {
-    return {
-      chatId:
-        chatId || (validate(queryParamChatId) ? queryParamChatId : undefined),
-      projectId,
-      preventChatPersistence,
-      tools,
-      systemPrompt,
-      ...chatConfig,
-    };
-  }, [
-    queryParamChatId,
+  const body = useChatRequestBody({
     chatId,
+    validQueryParamChatId,
     projectId,
     preventChatPersistence,
+    tools,
     systemPrompt,
     chatConfig,
-    tools,
-  ]);
+  });
 
   const {
     input,
@@ -149,27 +122,18 @@ export const useChat = ({
   });
 
   const availableModels = useAvailableModels({
-    chatResult,
+    messages: chatResult.messages,
     tools,
     files,
   });
 
-  const reload = useCallback(
-    (reloadConfig: Partial<ChatConfig> = {}) => {
-      setInput("");
-      chatResult.regenerate({
-        messageId: chatResult.messages.at(-1)?.id,
-        body: {
-          ...body,
-          ...reloadConfig,
-        },
-      });
-      if (reloadConfig) {
-        setConfig(reloadConfig);
-      }
-    },
-    [body, chatResult, setConfig, setInput]
-  );
+  const { reload } = useChatReload({
+    regenerate: chatResult.regenerate,
+    messages: chatResult.messages,
+    body,
+    setInput,
+    setConfig,
+  });
 
   return {
     ...chatResult,
