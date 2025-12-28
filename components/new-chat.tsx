@@ -1,6 +1,6 @@
 "use client";
 import { Edit, MessageCircleDashed } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils/helpers";
@@ -19,22 +19,25 @@ export const NewChatLink: React.FC<NewChatProps> = ({
   projectId,
 }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const baseTarget = projectId ? `/project/${projectId}/chat` : "/";
+
+  const effectiveTemporary = temporary ?? (searchParams.get("chatType") === "temporary");
 
   return (
     <ChatLink
       href={{
         pathname: baseTarget,
-        query: temporary ? { chatType: "temporary" } : {},
+        query: effectiveTemporary ? { chatType: "temporary" } : {},
       }}
       className="cursor-pointer"
       onClick={(e) => {
         if (pathname === baseTarget) {
           e.preventDefault();
-          const searchParams = new URLSearchParams(
-            temporary ? { chatType: "temporary" } : {}
+          const newSearchParams = new URLSearchParams(
+             effectiveTemporary ? { chatType: "temporary" } : {}
           );
-          const queryString = searchParams.toString();
+          const queryString = newSearchParams.toString();
           const url = queryString ? `${baseTarget}?${queryString}` : baseTarget;
           window.location.assign(url);
         }
@@ -76,7 +79,7 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
             <Edit className="h-4 w-4" /> New Chat
           </Item>
         </NewChatLink>
-        <NewChatLink temporary>
+        <NewChatLink temporary={true}>
           <div className="p-2">
             <MessageCircleDashed className="h-5 w-5" />
           </div>
