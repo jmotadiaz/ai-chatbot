@@ -1,11 +1,10 @@
 "use client";
 import { Edit, MessageCircleDashed } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat-link";
-import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Item } from "@/components/ui/item";
 
 interface NewChatProps {
@@ -19,22 +18,28 @@ export const NewChatLink: React.FC<NewChatProps> = ({
   temporary,
   projectId,
 }) => {
-  const { status, setMessages } = useChatContext();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const baseTarget = projectId ? `/project/${projectId}/chat` : "/";
+
+  const effectiveTemporary = temporary ?? (searchParams.get("chatType") === "temporary");
+
   return (
     <ChatLink
       href={{
-        pathname: projectId ? `/project/${projectId}/chat` : "/",
-        query: temporary ? { chatType: "temporary" } : {},
+        pathname: baseTarget,
+        query: effectiveTemporary ? { chatType: "temporary" } : {},
       }}
-      className={cn(
-        status === "streaming" || status === "submitted"
-          ? "pointer-events-none opacity-50"
-          : "cursor-pointer"
-      )}
-      onNavigate={() => {
-        if (pathname === "/" || pathname === `/project/${projectId}/chat`) {
-          setMessages([]);
+      className="cursor-pointer"
+      onClick={(e) => {
+        if (pathname === baseTarget) {
+          e.preventDefault();
+          const newSearchParams = new URLSearchParams(
+             effectiveTemporary ? { chatType: "temporary" } : {}
+          );
+          const queryString = newSearchParams.toString();
+          const url = queryString ? `${baseTarget}?${queryString}` : baseTarget;
+          window.location.assign(url);
         }
       }}
     >
@@ -74,7 +79,7 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
             <Edit className="h-4 w-4" /> New Chat
           </Item>
         </NewChatLink>
-        <NewChatLink temporary>
+        <NewChatLink temporary={true}>
           <div className="p-2">
             <MessageCircleDashed className="h-5 w-5" />
           </div>
