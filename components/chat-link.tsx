@@ -8,23 +8,23 @@ import { useSidebarContext } from "@/app/providers";
 
 type LinkProps = ComponentProps<typeof NextLink>;
 
-const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
+const ChatLink: React.FC<LinkProps> = ({ onClick, className, ...props }) => {
   const { setShowSidebar } = useSidebarContext();
   const pathname = usePathname();
   const toPath =
     typeof props.href === "string" ? props.href : props.href?.pathname;
-  const handleNavigate: LinkProps["onNavigate"] = (e) => {
+  const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
     if (toPath === pathname) {
       setShowSidebar(false);
     }
-    onNavigate?.(e);
+    onClick?.(e);
   };
 
   return (
     <NextLink
       {...props}
       className={cn("cursor-pointer", className)}
-      onNavigate={handleNavigate}
+      onClick={handleClick}
     />
   );
 };

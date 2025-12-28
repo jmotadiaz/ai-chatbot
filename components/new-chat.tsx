@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat-link";
-import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Item } from "@/components/ui/item";
 
 interface NewChatProps {
@@ -19,22 +18,25 @@ export const NewChatLink: React.FC<NewChatProps> = ({
   temporary,
   projectId,
 }) => {
-  const { status, setMessages } = useChatContext();
   const pathname = usePathname();
+  const baseTarget = projectId ? `/project/${projectId}/chat` : "/";
+
   return (
     <ChatLink
       href={{
-        pathname: projectId ? `/project/${projectId}/chat` : "/",
+        pathname: baseTarget,
         query: temporary ? { chatType: "temporary" } : {},
       }}
-      className={cn(
-        status === "streaming" || status === "submitted"
-          ? "pointer-events-none opacity-50"
-          : "cursor-pointer"
-      )}
-      onNavigate={() => {
-        if (pathname === "/" || pathname === `/project/${projectId}/chat`) {
-          setMessages([]);
+      className="cursor-pointer"
+      onClick={(e) => {
+        if (pathname === baseTarget) {
+          e.preventDefault();
+          const searchParams = new URLSearchParams(
+            temporary ? { chatType: "temporary" } : {}
+          );
+          const queryString = searchParams.toString();
+          const url = queryString ? `${baseTarget}?${queryString}` : baseTarget;
+          window.location.assign(url);
         }
       }}
     >
