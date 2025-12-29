@@ -17,9 +17,10 @@ test('Chat Hub UI renders correctly', async ({ page, authenticatedUser }) => {
   // Wait for a bit for hydration
   await page.waitForTimeout(1000);
 
-  if (await ragToggle.isVisible()) {
-      await expect(ragToggle).toBeVisible();
-      await expect(webToggle).toBeVisible();
+  // If we are on desktop
+  if (await ragToggle.count() > 0) {
+      await expect(ragToggle.first()).toBeVisible();
+      await expect(webToggle.first()).toBeVisible();
   } else {
       // Mobile view check
        const settingsIcon = page.locator('svg.lucide-settings-2');
