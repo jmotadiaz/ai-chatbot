@@ -1,98 +1,54 @@
-import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useChatContext } from "@/app/(chat)/chat-provider";
-import { ChatControl } from "@/components/chat-control";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
-import { Dropdown, useDropdown } from "@/components/ui/dropdown";
-import { Label } from "@/components/ui/label";
-export const AttachmentsControl: React.FC = () => {
-  const { handleFileChange, selectedModel } = useChatContext();
-  const { getDropdownPopupProps, getDropdownTriggerProps, close } =
-    useDropdown();
-  const [isCaptureSupported, setIsCaptureSupported] = useState(false);
+"use client";
 
-  useEffect(() => {
-    setIsCaptureSupported(checkCaptureSupported());
-  }, []);
+import { Paperclip } from "lucide-react";
+import { Dispatch, SetStateAction, useRef } from "react";
+import { Button } from "@/components/ui/button";
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    close();
-    handleFileChange(e);
+interface AttachmentsControlProps {
+  attachments: File[];
+  setAttachments: Dispatch<SetStateAction<File[]>>;
+}
+
+export const AttachmentsControl = ({
+  setAttachments,
+}: AttachmentsControlProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAttachments((prev) => {
+        const newAttachments = [...prev];
+        Array.from(e.target.files as FileList).forEach((file) => {
+          newAttachments.push(file);
+        });
+        return newAttachments;
+      });
+    }
   };
 
-  const { supportedFiles } = getChatConfigurationByModelId(selectedModel);
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
-    <div className="relative">
-      <ChatControl
-        Icon={Paperclip}
-        aria-label="Attach files"
-        {...getDropdownTriggerProps()}
+    <>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        multiple
       />
-
-      <Dropdown.Popup
-        {...getDropdownPopupProps()}
-        aria-label="Attachment options"
-        data-testid="attachment-menu"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        onClick={handleClick}
+        aria-label="Add attachment"
       >
-        {supportedFiles.includes("img") && (
-          <>
-            <Dropdown.Item as={Label} className="text-sm" htmlFor="image-input">
-              <ImageIcon className="w-5 h-5" /> <span>Image</span>
-              <input
-                id="image-input"
-                type="file"
-                accept="image/*"
-                className="absolute w-0 h-0 overflow-hidden opacity-0"
-                onChange={onChange}
-                multiple
-              />
-            </Dropdown.Item>
-            <>
-              {isCaptureSupported && (
-                <Dropdown.Item
-                  as={Label}
-                  className="text-sm"
-                  htmlFor="camera-input"
-                >
-                  <Camera className="w-5 h-5" /> <span>Camera</span>
-                  <input
-                    id="camera-input"
-                    type="file"
-                    accept="image/*"
-                    className="absolute w-0 h-0 overflow-hidden opacity-0"
-                    onChange={onChange}
-                    capture="environment"
-                    multiple
-                  />
-                </Dropdown.Item>
-              )}
-            </>
-          </>
-        )}
-        <Dropdown.Item as={Label} className="text-sm" htmlFor="document-input">
-          <FileText className="w-5 h-5" /> <span>Document</span>
-          <input
-            id="document-input"
-            type="file"
-            accept={
-              supportedFiles.includes("pdf")
-                ? "application/pdf,.md,.txt,.xml,.json"
-                : ".md,.txt,.xml,.json"
-            }
-            className="absolute w-0 h-0 overflow-hidden opacity-0"
-            onChange={onChange}
-            capture="environment"
-            multiple
-          />
-        </Dropdown.Item>
-      </Dropdown.Popup>
-    </div>
+        <Paperclip className="h-5 w-5" />
+        <span className="sr-only">Add attachment</span>
+      </Button>
+    </>
   );
-};
-
-const checkCaptureSupported = (): boolean => {
-  const input = document.createElement("input");
-  input.type = "file";
-  return typeof input.capture !== "undefined";
 };

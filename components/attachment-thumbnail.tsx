@@ -1,34 +1,31 @@
-import Image from "next/image";
+import React from "react";
+import { FileIcon } from "lucide-react";
 import type { FilePart } from "@/lib/features/attachment/types";
-import { extractMediaType, formatFilename } from "@/lib/utils/helpers";
 
-interface FileThumbnailProps {
-  file: FilePart;
-}
+export const FileThumbnail = ({ file }: { file: File | FilePart }) => {
+  const isFile = file instanceof File;
+  const isImage = isFile ? file.type.startsWith("image/") : file.mediaType.startsWith("image/");
+  const url = isFile ? URL.createObjectURL(file) : file.url;
+  const name = isFile ? file.name : file.filename;
 
-export const FileThumbnail: React.FC<FileThumbnailProps> = ({ file }) => {
-  if (file.mediaType.startsWith("image/")) {
+  if (isImage) {
     return (
-      <div className="h-14 w-14 overflow-hidden rounded-xl">
-        <Image
-          src={file.url}
-          width={56}
-          height={56}
-          className="h-full w-full object-cover object-center"
-          alt={file.filename || "attachment"}
+      <div className="relative w-16 h-16 rounded-md overflow-hidden border border-border">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={name || "image"}
+          className="w-full h-full object-cover"
         />
       </div>
     );
-  } else {
-    return (
-      <div className="h-12 flex rounded-xl bg-zinc-500  dark:bg-zinc-700 text-gray-100 flex-col justify-center pl-4 pr-12 py-2 text-sm font-semibold">
-        <span className="whitespace-nowrap mb-0.5">
-          {formatFilename(file.filename)}
-        </span>
-        <span className="whitespace-nowrap uppercase text-xs opacity-60">
-          {extractMediaType(file.mediaType)}
-        </span>
-      </div>
-    );
   }
+
+  return (
+    <div className="flex items-center justify-center w-16 h-16 rounded-md border border-border bg-muted">
+      <FileIcon className="h-8 w-8 text-muted-foreground" />
+    </div>
+  );
 };
+
+export const AttachmentThumbnail = FileThumbnail;

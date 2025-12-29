@@ -1,59 +1,40 @@
-import { X } from "lucide-react";
-import { useChatContext } from "@/app/(chat)/chat-provider";
-import { FileThumbnail } from "@/components/attachment-thumbnail";
-import { cn } from "@/lib/utils/helpers";
-import type { FilePart } from "@/lib/features/attachment/types";
-import { deleteFile } from "@/lib/features/attachment/actions";
-import { CircleProgress } from "@/components/icons";
+"use client";
 
-export interface PreviewFilesProps {
-  className?: string;
+import { X } from "lucide-react";
+import type { ClassValue } from "clsx";
+import { Dispatch, SetStateAction } from "react";
+import { AttachmentThumbnail } from "./attachment-thumbnail";
+import { cn } from "@/lib/utils/helpers";
+import { Button } from "@/components/ui/button";
+
+interface PreviewFilesProps {
+  className?: ClassValue;
+  attachments: File[];
+  setAttachments: Dispatch<SetStateAction<File[]>>;
 }
 
-export const PreviewFiles: React.FC<PreviewFilesProps> = ({ className }) => {
-  const { files, setFiles } = useChatContext();
+export const PreviewFiles = ({
+  className,
+  attachments,
+  setAttachments,
+}: PreviewFilesProps) => {
+  if (attachments.length === 0) return null;
 
-  const removeFile = (fileToDelete: FilePart) => {
-    deleteFile(fileToDelete.url);
-    setFiles(files.filter((file) => file.filename !== fileToDelete.filename));
-  };
-
-  if (files.length === 0) {
-    return null;
-  }
   return (
-    <div
-      data-testid="attachments-preview"
-      className={cn("flex space-x-3 items-center", className)}
-    >
-      {files.map((file, idx) => (
-        <div
-          className="relative cursor-pointer"
-          key={idx}
-          onClick={() => !file.loading && removeFile(file)}
-        >
-          {!file.loading && (
-            <div
-              className={cn(
-                "bg-secondary absolute p-1 rounded-full opacity-80",
-                file.mediaType.startsWith("image/")
-                  ? "top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
-                  : "top-1/2 right-2 transform -translate-y-1/2"
-              )}
-            >
-              <X size={15} />
-            </div>
-          )}
-          {file.loading && (
-            <div
-              className={cn(
-                "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80 text-xs"
-              )}
-            >
-              <CircleProgress size={15} progress={file.loading.percentage} />
-            </div>
-          )}
-          <FileThumbnail file={file} />
+    <div className={cn("flex flex-row gap-2 overflow-x-auto", className)}>
+      {attachments.map((file, index) => (
+        <div key={index} className="relative group">
+          <AttachmentThumbnail file={file} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => {
+              setAttachments((prev) => prev.filter((_, i) => i !== index));
+            }}
+          >
+            <X className="h-3 w-3" />
+          </Button>
         </div>
       ))}
     </div>
