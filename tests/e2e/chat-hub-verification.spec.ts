@@ -1,8 +1,8 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
-test('Chat Hub UI renders correctly', async ({ page }) => {
-  // Mock login and visit the page
+test('Chat Hub UI renders correctly', async ({ page, authenticatedUser }) => {
+  // Visit the page
   await page.goto('/chat/hub');
 
   // Check if Textarea is present

@@ -2,12 +2,12 @@
 
 import { Settings2 } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
+import { useMediaQuery } from "usehooks-ts";
 import {
   Dropdown,
   useDropdown
 } from "@/components/ui/dropdown";
 import { Toggle } from "@/components/ui/toggle";
-import { useMediaQuery } from "usehooks-ts";
 
 interface ToolsControlProps {
   selectedTools: Set<string>;
