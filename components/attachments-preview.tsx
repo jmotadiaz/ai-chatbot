@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 
 interface PreviewFilesProps {
   className?: ClassValue;
-  attachments: File[];
-  setAttachments: Dispatch<SetStateAction<File[]>>;
+  attachments?: File[];
+  setAttachments?: Dispatch<SetStateAction<File[]>>;
 }
 
 export const PreviewFiles = ({
   className,
-  attachments,
+  attachments = [],
   setAttachments,
 }: PreviewFilesProps) => {
   if (attachments.length === 0) return null;
@@ -25,16 +25,18 @@ export const PreviewFiles = ({
       {attachments.map((file, index) => (
         <div key={index} className="relative group">
           <AttachmentThumbnail file={file} />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={() => {
-              setAttachments((prev) => prev.filter((_, i) => i !== index));
-            }}
-          >
-            <X className="h-3 w-3" />
-          </Button>
+          {setAttachments && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => {
+                setAttachments((prev) => prev.filter((_, i) => i !== index));
+              }}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       ))}
     </div>

@@ -4,14 +4,20 @@ import { useState } from "react";
 import { Textarea } from "@/components/textarea";
 import { ToolsControl } from "@/components/tools-control";
 import { AttachmentsControl } from "@/components/attachments-control";
+import { cn } from "@/lib/utils/helpers";
+import type { ClassValue } from "clsx";
 
-export const HubClient = () => {
+interface HubClientProps {
+  className?: ClassValue;
+}
+
+export const HubClient = ({ className }: HubClientProps) => {
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className={cn("flex flex-col gap-4 p-4", className)}>
       <h1 className="text-2xl font-bold">Chat Hub</h1>
       <div className="w-full max-w-3xl mx-auto border rounded-2xl p-4">
         <form
