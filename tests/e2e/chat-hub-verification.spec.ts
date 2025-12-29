@@ -11,8 +11,8 @@ test('Chat Hub UI renders correctly', async ({ page, authenticatedUser }) => {
 
   // Check if ToolsControl is present (Settings icon for mobile or buttons for desktop)
   // Assuming desktop for now based on most tests, but checking for visibility of RAG/Web toggle
-  const ragToggle = page.getByRole('button', { name: 'Toggle RAG' });
-  const webToggle = page.getByRole('button', { name: 'Toggle Web Search' });
+  const ragToggle = page.locator('button').filter({ hasText: 'RAG' });
+  const webToggle = page.locator('button').filter({ hasText: 'Web' });
 
   // Wait for a bit for hydration
   await page.waitForTimeout(1000);

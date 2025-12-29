@@ -37,26 +37,23 @@ export const ToolsControl = ({
     return (
       <div className="flex flex-row gap-2">
         <Toggle
-          pressed={selectedTools.has("rag")}
-          onPressedChange={() => handleToolToggle("rag")}
-          variant="outline"
-          aria-label="Toggle RAG"
+          id="rag"
+          checked={selectedTools.has("rag")}
+          onChange={() => handleToolToggle("rag")}
         >
           RAG
         </Toggle>
         <Toggle
-          pressed={selectedTools.has("webSearch")}
-          onPressedChange={() => handleToolToggle("webSearch")}
-          variant="outline"
-          aria-label="Toggle Web Search"
+          id="webSearch"
+          checked={selectedTools.has("webSearch")}
+          onChange={() => handleToolToggle("webSearch")}
         >
           Web
         </Toggle>
         <Toggle
-          pressed={selectedTools.has("imageGenerator")}
-          onPressedChange={() => handleToolToggle("imageGenerator")}
-          variant="outline"
-          aria-label="Toggle Image Gen"
+          id="imageGenerator"
+          checked={selectedTools.has("imageGenerator")}
+          onChange={() => handleToolToggle("imageGenerator")}
         >
           Image Gen
         </Toggle>
@@ -82,10 +79,9 @@ export const ToolsControl = ({
           <div className="flex items-center justify-between w-full">
             <span>RAG</span>
             <Toggle
-              size="sm"
-              pressed={selectedTools.has("rag")}
-              onPressedChange={() => handleToolToggle("rag")}
-              aria-label="Toggle RAG"
+              id="rag-mobile"
+              checked={selectedTools.has("rag")}
+              onChange={() => handleToolToggle("rag")}
             />
           </div>
         </Dropdown.Item>
@@ -93,10 +89,9 @@ export const ToolsControl = ({
           <div className="flex items-center justify-between w-full">
             <span>Web Search</span>
             <Toggle
-              size="sm"
-              pressed={selectedTools.has("webSearch")}
-              onPressedChange={() => handleToolToggle("webSearch")}
-              aria-label="Toggle Web Search"
+              id="webSearch-mobile"
+              checked={selectedTools.has("webSearch")}
+              onChange={() => handleToolToggle("webSearch")}
             />
           </div>
         </Dropdown.Item>
@@ -104,10 +99,9 @@ export const ToolsControl = ({
           <div className="flex items-center justify-between w-full">
             <span>Image Gen</span>
             <Toggle
-              size="sm"
-              pressed={selectedTools.has("imageGenerator")}
-              onPressedChange={() => handleToolToggle("imageGenerator")}
-              aria-label="Toggle Image Gen"
+              id="imageGenerator-mobile"
+              checked={selectedTools.has("imageGenerator")}
+              onChange={() => handleToolToggle("imageGenerator")}
             />
           </div>
         </Dropdown.Item>
