@@ -2,16 +2,20 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
+import { useState } from "react";
 import {
-  ChatConfig,
-  ChatTools,
-  InputState,
-  SetChatConfig,
-  useChatConfig,
-  useChatTools,
-  useChatHandler,
-  useAvailableModels,
-} from "./use-chat-handler";
+  type ChatConfig,
+  type ChatTools,
+  type InputState,
+  type SetChatConfig,
+} from "./hook-types";
+import { useAvailableModels } from "./use-available-models";
+import { useChatConfig } from "./use-chat-config";
+import { useChatTools } from "./use-chat-tools";
+import { useHandleFileChange } from "./use-handle-file=change";
+import { useChatInputState } from "./use-chat-input-state";
+import { useChatSendEnabled } from "./use-chat-send-enabled";
+import { useChatSubmit } from "./use-chat-submit";
 import { useChatDataPartState } from "./use-chat-data-part-state";
 import { useChatQueryParamId } from "./use-chat-query-param-id";
 import { useChatReload } from "./use-chat-reload";
@@ -29,6 +33,8 @@ import type {
   ChatbotMessage,
   Tools,
 } from "@/lib/features/chat/types";
+import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
+import { FilePart } from "@/lib/features/attachment/types";
 
 export interface UseChatArgs {
   initialMessages?: ChatbotMessage[];
@@ -107,19 +113,19 @@ export const useChat = ({
     chatConfig,
   });
 
-  const {
-    input,
-    setInput,
-    files,
-    setFiles,
-    handleFileChange,
-    handleInputChange,
-    handleSubmit,
-    sendEnabled,
-  } = useChatHandler({
-    selectedModel: chatConfig.selectedModel,
-    chatResult,
+  const { input, setInput, handleInputChange } = useChatInputState("");
+  const [files, setFiles] = useState<FilePart[]>([]);
+  const sendEnabled = useChatSendEnabled({ input, files });
+  const { handleSubmit } = useChatSubmit({
+    sendMessage: chatResult.sendMessage,
     body,
+    input,
+    files,
+    sendEnabled,
+    onBeforeSubmit: () => {
+      setInput("");
+      setFiles([]);
+    },
   });
 
   const availableModels = useAvailableModels({
@@ -127,6 +133,16 @@ export const useChat = ({
     messages: chatResult.messages,
     tools,
     files,
+  });
+
+  const supportedFiles = useSupportedFiles({
+    selectedModels: [selectedModel],
+    availableModels,
+  });
+
+  const { handleFileChange } = useHandleFileChange({
+    setFiles,
+    supportedFiles,
   });
 
   const { reload } = useChatReload({
