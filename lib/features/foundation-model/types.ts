@@ -24,6 +24,7 @@ export type Company =
   | "alibaba"
   | "moonshotai"
   | "minimax"
+  | "xiaomi"
   | "zai"
   | "ai chatbot";
 

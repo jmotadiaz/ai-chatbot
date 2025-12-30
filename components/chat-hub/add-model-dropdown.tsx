@@ -21,17 +21,6 @@ export const AddModelDropdown: React.FC<AddModelDropdownProps> = ({
   variant = "button",
 }) => {
   const id = useId();
-  const [selectedModel, setSelectedModel] = useState<chatModelId | null>(null);
-
-  useEffect(() => {
-    if (!availableModels.length) {
-      setSelectedModel(null);
-      return;
-    }
-    setSelectedModel((prev) =>
-      prev && availableModels.includes(prev) ? prev : availableModels[0]
-    );
-  }, [availableModels]);
 
   if (variant === "button") {
     // If you need the button variant later, we can add a small trigger wrapper.
@@ -44,13 +33,12 @@ export const AddModelDropdown: React.FC<AddModelDropdownProps> = ({
       aria-label={triggerLabel}
       className={cn(triggerClassName, "flex items-center justify-center")}
     >
-      {selectedModel ? (
+      {availableModels.length > 0 ? (
         <ModelPickerSelector
           id={id}
-          selectedModel={selectedModel}
+          selectedModel={availableModels[0]}
           setSelectedModel={(model) => {
             onSelectModel(model);
-            setSelectedModel(model);
           }}
           models={availableModels}
           dropdownVariant="center"

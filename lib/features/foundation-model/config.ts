@@ -136,6 +136,13 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       },
     },
   },
+  "Mimo V2": {
+    model: providers.gateway("xiaomi/mimo-v2-flash"),
+    reasoning: true,
+    company: "xiaomi",
+    temperature: 0.8,
+    topP: 0.95,
+  },
   "GLM-4.6": {
     model: wrapLanguageModel({
       model: providers.gateway("zai/glm-4.6"),
@@ -378,6 +385,7 @@ export const chatModelKeys = [
   "Qwen3 Instruct",
   "Qwen3 Thinking",
   "MiniMax M2",
+  "Mimo V2",
   "GLM-4.6",
   "Deepseek Chat",
   "Deepseek R1",
