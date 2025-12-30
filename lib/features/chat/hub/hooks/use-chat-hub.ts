@@ -24,6 +24,8 @@ const HUB_MODELS: chatModelId[] = CHAT_MODELS.filter(
   (m) => m !== "Router"
 ) as chatModelId[];
 
+const HUB_MAX_INSTANCES = 3;
+
 const buildHubUserMessage = ({
   input,
   files,
@@ -88,8 +90,8 @@ export const useChatHub = ({
 
   const availableModels = useMemo(() => {
     if (instancesLocked) return [];
-    // Hard cap: no more than 4 instances.
-    if (instances.length >= 4) return [];
+    // Hard cap: no more than 3 instances.
+    if (instances.length >= HUB_MAX_INSTANCES) return [];
 
     const usedModels = new Set(instances.map((i) => i.model));
     return baseAvailableModels.filter((m) => !usedModels.has(m));
@@ -120,7 +122,7 @@ export const useChatHub = ({
       if (model === "Router") return;
       if (isPersisting) return;
       if (instancesLocked) return;
-      if (instances.length >= 4) return;
+      if (instances.length >= HUB_MAX_INSTANCES) return;
       // Prevent adding incompatible models based on current tools + files.
       if (!availableModels.includes(model)) return;
 

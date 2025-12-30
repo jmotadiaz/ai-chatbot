@@ -18,11 +18,25 @@ export interface HubClientProps {
 
 export const HubClient: React.FC<HubClientProps> = ({ className }) => {
   const hub = useChatHub();
-  const containerClassName = "w-full max-w-6xl 2xl:max-w-screen-2xl mx-auto px-4";
+  const inputContainerClassName = "w-full max-w-5xl mx-auto px-4";
+
+  const panelsContainerClassName = React.useMemo(() => {
+    const showAddModelTile = hub.instances.length < 3 && !hub.instancesLocked;
+    const visibleSlotsCount = hub.instances.length + (showAddModelTile ? 1 : 0);
+
+    const base = "w-full mx-auto px-4";
+    const desktopMaxWidth =
+      visibleSlotsCount <= 1
+        ? "2xl:max-w-5xl"
+        : visibleSlotsCount === 2
+          ? "2xl:max-w-screen-2xl"
+          : "2xl:max-w-[120rem]";
+    return cn(base, desktopMaxWidth);
+  }, [hub.instances.length, hub.instancesLocked]);
 
   const tabIds = React.useMemo(() => {
     const ids = hub.instances.map((i) => i.id);
-    return hub.instances.length < 4 && !hub.instancesLocked
+    return hub.instances.length < 3 && !hub.instancesLocked
       ? [...ids, "new-model"]
       : ids;
   }, [hub.instances, hub.instancesLocked]);
@@ -47,8 +61,8 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
       {/* Top area (panels) */}
       <div className="flex-1 w-full pb-6 min-h-0">
         {/* Desktop grid */}
-        <div className={cn("hidden 2xl:block h-full min-h-0", containerClassName)}>
-          <div className="grid grid-cols-2 gap-4 h-full min-h-0 auto-rows-fr">
+        <div className={cn("hidden 2xl:block h-full min-h-0", panelsContainerClassName)}>
+          <div className="grid grid-flow-col auto-cols-fr gap-4 h-full min-h-0">
             {hub.instances.map((inst) => (
               <HubInstancePanel
                 key={inst.id}
@@ -63,24 +77,22 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
               />
             ))}
 
-            {hub.instances.length < 4 && !hub.instancesLocked && (
-              <div className={cn(hub.instances.length === 0 && "col-span-2")}>
-                <AddModelDropdown
-                  availableModels={hub.availableModels}
-                  onSelectModel={(model) => hub.addInstance(model)}
-                  triggerClassName={cn(
-                    "w-full h-full rounded-xl border border-dashed bg-secondary/30"
-                  )}
-                  triggerLabel="Add Model"
-                  variant="tile"
-                />
-              </div>
+            {hub.instances.length < 3 && !hub.instancesLocked && (
+              <AddModelDropdown
+                availableModels={hub.availableModels}
+                onSelectModel={(model) => hub.addInstance(model)}
+                triggerClassName={cn(
+                  "w-full h-full rounded-xl border border-dashed bg-secondary/30"
+                )}
+                triggerLabel="Add Model"
+                variant="tile"
+              />
             )}
           </div>
         </div>
 
         {/* Mobile tabs */}
-        <div className={cn("2xl:hidden h-full flex flex-col", containerClassName)}>
+        <div className={cn("2xl:hidden h-full flex flex-col", panelsContainerClassName)}>
           <Tabs.Container>
             {hub.instances.map((inst) => (
               <Tabs.Tab
@@ -91,7 +103,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
                 {inst.model}
               </Tabs.Tab>
             ))}
-            {hub.instances.length < 4 && !hub.instancesLocked && (
+            {hub.instances.length < 3 && !hub.instancesLocked && (
               <Tabs.Tab
                 active={activeTab === "new-model"}
                 onClick={() => setActiveTab("new-model")}
@@ -120,7 +132,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
               </div>
             ))}
 
-            {hub.instances.length < 4 && !hub.instancesLocked && (
+            {hub.instances.length < 3 && !hub.instancesLocked && (
               <div className={cn("h-full", activeTab !== "new-model" && "hidden")}>
                 <AddModelDropdown
                   availableModels={hub.availableModels}
@@ -140,7 +152,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
       {/* Global hub form (bottom) */}
       <form
         onSubmit={hub.handleSubmit}
-        className={cn("bg-(--background) pb-4", containerClassName)}
+        className={cn("bg-(--background) pb-4", inputContainerClassName)}
       >
         <div className="relative w-full">
           <Textarea
