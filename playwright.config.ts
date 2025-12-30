@@ -11,6 +11,19 @@ config({
   path: ".env.test",
 });
 
+const setDefaultEnv = (key: string, value: string) => {
+  if (!process.env[key]) {
+    process.env[key] = value;
+  }
+};
+
+// Provide sensible defaults so `pnpm test` works even when `.env.test` is absent.
+// The test DB is exposed by docker-compose.test.yml on localhost:5434.
+setDefaultEnv("POSTGRES_URL", "postgres://postgres:postgres@localhost:5434/test");
+// Required by tests/e2e/fixtures.ts for signing Auth.js session cookies.
+setDefaultEnv("AUTH_SECRET", "test-auth-secret-change-me");
+setDefaultEnv("PORT", "3000");
+
 const PORT = process.env.PORT || 3000;
 
 // Set webServer.url and use.baseURL with the location of the WebServer respecting the correct set port
@@ -86,13 +99,15 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "npx next dev",
+    // Use webpack for E2E to avoid Turbopack-only font resolution/TLS issues that can cause the server to exit early.
+    command: `npx next dev --webpack -p ${PORT}`,
     stdout: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     stderr: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 240 * 1000,
     env: {
+      PORT: String(PORT),
       USE_MOCK_PROVIDERS: "1",
       DISABLE_DEV_INDICATOR: "1",
     },
