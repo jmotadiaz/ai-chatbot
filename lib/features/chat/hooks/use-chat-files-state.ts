@@ -2,9 +2,9 @@
 
 import { useCallback, useState } from "react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
+import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 
 export interface ChatFilesState {
   files: FilePart[];
@@ -20,16 +20,16 @@ export const useChatFilesState = ({
   initialFiles?: FilePart[];
 }): ChatFilesState => {
   const [files, setFiles] = useState<FilePart[]>(initialFiles);
+  const supportedFiles = useSupportedFiles({
+    selectedModels: [selectedModel],
+    availableModels: [selectedModel],
+  });
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileUpload(
-        setFiles,
-        e.target.files,
-        getChatConfigurationByModelId(selectedModel).supportedFiles
-      );
+      handleFileUpload(setFiles, e.target.files, supportedFiles);
     },
-    [selectedModel]
+    [supportedFiles]
   );
 
   return { files, setFiles, handleFileChange };

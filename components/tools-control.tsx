@@ -1,28 +1,37 @@
 import type { ClassValue } from "clsx";
 import { Wrench, Globe, Database } from "lucide-react";
-import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+import type { Tool, Tools } from "@/lib/features/chat/types";
 
 export interface ToolsControlProps {
   className?: ClassValue;
+  tools: Tools;
+  toggleTool: (tool: Tool) => void;
+  hasTool: (tool: Tool) => boolean;
+  enabled: boolean;
 }
 
-export const ToolsControl = ({ className }: ToolsControlProps) => {
+export const ToolsControl: React.FC<ToolsControlProps> = ({
+  className,
+  tools,
+  toggleTool,
+  hasTool,
+  enabled,
+}) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
-  const { tools, toggleTool, hasTool, selectedModel } = useChatContext();
-
-  const modelConfig = getChatConfigurationByModelId(selectedModel);
 
   const isActive = tools.length > 0;
 
-  if (!modelConfig.toolCalling) {
+  if (!enabled) {
     return null;
   }
+
+  const ragToggleId = "rag-tool";
+  const webSearchToggleId = "web-search-tool";
 
   return (
     <Dropdown.Container data-testid="tools-control-dropdown">
@@ -37,7 +46,7 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
       <Dropdown.Popup {...getDropdownPopupProps()}>
         <Dropdown.Item
           as={Toggle}
-          id="rag-tool"
+          id={ragToggleId}
           checked={hasTool(RAG_TOOL)}
           onChange={() => toggleTool(RAG_TOOL)}
         >
@@ -47,7 +56,7 @@ export const ToolsControl = ({ className }: ToolsControlProps) => {
 
         <Dropdown.Item
           as={Toggle}
-          id="web-search-tool"
+          id={webSearchToggleId}
           checked={hasTool(WEB_SEARCH_TOOL)}
           onChange={() => toggleTool(WEB_SEARCH_TOOL)}
         >

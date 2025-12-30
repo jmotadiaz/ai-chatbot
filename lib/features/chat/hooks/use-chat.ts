@@ -18,6 +18,7 @@ import { useChatReload } from "./use-chat-reload";
 import { useChatRequestBody } from "./use-chat-request-body";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
+import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import {
   defaultModel,
   defaultRagMaxResources,
@@ -122,6 +123,7 @@ export const useChat = ({
   });
 
   const availableModels = useAvailableModels({
+    models: CHAT_MODELS,
     messages: chatResult.messages,
     tools,
     files,

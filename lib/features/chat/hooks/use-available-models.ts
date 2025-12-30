@@ -1,23 +1,24 @@
 "use client";
 
 import { useMemo } from "react";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
 import type { FilePart } from "@/lib/features/attachment/types";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 
 export const useAvailableModels = ({
+  models,
   messages,
   tools,
   files,
 }: {
+  models: chatModelId[];
   messages: ChatbotMessage[];
   tools: Tools;
   files: FilePart[];
 }): chatModelId[] => {
   return useMemo(() => {
-    return CHAT_MODELS.filter((model) => {
+    return models.filter((model) => {
       const config = getChatConfigurationByModelId(model);
       const mediaTypes = [
         ...messages.flatMap((message) =>
@@ -36,7 +37,7 @@ export const useAvailableModels = ({
         })
       );
     });
-  }, [tools, messages, files]);
+  }, [files, messages, models, tools]);
 };
 
 

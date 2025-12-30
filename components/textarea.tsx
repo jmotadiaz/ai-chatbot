@@ -3,6 +3,7 @@ import type { ClassValue } from "clsx";
 import { Textarea as TextareaUI } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils/helpers";
 import { PreviewFiles } from "@/components/attachments-preview";
+import type { FilePart } from "@/lib/features/attachment/types";
 
 interface TextareaProps {
   input: string;
@@ -13,6 +14,9 @@ interface TextareaProps {
   ref?: React.Ref<HTMLTextAreaElement>;
   containerClassName?: ClassValue;
   textAreaClassName?: ClassValue;
+  files?: FilePart[];
+  setFiles?: React.Dispatch<React.SetStateAction<FilePart[]>>;
+  placeholder?: string;
 }
 
 export const Textarea = ({
@@ -23,6 +27,9 @@ export const Textarea = ({
   onPasteFiles,
   containerClassName,
   textAreaClassName,
+  files,
+  setFiles,
+  placeholder = "Say something...",
 }: TextareaProps) => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -53,7 +60,13 @@ export const Textarea = ({
         containerClassName
       )}
     >
-      <PreviewFiles className="m-3" />
+      {files && setFiles && (
+        <PreviewFiles
+          files={files}
+          setFiles={setFiles}
+          className="m-3"
+        />
+      )}
       <div className="relative">
         <div
           className={cn(
@@ -79,7 +92,7 @@ export const Textarea = ({
           onPaste={(e) => {
             onPasteFiles?.(e.clipboardData.files);
           }}
-          placeholder={"Say something..."}
+          placeholder={placeholder}
           onChange={(e) => {
             onChangeInput(e.target.value);
           }}

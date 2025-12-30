@@ -1,10 +1,12 @@
+"use client";
+
 import {
-  unstable_ViewTransition as ViewTransition,
   startTransition,
   useCallback,
   useState,
 } from "react";
 import type { ClassValue } from "clsx";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils/helpers";
 
 export interface DropdownContainerProps {
@@ -20,7 +22,10 @@ const DropdownContainer: React.FC<DropdownContainerProps> = ({
 };
 
 export interface DropdownPopupProps
-  extends React.HtmlHTMLAttributes<HTMLDivElement> {
+  extends Omit<
+    React.HTMLAttributes<HTMLDivElement>,
+    "onAnimationStart" | "onAnimationEnd" | "onAnimationIteration"
+  > {
   children: React.ReactNode;
   isShown: boolean;
   close: () => void;
@@ -43,28 +48,40 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   variant = "top-right",
   ...props
 }) => {
+  const initialY =
+    variant === "bottom" ? -8 : variant === "center" ? 8 : 8;
+
   return (
-    <>
+    <AnimatePresence>
       {isShown && (
-        <ViewTransition enter="dropdown-enter" exit="dropdown-exit">
-          <div
+        <>
+          <motion.div
+            key="dropdown-backdrop"
             data-testid="backdrop"
             className="fixed inset-0 z-40 bg-transparent"
             onClick={close}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeInOut" }}
           />
-          <div
-            {...props}
+          <motion.div
+            key="dropdown-popup"
             className={cn(
               "fixed w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-50 overflow-hidden pb-4 lg:pb-0",
               variants[variant],
               className
             )}
+            initial={{ opacity: 0, y: initialY }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: initialY }}
+            transition={{ duration: 0.18, ease: "easeInOut" }}
           >
-            {children}
-          </div>
-        </ViewTransition>
+            <div {...props}>{children}</div>
+          </motion.div>
+        </>
       )}
-    </>
+    </AnimatePresence>
   );
 };
 

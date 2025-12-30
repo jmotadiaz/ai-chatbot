@@ -2,6 +2,7 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
+import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import type { ChatbotMessage, Tools, Tool } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
 
@@ -19,6 +20,8 @@ export interface HubInstance {
 export interface ChatHub {
   instances: HubInstance[];
   availableModels: chatModelId[];
+  supportedFilesForPicker: Required<ModelConfiguration>["supportedFiles"];
+  toolsEnabled: boolean;
   /** Once the hub has sent the first message, new instances cannot be added. */
   instancesLocked: boolean;
   /** True while persisting a selected instance into a concrete chat. */

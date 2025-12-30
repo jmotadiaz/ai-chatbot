@@ -1,11 +1,11 @@
 "use client";
 
 import React, {
-  unstable_ViewTransition as ViewTransition,
   startTransition,
   useCallback,
   useState,
 } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import type { ButtonProps } from "@/components/ui/button";
 import { Button } from "@/components/ui/button"; // Assuming button component exists
 
@@ -30,10 +30,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmButtonVariant = "destructive",
   confirmButtonText = "Delete",
 }) => {
-  if (!isOpen) {
-    return null;
-  }
-
   const handleConfirm = () => {
     startTransition(() => {
       onConfirm();
@@ -42,43 +38,58 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   };
 
   return (
-    <>
-      <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-        onClick={() =>
-          startTransition(() => {
-            onClose();
-          })
-        }
-      ></div>
-      <ViewTransition enter="slide-up" exit="slide-up">
-        <div className="fixed z-60 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] w-full max-w-md px-4">
-          <div className="bg-background text-foreground p-6 rounded-lg shadow-xl">
-            <h3 className="text-lg font-semibold mb-2">{title}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{message}</p>
-            <div className="flex justify-end gap-2 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  startTransition(() => {
-                    onClose();
-                  });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant={confirmButtonVariant}
-                onClick={handleConfirm}
-                isLoading={isLoading}
-              >
-                {confirmButtonText}
-              </Button>
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            key="confirm-modal-backdrop"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() =>
+              startTransition(() => {
+                onClose();
+              })
+            }
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          />
+
+          <motion.div
+            key="confirm-modal-container"
+            className="fixed z-60 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] w-full max-w-md px-4"
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <div className="bg-background text-foreground p-6 rounded-lg shadow-xl">
+              <h3 className="text-lg font-semibold mb-2">{title}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{message}</p>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    startTransition(() => {
+                      onClose();
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant={confirmButtonVariant}
+                  onClick={handleConfirm}
+                  isLoading={isLoading}
+                >
+                  {confirmButtonText}
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      </ViewTransition>
-    </>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 

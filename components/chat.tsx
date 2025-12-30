@@ -28,6 +28,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     messages,
     input,
     setInput,
+    files,
     handleSubmit,
     title,
     status,
@@ -36,6 +37,10 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     dataPart,
     selectedModel,
     setFiles,
+    handleFileChange,
+    tools,
+    toggleTool,
+    hasTool,
     metaPrompt,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
@@ -48,12 +53,10 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observeRef = useRef<HTMLDivElement>(null);
+  const modelConfig = getChatConfigurationByModelId(selectedModel);
+
   const onPasteFiles = (files: FileList) => {
-    handleFileUpload(
-      setFiles,
-      files,
-      getChatConfigurationByModelId(selectedModel).supportedFiles
-    );
+    handleFileUpload(setFiles, files, modelConfig.supportedFiles);
   };
 
   const isLoading = status === "streaming" || status === "submitted";
@@ -114,10 +117,20 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
             isLoading={isLoading}
             onPasteFiles={onPasteFiles}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
+            files={files}
+            setFiles={setFiles}
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
-            <AttachmentsControl />
-            <ToolsControl />
+            <AttachmentsControl
+              handleFileChange={handleFileChange}
+              supportedFiles={modelConfig.supportedFiles}
+            />
+            <ToolsControl
+              tools={tools}
+              toggleTool={toggleTool}
+              hasTool={hasTool}
+              enabled={modelConfig.toolCalling}
+            />
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">

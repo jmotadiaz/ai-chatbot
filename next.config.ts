@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const disableDevIndicators = process.env.DISABLE_DEV_INDICATOR === "1";
@@ -7,6 +8,10 @@ const nextConfig: NextConfig = {
   experimental: {
     viewTransition: true,
     authInterrupts: true,
+  },
+  // Ensure Turbopack resolves modules from this project root (avoid picking an incorrect parent workspace root).
+  turbopack: {
+    root: path.join(__dirname),
   },
   images: {
     remotePatterns: [

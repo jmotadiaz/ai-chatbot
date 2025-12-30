@@ -1,12 +1,19 @@
 import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useChatContext } from "@/app/(chat)/chat-provider";
 import { ChatControl } from "@/components/chat-control";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
-export const AttachmentsControl: React.FC = () => {
-  const { handleFileChange, selectedModel } = useChatContext();
+import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+
+export interface AttachmentsControlProps {
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  supportedFiles: Required<ModelConfiguration>["supportedFiles"];
+}
+
+export const AttachmentsControl: React.FC<AttachmentsControlProps> = ({
+  handleFileChange,
+  supportedFiles,
+}) => {
   const { getDropdownPopupProps, getDropdownTriggerProps, close } =
     useDropdown();
   const [isCaptureSupported, setIsCaptureSupported] = useState(false);
@@ -20,7 +27,9 @@ export const AttachmentsControl: React.FC = () => {
     handleFileChange(e);
   };
 
-  const { supportedFiles } = getChatConfigurationByModelId(selectedModel);
+  const imageInputId = "image-input";
+  const cameraInputId = "camera-input";
+  const documentInputId = "document-input";
 
   return (
     <div className="relative">
@@ -37,10 +46,14 @@ export const AttachmentsControl: React.FC = () => {
       >
         {supportedFiles.includes("img") && (
           <>
-            <Dropdown.Item as={Label} className="text-sm" htmlFor="image-input">
+            <Dropdown.Item
+              as={Label}
+              className="text-sm"
+              htmlFor={imageInputId}
+            >
               <ImageIcon className="w-5 h-5" /> <span>Image</span>
               <input
-                id="image-input"
+                id={imageInputId}
                 type="file"
                 accept="image/*"
                 className="absolute w-0 h-0 overflow-hidden opacity-0"
@@ -53,11 +66,11 @@ export const AttachmentsControl: React.FC = () => {
                 <Dropdown.Item
                   as={Label}
                   className="text-sm"
-                  htmlFor="camera-input"
+                  htmlFor={cameraInputId}
                 >
                   <Camera className="w-5 h-5" /> <span>Camera</span>
                   <input
-                    id="camera-input"
+                    id={cameraInputId}
                     type="file"
                     accept="image/*"
                     className="absolute w-0 h-0 overflow-hidden opacity-0"
@@ -70,10 +83,14 @@ export const AttachmentsControl: React.FC = () => {
             </>
           </>
         )}
-        <Dropdown.Item as={Label} className="text-sm" htmlFor="document-input">
+        <Dropdown.Item
+          as={Label}
+          className="text-sm"
+          htmlFor={documentInputId}
+        >
           <FileText className="w-5 h-5" /> <span>Document</span>
           <input
-            id="document-input"
+            id={documentInputId}
             type="file"
             accept={
               supportedFiles.includes("pdf")

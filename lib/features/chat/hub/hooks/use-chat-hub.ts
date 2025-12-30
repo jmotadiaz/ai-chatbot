@@ -5,8 +5,6 @@ import { v4 } from "uuid";
 import type { ChatHub, HubInstance, SubmitHandler, SubmitMessage } from "../types";
 import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import type { ChatbotMessage, Tools, Tool } from "@/lib/features/chat/types";
@@ -15,6 +13,9 @@ import {
 } from "@/lib/features/chat/hooks/use-chat-input-state";
 import { useChatSendEnabled } from "@/lib/features/chat/hooks/use-chat-send-enabled";
 import { useChatTools } from "@/lib/features/chat/hooks/use-chat-tools";
+import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-models";
+import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
+import { useToolsEnabled } from "@/lib/features/chat/hooks/use-tools-enabled";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 
 // Important: keep the runtime exclusion of "Router", but widen the type so
@@ -22,50 +23,6 @@ import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 const HUB_MODELS: chatModelId[] = CHAT_MODELS.filter(
   (m) => m !== "Router"
 ) as chatModelId[];
-
-const getMediaTypesFromFiles = (files: FilePart[]): string[] => {
-  return files.map((f) => f.mediaType);
-};
-
-const isModelCompatibleWithMediaTypes = (
-  model: chatModelId,
-  mediaTypes: string[],
-  tools: Tools
-): boolean => {
-  const config = getChatConfigurationByModelId(model);
-  if (tools.length > 0 && !config.toolCalling) return false;
-
-  return mediaTypes.every((type) => {
-    if (type.startsWith("image/")) return config.supportedFiles.includes("img");
-    if (type === "application/pdf") return config.supportedFiles.includes("pdf");
-    return true;
-  });
-};
-
-const unionSupportedFiles = (
-  models: chatModelId[]
-): Required<ModelConfiguration>["supportedFiles"] => {
-  const set = new Set<Required<ModelConfiguration>["supportedFiles"][number]>();
-  for (const model of models) {
-    for (const f of getChatConfigurationByModelId(model).supportedFiles) set.add(f);
-  }
-  return Array.from(set);
-};
-
-const intersectSupportedFiles = (
-  models: chatModelId[]
-): Required<ModelConfiguration>["supportedFiles"] => {
-  if (models.length === 0) return [];
-  const [first, ...rest] = models;
-  const base = new Set(getChatConfigurationByModelId(first).supportedFiles);
-  for (const model of rest) {
-    const current = new Set(getChatConfigurationByModelId(model).supportedFiles);
-    for (const value of Array.from(base)) {
-      if (!current.has(value)) base.delete(value);
-    }
-  }
-  return Array.from(base);
-};
 
 const buildHubUserMessage = ({
   input,
@@ -120,7 +77,14 @@ export const useChatHub = ({
 
   const sendEnabled = useChatSendEnabled({ input, files });
 
-  const mediaTypes = useMemo(() => getMediaTypesFromFiles(files), [files]);
+  const instanceModels = useMemo(() => instances.map((i) => i.model), [instances]);
+
+  const baseAvailableModels = useAvailableModels({
+    models: HUB_MODELS,
+    messages: [],
+    tools,
+    files,
+  });
 
   const availableModels = useMemo(() => {
     if (instancesLocked) return [];
@@ -128,12 +92,15 @@ export const useChatHub = ({
     if (instances.length >= 4) return [];
 
     const usedModels = new Set(instances.map((i) => i.model));
-    return HUB_MODELS.filter(
-      (model) =>
-        !usedModels.has(model) &&
-        isModelCompatibleWithMediaTypes(model, mediaTypes, tools)
-    );
-  }, [instances, instancesLocked, mediaTypes, tools]);
+    return baseAvailableModels.filter((m) => !usedModels.has(m));
+  }, [baseAvailableModels, instances, instancesLocked]);
+
+  const supportedFilesForPicker = useSupportedFiles({
+    selectedModels: instanceModels,
+    availableModels,
+  });
+
+  const toolsEnabled = useToolsEnabled(instanceModels);
 
   const submitHandlersRef = useRef<Set<SubmitHandler>>(new Set());
 
@@ -164,37 +131,18 @@ export const useChatHub = ({
 
   const handleFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const instanceModels = instances.map((i) => i.model);
-
-      // If there are active instances, enforce intersection across them.
-      // If there are no instances yet, allow any file supported by at least one
-      // model compatible with current tools selection.
-      const supportedFiles: Required<ModelConfiguration>["supportedFiles"] =
-        instanceModels.length > 0
-          ? intersectSupportedFiles(instanceModels)
-          : unionSupportedFiles(
-              HUB_MODELS.filter((m) => {
-                const config = getChatConfigurationByModelId(m);
-                return tools.length === 0 || config.toolCalling;
-              })
-            );
-
-      await handleFileUpload(setFiles, event.target.files, supportedFiles);
+      await handleFileUpload(setFiles, event.target.files, supportedFilesForPicker);
     },
-    [instances, tools]
+    [supportedFilesForPicker]
   );
 
   const safeToggleTool = useCallback(
     (tool: Tool) => {
       // Prevent enabling tools if any current instance doesn't support tool-calling.
-      const anyIncompatible =
-        instances.length > 0 &&
-        instances.some((i) => !getChatConfigurationByModelId(i.model).toolCalling);
-
-      if (anyIncompatible) return;
+      if (!toolsEnabled) return;
       toggleTool(tool);
     },
-    [instances, toggleTool]
+    [toggleTool, toolsEnabled]
   );
 
   const handleSubmit = useCallback(
@@ -244,6 +192,8 @@ export const useChatHub = ({
   return {
     instances,
     availableModels,
+    supportedFilesForPicker,
+    toolsEnabled,
     instancesLocked,
     isPersisting,
     persistingInstanceId,

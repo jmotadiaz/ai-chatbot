@@ -136,12 +136,20 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       },
     },
   },
-  "Mimo V2": {
-    model: providers.gateway("xiaomi/mimo-v2-flash"),
+  "MiMo V2 Flash": {
+    model: providers.openrouter("xiaomi/mimo-v2-flash:free"),
     reasoning: true,
     company: "xiaomi",
     temperature: 0.8,
     topP: 0.95,
+    providerOptions: {
+      openrouter: {
+        reasoning: {
+          enabled: true,
+          effort: "medium"
+        },
+      },
+    },
   },
   "GLM-4.6": {
     model: wrapLanguageModel({
@@ -385,7 +393,7 @@ export const chatModelKeys = [
   "Qwen3 Instruct",
   "Qwen3 Thinking",
   "MiniMax M2",
-  "Mimo V2",
+  "MiMo V2 Flash",
   "GLM-4.6",
   "Deepseek Chat",
   "Deepseek R1",

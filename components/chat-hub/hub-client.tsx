@@ -8,9 +8,9 @@ import { ChatControl } from "@/components/chat-control";
 import { useChatHub } from "@/lib/features/chat/hub/hooks/use-chat-hub";
 import { HubInstancePanel } from "@/components/chat-hub/instance-panel";
 import { AddModelDropdown } from "@/components/chat-hub/add-model-dropdown";
-import { HubAttachmentsControl } from "@/components/chat-hub/hub-attachments-control";
-import { HubToolsControl } from "@/components/chat-hub/hub-tools-control";
-import { HubTextarea } from "@/components/chat-hub/hub-textarea";
+import { Textarea } from "@/components/textarea";
+import { AttachmentsControl } from "@/components/attachments-control";
+import { ToolsControl } from "@/components/tools-control";
 
 export interface HubClientProps {
   className?: string;
@@ -143,25 +143,25 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
         className={cn("bg-(--background) pb-4", containerClassName)}
       >
         <div className="relative w-full">
-          <HubTextarea
+          <Textarea
             input={hub.input}
             onChangeInput={hub.setInput}
             isLoading={isLoading}
             files={hub.files}
             setFiles={hub.setFiles}
+            placeholder="Compare models..."
           />
 
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
-            <HubAttachmentsControl
+            <AttachmentsControl
               handleFileChange={hub.handleFileChange}
-              availableModels={hub.availableModels}
-              instances={hub.instances}
+              supportedFiles={hub.supportedFilesForPicker}
             />
-            <HubToolsControl
+            <ToolsControl
               tools={hub.tools}
               toggleTool={hub.toggleTool}
               hasTool={hub.hasTool}
-              instances={hub.instances}
+              enabled={hub.toolsEnabled}
             />
           </div>
 
