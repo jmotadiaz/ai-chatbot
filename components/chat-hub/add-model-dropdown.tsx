@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useState } from "react";
+import React, { useId } from "react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { cn } from "@/lib/utils/helpers";
 import { ModelPickerSelector } from "@/components/model-picker";
