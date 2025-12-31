@@ -24,7 +24,9 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
     const showAddModelTile = hub.instances.length < 3 && !hub.instancesLocked;
     const visibleSlotsCount = hub.instances.length + (showAddModelTile ? 1 : 0);
 
-    const base = "w-full mx-auto px-4";
+    // Keep mobile tabs/panels aligned with the textarea width (max-w-5xl),
+    // while still allowing a wider desktop grid at 2xl+.
+    const base = "w-full max-w-5xl mx-auto px-4";
     const desktopMaxWidth =
       visibleSlotsCount <= 1
         ? "2xl:max-w-5xl"
