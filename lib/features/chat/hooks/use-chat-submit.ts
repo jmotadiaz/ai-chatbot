@@ -65,6 +65,7 @@ export const useChatSubmit = ({
       }
     );
 
+
     onAfterSubmit?.();
   }, [
     body,

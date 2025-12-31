@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run db:start && NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 next dev",
+    "dev": "npm run db:start && next dev",
     "build": "npx tsx lib/infrastructure/db/migrate.ts && next build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",

@@ -35,7 +35,10 @@ interface TestFixtures {
  */
 export const test = base.extend<TestFixtures>({
   db: async ({}, use) => {
-    const client = postgres(process.env.POSTGRES_URL!);
+    const client = postgres(
+      process.env.POSTGRES_URL ??
+        "postgres://postgres:postgres@localhost:5434/test"
+    );
     const db = drizzle(client, { schema });
 
     const [testUser] = await db
@@ -76,10 +79,7 @@ export const test = base.extend<TestFixtures>({
     await client.end();
   },
   authenticatedUser: async ({ page, baseURL, db }, use) => {
-    const secret = process.env.AUTH_SECRET;
-    if (!secret) {
-      throw new Error("AUTH_SECRET not set");
-    }
+    const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
 
     const { testUser } = db;
 
