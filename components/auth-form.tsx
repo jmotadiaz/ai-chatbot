@@ -46,11 +46,24 @@ export const AuthForm: React.FC<AuthFormProps> = ({ action, children }) => {
     <form action={formAction} className="flex flex-col gap-4 px-4 sm:px-16">
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
-        <Input type="email" name="email" id="email" required />
+        <Input
+          type="email"
+          name="email"
+          id="email"
+          autoComplete="email"
+          inputMode="email"
+          required
+        />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">Password</Label>
-        <Input type="password" name="password" id="password" required />
+        <Input
+          type="password"
+          name="password"
+          id="password"
+          autoComplete="current-password"
+          required
+        />
       </div>
       <div className="flex flex-col gap-2 mt-2 items-center">
         <Button type="submit" disabled={pending}>
