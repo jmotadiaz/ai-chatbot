@@ -18,7 +18,6 @@ export interface UseChatHubInstanceConfig
   extends UseChatHubInstanceArgs {
   initialMessages?: ChatbotMessage[];
   projectId?: string;
-  chatId?: string;
   temperature?: number;
   systemPrompt?: string;
   tools?: Tools;
@@ -28,18 +27,17 @@ export interface UseChatHubInstanceConfig
 }
 
 export interface UseChatHubInstanceResult extends UseChatSessionResult {
-  instanceId: string;
+  chatId: string;
   model: chatModelId;
   dataPart: DataUIPart<ChatbotDataPart> | undefined;
 }
 
 export const useChatHubInstance = ({
-  id,
+  chatId,
   model,
   submitSubscribe,
   initialMessages,
   projectId,
-  chatId,
   temperature,
   systemPrompt,
   tools = [],
@@ -82,7 +80,7 @@ export const useChatHubInstance = ({
 
   return {
     ...chatResult,
-    instanceId: id,
+    chatId,
     model,
     dataPart,
   };

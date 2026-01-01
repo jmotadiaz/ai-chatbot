@@ -12,6 +12,7 @@ import {
 import { getDb } from "@/lib/infrastructure/db/db";
 
 export async function persistHubChatFromTranscript({
+  chatId,
   messages,
   model,
   tools = [],
@@ -20,6 +21,7 @@ export async function persistHubChatFromTranscript({
   ragMaxResources = defaultRagMaxResources,
   webSearchNumResults = defaultWebSearchNumResults,
 }: {
+  chatId: string;
   messages: ChatbotMessage[];
   model: chatModelId;
   tools?: Tools;
@@ -35,8 +37,9 @@ export async function persistHubChatFromTranscript({
 
   const title = await generateTitle(messages);
 
-  const chatId = await getDb().transaction(async (tx) => {
+  const persistedChatId = await getDb().transaction(async (tx) => {
     const chat = await saveChat({
+      id: chatId,
       userId: session.user.id,
       title,
       projectId,
@@ -54,7 +57,7 @@ export async function persistHubChatFromTranscript({
     return chat.id;
   });
 
-  return { chatId };
+  return { chatId: persistedChatId };
 }
 
 

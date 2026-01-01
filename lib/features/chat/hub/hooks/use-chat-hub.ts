@@ -68,7 +68,7 @@ export const useChatHub = ({
   const [instances, setInstances] = useState<HubInstance[]>(initialInstances);
   const [instancesLocked, setInstancesLocked] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
-  const [persistingInstanceId, setPersistingInstanceId] = useState<string | null>(
+  const [persistingChatId, setPersistingChatId] = useState<string | null>(
     null
   );
 
@@ -113,8 +113,8 @@ export const useChatHub = ({
     };
   }, []);
 
-  const removeInstance = useCallback((id: string) => {
-    setInstances((prev) => prev.filter((i) => i.id !== id));
+  const removeInstance = useCallback((chatId: string) => {
+    setInstances((prev) => prev.filter((i) => i.chatId !== chatId));
   }, []);
 
   const addInstance = useCallback(
@@ -126,7 +126,7 @@ export const useChatHub = ({
       // Prevent adding incompatible models based on current tools + files.
       if (!availableModels.includes(model)) return;
 
-      setInstances((prev) => [...prev, { id: v4(), model }]);
+      setInstances((prev) => [...prev, { chatId: v4(), model }]);
     },
     [availableModels, instances.length, instancesLocked, isPersisting]
   );
@@ -169,15 +169,16 @@ export const useChatHub = ({
   );
 
   const persistChat = useCallback<ChatHub["persistChat"]>(
-    async ({ instanceId, messages, model, tools = [], ...rest }) => {
+    async ({ chatId, messages, model, tools = [], ...rest }) => {
       if (isPersisting) {
         throw new Error("Already persisting a chat");
       }
       setIsPersisting(true);
-      setPersistingInstanceId(instanceId);
+      setPersistingChatId(chatId);
       try {
         // Server action proxy (hub orchestrates UI state; instance controls navigation).
         return await persistHubChatFromTranscript({
+          chatId,
           messages: messages as ChatbotMessage[],
           model,
           tools,
@@ -185,7 +186,7 @@ export const useChatHub = ({
         });
       } finally {
         setIsPersisting(false);
-        setPersistingInstanceId(null);
+        setPersistingChatId(null);
       }
     },
     [isPersisting]
@@ -198,7 +199,7 @@ export const useChatHub = ({
     toolsEnabled,
     instancesLocked,
     isPersisting,
-    persistingInstanceId,
+    persistingChatId,
     addInstance,
     removeInstance,
     persistChat,

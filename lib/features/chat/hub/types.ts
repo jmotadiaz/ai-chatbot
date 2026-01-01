@@ -13,7 +13,7 @@ export type SubmitMessage = Parameters<
 export type SubmitHandler = (message: SubmitMessage) => void | Promise<void>;
 
 export interface HubInstance {
-  id: string;
+  chatId: string;
   model: chatModelId;
 }
 
@@ -26,13 +26,13 @@ export interface ChatHub {
   instancesLocked: boolean;
   /** True while persisting a selected instance into a concrete chat. */
   isPersisting: boolean;
-  /** Which instance is currently being persisted (for per-panel loading UI). */
-  persistingInstanceId: string | null;
+  /** Which chatId is currently being persisted (for per-panel loading UI). */
+  persistingChatId: string | null;
 
   addInstance: (model: chatModelId) => void;
-  removeInstance: (id: string) => void;
+  removeInstance: (chatId: string) => void;
   persistChat: (args: {
-    instanceId: string;
+    chatId: string;
     messages: ChatbotMessage[];
     model: chatModelId;
     tools?: Tools;
@@ -66,7 +66,7 @@ export interface ChatHub {
 }
 
 export interface UseChatHubInstanceArgs {
-  id: string;
+  chatId: string;
   model: chatModelId;
   submitSubscribe: ChatHub["submitSubscribe"];
 }

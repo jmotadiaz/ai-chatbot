@@ -37,7 +37,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
   }, [hub.instances.length, hub.instancesLocked]);
 
   const tabIds = React.useMemo(() => {
-    const ids = hub.instances.map((i) => i.id);
+    const ids = hub.instances.map((i) => i.chatId);
     return hub.instances.length < 3 && !hub.instancesLocked
       ? [...ids, "new-model"]
       : ids;
@@ -67,14 +67,14 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
           <div className="grid grid-flow-col auto-cols-fr gap-4 h-full min-h-0">
             {hub.instances.map((inst) => (
               <HubInstancePanel
-                key={inst.id}
+                key={inst.chatId}
                 instance={inst}
                 submitSubscribe={hub.submitSubscribe}
                 tools={hub.tools}
                 onRemove={hub.removeInstance}
                 persistChat={hub.persistChat}
                 isPersisting={hub.isPersisting}
-                persistingInstanceId={hub.persistingInstanceId}
+                persistingChatId={hub.persistingChatId}
                 className="h-full"
               />
             ))}
@@ -98,9 +98,9 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
           <Tabs.Container>
             {hub.instances.map((inst) => (
               <Tabs.Tab
-                key={inst.id}
-                active={activeTab === inst.id}
-                onClick={() => setActiveTab(inst.id)}
+                key={inst.chatId}
+                active={activeTab === inst.chatId}
+                onClick={() => setActiveTab(inst.chatId)}
               >
                 {inst.model}
               </Tabs.Tab>
@@ -118,8 +118,8 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
           <div className="pt-4 flex-1 min-h-0">
             {hub.instances.map((inst) => (
               <div
-                key={inst.id}
-                className={cn("h-full", activeTab !== inst.id && "hidden")}
+                key={inst.chatId}
+                className={cn("h-full", activeTab !== inst.chatId && "hidden")}
               >
                 <HubInstancePanel
                   instance={inst}
@@ -128,7 +128,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
                   onRemove={hub.removeInstance}
                   persistChat={hub.persistChat}
                   isPersisting={hub.isPersisting}
-                  persistingInstanceId={hub.persistingInstanceId}
+                  persistingChatId={hub.persistingChatId}
                   className="h-full"
                 />
               </div>

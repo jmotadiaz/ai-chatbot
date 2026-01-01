@@ -18,7 +18,7 @@ export interface HubInstancePanelProps {
   onRemove: (id: string) => void;
   persistChat: ChatHub["persistChat"];
   isPersisting: boolean;
-  persistingInstanceId: string | null;
+  persistingChatId: string | null;
   className?: string;
 }
 
@@ -29,13 +29,13 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   onRemove,
   persistChat,
   isPersisting,
-  persistingInstanceId,
+  persistingChatId,
   className,
 }) => {
   const router = useRouter();
 
   const chat = useChatHubInstance({
-    id: instance.id,
+    chatId: instance.chatId,
     model: instance.model,
     submitSubscribe,
     tools,
@@ -44,16 +44,16 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
 
   const onSelectThisChat = useCallback(async () => {
     const { chatId } = await persistChat({
-      instanceId: instance.id,
+      chatId: instance.chatId,
       messages: chat.messages,
       model: instance.model,
       tools,
     });
     router.push(`/${chatId}`);
-  }, [chat.messages, instance.id, instance.model, persistChat, router, tools]);
+  }, [chat.messages, instance.chatId, instance.model, persistChat, router, tools]);
 
   const isThisPersisting =
-    isPersisting && persistingInstanceId === instance.id;
+    isPersisting && persistingChatId === instance.chatId;
 
   return (
     <div
@@ -78,7 +78,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
             variant="icon"
             size="icon"
             aria-label="Remove instance"
-            onClick={() => onRemove(instance.id)}
+            onClick={() => onRemove(instance.chatId)}
             disabled={isPersisting}
           >
             <Trash2 />
