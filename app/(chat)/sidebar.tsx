@@ -23,14 +23,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId }) => {
   return (
     <SidebarComponent>
       <SidebarContent>
-        <NewChatSidebar className="mb-3" />
-        <RAGNav className="mb-6" />
-        <Suspense fallback={<ProjectListLoading />}>
-          <ProjectList currentProjectId={projectId} chatId={chatId} />
-        </Suspense>
-        <Suspense fallback={<ChatListLoading />}>
-          <Chats chatId={chatId} />
-        </Suspense>
+        <div className="flex flex-col gap-1">
+          <NewChatSidebar />
+          <RAGNav />
+          <Suspense fallback={<ProjectListLoading className="my-0 mt-4" />}>
+            <ProjectList
+              className="my-0 mt-4"
+              currentProjectId={projectId}
+              chatId={chatId}
+            />
+          </Suspense>
+          <Suspense fallback={<ChatListLoading className="my-0 mt-4" />}>
+            <Chats chatId={chatId} className="my-0 mt-4" />
+          </Suspense>
+        </div>
       </SidebarContent>
       <SidebarFooter>
         <Suspense fallback={null}>
@@ -41,7 +47,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId }) => {
   );
 };
 
-const Chats: React.FC<Omit<ChatListProps, "chats">> = async ({ chatId }) => {
+const Chats: React.FC<Omit<ChatListProps, "chats">> = async ({
+  chatId,
+  className,
+}) => {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
@@ -51,5 +60,5 @@ const Chats: React.FC<Omit<ChatListProps, "chats">> = async ({ chatId }) => {
     userId: session.user.id,
     limit: 20,
   });
-  return <ChatList chats={chats} chatId={chatId} />;
+  return <ChatList chats={chats} chatId={chatId} className={className} />;
 };

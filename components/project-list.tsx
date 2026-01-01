@@ -38,7 +38,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
           Projects <CirclePlus className="h-4 w-4 ml-2" />
         </SidebarSectionTitle>
       </ChatLink>
-      <div role="list" className="space-y-2">
+      <div role="list" className="space-y-1">
         <ChatLink href="/english-helper">
           <Item>English Helper</Item>
         </ChatLink>
@@ -71,7 +71,7 @@ export const ProjectListLoading: React.FC<{ className?: ClassNameValue }> = ({
       <div className="text-base flex items-center font-semibold text-zinc-500 dark:text-zinc-300 mb-4">
         Projects <Edit className="h-5 w-5 ml-2" />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="block p-2 text-sm font-semibold cursor-pointer select-none rounded-lg border dark:border-zinc-600 hover:bg-accent transition-colors">
           English Helper
         </div>
