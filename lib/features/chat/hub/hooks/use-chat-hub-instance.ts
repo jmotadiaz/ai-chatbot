@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
+import { DataUIPart } from "ai";
 import type { UseChatHubInstanceArgs } from "../types";
-import type { Tools, ChatbotMessage } from "@/lib/features/chat/types";
+import type { Tools, ChatbotMessage, ChatbotDataPart } from "@/lib/features/chat/types";
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/constants";
 import { useChatConfig } from "@/lib/features/chat/hooks/use-chat-config";
 import { useChatRequestBody } from "@/lib/features/chat/hooks/use-chat-request-body";
-import { useChatSession } from "@/lib/features/chat/hooks/use-chat-session";
+import { useChatSession, UseChatSessionResult } from "@/lib/features/chat/hooks/use-chat-session";
+import { useChatDataPartState } from "@/lib/features/chat/hooks/use-chat-data-part-state";
+import { chatModelId } from "@/lib/features/foundation-model/config";
 
 export interface UseChatHubInstanceConfig
   extends UseChatHubInstanceArgs {
@@ -22,6 +25,12 @@ export interface UseChatHubInstanceConfig
   preventChatPersistence?: boolean;
   ragMaxResources?: number;
   webSearchNumResults?: number;
+}
+
+export interface UseChatHubInstanceResult extends UseChatSessionResult {
+  instanceId: string;
+  model: chatModelId;
+  dataPart: DataUIPart<ChatbotDataPart> | undefined;
 }
 
 export const useChatHubInstance = ({
@@ -37,11 +46,13 @@ export const useChatHubInstance = ({
   preventChatPersistence = false,
   ragMaxResources = defaultRagMaxResources,
   webSearchNumResults = defaultWebSearchNumResults,
-}: UseChatHubInstanceConfig) => {
+}: UseChatHubInstanceConfig): UseChatHubInstanceResult => {
+  const { dataPart, setDataPart } = useChatDataPartState();
   // Instance owns its own session + UI state.
   const chatResult = useChatSession({
     initialMessages,
     api: "/api/chat",
+    onDataPart: setDataPart,
     throttleMs: 200,
   });
 
@@ -70,9 +81,10 @@ export const useChatHubInstance = ({
   }, [body, chatResult, submitSubscribe]);
 
   return {
+    ...chatResult,
     instanceId: id,
     model,
-    ...chatResult,
+    dataPart,
   };
 };
 

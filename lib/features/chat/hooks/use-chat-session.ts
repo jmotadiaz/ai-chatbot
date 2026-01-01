@@ -16,13 +16,15 @@ export interface UseChatSessionArgs {
   onChatId?: (chatId: string) => void | Promise<void>;
 }
 
+export type UseChatSessionResult = UseChatHelpers<ChatbotMessage>;
+
 export const useChatSession = ({
   initialMessages,
   api = "/api/chat",
   throttleMs = 200,
   onDataPart,
   onChatId,
-}: UseChatSessionArgs): UseChatHelpers<ChatbotMessage> => {
+}: UseChatSessionArgs): UseChatSessionResult => {
   return useAiSdkChat({
     messages: initialMessages,
     generateId: v4,

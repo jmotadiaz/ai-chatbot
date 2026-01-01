@@ -97,6 +97,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
             <LoadingMessage
               message={chat.messages[chat.messages.length - 1]}
               status={chat.status}
+              {...(chat.dataPart?.type !== "data-chat" && { dataPart: chat.dataPart })}
             />
           </>
         )}
