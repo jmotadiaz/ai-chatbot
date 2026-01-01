@@ -1,6 +1,6 @@
 import type { ClassValue } from "clsx";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, ArrowRight  } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { ChatListItem } from "@/components/chat-list-item";
@@ -36,6 +36,13 @@ export const ChatList: React.FC<ChatListProps> = async ({
           <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
         ))}
       </div>
+      <Link
+        href="/chat/history"
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-4 ml-1 transition-colors"
+      >
+        See all
+        <ArrowRight className="w-3 h-3" />
+      </Link>
     </div>
   );
 };
