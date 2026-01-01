@@ -6,6 +6,7 @@ import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat-link";
 import { useChatContext } from "@/app/(chat)/chat-provider";
+import { useChatLifecycle } from "@/app/(chat)/chat-lifecycle";
 import { Item } from "@/components/ui/item";
 
 interface NewChatProps {
@@ -19,7 +20,8 @@ export const NewChatLink: React.FC<NewChatProps> = ({
   temporary,
   projectId,
 }) => {
-  const { status, setMessages } = useChatContext();
+  const { status } = useChatContext();
+  const { startNewChat } = useChatLifecycle();
   const pathname = usePathname();
   return (
     <ChatLink
@@ -34,7 +36,7 @@ export const NewChatLink: React.FC<NewChatProps> = ({
       )}
       onNavigate={() => {
         if (pathname === "/" || pathname === `/project/${projectId}/chat`) {
-          setMessages([]);
+          startNewChat();
         }
       }}
     >

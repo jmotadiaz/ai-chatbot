@@ -291,18 +291,24 @@ export async function processChatResponse({
               ) {
                 console.log("Saving chat and messages...", chatId);
                 const dbChatId = await getDb().transaction(async (tx) => {
-                  const { id } = chatId
-                    ? await updateChat(
-                      { id: chatId, userId: user.id },
-                      {
-                        defaultModel: selectedModel,
-                        defaultTemperature: temperature,
-                        ragMaxResources: safeRagMaxResources,
-                        webSearchNumResults: safeWebSearchNumResults,
-                        tools,
-                      }
-                    )(tx)
-                    : await saveChat({
+                  const updated =
+                    chatId
+                      ? await updateChat(
+                          { id: chatId, userId: user.id },
+                          {
+                            defaultModel: selectedModel,
+                            defaultTemperature: temperature,
+                            ragMaxResources: safeRagMaxResources,
+                            webSearchNumResults: safeWebSearchNumResults,
+                            tools,
+                          }
+                        )(tx)
+                      : undefined;
+
+                  const ensuredChat =
+                    updated ??
+                    (await saveChat({
+                      ...(chatId ? { id: chatId } : {}),
                       userId: user.id,
                       title: await generateTitle(messages),
                       projectId,
@@ -311,7 +317,9 @@ export async function processChatResponse({
                       ragMaxResources: safeRagMaxResources,
                       webSearchNumResults: safeWebSearchNumResults,
                       tools,
-                    })(tx);
+                    })(tx));
+
+                  const { id } = ensuredChat;
                   await deleteMessageById(messageId)(tx);
                   await saveMessages(
                     await Promise.all(

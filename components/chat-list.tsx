@@ -1,6 +1,6 @@
 import type { ClassValue } from "clsx";
 import Link from "next/link";
-import { Search, ArrowRight  } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { ChatListItem } from "@/components/chat-list-item";

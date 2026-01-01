@@ -40,6 +40,7 @@ export interface UseChatArgs {
   initialMessages?: ChatbotMessage[];
   projectId?: string;
   chatId?: string;
+  isNewChat?: boolean;
   selectedModel?: chatModelId;
   temperature?: number;
   systemPrompt?: string;
@@ -76,6 +77,7 @@ export const useChat = ({
   systemPrompt,
   metaPrompt,
   chatId,
+  isNewChat = false,
   projectId,
   title,
   preventChatPersistence = false,
@@ -92,14 +94,18 @@ export const useChat = ({
   const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);
   const { setQueryParamChatId, validQueryParamChatId } = useChatQueryParamId();
   const { dataPart, setDataPart } = useChatDataPartState();
+  const effectiveChatId = chatId || validQueryParamChatId;
 
   const chatResult = useChatSession({
     initialMessages,
     api: "/api/chat",
     throttleMs: 200,
     onDataPart: setDataPart,
-    onChatId: async (newChatId) => {
-      await setQueryParamChatId(newChatId);
+    onFinish: async () => {
+      if (!isNewChat) return;
+      if (preventChatPersistence) return;
+      if (!effectiveChatId) return;
+      await setQueryParamChatId(effectiveChatId);
     },
   });
 

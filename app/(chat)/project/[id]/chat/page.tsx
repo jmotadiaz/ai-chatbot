@@ -11,7 +11,7 @@ interface ProjectPageProps {
 
 const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
   const { id } = await params;
-  const { chatId, chatType } = await searchParams;
+  const { chatId } = await searchParams;
   const session = await auth();
 
   if (!session?.user) {
@@ -22,11 +22,7 @@ const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
     redirect(`/${chatId}`);
   }
 
-  const chatTypeValue = Array.isArray(chatType) ? chatType[0] : chatType;
-
-  return (
-    <ChatComposition projectId={id} temporary={chatTypeValue === "temporary"} />
-  );
+  return <ChatComposition projectId={id} />;
 };
 
 export default Page;

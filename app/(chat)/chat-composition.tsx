@@ -24,18 +24,16 @@ import {
   dbMessageToChatbotMessage,
 } from "@/lib/features/chat/utils";
 import type { ChatProviderProps } from "@/app/(chat)/chat-provider";
-import { ChatProvider } from "@/app/(chat)/chat-provider";
+import { ChatShell } from "@/app/(chat)/chat-shell";
 
 interface ChatCompositionProps {
   chatId?: string;
   projectId?: string;
-  temporary?: boolean;
 }
 
 export const ChatComposition: React.FC<ChatCompositionProps> = async ({
   chatId,
   projectId,
-  temporary = false,
 }) => {
   const session = await auth();
   if (!session?.user) {
@@ -46,7 +44,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     selectedModel: defaultModel,
     temperature: defaultTemperature,
     metaPrompt: defaultMetaPrompt,
-    preventChatPersistence: temporary,
     webSearchNumResults: defaultWebSearchNumResults,
     ragSimilarityPercentage: defaultRagSimilarityPercentage,
     ragMaxResources: defaultRagMaxResources,
@@ -84,7 +81,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       initialMessages,
       tools: filterTools(chat.tools || []),
       metaPrompt: metaPrompt,
-      preventChatPersistence: temporary,
       webSearchNumResults:
         chat.webSearchNumResults ?? defaultWebSearchNumResults,
       ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,
@@ -104,7 +100,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
       metaPrompt: project.hasPromptRefiner ? defaultMetaPrompt : null,
       title: project.name,
       tools: filterTools(project.tools || []),
-      preventChatPersistence: temporary,
       webSearchNumResults:
         project.webSearchNumResults ?? defaultWebSearchNumResults,
       ragMaxResources: project.ragMaxResources ?? defaultRagMaxResources,
@@ -113,12 +108,9 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
 
   return (
     <Suspense fallback={<ChatLoading />}>
-      <ChatProvider {...chatConfig}>
+      <ChatShell chatConfig={chatConfig}>
         <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar
-            projectId={chatConfig.projectId}
-            chatId={chatConfig.chatId}
-          />
+          <Sidebar projectId={chatConfig.projectId} chatId={chatConfig.chatId} />
           <Header.Container>
             <Header.Left>
               <Logo />
@@ -131,7 +123,7 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
           </Header.Container>
           <Chat className="pt-16" />
         </div>
-      </ChatProvider>
+      </ChatShell>
     </Suspense>
   );
 };
