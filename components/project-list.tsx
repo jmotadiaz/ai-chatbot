@@ -35,7 +35,7 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
     <div className={cn("my-4", className)}>
       <ChatLink href="/project/add">
         <SidebarSectionTitle>
-          Projects <CirclePlus className="h-4 w-4 ml-2" />
+          Projects <CirclePlus className="h-4 w-4 ml-3" />
         </SidebarSectionTitle>
       </ChatLink>
       <div role="list" className="space-y-1">
