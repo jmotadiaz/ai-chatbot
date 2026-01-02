@@ -431,11 +431,15 @@ export const calculateModelConfiguration = async ({
   selectedModel,
   messages,
   temperature,
+  topP,
+  topK,
   tools,
 }: {
   selectedModel: chatModelId;
   messages: ChatbotMessage[];
   temperature?: number;
+  topP?: number;
+  topK?: number;
   tools: Tools;
 }): Promise<{
   modelConfiguration: ModelConfiguration;
@@ -451,8 +455,10 @@ export const calculateModelConfiguration = async ({
   return {
     modelConfiguration: {
       ...modelConfig,
-      // If a temperature override is provided, use it; otherwise keep modelConfig.temperature
+      // If overrides are provided, use them; otherwise keep modelConfig values
       temperature: temperature ?? modelConfig.temperature,
+      topP: topP ?? modelConfig.topP,
+      topK: topK ?? modelConfig.topK,
     },
     tools,
   };

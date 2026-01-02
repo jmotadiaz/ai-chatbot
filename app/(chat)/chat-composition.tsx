@@ -9,7 +9,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NewChatHeader } from "@/components/new-chat";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
-  defaultTemperature,
   defaultModel,
   defaultWebSearchNumResults,
   defaultRagSimilarityPercentage,
@@ -42,7 +41,6 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
 
   let chatConfig: Omit<ChatProviderProps, "children"> = {
     selectedModel: defaultModel,
-    temperature: defaultTemperature,
     metaPrompt: defaultMetaPrompt,
     webSearchNumResults: defaultWebSearchNumResults,
     ragSimilarityPercentage: defaultRagSimilarityPercentage,
@@ -74,7 +72,9 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
 
     chatConfig = {
       selectedModel: chat.defaultModel as chatModelId,
-      temperature: chat.defaultTemperature ?? defaultTemperature,
+      temperature: chat.defaultTemperature ?? undefined,
+      topP: chat.defaultTopP ?? undefined,
+      topK: chat.defaultTopK ?? undefined,
       chatId,
       projectId: chat.projectId ?? undefined,
       systemPrompt: project ? project.systemPrompt : undefined,
@@ -95,7 +95,9 @@ export const ChatComposition: React.FC<ChatCompositionProps> = async ({
     chatConfig = {
       projectId: project.id,
       selectedModel: (project.defaultModel as chatModelId) || undefined,
-      temperature: project.defaultTemperature || undefined,
+      temperature: project.defaultTemperature ?? undefined,
+      topP: project.defaultTopP ?? undefined,
+      topK: project.defaultTopK ?? undefined,
       systemPrompt: project.systemPrompt,
       metaPrompt: project.hasPromptRefiner ? defaultMetaPrompt : null,
       title: project.name,

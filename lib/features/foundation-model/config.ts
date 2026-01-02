@@ -12,6 +12,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.1 Instant": {
     model: providers.gateway("meta/llama-3.1-8b"),
     company: "meta",
+    temperature: 0.6,
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
@@ -23,10 +24,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Llama 3.3": {
     model: providers.groq("llama-3.3-70b-versatile"),
     company: "meta",
+    temperature: 0.6,
   },
   "Llama 4 Scout": {
     model: providers.gateway("meta/llama-4-scout"),
     company: "meta",
+    temperature: 0.6,
     supportedFiles: ["img"],
     providerOptions: {
       gateway: {
@@ -69,6 +72,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Magistral Medium": {
     model: providers.openrouter("mistralai/magistral-medium-2506:thinking"),
     company: "mistral",
+    temperature: 0.6,
     providerOptions: {
       openrouter: { reasoning: { enabled: true, effort: "high" } },
     },
@@ -76,6 +80,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Magistral Small": {
     model: providers.openrouter("mistralai/magistral-small-2506"),
     company: "mistral",
+    temperature: 0.6,
   },
   "Deepseek Chat": {
     model: providers.deepseek("deepseek-chat"),
@@ -117,10 +122,12 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Qwen3 30b": {
     model: providers.lmstudio("qwen/qwen3-30b-a3b-2507"),
     company: "alibaba",
+    temperature: 0.6,
   },
   "Qwen3 Coder": {
     model: providers.openrouter("qwen/qwen3-coder"),
     company: "alibaba",
+    temperature: 0.6,
   },
   "MiniMax M2": {
     model: providers.gateway("minimax/minimax-m2"),
@@ -172,12 +179,14 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   Sonar: {
     model: providers.perplexity("sonar"),
     company: "perplexity",
+    temperature: 0.6,
     supportedFiles: ["img"],
     toolCalling: false,
   },
   "Sonar Pro": {
     model: providers.perplexity("sonar-pro"),
     company: "perplexity",
+    temperature: 0.6,
     supportedFiles: ["img"],
     toolCalling: false,
   },
@@ -188,12 +197,14 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     }),
     reasoning: true,
     company: "perplexity",
+    temperature: 0.6,
     supportedFiles: ["img"],
     toolCalling: false,
   },
   "Claude Haiku 4.5": {
     model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     providerOptions: {
       gateway: {
@@ -205,6 +216,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Claude Sonnet 4.5": {
     model: providers.gateway("anthropic/claude-sonnet-4.5"),
     company: "anthropic",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     providerOptions: {
@@ -221,6 +233,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Claude Opus 4.5": {
     model: providers.gateway("anthropic/claude-opus-4.5"),
     company: "anthropic",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     providerOptions: {
@@ -237,6 +250,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "GPT OSS": {
     model: providers.gateway("openai/gpt-oss-120b"),
     company: "openai",
+    temperature: 0.6,
     reasoning: true,
     providerOptions: {
       openai: { reasoningEffort: "high" },
@@ -251,20 +265,24 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.groq("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
+    temperature: 0.6,
   },
   "o4 Mini": {
     model: providers.openai("o4-mini"),
     reasoning: true,
     company: "openai",
+    temperature: 0.6,
   },
   o3: {
     model: providers.openai("o3"),
     reasoning: true,
     company: "openai",
+    temperature: 0.6,
   },
   "GPT 5 Nano": {
     model: providers.openai("gpt-5-nano-2025-08-07"),
     company: "openai",
+    temperature: 0.6,
     providerOptions: {
       openai: {
         textVerbosity: "low",
@@ -276,6 +294,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.openai("gpt-5-mini-2025-08-07"),
     reasoning: true,
     company: "openai",
+    temperature: 0.6,
     providerOptions: {
       openai: {
         textVerbosity: "low",
@@ -287,6 +306,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     model: providers.openai("gpt-5.2"),
     reasoning: true,
     company: "openai",
+    temperature: 0.6,
     providerOptions: {
       openai: {
         textVerbosity: "low",
@@ -299,16 +319,19 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Gemini 2.0 Flash": {
     model: providers.gateway("google/gemini-2.0-flash"),
     company: "google",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash Lite": {
     model: providers.gateway("google/gemini-2.5-flash-lite"),
     company: "google",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
   },
   "Gemini 2.5 Flash": {
     model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
     reasoning: true,
@@ -324,6 +347,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Gemini 2.5 Pro": {
     model: providers.gateway("google/gemini-2.5-pro"),
     company: "google",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     providerOptions: {
@@ -338,6 +362,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Gemini 3 Flash": {
     model: providers.gateway("google/gemini-3-flash"),
     company: "google",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
     reasoning: true,
@@ -353,6 +378,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Nano Banana": {
     model: providers.gateway("google/gemini-2.5-flash-image"),
     company: "google",
+    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],
     providerOptions: {
@@ -364,16 +390,19 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   "Grok Code Fast": {
     model: providers.xai("grok-code-fast-1"),
     company: "xai",
+    temperature: 0.6,
   },
   "Grok 4.1 Fast": {
     model: providers.xai("grok-4-1-fast"),
     company: "xai",
+    temperature: 0.6,
     supportedFiles: ["img"],
     reasoning: true,
   },
   "Grok 4": {
     model: providers.xai("grok-4-0709"),
     company: "xai",
+    temperature: 0.6,
     supportedFiles: ["img"],
     reasoning: true,
   },

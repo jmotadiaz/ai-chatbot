@@ -11,12 +11,21 @@ test.describe("Chat functionality", () => {
   });
 
   test("should allow modifying chat settings for different models", async () => {
+    // Router model should not show settings button (no configurable params)
     await chatPage.header.modelPicker.selectModel("Router");
     await expect.soft(chatPage.chat.settingsButton).not.toBeVisible();
 
+    // Claude Sonnet 4.5 should show settings (has temperature: 0.6)
     await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
+    await chatPage.chat.openSettings();
+    await expect
+      .soft(chatPage.chat.settings.temperatureInput)
+      .toHaveValue("0.6");
+    await chatPage.closeDropdown();
+
+    // Qwen3 Instruct should show settings (has temperature: 0.7, topP: 0.8)
     await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
@@ -25,14 +34,16 @@ test.describe("Chat functionality", () => {
       .soft(chatPage.chat.settings.temperatureInput)
       .toHaveValue("0.7");
 
-    await chatPage.chat.settings.setTemperature(0.6);
+    // Modify temperature and verify it persists for this model
+    await chatPage.chat.settings.setTemperature(0.5);
     await chatPage.closeDropdown();
 
+    // Switch back to Claude Sonnet 4.5 - should show its default temperature (0.6)
     await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
     await chatPage.chat.openSettings();
     await expect
       .soft(chatPage.chat.settings.temperatureInput)
-      .toHaveValue("0.5");
+      .toHaveValue("0.6");
   });
 
   test("should send config to the assistant correctly", async () => {

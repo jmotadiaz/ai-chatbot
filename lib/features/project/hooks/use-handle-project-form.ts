@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
@@ -10,13 +10,27 @@ import type { Project } from "@/lib/features/project/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import {
-  defaultTemperature,
   defaultWebSearchNumResults,
   defaultRagMaxResources,
 } from "@/lib/features/foundation-model/constants";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
 import type { Tool, Tools } from "@/lib/features/chat/types";
 
 const models = CHAT_MODELS.filter((model) => model !== "Router");
+
+// Check if an existing project has custom advanced settings configured
+const hasAdvancedConfig = (project?: Project): boolean => {
+  if (!project) return false;
+  return (
+    project.defaultTemperature !== null ||
+    project.defaultTopP !== null ||
+    project.defaultTopK !== null ||
+    (project.ragMaxResources !== null &&
+      project.ragMaxResources !== defaultRagMaxResources) ||
+    (project.webSearchNumResults !== null &&
+      project.webSearchNumResults !== defaultWebSearchNumResults)
+  );
+};
 
 interface UseHandleProjectFormProps {
   project?: Project;
@@ -35,16 +49,62 @@ export const useHandleProjectForm = ({
   const [model, setModel] = useState<chatModelId>(
     (project?.defaultModel as chatModelId) || models[0]
   );
-  const [temperature, setTemperature] = useState<number>(
-    project?.defaultTemperature ?? defaultTemperature
+
+  // Advanced settings - collapsible state
+  // Closed by default for new projects, open if editing a project with custom config
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(() =>
+    hasAdvancedConfig(project)
   );
-  const [webSearchNumResults, setWebSearchNumResults] = useState<number>(
-    project?.webSearchNumResults ?? defaultWebSearchNumResults
+
+  // Get model config for defaults
+  const getModelConfig = useCallback(
+    (modelId: chatModelId) => getChatConfigurationByModelId(modelId),
+    []
   );
-  const [ragMaxResources, setRagMaxResources] = useState<number>(
-    project?.ragMaxResources ?? defaultRagMaxResources
+
+  const modelConfig = getModelConfig(model);
+
+  // Temperature, topP, topK states - undefined means use model defaults
+  const [temperature, setTemperature] = useState<number | undefined>(
+    project?.defaultTemperature ?? undefined
+  );
+  const [topP, setTopP] = useState<number | undefined>(
+    project?.defaultTopP ?? undefined
+  );
+  const [topK, setTopK] = useState<number | undefined>(
+    project?.defaultTopK ?? undefined
+  );
+
+  const [webSearchNumResults, setWebSearchNumResults] = useState<
+    number | undefined
+  >(project?.webSearchNumResults ?? undefined);
+  const [ragMaxResources, setRagMaxResources] = useState<number | undefined>(
+    project?.ragMaxResources ?? undefined
   );
   const [isCreating, setIsCreating] = useState(false);
+
+  // Handle advanced toggle - when opening, initialize with model defaults
+  const handleAdvancedToggle = useCallback(() => {
+    setIsAdvancedOpen((prev) => {
+      const newOpen = !prev;
+      if (newOpen) {
+        // Opening: initialize with model defaults if not already set
+        setTemperature((t) => t ?? modelConfig.temperature);
+        setTopP((p) => p ?? modelConfig.topP);
+        setTopK((k) => k ?? modelConfig.topK);
+        setRagMaxResources((r) => r ?? defaultRagMaxResources);
+        setWebSearchNumResults((w) => w ?? defaultWebSearchNumResults);
+      } else {
+        // Closing: clear values to use model defaults
+        setTemperature(undefined);
+        setTopP(undefined);
+        setTopK(undefined);
+        setRagMaxResources(undefined);
+        setWebSearchNumResults(undefined);
+      }
+      return newOpen;
+    });
+  }, [modelConfig]);
 
   const { refinePrompt, isLoadingRefinedPrompt } = usePromptRefiner({
     input: systemPrompt,
@@ -68,15 +128,18 @@ export const useHandleProjectForm = ({
 
     setIsCreating(true);
     try {
+      // Only include advanced settings if collapsible is open
       const projectData = {
         name: title,
         defaultModel: model,
-        defaultTemperature: temperature,
+        defaultTemperature: isAdvancedOpen ? temperature : undefined,
+        defaultTopP: isAdvancedOpen ? topP : undefined,
+        defaultTopK: isAdvancedOpen ? topK : undefined,
         systemPrompt,
         tools,
         hasPromptRefiner,
-        ragMaxResources,
-        webSearchNumResults,
+        ragMaxResources: isAdvancedOpen ? ragMaxResources : undefined,
+        webSearchNumResults: isAdvancedOpen ? webSearchNumResults : undefined,
       };
 
       if (project) {
@@ -110,8 +173,17 @@ export const useHandleProjectForm = ({
     hasTool,
     model,
     setModel,
+    // Advanced settings
+    isAdvancedOpen,
+    handleAdvancedToggle,
+    modelConfig,
     temperature,
     setTemperature,
+    topP,
+    setTopP,
+    topK,
+    setTopK,
+    // Tool config
     webSearchNumResults,
     setWebSearchNumResults,
     ragMaxResources,

@@ -16,6 +16,8 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
   const {
     temperature,
+    topP,
+    topK,
     setConfig,
     selectedModel,
     tools,
@@ -25,16 +27,24 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   } = useChatContext();
 
   const setTemperature = (value: number) => setConfig({ temperature: value });
+  const setTopP = (value: number) => setConfig({ topP: value });
+  const setTopK = (value: number) => setConfig({ topK: value });
   const setRagMaxResources = (value: number) =>
     setConfig({ ragMaxResources: value });
   const setWebSearchNumResults = (value: number) =>
     setConfig({ webSearchNumResults: value });
 
+  const isRouter = selectedModel === "Router";
   const showToolConfig = tools.length > 0;
-  const showTemperatureSetting =
-    isDefined(temperature) && selectedModel !== "Router";
 
-  if (!showTemperatureSetting && !showToolConfig) {
+  // Model config fields only shown for non-Router models and only if the model has them defined
+  const showTemperatureSetting = !isRouter && isDefined(temperature);
+  const showTopPSetting = !isRouter && isDefined(topP);
+  const showTopKSetting = !isRouter && isDefined(topK);
+
+  const showModelConfig = showTemperatureSetting || showTopPSetting || showTopKSetting;
+
+  if (!showModelConfig && !showToolConfig) {
     return null;
   }
 
@@ -67,24 +77,52 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
             />
           </Dropdown.Item>
         )}
+        {showTopPSetting && (
+          <Dropdown.Item className="justify-between">
+            <Label className="mr-8 text-nowrap" htmlFor="topP">
+              Top P
+            </Label>
+            <InputNumber
+              id="topP"
+              value={topP}
+              min={0}
+              max={1}
+              step={0.1}
+              onChange={setTopP}
+            />
+          </Dropdown.Item>
+        )}
+        {showTopKSetting && (
+          <Dropdown.Item className="justify-between">
+            <Label className="mr-8 text-nowrap" htmlFor="topK">
+              Top K
+            </Label>
+            <InputNumber
+              id="topK"
+              value={topK}
+              min={0}
+              max={100}
+              step={1}
+              onChange={setTopK}
+            />
+          </Dropdown.Item>
+        )}
         {showToolConfig && (
           <>
             {hasTool(RAG_TOOL) && (
-              <>
-                <Dropdown.Item className="justify-between">
-                  <Label className="mr-8 text-nowrap" htmlFor="ragMaxResources">
-                    RAG Max Resources
-                  </Label>
-                  <InputNumber
-                    id="ragMaxResources"
-                    value={ragMaxResources}
-                    min={1}
-                    max={50}
-                    step={1}
-                    onChange={setRagMaxResources}
-                  />
-                </Dropdown.Item>
-              </>
+              <Dropdown.Item className="justify-between">
+                <Label className="mr-8 text-nowrap" htmlFor="ragMaxResources">
+                  RAG Max Resources
+                </Label>
+                <InputNumber
+                  id="ragMaxResources"
+                  value={ragMaxResources}
+                  min={1}
+                  max={50}
+                  step={1}
+                  onChange={setRagMaxResources}
+                />
+              </Dropdown.Item>
             )}
             {hasTool(WEB_SEARCH_TOOL) && (
               <Dropdown.Item className="justify-between">

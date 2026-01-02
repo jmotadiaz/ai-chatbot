@@ -4,7 +4,6 @@ import React, { createContext, useContext } from "react";
 import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import {
   defaultModel,
-  defaultTemperature,
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/constants";
@@ -16,7 +15,9 @@ import {
 
 const chatContext = createContext<UseChatResult>({
   selectedModel: defaultModel,
-  temperature: defaultTemperature,
+  temperature: undefined,
+  topP: undefined,
+  topK: undefined,
   ragMaxResources: defaultRagMaxResources,
   webSearchNumResults: defaultWebSearchNumResults,
   setConfig: () => {},

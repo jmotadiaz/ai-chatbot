@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Globe, Save, WandSparkles } from "lucide-react";
+import { Database, Globe, Save, WandSparkles } from "lucide-react";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,12 @@ import {
   markdownCommandStyle,
   MarkdownEditor,
 } from "@/components/ui/markdown-editor";
+import { Collapsible } from "@/components/ui/collapsible";
 import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-project-form";
+import {
+  defaultRagMaxResources,
+  defaultWebSearchNumResults,
+} from "@/lib/features/foundation-model/constants";
 
 const tabs = ["configuration", "testChat"] as const;
 
@@ -42,8 +47,17 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     hasTool,
     model,
     setModel,
+    // Advanced settings
+    isAdvancedOpen,
+    handleAdvancedToggle,
+    modelConfig,
     temperature,
     setTemperature,
+    topP,
+    setTopP,
+    topK,
+    setTopK,
+    // Tool config
     webSearchNumResults,
     setWebSearchNumResults,
     ragMaxResources,
@@ -120,6 +134,14 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 <h3 className="text-lg font-semibold mb-6">Tools</h3>
                 <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
                   <Toggle
+                    id="rag-tool"
+                    checked={hasTool(RAG_TOOL)}
+                    onChange={handleToggleTool(RAG_TOOL)}
+                  >
+                    <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                    <span className="whitespace-nowrap">RAG</span>
+                  </Toggle>
+                  <Toggle
                     id="web-search-tool"
                     checked={hasTool(WEB_SEARCH_TOOL)}
                     onChange={handleToggleTool(WEB_SEARCH_TOOL)}
@@ -137,66 +159,105 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                   </Toggle>
                 </div>
               </div>
-              <div className="flex flex-col mt-4">
-                <h3 className="text-lg font-semibold mb-4">Settings</h3>
-                <div className="flex flex-col lg:flex-row space-y-4 space-x-5 lg:space-x-10">
-                  <div className="flex flex-col gap-2">
-                    <Label className="text-base" htmlFor="temperature">
-                      Temperature
-                    </Label>
-                    <InputNumber
-                      id="temperature"
-                      value={temperature}
-                      min={0}
-                      max={2}
-                      step={0.1}
-                      onChange={setTemperature}
-                    />
-                  </div>
+              <Collapsible
+                title="Advanced"
+                isOpen={isAdvancedOpen}
+                onToggle={handleAdvancedToggle}
+                className="mt-2 border-none"
+              >
+                <h4 className="text-base font-semibold mb-4">
+                  Model Settings
+                </h4>
+                <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
+                  {modelConfig.temperature !== undefined && (
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-base" htmlFor="temperature">
+                        Temperature
+                      </Label>
+                      <InputNumber
+                        id="temperature"
+                        value={temperature ?? modelConfig.temperature}
+                        min={0}
+                        max={2}
+                        step={0.1}
+                        onChange={setTemperature}
+                      />
+                    </div>
+                  )}
+                  {modelConfig.topP !== undefined && (
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-base" htmlFor="topP">
+                        Top P
+                      </Label>
+                      <InputNumber
+                        id="topP"
+                        value={topP ?? modelConfig.topP}
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        onChange={setTopP}
+                      />
+                    </div>
+                  )}
+                  {modelConfig.topK !== undefined && (
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-base" htmlFor="topK">
+                        Top K
+                      </Label>
+                      <InputNumber
+                        id="topK"
+                        value={topK ?? modelConfig.topK}
+                        min={0}
+                        max={100}
+                        step={1}
+                        onChange={setTopK}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-              {(hasTool(RAG_TOOL) || hasTool(WEB_SEARCH_TOOL)) && (
-                <div className="flex flex-col mt-4">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Tool Configuration
-                  </h3>
-                  <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-10">
-                    {hasTool(RAG_TOOL) && (
-                      <div className="flex flex-col gap-2">
-                        <Label className="text-base" htmlFor="ragMaxResources">
-                          RAG Max Resources
-                        </Label>
-                        <InputNumber
-                          id="ragMaxResources"
-                          value={ragMaxResources}
-                          min={1}
-                          max={50}
-                          step={1}
-                          onChange={setRagMaxResources}
-                        />
-                      </div>
-                    )}
-                    {hasTool(WEB_SEARCH_TOOL) && (
-                      <div className="flex flex-col gap-2">
-                        <Label
-                          className="text-base"
-                          htmlFor="webSearchNumResults"
-                        >
-                          Web Search Results
-                        </Label>
-                        <InputNumber
-                          id="webSearchNumResults"
-                          value={webSearchNumResults}
-                          min={1}
-                          max={10}
-                          step={1}
-                          onChange={setWebSearchNumResults}
-                        />
-                      </div>
-                    )}
+                {(hasTool(RAG_TOOL) || hasTool(WEB_SEARCH_TOOL)) && (
+                  <div className="flex flex-col mt-6">
+                    <h4 className="text-base font-semibold mb-4">
+                      Tool Configuration
+                    </h4>
+                    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
+                      {hasTool(RAG_TOOL) && (
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-base" htmlFor="ragMaxResources">
+                            RAG Max Resources
+                          </Label>
+                          <InputNumber
+                            id="ragMaxResources"
+                            value={ragMaxResources ?? defaultRagMaxResources}
+                            min={1}
+                            max={50}
+                            step={1}
+                            onChange={setRagMaxResources}
+                          />
+                        </div>
+                      )}
+                      {hasTool(WEB_SEARCH_TOOL) && (
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            className="text-base"
+                            htmlFor="webSearchNumResults"
+                          >
+                            Web Search Results
+                          </Label>
+                          <InputNumber
+                            id="webSearchNumResults"
+                            value={webSearchNumResults ?? defaultWebSearchNumResults}
+                            min={1}
+                            max={10}
+                            step={1}
+                            onChange={setWebSearchNumResults}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </Collapsible>
 
               <div className="pt-4 text-right">
                 <Button
@@ -218,15 +279,17 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
           >
             <Suspense fallback={null}>
               <ChatProvider
-                temperature={temperature}
+                temperature={isAdvancedOpen ? temperature : undefined}
+                topP={isAdvancedOpen ? topP : undefined}
+                topK={isAdvancedOpen ? topK : undefined}
                 selectedModel={model}
                 systemPrompt={systemPrompt}
                 tools={tools}
                 metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
                 title={title}
                 preventChatPersistence={true}
-                webSearchNumResults={webSearchNumResults}
-                ragMaxResources={ragMaxResources}
+                webSearchNumResults={isAdvancedOpen ? webSearchNumResults : undefined}
+                ragMaxResources={isAdvancedOpen ? ragMaxResources : undefined}
               >
                 <Chat className="flex-1 justify-center" />
               </ChatProvider>

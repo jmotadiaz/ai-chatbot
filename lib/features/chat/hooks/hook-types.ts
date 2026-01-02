@@ -6,7 +6,9 @@ import type { FilePart } from "@/lib/features/attachment/types";
 
 export interface ChatConfig {
   selectedModel: chatModelId;
-  temperature: number;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
   // Tool-specific configuration (only used if tool active)
   ragMaxResources: number; // max number of RAG chunks/resources returned
   webSearchNumResults: number; // number of web search results

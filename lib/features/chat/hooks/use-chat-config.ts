@@ -12,37 +12,25 @@ import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/h
 export const useChatConfig = ({
   selectedModel = defaultModel,
   temperature,
+  topP,
+  topK,
   ragMaxResources,
   webSearchNumResults,
 }: Partial<ChatConfig>): {
   chatConfig: ChatConfig;
   setConfig: SetChatConfig;
 } => {
-  const [chatConfig, setChatConfig] = useState<ChatConfig>(() =>
-    Object.assign(
-      getChatConfigurationByModelId(selectedModel),
-      Object.fromEntries(
-        Object.entries({
-          temperature,
-          ragMaxResources,
-          webSearchNumResults,
-        }).filter(([, value]) => value !== undefined && value !== null)
-      ),
-      {
-        selectedModel,
-        useRAG: false,
-        useWebSearch: false,
-        ragMaxResources:
-          ragMaxResources !== undefined
-            ? ragMaxResources
-            : defaultRagMaxResources,
-        webSearchNumResults:
-          webSearchNumResults !== undefined
-            ? webSearchNumResults
-            : defaultWebSearchNumResults,
-      }
-    )
-  );
+  const [chatConfig, setChatConfig] = useState<ChatConfig>(() => {
+    const modelConfig = getChatConfigurationByModelId(selectedModel);
+    return {
+      selectedModel,
+      temperature: temperature ?? modelConfig.temperature,
+      topP: topP ?? modelConfig.topP,
+      topK: topK ?? modelConfig.topK,
+      ragMaxResources: ragMaxResources ?? defaultRagMaxResources,
+      webSearchNumResults: webSearchNumResults ?? defaultWebSearchNumResults,
+    };
+  });
 
   const setConfig = useCallback<SetChatConfig>((config) => {
     setChatConfig((prev) => ({

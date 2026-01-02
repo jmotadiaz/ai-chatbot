@@ -3,7 +3,6 @@ import {
   LANGUAGE_MODEL_CONFIGURATIONS_CONST,
   LanguageModelKeys,
 } from "@/lib/features/foundation-model/config";
-import { defaultTemperature } from "@/lib/features/foundation-model/constants";
 import {
   ModelConfiguration,
   ProviderOptions,
@@ -21,63 +20,53 @@ export const languageModelConfigurations = (
   };
 };
 
+export interface ChatModelConfiguration {
+  company: ModelConfiguration["company"];
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  reasoning: boolean;
+  toolCalling: boolean;
+  nativeToolCalling: boolean;
+  zeroDataRetention?: boolean;
+  supportedFiles: Required<ModelConfiguration>["supportedFiles"];
+  supportedOutput: Required<ModelConfiguration>["supportedOutput"];
+}
+
 export const getChatConfigurationByModelId = (
   modelId: chatModelId
-): Required<
-  Omit<ModelConfiguration, "model" | "providerOptions" | "topP" | "topK"> & {
-    zeroDataRetention?: boolean;
+): ChatModelConfiguration => {
+  const defaultConfig = {
+    toolCalling: true,
+    nativeToolCalling: false,
+    company: "ai chatbot" as const,
+    supportedFiles: [] as Required<ModelConfiguration>["supportedFiles"],
+    reasoning: false,
+    zeroDataRetention: false,
+    supportedOutput: ["text"] as Required<ModelConfiguration>["supportedOutput"],
+  };
+
+  if (modelId === "Router") {
+    return {
+      ...defaultConfig,
+      reasoning: true,
+      supportedFiles: ["img", "pdf"],
+      supportedOutput: ["text", "img"],
+    };
   }
-> => {
-  const {
-    temperature,
-    toolCalling,
-    supportedFiles,
-    supportedOutput,
-    company,
-    nativeToolCalling,
-    zeroDataRetention,
-    reasoning,
-  } = Object.assign(
-    {
-      temperature: defaultTemperature,
-      toolCalling: true,
-      nativeToolCalling: false,
-      company: "ai chatbot" as const,
-      supportedFiles: [],
-      reasoning: false,
-      zeroDataRetention: false,
-      supportedOutput: [
-        "text",
-      ] as Required<ModelConfiguration>["supportedOutput"],
-    },
-    modelId !== "Router"
-      ? {
-          ...languageModelConfigurations(modelId),
-          zeroDataRetention:
-            languageModelConfigurations(modelId)?.providerOptions?.gateway
-              ?.zeroDataRetention,
-        }
-      : {
-          reasoning: true,
-          supportedFiles: [
-            "img",
-            "pdf",
-          ] as Required<ModelConfiguration>["supportedFiles"],
-          supportedOutput: [
-            "text",
-            "img",
-          ] as Required<ModelConfiguration>["supportedOutput"],
-        }
-  );
+
+  const modelConfig = languageModelConfigurations(modelId);
 
   return {
-    company,
-    temperature,
-    reasoning,
-    toolCalling,
-    nativeToolCalling,
-    zeroDataRetention,
-    supportedFiles,
-    supportedOutput,
+    company: modelConfig.company,
+    temperature: modelConfig.temperature,
+    topP: modelConfig.topP,
+    topK: modelConfig.topK,
+    reasoning: modelConfig.reasoning ?? false,
+    toolCalling: modelConfig.toolCalling ?? true,
+    nativeToolCalling: modelConfig.nativeToolCalling ?? false,
+    zeroDataRetention: modelConfig.providerOptions?.gateway?.zeroDataRetention,
+    supportedFiles: modelConfig.supportedFiles ?? [],
+    supportedOutput: modelConfig.supportedOutput ?? ["text"],
   };
 };

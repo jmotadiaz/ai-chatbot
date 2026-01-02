@@ -77,6 +77,8 @@ export async function processChatResponse({
   messages,
   selectedModel,
   temperature,
+  topP,
+  topK,
   chatId,
   systemPrompt = defaultSystemPrompt,
   selectedTools = [],
@@ -90,6 +92,8 @@ export async function processChatResponse({
   messages: ChatbotMessage[];
   selectedModel: chatModelId;
   temperature?: number;
+  topP?: number;
+  topK?: number;
   chatId?: string;
   systemPrompt?: string;
   selectedTools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
@@ -125,6 +129,8 @@ export async function processChatResponse({
           selectedModel,
           messages,
           temperature,
+          topP,
+          topK,
           tools: selectedTools,
         });
       const executedTools = new Set<Tool>(

@@ -18,6 +18,8 @@ export const POST = withAuth(async (user, req) => {
     messages,
     selectedModel,
     temperature,
+    topP,
+    topK,
     chatId,
     systemPrompt = defaultSystemPrompt,
     tools: selectedTools = [],
@@ -30,6 +32,8 @@ export const POST = withAuth(async (user, req) => {
     messages: ChatbotMessage[];
     selectedModel: chatModelId;
     temperature?: number;
+    topP?: number;
+    topK?: number;
     chatId?: string;
     systemPrompt?: string;
     tools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
@@ -44,6 +48,8 @@ export const POST = withAuth(async (user, req) => {
     messages,
     selectedModel,
     temperature,
+    topP,
+    topK,
     chatId,
     systemPrompt,
     selectedTools,

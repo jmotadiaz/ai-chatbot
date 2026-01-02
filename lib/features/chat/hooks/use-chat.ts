@@ -43,6 +43,8 @@ export interface UseChatArgs {
   isNewChat?: boolean;
   selectedModel?: chatModelId;
   temperature?: number;
+  topP?: number;
+  topK?: number;
   systemPrompt?: string;
   metaPrompt?: string | null;
   title?: string;
@@ -74,6 +76,8 @@ export const useChat = ({
   initialMessages,
   selectedModel = defaultModel,
   temperature,
+  topP,
+  topK,
   systemPrompt,
   metaPrompt,
   chatId,
@@ -88,6 +92,8 @@ export const useChat = ({
   const { chatConfig, setConfig } = useChatConfig({
     selectedModel,
     temperature,
+    topP,
+    topK,
     ragMaxResources,
     webSearchNumResults,
   });
