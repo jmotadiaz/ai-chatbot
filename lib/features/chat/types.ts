@@ -25,12 +25,12 @@ export interface ChatDataPart {
   id: string;
 }
 
-export interface ReasoningPart {
+export interface ReasoningDataPart {
   status: "started" | "finished";
 }
 
 export type ChatbotDataPart = {
-  ["reasoning"]: ReasoningPart;
+  ["reasoning"]: ReasoningDataPart;
   ["chat"]: ChatDataPart;
 };
 

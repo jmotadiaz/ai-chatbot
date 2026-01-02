@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import type { Tools } from "@/lib/features/chat/types";
@@ -55,6 +55,14 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   const isThisPersisting =
     isPersisting && persistingChatId === instance.chatId;
 
+  // Compute isReasoningStarted from dataPart
+  const isReasoningStarted = useMemo(() => {
+    return (
+      chat.dataPart?.type === "data-reasoning" &&
+      chat.dataPart.data.status === "started"
+    );
+  }, [chat.dataPart]);
+
   return (
     <div
       className={cn(
@@ -93,11 +101,14 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
           </div>
         ) : (
           <>
-            <Messages messages={chat.messages} />
+            <Messages
+              messages={chat.messages}
+              isReasoningStarted={isReasoningStarted}
+            />
             <LoadingMessage
               message={chat.messages[chat.messages.length - 1]}
               status={chat.status}
-              {...(chat.dataPart?.type !== "data-chat" && { dataPart: chat.dataPart })}
+              isReasoningStarted={isReasoningStarted}
             />
           </>
         )}

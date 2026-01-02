@@ -12,6 +12,7 @@ import {
   smoothStream,
   NoSuchToolError,
   InvalidArgumentError,
+  pruneMessages,
 } from "ai";
 import { auth } from "@/lib/features/auth/auth-config";
 
@@ -164,6 +165,15 @@ export async function processChatResponse({
         return msg;
       });
 
+      // Convert to model messages and prune reasoning parts if model doesn't support reasoning
+      const modelMessages = convertToModelMessages(processedMessages);
+      const messagesToSend = modelConfiguration.reasoning
+        ? modelMessages
+        : pruneMessages({
+            messages: modelMessages,
+            reasoning: "all",
+          });
+
       const result = streamText({
         ...modelConfiguration,
         ...((tools.length > 0 || isUrlPresentInLastMessage) && {
@@ -177,7 +187,7 @@ export async function processChatResponse({
           },
         }),
         system: systemPrompt,
-        messages: convertToModelMessages(processedMessages),
+        messages: messagesToSend,
         tools: toolSet,
         stopWhen: stepCountIs(4),
         activeTools: [],
@@ -231,6 +241,7 @@ export async function processChatResponse({
             };
           }
 
+          // Start reasoning indicator after tools are done for reasoning models
           if (stepNumber >= tools.length && modelConfiguration.reasoning) {
             writer.write({
               type: "data-reasoning",
@@ -242,6 +253,7 @@ export async function processChatResponse({
           }
         },
         onChunk: ({ chunk }) => {
+          // Track when reasoning tokens actually arrive
           if (chunk.type === "reasoning-delta" && !reasoning) {
             writer.write({
               type: "data-reasoning",
@@ -251,6 +263,7 @@ export async function processChatResponse({
             });
             reasoning = true;
           }
+          // Mark reasoning as finished when we get non-reasoning content
           if (chunk.type !== "reasoning-delta" && reasoning) {
             writer.write({
               type: "data-reasoning",
@@ -266,7 +279,7 @@ export async function processChatResponse({
       writer.merge(
         result.toUIMessageStream({
           originalMessages: messages,
-          sendReasoning: false,
+          sendReasoning: modelConfiguration.reasoning === true,
           sendSources: true,
           generateMessageId: randomUUID,
           messageMetadata: ({ part }) => {

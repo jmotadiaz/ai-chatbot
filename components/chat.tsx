@@ -84,11 +84,20 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               <ProjectOverview title={title} />
             ) : (
               <>
-                <Messages messages={messages} />
+                <Messages
+                  messages={messages}
+                  isReasoningStarted={
+                    dataPart?.type === "data-reasoning" &&
+                    dataPart.data.status === "started"
+                  }
+                />
                 <LoadingMessage
                   message={messages[messages.length - 1]}
                   status={status}
-                  {...(dataPart?.type !== "data-chat" && { dataPart })}
+                  isReasoningStarted={
+                    dataPart?.type === "data-reasoning" &&
+                    dataPart.data.status === "started"
+                  }
                 />
                 {(status === "ready" || status === "error") && (
                   <div className="mt-1 ml-4">

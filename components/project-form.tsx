@@ -19,7 +19,7 @@ import {
   markdownCommandStyle,
   MarkdownEditor,
 } from "@/components/ui/markdown-editor";
-import { Collapsible } from "@/components/ui/collapsible";
+import { Collapsible } from "@/components/ui/internal-collapsible";
 import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-project-form";
 import {
   defaultRagMaxResources,

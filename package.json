@@ -43,6 +43,8 @@
     "@opentelemetry/api-logs": "^0.200.0",
     "@opentelemetry/instrumentation": "^0.200.0",
     "@opentelemetry/sdk-logs": "^0.200.0",
+    "@radix-ui/react-collapsible": "^1.1.12",
+    "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@types/turndown": "^5.0.5",
     "@uiw/react-md-editor": "^4.0.7",
     "@vercel/blob": "^2.0.0",

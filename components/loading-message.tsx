@@ -1,22 +1,19 @@
 "use client";
 
 import { motion } from "motion/react";
-import type { ChatStatus, DataUIPart, UITool, UIToolInvocation } from "ai";
+import type { ChatStatus, UITool, UIToolInvocation } from "ai";
 import { memo } from "react";
-import type {
-  ChatbotDataPart,
-  ChatbotMessage,
-} from "@/lib/features/chat/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { DotsLoadingIcon } from "@/components/icons";
 
 interface LoadingMessageProps {
   message: ChatbotMessage;
   status: ChatStatus;
-  dataPart?: DataUIPart<Omit<ChatbotDataPart, "chat">> | undefined;
+  isReasoningStarted?: boolean;
 }
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
-  ({ message, status, dataPart }) => {
+  ({ message, status, isReasoningStarted = false }) => {
     if (
       status === "ready" ||
       status === "error" ||
@@ -25,9 +22,14 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
       return null;
     }
 
+    // Hide loading message when reasoning has started (tools are done)
+    if (isReasoningStarted) {
+      return null;
+    }
+
     return (
       <motion.div
-        className="flex items-center mt-4 ml-4 h-4"
+        className="flex items-center ml-4 h-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -60,13 +62,6 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
             }
           }
 
-          if (
-            dataPart?.type === "data-reasoning" &&
-            dataPart.data.status === "started"
-          ) {
-            return <ToolLoading key={`message-reasoning`} text="Thinking" />;
-          }
-
           return null;
         })()}
       </motion.div>
@@ -79,9 +74,9 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = memo(
     return (
       prevProps.status === nextProps.status &&
       prevProps.message.metadata?.status ===
-        nextProps.message.metadata?.status &&
-      !isToolLoading(nextToolPart?.state) &&
-      prevProps.dataPart?.data.status === nextProps.dataPart?.data.status
+      nextProps.message.metadata?.status &&
+      prevProps.isReasoningStarted === nextProps.isReasoningStarted &&
+      !isToolLoading(nextToolPart?.state)
     );
   }
 );

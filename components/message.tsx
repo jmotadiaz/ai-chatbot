@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import React, { useMemo, useState } from "react";
 import { useCollapse } from "react-collapsed";
 import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
-import type { SourceDocumentUIPart, SourceUrlUIPart } from "ai";
+import type { ReasoningUIPart, SourceDocumentUIPart, SourceUrlUIPart } from "ai";
 import Image from "next/image";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/copy-block";
@@ -13,16 +13,29 @@ import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
 import { segregateMessageParts } from "@/lib/features/chat/utils";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
 
 export interface MessagesProps {
   messages: ChatbotMessage[];
+  isReasoningStarted?: boolean;
 }
 
-export const Messages: React.FC<MessagesProps> = ({ messages }) => {
+export const Messages: React.FC<MessagesProps> = ({
+  messages,
+  isReasoningStarted = false,
+}) => {
   return (
     <>
       {messages.map((m, i) => (
-        <Message key={i} message={m} />
+        <Message
+          key={i}
+          message={m}
+          isReasoningStarted={i === messages.length - 1 && isReasoningStarted}
+        />
       ))}
     </>
   );
@@ -30,15 +43,17 @@ export const Messages: React.FC<MessagesProps> = ({ messages }) => {
 
 export interface MessageProps {
   message: ChatbotMessage;
+  isReasoningStarted?: boolean;
 }
 
-export const Message: React.FC<MessageProps> = ({ message }) => {
+export const Message: React.FC<MessageProps> = ({
+  message,
+  isReasoningStarted = false,
+}) => {
   return (
     <AnimatePresence key={message.id}>
       <motion.div
-        className={cn("w-full mx-auto px-4 wrap-anywhere", {
-          "pt-4": message.role === "user",
-        })}
+        className="w-full mx-auto px-4 wrap-anywhere"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         key={`message-${message.id}`}
@@ -47,7 +62,10 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
         {message.role === "user" ? (
           <UserMessage message={message} />
         ) : (
-          <AssistantMessage message={message} />
+          <AssistantMessage
+            message={message}
+            isReasoningStarted={isReasoningStarted}
+          />
         )}
       </motion.div>
     </AnimatePresence>
@@ -76,7 +94,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   });
 
   return (
-    <>
+    <div className="mb-8 pt-4">
       <div className={cn("flex gap-4 w-full ml-auto max-w-4xl", "w-fit")}>
         <div className="flex flex-col w-full space-y-2">
           {(files.length > 0 || textFiles.length > 0) && (
@@ -99,7 +117,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           )}
           {text.trim() && (
             <CopyBlock text={text}>
-              <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 mb-4 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
+              <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
                 <>
                   <motion.div
                     initial={{ y: 5, opacity: 0 }}
@@ -132,24 +150,58 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
 interface AssistantMessageProps {
   message: ChatbotMessage;
+  isReasoningStarted?: boolean;
 }
 
-const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
+const AssistantMessage: React.FC<AssistantMessageProps> = ({
+  message,
+  isReasoningStarted = false,
+}) => {
   const { sourceParts } = useMemo(
     () => segregateMessageParts(message),
     [message]
   );
+
+  // Check if message already has reasoning parts
+  const hasReasoningPart = message.parts.some(
+    (part) => part.type === "reasoning"
+  );
+
+  // Check if message has text tokens (to auto-close reasoning)
+  const hasTextTokens = message.parts.some(
+    (part) => part.type === "text" && part.text.trim().length > 0
+  );
+
+
+  // Show pending reasoning if data-reasoning started but no reasoning parts yet
+  const showPendingReasoning =
+    isReasoningStarted && !hasReasoningPart && message.role === "assistant";
+
   return (
     <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
+        {showPendingReasoning && (
+          <Reasoning isStreaming={true} hasReasoningTokens={false}>
+            <ReasoningTrigger />
+          </Reasoning>
+        )}
         {message.parts.map((part, i) => {
           switch (part.type) {
+            case "reasoning":
+              return (
+                <ReasoningPart
+                  key={`message-${message.id}-reasoning-${i}`}
+                  part={part}
+                  isStreaming={part.state === "streaming" && !hasTextTokens}
+                  hasTextTokens={hasTextTokens}
+                />
+              );
             case "text":
               return (
                 <div
@@ -198,6 +250,31 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
         )}
       </div>
     </div>
+  );
+};
+
+interface ReasoningPartProps {
+  part: ReasoningUIPart;
+  isStreaming: boolean;
+  hasTextTokens: boolean;
+}
+
+const ReasoningPart: React.FC<ReasoningPartProps> = ({
+  part,
+  isStreaming,
+  hasTextTokens,
+}) => {
+  const hasReasoningTokens = Boolean(part.text);
+
+  return (
+    <Reasoning
+      isStreaming={isStreaming}
+      hasReasoningTokens={hasReasoningTokens}
+      hasTextTokens={hasTextTokens}
+    >
+      <ReasoningTrigger />
+      {hasReasoningTokens && <ReasoningContent>{part.text}</ReasoningContent>}
+    </Reasoning>
   );
 };
 
