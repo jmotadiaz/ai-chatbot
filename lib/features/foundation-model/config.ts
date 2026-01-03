@@ -144,7 +144,10 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "MiMo V2 Flash": {
-    model: providers.openrouter("xiaomi/mimo-v2-flash:free"),
+    model: wrapLanguageModel({
+      model: providers.openrouter("xiaomi/mimo-v2-flash:free"),
+      middleware: [reasoningMw],
+    }),
     reasoning: true,
     company: "xiaomi",
     temperature: 0.8,
