@@ -180,7 +180,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
                   key={`message-${message.id}-part-${i}`}
                   className={cn("max-w-full")}
                 >
-                  <CopyBlock className="pt-2" text={part.text}>
+                  <CopyBlock className="pt-2 -top-2" text={part.text}>
                     <Response className="[&>*:first-child]:mt-6 [&>*:last-child]:mb-6">
                       {part.text}
                     </Response>
