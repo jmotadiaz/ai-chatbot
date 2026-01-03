@@ -41,6 +41,7 @@ html, body {
   text-size-adjust: 100%;
   font-family: var(--font-albert-sans);
   font-weight: 450;
+  font-size: 16.5px;
 }
 
 .w-md-editor,
