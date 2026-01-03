@@ -134,7 +134,7 @@ const defaultGetThinkingMessage = (isStreaming: boolean) => {
     </div>;
   }
 
-  return <p>Thought for a few seconds</p>;
+  return <p className="font-semibold text-base text-zinc-500 dark:text-zinc-400">Thought for a few seconds</p>;
 };
 
 export const ReasoningTrigger = memo(
