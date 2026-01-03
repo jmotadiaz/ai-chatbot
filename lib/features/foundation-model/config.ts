@@ -171,8 +171,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        order: ["cerebras", "deepinfra", "baseten"],
-        only: ["cerebras", "deepinfra", "baseten"],
+        order: ["deepinfra", "baseten"],
+        only: ["deepinfra", "baseten"],
       },
     },
   },
