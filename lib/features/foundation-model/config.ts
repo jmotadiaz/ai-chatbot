@@ -5,7 +5,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 const reasoningMw = extractReasoningMiddleware({
   tagName: "think",
   separator: "\n",
-  startWithReasoning: false,
+  startWithReasoning: true,
 });
 
 const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
