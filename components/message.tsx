@@ -21,21 +21,13 @@ import {
 
 export interface MessagesProps {
   messages: ChatbotMessage[];
-  isReasoningStarted?: boolean;
 }
 
-export const Messages: React.FC<MessagesProps> = ({
-  messages,
-  isReasoningStarted = false,
-}) => {
+export const Messages: React.FC<MessagesProps> = ({ messages }) => {
   return (
     <>
       {messages.map((m, i) => (
-        <Message
-          key={i}
-          message={m}
-          isReasoningStarted={i === messages.length - 1 && isReasoningStarted}
-        />
+        <Message key={i} message={m} />
       ))}
     </>
   );
@@ -43,12 +35,10 @@ export const Messages: React.FC<MessagesProps> = ({
 
 export interface MessageProps {
   message: ChatbotMessage;
-  isReasoningStarted?: boolean;
 }
 
 export const Message: React.FC<MessageProps> = ({
   message,
-  isReasoningStarted = false,
 }) => {
   return (
     <AnimatePresence key={message.id}>
@@ -64,7 +54,6 @@ export const Message: React.FC<MessageProps> = ({
         ) : (
           <AssistantMessage
             message={message}
-            isReasoningStarted={isReasoningStarted}
           />
         )}
       </motion.div>
@@ -156,21 +145,14 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
 
 interface AssistantMessageProps {
   message: ChatbotMessage;
-  isReasoningStarted?: boolean;
 }
 
 const AssistantMessage: React.FC<AssistantMessageProps> = ({
   message,
-  isReasoningStarted = false,
 }) => {
   const { sourceParts } = useMemo(
     () => segregateMessageParts(message),
     [message]
-  );
-
-  // Check if message already has reasoning parts
-  const hasReasoningPart = message.parts.some(
-    (part) => part.type === "reasoning"
   );
 
   // Check if message has text tokens (to auto-close reasoning)
@@ -178,19 +160,9 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
     (part) => part.type === "text" && part.text.trim().length > 0
   );
 
-
-  // Show pending reasoning if data-reasoning started but no reasoning parts yet
-  const showPendingReasoning =
-    isReasoningStarted && !hasReasoningPart && message.role === "assistant";
-
   return (
     <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
-        {showPendingReasoning && (
-          <Reasoning isStreaming={true} hasReasoningTokens={false}>
-            <ReasoningTrigger />
-          </Reasoning>
-        )}
         {message.parts.map((part, i) => {
           switch (part.type) {
             case "reasoning":
@@ -264,16 +236,10 @@ const ReasoningPart: React.FC<ReasoningPartProps> = ({
   isStreaming,
   hasTextTokens,
 }) => {
-  const hasReasoningTokens = Boolean(part.text);
-
   return (
-    <Reasoning
-      isStreaming={isStreaming}
-      hasReasoningTokens={hasReasoningTokens}
-      hasTextTokens={hasTextTokens}
-    >
+    <Reasoning isStreaming={isStreaming} hasTextTokens={hasTextTokens}>
       <ReasoningTrigger />
-      {hasReasoningTokens && <ReasoningContent>{part.text}</ReasoningContent>}
+      <ReasoningContent>{part.text}</ReasoningContent>
     </Reasoning>
   );
 };

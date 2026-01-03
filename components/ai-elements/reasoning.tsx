@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
@@ -12,14 +11,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { DotsLoadingIcon } from "@/components/icons";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 
 type ReasoningContextValue = {
   isStreaming: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   duration: number | undefined;
-  hasReasoningTokens: boolean;
 };
 
 const ReasoningContext = createContext<ReasoningContextValue | null>(null);
@@ -38,7 +36,6 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   duration?: number;
-  hasReasoningTokens?: boolean;
   hasTextTokens?: boolean;
 };
 
@@ -53,7 +50,6 @@ export const Reasoning = memo(
     defaultOpen = true,
     onOpenChange,
     duration: durationProp,
-    hasReasoningTokens = true,
     hasTextTokens = false,
     children,
     ...props
@@ -110,7 +106,7 @@ export const Reasoning = memo(
 
     return (
       <ReasoningContext.Provider
-        value={{ isStreaming, isOpen, setIsOpen, duration, hasReasoningTokens }}
+        value={{ isStreaming, isOpen, setIsOpen, duration }}
       >
         <Collapsible
           className={cn("not-prose mb-4", className)}
@@ -126,25 +122,16 @@ export const Reasoning = memo(
 );
 
 export type ReasoningTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
-  getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
+  getThinkingMessage?: (isStreaming: boolean) => ReactNode;
 };
 
-const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
-  if (isStreaming || duration === 0) {
-    return <>
-      <div className="mr-4">
-        <DotsLoadingIcon />
-      </div>
-      <motion.div
-        className="font-semibold text-zinc-500 dark:text-zinc-400"
-        initial={{ x: 20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: 20, opacity: 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-      >
-        Thinking...
-      </motion.div>
-    </>;
+const defaultGetThinkingMessage = (isStreaming: boolean) => {
+  if (isStreaming) {
+    return <Shimmer duration={1}
+      className="font-semibold text-base text-zinc-500 dark:text-zinc-400"
+    >
+      Thinking...
+    </Shimmer>;
   }
 
   return <p>Thought for a few seconds</p>;
@@ -152,35 +139,19 @@ const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
 
 export const ReasoningTrigger = memo(
   ({ className, children, getThinkingMessage = defaultGetThinkingMessage, ...props }: ReasoningTriggerProps) => {
-    const { isStreaming, isOpen, duration, hasReasoningTokens } = useReasoning();
+    const { isStreaming, isOpen } = useReasoning();
 
     const content = children ?? (
       <>
-        {getThinkingMessage(isStreaming, duration)}
-        {hasReasoningTokens && (
-          <ChevronDownIcon
-            className={cn(
-              "size-4 transition-transform",
-              isOpen ? "rotate-180" : "rotate-0"
-            )}
-          />
-        )}
+        {getThinkingMessage(isStreaming)}
+        <ChevronDownIcon
+          className={cn(
+            "size-4 transition-transform",
+            isOpen ? "rotate-180" : "rotate-0"
+          )}
+        />
       </>
     );
-
-    // If no reasoning tokens, render as a non-interactive div
-    if (!hasReasoningTokens) {
-      return (
-        <div
-          className={cn(
-            "flex w-full items-center gap-2 text-muted-foreground text-sm",
-            className
-          )}
-        >
-          {content}
-        </div>
-      );
-    }
 
     return (
       <CollapsibleTrigger

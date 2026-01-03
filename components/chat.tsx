@@ -34,7 +34,6 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     status,
     sendEnabled,
     stop,
-    dataPart,
     selectedModel,
     setFiles,
     handleFileChange,
@@ -84,20 +83,10 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               <ProjectOverview title={title} />
             ) : (
               <>
-                <Messages
-                  messages={messages}
-                  isReasoningStarted={
-                    dataPart?.type === "data-reasoning" &&
-                    dataPart.data.status === "started"
-                  }
-                />
+                <Messages messages={messages} />
                 <LoadingMessage
                   message={messages[messages.length - 1]}
                   status={status}
-                  isReasoningStarted={
-                    dataPart?.type === "data-reasoning" &&
-                    dataPart.data.status === "started"
-                  }
                 />
                 {(status === "ready" || status === "error") && (
                   <div className="mt-1 ml-4">

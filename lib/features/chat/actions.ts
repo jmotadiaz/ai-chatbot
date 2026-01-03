@@ -142,7 +142,6 @@ export async function processChatResponse({
       );
       const lastMessage = messagePartsToText(messages[messages.length - 1]);
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
-      let reasoning = false;
 
       // Process messages to attach text file contents from metadata
       const processedMessages = messages.map((msg) => {
@@ -193,7 +192,7 @@ export async function processChatResponse({
         activeTools: [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async ({ stepNumber }) => {
+        prepareStep: async () => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
@@ -241,45 +240,13 @@ export async function processChatResponse({
             };
           }
 
-          // Start reasoning indicator after tools are done for reasoning models
-          if (stepNumber >= tools.length && modelConfiguration.reasoning) {
-            writer.write({
-              type: "data-reasoning",
-              data: {
-                status: "started",
-              },
-            });
-            reasoning = true;
-          }
-        },
-        onChunk: ({ chunk }) => {
-          // Track when reasoning tokens actually arrive
-          if (chunk.type === "reasoning-delta" && !reasoning) {
-            writer.write({
-              type: "data-reasoning",
-              data: {
-                status: "started",
-              },
-            });
-            reasoning = true;
-          }
-          // Mark reasoning as finished when we get non-reasoning content
-          if (chunk.type !== "reasoning-delta" && reasoning) {
-            writer.write({
-              type: "data-reasoning",
-              data: {
-                status: "finished",
-              },
-            });
-            reasoning = false;
-          }
         },
       });
 
       writer.merge(
         result.toUIMessageStream({
           originalMessages: messages,
-          sendReasoning: modelConfiguration.reasoning === true,
+          sendReasoning: true,
           sendSources: true,
           generateMessageId: randomUUID,
           messageMetadata: ({ part }) => {

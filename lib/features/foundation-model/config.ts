@@ -5,7 +5,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 const reasoningMw = extractReasoningMiddleware({
   tagName: "think",
   separator: "\n",
-  startWithReasoning: true,
+  startWithReasoning: false,
 });
 
 const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
@@ -171,8 +171,8 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        order: ["deepinfra", "baseten"],
-        only: ["deepinfra", "baseten"],
+        order: ["cerebras", "deepinfra", "baseten"],
+        only: ["cerebras", "deepinfra", "baseten"],
       },
     },
   },
