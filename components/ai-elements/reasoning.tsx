@@ -127,11 +127,11 @@ export type ReasoningTriggerProps = ComponentProps<typeof CollapsibleTrigger> & 
 
 const defaultGetThinkingMessage = (isStreaming: boolean) => {
   if (isStreaming) {
-    return <Shimmer duration={1}>
-      <div className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
-        Thinking..
-      </div>
-    </Shimmer>;
+    return <div className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
+      <Shimmer duration={1}>  
+        Thinking.
+      </Shimmer>
+    </div>;
   }
 
   return <p>Thought for a few seconds</p>;
