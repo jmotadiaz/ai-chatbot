@@ -150,7 +150,7 @@ interface AssistantMessageProps {
 const AssistantMessage: React.FC<AssistantMessageProps> = ({
   message,
 }) => {
-  const { sourceParts } = useMemo(
+  const { sourceParts, reasoningParts } = useMemo(
     () => segregateMessageParts(message),
     [message]
   );
@@ -163,17 +163,17 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
   return (
     <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
+        {reasoningParts.map((part, i) => (
+          <ReasoningPart
+            key={`message-${message.id}-reasoning-${i}`}
+            part={part}
+            isStreaming={part.state === "streaming" && !hasTextTokens}
+            hasTextTokens={hasTextTokens}
+          />
+        ))}
+
         {message.parts.map((part, i) => {
           switch (part.type) {
-            case "reasoning":
-              return (
-                <ReasoningPart
-                  key={`message-${message.id}-reasoning-${i}`}
-                  part={part}
-                  isStreaming={part.state === "streaming" && !hasTextTokens}
-                  hasTextTokens={hasTextTokens}
-                />
-              );
             case "text":
               return (
                 <div

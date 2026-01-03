@@ -1,5 +1,6 @@
 import type {
   FileUIPart,
+  ReasoningUIPart,
   SourceDocumentUIPart,
   SourceUrlUIPart,
   TextUIPart,
@@ -137,6 +138,7 @@ export const messagePartsToText = (message: ChatbotMessage): string => {
 };
 
 export interface SegregatedMessagePartsReturn {
+  reasoningParts: ReasoningUIPart[];
   textParts: TextUIPart[];
   fileParts: FileUIPart[];
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
@@ -168,6 +170,7 @@ const ragChunksToSourceParts = (
 export const segregateMessageParts = (
   message: ChatbotMessage
 ): {
+  reasoningParts: ReasoningUIPart[];
   textParts: TextUIPart[];
   fileParts: FileUIPart[];
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
@@ -175,6 +178,9 @@ export const segregateMessageParts = (
   return message.parts?.reduce<SegregatedMessagePartsReturn>(
     (acc, part) => {
       switch (part.type) {
+        case "reasoning":
+          acc.reasoningParts.push(part);
+          break;
         case "text":
           acc.textParts.push(part);
           break;
@@ -193,7 +199,12 @@ export const segregateMessageParts = (
       }
       return acc;
     },
-    { textParts: [], sourceParts: [], fileParts: [] }
+    {
+      reasoningParts: [],
+      textParts: [],
+      sourceParts: [],
+      fileParts: [],
+    }
   );
 };
 
