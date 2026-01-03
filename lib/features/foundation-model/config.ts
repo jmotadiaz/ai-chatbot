@@ -366,6 +366,13 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
     reasoning: true,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          includeThoughts: true,
+        },
+      },
+    },
   },
   "Gemini 3 Pro": {
     model: providers.gateway("google/gemini-3-pro-preview"),
@@ -374,6 +381,13 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     reasoning: true,
     temperature: 1,
     nativeToolCalling: true,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          includeThoughts: true,
+        },
+      },
+    },
   },
   "Nano Banana": {
     model: providers.gateway("google/gemini-2.5-flash-image"),
