@@ -1,0 +1,78 @@
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Experiments (use with caution):
+  ✓ authInterrupts
+  ✓ viewTransition
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 2.4s
+○ Compiling /login ...
+ GET /login 200 in 7.1s (compile: 6.2s, render: 852ms)
+○ Compiling /api/auth/[...nextauth] ...
+ GET /api/auth/session 200 in 8.1s (compile: 8.0s, render: 63ms)
+ GET /api/auth/session 200 in 103ms (compile: 78ms, render: 25ms)
+ POST /login 303 in 60s (compile: 45ms, render: 60s)
+ GET / 200 in 66s (compile: 61s, render: 5.2s)
+ GET /login 200 in 165ms (compile: 21ms, render: 144ms)
+ GET /api/auth/session 200 in 240ms (compile: 203ms, render: 38ms)
+ GET /api/auth/session 200 in 32ms (compile: 14ms, render: 18ms)
+ POST /login 200 in 1085ms (compile: 8ms, render: 1077ms)
+ GET /chat/hub 200 in 2.8s (compile: 273ms, render: 2.5s)
+ GET /api/auth/session 200 in 144ms (compile: 131ms, render: 12ms)
+ GET /login 200 in 164ms (compile: 9ms, render: 155ms)
+✓ Finished writing to filesystem cache in 22.5s
+ GET / 200 in 2.5s (compile: 190ms, render: 2.3s)
+ GET /api/auth/session 200 in 69ms (compile: 12ms, render: 56ms)
+ GET /api/auth/session 200 in 29ms (compile: 9ms, render: 19ms)
+ GET /login 200 in 148ms (compile: 8ms, render: 140ms)
+ GET /api/auth/session 200 in 153ms (compile: 140ms, render: 13ms)
+ POST /login 200 in 452ms (compile: 4ms, render: 447ms)
+ GET /chat/hub 200 in 1476ms (compile: 61ms, render: 1414ms)
+ GET /api/auth/session 200 in 202ms (compile: 172ms, render: 30ms)
+ GET /login 200 in 330ms (compile: 31ms, render: 300ms)
+ GET / 200 in 1991ms (compile: 34ms, render: 1957ms)
+ GET /api/auth/session 200 in 22ms (compile: 8ms, render: 15ms)
+ GET /api/auth/session 200 in 20ms (compile: 8ms, render: 12ms)
+ GET /login 200 in 118ms (compile: 4ms, render: 113ms)
+ GET /api/auth/session 200 in 124ms (compile: 117ms, render: 7ms)
+ POST /login 200 in 296ms (compile: 4ms, render: 292ms)
+ GET /chat/hub 200 in 823ms (compile: 36ms, render: 787ms)
+ GET /api/auth/session 200 in 132ms (compile: 123ms, render: 9ms)
+ GET /login 200 in 358ms (compile: 18ms, render: 340ms)
+ GET / 200 in 1067ms (compile: 25ms, render: 1043ms)
+ GET /api/auth/session 200 in 8ms (compile: 3ms, render: 5ms)
+ GET /api/auth/session 200 in 8ms (compile: 3ms, render: 5ms)
+ GET /login 200 in 105ms (compile: 5ms, render: 99ms)
+ GET /api/auth/session 200 in 130ms (compile: 123ms, render: 8ms)
+ POST /login 200 in 174ms (compile: 4ms, render: 170ms)
+ GET /chat/hub 200 in 999ms (compile: 37ms, render: 962ms)
+ GET /api/auth/session 200 in 129ms (compile: 120ms, render: 9ms)
+ GET /api/auth/session 200 in 15ms (compile: 11ms, render: 5ms)
+ GET /login 200 in 159ms (compile: 10ms, render: 149ms)
+ GET / 200 in 1169ms (compile: 31ms, render: 1138ms)
+ GET /api/auth/session 200 in 9ms (compile: 3ms, render: 6ms)
+ GET /api/auth/session 200 in 9ms (compile: 3ms, render: 6ms)
+ GET /login 200 in 74ms (compile: 4ms, render: 70ms)
+ GET /api/auth/session 200 in 160ms (compile: 136ms, render: 23ms)
+ POST /login 200 in 233ms (compile: 11ms, render: 222ms)
+ GET /chat/hub 200 in 862ms (compile: 53ms, render: 809ms)
+ GET /api/auth/session 200 in 169ms (compile: 153ms, render: 15ms)
+ GET /login 200 in 511ms (compile: 14ms, render: 497ms)
+ GET / 200 in 1666ms (compile: 41ms, render: 1624ms)
+ GET /api/auth/session 200 in 10ms (compile: 3ms, render: 7ms)
+ GET /api/auth/session 200 in 7ms (compile: 3ms, render: 5ms)
+⨯ Error: Failed to find Server Action. This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+⨯ Error: Failed to find Server Action. This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames {
+  page: '/login'
+}
+ POST /login 500 in 4.9s (compile: 4.6s, render: 317ms)

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, ImageIcon, Shield, Wrench } from "lucide-react";
+import { FileText, ImageIcon, Plus, Shield, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
 import { Select, useSelect } from "@/components/ui/select";
 import type { Company } from "@/lib/features/foundation-model/types";
@@ -62,9 +62,8 @@ export interface ModelPickerSelectorProps {
   setSelectedModel: (model: chatModelId) => void;
   models: chatModelId[];
   id: string;
-  dropdownVariant?: React.ComponentProps<
-    typeof Select.Dropdown
-  >["variant"];
+  dropdownVariant?: React.ComponentProps<typeof Select.Dropdown>["variant"];
+  triggerVariant?: "select" | "button";
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
@@ -73,6 +72,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   models,
   id,
   dropdownVariant,
+  triggerVariant = "select",
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -81,9 +81,33 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
       id,
     });
 
+  const { isOpen, toggle } = getSelectTriggerProps();
+
   return (
     <Select.Container>
-      <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
+      {triggerVariant === "button" ? (
+        <button
+          type="button"
+          role="combobox"
+          aria-controls={`dropdown-${id}`}
+          aria-expanded={isOpen}
+          onClick={toggle}
+          className="flex flex-col items-center justify-center gap-2 group cursor-pointer"
+        >
+          <div className="rounded-full p-2 bg-black dark:bg-zinc-100 group-hover:opacity-90 transition-opacity">
+            <Plus
+              size={16}
+              className="text-white dark:text-zinc-900"
+              strokeWidth={2}
+            />
+          </div>
+          <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+            Add Model
+          </span>
+        </button>
+      ) : (
+        <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
+      )}
       <Select.Dropdown
         {...getSelectContentProps()}
         {...(dropdownVariant && { variant: dropdownVariant })}
