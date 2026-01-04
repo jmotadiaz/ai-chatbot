@@ -1,7 +1,8 @@
 "use client";
 
-import { FileText, ImageIcon, Shield, Wrench } from "lucide-react";
+import { FileText, ImageIcon, Plus, Shield, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
+import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
 import type { Company } from "@/lib/features/foundation-model/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -62,9 +63,8 @@ export interface ModelPickerSelectorProps {
   setSelectedModel: (model: chatModelId) => void;
   models: chatModelId[];
   id: string;
-  dropdownVariant?: React.ComponentProps<
-    typeof Select.Dropdown
-  >["variant"];
+  dropdownVariant?: React.ComponentProps<typeof Select.Dropdown>["variant"];
+  triggerVariant?: "select" | "button";
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
@@ -73,6 +73,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   models,
   id,
   dropdownVariant,
+  triggerVariant = "select",
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -81,9 +82,33 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
       id,
     });
 
+  const { isOpen, toggle } = getSelectTriggerProps();
+
   return (
     <Select.Container>
-      <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
+      {triggerVariant === "button" ? (
+        <div className="flex flex-col items-center justify-center gap-2 group">
+          <Button
+            variant="outline"
+            size="icon"
+            role="combobox"
+            aria-controls={`dropdown-${id}`}
+            aria-expanded={isOpen}
+            onClick={toggle}
+            className="rounded-full w-12 h-12"
+          >
+            <Plus size={24} strokeWidth={2} />
+          </Button>
+          <span
+            onClick={toggle}
+            className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer"
+          >
+            Add Model
+          </span>
+        </div>
+      ) : (
+        <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
+      )}
       <Select.Dropdown
         {...getSelectContentProps()}
         {...(dropdownVariant && { variant: dropdownVariant })}

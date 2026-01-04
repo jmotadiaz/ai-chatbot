@@ -42,6 +42,7 @@ export const AddModelDropdown: React.FC<AddModelDropdownProps> = ({
           }}
           models={availableModels}
           dropdownVariant="center"
+          triggerVariant="button"
         />
       ) : (
         <div className="text-sm text-muted-foreground select-none">
