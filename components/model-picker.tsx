@@ -87,7 +87,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   return (
     <Select.Container>
       {triggerVariant === "button" ? (
-        <div className="flex flex-col items-center justify-center gap-2 group">
+        <div className="flex flex-col items-center justify-center gap-2 group userselect-nobe">
           <Button
             variant="outline"
             size="icon"
