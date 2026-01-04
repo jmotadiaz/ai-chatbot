@@ -2,6 +2,7 @@
 
 import { FileText, ImageIcon, Plus, Shield, Wrench } from "lucide-react";
 import { useChatContext } from "@/app/(chat)/chat-provider";
+import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
 import type { Company } from "@/lib/features/foundation-model/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -86,25 +87,25 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   return (
     <Select.Container>
       {triggerVariant === "button" ? (
-        <button
-          type="button"
-          role="combobox"
-          aria-controls={`dropdown-${id}`}
-          aria-expanded={isOpen}
-          onClick={toggle}
-          className="flex flex-col items-center justify-center gap-2 group cursor-pointer"
-        >
-          <div className="rounded-full p-2 bg-black dark:bg-zinc-100 group-hover:opacity-90 transition-opacity">
-            <Plus
-              size={16}
-              className="text-white dark:text-zinc-900"
-              strokeWidth={2}
-            />
-          </div>
-          <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+        <div className="flex flex-col items-center justify-center gap-2 group">
+          <Button
+            variant="outline"
+            size="icon"
+            role="combobox"
+            aria-controls={`dropdown-${id}`}
+            aria-expanded={isOpen}
+            onClick={toggle}
+            className="rounded-full w-12 h-12"
+          >
+            <Plus size={24} strokeWidth={2} />
+          </Button>
+          <span
+            onClick={toggle}
+            className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer"
+          >
             Add Model
           </span>
-        </button>
+        </div>
       ) : (
         <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
       )}
