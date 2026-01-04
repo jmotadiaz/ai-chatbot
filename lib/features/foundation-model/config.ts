@@ -107,17 +107,11 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     },
   },
   "Qwen3 Thinking": {
-    model: providers.gateway("alibaba/qwen3-235b-a22b-thinking"),
+    model: providers.gateway("alibaba/qwen3-next-80b-a3b-thinking"),
     reasoning: true,
     company: "alibaba",
     temperature: 0.6,
     topP: 0.95,
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-        only: ["deepinfra"],
-      },
-    },
   },
   "Qwen3 30b": {
     model: providers.lmstudio("qwen/qwen3-30b-a3b-2507"),
@@ -324,6 +318,11 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "google",
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
+    },
   },
   "Gemini 2.5 Flash Lite": {
     model: providers.gateway("google/gemini-2.5-flash-lite"),
@@ -370,6 +369,9 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     nativeToolCalling: true,
     reasoning: true,
     providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
       google: {
         thinkingConfig: {
           includeThoughts: true,
@@ -432,7 +434,6 @@ export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const chatModelKeys = [
-  "GPT OSS Mini",
   "GPT OSS",
   "Kimi K2",
   "Kimi K2 Thinking",
