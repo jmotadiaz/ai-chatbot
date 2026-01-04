@@ -122,28 +122,32 @@ export const Reasoning = memo(
 );
 
 export type ReasoningTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
-  getThinkingMessage?: (isStreaming: boolean) => ReactNode;
+  getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
 };
 
-const defaultGetThinkingMessage = (isStreaming: boolean) => {
+const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
   if (isStreaming) {
     return <div className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
-      <Shimmer duration={1}>  
+      <Shimmer duration={1}>
         Thinking.
       </Shimmer>
     </div>;
   }
 
-  return <p className="font-semibold text-base text-zinc-500 dark:text-zinc-400">Thought for a few seconds</p>;
+  const durationText = duration && duration > 0
+    ? `Thought for ${duration} second${duration > 1 ? 's' : ''}`
+    : 'Thought for a few seconds';
+
+  return <p className="font-semibold text-base text-zinc-500 dark:text-zinc-400">{durationText}</p>;
 };
 
 export const ReasoningTrigger = memo(
   ({ className, children, getThinkingMessage = defaultGetThinkingMessage, ...props }: ReasoningTriggerProps) => {
-    const { isStreaming, isOpen } = useReasoning();
+    const { isStreaming, isOpen, duration } = useReasoning();
 
     const content = children ?? (
       <>
-        {getThinkingMessage(isStreaming)}
+        {getThinkingMessage(isStreaming, duration)}
         <ChevronDownIcon
           className={cn(
             "size-4 transition-transform",

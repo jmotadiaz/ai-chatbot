@@ -67,6 +67,7 @@ export const useChatHub = ({
 }: UseChatHubArgs = {}): ChatHub => {
   const [instances, setInstances] = useState<HubInstance[]>(initialInstances);
   const [instancesLocked, setInstancesLocked] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
   const [persistingChatId, setPersistingChatId] = useState<string | null>(
     null
@@ -150,10 +151,11 @@ export const useChatHub = ({
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (!sendEnabled) return;
+      if (!sendEnabled || isSubmitting) return;
 
       // After the first send, do not allow adding new instances (comparison set is locked).
       setInstancesLocked(true);
+      setIsSubmitting(true);
 
       // Consistency with current chat: clear immediately.
       setInput("");
@@ -161,11 +163,15 @@ export const useChatHub = ({
 
       const message = buildHubUserMessage({ input, files });
 
-      for (const handler of submitHandlersRef.current) {
-        void handler(message);
-      }
+      // Collect all handler promises and wait for all to settle
+      const promises = Array.from(submitHandlersRef.current).map((handler) =>
+        Promise.resolve(handler(message))
+      );
+
+      await Promise.allSettled(promises);
+      setIsSubmitting(false);
     },
-    [files, input, sendEnabled, setInput]
+    [files, input, isSubmitting, sendEnabled, setInput]
   );
 
   const persistChat = useCallback<ChatHub["persistChat"]>(
@@ -198,6 +204,7 @@ export const useChatHub = ({
     supportedFilesForPicker,
     toolsEnabled,
     instancesLocked,
+    isSubmitting,
     isPersisting,
     persistingChatId,
     addInstance,

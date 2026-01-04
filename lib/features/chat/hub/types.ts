@@ -24,6 +24,8 @@ export interface ChatHub {
   toolsEnabled: boolean;
   /** Once the hub has sent the first message, new instances cannot be added. */
   instancesLocked: boolean;
+  /** True while all instances are processing a submitted message. */
+  isSubmitting: boolean;
   /** True while persisting a selected instance into a concrete chat. */
   isPersisting: boolean;
   /** Which chatId is currently being persisted (for per-panel loading UI). */

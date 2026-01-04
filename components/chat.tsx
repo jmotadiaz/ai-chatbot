@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUp, WandSparkles, Undo } from "lucide-react";
-import { useRef, useMemo } from "react";
+import { useRef } from "react";
 import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
 import { Messages, Message } from "@/components/message";
@@ -15,6 +15,7 @@ import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-re
 import { LoadingMessage } from "@/components/loading-message";
 import { AttachmentsControl } from "@/components/attachments-control";
 import { ChatReload } from "@/components/chat-reload";
+import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
@@ -52,22 +53,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const modelConfig = getChatConfigurationByModelId(selectedModel);
-
-  // Separar mensajes en turnos anteriores y último turno
-  const { previousMessages, lastTurnMessages } = useMemo(() => {
-    if (messages.length === 0) {
-      return { previousMessages: [], lastTurnMessages: [] };
-    }
-    // Encontrar el índice del último mensaje de usuario
-    const lastUserIndex = messages.findLastIndex((m) => m.role === "user");
-    if (lastUserIndex === -1) {
-      return { previousMessages: [], lastTurnMessages: messages };
-    }
-    return {
-      previousMessages: messages.slice(0, lastUserIndex),
-      lastTurnMessages: messages.slice(lastUserIndex),
-    };
-  }, [messages]);
+  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(messages);
 
   const onPasteFiles = (files: FileList) => {
     handleFileUpload(setFiles, files, modelConfig.supportedFiles);

@@ -56,7 +56,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
     }
   }, [activeTab, tabIds]);
 
-  const isLoading = false; // hub doesn’t have a unified loading state
+  const isLoading = hub.isSubmitting;
 
   return (
     <div className={cn("flex flex-col h-full w-full", className)}>
