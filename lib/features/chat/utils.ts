@@ -167,7 +167,7 @@ const ragChunksToSourceParts = (
   });
 };
 
-export const segregateMessageParts = (
+export const destructuringMessageParts = (
   message: ChatbotMessage
 ): {
   reasoningParts: ReasoningUIPart[];
@@ -206,6 +206,20 @@ export const segregateMessageParts = (
       fileParts: [],
     }
   );
+};
+
+export const mergeReasoningParts = (
+  parts: ReasoningUIPart[]
+): ReasoningUIPart | null => {
+  if (parts.length === 0) return null;
+
+  const lastPart = parts[parts.length - 1];
+  return {
+    type: "reasoning",
+    text: parts.map((p) => p.text).join(""),
+    state: lastPart.state,
+    providerMetadata: lastPart.providerMetadata,
+  };
 };
 
 export const filterTools = (tools: string[]): Tool[] => {

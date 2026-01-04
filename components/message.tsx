@@ -12,7 +12,7 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import { FileThumbnail } from "@/components/attachment-thumbnail";
 import { Response } from "@/components/response";
-import { segregateMessageParts } from "@/lib/features/chat/utils";
+import { mergeReasoningParts, destructuringMessageParts } from "@/lib/features/chat/utils";
 import {
   Reasoning,
   ReasoningContent,
@@ -67,7 +67,7 @@ interface UserMessageProps {
 
 const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const { textParts, fileParts: files } = useMemo(
-    () => segregateMessageParts(message),
+    () => destructuringMessageParts(message),
     [message]
   );
   const text = textParts[0].text ?? "";
@@ -151,8 +151,13 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
   message,
 }) => {
   const { sourceParts, reasoningParts } = useMemo(
-    () => segregateMessageParts(message),
+    () => destructuringMessageParts(message),
     [message]
+  );
+
+  const mergedReasoning = useMemo(
+    () => mergeReasoningParts(reasoningParts),
+    [reasoningParts]
   );
 
   // Check if message has text tokens (to auto-close reasoning)
@@ -163,14 +168,14 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
   return (
     <div className={cn("flex gap-4 w-full")}>
       <div className="flex flex-col w-full space-y-4">
-        {reasoningParts.map((part, i) => (
+        {mergedReasoning && (
           <ReasoningPart
-            key={`message-${message.id}-reasoning-${i}`}
-            part={part}
-            isStreaming={part.state === "streaming" && !hasTextTokens}
+            key={`message-${message.id}-reasoning`}
+            part={mergedReasoning}
+            isStreaming={mergedReasoning.state === "streaming" && !hasTextTokens}
             hasTextTokens={hasTextTokens}
           />
-        ))}
+        )}
 
         {message.parts.map((part, i) => {
           switch (part.type) {

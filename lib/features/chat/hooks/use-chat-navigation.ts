@@ -6,10 +6,10 @@ interface UseChatNavigationProps {
   messages?: Array<ChatbotMessage>;
 }
 
-const getScrollPosition = (element: HTMLElement, container: HTMLElement) => {
+const getScrollPosition = (element: HTMLElement, container: HTMLElement, offset = 0) => {
   const elementRect = element.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
-  return elementRect.top - containerRect.top + container.scrollTop;
+  return elementRect.top - containerRect.top + container.scrollTop - offset;
 };
 
 const getLastUserMessageElement = (container: HTMLElement) => {
@@ -307,9 +307,11 @@ export const useChatNavigation = ({
     ) as HTMLElement[];
 
     // Find closest message below current scroll position
+    // Use 50px threshold to account for container padding and avoid selecting
+    // the currently visible message at the top
     const target = userMessageElements
       .map((m) => ({ el: m, top: getScrollPosition(m, container) }))
-      .filter((item) => item.top > scrollTop + 10)
+      .filter((item) => item.top > scrollTop + 50)
       .sort((a, b) => a.top - b.top)[0];
 
     if (target) {
@@ -334,5 +336,6 @@ export const useChatNavigation = ({
     scrollToPrev,
     scrollToNext,
     scrollToBottom,
+    scrollToLastUserMessage,
   };
 };

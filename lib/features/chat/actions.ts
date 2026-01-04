@@ -185,6 +185,7 @@ export async function processChatResponse({
             },
           },
         }),
+        maxRetries: 3,
         system: systemPrompt,
         messages: messagesToSend,
         tools: toolSet,

@@ -1,10 +1,10 @@
 "use client";
 
 import { ArrowUp, WandSparkles, Undo } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { Textarea } from "@/components/textarea";
 import { ProjectOverview } from "@/components/project-overview";
-import { Messages } from "@/components/message";
+import { Messages, Message } from "@/components/message";
 import { ChatControl } from "@/components/chat-control";
 import { ChatSettingsButton } from "@/components/chat-settings-button";
 import { ToolsControl } from "@/components/tools-control";
@@ -51,8 +51,23 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
       status,
     });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const observeRef = useRef<HTMLDivElement>(null);
   const modelConfig = getChatConfigurationByModelId(selectedModel);
+
+  // Separar mensajes en turnos anteriores y último turno
+  const { previousMessages, lastTurnMessages } = useMemo(() => {
+    if (messages.length === 0) {
+      return { previousMessages: [], lastTurnMessages: [] };
+    }
+    // Encontrar el índice del último mensaje de usuario
+    const lastUserIndex = messages.findLastIndex((m) => m.role === "user");
+    if (lastUserIndex === -1) {
+      return { previousMessages: [], lastTurnMessages: messages };
+    }
+    return {
+      previousMessages: messages.slice(0, lastUserIndex),
+      lastTurnMessages: messages.slice(lastUserIndex),
+    };
+  }, [messages]);
 
   const onPasteFiles = (files: FileList) => {
     handleFileUpload(setFiles, files, modelConfig.supportedFiles);
@@ -75,28 +90,38 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
         )}
       >
         <div
-          className="h-full overflow-y-auto pb-8 pt-4"
+          className="h-full overflow-y-auto"
           ref={scrollContainerRef}
         >
-          <div className={cn("w-full max-w-5xl px-4 mx-auto")}>
-            {messages.length === 0 ? (
-              <ProjectOverview title={title} />
-            ) : (
-              <>
-                <Messages messages={messages} />
-                <LoadingMessage
-                  message={messages[messages.length - 1]}
-                  status={status}
-                />
-                {(status === "ready" || status === "error") && (
-                  <div className="mt-1 ml-4">
-                    <ChatReload />
-                  </div>
-                )}
-              </>
-            )}
+          <div className="pt-4 pb-8 px-4">
+            <div className="w-full max-w-5xl mx-auto">
+              {messages.length === 0 ? (
+                <ProjectOverview title={title} />
+              ) : (
+                <>
+                  {/* Turnos anteriores - altura natural */}
+                  {previousMessages.length > 0 && (
+                    <Messages messages={previousMessages} />
+                  )}
 
-            <div className="h1" ref={observeRef}></div>
+                  {/* Último turno - min-height para permitir scroll al inicio */}
+                  <div className="min-h-[calc(100dvh-16rem)]">
+                    {lastTurnMessages.map((m) => (
+                      <Message key={m.id} message={m} />
+                    ))}
+                    <LoadingMessage
+                      message={messages[messages.length - 1]}
+                      status={status}
+                    />
+                    {(status === "ready" || status === "error") && (
+                      <div className="mt-1 ml-4">
+                        <ChatReload />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
         <ChatNavigation
