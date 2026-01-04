@@ -299,7 +299,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       openai: {
         textVerbosity: "low",
         reasoningEffort: "high",
-        reasoningSummary: 'detailed',
+        reasoningSummary: "auto",
       },
     },
     supportedFiles: ["img", "pdf"],
@@ -313,7 +313,7 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
       openai: {
         textVerbosity: "low",
         reasoningEffort: "high",
-        reasoningSummary: 'detailed',
+        reasoningSummary: "auto",
         serviceTier: "priority",
       },
     },
