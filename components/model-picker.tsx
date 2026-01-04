@@ -95,13 +95,13 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
             aria-controls={`dropdown-${id}`}
             aria-expanded={isOpen}
             onClick={toggle}
-            className="rounded-full w-12 h-12"
+            className="rounded-full"
           >
             <Plus size={24} strokeWidth={2} />
           </Button>
           <span
             onClick={toggle}
-            className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer"
+            className="font-medium text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer"
           >
             Add Model
           </span>
