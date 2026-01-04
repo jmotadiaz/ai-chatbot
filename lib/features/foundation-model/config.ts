@@ -334,6 +334,11 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     company: "google",
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
+    },
   },
   "Gemini 2.5 Flash": {
     model: providers.gateway("google/gemini-2.5-flash"),
@@ -392,6 +397,9 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     temperature: 1,
     nativeToolCalling: true,
     providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
       google: {
         thinkingConfig: {
           includeThoughts: true,
@@ -406,6 +414,9 @@ const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
     supportedFiles: ["img", "pdf"],
     supportedOutput: ["text", "img"],
     providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
       google: {
         responseModalities: ["TEXT", "IMAGE"],
       },
