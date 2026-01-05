@@ -58,7 +58,7 @@ export const GOOGLE_CONFIG = {
   "Gemini 3 Flash": {
     model: providers.gateway("google/gemini-3-flash"),
     company: "google",
-    temperature: 0.6,
+    temperature: 1,
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
     reasoning: true,
