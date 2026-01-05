@@ -158,7 +158,7 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
       <div className="flex flex-col space-y-1">
         <div className="font-medium text-[15px]">{name}</div>
         <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center">
             <div className="font-mono font-medium text-lg relative top-[1px]">
               I:
             </div>
