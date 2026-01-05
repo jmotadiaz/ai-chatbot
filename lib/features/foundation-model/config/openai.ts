@@ -54,7 +54,6 @@ export const OPENAI_CONFIG = {
     model: providers.openai("gpt-5-mini-2025-08-07"),
     reasoning: true,
     company: "openai",
-    temperature: 0.6,
     providerOptions: {
       openai: {
         textVerbosity: "low",
@@ -68,7 +67,6 @@ export const OPENAI_CONFIG = {
     model: providers.openai("gpt-5.2"),
     reasoning: true,
     company: "openai",
-    temperature: 0.6,
     providerOptions: {
       openai: {
         textVerbosity: "low",
