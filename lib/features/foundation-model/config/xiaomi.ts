@@ -1,3 +1,4 @@
+import { wrapLanguageModel } from "ai";
 import { providers } from "@/lib/infrastructure/ai/providers";
 import type { ModelConfiguration } from "../types";
 import { reasoningMw } from "./utils";
