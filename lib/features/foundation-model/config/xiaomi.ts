@@ -1,9 +1,13 @@
 import { providers } from "@/lib/infrastructure/ai/providers";
 import type { ModelConfiguration } from "../types";
+import { reasoningMw } from "./utils";
 
 export const XIAOMI_CONFIG = {
   "MiMo V2 Flash": {
-    model: providers.openrouter("xiaomi/mimo-v2-flash:free"),
+    model: wrapLanguageModel({
+      model: providers.openrouter("xiaomi/mimo-v2-flash:free"),
+      middleware: [reasoningMw],
+    }),
     reasoning: true,
     company: "xiaomi",
     temperature: 0.8,
