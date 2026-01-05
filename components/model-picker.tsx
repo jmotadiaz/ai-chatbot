@@ -192,7 +192,7 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               switch (supportedFile) {
                 case "img":
                   return (
-                    <div key={`${name}-supported-output-${supportedFile}`}>
+                    <div key={`${name}-supported-output-${supportedFile}`} className="ml-1">
                       <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );
