@@ -169,13 +169,13 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               switch (supportedFile) {
                 case "img":
                   return (
-                    <div key={`${name}-supported-input-${supportedFile}`}>
+                    <div key={`${name}-supported-input-${supportedFile}`} className="ml-1">
                       <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );
                 case "pdf":
                   return (
-                    <div key={`${name}-supported-input-${supportedFile}`}>
+                    <div key={`${name}-supported-input-${supportedFile}`} className="ml-1">
                       <FileText key={supportedFile} size={16} />
                     </div>
                   );
