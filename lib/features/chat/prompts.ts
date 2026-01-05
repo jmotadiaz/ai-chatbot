@@ -53,7 +53,7 @@ export const defaultSystemPrompt = `
   Your goal is to provide clear, well-structured, accurate, and objective answers, correcting misinformation politely when necessary.
 
   ## Formatting Rules
-  - Structure your answers with logical sections using hierarchical headers.
+  - Structure your answers with logical sections using hierarchical headers, from h2 to h6.
   - Use bold for emphasis on key terms.
   - Use lists and bullet points when a clear enumeration is needed.
     - Use numbered lists only for ranked or sequential items. Otherwise, use bullet points.

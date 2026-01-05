@@ -79,22 +79,22 @@ const albertSans = localFont({
       style: "italic",
     },
     {
-      path: "../public/fonts/albert-sans/albert-sans-v4-latin-800.woff2",
+      path: "../public/fonts/albert-sans/albert-sans-v4-latin-700.woff2",
       weight: "800",
       style: "normal",
     },
     {
-      path: "../public/fonts/albert-sans/albert-sans-v4-latin-800italic.woff2",
+      path: "../public/fonts/albert-sans/albert-sans-v4-latin-700italic.woff2",
       weight: "800",
       style: "italic",
     },
     {
-      path: "../public/fonts/albert-sans/albert-sans-v4-latin-900.woff2",
+      path: "../public/fonts/albert-sans/albert-sans-v4-latin-700.woff2",
       weight: "900",
       style: "normal",
     },
     {
-      path: "../public/fonts/albert-sans/albert-sans-v4-latin-900italic.woff2",
+      path: "../public/fonts/albert-sans/albert-sans-v4-latin-700italic.woff2",
       weight: "900",
       style: "italic",
     },
