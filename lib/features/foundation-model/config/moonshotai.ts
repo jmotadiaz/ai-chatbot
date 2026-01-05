@@ -1,17 +1,11 @@
-import { providers } from "@/lib/infrastructure/ai/providers";
 import type { ModelConfiguration } from "../types";
+import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MOONSHOTAI_CONFIG = {
   "Kimi K2": {
-    model: providers.gateway("moonshotai/kimi-k2-0905"),
+    model: providers.groq("moonshotai/kimi-k2-instruct-0905"),
     company: "moonshotai",
     temperature: 0.6,
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-        only: ["baseten"],
-      },
-    },
   },
   "Kimi K2 Thinking": {
     model: providers.gateway("moonshotai/kimi-k2-thinking-turbo"),

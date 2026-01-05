@@ -14,7 +14,7 @@ const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
   },
   prompt_engineering: {
     simple: "meta/llama-4-scout",
-    moderate: "moonshotai/kimi-k2-0905",
+    moderate: "moonshotai/kimi-k2-instruct-0905",
     complex: "openai/gpt-oss-120b",
     advanced: "gemini-2.5-pro",
   },
