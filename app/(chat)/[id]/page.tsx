@@ -1,6 +1,6 @@
 import React from "react";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { AuthCheck } from "@/components/auth/check";
+import { ResourceOwnerCheck } from "@/components/auth/resource-owner-check";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -9,10 +9,12 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
   const { id } = await params;
 
-  return <>
-    <AuthCheck />
-    <ChatLayout chatId={id} />
-  </>;
+  return (
+    <>
+      <ResourceOwnerCheck chatId={id} />
+      <ChatLayout chatId={id} />
+    </>
+  );
 };
 
 export default ChatPage;

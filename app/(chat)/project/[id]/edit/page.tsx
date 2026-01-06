@@ -6,7 +6,7 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { getProjectById } from "@/lib/features/project/queries";
-import { AuthCheck } from "@/components/auth/check";
+import { ResourceOwnerCheck } from "@/components/auth/resource-owner-check";
 
 interface EditProjectPageProps {
   params: Promise<{
@@ -24,7 +24,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
 
   return (
     <>
-      <AuthCheck />
+      <ResourceOwnerCheck projectId={id} />
       <div className="h-svh flex flex-col justify-center w-full stretch">
         <Sidebar projectId={id} />
         <Header.Container>
