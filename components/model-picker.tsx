@@ -7,7 +7,7 @@ import { Select, useSelect } from "@/components/ui/select";
 import type { Company } from "@/lib/features/foundation-model/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { cn } from "@/lib/utils/helpers";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 import {
   MetaIcon,
   ClaudeIcon,

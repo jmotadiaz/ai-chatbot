@@ -7,13 +7,13 @@ import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-re
 import { systemMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { createProject, updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import {
+  CHAT_MODELS,
   defaultWebSearchNumResults,
   defaultRagMaxResources,
-} from "@/lib/features/foundation-model/constants";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+  getChatConfigurationByModelId,
+} from "@/lib/features/foundation-model/config";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { Tool, Tools } from "@/lib/features/chat/types";
 
 const models = CHAT_MODELS.filter((model) => model !== "Router");

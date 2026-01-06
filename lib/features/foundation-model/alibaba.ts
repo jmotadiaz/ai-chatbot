@@ -1,5 +1,5 @@
+import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
-import type { ModelConfiguration } from "../types";
 
 export const ALIBABA_CONFIG = {
   "Qwen3 Instruct": {

@@ -22,12 +22,10 @@ import { useChatReload } from "./use-chat-reload";
 import { useChatRequestBody } from "./use-chat-request-body";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
-import {
+import { CHAT_MODELS,
   defaultModel,
   defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+  defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type {
   ChatbotDataPart,
   ChatbotMessage,

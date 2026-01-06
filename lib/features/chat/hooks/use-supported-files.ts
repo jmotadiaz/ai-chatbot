@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 const unionSupportedFiles = (

@@ -13,7 +13,7 @@ import {
   defaultWebSearchNumResults,
   defaultRagSimilarityPercentage,
   defaultRagMaxResources,
-} from "@/lib/features/foundation-model/constants";
+} from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import { auth } from "@/lib/features/auth/auth-config";

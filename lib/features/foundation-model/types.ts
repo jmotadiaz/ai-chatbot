@@ -54,30 +54,8 @@ export interface ModelConfiguration {
   company: Company;
 }
 
-// We need to define LanguageModelKeys here or allow a circular dependency if we define it in constants.
-// For now, I will use a placeholder or move the keys definition here if possible,
-// but keys depend on the CONST object which is in constants.ts.
-// In typescript we can reference typeof separate object.
-// But to avoid circular deps, maybe I define the keys manually or just export the type from constants
-// and import it here?
-// Actually `LanguageModelKeys` is `keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST`.
-// Since the object is the source of truth, `LanguageModelKeys` usually lives with the object.
-// So I will NOT export LanguageModelKeys from here, but I will need `chatModelId` which depends on it.
-// Wait, `chatModelId` depends on `LanguageModelKeys`.
-// If I put `LanguageModelKeys` in `constants.ts`, then `types.ts` cannot import it if `constants.ts` imports `types.ts`.
-//
-// Solution: Define `LanguageModelKeys` and `chatModelId` in `constants.ts` because they are data-driven.
-// OR move the CONST object structure interface here? No, the CONST object depends on `ModelConfiguration`.
-//
-// Let's keep data-driven types in `constants.ts` or `types.ts` if we can separate pure types.
-// `Company` and `ProviderOptions` are pure types.
-// `ModelConfiguration` is a pure type.
-// `LanguageModelKeys` depends on the value.
-//
-// I will keep `LanguageModelKeys` and `chatModelId` in `constants.ts` or a new file if needed, but `constants.ts` seems appropriate.
-// However `ModelRoutingMetadata` needs `model: string` but effectively it refers to model IDs.
-//
-// Let's put `ModelRoutingMetadata` here.
+// Model and Routing Types
+
 
 // --- From providers.ts ---
 

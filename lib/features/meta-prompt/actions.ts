@@ -7,7 +7,7 @@ import {
   originalPrompt,
 } from "./prompts";
 import { RefinePromptInput } from "./types";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/helpers";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
 import { scapeXML } from "@/lib/utils/helpers";
 
 export async function refinePrompt({

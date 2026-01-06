@@ -6,8 +6,8 @@ import {
   defaultModel,
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+  getChatConfigurationByModelId,
+} from "@/lib/features/foundation-model/config";
 
 export const useChatConfig = ({
   selectedModel = defaultModel,

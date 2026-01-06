@@ -4,7 +4,7 @@ import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "./constants";
-import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/constants";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 // Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY

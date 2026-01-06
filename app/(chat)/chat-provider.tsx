@@ -1,12 +1,10 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
-import {
+import { CHAT_MODELS,
   defaultModel,
   defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+  defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import {
   UseChatResult,
   UseChatArgs,

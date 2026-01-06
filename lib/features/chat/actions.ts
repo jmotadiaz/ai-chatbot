@@ -46,7 +46,7 @@ import {
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+} from "@/lib/features/foundation-model/config";
 import {
   webSearchFactory,
   urlContextFactory,

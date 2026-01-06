@@ -6,7 +6,7 @@ import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+} from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/features/auth/handlers";
 import { processChatResponse } from "@/lib/features/chat/actions";

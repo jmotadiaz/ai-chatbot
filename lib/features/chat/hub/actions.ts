@@ -8,7 +8,7 @@ import { chatbotMessageToDbMessage, generateTitle } from "@/lib/features/chat/ut
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+} from "@/lib/features/foundation-model/config";
 import { getDb } from "@/lib/infrastructure/db/db";
 
 export async function persistHubChatFromTranscript({

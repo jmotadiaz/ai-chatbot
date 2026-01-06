@@ -4,6 +4,7 @@ import {
   chatModelId,
   chatModelKeys,
   LanguageModelKeys,
+  languageModelConfigurations,
 } from "./config";
 import { CATEGORIES, COMPLEXITY_LEVELS } from "./types";
 import type {
@@ -12,7 +13,6 @@ import type {
   ModelRoutingMetadata,
   ModelRoutingResult,
 } from "./types";
-import { languageModelConfigurations } from "./helpers";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import type { Tools, ChatbotMessage } from "@/lib/features/chat/types";
 

@@ -1,7 +1,7 @@
 import { wrapLanguageModel } from "ai";
-import { providers } from "@/lib/infrastructure/ai/providers";
-import type { ModelConfiguration } from "../types";
+import type { ModelConfiguration } from "./types";
 import { reasoningMw } from "./utils";
+import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const PERPLEXITY_CONFIG = {
   Sonar: {

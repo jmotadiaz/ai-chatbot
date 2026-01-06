@@ -1,5 +1,5 @@
+import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
-import type { ModelConfiguration } from "../types";
 
 export const META_CONFIG = {
   "Llama 3.1 Instant": {

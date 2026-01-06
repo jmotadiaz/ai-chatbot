@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 
 /**
  * True if tools can be enabled for the given set of models.

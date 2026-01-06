@@ -24,7 +24,7 @@ import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-pr
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+} from "@/lib/features/foundation-model/config";
 
 const tabs = ["configuration", "testChat"] as const;
 

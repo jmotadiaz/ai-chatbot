@@ -6,13 +6,12 @@ import type { UseChatHubInstanceArgs } from "../types";
 import type { Tools, ChatbotMessage, ChatbotDataPart } from "@/lib/features/chat/types";
 import {
   defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/constants";
+  defaultWebSearchNumResults, chatModelId 
+} from "@/lib/features/foundation-model/config";
 import { useChatConfig } from "@/lib/features/chat/hooks/use-chat-config";
 import { useChatRequestBody } from "@/lib/features/chat/hooks/use-chat-request-body";
 import { useChatSession, UseChatSessionResult } from "@/lib/features/chat/hooks/use-chat-session";
 import { useChatDataPartState } from "@/lib/features/chat/hooks/use-chat-data-part-state";
-import { chatModelId } from "@/lib/features/foundation-model/config";
 
 export interface UseChatHubInstanceConfig
   extends UseChatHubInstanceArgs {

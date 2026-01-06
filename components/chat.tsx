@@ -18,7 +18,7 @@ import { ChatReload } from "@/components/chat-reload";
 import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/helpers";
+import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
 
 export interface ChatProps {
   className?: string;

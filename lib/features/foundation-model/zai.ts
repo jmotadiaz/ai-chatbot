@@ -1,18 +1,16 @@
+import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
-import type { ModelConfiguration } from "../types";
 
-export const MINIMAX_CONFIG = {
-  "MiniMax M2": {
-    model: providers.gateway("minimax/minimax-m2"),
+export const ZAI_CONFIG = {
+  "GLM-4.7": {
+    model: providers.gateway("zai/glm-4.7"),
     reasoning: true,
-    company: "minimax",
+    company: "zai",
     temperature: 1,
-    topP: 0.9,
-    topK: 40,
+    topP: 0.95,
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        only: ["deepinfra"],
       },
     },
   },
