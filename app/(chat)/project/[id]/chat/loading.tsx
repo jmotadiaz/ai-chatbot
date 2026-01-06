@@ -1,4 +1,4 @@
-import { ChatLoading } from "@/app/(chat)/chat-composition";
+import { ChatLoading } from "@/app/(chat)/chat-layout";
 
 const Loading: React.FC = () => {
   return <ChatLoading />;

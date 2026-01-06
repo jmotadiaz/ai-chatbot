@@ -1,10 +1,10 @@
 import type { ClassValue } from "clsx";
-import Link from "next/link";
 import { Search, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { ChatListItem } from "@/components/layout/sidebar/chat-list-item";
 import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
+import ChatLink from "@/components/chat/link";
 
 export interface ChatListProps {
   chats: Chat[];
@@ -23,26 +23,26 @@ export const ChatList: React.FC<ChatListProps> = async ({
 
   return (
     <div className={cn("my-4", className)}>
-      <Link
+      <ChatLink
         href="/chat/history"
         aria-label="Open chat history"
       >
         <SidebarSectionTitle>
           Chats <Search className="h-4 w-4 ml-3" />
         </SidebarSectionTitle>
-      </Link>
+      </ChatLink>
       <div className="space-y-3" role="list" aria-label="Chat history">
         {filteredChats.map((chat) => (
           <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
         ))}
       </div>
-      <Link
+      <ChatLink
         href="/chat/history"
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-4 ml-1 transition-colors"
       >
         See all
         <ArrowRight className="w-3 h-3" />
-      </Link>
+      </ChatLink>
     </div>
   );
 };
@@ -56,13 +56,13 @@ export const ChatListLoading: React.FC<{ className?: ClassValue }> = ({
         <h3 className="text-sm uppercase flex items-center font-medium text-zinc-500 dark:text-zinc-300 tracking-widest">
           Chats
         </h3>
-        <Link
+        <ChatLink
           href="/chat/history"
           aria-label="Open chat history"
           className="w-8 h-8 -mr-2 flex items-center justify-center rounded-md text-zinc-500 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
         >
           <Search className="w-4 h-4" />
-        </Link>
+        </ChatLink>
       </div>
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, index) => (

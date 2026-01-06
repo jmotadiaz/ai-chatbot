@@ -2,13 +2,13 @@ import React from "react";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
-import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import { SidebarContainer } from "@/components/layout/sidebar/container";
 
 const Loading: React.FC = () => {
   return (
     <>
-      <Sidebar />
+      <SidebarContainer />
       <Header.Container>
         <Header.Left>
           <Logo />

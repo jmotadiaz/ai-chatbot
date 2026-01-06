@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/features/auth/auth-config";
-import { ChatComposition } from "@/app/(chat)/chat-composition";
+import { ChatLayout } from "@/app/(chat)/chat-layout";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -22,7 +22,7 @@ const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
     redirect(`/${chatId}`);
   }
 
-  return <ChatComposition projectId={id} />;
+  return <ChatLayout projectId={id} />;
 };
 
 export default Page;
