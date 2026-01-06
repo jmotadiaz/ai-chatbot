@@ -4,12 +4,12 @@ import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { NewChatHeader } from "@/components/chat/new";
 import { ModelPickerLoading } from "@/components/chat/model-picker";
-import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { SidebarContainer } from "@/components/layout/sidebar/container";
 
 const Loading: React.FC = () => {
   return (
     <div className="h-svh flex flex-col justify-center w-full stretch">
-      <Sidebar />
+      <SidebarContainer />
       <Header.Container>
         <Header.Left>
           <Logo />

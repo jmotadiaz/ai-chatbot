@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { auth } from "@/lib/features/auth/auth-config";
 import { ProjectForm } from "@/components/project/form";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { getProjectById } from "@/lib/features/project/queries";
+import { AuthCheck } from "@/components/auth/check";
 
 interface EditProjectPageProps {
   params: Promise<{
@@ -15,11 +15,6 @@ interface EditProjectPageProps {
 }
 
 const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   const { id } = await params;
   const project = await getProjectById(id);
 
@@ -29,6 +24,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
 
   return (
     <>
+      <AuthCheck />
       <div className="h-svh flex flex-col justify-center w-full stretch">
         <Sidebar projectId={id} />
         <Header.Container>

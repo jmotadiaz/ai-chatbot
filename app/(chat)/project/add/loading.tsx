@@ -1,10 +1,10 @@
 import { NewProject } from "@/app/(chat)/project/add/component";
-import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { SidebarContainer } from "@/components/layout/sidebar/container";
 
 const Loading: React.FC = () => {
   return (
     <>
-      <Sidebar />
+      <SidebarContainer />
       <NewProject />
     </>
   );

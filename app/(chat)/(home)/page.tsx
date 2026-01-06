@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/features/auth/auth-config";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
+import { AuthCheck } from "@/components/auth/check";
 
 export interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -8,16 +8,17 @@ export interface PageProps {
 
 const Page: React.FC<PageProps> = async ({ searchParams }) => {
   const { chatId } = await searchParams;
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
 
   if (chatId) {
     redirect(`/${chatId}`);
   }
 
-  return <ChatLayout />;
+  return (
+    <>
+      <AuthCheck />
+      <ChatLayout />
+    </>
+  );
 };
 
 export default Page;

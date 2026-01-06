@@ -1,14 +1,13 @@
-import { ProjectForm } from "@/components/project/form";
+import React from "react";
+import { HubClient } from "@/components/chat/hub/hub-client";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
-import { SidebarContainer } from "@/components/layout/sidebar/container";
 
-const Loading: React.FC = () => {
+export const ChatHubComponent: React.FC = () => {
   return (
-    <>
-      <SidebarContainer />
+    <div className="h-svh flex flex-col justify-center w-full stretch">
       <Header.Container>
         <Header.Left>
           <Logo />
@@ -18,9 +17,9 @@ const Loading: React.FC = () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <ProjectForm />
-    </>
+      <HubClient className="pt-16" />
+    </div>
   );
 };
 
-export default Loading;
+
