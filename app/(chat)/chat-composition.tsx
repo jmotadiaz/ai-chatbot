@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/app/(chat)/sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import Chat from "@/components/chat/chat";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";

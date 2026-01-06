@@ -7,7 +7,7 @@ import { ChatList } from "@/components/layout/sidebar/chat-list";
 import { auth } from "@/lib/features/auth/auth-config";
 import { cn } from "@/lib/utils/helpers";
 import { getProjectsByUserId } from "@/lib/features/project/queries";
-import { SidebarSectionTitle } from "@/components/layout/sidebar/sidebar";
+import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
 
 export interface ProjectListProps {
   limit?: number;

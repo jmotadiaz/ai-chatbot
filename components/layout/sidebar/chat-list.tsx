@@ -4,7 +4,7 @@ import { Search, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { ChatListItem } from "@/components/layout/sidebar/chat-list-item";
-import { SidebarSectionTitle } from "@/components/layout/sidebar/sidebar";
+import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
 
 export interface ChatListProps {
   chats: Chat[];

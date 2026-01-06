@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Sidebar } from "../../../sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { auth } from "@/lib/features/auth/auth-config";
 import { ProjectForm } from "@/components/project/form";
 import { Header } from "@/components/layout/header/header";

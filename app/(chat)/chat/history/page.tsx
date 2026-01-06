@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
-import { Sidebar } from "@/app/(chat)/sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
 const ChatHistoryPage: React.FC = async () => {
   const session = await auth();

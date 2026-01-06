@@ -2,7 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/features/auth/auth-config";
 import { HubClient } from "@/components/chat/hub/hub-client";
-import { Sidebar } from "@/app/(chat)/sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";

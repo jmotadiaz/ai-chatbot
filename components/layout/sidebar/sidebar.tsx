@@ -1,64 +1,62 @@
-"use client";
-import { useSidebarContext } from "@/app/providers";
-import { cn } from "@/lib/utils/helpers";
+import React, { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/features/auth/auth-config";
+import { SidebarContainer } from "@/components/layout/sidebar/container";
+import { SidebarContent } from "@/components/layout/sidebar/content";
+import { SidebarFooter } from "@/components/layout/sidebar/footer";
+import { ProjectList, ProjectListLoading } from "@/components/layout/sidebar/project-list";
+import type { ChatListProps } from "@/components/layout/sidebar/chat-list";
+import { ChatList, ChatListLoading } from "@/components/layout/sidebar/chat-list";
+import { UserMenu } from "@/components/layout/sidebar/user-menu";
+import { RAGNav } from "@/components/layout/sidebar/rag-nav";
+import { getChats } from "@/lib/features/chat/queries";
+import { NewChatSidebar } from "@/components/chat/new";
 
-interface SidebarProps {
-  children?: React.ReactNode;
+export interface SidebarProps {
+  projectId?: string | null | undefined;
+  chatId?: string | null | undefined;
 }
 
-export const Sidebar = ({ children }: SidebarProps) => {
-  const { showSidebar, setShowSidebar } = useSidebarContext();
-
+export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId }) => {
   return (
-    <div>
-      <div
-        onClick={() => setShowSidebar(false)}
-        className={cn(
-          "fixed h-screen z-10 top-0 left-0",
-          showSidebar ? "w-full" : "w-0"
-        )}
-      />
-      <div className="fixed h-screen z-20 top-0 left-0">
-        <div
-          data-testid="sidebar-container"
-          className={cn(
-            "flex flex-col justify-between h-full pt-24 bg-secondary transition-all duration-300 overflow-hidden shadow-lg",
-            showSidebar ? "w-80" : "w-0"
-          )}
-        >
-          {children}
+    <SidebarContainer>
+      <SidebarContent>
+        <div className="flex flex-col gap-1">
+          <NewChatSidebar />
+          <RAGNav />
+          <Suspense fallback={<ProjectListLoading className="my-0 mt-4" />}>
+            <ProjectList
+              className="my-0 mt-4"
+              currentProjectId={projectId}
+              chatId={chatId}
+            />
+          </Suspense>
+          <Suspense fallback={<ChatListLoading className="my-0 mt-4" />}>
+            <Chats chatId={chatId} className="my-0 mt-4" />
+          </Suspense>
         </div>
-      </div>
-    </div>
+      </SidebarContent>
+      <SidebarFooter>
+        <Suspense fallback={null}>
+          <UserMenu />
+        </Suspense>
+      </SidebarFooter>
+    </SidebarContainer>
   );
 };
 
-interface SidebarContentProps {
-  children: React.ReactNode;
-}
-
-export const SidebarContent = ({ children }: SidebarContentProps) => {
-  return (
-    <div className="flex-1 px-4 w-80 overflow-auto scrollbar-none">
-      {children}
-    </div>
-  );
-};
-
-export interface SidebarFooterProps {
-  children: React.ReactNode;
-}
-
-export const SidebarFooter = ({ children }: SidebarFooterProps) => {
-  return <div className="relative px-4 w-80 p-4">{children}</div>;
-};
-
-export const SidebarSectionTitle: React.FC<{ children: React.ReactNode }> = ({
-  children,
+const Chats: React.FC<Omit<ChatListProps, "chats">> = async ({
+  chatId,
+  className,
 }) => {
-  return (
-    <h3 className="text-sm uppercase flex items-center font-medium text-zinc-500 dark:text-zinc-300 mb-4 tracking-widest">
-      {children}
-    </h3>
-  );
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const { chats } = await getChats({
+    userId: session.user.id,
+    limit: 20,
+  });
+  return <ChatList chats={chats} chatId={chatId} className={className} />;
 };

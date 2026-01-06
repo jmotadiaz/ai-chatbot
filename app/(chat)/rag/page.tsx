@@ -1,4 +1,4 @@
-import { Sidebar } from "@/app/(chat)/sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { RAGManager } from "@/app/(chat)/rag/component";
 import { AuthCheck } from "@/components/auth/check";
 

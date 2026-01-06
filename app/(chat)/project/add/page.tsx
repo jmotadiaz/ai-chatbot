@@ -1,4 +1,4 @@
-import { Sidebar } from "../../sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { AuthCheck } from "@/components/auth/check";
 import { NewProject } from "@/app/(chat)/project/add/component";
 
