@@ -22,8 +22,8 @@ import {
   filterTools,
   dbMessageToChatbotMessage,
 } from "@/lib/features/chat/utils";
-import type { ChatProviderProps } from "@/app/(chat)/chat-provider";
-import { ChatShell } from "@/app/(chat)/chat-shell";
+import type { ChatProviderProps } from "@/components/chat/provider";
+import { ChatShell } from "@/components/chat/shell";
 
 interface ChatCompositionProps {
   chatId?: string;

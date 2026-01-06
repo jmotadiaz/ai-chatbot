@@ -3,8 +3,8 @@
 import React, { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
-import { ChatProvider, type ChatProviderProps } from "@/app/(chat)/chat-provider";
-import { ChatLifecycleProvider } from "@/app/(chat)/chat-lifecycle";
+import { ChatProvider, type ChatProviderProps } from "@/components/chat/provider";
+import { ChatLifecycleProvider } from "@/components/chat/lifecycle";
 
 export interface ChatShellProps {
   children: React.ReactNode;
