@@ -1,12 +1,12 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/features/auth/auth-config";
-import { HubClient } from "@/components/chat-hub/hub-client";
+import { HubClient } from "@/components/chat/hub/hub-client";
 import { Sidebar } from "@/app/(chat)/sidebar";
-import { Header } from "@/components/header";
-import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { NewChatHeader } from "@/components/new-chat";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import { NewChatHeader } from "@/components/chat/new";
 
 const HubPage: React.FC = async () => {
   const session = await auth();

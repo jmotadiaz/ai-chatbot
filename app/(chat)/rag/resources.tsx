@@ -1,4 +1,4 @@
-import { RAGResources } from "@/components/rag-resources";
+import { RAGResources } from "@/components/rag/resources";
 import { auth } from "@/lib/features/auth/auth-config";
 import { getRagResourcesAction } from "@/lib/features/rag/actions";
 export const Resources: React.FC = async () => {

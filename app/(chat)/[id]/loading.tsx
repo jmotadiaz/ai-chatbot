@@ -1,10 +1,10 @@
 import React from "react";
-import { Header } from "@/components/header";
-import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { NewChatHeader } from "@/components/new-chat";
-import { ModelPickerLoading } from "@/components/model-picker";
-import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import { NewChatHeader } from "@/components/chat/new";
+import { ModelPickerLoading } from "@/components/chat/model-picker";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
 const Loading: React.FC = () => {
   return (

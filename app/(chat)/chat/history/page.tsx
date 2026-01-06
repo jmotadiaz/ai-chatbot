@@ -2,11 +2,11 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/features/auth/auth-config";
 import { getHistoryChatsAction } from "@/lib/features/chat/history/actions";
-import { ChatHistory } from "@/components/chat-history";
-import { Header } from "@/components/header";
-import { Logo } from "@/components/logo";
-import { NewChatHeader } from "@/components/new-chat";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ChatHistory } from "@/components/chat/history";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { NewChatHeader } from "@/components/chat/new";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { Sidebar } from "@/app/(chat)/sidebar";
 
 const ChatHistoryPage: React.FC = async () => {

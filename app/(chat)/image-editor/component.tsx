@@ -1,8 +1,8 @@
-import { Header } from "@/components/header";
-import { ImageAutomaticEdition } from "@/components/image-automatic-edition";
-import { Logo } from "@/components/logo";
-import { NewChatHeader } from "@/components/new-chat";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Header } from "@/components/layout/header/header";
+import { ImageAutomaticEdition } from "@/components/image/automatic-edition";
+import { Logo } from "@/components/layout/header/logo";
+import { NewChatHeader } from "@/components/chat/new";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 
 export const ImageEditorLayout: React.FC = () => {
   return (

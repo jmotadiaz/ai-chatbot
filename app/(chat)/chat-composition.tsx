@@ -1,12 +1,12 @@
 import React, { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/app/(chat)/sidebar";
-import Chat from "@/components/chat";
-import { Header } from "@/components/header";
-import { Logo } from "@/components/logo";
-import { ModelPicker, ModelPickerLoading } from "@/components/model-picker";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { NewChatHeader } from "@/components/new-chat";
+import Chat from "@/components/chat/chat";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { ModelPicker, ModelPickerLoading } from "@/components/chat/model-picker";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import { NewChatHeader } from "@/components/chat/new";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
   defaultModel,

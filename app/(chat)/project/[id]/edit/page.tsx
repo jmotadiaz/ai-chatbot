@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "../../../sidebar";
 import { auth } from "@/lib/features/auth/auth-config";
-import { ProjectForm } from "@/components/project-form";
-import { Header } from "@/components/header";
-import { Logo } from "@/components/logo";
-import { NewChatHeader } from "@/components/new-chat";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ProjectForm } from "@/components/project/form";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { NewChatHeader } from "@/components/chat/new";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { getProjectById } from "@/lib/features/project/queries";
 
 interface EditProjectPageProps {

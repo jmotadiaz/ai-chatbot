@@ -5,14 +5,14 @@ import {
   SidebarContent,
   Sidebar as SidebarComponent,
   SidebarFooter,
-} from "@/components/sidebar";
-import { ProjectList, ProjectListLoading } from "@/components/project-list";
-import type { ChatListProps } from "@/components/chat-list";
-import { ChatList, ChatListLoading } from "@/components/chat-list";
-import { UserMenu } from "@/components/user-menu";
-import { RAGNav } from "@/components/rag-nav";
+} from "@/components/layout/sidebar/sidebar";
+import { ProjectList, ProjectListLoading } from "@/components/layout/sidebar/project-list";
+import type { ChatListProps } from "@/components/layout/sidebar/chat-list";
+import { ChatList, ChatListLoading } from "@/components/layout/sidebar/chat-list";
+import { UserMenu } from "@/components/layout/sidebar/user-menu";
+import { RAGNav } from "@/components/layout/sidebar/rag-nav";
 import { getChats } from "@/lib/features/chat/queries";
-import { NewChatSidebar } from "@/components/new-chat";
+import { NewChatSidebar } from "@/components/chat/new";
 
 export interface SidebarProps {
   projectId?: string | null | undefined;

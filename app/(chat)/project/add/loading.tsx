@@ -1,5 +1,5 @@
 import { NewProject } from "@/app/(chat)/project/add/component";
-import { Sidebar } from "@/components/sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
 const Loading: React.FC = () => {
   return (

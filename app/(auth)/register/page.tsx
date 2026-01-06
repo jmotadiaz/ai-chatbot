@@ -1,7 +1,7 @@
 import React from "react";
 import { forbidden } from "next/navigation";
-import { AuthForm } from "@/components/auth-form";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AuthForm } from "@/components/auth/form";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { register } from "@/lib/features/auth/actions";
 
 const Page: React.FC = async () => {

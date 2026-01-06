@@ -1,9 +1,9 @@
 import React, { Suspense } from "react";
-import { Header } from "@/components/header";
-import { Logo } from "@/components/logo";
-import { NewChatHeader } from "@/components/new-chat";
-import { ThemeToggle } from "@/components/theme-toggle";
-import EnglishHelperChat from "@/components/english-helper-chat";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { NewChatHeader } from "@/components/chat/new";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import EnglishHelperChat from "@/components/english/helper-chat";
 
 export const EnglishHelper: React.FC = async () => {
   return (

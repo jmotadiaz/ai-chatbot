@@ -1,5 +1,5 @@
 import { RAGManager } from "@/app/(chat)/rag/component";
-import { Sidebar } from "@/components/sidebar";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
 const Loading: React.FC = () => {
   return (
