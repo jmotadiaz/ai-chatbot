@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, ChevronsDown } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronsDown, ChevronsUp } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
@@ -54,15 +54,28 @@ export const ChatNavigation: React.FC<ChatNavigationProps> = ({
     showPrev,
     showNext,
     showBottom,
+    showTop,
     scrollToPrev,
     scrollToNext,
     scrollToBottom,
+    scrollToTop,
   } = useChatNavigation({ scrollContainerRef, messages });
 
   return (
     <AnimatePresence>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-        <div className="grid grid-cols-3 gap-2 w-[112px]">
+        <div className="grid grid-cols-4 gap-2 w-[152px]">
+          <div className="flex justify-center items-center w-8">
+            {showTop && (
+              <ChatNavigationButton
+                onClick={scrollToTop}
+                ariaLabel="Scroll to top"
+              >
+                <ChevronsUp className="h-4 w-4" />
+              </ChatNavigationButton>
+            )}
+          </div>
+
           <div className="flex justify-center items-center w-8">
             {showPrev && (
               <ChatNavigationButton
@@ -75,23 +88,23 @@ export const ChatNavigation: React.FC<ChatNavigationProps> = ({
           </div>
 
           <div className="flex justify-center items-center w-8">
-            {showBottom && (
-              <ChatNavigationButton
-                onClick={scrollToBottom}
-                ariaLabel="Scroll to bottom"
-              >
-                <ChevronsDown className="h-4 w-4" />
-              </ChatNavigationButton>
-            )}
-          </div>
-
-          <div className="flex justify-center items-center w-8">
             {showNext && (
               <ChatNavigationButton
                 onClick={scrollToNext}
                 ariaLabel="Next message"
               >
                 <ChevronDown className="h-4 w-4" />
+              </ChatNavigationButton>
+            )}
+          </div>
+
+          <div className="flex justify-center items-center w-8">
+            {showBottom && (
+              <ChatNavigationButton
+                onClick={scrollToBottom}
+                ariaLabel="Scroll to bottom"
+              >
+                <ChevronsDown className="h-4 w-4" />
               </ChatNavigationButton>
             )}
           </div>

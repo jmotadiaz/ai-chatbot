@@ -28,6 +28,7 @@ export const useChatNavigation = ({
   const [showPrev, setShowPrev] = useState(false);
   const [showNext, setShowNext] = useState(false);
   const [showBottom, setShowBottom] = useState(false);
+  const [showTop, setShowTop] = useState(false);
   const hasInitialScrolled = useRef(false);
   const prevUserMessageCount = useRef(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -260,8 +261,13 @@ export const useChatNavigation = ({
     const bottomObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          // Show bottom button when sentinel is NOT visible
-          setShowBottom(!entry.isIntersecting);
+          if (entry.target === sentinel) {
+            // Show bottom button when sentinel is NOT visible
+            setShowBottom(!entry.isIntersecting);
+          } else if (entry.target.id === "chat-top-sentinel") {
+            // Show top button when top sentinel is NOT visible
+            setShowTop(!entry.isIntersecting);
+          }
         });
       },
       {
@@ -273,6 +279,14 @@ export const useChatNavigation = ({
 
     bottomObserverRef.current = bottomObserver;
     bottomObserver.observe(sentinel);
+
+    // Observe top sentinel if it exists
+    const topSentinel = container.querySelector("#chat-top-sentinel");
+    if (topSentinel) {
+      bottomObserver.observe(topSentinel);
+    } else {
+      setShowTop(false);
+    }
 
     return () => {
       bottomObserver.disconnect();
@@ -329,13 +343,25 @@ export const useChatNavigation = ({
     }
   }, [scrollContainerRef]);
 
+  const scrollToTop = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+  }, [scrollContainerRef]);
+
   return {
     showPrev,
     showNext,
     showBottom,
+    showTop,
     scrollToPrev,
     scrollToNext,
     scrollToBottom,
+    scrollToTop,
     scrollToLastUserMessage,
   };
 };

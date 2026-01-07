@@ -79,12 +79,13 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
           className="h-full overflow-y-auto"
           ref={scrollContainerRef}
         >
-          <div className="pt-4 pb-8 px-4">
+          <div className="pt-4 pb-32 px-4">
             <div className="w-full max-w-5xl mx-auto">
               {messages.length === 0 ? (
                 <ProjectOverview title={title} />
               ) : (
                 <>
+                  <div id="chat-top-sentinel" className="h-[1px] w-full" />
                   {/* Turnos anteriores - altura natural */}
                   {previousMessages.length > 0 && (
                     <Messages messages={previousMessages} />
