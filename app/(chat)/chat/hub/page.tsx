@@ -1,19 +1,13 @@
 import React from "react";
-import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { ChatHubComponent } from "@/app/(chat)/chat/hub/component";
-import { auth } from "@/lib/features/auth/auth-config";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-const HubPage: React.FC = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const HubPage: React.FC<AuthenticatedPage> = async () => {
   return <>
     <Sidebar />
     <ChatHubComponent />
   </>;
 };
 
-export default HubPage;
+export default withAuth(HubPage);

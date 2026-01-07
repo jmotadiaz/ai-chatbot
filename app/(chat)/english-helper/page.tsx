@@ -1,15 +1,9 @@
 import React from "react";
-import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { auth } from "@/lib/features/auth/auth-config";
 import { EnglishHelper } from "@/app/(chat)/english-helper/component";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-const Page: React.FC = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const Page: React.FC<AuthenticatedPage> = async () => {
   return (
     <>
       <Sidebar />
@@ -18,4 +12,4 @@ const Page: React.FC = async () => {
   );
 };
 
-export default Page;
+export default withAuth(Page);

@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-interface ProjectPageProps {
+interface ProjectPageProps extends AuthenticatedPage {
   params: Promise<{
     id: string;
   }>;
@@ -23,4 +24,4 @@ const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
   );
 };
 
-export default Page;
+export default withAuth(Page);

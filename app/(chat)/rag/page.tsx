@@ -1,14 +1,9 @@
-import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { RAGManager } from "@/app/(chat)/rag/component";
-import { auth } from "@/lib/features/auth/auth-config";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
+import React from "react";
 
-export default async function RAGUploadPage() {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const RAGUploadPage: React.FC<AuthenticatedPage> = async () => {
   return (
     <>
       <Sidebar />
@@ -16,3 +11,5 @@ export default async function RAGUploadPage() {
     </>
   );
 }
+
+export default withAuth(RAGUploadPage);
