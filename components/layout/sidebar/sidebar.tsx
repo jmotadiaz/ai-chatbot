@@ -1,23 +1,33 @@
 import React, { Suspense } from "react";
+import { User } from "next-auth";
 import { SidebarContainer } from "@/components/layout/sidebar/container";
 import { SidebarContent } from "@/components/layout/sidebar/content";
 import { SidebarFooter } from "@/components/layout/sidebar/footer";
-import { ProjectList, ProjectListLoading } from "@/components/layout/sidebar/project-list";
+import {
+  ProjectList,
+  ProjectListLoading,
+} from "@/components/layout/sidebar/project-list";
 import type { ChatListProps } from "@/components/layout/sidebar/chat-list";
-import { ChatList, ChatListLoading } from "@/components/layout/sidebar/chat-list";
+import {
+  ChatList,
+  ChatListLoading,
+} from "@/components/layout/sidebar/chat-list";
 import { UserMenu } from "@/components/layout/sidebar/user-menu";
 import { RAGNav } from "@/components/layout/sidebar/rag-nav";
 import { getChats } from "@/lib/features/chat/queries";
 import { NewChatSidebar } from "@/components/chat/new";
-import { User } from "next-auth";
+import { Authenticated } from "@/lib/features/auth/with-auth";
 
-export interface SidebarProps {
+export interface SidebarProps extends Authenticated {
   projectId?: string | null | undefined;
   chatId?: string | null | undefined;
-  user: User;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId, user }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  projectId,
+  chatId,
+  user,
+}) => {
   return (
     <SidebarContainer>
       <SidebarContent>
@@ -50,11 +60,7 @@ interface ChatsProps extends Omit<ChatListProps, "chats"> {
   user: User;
 }
 
-const Chats: React.FC<ChatsProps> = async ({
-  chatId,
-  className,
-  user,
-}) => {
+const Chats: React.FC<ChatsProps> = async ({ chatId, className, user }) => {
   const { chats } = await getChats({
     userId: user.id!,
     limit: 20,
