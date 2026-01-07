@@ -17,7 +17,6 @@ import {
 } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
-import { auth } from "@/lib/features/auth/auth-config";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import {
   filterTools,
@@ -25,21 +24,19 @@ import {
 } from "@/lib/features/chat/utils";
 import type { ChatProviderProps } from "@/components/chat/provider";
 import { ChatShell } from "@/components/chat/shell";
+import { User } from "next-auth";
 
 interface ChatCompositionProps {
   chatId?: string;
   projectId?: string;
+  user: User;
 }
 
 export const ChatLayout: React.FC<ChatCompositionProps> = async ({
   chatId,
   projectId,
+  user,
 }) => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   let chatConfig: Omit<ChatProviderProps, "children"> = {
     selectedModel: defaultModel,
     metaPrompt: defaultMetaPrompt,
@@ -50,7 +47,7 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
   };
 
   if (chatId) {
-    const chat = await getChatById({ id: chatId, userId: session.user.id });
+    const chat = await getChatById({ id: chatId, userId: user.id! });
 
     if (!chat) {
       redirect("/");
@@ -61,7 +58,7 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
     const project = chat.projectId
       ? await getProjectById({
           id: chat.projectId ?? "",
-          userId: session.user.id,
+          userId: user.id!,
         })
       : null;
 
@@ -92,10 +89,10 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
   } else if (projectId) {
     const project = await getProjectById({
       id: projectId,
-      userId: session.user.id,
+      userId: user.id!,
     });
 
-    if (!project || project.userId !== session.user.id) {
+    if (!project || project.userId !== user.id) {
       redirect("/project/new");
     }
 
@@ -119,7 +116,7 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
     <Suspense fallback={<ChatLoading />}>
       <ChatShell chatConfig={chatConfig}>
         <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar projectId={chatConfig.projectId} chatId={chatConfig.chatId} />
+          <Sidebar projectId={chatConfig.projectId} chatId={chatConfig.chatId} user={user} />
           <Header.Container>
             <Header.Left>
               <Logo />

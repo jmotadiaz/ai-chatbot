@@ -1,6 +1,4 @@
 import React, { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/features/auth/auth-config";
 import { SidebarContainer } from "@/components/layout/sidebar/container";
 import { SidebarContent } from "@/components/layout/sidebar/content";
 import { SidebarFooter } from "@/components/layout/sidebar/footer";
@@ -11,13 +9,15 @@ import { UserMenu } from "@/components/layout/sidebar/user-menu";
 import { RAGNav } from "@/components/layout/sidebar/rag-nav";
 import { getChats } from "@/lib/features/chat/queries";
 import { NewChatSidebar } from "@/components/chat/new";
+import { User } from "next-auth";
 
 export interface SidebarProps {
   projectId?: string | null | undefined;
   chatId?: string | null | undefined;
+  user: User;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId, user }) => {
   return (
     <SidebarContainer>
       <SidebarContent>
@@ -29,33 +29,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ projectId, chatId }) => {
               className="my-0 mt-4"
               currentProjectId={projectId}
               chatId={chatId}
+              user={user}
             />
           </Suspense>
           <Suspense fallback={<ChatListLoading className="my-0 mt-4" />}>
-            <Chats chatId={chatId} className="my-0 mt-4" />
+            <Chats chatId={chatId} className="my-0 mt-4" user={user} />
           </Suspense>
         </div>
       </SidebarContent>
       <SidebarFooter>
         <Suspense fallback={null}>
-          <UserMenu />
+          <UserMenu user={user} />
         </Suspense>
       </SidebarFooter>
     </SidebarContainer>
   );
 };
 
-const Chats: React.FC<Omit<ChatListProps, "chats">> = async ({
+interface ChatsProps extends Omit<ChatListProps, "chats"> {
+  user: User;
+}
+
+const Chats: React.FC<ChatsProps> = async ({
   chatId,
   className,
+  user,
 }) => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   const { chats } = await getChats({
-    userId: session.user.id,
+    userId: user.id!,
     limit: 20,
   });
   return <ChatList chats={chats} chatId={chatId} className={className} />;

@@ -1,15 +1,15 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/features/auth/auth-config";
 import { UserDropdown } from "@/components/layout/sidebar/user-dropdown";
-export const UserMenu = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
+import { User } from "next-auth";
+import React from "react";
 
-  if (!session.user.email) {
+interface UserMenuProps {
+  user: User;
+}
+
+export const UserMenu: React.FC<UserMenuProps> = async ({ user }) => {
+  if (!user.email) {
     return null;
   }
 
-  return <UserDropdown email={session.user.email} />;
+  return <UserDropdown email={user.email} />;
 };

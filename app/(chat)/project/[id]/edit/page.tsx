@@ -26,7 +26,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params, user })
   return (
     <>
       <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar projectId={id} />
+        <Sidebar projectId={id} user={user} />
         <Header.Container>
           <Header.Left>
             <Logo />

@@ -6,7 +6,7 @@ export interface PageProps extends AuthenticatedPage {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const Page: React.FC<PageProps> = async ({ searchParams }) => {
+const Page: React.FC<PageProps> = async ({ searchParams, user }) => {
   const { chatId } = await searchParams;
 
   if (chatId) {
@@ -15,7 +15,7 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
 
   return (
     <>
-      <ChatLayout />
+      <ChatLayout user={user} />
     </>
   );
 };

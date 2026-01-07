@@ -4,16 +4,17 @@ import { Item } from "@/components/ui/item";
 import ChatLink from "@/components/chat/link";
 import { ProjectListItem } from "@/components/layout/sidebar/project-list-item";
 import { ChatList } from "@/components/layout/sidebar/chat-list";
-import { auth } from "@/lib/features/auth/auth-config";
 import { cn } from "@/lib/utils/helpers";
 import { getProjectsByUserId } from "@/lib/features/project/queries";
 import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
+import { User } from "next-auth";
 
 export interface ProjectListProps {
   limit?: number;
   className?: ClassNameValue;
   currentProjectId?: string | null | undefined;
   chatId?: string | null | undefined;
+  user: User;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = async ({
@@ -21,12 +22,10 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
   limit = 10,
   currentProjectId,
   chatId,
+  user,
 }) => {
-  const session = await auth();
-  if (!session?.user) return null;
-
   const projects = await getProjectsByUserId({
-    userId: session.user.id,
+    userId: user.id!,
     joinChats: true,
     limit,
   });

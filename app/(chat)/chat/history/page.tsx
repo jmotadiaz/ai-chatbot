@@ -16,7 +16,7 @@ const ChatHistoryPage: React.FC<AuthenticatedPage> = async ({ user }) => {
 
   return (
     <>
-      <Sidebar />
+      <Sidebar user={user} />
       <Header.Container>
         <Header.Left>
           <Logo />

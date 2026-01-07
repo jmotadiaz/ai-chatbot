@@ -2,10 +2,10 @@ import { ImageEditorLayout } from "@/app/(chat)/image-editor/component";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-const ImageEditorPage: React.FC<AuthenticatedPage> = async () => {
+const ImageEditorPage: React.FC<AuthenticatedPage> = async ({ user }) => {
   return (
     <>
-      <Sidebar />
+      <Sidebar user={user} />
       <ImageEditorLayout />
     </>
   );

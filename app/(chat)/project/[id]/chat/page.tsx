@@ -9,7 +9,7 @@ interface ProjectPageProps extends AuthenticatedPage {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
+const Page: React.FC<ProjectPageProps> = async ({ params, searchParams, user }) => {
   const { id } = await params;
   const { chatId } = await searchParams;
 
@@ -19,7 +19,7 @@ const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
 
   return (
     <>
-      <ChatLayout projectId={id} />
+      <ChatLayout projectId={id} user={user} />
     </>
   );
 };

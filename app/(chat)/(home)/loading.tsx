@@ -1,7 +1,7 @@
-import { ChatLayout } from "@/app/(chat)/chat-layout";
+import { ChatLoading } from "@/app/(chat)/chat-layout";
 
 const Loading: React.FC = () => {
-  return <ChatLayout />;
+  return <ChatLoading />;
 };
 
 export default Loading;

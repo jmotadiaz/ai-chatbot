@@ -6,12 +6,12 @@ interface ChatPageProps extends AuthenticatedPage {
   params: Promise<{ id: string }>;
 }
 
-const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
+const ChatPage: React.FC<ChatPageProps> = async ({ params, user }) => {
   const { id } = await params;
 
   return (
     <>
-      <ChatLayout chatId={id} />
+      <ChatLayout chatId={id} user={user} />
     </>
   );
 };
