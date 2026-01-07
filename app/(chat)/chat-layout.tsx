@@ -1,122 +1,22 @@
 import React, { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { SidebarContainer } from "@/components/layout/sidebar/container";
 import Chat from "@/components/chat/chat";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
-import { ModelPicker, ModelPickerLoading } from "@/components/chat/model-picker";
+import { ModelPicker } from "@/components/chat/model-picker";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { NewChatHeader } from "@/components/chat/new";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
-import {
-  defaultModel,
-  defaultWebSearchNumResults,
-  defaultRagSimilarityPercentage,
-  defaultRagMaxResources,
-} from "@/lib/features/foundation-model/config";
-import { getProjectById } from "@/lib/features/project/queries";
-import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
-import {
-  filterTools,
-  dbMessageToChatbotMessage,
-} from "@/lib/features/chat/utils";
 import type { ChatProviderProps } from "@/components/chat/provider";
 import { ChatShell } from "@/components/chat/shell";
-import { User } from "next-auth";
 
-interface ChatCompositionProps {
-  chatId?: string;
-  projectId?: string;
-  user: User;
+interface ChatLayoutProps {
+  chatConfig: Omit<ChatProviderProps, "children">;
 }
 
-export const ChatLayout: React.FC<ChatCompositionProps> = async ({
-  chatId,
-  projectId,
-  user,
-}) => {
-  let chatConfig: Omit<ChatProviderProps, "children"> = {
-    selectedModel: defaultModel,
-    metaPrompt: defaultMetaPrompt,
-    webSearchNumResults: defaultWebSearchNumResults,
-    ragSimilarityPercentage: defaultRagSimilarityPercentage,
-    ragMaxResources: defaultRagMaxResources,
-    tools: [],
-  };
-
-  if (chatId) {
-    const chat = await getChatById({ id: chatId, userId: user.id! });
-
-    if (!chat) {
-      redirect("/");
-    }
-
-    const messages = await getMessagesByChatId(chatId);
-
-    const project = chat.projectId
-      ? await getProjectById({
-          id: chat.projectId ?? "",
-          userId: user.id!,
-        })
-      : null;
-
-    let metaPrompt: string | null = defaultMetaPrompt;
-
-    if (project && !project.hasPromptRefiner) {
-      metaPrompt = null;
-    }
-
-    // Convert to UI messages format
-    const initialMessages = dbMessageToChatbotMessage(messages);
-
-    chatConfig = {
-      selectedModel: chat.defaultModel as chatModelId,
-      temperature: chat.defaultTemperature ?? undefined,
-      topP: chat.defaultTopP ?? undefined,
-      topK: chat.defaultTopK ?? undefined,
-      chatId,
-      projectId: chat.projectId ?? undefined,
-      systemPrompt: project ? project.systemPrompt : undefined,
-      initialMessages,
-      tools: filterTools(chat.tools || []),
-      metaPrompt: metaPrompt,
-      webSearchNumResults:
-        chat.webSearchNumResults ?? defaultWebSearchNumResults,
-      ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,
-    };
-  } else if (projectId) {
-    const project = await getProjectById({
-      id: projectId,
-      userId: user.id!,
-    });
-
-    if (!project || project.userId !== user.id) {
-      redirect("/project/new");
-    }
-
-    chatConfig = {
-      projectId: project.id,
-      selectedModel: (project.defaultModel as chatModelId) || undefined,
-      temperature: project.defaultTemperature ?? undefined,
-      topP: project.defaultTopP ?? undefined,
-      topK: project.defaultTopK ?? undefined,
-      systemPrompt: project.systemPrompt,
-      metaPrompt: project.hasPromptRefiner ? defaultMetaPrompt : null,
-      title: project.name,
-      tools: filterTools(project.tools || []),
-      webSearchNumResults:
-        project.webSearchNumResults ?? defaultWebSearchNumResults,
-      ragMaxResources: project.ragMaxResources ?? defaultRagMaxResources,
-    };
-  }
-
+export const ChatLayout: React.FC<ChatLayoutProps> = async ({ chatConfig }) => {
   return (
-    <Suspense fallback={<ChatLoading />}>
+    <Suspense fallback={null}>
       <ChatShell chatConfig={chatConfig}>
         <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Sidebar projectId={chatConfig.projectId} chatId={chatConfig.chatId} user={user} />
           <Header.Container>
             <Header.Left>
               <Logo />
@@ -131,27 +31,5 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
         </div>
       </ChatShell>
     </Suspense>
-  );
-};
-
-export const ChatLoading: React.FC = () => {
-  return (
-    <>
-      <SidebarContainer />
-      <Header.Container>
-        <Header.Left>
-          <Logo />
-          <NewChatHeader />
-          <ModelPickerLoading />
-        </Header.Left>
-        <Header.Right>
-          <ThemeToggle />
-        </Header.Right>
-      </Header.Container>
-      <div className="h-svh flex flex-col items-center justify-center w-full max-w-5xl px-4 mx-auto pt-24 relative overflow-hidden">
-        <div className="h-9 bg-gray-200 dark:bg-zinc-700 rounded-md py-1 animate-pulse w-3/5 mb-12" />
-        <div className="w-full h-[152px] bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse px-4" />
-      </div>
-    </>
   );
 };

@@ -1,12 +1,17 @@
+import React from "react";
 import { redirect } from "next/navigation";
-import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
+import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { ChatHomeComponent } from "@/app/(chat)/(home)/component";
 
-export interface PageProps extends AuthenticatedPage {
+export interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const Page: React.FC<PageProps> = async ({ searchParams, user }) => {
+const Page: React.FC<PageProps & Authenticated> = async ({
+  searchParams,
+  user,
+}) => {
   const { chatId } = await searchParams;
 
   if (chatId) {
@@ -15,7 +20,8 @@ const Page: React.FC<PageProps> = async ({ searchParams, user }) => {
 
   return (
     <>
-      <ChatLayout user={user} />
+      <Sidebar user={user} />
+      <ChatHomeComponent />
     </>
   );
 };

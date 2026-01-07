@@ -1,16 +1,16 @@
-import { auth } from "@/lib/features/auth/auth-config";
 import { Session } from "next-auth";
 import { redirect } from "next/navigation";
 import React from "react";
+import { auth } from "@/lib/features/auth/auth-config";
 
-export interface AuthenticatedPage {
+export interface Authenticated {
   user: NonNullable<Session["user"]>;
 }
 
 export function withAuth<P extends object>(
-  Component: React.ComponentType<P & AuthenticatedPage>
+  Component: React.ComponentType<P & Authenticated>
 ) {
-  return async function WithAuth(props: P) {
+  async function WithAuth(props: P) {
     const session = await auth();
 
     if (!session?.user) {
@@ -18,5 +18,7 @@ export function withAuth<P extends object>(
     }
 
     return <Component {...props} user={session.user} />;
-  };
+  }
+
+  return WithAuth as React.ComponentType<P>;
 }

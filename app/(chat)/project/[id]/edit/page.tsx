@@ -6,15 +6,18 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { getProjectById } from "@/lib/features/project/queries";
-import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
+import { withAuth, Authenticated } from "@/lib/features/auth/with-auth";
 
-interface EditProjectPageProps extends AuthenticatedPage {
+interface EditProjectPageProps extends Authenticated {
   params: Promise<{
     id: string;
   }>;
 }
 
-const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params, user }) => {
+const EditProjectPage: React.FC<EditProjectPageProps> = async ({
+  params,
+  user,
+}) => {
   const { id } = await params;
 
   const project = await getProjectById({ id, userId: user.id });

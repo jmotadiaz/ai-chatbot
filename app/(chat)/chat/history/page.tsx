@@ -6,9 +6,9 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
+import { withAuth, Authenticated } from "@/lib/features/auth/with-auth";
 
-const ChatHistoryPage: React.FC<AuthenticatedPage> = async ({ user }) => {
+const ChatHistoryPage: React.FC<Authenticated> = async ({ user }) => {
   const { chats, hasMore } = await getHistoryChatsAction({
     limit: 20,
     offset: 0,
