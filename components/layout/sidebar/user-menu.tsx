@@ -1,6 +1,6 @@
-import { UserDropdown } from "@/components/layout/sidebar/user-dropdown";
 import { User } from "next-auth";
 import React from "react";
+import { UserDropdown } from "@/components/layout/sidebar/user-dropdown";
 
 interface UserMenuProps {
   user: User;

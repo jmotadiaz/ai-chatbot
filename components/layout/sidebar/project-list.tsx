@@ -1,5 +1,6 @@
 import type { ClassNameValue } from "tailwind-merge";
 import { CirclePlus, Edit } from "lucide-react";
+import { User } from "next-auth";
 import { Item } from "@/components/ui/item";
 import ChatLink from "@/components/chat/link";
 import { ProjectListItem } from "@/components/layout/sidebar/project-list-item";
@@ -7,7 +8,6 @@ import { ChatList } from "@/components/layout/sidebar/chat-list";
 import { cn } from "@/lib/utils/helpers";
 import { getProjectsByUserId } from "@/lib/features/project/queries";
 import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
-import { User } from "next-auth";
 
 export interface ProjectListProps {
   limit?: number;

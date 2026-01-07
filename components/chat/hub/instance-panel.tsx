@@ -93,7 +93,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
 
       <div className="flex-1 min-h-0 relative">
         <div
-          className="h-full overflow-y-auto px-4 py-3"
+          className="h-full overflow-y-auto px-4 pt-3 pb-20"
           ref={scrollContainerRef}
         >
           {chat.messages.length === 0 ? (
@@ -102,6 +102,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
             </div>
           ) : (
             <>
+              <div id="chat-top-sentinel" className="h-[1px] w-full" />
               {/* Previous turns - natural height */}
               {previousMessages.length > 0 && (
                 <Messages messages={previousMessages} />
