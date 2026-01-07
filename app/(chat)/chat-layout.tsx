@@ -50,7 +50,7 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
   };
 
   if (chatId) {
-    const chat = await getChatById(chatId);
+    const chat = await getChatById({ id: chatId, userId: session.user.id });
 
     if (!chat) {
       redirect("/");
@@ -59,7 +59,10 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
     const messages = await getMessagesByChatId(chatId);
 
     const project = chat.projectId
-      ? await getProjectById(chat.projectId ?? "")
+      ? await getProjectById({
+          id: chat.projectId ?? "",
+          userId: session.user.id,
+        })
       : null;
 
     let metaPrompt: string | null = defaultMetaPrompt;
@@ -87,7 +90,10 @@ export const ChatLayout: React.FC<ChatCompositionProps> = async ({
       ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,
     };
   } else if (projectId) {
-    const project = await getProjectById(projectId);
+    const project = await getProjectById({
+      id: projectId,
+      userId: session.user.id,
+    });
 
     if (!project || project.userId !== session.user.id) {
       redirect("/project/new");
