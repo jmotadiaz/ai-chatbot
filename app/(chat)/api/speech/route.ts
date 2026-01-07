@@ -1,5 +1,5 @@
 import { generateSpeech } from "@/lib/features/english/actions";
-import { withAuth } from "@/lib/features/auth/handlers";
+import { withAuth } from "@/lib/features/auth/with-auth/handler";
 
 export const POST = withAuth(async (_user, req) => {
   const { input } = await req.json();

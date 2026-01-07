@@ -16,7 +16,7 @@ import { UserMenu } from "@/components/layout/sidebar/user-menu";
 import { RAGNav } from "@/components/layout/sidebar/rag-nav";
 import { getChats } from "@/lib/features/chat/queries";
 import { NewChatSidebar } from "@/components/chat/new";
-import { Authenticated } from "@/lib/features/auth/with-auth";
+import { Authenticated } from "@/lib/features/auth/with-auth/hoc";
 
 export interface SidebarProps extends Authenticated {
   projectId?: string | null | undefined;

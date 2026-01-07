@@ -9,7 +9,7 @@ import { getProjectById } from "@/lib/features/project/queries";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { filterTools } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { withAuth, Authenticated } from "@/lib/features/auth/with-auth";
+import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
 interface ProjectPageProps extends Authenticated {

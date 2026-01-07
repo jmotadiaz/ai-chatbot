@@ -14,7 +14,10 @@ import {
   dbMessageToChatbotMessage,
 } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth";
+import {
+  withAuth,
+  type Authenticated,
+} from "@/lib/features/auth/with-auth/hoc";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;

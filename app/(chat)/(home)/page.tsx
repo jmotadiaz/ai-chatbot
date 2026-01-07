@@ -1,6 +1,9 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth";
+import {
+  withAuth,
+  type Authenticated,
+} from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { ChatHomeComponent } from "@/app/(chat)/(home)/component";
 

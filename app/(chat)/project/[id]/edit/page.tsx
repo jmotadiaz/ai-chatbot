@@ -6,7 +6,7 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { getProjectById } from "@/lib/features/project/queries";
-import { withAuth, Authenticated } from "@/lib/features/auth/with-auth";
+import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 
 interface EditProjectPageProps extends Authenticated {
   params: Promise<{
