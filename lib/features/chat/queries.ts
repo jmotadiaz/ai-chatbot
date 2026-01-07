@@ -88,12 +88,18 @@ export const updateChat =
     return updatedChat;
   };
 
-export async function getChatById(id: string): Promise<Chat | undefined> {
+export async function getChatById({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}): Promise<Chat | undefined> {
   try {
     const [selectedChat] = await getDb()
       .select()
       .from(chat)
-      .where(eq(chat.id, id));
+      .where(and(eq(chat.id, id), eq(chat.userId, userId)));
     return selectedChat;
   } catch (error) {
     console.error("Failed to get chat by id from database", error);

@@ -1,8 +1,14 @@
+import { redirect } from "next/navigation";
 import { RAGResources } from "@/components/rag/resources";
 import { getRagResourcesAction } from "@/lib/features/rag/actions";
-import { AuthCheck } from "@/components/auth/check";
+import { auth } from "@/lib/features/auth/auth-config";
 
 export const Resources: React.FC = async () => {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const { resources, hasMore } = await getRagResourcesAction({
     limit: 20,
     offset: 0,
@@ -10,7 +16,6 @@ export const Resources: React.FC = async () => {
 
   return (
     <>
-      <AuthCheck />
       <RAGResources initialResources={resources} initialHasMore={hasMore} />
     </>
   );

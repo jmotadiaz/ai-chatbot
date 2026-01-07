@@ -6,7 +6,7 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { getProjectById } from "@/lib/features/project/queries";
-import { ResourceOwnerCheck } from "@/components/auth/resource-owner-check";
+import { auth } from "@/lib/features/auth/auth-config";
 
 interface EditProjectPageProps {
   params: Promise<{
@@ -16,7 +16,12 @@ interface EditProjectPageProps {
 
 const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
   const { id } = await params;
-  const project = await getProjectById(id);
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const project = await getProjectById({ id, userId: session.user.id });
 
   if (!project) {
     redirect("/project/new");
@@ -24,7 +29,6 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({ params }) => {
 
   return (
     <>
-      <ResourceOwnerCheck projectId={id} />
       <div className="h-svh flex flex-col justify-center w-full stretch">
         <Sidebar projectId={id} />
         <Header.Container>

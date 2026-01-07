@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { ResourceOwnerCheck } from "@/components/auth/resource-owner-check";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -19,7 +18,6 @@ const Page: React.FC<ProjectPageProps> = async ({ params, searchParams }) => {
 
   return (
     <>
-      <ResourceOwnerCheck projectId={id} />
       <ChatLayout projectId={id} />
     </>
   );

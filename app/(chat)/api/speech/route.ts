@@ -1,6 +1,7 @@
 import { generateSpeech } from "@/lib/features/english/actions";
+import { withAuth } from "@/lib/features/auth/handlers";
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (_user, req) => {
   const { input } = await req.json();
 
   try {
@@ -10,4 +11,4 @@ export async function POST(req: Request) {
     console.error("Error generating speech:", error);
     return new Response("Error generating speech", { status: 500 });
   }
-}
+});

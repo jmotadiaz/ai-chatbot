@@ -49,12 +49,18 @@ export const createProject =
       .then(([newProject]) => newProject);
   };
 
-export async function getProjectById(id: string): Promise<Project | undefined> {
+export async function getProjectById({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}): Promise<Project | undefined> {
   try {
     const [selectedProject] = await getDb()
       .select()
       .from(project)
-      .where(eq(project.id, id));
+      .where(and(eq(project.id, id), eq(project.userId, userId)));
     return selectedProject;
   } catch (error) {
     console.error("Failed to get project by id from database", error);
