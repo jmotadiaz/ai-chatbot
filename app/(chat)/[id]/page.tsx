@@ -1,25 +1,19 @@
 import React from "react";
-import { redirect } from "next/navigation";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { auth } from "@/lib/features/auth/auth-config";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-interface ChatPageProps {
+interface ChatPageProps extends AuthenticatedPage {
   params: Promise<{ id: string }>;
 }
 
-const ChatPage: React.FC<ChatPageProps> = async ({ params }) => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const ChatPage: React.FC<ChatPageProps> = async ({ params, user }) => {
   const { id } = await params;
 
   return (
     <>
-      <ChatLayout chatId={id} />
+      <ChatLayout chatId={id} user={user} />
     </>
   );
 };
 
-export default ChatPage;
+export default withAuth(ChatPage);

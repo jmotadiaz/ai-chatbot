@@ -1,17 +1,12 @@
 import { redirect } from "next/navigation";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
-import { auth } from "@/lib/features/auth/auth-config";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-export interface PageProps {
+export interface PageProps extends AuthenticatedPage {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const Page: React.FC<PageProps> = async ({ searchParams }) => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const Page: React.FC<PageProps> = async ({ searchParams, user }) => {
   const { chatId } = await searchParams;
 
   if (chatId) {
@@ -20,9 +15,9 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
 
   return (
     <>
-      <ChatLayout />
+      <ChatLayout user={user} />
     </>
   );
 };
 
-export default Page;
+export default withAuth(Page);

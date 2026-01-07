@@ -1,20 +1,14 @@
-import { redirect } from "next/navigation";
 import { ImageEditorLayout } from "@/app/(chat)/image-editor/component";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { auth } from "@/lib/features/auth/auth-config";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-const ImageEditorPage: React.FC = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const ImageEditorPage: React.FC<AuthenticatedPage> = async ({ user }) => {
   return (
     <>
-      <Sidebar />
+      <Sidebar user={user} />
       <ImageEditorLayout />
     </>
   );
 };
 
-export default ImageEditorPage;
+export default withAuth(ImageEditorPage);

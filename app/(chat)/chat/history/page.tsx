@@ -1,5 +1,4 @@
 import React from "react";
-import { redirect } from "next/navigation";
 import { getHistoryChatsAction } from "@/lib/features/chat/history/actions";
 import { ChatHistory } from "@/components/chat/history";
 import { Header } from "@/components/layout/header/header";
@@ -7,14 +6,9 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { auth } from "@/lib/features/auth/auth-config";
+import { withAuth, AuthenticatedPage } from "@/lib/features/auth/with-auth";
 
-const ChatHistoryPage: React.FC = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+const ChatHistoryPage: React.FC<AuthenticatedPage> = async ({ user }) => {
   const { chats, hasMore } = await getHistoryChatsAction({
     limit: 20,
     offset: 0,
@@ -22,7 +16,7 @@ const ChatHistoryPage: React.FC = async () => {
 
   return (
     <>
-      <Sidebar />
+      <Sidebar user={user} />
       <Header.Container>
         <Header.Left>
           <Logo />
@@ -39,4 +33,4 @@ const ChatHistoryPage: React.FC = async () => {
   );
 };
 
-export default ChatHistoryPage;
+export default withAuth(ChatHistoryPage);
