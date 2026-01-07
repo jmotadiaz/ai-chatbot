@@ -273,7 +273,7 @@ export const useChatNavigation = ({
       {
         root: container,
         threshold: 0,
-        rootMargin: "0px 0px 50px 0px", // 50px buffer before bottom
+        rootMargin: "50px 0px 50px 0px", // 50px buffer before top/bottom
       }
     );
 
