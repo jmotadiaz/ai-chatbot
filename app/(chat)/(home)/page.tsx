@@ -18,7 +18,7 @@ const Page: React.FC<PageProps & Authenticated> = async ({
   const { chatId } = await searchParams;
 
   if (chatId) {
-    redirect(`/${chatId}`);
+    redirect(`/chat/${chatId}`);
   }
 
   return (

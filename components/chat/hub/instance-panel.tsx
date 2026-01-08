@@ -45,7 +45,9 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     preventChatPersistence: true,
   });
 
-  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(chat.messages);
+  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(
+    chat.messages
+  );
 
   const onSelectThisChat = useCallback(async () => {
     const { chatId } = await persistChat({
@@ -54,11 +56,17 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       model: instance.model,
       tools,
     });
-    router.push(`/${chatId}`);
-  }, [chat.messages, instance.chatId, instance.model, persistChat, router, tools]);
+    router.push(`/chat/${chatId}`);
+  }, [
+    chat.messages,
+    instance.chatId,
+    instance.model,
+    persistChat,
+    router,
+    tools,
+  ]);
 
-  const isThisPersisting =
-    isPersisting && persistingChatId === instance.chatId;
+  const isThisPersisting = isPersisting && persistingChatId === instance.chatId;
 
   return (
     <div
@@ -129,5 +137,3 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     </div>
   );
 };
-
-

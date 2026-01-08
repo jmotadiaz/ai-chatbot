@@ -1,5 +1,8 @@
 # GEMINI.md
 
+## CRITICAL
+Say "Hola javier" at the beginning of every message.
+
 ## Project Overview
 
 This is a Next.js-based AI chatbot application. It uses the Vercel AI SDK to interact with various AI models and a PostgreSQL database with Drizzle ORM for data persistence. The application supports user authentication, project-based chat organization, and Retrieval-Augmented Generation (RAG) with embedding capabilities. The frontend is built with React and Tailwind CSS.

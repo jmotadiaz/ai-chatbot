@@ -28,7 +28,7 @@ const Page: React.FC<ProjectPageProps> = async ({
   const { chatId } = await searchParams;
 
   if (chatId) {
-    redirect(`/${chatId}`);
+    redirect(`/chat/${chatId}`);
   }
 
   const project = await getProjectById({

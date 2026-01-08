@@ -14,7 +14,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({ id, title }) => {
   const [isPending, startTransition] = useTransition();
   return (
     <Item className="py-0" loading={isPending}>
-      <ChatLink href={`/${id}`} className="flex-1 py-2 overflow-hidden">
+      <ChatLink href={`/chat/${id}`} className="flex-1 py-2 overflow-hidden">
         <div className="whitespace-nowrap overflow-hidden text-ellipsis">
           {title || "Untitled Chat"}
         </div>

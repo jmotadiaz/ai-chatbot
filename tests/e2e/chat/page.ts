@@ -24,7 +24,7 @@ export class ChatPage {
   }
 
   async goto(chatId?: string) {
-    const url = chatId ? `/${chatId}` : "/";
+    const url = chatId ? `/chat/${chatId}` : "/";
     await this.page.goto(url);
   }
 

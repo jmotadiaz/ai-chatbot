@@ -18,7 +18,7 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = memo(
     return (
       <li className="flex items-center justify-between p-3 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors">
         <Link
-          href={`/${chat.id}`}
+          href={`/chat/${chat.id}`}
           className={cn(
             "flex-1 truncate mr-4 text-sm font-medium",
             "hover:underline"
