@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ModelPicker } from "@/components/chat/model-picker";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import { ActiveChatMenu } from "@/components/chat/chat-menu";
 import { NewChatHeader } from "@/components/chat/new";
 import type { ChatProviderProps } from "@/components/chat/provider";
 import { ChatShell } from "@/components/chat/shell";
@@ -24,6 +25,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = async ({ chatConfig }) => {
               <ModelPicker id="header-model-picker" />
             </Header.Left>
             <Header.Right>
+              <ActiveChatMenu />
               <ThemeToggle />
             </Header.Right>
           </Header.Container>

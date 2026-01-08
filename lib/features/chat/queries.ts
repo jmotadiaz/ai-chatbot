@@ -28,6 +28,7 @@ export const saveChat =
     webSearchNumResults,
     tools,
     projectId,
+    pinned = false,
   }: InsertChat): Transactional<Chat> =>
   async (tx) => {
     try {
@@ -45,6 +46,7 @@ export const saveChat =
           webSearchNumResults,
           tools,
           projectId,
+          pinned,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -72,6 +74,7 @@ export const updateChat =
         | "webSearchNumResults"
         | "tools"
         | "projectId"
+        | "pinned"
       >
     >
   ): Transactional<Chat> =>
@@ -141,7 +144,7 @@ export async function getChats({
             : eq(chat.projectId, projectId)
         )
       )
-      .orderBy(desc(chat.updatedAt))
+      .orderBy(desc(chat.pinned), desc(chat.updatedAt))
       .limit(extendedLimit);
 
     return {

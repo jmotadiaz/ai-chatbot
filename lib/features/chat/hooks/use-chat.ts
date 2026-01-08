@@ -22,10 +22,12 @@ import { useChatReload } from "./use-chat-reload";
 import { useChatRequestBody } from "./use-chat-request-body";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { CHAT_MODELS,
+import {
+  CHAT_MODELS,
   defaultModel,
   defaultRagMaxResources,
-  defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
+  defaultWebSearchNumResults,
+} from "@/lib/features/foundation-model/config";
 import type {
   ChatbotDataPart,
   ChatbotMessage,
@@ -68,6 +70,8 @@ export interface UseChatResult
   dataPart: DataUIPart<ChatbotDataPart> | undefined;
   setConfig: SetChatConfig;
   availableModels: chatModelId[];
+  isNewChat: boolean;
+  preventChatPersistence: boolean;
 }
 
 export const useChat = ({
@@ -186,5 +190,7 @@ export const useChat = ({
     toggleTool,
     hasTool,
     setTools,
+    isNewChat,
+    preventChatPersistence,
   };
 };

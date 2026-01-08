@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  startTransition,
-  useCallback,
-  useState,
-} from "react";
+import { startTransition, useCallback, useState } from "react";
 import type { ClassValue } from "clsx";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils/helpers";
@@ -29,14 +25,21 @@ export interface DropdownPopupProps
   children: React.ReactNode;
   isShown: boolean;
   close: () => void;
-  variant?: "top-left" | "top-right" | "bottom" | "center";
+  variant?:
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right"
+    | "center";
   className?: string;
 }
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
   "top-right": "lg:absolute lg:bottom-full lg:mb-2",
   "top-left": "lg:absolute lg:bottom-full lg:right-0 lg:left-auto lg:mb-2",
-  bottom: "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
+  "bottom-left":
+    "lg:absolute top-auto lg:top-full lg:bottom-auto lg:right-0 lg:left-auto lg:mt-2",
+  "bottom-right": "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
   center: "lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
 };
 
@@ -49,7 +52,11 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   ...props
 }) => {
   const initialY =
-    variant === "bottom" ? -8 : variant === "center" ? 8 : 8;
+    variant === "bottom-left" || variant === "bottom-right"
+      ? -8
+      : variant === "center"
+      ? 8
+      : 8;
 
   return (
     <AnimatePresence>

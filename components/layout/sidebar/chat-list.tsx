@@ -19,21 +19,22 @@ export const ChatList: React.FC<ChatListProps> = async ({
 }) => {
   if (!chats.length) return null;
 
-  const filteredChats = chats.filter(({ id }) => id !== chatId);
-
   return (
     <div className={cn("my-4", className)}>
-      <ChatLink
-        href="/chat/history"
-        aria-label="Open chat history"
-      >
+      <ChatLink href="/chat/history" aria-label="Open chat history">
         <SidebarSectionTitle>
           Chats <Search className="h-4 w-4 ml-3" />
         </SidebarSectionTitle>
       </ChatLink>
       <div className="space-y-3" role="list" aria-label="Chat history">
-        {filteredChats.map((chat) => (
-          <ChatListItem key={chat.id} id={chat.id} title={chat.title} />
+        {chats.map((chat) => (
+          <ChatListItem
+            key={chat.id}
+            id={chat.id}
+            title={chat.title}
+            pinned={chat.pinned}
+            active={chat.id === chatId}
+          />
         ))}
       </div>
       <ChatLink

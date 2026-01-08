@@ -131,7 +131,7 @@ const SelectDropdownComponent: React.FC<SelectContentProps> = ({
   isShown,
   close,
   id,
-  variant = "bottom",
+  variant = "bottom-right",
 }) => {
   return (
     <Dropdown.Popup

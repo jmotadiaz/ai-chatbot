@@ -1,10 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 
-import { deleteChat } from "@/lib/features/chat/actions";
+import { deleteChat, togglePinChat } from "@/lib/features/chat/actions";
 import { getHistoryChatsAction } from "@/lib/features/chat/history/actions";
 import { useIntersectionObserver } from "@/lib/utils/hooks/intersection";
 import type { Chat } from "@/lib/features/chat/types";
@@ -23,6 +30,8 @@ export interface UseChatHistoryReturn {
   setFilter: (value: string) => void;
   isDeleting: (chatId: string) => boolean;
   onDeleteChat: (chatId: string) => void;
+  isPinning: (chatId: string) => boolean;
+  onTogglePin: (chatId: string) => void;
   scrollContainer: React.RefObject<HTMLUListElement | null>;
   loader: React.RefCallback<HTMLLIElement>;
 }
@@ -38,6 +47,7 @@ export const useChatHistory = ({
   const [filter, setFilter] = useState<string>("");
   const [debouncedFilter] = useDebounce(filter, 300);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [pinningIds, setPinningIds] = useState<Set<string>>(new Set());
 
   const chatsRef = useRef<Chat[]>(initialChats);
   useEffect(() => {
@@ -110,9 +120,59 @@ export const useChatHistory = ({
     [startTransition]
   );
 
+  const onTogglePin = useCallback(
+    (chatId: string) => {
+      setPinningIds((prev) => new Set(prev).add(chatId));
+
+      startTransition(async () => {
+        try {
+          // Optimistic update
+          setChats((prev) =>
+            prev
+              .map((chat) =>
+                chat.id === chatId ? { ...chat, pinned: !chat.pinned } : chat
+              )
+              .sort((a, b) => {
+                if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+                return (
+                  new Date(b.updatedAt).getTime() -
+                  new Date(a.updatedAt).getTime()
+                );
+              })
+          );
+
+          await togglePinChat(chatId);
+          toast.success("Chat pin status updated");
+        } catch (error) {
+          console.error("Error toggling pin:", error);
+          toast.error("Failed to update pin status");
+          // Revert optimistic update
+          const result = await getHistoryChatsAction({
+            limit: chatsRef.current.length,
+            offset: 0,
+            filter: debouncedFilter,
+          });
+          setChats(result.chats);
+        } finally {
+          setPinningIds((prev) => {
+            const next = new Set(prev);
+            next.delete(chatId);
+            return next;
+          });
+        }
+      });
+    },
+    [debouncedFilter, startTransition]
+  );
+
   const isDeleting = useCallback(
     (chatId: string) => deletingIds.has(chatId),
     [deletingIds]
+  );
+
+  const isPinning = useCallback(
+    (chatId: string) => pinningIds.has(chatId),
+    [pinningIds]
   );
 
   // Keep return object stable-ish for consumers.
@@ -125,11 +185,22 @@ export const useChatHistory = ({
       setFilter,
       isDeleting,
       onDeleteChat,
+      isPinning,
+      onTogglePin,
       scrollContainer,
       loader,
     }),
-    [chats, hasMore, isLoading, filter, isDeleting, onDeleteChat, scrollContainer, loader]
+    [
+      chats,
+      hasMore,
+      isLoading,
+      filter,
+      isDeleting,
+      onDeleteChat,
+      isPinning,
+      onTogglePin,
+      scrollContainer,
+      loader,
+    ]
   );
 };
-
-

@@ -41,7 +41,7 @@ export async function getHistoryChats({
       .select()
       .from(chat)
       .where(whereClause)
-      .orderBy(desc(chat.updatedAt))
+      .orderBy(desc(chat.pinned), desc(chat.updatedAt))
       .limit(extendedLimit)
       .offset(offset);
 

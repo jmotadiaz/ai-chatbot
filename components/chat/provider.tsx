@@ -1,10 +1,12 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
-import { CHAT_MODELS,
+import {
+  CHAT_MODELS,
   defaultModel,
   defaultRagMaxResources,
-  defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
+  defaultWebSearchNumResults,
+} from "@/lib/features/foundation-model/config";
 import {
   UseChatResult,
   UseChatArgs,
@@ -47,6 +49,8 @@ const chatContext = createContext<UseChatResult>({
   setTools: () => {},
   availableModels: CHAT_MODELS,
   dataPart: undefined,
+  isNewChat: false,
+  preventChatPersistence: false,
 });
 
 export interface ChatProviderProps extends UseChatArgs {

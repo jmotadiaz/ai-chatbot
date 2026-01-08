@@ -27,6 +27,8 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
     setFilter,
     isDeleting,
     onDeleteChat,
+    isPinning,
+    onTogglePin,
     loader,
     scrollContainer,
   } = useChatHistory({
@@ -61,6 +63,8 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
               chat={chat}
               onDelete={onDeleteChat}
               isDeleting={isDeleting(chat.id)}
+              onTogglePin={onTogglePin}
+              isPinning={isPinning(chat.id)}
             />
             {hasMore &&
               chats.length >= ITEMS_TO_TRIGGER_PAGINATION &&
@@ -74,9 +78,9 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
           </Fragment>
         ))}
         {chats.length === 0 && !isLoading && (
-            <div className="text-center text-muted-foreground py-8">
-                No chats found.
-            </div>
+          <div className="text-center text-muted-foreground py-8">
+            No chats found.
+          </div>
         )}
         {hasMore && isLoading && (
           <li className="h-8 w-full flex items-center justify-center text-muted-foreground text-sm">

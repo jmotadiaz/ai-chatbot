@@ -66,6 +66,7 @@ export const chat = pgTable("Chat", {
   ragMaxResources: integer("ragMaxResources"),
   webSearchNumResults: integer("webSearchNumResults"),
   tools: varchar("tools", { length: 100 }).array(),
+  pinned: boolean("pinned").default(false).notNull(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

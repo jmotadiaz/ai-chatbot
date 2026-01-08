@@ -22,6 +22,7 @@ import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
   deleteChat as deleteDBChat,
   deleteMessageById,
+  getChatById,
   saveChat,
   saveMessages,
   updateChat,
@@ -67,8 +68,29 @@ export async function deleteChat(id: string) {
   try {
     await transaction(deleteDBChat({ id, userId: session.user.id }));
     revalidatePath("/");
+    revalidatePath("/chat/history");
   } catch (error) {
     console.error("Failed to delete chat:", error);
+  }
+}
+
+export async function togglePinChat(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    return;
+  }
+
+  try {
+    const dbChat = await getChatById({ id, userId: session.user.id });
+    if (!dbChat) return;
+
+    await transaction(
+      updateChat({ id, userId: session.user.id }, { pinned: !dbChat.pinned })
+    );
+    revalidatePath("/");
+    revalidatePath("/chat/history");
+  } catch (error) {
+    console.error("Failed to toggle pin chat:", error);
   }
 }
 
@@ -136,7 +158,7 @@ export async function processChatResponse({
         });
       const executedTools = new Set<Tool>(
         !!process.env.USE_MOCK_PROVIDERS ||
-          modelConfiguration.toolCalling === false
+        modelConfiguration.toolCalling === false
           ? TOOLS
           : []
       );
@@ -240,7 +262,6 @@ export async function processChatResponse({
               activeTools: [WEB_SEARCH_TOOL],
             };
           }
-
         },
       });
 
@@ -278,19 +299,18 @@ export async function processChatResponse({
               ) {
                 console.log("Saving chat and messages...", chatId);
                 const dbChatId = await getDb().transaction(async (tx) => {
-                  const updated =
-                    chatId
-                      ? await updateChat(
-                          { id: chatId, userId: user.id },
-                          {
-                            defaultModel: selectedModel,
-                            defaultTemperature: temperature,
-                            ragMaxResources: safeRagMaxResources,
-                            webSearchNumResults: safeWebSearchNumResults,
-                            tools,
-                          }
-                        )(tx)
-                      : undefined;
+                  const updated = chatId
+                    ? await updateChat(
+                        { id: chatId, userId: user.id },
+                        {
+                          defaultModel: selectedModel,
+                          defaultTemperature: temperature,
+                          ragMaxResources: safeRagMaxResources,
+                          webSearchNumResults: safeWebSearchNumResults,
+                          tools,
+                        }
+                      )(tx)
+                    : undefined;
 
                   const ensuredChat =
                     updated ??
