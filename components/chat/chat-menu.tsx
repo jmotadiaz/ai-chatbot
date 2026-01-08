@@ -71,7 +71,7 @@ export const ChatMenu: React.FC<{ chatId: string }> = ({ chatId }) => {
 
   return (
     <>
-      <Select.Container className="mr-2">
+      <Select.Container>
         <Button
           variant="icon"
           size="icon"
