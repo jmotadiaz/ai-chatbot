@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useTransition, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MoreVertical, Pin, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,11 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 export const ActiveChatMenu: React.FC = () => {
   const { chatId, isNewChat, preventChatPersistence } = useChatContext();
+  const searchParams = useSearchParams();
+  const paramChatId = searchParams.get("chatId");
 
-  const isPersisted = !isNewChat && !preventChatPersistence && chatId;
+  const isPersisted =
+    (!isNewChat || !!paramChatId) && !preventChatPersistence && chatId;
 
   if (!isPersisted) return null;
 
