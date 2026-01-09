@@ -29,6 +29,14 @@ export class HistoryComponent {
     });
   }
 
+  getPinButton(title: string): Locator {
+    // The pin button aria-label toggles between "Pin chat" and "Unpin chat"
+    // We can use a partial match or try to find either
+    return this.getChatItem(title).getByRole("button", {
+      name: /pin chat/i,
+    });
+  }
+
   async filter(text: string) {
     await this.filterInput.fill(text);
   }
@@ -39,6 +47,10 @@ export class HistoryComponent {
 
   async deleteChat(title: string) {
     await this.getDeleteButton(title).click();
+  }
+
+  async togglePinChat(title: string) {
+    await this.getPinButton(title).click();
   }
 
   async scrollToBottom() {

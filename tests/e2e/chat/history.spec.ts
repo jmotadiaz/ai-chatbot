@@ -142,4 +142,60 @@ test.describe("Chat History", () => {
     expect(olderIndex).not.toBe(-1);
     expect(newerIndex).toBeLessThan(olderIndex);
   });
+
+  test("should preserve updatedAt when pinning a chat", async ({
+    page,
+    db,
+    authenticatedUser,
+  }) => {
+    expect(authenticatedUser).toBeDefined();
+
+    const olderChat = {
+      title: "Older Chat For Pinning",
+      pinned: false,
+      updatedAt: new Date(Date.now() - 1000000), // Older
+      messages: [{ role: "user" as const, content: "Hello" }],
+    };
+    const newerChat = {
+      title: "Newer Chat Reference",
+      pinned: false,
+      updatedAt: new Date(Date.now()), // Newer
+      messages: [{ role: "user" as const, content: "Hi" }],
+    };
+
+    await db.addChats([olderChat, newerChat]);
+
+    await page.goto("/chat/history");
+    const history = new HistoryComponent(page.locator("body"));
+    await expect(history.pageTitle).toBeVisible();
+
+    // Initial Order: Newer, Older
+    let items = await history.historyList.getByRole("listitem").allTextContents();
+    let newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
+    let olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
+
+    expect(newerIndex).toBeLessThan(olderIndex);
+
+    // Pin the Older Chat
+    await history.togglePinChat("Older Chat For Pinning");
+
+    // Wait for network idle or just reload to be sure we are checking server state
+    await page.waitForTimeout(1000);
+    await page.reload();
+    await expect(history.pageTitle).toBeVisible();
+
+    // Verify Order is STILL: Newer, Older
+    // If bug existed, Older would have new updatedAt and might jump ahead of Newer (or stay same if we didn't fix sorting, but we did fix sorting in previous step).
+    // Wait, in previous step we fixed sorting to IGNORE pinned status.
+    // So if updatedAt updates to NOW, then Older becomes Newer!
+    // So "Older Chat" would become the NEWEST chat.
+    // So if bug exists (updatedAt changes), Older should be FIRST.
+    // If fix works (updatedAt preserved), Older should be SECOND.
+
+    items = await history.historyList.getByRole("listitem").allTextContents();
+    newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
+    olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
+
+    expect(newerIndex).toBeLessThan(olderIndex);
+  });
 });

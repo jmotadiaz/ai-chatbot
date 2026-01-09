@@ -75,6 +75,7 @@ export const updateChat =
         | "tools"
         | "projectId"
         | "pinned"
+        | "updatedAt"
       >
     >
   ): Transactional<Chat> =>
@@ -82,8 +83,8 @@ export const updateChat =
     const [updatedChat] = await tx
       .update(chat)
       .set({
-        ...partialChat,
         updatedAt: new Date(),
+        ...partialChat,
       })
       .where(and(eq(chat.id, id), eq(chat.userId, userId)))
       .returning();
