@@ -63,7 +63,10 @@ export const ChatNavigation: React.FC<ChatNavigationProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+      <div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+        data-testid="chat-navigation-wrapper"
+      >
         <div className="grid grid-cols-4 gap-2 w-[152px]">
           <div className="flex justify-center items-center w-8">
             {showTop && (

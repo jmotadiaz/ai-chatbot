@@ -2,7 +2,10 @@ import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
 config({
-  path: process.env.USE_MOCK_PROVIDERS ? ".env.test" : ".env.development.local",
+  path:
+    process.env.NEXT_PUBLIC_ENV === "test"
+      ? ".env.test"
+      : ".env.development.local",
 });
 
 export default defineConfig({

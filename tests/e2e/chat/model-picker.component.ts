@@ -10,9 +10,9 @@ export class ModelPickerComponent {
   readonly modelDropdown: Locator;
 
   constructor(container: Locator, id: string) {
-    this.modelPicker = container.locator(
-      `[role="combobox"][aria-controls="dropdown-${id}"]`
-    );
+    this.modelPicker = container
+      .locator(`[role="combobox"][aria-controls="dropdown-${id}"]`)
+      .first();
     this.modelDropdown = container.locator(`#dropdown-${id}`);
   }
 

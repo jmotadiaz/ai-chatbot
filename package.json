@@ -19,9 +19,9 @@
     "lint:fix": "eslint --fix . && npm run type:check",
     "type:check": "tsc --noEmit",
     "test": "npm run test:e2e",
-    "test:e2e": "npm run db:test:start && (playwright test $PLAYWRIGHT_ARGS; status=$?; npm run db:test:stop; exit $status)",
-    "test:e2e:ui": "npm run db:test:start && (playwright test --ui; status=$?; npm run db:test:stop; exit $status)",
-    "test:e2e:headed": "npm run db:test:start && (playwright test --headed; status=$?; npm run db:test:stop; exit $status)",
+    "test:e2e": "npm run db:test:start && trap 'npm run db:test:stop' EXIT && playwright test $PLAYWRIGHT_ARGS",
+    "test:e2e:ui": "npm run db:test:start && trap 'npm run db:test:stop' EXIT && playwright test --ui $PLAYWRIGHT_ARGS",
+    "test:e2e:headed": "npm run db:test:start && trap 'npm run db:test:stop' EXIT && playwright test --headed $PLAYWRIGHT_ARGS",
     "test:e2e:jules": "sudo docker compose  -f docker-compose.test.yml down && sudo docker compose -f docker-compose.test.yml up -d && playwright test",
     "prepare": "husky"
   },

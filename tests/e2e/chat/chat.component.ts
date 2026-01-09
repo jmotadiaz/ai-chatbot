@@ -32,8 +32,8 @@ export class ChatComponent {
   constructor(container: Locator) {
     this.container = container;
 
-    this.chatInput = container.locator("[data-testid='chat-input']");
-    this.submitButton = container.getByLabel("Send message");
+    this.chatInput = container.locator("[data-testid='chat-input']").first();
+    this.submitButton = container.getByLabel("Send message").first();
     this.messagesContainer = container
       .locator('[data-testid="messages"], .messages, div')
       .filter({ hasText: /user|assistant/i })

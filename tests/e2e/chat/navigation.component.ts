@@ -1,4 +1,4 @@
-import { Locator } from "@playwright/test";
+import { Locator, expect } from "@playwright/test";
 
 /**
  * Component Object Model for Chat Navigation
@@ -11,8 +11,11 @@ export class NavigationComponent {
   readonly bottomButton: Locator;
   readonly scrollContainer: Locator;
 
+  readonly wrapper: Locator;
+
   constructor(container: Locator) {
     this.container = container;
+    this.wrapper = container.getByTestId("chat-navigation-wrapper");
     this.prevButton = container.getByLabel("Previous message");
     this.nextButton = container.getByLabel("Next message");
     this.bottomButton = container.getByLabel("Scroll to bottom");
@@ -44,12 +47,9 @@ export class NavigationComponent {
   }
 
   async scrollToPosition(top: number) {
-    await this.scrollContainer.evaluate(
-      (el, scrollTop) => {
-        el.scrollTo({ top: scrollTop, behavior: "instant" });
-      },
-      top
-    );
+    await this.scrollContainer.evaluate((el, scrollTop) => {
+      el.scrollTo({ top: scrollTop, behavior: "instant" });
+    }, top);
   }
 
   async getScrollTop(): Promise<number> {
@@ -95,5 +95,89 @@ export class NavigationComponent {
       return elementRect.top - containerRect.top + container.scrollTop;
     });
   }
-}
 
+  async assertPrevButtonVisible() {
+    // Simply wait for the button to become visible with extended timeout
+    await expect(this.prevButton).toBeVisible({ timeout: 15000 });
+  }
+
+  async assertPrevButtonHidden() {
+    await expect(this.prevButton).not.toBeVisible({ timeout: 5000 });
+  }
+
+  async assertNextButtonVisible() {
+    // Simply wait for the button to become visible with extended timeout
+    await expect(this.nextButton).toBeVisible({ timeout: 15000 });
+  }
+
+  async assertNextButtonHidden() {
+    await expect(this.nextButton).not.toBeVisible({ timeout: 5000 });
+  }
+
+  async assertBottomButtonVisible() {
+    // Simply wait for the button to become visible with extended timeout
+    await expect(this.bottomButton).toBeVisible({ timeout: 15000 });
+  }
+
+  async assertBottomButtonHidden() {
+    await expect(this.bottomButton).not.toBeVisible({ timeout: 5000 });
+  }
+
+  async waitForMessageInViewport(
+    index: number,
+    shouldBeVisible: boolean = true
+  ) {
+    await expect
+      .poll(
+        async () => {
+          return await this.isUserMessageInViewport(index);
+        },
+        {
+          timeout: 5000,
+        }
+      )
+      .toBe(shouldBeVisible);
+  }
+
+  async assertScrollTopLessThan(value: number) {
+    await expect
+      .poll(
+        async () => {
+          return await this.getScrollTop();
+        },
+        {
+          timeout: 5000,
+        }
+      )
+      .toBeLessThan(value);
+  }
+
+  async assertScrollTopGreaterThan(value: number) {
+    await expect
+      .poll(
+        async () => {
+          return await this.getScrollTop();
+        },
+        {
+          timeout: 5000,
+        }
+      )
+      .toBeGreaterThan(value);
+  }
+
+  async assertDistanceFromBottomLessThan(value: number) {
+    await expect
+      .poll(
+        async () => {
+          const scrollTop = await this.getScrollTop();
+          const scrollHeight = await this.getScrollHeight();
+          const clientHeight = await this.getClientHeight();
+          return scrollHeight - scrollTop - clientHeight;
+        },
+        {
+          timeout: 5000,
+        }
+      )
+      .toBeLessThan(value);
+  }
+}

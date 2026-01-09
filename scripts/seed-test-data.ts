@@ -123,7 +123,10 @@ async function upsertSeedProject(tx: Tx, userId: string) {
 
 async function main() {
   config({
-    path: process.env.USE_MOCK_PROVIDERS ? ".env.test" : ".env.development.local",
+    path:
+      process.env.NEXT_PUBLIC_ENV === "test"
+        ? ".env.test"
+        : ".env.development.local",
   });
 
   const args = parseArgs(process.argv.slice(2));
@@ -157,14 +160,18 @@ async function main() {
         throw new Error("Total messages per chat must be > 0");
       }
 
-      const safeProjectChats = Math.max(0, Math.min(args.projectChats, args.chats));
+      const safeProjectChats = Math.max(
+        0,
+        Math.min(args.projectChats, args.chats)
+      );
 
       const createdChatIds: string[] = [];
 
       for (let i = 0; i < args.chats; i++) {
         const chatId = randomUUID();
         const title = faker.lorem.words(5);
-        const assignedProjectId = i < safeProjectChats ? seedProject.id : undefined;
+        const assignedProjectId =
+          i < safeProjectChats ? seedProject.id : undefined;
 
         await tx.insert(chat).values({
           id: chatId,
@@ -185,7 +192,10 @@ async function main() {
         }> = [];
 
         // Interleave user/assistant as much as possible
-        const maxTurns = Math.max(args.userMessagesPerChat, args.assistantMessagesPerChat);
+        const maxTurns = Math.max(
+          args.userMessagesPerChat,
+          args.assistantMessagesPerChat
+        );
         let userLeft = args.userMessagesPerChat;
         let assistantLeft = args.assistantMessagesPerChat;
 
@@ -241,5 +251,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
-

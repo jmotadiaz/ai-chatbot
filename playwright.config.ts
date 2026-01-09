@@ -93,8 +93,8 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 240 * 1000,
     env: {
-      USE_MOCK_PROVIDERS: "1",
       DISABLE_DEV_INDICATOR: "1",
+      NEXT_PUBLIC_ENV: "test",
     },
   },
 });

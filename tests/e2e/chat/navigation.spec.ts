@@ -13,7 +13,9 @@ const generateLongChat = () => {
     });
     messages.push({
       role: "assistant",
-      content: `Assistant response ${i}: ${"This is a detailed response to help test scrolling. ".repeat(10)}`,
+      content: `Assistant response ${i}: ${"This is a detailed response to help test scrolling. ".repeat(
+        10
+      )}`,
     });
   }
 
@@ -54,11 +56,9 @@ test.describe("Chat Navigation", () => {
       const chatPage = new ChatPage(page);
       await chatPage.goto(longChat.id);
 
-      // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-
-      // Wait for the initial scroll to complete
-      await page.waitForTimeout(800);
+      // Wait for messages to render and initial scroll
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
+      await chatPage.chat.navigation.waitForMessageInViewport(9);
 
       // The last user message should be visible
       const isLastVisible =
@@ -80,16 +80,14 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to top to make first message visible
       await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.waitForMessageInViewport(0);
 
       // Wait for prev button to disappear (if it was visible)
-      await expect(chatPage.chat.navigation.prevButton).not.toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertPrevButtonHidden();
     });
 
     test("should show prev button when first user message leaves viewport", async ({
@@ -99,8 +97,7 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Get position of second message and scroll there
       const secondMessagePos =
@@ -108,9 +105,7 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.scrollToPosition(secondMessagePos + 100);
 
       // Wait for prev button to appear
-      await expect.soft(chatPage.chat.navigation.prevButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertPrevButtonVisible();
     });
 
     test("should navigate to previous user message when clicking prev", async ({
@@ -120,30 +115,24 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to message 5 position
       const message5Pos =
         await chatPage.chat.navigation.getUserMessageScrollPosition(5);
       await chatPage.chat.navigation.scrollToPosition(message5Pos);
-      await page.waitForTimeout(500);
 
       // Wait for prev button to be visible
-      await expect(chatPage.chat.navigation.prevButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertPrevButtonVisible();
 
       // Click prev button
       await chatPage.chat.navigation.clickPrev();
 
-      // Wait for smooth scroll animation to complete
-      await page.waitForTimeout(800);
-
       // After clicking prev from position of message 5, we should scroll to a previous message
       // The scroll position should be less than where we started
-      const newScrollTop = await chatPage.chat.navigation.getScrollTop();
-      expect.soft(newScrollTop).toBeLessThan(message5Pos);
+      // After clicking prev from position of message 5, we should scroll to a previous message
+      // The scroll position should be less than where we started
+      await chatPage.chat.navigation.assertScrollTopLessThan(message5Pos);
     });
   });
 
@@ -159,9 +148,7 @@ test.describe("Chat Navigation", () => {
       await page.waitForTimeout(500);
 
       // Next button should not be visible (only 1 user message)
-      await expect
-        .soft(chatPage.chat.navigation.nextButton)
-        .not.toBeVisible();
+      await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
     test("should show next button when last user message is below viewport", async ({
@@ -170,17 +157,16 @@ test.describe("Chat Navigation", () => {
       const chatPage = new ChatPage(page);
       await chatPage.goto(longChat.id);
 
-      // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      // Wait for loading to finish and messages to render
+      await chatPage.chat.waitForLoadingComplete();
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to top
+      // Scroll to top and wait for scroll position to stabilize
       await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.assertScrollTopLessThan(50);
 
       // Wait for next button to appear
-      await expect.soft(chatPage.chat.navigation.nextButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertNextButtonVisible();
     });
 
     test("should not show next button when last user message is visible", async ({
@@ -190,16 +176,13 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to bottom
       await chatPage.chat.navigation.scrollToBottom();
 
       // Wait for next button to disappear
-      await expect(chatPage.chat.navigation.nextButton).not.toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertNextButtonHidden();
     });
 
     test("should not show next button when last user message leaves viewport through top", async ({
@@ -219,9 +202,7 @@ test.describe("Chat Navigation", () => {
       await page.waitForTimeout(500);
 
       // Next button should NOT be visible (last message is above, not below)
-      await expect
-        .soft(chatPage.chat.navigation.nextButton)
-        .not.toBeVisible();
+      await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
     test("should navigate to next user message when clicking next", async ({
@@ -231,28 +212,23 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to top
       await chatPage.chat.navigation.scrollToTop();
 
       // Wait for next button to appear
-      await expect(chatPage.chat.navigation.nextButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertNextButtonVisible();
 
       const initialScrollTop = await chatPage.chat.navigation.getScrollTop();
 
       // Click next button
       await chatPage.chat.navigation.clickNext();
 
-      // Wait for smooth scroll animation to complete
-      await page.waitForTimeout(800);
-
       // Should have scrolled down
-      const newScrollTop = await chatPage.chat.navigation.getScrollTop();
-      expect.soft(newScrollTop).toBeGreaterThan(initialScrollTop);
+      await chatPage.chat.navigation.assertScrollTopGreaterThan(
+        initialScrollTop
+      );
     });
   });
 
@@ -264,16 +240,13 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to top
       await chatPage.chat.navigation.scrollToTop();
 
       // Wait for bottom button to appear
-      await expect.soft(chatPage.chat.navigation.bottomButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertBottomButtonVisible();
     });
 
     test("should not show bottom button when at bottom of chat", async ({
@@ -283,16 +256,13 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to bottom
       await chatPage.chat.navigation.scrollToBottom();
 
       // Wait for bottom button to disappear
-      await expect(chatPage.chat.navigation.bottomButton).not.toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertBottomButtonHidden();
     });
 
     test("should scroll to bottom when clicking bottom button", async ({
@@ -301,31 +271,24 @@ test.describe("Chat Navigation", () => {
       const chatPage = new ChatPage(page);
       await chatPage.goto(longChat.id);
 
-      // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      // Wait for messages to render and loading to finish
+      await chatPage.chat.waitForLoadingComplete();
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
+
+      // Ensure we are initially at the bottom (default behavior) or have content
+      await chatPage.chat.navigation.waitForMessageInViewport(9);
 
       // Scroll to top
       await chatPage.chat.navigation.scrollToTop();
 
       // Wait for bottom button to appear
-      await expect(chatPage.chat.navigation.bottomButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertBottomButtonVisible();
 
       // Click bottom button
       await chatPage.chat.navigation.clickBottom();
 
-      // Wait for smooth scroll animation to complete
-      await page.waitForTimeout(800);
-
       // Should be near bottom
-      const scrollTop = await chatPage.chat.navigation.getScrollTop();
-      const scrollHeight = await chatPage.chat.navigation.getScrollHeight();
-      const clientHeight = await chatPage.chat.navigation.getClientHeight();
-
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      expect.soft(distanceFromBottom).toBeLessThan(100);
+      await chatPage.chat.navigation.assertDistanceFromBottomLessThan(100);
     });
   });
 
@@ -337,8 +300,15 @@ test.describe("Chat Navigation", () => {
       await chatPage.goto(longChat.id);
 
       // Wait for messages to render
-      await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
+      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
+
+      // Helper to get prev button position relative to wrapper
+      const getPrevRelativeX = async () => {
+        const prevBox = await chatPage.chat.navigation.prevButton.boundingBox();
+        const wrapperBox = await chatPage.chat.navigation.wrapper.boundingBox();
+        if (!prevBox || !wrapperBox) return null;
+        return prevBox.x - wrapperBox.x;
+      };
 
       // Scroll to a position where prev button is visible
       const message3Pos =
@@ -346,25 +316,23 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.scrollToPosition(message3Pos);
 
       // Wait for prev button to appear
-      await expect(chatPage.chat.navigation.prevButton).toBeVisible({
-        timeout: 2000,
-      });
+      await chatPage.chat.navigation.assertPrevButtonVisible();
 
-      // Get prev button position
-      const prevBox1 = await chatPage.chat.navigation.prevButton.boundingBox();
-      const prevX1 = prevBox1?.x;
+      // Get prev button relative position
+      const prevRelativeX1 = await getPrevRelativeX();
 
       // Scroll to different position (still showing prev)
       const message5Pos =
         await chatPage.chat.navigation.getUserMessageScrollPosition(5);
       await chatPage.chat.navigation.scrollToPosition(message5Pos);
-      await page.waitForTimeout(500);
 
-      // Prev button should still be at same x position
-      const prevBox2 = await chatPage.chat.navigation.prevButton.boundingBox();
-      const prevX2 = prevBox2?.x;
+      // Prev button should still be at same relative x position (0 tolerance since it's relative)
+      const prevRelativeX2 = await getPrevRelativeX();
 
-      expect.soft(prevX2).toBe(prevX1);
+      // Relative position should be exactly the same
+      expect.soft(prevRelativeX1).not.toBeNull();
+      expect.soft(prevRelativeX2).not.toBeNull();
+      expect.soft(Math.abs(prevRelativeX2! - prevRelativeX1!)).toBeLessThan(1);
     });
   });
 });

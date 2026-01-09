@@ -1,4 +1,5 @@
 "use client";
+import { MotionConfig } from "motion/react";
 import React, {
   useCallback,
   useContext,
@@ -22,7 +23,23 @@ export const Providers: React.FC<ProvidersProps> = ({ children }) => {
         enableSystem
         defaultTheme="system"
       >
-        {children}
+        <MotionConfig
+          transition={
+            process.env.NEXT_PUBLIC_ENV === "test" ? { duration: 0 } : undefined
+          }
+        >
+          {process.env.NEXT_PUBLIC_ENV === "test" && (
+            <style>
+              {`
+                *, *::before, *::after {
+                  transition: none !important;
+                  animation: none !important;
+                }
+              `}
+            </style>
+          )}
+          {children}
+        </MotionConfig>
       </ThemeProvider>
     </SessionProvider>
   );

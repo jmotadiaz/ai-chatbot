@@ -157,7 +157,7 @@ export async function processChatResponse({
           tools: selectedTools,
         });
       const executedTools = new Set<Tool>(
-        !!process.env.USE_MOCK_PROVIDERS ||
+        !!(process.env.NEXT_PUBLIC_ENV === "test") ||
         modelConfiguration.toolCalling === false
           ? TOOLS
           : []
