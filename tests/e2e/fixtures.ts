@@ -19,6 +19,8 @@ type NewChat = {
     role: "user" | "assistant";
     content: string;
   }>;
+  pinned?: boolean;
+  updatedAt?: Date;
 };
 
 interface TestFixtures {
@@ -59,6 +61,8 @@ export const test = base.extend<TestFixtures>({
             .values({
               title: newChat.title,
               userId: testUser.id,
+              pinned: newChat.pinned,
+              updatedAt: newChat.updatedAt,
             })
             .returning();
 

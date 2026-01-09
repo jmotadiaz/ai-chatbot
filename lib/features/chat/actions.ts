@@ -85,7 +85,10 @@ export async function togglePinChat(id: string) {
     if (!dbChat) return;
 
     await transaction(
-      updateChat({ id, userId: session.user.id }, { pinned: !dbChat.pinned })
+      updateChat(
+        { id, userId: session.user.id },
+        { pinned: !dbChat.pinned, updatedAt: dbChat.updatedAt }
+      )
     );
     revalidatePath("/");
     revalidatePath("/chat/history");

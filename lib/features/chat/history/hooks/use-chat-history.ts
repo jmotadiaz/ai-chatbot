@@ -132,8 +132,8 @@ export const useChatHistory = ({
               .map((chat) =>
                 chat.id === chatId ? { ...chat, pinned: !chat.pinned } : chat
               )
+              // Only sort by updatedAt to keep consistent with server query, ignoring pinned status
               .sort((a, b) => {
-                if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
                 return (
                   new Date(b.updatedAt).getTime() -
                   new Date(a.updatedAt).getTime()
