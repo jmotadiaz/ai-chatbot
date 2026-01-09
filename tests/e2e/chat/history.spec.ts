@@ -1,6 +1,6 @@
 import { test, expect } from "../fixtures";
 import { ChatPage } from "./page";
-import { HistoryComponent } from "./history.component";
+import { HistoryPage } from "./history-page";
 
 test.describe("Chat History", () => {
   test("should navigate to history page from sidebar", async ({
@@ -28,8 +28,8 @@ test.describe("Chat History", () => {
 
     await page.waitForURL("/chat/history");
 
-    const history = new HistoryComponent(page.locator("body"));
-    await expect(history.pageTitle).toBeVisible();
+    const historyPage = new HistoryPage(page);
+    await expect(historyPage.pageTitle).toBeVisible();
   });
 
   test("should list chats, filter and delete", async ({
@@ -52,31 +52,33 @@ test.describe("Chat History", () => {
     ];
     await db.addChats(chats);
 
-    await page.goto("/chat/history");
-    const history = new HistoryComponent(page.locator("body"));
+    const historyPage = new HistoryPage(page);
+    await historyPage.goto();
 
     // Wait for page to load
-    await expect(history.pageTitle).toBeVisible();
+    await expect(historyPage.pageTitle).toBeVisible();
 
-    await history.assertChatVisible(targetTitle);
-    await history.assertChatVisible(otherTitle);
+    await historyPage.assertChatVisible(targetTitle);
+    await historyPage.assertChatVisible(otherTitle);
 
     // Filter
-    await history.filter("Special Unique");
+    await historyPage.filter("Special Unique");
 
     // Wait for debounce and verify filter works
-    await history.assertChatVisible(targetTitle);
-    await history.assertChatHidden(otherTitle);
+    await historyPage.assertChatVisible(targetTitle);
+    await historyPage.assertChatHidden(otherTitle);
 
     // Clear filter
-    await history.clearFilter();
-    await history.assertChatVisible(otherTitle);
+    await historyPage.clearFilter();
+    await historyPage.assertChatVisible(otherTitle);
 
     // Delete
-    await history.deleteChat(targetTitle);
+    await historyPage.deleteChat(targetTitle);
+    // Confirm delete
+    await historyPage.confirmModal.confirm();
 
-    await history.assertChatHidden(targetTitle);
-    await history.assertChatVisible(otherTitle);
+    await historyPage.assertChatHidden(targetTitle);
+    await historyPage.assertChatVisible(otherTitle);
   });
 
   test("should support infinite scroll", async ({
@@ -92,18 +94,18 @@ test.describe("Chat History", () => {
     }));
     await db.addChats(chats);
 
-    await page.goto("/chat/history");
-    const history = new HistoryComponent(page.locator("body"));
+    const historyPage = new HistoryPage(page);
+    await historyPage.goto();
 
     // Wait for page to load
-    await expect(history.pageTitle).toBeVisible();
-    await expect(history.historyList).toBeVisible();
+    await expect(historyPage.pageTitle).toBeVisible();
+    await expect(historyPage.historyList).toBeVisible();
 
     // Scroll to bottom
-    await history.scrollToBottom();
+    await historyPage.scrollToBottom();
 
     // Wait for more items to load (initial: 20, after scroll: 25)
-    await history.assertItemCountGreaterThan(20);
+    await historyPage.assertItemCountGreaterThan(20);
   });
 
   test("should NOT sort pinned chats to top", async ({
@@ -127,12 +129,12 @@ test.describe("Chat History", () => {
 
     await db.addChats([olderPinnedChat, newerUnpinnedChat]);
 
-    await page.goto("/chat/history");
-    const history = new HistoryComponent(page.locator("body"));
-    await expect(history.pageTitle).toBeVisible();
+    const historyPage = new HistoryPage(page);
+    await historyPage.goto();
+    await expect(historyPage.pageTitle).toBeVisible();
 
     // Verify order: Newer Unpinned first, then Older Pinned
-    const items = await history.historyList.getByRole("listitem").allTextContents();
+    const items = await historyPage.historyList.getByRole("listitem").allTextContents();
 
     // Check if at least these two exist and are in correct relative order
     const newerIndex = items.findIndex(t => t.includes("Newer Unpinned Chat"));
@@ -165,23 +167,23 @@ test.describe("Chat History", () => {
 
     await db.addChats([olderChat, newerChat]);
 
-    await page.goto("/chat/history");
-    const history = new HistoryComponent(page.locator("body"));
-    await expect(history.pageTitle).toBeVisible();
+    const historyPage = new HistoryPage(page);
+    await historyPage.goto();
+    await expect(historyPage.pageTitle).toBeVisible();
 
     // Initial Order: Newer, Older
-    let items = await history.historyList.getByRole("listitem").allTextContents();
+    let items = await historyPage.historyList.getByRole("listitem").allTextContents();
     let newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
     let olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
 
     expect(newerIndex).toBeLessThan(olderIndex);
 
     // Pin the Older Chat
-    await history.togglePinChat("Older Chat For Pinning");
+    await historyPage.togglePinChat("Older Chat For Pinning");
 
     // Verify client-side state immediately (no reload)
     // Order should NOT change.
-    items = await history.historyList.getByRole("listitem").allTextContents();
+    items = await historyPage.historyList.getByRole("listitem").allTextContents();
     newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
     olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
     expect(newerIndex).toBeLessThan(olderIndex);
@@ -189,17 +191,9 @@ test.describe("Chat History", () => {
     // Wait for network idle or just reload to be sure we are checking server state
     await page.waitForTimeout(1000);
     await page.reload();
-    await expect(history.pageTitle).toBeVisible();
+    await expect(historyPage.pageTitle).toBeVisible();
 
-    // Verify Order is STILL: Newer, Older
-    // If bug existed, Older would have new updatedAt and might jump ahead of Newer (or stay same if we didn't fix sorting, but we did fix sorting in previous step).
-    // Wait, in previous step we fixed sorting to IGNORE pinned status.
-    // So if updatedAt updates to NOW, then Older becomes Newer!
-    // So "Older Chat" would become the NEWEST chat.
-    // So if bug exists (updatedAt changes), Older should be FIRST.
-    // If fix works (updatedAt preserved), Older should be SECOND.
-
-    items = await history.historyList.getByRole("listitem").allTextContents();
+    items = await historyPage.historyList.getByRole("listitem").allTextContents();
     newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
     olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
 
