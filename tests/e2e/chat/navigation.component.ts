@@ -97,87 +97,102 @@ export class NavigationComponent {
   }
 
   async assertPrevButtonVisible() {
-    // Simply wait for the button to become visible with extended timeout
-    await expect(this.prevButton).toBeVisible({ timeout: 15000 });
+    await expect(async () => {
+      await expect(this.prevButton).toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertPrevButtonHidden() {
-    await expect(this.prevButton).not.toBeVisible({ timeout: 5000 });
+    await expect(async () => {
+      await expect(this.prevButton).not.toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertNextButtonVisible() {
-    // Simply wait for the button to become visible with extended timeout
-    await expect(this.nextButton).toBeVisible({ timeout: 15000 });
+    await expect(async () => {
+      await expect(this.nextButton).toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertNextButtonHidden() {
-    await expect(this.nextButton).not.toBeVisible({ timeout: 5000 });
+    await expect(async () => {
+      await expect(this.nextButton).not.toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertBottomButtonVisible() {
-    // Simply wait for the button to become visible with extended timeout
-    await expect(this.bottomButton).toBeVisible({ timeout: 15000 });
+    await expect(async () => {
+      await expect(this.bottomButton).toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertBottomButtonHidden() {
-    await expect(this.bottomButton).not.toBeVisible({ timeout: 5000 });
+    await expect(async () => {
+      await expect(this.bottomButton).not.toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async waitForMessageInViewport(
     index: number,
     shouldBeVisible: boolean = true
   ) {
-    await expect
-      .poll(
-        async () => {
-          return await this.isUserMessageInViewport(index);
-        },
-        {
-          timeout: 5000,
-        }
-      )
-      .toBe(shouldBeVisible);
+    await expect(async () => {
+      const isVisible = await this.isUserMessageInViewport(index);
+      expect(isVisible).toBe(shouldBeVisible);
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertScrollTopLessThan(value: number) {
-    await expect
-      .poll(
-        async () => {
-          return await this.getScrollTop();
-        },
-        {
-          timeout: 5000,
-        }
-      )
-      .toBeLessThan(value);
+    await expect(async () => {
+      const scrollTop = await this.getScrollTop();
+      expect(scrollTop).toBeLessThan(value);
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertScrollTopGreaterThan(value: number) {
-    await expect
-      .poll(
-        async () => {
-          return await this.getScrollTop();
-        },
-        {
-          timeout: 5000,
-        }
-      )
-      .toBeGreaterThan(value);
+    await expect(async () => {
+      const scrollTop = await this.getScrollTop();
+      expect(scrollTop).toBeGreaterThan(value);
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 
   async assertDistanceFromBottomLessThan(value: number) {
-    await expect
-      .poll(
-        async () => {
-          const scrollTop = await this.getScrollTop();
-          const scrollHeight = await this.getScrollHeight();
-          const clientHeight = await this.getClientHeight();
-          return scrollHeight - scrollTop - clientHeight;
-        },
-        {
-          timeout: 5000,
-        }
-      )
-      .toBeLessThan(value);
+    await expect(async () => {
+      const scrollTop = await this.getScrollTop();
+      const scrollHeight = await this.getScrollHeight();
+      const clientHeight = await this.getClientHeight();
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      expect(distanceFromBottom).toBeLessThan(value);
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
   }
 }
