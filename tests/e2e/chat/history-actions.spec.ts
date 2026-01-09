@@ -34,7 +34,7 @@ test.describe("Chat History Actions", () => {
     // Verify Modal Appears
     const modal = page.locator('text=Delete Chat?');
     await expect(modal).toBeVisible();
-    await expect(page.getByText("Are you sure you want to delete this chat?")).toBeVisible();
+    await expect(page.getByText(`Are you sure you want to delete the chat "${chatTitle}"?`)).toBeVisible();
 
     // Click Cancel
     await page.getByRole('button', { name: 'Cancel' }).click();

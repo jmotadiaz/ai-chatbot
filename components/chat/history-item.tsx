@@ -69,7 +69,7 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = memo(
           onConfirm={() => onDelete(chat.id)}
           isLoading={isDeleting}
           title="Delete Chat?"
-          message="Are you sure you want to delete this chat? This action cannot be undone."
+          message={`Are you sure you want to delete the chat "${chat.title}"? This action cannot be undone.`}
         />
       </>
     );
