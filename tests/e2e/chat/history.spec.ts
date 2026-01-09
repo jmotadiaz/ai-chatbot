@@ -179,6 +179,13 @@ test.describe("Chat History", () => {
     // Pin the Older Chat
     await history.togglePinChat("Older Chat For Pinning");
 
+    // Verify client-side state immediately (no reload)
+    // Order should NOT change.
+    items = await history.historyList.getByRole("listitem").allTextContents();
+    newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
+    olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
+    expect(newerIndex).toBeLessThan(olderIndex);
+
     // Wait for network idle or just reload to be sure we are checking server state
     await page.waitForTimeout(1000);
     await page.reload();
