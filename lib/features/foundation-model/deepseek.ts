@@ -7,10 +7,11 @@ export const DEEPSEEK_CONFIG = {
     company: "deepseek",
     temperature: 0.6,
   },
-  "Deepseek R1": {
-    model: providers.gateway("deepseek/deepseek-r1"),
+  "Deepseek Reasoner": {
+    model: providers.deepseek("deepseek-reasoner"),
     company: "deepseek",
     reasoning: true,
+    toolCalling: false,
     temperature: 0.6,
     topP: 0.95,
   },
