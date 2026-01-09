@@ -17,7 +17,7 @@ export class HeaderComponent {
       container,
       "header-model-picker"
     );
-    this.sidebarToggleButton = container.getByLabel("Toggle sidebar");
+    this.sidebarToggleButton = container.getByLabel("Toggle sidebar").first();
   }
 
   async toggleSidebar() {

@@ -1,26 +1,30 @@
 import { test, expect } from "../fixtures";
+import { ChatPage } from "./page";
+import { HistoryComponent } from "./history.component";
 
-test.describe.skip("Chat History", () => {
-  // Use authenticatedUser fixture to auto-login
-  test.use({ storageState: { cookies: [], origins: [] } }); // Reset state if needed, but fixtures handle it
-
+test.describe("Chat History", () => {
   test("should navigate to history page from sidebar", async ({ page, db }) => {
-    // Navigate to home after login (handled by fixture, but we might need to go to / explicitly)
-    await page.goto("/");
-
-    // Create some chats to ensure list is visible
-    // db.addChats expects title and messages array
+    // Create some chats to ensure sidebar chat list is visible
     const chats = Array.from({ length: 5 }).map((_, i) => ({
       title: `Chat Title ${i}`,
       messages: [{ role: "user" as const, content: "Hello" }],
     }));
     await db.addChats(chats);
-    await page.reload();
 
-    await expect(page.getByText("Chats")).toBeVisible();
+    const chatPage = new ChatPage(page);
+    await chatPage.goto();
+
+    // Open sidebar
+    await chatPage.header.toggleSidebar();
+
+    // Wait for sidebar chat list to load and click "See all"
+    await expect(page.getByText("See all")).toBeVisible();
     await page.getByText("See all").click();
+
     await page.waitForURL("/chat/history");
-    await expect(page.getByText("Chat History")).toBeVisible();
+
+    const history = new HistoryComponent(page.locator("body"));
+    await expect(history.pageTitle).toBeVisible();
   });
 
   test("should list chats, filter and delete", async ({ page, db }) => {
@@ -39,75 +43,51 @@ test.describe.skip("Chat History", () => {
     await db.addChats(chats);
 
     await page.goto("/chat/history");
+    const history = new HistoryComponent(page.locator("body"));
 
-    await expect(page.getByText(targetTitle)).toBeVisible();
-    await expect(page.getByText(otherTitle)).toBeVisible();
+    // Wait for page to load
+    await expect(history.pageTitle).toBeVisible();
+
+    await history.assertChatVisible(targetTitle);
+    await history.assertChatVisible(otherTitle);
 
     // Filter
-    await page.getByPlaceholder("Filter chats...").fill("Special Unique");
+    await history.filter("Special Unique");
 
-    // Wait for debounce and refresh
-    await expect(page.getByText(targetTitle)).toBeVisible();
-    await expect(page.getByText(otherTitle)).not.toBeVisible();
+    // Wait for debounce and verify filter works
+    await history.assertChatVisible(targetTitle);
+    await history.assertChatHidden(otherTitle);
 
     // Clear filter
-    await page.getByPlaceholder("Filter chats...").fill("");
-    await expect(page.getByText(otherTitle)).toBeVisible();
+    await history.clearFilter();
+    await history.assertChatVisible(otherTitle);
 
     // Delete
-    const row = page.locator("li").filter({ hasText: targetTitle });
-    await row.getByRole("button", { name: `Delete chat ${targetTitle}` }).click();
+    await history.deleteChat(targetTitle);
 
-    await expect(page.getByText(targetTitle)).not.toBeVisible();
-    await expect(page.getByText(otherTitle)).toBeVisible();
+    await history.assertChatHidden(targetTitle);
+    await history.assertChatVisible(otherTitle);
   });
 
   test("should support infinite scroll", async ({ page, db }) => {
-    // create 25 chats
-    // Note: addChats transaction might be fast, timestamps might be close.
-    // The sorting is by updatedAt.
-    // We should ensure enough variation or just trust implicit order of insertion/update?
-    // addChats inserts sequentially in transaction.
-
+    // Create 25 chats
     const chats = Array.from({ length: 25 }).map((_, i) => ({
       title: `History Chat ${i}`,
       messages: [{ role: "user" as const, content: "Hello" }],
     }));
-
-    // Insert them in reverse order or ensure timestamps?
-    // The db fixture doesn't let us set createdAt easily.
-    // But latest inserted will likely be last updated.
-    // If we want "History Chat 0" to be newest, we should insert it last.
-    // Or we just check that we can find them all.
-
-    // Let's insert them one by one to ensure timestamp diffs if needed?
-    // Actually addChats does a loop in transaction. Postgres commit time might be same?
-    // But `returning()` and then next insert...
-    // Let's just assume standard sort.
-
     await db.addChats(chats);
 
     await page.goto("/chat/history");
+    const history = new HistoryComponent(page.locator("body"));
 
-    // We expect some to be visible.
+    // Wait for page to load
+    await expect(history.pageTitle).toBeVisible();
+    await expect(history.historyList).toBeVisible();
+
     // Scroll to bottom
-    const list = page.locator('ul[aria-label="Chat history list"]');
-    await expect(list).toBeVisible();
+    await history.scrollToBottom();
 
-    // Scroll
-    await list.evaluate((el) => el.scrollTop = el.scrollHeight);
-
-    // Wait for more to load.
-    // Since we don't control exact sort easily without mocking db time,
-    // just verifying that we can scroll and see more items or specific count logic.
-
-    // We can check that the list has grown.
-    // Initial count should be 20.
-    // After scroll, should be 25.
-
-    await expect(async () => {
-        const count = await list.locator("li").count();
-        expect(count).toBeGreaterThan(20);
-    }).toPass();
+    // Wait for more items to load (initial: 20, after scroll: 25)
+    await history.assertItemCountGreaterThan(20);
   });
 });

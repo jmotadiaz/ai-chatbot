@@ -1,0 +1,83 @@
+import { Locator, expect } from "@playwright/test";
+
+/**
+ * Component Object Model for Chat History page
+ * Encapsulates history page interactions and elements
+ */
+export class HistoryComponent {
+  readonly container: Locator;
+  readonly historyList: Locator;
+  readonly filterInput: Locator;
+  readonly pageTitle: Locator;
+
+  constructor(page: Locator) {
+    this.container = page;
+    this.historyList = page.locator('ul[aria-label="Chat history list"]');
+    this.filterInput = page.getByPlaceholder("Filter chats...");
+    this.pageTitle = page
+      .getByRole("heading", { name: "Chat History" })
+      .first();
+  }
+
+  getChatItem(title: string): Locator {
+    return this.historyList.locator("li").filter({ hasText: title });
+  }
+
+  getDeleteButton(title: string): Locator {
+    return this.getChatItem(title).getByRole("button", {
+      name: `Delete chat ${title}`,
+    });
+  }
+
+  async filter(text: string) {
+    await this.filterInput.fill(text);
+  }
+
+  async clearFilter() {
+    await this.filterInput.fill("");
+  }
+
+  async deleteChat(title: string) {
+    await this.getDeleteButton(title).click();
+  }
+
+  async scrollToBottom() {
+    await this.historyList.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  }
+
+  async getItemCount(): Promise<number> {
+    return await this.historyList.locator("li").count();
+  }
+
+  async assertChatVisible(title: string) {
+    await expect(async () => {
+      await expect(
+        this.historyList.getByText(title, { exact: true })
+      ).toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000],
+      timeout: 10_000,
+    });
+  }
+
+  async assertChatHidden(title: string) {
+    await expect(async () => {
+      await expect(
+        this.historyList.getByText(title, { exact: true })
+      ).not.toBeVisible();
+    }).toPass({
+      intervals: [500, 1_000, 2_000],
+      timeout: 10_000,
+    });
+  }
+
+  async assertItemCountGreaterThan(count: number) {
+    await expect(async () => {
+      const itemCount = await this.getItemCount();
+      expect(itemCount).toBeGreaterThan(count);
+    }).toPass({
+      intervals: [500, 1_000, 2_000, 5_000],
+      timeout: 30_000,
+    });
+  }
+}
