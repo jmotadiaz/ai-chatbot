@@ -82,6 +82,23 @@ export class NavigationComponent {
     });
   }
 
+  /**
+   * Assert that a user message is in the viewport using native Playwright assertion.
+   * This is more reliable than pixel calculations, especially in CI/headless.
+   */
+  async assertUserMessageInViewport(index: number) {
+    const message = this.container.locator('[data-role="user"]').nth(index);
+    await expect(message).toBeInViewport();
+  }
+
+  /**
+   * Assert that a user message is NOT in the viewport using native Playwright assertion.
+   */
+  async assertUserMessageNotInViewport(index: number) {
+    const message = this.container.locator('[data-role="user"]').nth(index);
+    await expect(message).not.toBeInViewport();
+  }
+
   async getUserMessageScrollPosition(index: number): Promise<number> {
     const userMessages = this.container.locator('[data-role="user"]');
     const message = userMessages.nth(index);

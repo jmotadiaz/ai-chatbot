@@ -145,9 +145,9 @@ test.describe("Chat Navigation", () => {
 
       // Wait for message to render
       await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
 
-      // Next button should not be visible (only 1 user message)
+      // Wait for observer to update and verify next button is not visible
+      await chatPage.chat.navigation.assertNextButtonHidden();
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
@@ -193,13 +193,12 @@ test.describe("Chat Navigation", () => {
 
       // Wait for messages to render
       await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
 
       // Scroll to very bottom (past all messages)
       await chatPage.chat.navigation.scrollToBottom();
 
-      // Wait for observer to update
-      await page.waitForTimeout(500);
+      // Wait for scroll to settle and observer to update
+      await chatPage.chat.navigation.assertNextButtonHidden();
 
       // Next button should NOT be visible (last message is above, not below)
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();

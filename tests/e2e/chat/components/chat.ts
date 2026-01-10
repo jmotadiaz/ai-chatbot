@@ -1,4 +1,4 @@
-import { Locator } from "@playwright/test";
+import { Locator, expect } from "@playwright/test";
 import { ToolsComponent } from "@/tests/e2e/chat/components/tools";
 import { SettingsComponent } from "@/tests/e2e/chat/components/settings";
 import { NavigationComponent } from "@/tests/e2e/chat/components/navigation";
@@ -96,12 +96,13 @@ export class ChatComponent {
   }
 
   async waitForLoadingComplete(timeout = 30000) {
-    try {
-      await this.loadingIndicator.waitFor({ state: "attached", timeout });
-      await this.loadingIndicator.waitFor({ state: "detached", timeout });
-    } catch {
-      // If no loading indicator exists, that's fine
-    }
+    // Simply wait for loading indicator to be gone (or never appear)
+    // This avoids race conditions when responses are fast
+    await expect(this.loadingIndicator).not.toBeVisible({ timeout });
+  }
+
+  async waitForAssistantMessage(nth: number = 0, timeout = 30000) {
+    await expect(this.assistantMessages.nth(nth)).toBeVisible({ timeout });
   }
 
   async typeMessage(message: string) {

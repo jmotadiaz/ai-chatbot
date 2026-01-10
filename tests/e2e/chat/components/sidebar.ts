@@ -24,6 +24,7 @@ export class SidebarComponent {
   getChatItemByTitle(title: string): Locator {
     return this.chatList
       .getByText(title, { exact: true })
+      .first()
       .locator('xpath=ancestor::div[@role="listitem"]');
   }
 
@@ -32,7 +33,11 @@ export class SidebarComponent {
    * @param title The title of the chat to delete
    */
   async deleteChat(title: string) {
-    await this.getChatItemByTitle(title).getByLabel("Delete chat").click();
+    // Use first() to handle cases where multiple chats with similar titles exist
+    await this.getChatItemByTitle(title)
+      .first()
+      .getByLabel("Delete chat")
+      .click();
   }
 
   /**

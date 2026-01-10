@@ -14,7 +14,8 @@ test.describe("Chat attachments", () => {
     await chatPage.header.modelPicker.selectModel("Llama 4 Scout");
 
     await chatPage.chat.openAttachmentMenu();
-    expect.soft(chatPage.chat.imageInputLabel).toBeVisible();
+    // Wait for menu content to be visible
+    await expect(chatPage.chat.imageInputLabel).toBeVisible();
   });
 
   test("should filter models based on attachment type", async () => {

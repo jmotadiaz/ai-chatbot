@@ -1,7 +1,4 @@
-# GEMINI.md
-
-## CRITICAL
-Say "Hola javier" at the beginning of every message.
+# AGENTS.md
 
 ## Project Overview
 

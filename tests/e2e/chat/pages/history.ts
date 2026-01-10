@@ -56,15 +56,30 @@ export class HistoryPage {
   }
 
   async deleteChat(title: string) {
-    await this.getDeleteButton(title).click();
+    const row = this.getChatItem(title);
+    await expect(row).toBeVisible();
+    // Force click if the element is moving due to list reordering
+    await this.getDeleteButton(title).click({ force: true });
   }
 
   async togglePinChat(title: string) {
-    await this.getPinButton(title).click();
+    const row = this.getChatItem(title);
+    await expect(row).toBeVisible();
+    // Force click if the element is moving due to list reordering
+    await this.getPinButton(title).click({ force: true });
   }
 
   async scrollToBottom() {
-    await this.historyList.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    // 1. Get the last visible item before scrolling
+    const lastVisibleItem = this.historyList.locator("li").last();
+
+    // 2. Execute scroll with instant behavior
+    await this.historyList.evaluate((el) =>
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" })
+    );
+
+    // 3. Confirm scroll success by checking last item is visible
+    await expect(lastVisibleItem).toBeVisible();
   }
 
   async getItemCount(): Promise<number> {

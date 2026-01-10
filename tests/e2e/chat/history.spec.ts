@@ -1,214 +1,347 @@
+import { randomUUID } from "crypto";
 import { test, expect } from "../fixtures";
 import { ChatPage } from "./pages/chat";
 import { HistoryPage } from "./pages/history";
 
 test.describe("Chat History", () => {
-  test("should navigate to history page from sidebar", async ({
-    page,
-    db,
-    authenticatedUser,
-  }) => {
-    expect(authenticatedUser).toBeDefined();
-    // Create some chats to ensure sidebar chat list is visible
-    const chats = Array.from({ length: 5 }).map((_, i) => ({
-      title: `Chat Title ${i}`,
-      messages: [{ role: "user" as const, content: "Hello" }],
-    }));
-    await db.addChats(chats);
-
-    const chatPage = new ChatPage(page);
-    await chatPage.goto();
-
-    // Open sidebar
-    await chatPage.header.toggleSidebar();
-
-    // Wait for sidebar chat list to load and click "See all"
-    await expect(page.getByText("See all")).toBeVisible();
-    await page.getByText("See all").click();
-
-    await page.waitForURL("/chat/history");
-
-    const historyPage = new HistoryPage(page);
-    await expect(historyPage.pageTitle).toBeVisible();
-  });
-
-  test("should list chats, filter and delete", async ({
-    page,
-    db,
-    authenticatedUser,
-  }) => {
-    expect(authenticatedUser).toBeDefined();
-    const targetTitle = "Special Unique Chat Title";
-    const otherTitle = "Another Chat Title";
-    const chats = [
-      {
-        title: targetTitle,
+  test.describe("Navigation", () => {
+    test("should navigate to history page from sidebar", async ({
+      page,
+      db,
+      authenticatedUser,
+    }) => {
+      expect(authenticatedUser).toBeDefined();
+      // Create some chats to ensure sidebar chat list is visible
+      const chats = Array.from({ length: 5 }).map((_, i) => ({
+        title: `Chat Title ${i}`,
         messages: [{ role: "user" as const, content: "Hello" }],
-      },
-      {
-        title: otherTitle,
+      }));
+      await db.addChats(chats);
+
+      const chatPage = new ChatPage(page);
+      await chatPage.goto();
+
+      // Open sidebar
+      await chatPage.header.toggleSidebar();
+
+      // Wait for sidebar chat list to load and click "See all"
+      await expect(page.getByText("See all")).toBeVisible();
+      await page.getByText("See all").click();
+
+      await page.waitForURL("/chat/history");
+
+      const historyPage = new HistoryPage(page);
+      await expect(historyPage.pageTitle).toBeVisible();
+    });
+  });
+
+  test.describe("Chat List", () => {
+    test("should display chats correctly", async ({
+      page,
+      db,
+      authenticatedUser,
+    }) => {
+      expect(authenticatedUser).toBeDefined();
+      const chats = [
+        {
+          title: "Test Chat 1",
+          messages: [{ role: "user" as const, content: "Hello" }],
+        },
+        {
+          title: "Test Chat 2",
+          messages: [{ role: "user" as const, content: "Hello" }],
+        },
+      ];
+      await db.addChats(chats);
+
+      const historyPage = new HistoryPage(page);
+      await historyPage.goto();
+
+      await expect(historyPage.pageTitle).toBeVisible();
+      await historyPage.assertChatVisible("Test Chat 1");
+      await historyPage.assertChatVisible("Test Chat 2");
+    });
+
+    test("should filter chats by title", async ({
+      page,
+      db,
+      authenticatedUser,
+    }) => {
+      expect(authenticatedUser).toBeDefined();
+      const targetTitle = "Special Unique Chat Title";
+      const otherTitle = "Another Chat Title";
+      const chats = [
+        {
+          title: targetTitle,
+          messages: [{ role: "user" as const, content: "Hello" }],
+        },
+        {
+          title: otherTitle,
+          messages: [{ role: "user" as const, content: "Hello" }],
+        },
+      ];
+      await db.addChats(chats);
+
+      const historyPage = new HistoryPage(page);
+      await historyPage.goto();
+
+      // Filter
+      await historyPage.filter("Special Unique");
+
+      // Verify filter works
+      await historyPage.assertChatVisible(targetTitle);
+      await historyPage.assertChatHidden(otherTitle);
+
+      // Clear filter
+      await historyPage.clearFilter();
+      await historyPage.assertChatVisible(otherTitle);
+    });
+
+    test("should support infinite scroll", async ({
+      page,
+      db,
+      authenticatedUser,
+    }) => {
+      expect(authenticatedUser).toBeDefined();
+      // Create 25 chats
+      const chats = Array.from({ length: 25 }).map((_, i) => ({
+        title: `History Chat ${i}`,
         messages: [{ role: "user" as const, content: "Hello" }],
-      },
-    ];
-    await db.addChats(chats);
+      }));
+      await db.addChats(chats);
 
-    const historyPage = new HistoryPage(page);
-    await historyPage.goto();
+      const historyPage = new HistoryPage(page);
+      await historyPage.goto();
 
-    // Wait for page to load
-    await expect(historyPage.pageTitle).toBeVisible();
+      await expect(historyPage.pageTitle).toBeVisible();
+      await expect(historyPage.historyList).toBeVisible();
 
-    await historyPage.assertChatVisible(targetTitle);
-    await historyPage.assertChatVisible(otherTitle);
+      // Scroll to bottom
+      await historyPage.scrollToBottom();
 
-    // Filter
-    await historyPage.filter("Special Unique");
-
-    // Wait for debounce and verify filter works
-    await historyPage.assertChatVisible(targetTitle);
-    await historyPage.assertChatHidden(otherTitle);
-
-    // Clear filter
-    await historyPage.clearFilter();
-    await historyPage.assertChatVisible(otherTitle);
-
-    // Delete
-    await historyPage.deleteChat(targetTitle);
-    // Confirm delete
-    await historyPage.confirmModal.confirm();
-
-    await historyPage.assertChatHidden(targetTitle);
-    await historyPage.assertChatVisible(otherTitle);
+      // Wait for more items to load (initial: 20, after scroll: 25)
+      await historyPage.assertItemCountGreaterThan(20);
+    });
   });
 
-  test("should support infinite scroll", async ({
-    page,
-    db,
-    authenticatedUser,
-  }) => {
-    expect(authenticatedUser).toBeDefined();
-    // Create 25 chats
-    const chats = Array.from({ length: 25 }).map((_, i) => ({
-      title: `History Chat ${i}`,
-      messages: [{ role: "user" as const, content: "Hello" }],
-    }));
-    await db.addChats(chats);
+  test.describe("Chat Actions", () => {
+    test.describe("Delete", () => {
+      test("should show confirmation modal and allow canceling deletion", async ({
+        page,
+        db,
+        authenticatedUser,
+      }) => {
+        expect(authenticatedUser).toBeDefined();
 
-    const historyPage = new HistoryPage(page);
-    await historyPage.goto();
+        const chatTitle = "Chat To Delete";
+        const chats = [
+          {
+            title: chatTitle,
+            messages: [{ role: "user" as const, content: "Hello" }],
+          },
+        ];
+        await db.addChats(chats);
 
-    // Wait for page to load
-    await expect(historyPage.pageTitle).toBeVisible();
-    await expect(historyPage.historyList).toBeVisible();
+        const historyPage = new HistoryPage(page);
+        await historyPage.goto();
+        await historyPage.assertChatVisible(chatTitle);
 
-    // Scroll to bottom
-    await historyPage.scrollToBottom();
+        // Trigger Delete
+        await historyPage.deleteChat(chatTitle);
 
-    // Wait for more items to load (initial: 20, after scroll: 25)
-    await historyPage.assertItemCountGreaterThan(20);
-  });
+        // Verify Modal
+        await historyPage.confirmModal.isVisible();
+        await historyPage.confirmModal.hasMessage(
+          `Are you sure you want to delete the chat "${chatTitle}"?`
+        );
 
-  test("should NOT sort pinned chats to top", async ({
-    page,
-    db,
-    authenticatedUser,
-  }) => {
-    expect(authenticatedUser).toBeDefined();
-    const olderPinnedChat = {
-      title: "Older Pinned Chat",
-      pinned: true,
-      updatedAt: new Date(Date.now() - 1000000), // Older
-      messages: [{ role: "user" as const, content: "Hello" }],
-    };
-    const newerUnpinnedChat = {
-      title: "Newer Unpinned Chat",
-      pinned: false,
-      updatedAt: new Date(Date.now()), // Newer
-      messages: [{ role: "user" as const, content: "Hi" }],
-    };
+        // Cancel
+        await historyPage.confirmModal.cancel();
+        await historyPage.confirmModal.isHidden();
+        await historyPage.assertChatVisible(chatTitle);
+      });
 
-    await db.addChats([olderPinnedChat, newerUnpinnedChat]);
+      test("should delete a chat after confirmation", async ({
+        page,
+        db,
+        authenticatedUser,
+      }) => {
+        expect(authenticatedUser).toBeDefined();
+        const chatTitle = "Chat To Be Removed";
+        const chats = [
+          {
+            title: chatTitle,
+            messages: [{ role: "user" as const, content: "Hello" }],
+          },
+        ];
+        await db.addChats(chats);
 
-    const historyPage = new HistoryPage(page);
-    await historyPage.goto();
-    await expect(historyPage.pageTitle).toBeVisible();
+        const historyPage = new HistoryPage(page);
+        await historyPage.goto();
 
-    // Verify order: Newer Unpinned first, then Older Pinned
-    const items = await historyPage.historyList
-      .getByRole("listitem")
-      .allTextContents();
+        await historyPage.deleteChat(chatTitle);
+        await historyPage.confirmModal.confirm();
 
-    // Check if at least these two exist and are in correct relative order
-    const newerIndex = items.findIndex((t) =>
-      t.includes("Newer Unpinned Chat")
-    );
-    const olderIndex = items.findIndex((t) => t.includes("Older Pinned Chat"));
+        await historyPage.confirmModal.isHidden();
+        await historyPage.assertChatHidden(chatTitle);
+      });
+    });
 
-    expect(newerIndex).not.toBe(-1);
-    expect(olderIndex).not.toBe(-1);
-    expect(newerIndex).toBeLessThan(olderIndex);
-  });
+    test.describe("Pinning", () => {
+      test("should NOT sort pinned chats to top on History page (chronological order)", async ({
+        page,
+        db,
+        authenticatedUser,
+      }) => {
+        expect(authenticatedUser).toBeDefined();
+        // Use unique titles to avoid collisions with worker-shared user
+        const olderPinnedTitle = `Older Pinned Chat ${randomUUID().slice(
+          0,
+          8
+        )}`;
+        const newerUnpinnedTitle = `Newer Unpinned Chat ${randomUUID().slice(
+          0,
+          8
+        )}`;
 
-  test("should preserve updatedAt when pinning a chat", async ({
-    page,
-    db,
-    authenticatedUser,
-  }) => {
-    expect(authenticatedUser).toBeDefined();
+        const olderPinnedChat = {
+          title: olderPinnedTitle,
+          pinned: true,
+          updatedAt: new Date(Date.now() - 5000), // 5 seconds ago (older)
+          messages: [{ role: "user" as const, content: "Hello" }],
+        };
+        const newerUnpinnedChat = {
+          title: newerUnpinnedTitle,
+          pinned: false,
+          updatedAt: new Date(Date.now()), // Now (newer)
+          messages: [{ role: "user" as const, content: "Hi" }],
+        };
 
-    const olderChat = {
-      title: "Older Chat For Pinning",
-      pinned: false,
-      updatedAt: new Date(Date.now() - 1000000), // Older
-      messages: [{ role: "user" as const, content: "Hello" }],
-    };
-    const newerChat = {
-      title: "Newer Chat Reference",
-      pinned: false,
-      updatedAt: new Date(Date.now()), // Newer
-      messages: [{ role: "user" as const, content: "Hi" }],
-    };
+        await db.addChats([olderPinnedChat, newerUnpinnedChat]);
 
-    await db.addChats([olderChat, newerChat]);
+        const historyPage = new HistoryPage(page);
+        await historyPage.goto();
 
-    const historyPage = new HistoryPage(page);
-    await historyPage.goto();
-    await expect(historyPage.pageTitle).toBeVisible();
+        // Wait for chats to be visible before checking order
+        await historyPage.assertChatVisible(newerUnpinnedTitle);
+        await historyPage.assertChatVisible(olderPinnedTitle);
 
-    // Initial Order: Newer, Older
-    let items = await historyPage.historyList
-      .getByRole("listitem")
-      .allTextContents();
-    let newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
-    let olderIndex = items.findIndex((t) =>
-      t.includes("Older Chat For Pinning")
-    );
+        // Verify order: Newer Unpinned first, then Older Pinned
+        const items = await historyPage.historyList
+          .getByRole("listitem")
+          .allTextContents();
 
-    expect(newerIndex).toBeLessThan(olderIndex);
+        const newerIndex = items.findIndex((t) =>
+          t.includes(newerUnpinnedTitle)
+        );
+        const olderIndex = items.findIndex((t) => t.includes(olderPinnedTitle));
 
-    // Pin the Older Chat
-    await historyPage.togglePinChat("Older Chat For Pinning");
+        expect(newerIndex).not.toBe(-1);
+        expect(olderIndex).not.toBe(-1);
+        expect(newerIndex).toBeLessThan(olderIndex);
+      });
 
-    // Verify client-side state immediately (no reload)
-    // Order should NOT change.
-    items = await historyPage.historyList
-      .getByRole("listitem")
-      .allTextContents();
-    newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
-    olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
-    expect(newerIndex).toBeLessThan(olderIndex);
+      test("should preserve updatedAt and order when pinning a chat", async ({
+        page,
+        db,
+        authenticatedUser,
+      }) => {
+        expect(authenticatedUser).toBeDefined();
 
-    // Wait for network idle or just reload to be sure we are checking server state
-    await page.waitForTimeout(1000);
-    await page.reload();
-    await expect(historyPage.pageTitle).toBeVisible();
+        // Use unique titles to avoid collisions with worker-shared user
+        const olderChatTitle = `Older Chat For Pinning ${randomUUID().slice(
+          0,
+          8
+        )}`;
+        const newerChatTitle = `Newer Chat Reference ${randomUUID().slice(
+          0,
+          8
+        )}`;
 
-    items = await historyPage.historyList
-      .getByRole("listitem")
-      .allTextContents();
-    newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
-    olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
+        const olderChat = {
+          title: olderChatTitle,
+          pinned: false,
+          updatedAt: new Date(Date.now() - 5000), // 5 seconds ago (older)
+          messages: [{ role: "user" as const, content: "Hello" }],
+        };
+        const newerChat = {
+          title: newerChatTitle,
+          pinned: false,
+          updatedAt: new Date(Date.now()), // Now (newer)
+          messages: [{ role: "user" as const, content: "Hi" }],
+        };
 
-    expect(newerIndex).toBeLessThan(olderIndex);
+        await db.addChats([olderChat, newerChat]);
+
+        const historyPage = new HistoryPage(page);
+        await historyPage.goto();
+
+        // Wait for chats to be visible before checking order
+        await historyPage.assertChatVisible(newerChatTitle);
+        await historyPage.assertChatVisible(olderChatTitle);
+
+        // Initial Order: Newer, Older
+        let items = await historyPage.historyList
+          .getByRole("listitem")
+          .allTextContents();
+        let newerIndex = items.findIndex((t) => t.includes(newerChatTitle));
+        let olderIndex = items.findIndex((t) => t.includes(olderChatTitle));
+        expect(newerIndex).toBeLessThan(olderIndex);
+
+        // Pin the Older Chat
+        await historyPage.togglePinChat(olderChatTitle);
+
+        // Verify order should NOT change (stays chronological)
+        items = await historyPage.historyList
+          .getByRole("listitem")
+          .allTextContents();
+        newerIndex = items.findIndex((t) => t.includes(newerChatTitle));
+        olderIndex = items.findIndex((t) => t.includes(olderChatTitle));
+        expect(newerIndex).toBeLessThan(olderIndex);
+
+        // Reload to verify server state
+        await page.reload();
+        items = await historyPage.historyList
+          .getByRole("listitem")
+          .allTextContents();
+        newerIndex = items.findIndex((t) => t.includes(newerChatTitle));
+        olderIndex = items.findIndex((t) => t.includes(olderChatTitle));
+        expect(newerIndex).toBeLessThan(olderIndex);
+      });
+
+      test("should NOT disable trash button when pinning a chat", async ({
+        page,
+        db,
+        authenticatedUser,
+      }) => {
+        expect(authenticatedUser).toBeDefined();
+        const chatTitle = "Chat For Pinning State Check";
+        const chats = [
+          {
+            title: chatTitle,
+            messages: [{ role: "user" as const, content: "Hello" }],
+            pinned: false,
+          },
+        ];
+        await db.addChats(chats);
+
+        const historyPage = new HistoryPage(page);
+        await historyPage.goto();
+
+        const pinButton = historyPage.getPinButton(chatTitle);
+        const deleteButton = historyPage.getDeleteButton(chatTitle);
+
+        // Trigger pin
+        await pinButton.click();
+
+        // Check if delete button is disabled (should not be)
+        expect(await deleteButton.isDisabled()).toBe(false);
+
+        // Wait for pin state to update
+        await expect(
+          page.getByRole("button", { name: "Unpin chat" })
+        ).toBeVisible();
+      });
+    });
   });
 });

@@ -1,23 +1,26 @@
+import { randomUUID } from "crypto";
 import { test, expect } from "../fixtures";
 import { ChatPage } from "./pages/chat";
-
-const chats = [
-  {
-    title: "Chat 1",
-    messages: [{ role: "user" as const, content: "Hello" }],
-  },
-  {
-    title: "Chat 2",
-    messages: [{ role: "user" as const, content: "Hi" }],
-  },
-];
 
 import type { Chat } from "@/lib/infrastructure/db/schema";
 
 test.describe("Chat Sidebar", () => {
   let createdChats: Chat[];
+  // Use unique titles to prevent collisions with worker-shared user
+  const chatTitle1 = `Sidebar Chat 1 - ${randomUUID().slice(0, 8)}`;
+  const chatTitle2 = `Sidebar Chat 2 - ${randomUUID().slice(0, 8)}`;
 
   test.beforeEach(async ({ db, authenticatedUser }) => {
+    const chats = [
+      {
+        title: chatTitle1,
+        messages: [{ role: "user" as const, content: "Hello" }],
+      },
+      {
+        title: chatTitle2,
+        messages: [{ role: "user" as const, content: "Hi" }],
+      },
+    ];
     createdChats = await db.addChats(chats);
     expect(authenticatedUser).toBeDefined();
   });
@@ -30,7 +33,7 @@ test.describe("Chat Sidebar", () => {
     await expect.soft(chatPage.chat.container.getByText("Hello")).toBeVisible();
 
     await chatPage.header.toggleSidebar();
-    await chatPage.sidebar.clickChatByTitle("Chat 2");
+    await chatPage.sidebar.clickChatByTitle(chatTitle2);
     await expect.soft(chatPage.chat.container.getByText("Hi")).toBeVisible();
   });
 
@@ -39,10 +42,10 @@ test.describe("Chat Sidebar", () => {
     await chatPage.goto();
     await chatPage.header.toggleSidebar();
     await expect
-      .soft(chatPage.sidebar.getChatItemByTitle("Chat 1"))
+      .soft(chatPage.sidebar.getChatItemByTitle(chatTitle1))
       .toBeVisible();
     await expect
-      .soft(chatPage.sidebar.getChatItemByTitle("Chat 2"))
+      .soft(chatPage.sidebar.getChatItemByTitle(chatTitle2))
       .toBeVisible();
   });
 
@@ -65,9 +68,9 @@ test.describe("Chat Sidebar", () => {
     const chatPage = new ChatPage(page);
     await chatPage.goto();
     await chatPage.header.toggleSidebar();
-    await chatPage.sidebar.deleteChat("Chat 1");
+    await chatPage.sidebar.deleteChat(chatTitle1);
     await expect
-      .soft(chatPage.sidebar.getChatItemByTitle("Chat 1"))
+      .soft(chatPage.sidebar.getChatItemByTitle(chatTitle1))
       .not.toBeAttached();
   });
 

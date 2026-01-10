@@ -4,6 +4,7 @@ import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { hashSync } from "bcrypt-ts";
 import {
   user,
   User,
@@ -23,6 +24,10 @@ type NewChat = {
   updatedAt?: Date;
 };
 
+interface WorkerFixtures {
+  workerUser: User;
+}
+
 interface TestFixtures {
   authenticatedUser: { id: string; email: string };
   db: {
@@ -35,22 +40,40 @@ interface TestFixtures {
  * Extended test with fixtures for AI providers and database
  * This allows dependency injection for testing
  */
-export const test = base.extend<TestFixtures>({
-  db: async ({}, use) => {
+export const test = base.extend<TestFixtures, WorkerFixtures>({
+  // Worker-scoped fixture: creates ONE user per worker thread
+  workerUser: [
+    async ({}, use) => {
+      const client = postgres(
+        process.env.POSTGRES_URL ??
+          "postgres://postgres:postgres@localhost:5434/test"
+      );
+      const db = drizzle(client, { schema });
+
+      // Use salt rounds = 1 for fast hashing in tests
+      const hashedPassword = hashSync("test-password", 1);
+
+      const [testUser] = await db
+        .insert(user)
+        .values({
+          email: `worker-${randomUUID()}@test.com`,
+          password: hashedPassword,
+        })
+        .returning();
+
+      await use(testUser);
+      await client.end();
+    },
+    { scope: "worker" },
+  ],
+
+  // Test-scoped fixture: reuses workerUser, provides DB helpers
+  db: async ({ workerUser }, use) => {
     const client = postgres(
       process.env.POSTGRES_URL ??
         "postgres://postgres:postgres@localhost:5434/test"
     );
     const db = drizzle(client, { schema });
-
-    const [testUser] = await db
-      .insert(user)
-      .values({
-        email: `${randomUUID()}@test.com`,
-        password:
-          "$2b$10$testtestsalt123456789012uG9dWQd8U1xMOPuQJxFr7eETeM2Yy",
-      })
-      .returning();
 
     const addChats = async (newChats: NewChat[]) => {
       const insertedChats: Chat[] = [];
@@ -60,7 +83,7 @@ export const test = base.extend<TestFixtures>({
             .insert(chat)
             .values({
               title: newChat.title,
-              userId: testUser.id,
+              userId: workerUser.id,
               pinned: newChat.pinned,
               updatedAt: newChat.updatedAt,
             })
@@ -79,9 +102,10 @@ export const test = base.extend<TestFixtures>({
       return insertedChats;
     };
 
-    await use({ testUser, addChats });
+    await use({ testUser: workerUser, addChats });
     await client.end();
   },
+
   authenticatedUser: async ({ page, baseURL, db }, use) => {
     const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
 
