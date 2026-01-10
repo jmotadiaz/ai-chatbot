@@ -1,6 +1,6 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
-import { HistoryComponent } from "./history.component";
+import { ChatPage } from "@/tests/e2e/chat/pages/chat";
+import { HistoryComponent } from "@/tests/e2e/chat/components/history";
 
 test.describe("Chat History", () => {
   test("should navigate to history page from sidebar", async ({
@@ -74,6 +74,7 @@ test.describe("Chat History", () => {
 
     // Delete
     await history.deleteChat(targetTitle);
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
 
     await history.assertChatHidden(targetTitle);
     await history.assertChatVisible(otherTitle);

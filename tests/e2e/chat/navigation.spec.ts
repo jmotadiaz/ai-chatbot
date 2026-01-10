@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "@/tests/e2e/chat/pages/chat";
 import type { Chat } from "@/lib/infrastructure/db/schema";
 
 // Generate a chat with many messages to enable scrolling
