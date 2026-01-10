@@ -1,22 +1,25 @@
-import { Locator, expect } from "@playwright/test";
+import { Page, Locator, expect } from "@playwright/test";
+import { ConfirmModalComponent } from "../components/confirm-modal.component";
 
 /**
- * Component Object Model for Chat History page
+ * Page Object Model for Chat History page
  * Encapsulates history page interactions and elements
  */
-export class HistoryComponent {
-  readonly container: Locator;
+export class HistoryPage {
+  readonly page: Page;
   readonly historyList: Locator;
   readonly filterInput: Locator;
   readonly pageTitle: Locator;
+  readonly confirmModal: ConfirmModalComponent;
 
-  constructor(page: Locator) {
-    this.container = page;
+  constructor(page: Page) {
+    this.page = page;
     this.historyList = page.locator('ul[aria-label="Chat history list"]');
     this.filterInput = page.getByPlaceholder("Filter chats...");
     this.pageTitle = page
       .getByRole("heading", { name: "Chat History" })
       .first();
+    this.confirmModal = new ConfirmModalComponent(page.locator("body"));
   }
 
   getChatItem(title: string): Locator {
@@ -35,6 +38,10 @@ export class HistoryComponent {
     return this.getChatItem(title).getByRole("button", {
       name: /pin chat/i,
     });
+  }
+
+  async goto() {
+    await this.page.goto("/chat/history");
   }
 
   async filter(text: string) {
