@@ -4,6 +4,7 @@ import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { eq } from "drizzle-orm";
 import {
   user,
   User,
@@ -23,6 +24,11 @@ type NewChat = {
   updatedAt?: Date;
 };
 
+interface WorkerFixtures {
+  workerDb: ReturnType<typeof drizzle>;
+  workerUser: User;
+}
+
 interface TestFixtures {
   authenticatedUser: { id: string; email: string };
   db: {
@@ -35,32 +41,47 @@ interface TestFixtures {
  * Extended test with fixtures for AI providers and database
  * This allows dependency injection for testing
  */
-export const test = base.extend<TestFixtures>({
-  db: async ({}, use) => {
-    const client = postgres(
-      process.env.POSTGRES_URL ??
-        "postgres://postgres:postgres@localhost:5434/test"
-    );
-    const db = drizzle(client, { schema });
+export const test = base.extend<TestFixtures, WorkerFixtures>({
+  // Worker scoped fixtures
+  workerDb: [
+    async ({}, use) => {
+      const client = postgres(
+        process.env.POSTGRES_URL ??
+          "postgres://postgres:postgres@localhost:5434/test"
+      );
+      const db = drizzle(client, { schema });
+      await use(db);
+      await client.end();
+    },
+    { scope: "worker" },
+  ],
 
-    const [testUser] = await db
-      .insert(user)
-      .values({
-        email: `${randomUUID()}@test.com`,
-        password:
-          "$2b$10$testtestsalt123456789012uG9dWQd8U1xMOPuQJxFr7eETeM2Yy",
-      })
-      .returning();
+  workerUser: [
+    async ({ workerDb }, use) => {
+      const [testUser] = await workerDb
+        .insert(user)
+        .values({
+          email: `${randomUUID()}@test.com`,
+          password:
+            "$2b$10$testtestsalt123456789012uG9dWQd8U1xMOPuQJxFr7eETeM2Yy",
+        })
+        .returning();
+      await use(testUser);
+    },
+    { scope: "worker" },
+  ],
 
+  // Test scoped fixtures
+  db: async ({ workerDb, workerUser }, use) => {
     const addChats = async (newChats: NewChat[]) => {
       const insertedChats: Chat[] = [];
-      await db.transaction(async (tx) => {
+      await workerDb.transaction(async (tx) => {
         for (const newChat of newChats) {
           const [insertedChat] = await tx
             .insert(chat)
             .values({
               title: newChat.title,
-              userId: testUser.id,
+              userId: workerUser.id,
               pinned: newChat.pinned,
               updatedAt: newChat.updatedAt,
             })
@@ -79,17 +100,18 @@ export const test = base.extend<TestFixtures>({
       return insertedChats;
     };
 
-    await use({ testUser, addChats });
-    await client.end();
+    await use({ testUser: workerUser, addChats });
+
+    // Cleanup chats after each test to prevent pollution since we reuse the user
+    await workerDb.delete(chat).where(eq(chat.userId, workerUser.id));
   },
-  authenticatedUser: async ({ page, baseURL, db }, use) => {
+
+  authenticatedUser: async ({ page, baseURL, workerUser }, use) => {
     const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
 
-    const { testUser } = db;
-
     const token: DefaultJWT = {
-      id: testUser.id,
-      email: testUser.email,
+      id: workerUser.id,
+      email: workerUser.email,
       type: "regular",
     };
 
@@ -122,7 +144,7 @@ export const test = base.extend<TestFixtures>({
     ]);
 
     // Provide the authenticated user to the test
-    await use({ id: testUser.id, email: testUser.email });
+    await use({ id: workerUser.id, email: workerUser.email });
   },
 });
 

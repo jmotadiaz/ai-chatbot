@@ -105,6 +105,7 @@ test.describe("Chat History", () => {
     await historyPage.scrollToBottom();
 
     // Wait for more items to load (initial: 20, after scroll: 25)
+    // We expect the count to increase.
     await historyPage.assertItemCountGreaterThan(20);
   });
 
@@ -189,11 +190,15 @@ test.describe("Chat History", () => {
     expect(newerIndex).toBeLessThan(olderIndex);
 
     // Wait for network idle or just reload to be sure we are checking server state
-    await page.waitForTimeout(1000);
+    await expect(
+      historyPage.getPinButton("Older Chat For Pinning")
+    ).toHaveAttribute("aria-label", /unpin chat/i);
     await page.reload();
     await expect(historyPage.pageTitle).toBeVisible();
 
-    items = await historyPage.historyList.getByRole("listitem").allTextContents();
+    items = await historyPage.historyList
+      .getByRole("listitem")
+      .allTextContents();
     newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
     olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
 
