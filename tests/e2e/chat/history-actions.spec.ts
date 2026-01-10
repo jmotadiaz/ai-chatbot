@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { HistoryComponent } from "./history.component";
+import { HistoryComponent } from "@/tests/e2e/chat/components/history";
 
 test.describe("Chat History Actions", () => {
   test("should show confirmation modal when deleting a chat", async ({

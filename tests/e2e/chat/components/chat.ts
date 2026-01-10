@@ -1,7 +1,7 @@
 import { Locator } from "@playwright/test";
-import { ToolsComponent } from "@/tests/e2e/chat/tools.component";
-import { SettingsComponent } from "@/tests/e2e/chat/settings.component";
-import { NavigationComponent } from "@/tests/e2e/chat/navigation.component";
+import { ToolsComponent } from "@/tests/e2e/chat/components/tools";
+import { SettingsComponent } from "@/tests/e2e/chat/components/settings";
+import { NavigationComponent } from "@/tests/e2e/chat/components/navigation";
 
 /**
  * Component Object Model for Chat functionality

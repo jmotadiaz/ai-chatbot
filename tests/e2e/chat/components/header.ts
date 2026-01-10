@@ -1,5 +1,5 @@
 import { Locator } from "@playwright/test";
-import { ModelPickerComponent } from "@/tests/e2e/chat/model-picker.component";
+import { ModelPickerComponent } from "@/tests/e2e/chat/components/model-picker";
 
 /**
  * Component Object Model for Header functionality
