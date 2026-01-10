@@ -96,12 +96,15 @@ export class ChatComponent {
   }
 
   async waitForLoadingComplete(timeout = 30000) {
+    // Only wait for it to be detached.
+    // If it hasn't appeared yet, this might return instantly.
+    // To avoid that, we could check if it is visible first with a short timeout, ignoring error.
     try {
-      await this.loadingIndicator.waitFor({ state: "attached", timeout });
-      await this.loadingIndicator.waitFor({ state: "detached", timeout });
+      await this.loadingIndicator.waitFor({ state: "visible", timeout: 2000 });
     } catch {
-      // If no loading indicator exists, that's fine
+      // It might be too fast or hasn't started.
     }
+    await this.loadingIndicator.waitFor({ state: "detached", timeout });
   }
 
   async typeMessage(message: string) {

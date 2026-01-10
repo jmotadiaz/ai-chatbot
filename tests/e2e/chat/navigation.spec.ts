@@ -61,14 +61,10 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.waitForMessageInViewport(9);
 
       // The last user message should be visible
-      const isLastVisible =
-        await chatPage.chat.navigation.isUserMessageInViewport(9);
-      expect.soft(isLastVisible).toBe(true);
+      await chatPage.chat.navigation.assertUserMessageInViewport(9);
 
       // The first user message should NOT be visible (scrolled past)
-      const isFirstVisible =
-        await chatPage.chat.navigation.isUserMessageInViewport(0);
-      expect.soft(isFirstVisible).toBe(false);
+      await chatPage.chat.navigation.assertUserMessageNotInViewport(0);
     });
   });
 
@@ -84,7 +80,7 @@ test.describe("Chat Navigation", () => {
 
       // Scroll to top to make first message visible
       await chatPage.chat.navigation.scrollToTop();
-      await chatPage.chat.navigation.waitForMessageInViewport(0);
+      await chatPage.chat.navigation.assertUserMessageInViewport(0);
 
       // Wait for prev button to disappear (if it was visible)
       await chatPage.chat.navigation.assertPrevButtonHidden();
@@ -145,7 +141,6 @@ test.describe("Chat Navigation", () => {
 
       // Wait for message to render
       await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
 
       // Next button should not be visible (only 1 user message)
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
@@ -193,13 +188,9 @@ test.describe("Chat Navigation", () => {
 
       // Wait for messages to render
       await expect(chatPage.chat.userMessages.first()).toBeVisible();
-      await page.waitForTimeout(500);
 
       // Scroll to very bottom (past all messages)
       await chatPage.chat.navigation.scrollToBottom();
-
-      // Wait for observer to update
-      await page.waitForTimeout(500);
 
       // Next button should NOT be visible (last message is above, not below)
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();

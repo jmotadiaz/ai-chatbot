@@ -64,22 +64,16 @@ export class NavigationComponent {
     return await this.scrollContainer.evaluate((el) => el.clientHeight);
   }
 
-  async isUserMessageInViewport(index: number): Promise<boolean> {
-    const userMessages = this.container.locator('[data-role="user"]');
-    const message = userMessages.nth(index);
+  async assertUserMessageInViewport(index: number) {
+     const userMessages = this.container.locator('[data-role="user"]');
+     const message = userMessages.nth(index);
+     await expect(message).toBeInViewport();
+  }
 
-    return await message.evaluate((el) => {
-      const container = el.closest(".overflow-y-auto");
-      if (!container) return false;
-
-      const containerRect = container.getBoundingClientRect();
-      const elementRect = el.getBoundingClientRect();
-
-      return (
-        elementRect.top >= containerRect.top &&
-        elementRect.bottom <= containerRect.bottom
-      );
-    });
+  async assertUserMessageNotInViewport(index: number) {
+     const userMessages = this.container.locator('[data-role="user"]');
+     const message = userMessages.nth(index);
+     await expect(message).not.toBeInViewport();
   }
 
   async getUserMessageScrollPosition(index: number): Promise<number> {
@@ -154,13 +148,11 @@ export class NavigationComponent {
     index: number,
     shouldBeVisible: boolean = true
   ) {
-    await expect(async () => {
-      const isVisible = await this.isUserMessageInViewport(index);
-      expect(isVisible).toBe(shouldBeVisible);
-    }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
-    });
+    if (shouldBeVisible) {
+      await this.assertUserMessageInViewport(index);
+    } else {
+      await this.assertUserMessageNotInViewport(index);
+    }
   }
 
   async assertScrollTopLessThan(value: number) {

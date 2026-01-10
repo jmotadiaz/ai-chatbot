@@ -61,7 +61,18 @@ export class HistoryPage {
   }
 
   async scrollToBottom() {
-    await this.historyList.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    // 1. Get the last item before scrolling
+    const lastVisibleItem = this.historyList.locator("li").last();
+
+    // 2. Execute scroll
+    await this.historyList.evaluate((el) => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+    });
+
+    // 3. Confirm scroll by waiting for the last item to be visible
+    // Note: If new items load immediately, this might reference a new item,
+    // but we just want to ensure we are at the bottom or scrolled down.
+    await expect(lastVisibleItem).toBeVisible();
   }
 
   async getItemCount(): Promise<number> {
