@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./pages/chat";
 
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
@@ -63,6 +63,8 @@ test.describe("Chat functionality", () => {
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect
       .soft(lastMessage)
-      .toContain("Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6");
+      .toContain(
+        "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6"
+      );
   });
 });

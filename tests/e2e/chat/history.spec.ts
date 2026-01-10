@@ -1,6 +1,6 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
-import { HistoryPage } from "./history-page";
+import { ChatPage } from "./pages/chat";
+import { HistoryPage } from "./pages/history";
 
 test.describe("Chat History", () => {
   test("should navigate to history page from sidebar", async ({
@@ -134,11 +134,15 @@ test.describe("Chat History", () => {
     await expect(historyPage.pageTitle).toBeVisible();
 
     // Verify order: Newer Unpinned first, then Older Pinned
-    const items = await historyPage.historyList.getByRole("listitem").allTextContents();
+    const items = await historyPage.historyList
+      .getByRole("listitem")
+      .allTextContents();
 
     // Check if at least these two exist and are in correct relative order
-    const newerIndex = items.findIndex(t => t.includes("Newer Unpinned Chat"));
-    const olderIndex = items.findIndex(t => t.includes("Older Pinned Chat"));
+    const newerIndex = items.findIndex((t) =>
+      t.includes("Newer Unpinned Chat")
+    );
+    const olderIndex = items.findIndex((t) => t.includes("Older Pinned Chat"));
 
     expect(newerIndex).not.toBe(-1);
     expect(olderIndex).not.toBe(-1);
@@ -172,9 +176,13 @@ test.describe("Chat History", () => {
     await expect(historyPage.pageTitle).toBeVisible();
 
     // Initial Order: Newer, Older
-    let items = await historyPage.historyList.getByRole("listitem").allTextContents();
+    let items = await historyPage.historyList
+      .getByRole("listitem")
+      .allTextContents();
     let newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
-    let olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
+    let olderIndex = items.findIndex((t) =>
+      t.includes("Older Chat For Pinning")
+    );
 
     expect(newerIndex).toBeLessThan(olderIndex);
 
@@ -183,7 +191,9 @@ test.describe("Chat History", () => {
 
     // Verify client-side state immediately (no reload)
     // Order should NOT change.
-    items = await historyPage.historyList.getByRole("listitem").allTextContents();
+    items = await historyPage.historyList
+      .getByRole("listitem")
+      .allTextContents();
     newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
     olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
     expect(newerIndex).toBeLessThan(olderIndex);
@@ -193,7 +203,9 @@ test.describe("Chat History", () => {
     await page.reload();
     await expect(historyPage.pageTitle).toBeVisible();
 
-    items = await historyPage.historyList.getByRole("listitem").allTextContents();
+    items = await historyPage.historyList
+      .getByRole("listitem")
+      .allTextContents();
     newerIndex = items.findIndex((t) => t.includes("Newer Chat Reference"));
     olderIndex = items.findIndex((t) => t.includes("Older Chat For Pinning"));
 

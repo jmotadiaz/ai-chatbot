@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./pages/chat";
 
 const chats = [
   {
@@ -27,11 +27,11 @@ test.describe("Chat Sidebar", () => {
     const chat1 = createdChats[0];
 
     await chatPage.goto(chat1.id);
-    await expect.soft(page.getByText("Hello")).toBeVisible();
+    await expect.soft(chatPage.chat.container.getByText("Hello")).toBeVisible();
 
     await chatPage.header.toggleSidebar();
     await chatPage.sidebar.clickChatByTitle("Chat 2");
-    await expect.soft(page.getByText("Hi")).toBeVisible();
+    await expect.soft(chatPage.chat.container.getByText("Hi")).toBeVisible();
   });
 
   test("should display the chat list", async ({ page }) => {
@@ -93,11 +93,15 @@ test.describe("Chat Sidebar", () => {
 
     // Verify order: Older Pinned first, then Newer Unpinned
     // We need to get all chat items and check their order
-    const items = await chatPage.sidebar.chatList.getByRole("listitem").allTextContents();
+    const items = await chatPage.sidebar.chatList
+      .getByRole("listitem")
+      .allTextContents();
 
     // Check if at least these two exist and are in correct relative order
-    const newerIndex = items.findIndex(t => t.includes("Newer Unpinned Chat"));
-    const olderIndex = items.findIndex(t => t.includes("Older Pinned Chat"));
+    const newerIndex = items.findIndex((t) =>
+      t.includes("Newer Unpinned Chat")
+    );
+    const olderIndex = items.findIndex((t) => t.includes("Older Pinned Chat"));
 
     expect(newerIndex).not.toBe(-1);
     expect(olderIndex).not.toBe(-1);

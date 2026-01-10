@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { HistoryPage } from "./history-page";
+import { HistoryPage } from "./pages/history";
 
 test.describe("Chat History Actions", () => {
   test("should show confirmation modal when deleting a chat", async ({
@@ -11,10 +11,12 @@ test.describe("Chat History Actions", () => {
 
     // Create a chat to delete
     const chatTitle = "Chat To Delete";
-    const chats = [{
-      title: chatTitle,
-      messages: [{ role: "user" as const, content: "Hello" }],
-    }];
+    const chats = [
+      {
+        title: chatTitle,
+        messages: [{ role: "user" as const, content: "Hello" }],
+      },
+    ];
     await db.addChats(chats);
 
     // Go to history page
@@ -29,7 +31,9 @@ test.describe("Chat History Actions", () => {
 
     // Verify Modal Appears
     await historyPage.confirmModal.isVisible();
-    await historyPage.confirmModal.hasMessage(`Are you sure you want to delete the chat "${chatTitle}"?`);
+    await historyPage.confirmModal.hasMessage(
+      `Are you sure you want to delete the chat "${chatTitle}"?`
+    );
 
     // Click Cancel
     await historyPage.confirmModal.cancel();
@@ -60,11 +64,13 @@ test.describe("Chat History Actions", () => {
     expect(authenticatedUser).toBeDefined();
     // This test verifies the fix for the animation/state coupling
     const chatTitle = "Chat For Pinning";
-    const chats = [{
-      title: chatTitle,
-      messages: [{ role: "user" as const, content: "Hello" }],
-      pinned: false
-    }];
+    const chats = [
+      {
+        title: chatTitle,
+        messages: [{ role: "user" as const, content: "Hello" }],
+        pinned: false,
+      },
+    ];
     await db.addChats(chats);
 
     const historyPage = new HistoryPage(page);
@@ -84,6 +90,8 @@ test.describe("Chat History Actions", () => {
 
     // Wait for pin to finish (button becomes enabled or changes state to "Unpin")
     // If it becomes "Unpin", the aria label changes.
-    await expect(page.getByRole('button', { name: 'Unpin chat' })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Unpin chat" })
+    ).toBeVisible();
   });
 });

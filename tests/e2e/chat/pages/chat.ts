@@ -1,7 +1,7 @@
 import { Page, Locator } from "@playwright/test";
-import { SidebarComponent } from "@/tests/e2e/chat/sidebar.component";
-import { HeaderComponent } from "@/tests/e2e/chat/header.component";
-import { ChatComponent } from "@/tests/e2e/chat/chat.component";
+import { SidebarComponent } from "@/tests/e2e/chat/components/sidebar";
+import { HeaderComponent } from "@/tests/e2e/chat/components/header";
+import { ChatComponent } from "@/tests/e2e/chat/components/chat";
 
 /**
  * Page Object Model for Chat functionality
@@ -17,9 +17,13 @@ export class ChatPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.header = new HeaderComponent(page.getByTestId("header-container"));
-    this.sidebar = new SidebarComponent(page.getByTestId("sidebar-container"));
-    this.chat = new ChatComponent(page.getByTestId("chat-container"));
+    this.header = new HeaderComponent(
+      page.getByTestId("header-container").first()
+    );
+    this.sidebar = new SidebarComponent(
+      page.getByTestId("sidebar-container").first()
+    );
+    this.chat = new ChatComponent(page.getByTestId("chat-container").first());
     this.dropdownBackdrop = page.getByTestId("backdrop");
   }
 

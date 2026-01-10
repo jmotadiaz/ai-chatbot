@@ -38,7 +38,10 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   });
 
   return (
-    <div className="w-full pb-6 max-w-4xl mx-auto">
+    <div
+      data-testid="history-container"
+      className="w-full pb-6 max-w-4xl mx-auto"
+    >
       <h1 className="text-2xl font-bold mb-6">Chat History</h1>
       <div className="flex flex-col lg:flex-row gap-4 mb-8 items-center">
         <div className="relative flex-1 w-full">

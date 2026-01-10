@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./pages/chat";
 
 type Category = "technical" | "prompt_engineering";
 

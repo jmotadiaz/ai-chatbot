@@ -1,4 +1,5 @@
 import { Locator } from "@playwright/test";
+import { ConfirmModalComponent } from "./confirm-modal";
 
 /**
  * Component Object Model for Sidebar functionality
@@ -8,11 +9,13 @@ export class SidebarComponent {
   readonly container: Locator;
   // Sidebar elements
   readonly chatList: Locator;
+  readonly confirmModal: ConfirmModalComponent;
 
   constructor(container: Locator) {
     this.container = container;
 
     this.chatList = container.getByRole("list", { name: "Chat history" });
+    this.confirmModal = new ConfirmModalComponent(container);
   }
 
   /**

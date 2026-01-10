@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./pages/chat";
 
 test.describe("Prompt Refiner", () => {
   let chatPage: ChatPage;

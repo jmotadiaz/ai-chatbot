@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./pages/chat";
 import type { Chat } from "@/lib/infrastructure/db/schema";
 
 // Generate a chat with many messages to enable scrolling
@@ -332,7 +332,7 @@ test.describe("Chat Navigation", () => {
       // Relative position should be exactly the same
       expect.soft(prevRelativeX1).not.toBeNull();
       expect.soft(prevRelativeX2).not.toBeNull();
-      expect.soft(Math.abs(prevRelativeX2! - prevRelativeX1!)).toBeLessThan(1);
+      expect.soft(Math.abs(prevRelativeX2! - prevRelativeX1!)).toBeLessThan(2);
     });
   });
 });

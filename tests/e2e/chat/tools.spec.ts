@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { ChatPage } from "./page";
+import { ChatPage } from "./pages/chat";
 
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
@@ -11,7 +11,6 @@ test.describe("Chat functionality", () => {
   });
 
   test("should handle tool configuration and model filtering correctly", async () => {
-
     await chatPage.header.modelPicker.selectModel("Sonar Pro");
     await expect.soft(chatPage.chat.toolsControl).not.toBeVisible();
 

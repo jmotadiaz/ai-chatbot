@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from "@playwright/test";
-import { ConfirmModalComponent } from "../components/confirm-modal.component";
+import { ConfirmModalComponent } from "../components/confirm-modal";
 
 /**
  * Page Object Model for Chat History page
@@ -14,12 +14,15 @@ export class HistoryPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.historyList = page.locator('ul[aria-label="Chat history list"]');
-    this.filterInput = page.getByPlaceholder("Filter chats...");
-    this.pageTitle = page
+    const container = page.getByTestId("history-container");
+    this.historyList = container
+      .locator('ul[aria-label="Chat history list"]')
+      .first();
+    this.filterInput = container.getByPlaceholder("Filter chats...");
+    this.pageTitle = container
       .getByRole("heading", { name: "Chat History" })
       .first();
-    this.confirmModal = new ConfirmModalComponent(page.locator("body"));
+    this.confirmModal = new ConfirmModalComponent(container);
   }
 
   getChatItem(title: string): Locator {
