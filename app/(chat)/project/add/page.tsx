@@ -5,7 +5,7 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 
-export const NewProject: React.FC = async () => {
+export default async function NewProject() {
   return (
     <>
       <Header.Container>
