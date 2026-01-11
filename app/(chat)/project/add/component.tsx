@@ -5,9 +5,9 @@ import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 
-export const NewProject: React.FC = async () => {
+export const NewProject: React.FC = () => {
   return (
-    <>
+    <div className="h-svh flex flex-col justify-center w-full stretch">
       <Header.Container>
         <Header.Left>
           <Logo />
@@ -20,6 +20,6 @@ export const NewProject: React.FC = async () => {
       <Suspense fallback={null}>
         <ProjectForm />
       </Suspense>
-    </>
+    </div>
   );
 };
