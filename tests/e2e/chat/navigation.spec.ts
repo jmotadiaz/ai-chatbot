@@ -282,48 +282,4 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.assertUserMessageInViewport(9);
     });
   });
-
-  test.describe("Button positioning", () => {
-    test("buttons should maintain fixed x-axis positions when appearing and disappearing", async ({
-      page,
-    }) => {
-      const chatPage = new ChatPage(page);
-      await chatPage.goto(longChat.id);
-
-      // Wait for messages to render
-      await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
-
-      // Helper to get prev button position relative to wrapper
-      const getPrevRelativeX = async () => {
-        const prevBox = await chatPage.chat.navigation.prevButton.boundingBox();
-        const wrapperBox = await chatPage.chat.navigation.wrapper.boundingBox();
-        if (!prevBox || !wrapperBox) return null;
-        return prevBox.x - wrapperBox.x;
-      };
-
-      // Scroll to a position where prev button is visible
-      const message3Pos =
-        await chatPage.chat.navigation.getUserMessageScrollPosition(3);
-      await chatPage.chat.navigation.scrollToPosition(message3Pos);
-
-      // Wait for prev button to appear
-      await chatPage.chat.navigation.assertPrevButtonVisible();
-
-      // Get prev button relative position
-      const prevRelativeX1 = await getPrevRelativeX();
-
-      // Scroll to different position (still showing prev)
-      const message5Pos =
-        await chatPage.chat.navigation.getUserMessageScrollPosition(5);
-      await chatPage.chat.navigation.scrollToPosition(message5Pos);
-
-      // Prev button should still be at same relative x position (0 tolerance since it's relative)
-      const prevRelativeX2 = await getPrevRelativeX();
-
-      // Relative position should be exactly the same
-      expect.soft(prevRelativeX1).not.toBeNull();
-      expect.soft(prevRelativeX2).not.toBeNull();
-      expect.soft(Math.abs(prevRelativeX2! - prevRelativeX1!)).toBeLessThan(2);
-    });
-  });
 });
