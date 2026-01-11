@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Undo, WandSparkles } from "lucide-react";
 import { Tabs } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils/helpers";
 import { ChatControl } from "@/components/chat/control";
@@ -11,6 +11,7 @@ import { AddModelDropdown } from "@/components/chat/hub/add-model-dropdown";
 import { Textarea } from "@/components/chat/textarea";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { ToolsControl } from "@/components/chat/tools/control";
+import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 
 export interface HubClientProps {
   className?: string;
@@ -57,6 +58,12 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
   }, [activeTab, tabIds]);
 
   const isLoading = hub.isSubmitting;
+
+  const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
+    usePromptRefiner({
+      input: hub.input,
+      setInput: hub.setInput,
+    });
 
   return (
     <div className={cn("flex flex-col h-full w-full", className)}>
@@ -161,6 +168,7 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
             input={hub.input}
             onChangeInput={hub.setInput}
             isLoading={isLoading}
+            isLoadingRefinedPrompt={isLoadingRefinedPrompt}
             files={hub.files}
             setFiles={hub.setFiles}
             placeholder="Compare models..."
@@ -180,11 +188,25 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            {hasPreviousMessage && (
+              <ChatControl
+                Icon={Undo}
+                onClick={undo}
+                aria-label="Undo refined prompt"
+              />
+            )}
+            <ChatControl
+              Icon={WandSparkles}
+              onClick={refinePrompt}
+              disabled={!hub.input.length}
+              isLoading={isLoadingRefinedPrompt}
+              aria-label="Refine prompt"
+            />
             <ChatControl
               Icon={ArrowUp}
               type="submit"
               aria-label="Send message"
-              disabled={!hub.sendEnabled}
+              disabled={!hub.sendEnabled || isLoadingRefinedPrompt}
               isLoading={isLoading}
             />
           </div>
