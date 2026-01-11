@@ -8,9 +8,7 @@ test.describe("Chat History", () => {
     test("should navigate to history page from sidebar", async ({
       page,
       db,
-      authenticatedUser,
     }) => {
-      expect(authenticatedUser).toBeDefined();
       // Create some chats to ensure sidebar chat list is visible
       const chats = Array.from({ length: 5 }).map((_, i) => ({
         title: `Chat Title ${i}`,
@@ -36,12 +34,7 @@ test.describe("Chat History", () => {
   });
 
   test.describe("Chat List", () => {
-    test("should display chats correctly", async ({
-      page,
-      db,
-      authenticatedUser,
-    }) => {
-      expect(authenticatedUser).toBeDefined();
+    test("should display chats correctly", async ({ page, db }) => {
       const chats = [
         {
           title: "Test Chat 1",
@@ -62,12 +55,7 @@ test.describe("Chat History", () => {
       await historyPage.assertChatVisible("Test Chat 2");
     });
 
-    test("should filter chats by title", async ({
-      page,
-      db,
-      authenticatedUser,
-    }) => {
-      expect(authenticatedUser).toBeDefined();
+    test("should filter chats by title", async ({ page, db }) => {
       const targetTitle = "Special Unique Chat Title";
       const otherTitle = "Another Chat Title";
       const chats = [
@@ -97,12 +85,7 @@ test.describe("Chat History", () => {
       await historyPage.assertChatVisible(otherTitle);
     });
 
-    test("should support infinite scroll", async ({
-      page,
-      db,
-      authenticatedUser,
-    }) => {
-      expect(authenticatedUser).toBeDefined();
+    test("should support infinite scroll", async ({ page, db }) => {
       // Create 25 chats
       const chats = Array.from({ length: 25 }).map((_, i) => ({
         title: `History Chat ${i}`,
@@ -129,10 +112,7 @@ test.describe("Chat History", () => {
       test("should show confirmation modal and allow canceling deletion", async ({
         page,
         db,
-        authenticatedUser,
       }) => {
-        expect(authenticatedUser).toBeDefined();
-
         const chatTitle = "Chat To Delete";
         const chats = [
           {
@@ -161,12 +141,7 @@ test.describe("Chat History", () => {
         await historyPage.assertChatVisible(chatTitle);
       });
 
-      test("should delete a chat after confirmation", async ({
-        page,
-        db,
-        authenticatedUser,
-      }) => {
-        expect(authenticatedUser).toBeDefined();
+      test("should delete a chat after confirmation", async ({ page, db }) => {
         const chatTitle = "Chat To Be Removed";
         const chats = [
           {
@@ -191,9 +166,7 @@ test.describe("Chat History", () => {
       test("should NOT sort pinned chats to top on History page (chronological order)", async ({
         page,
         db,
-        authenticatedUser,
       }) => {
-        expect(authenticatedUser).toBeDefined();
         // Use unique titles to avoid collisions with worker-shared user
         const olderPinnedTitle = `Older Pinned Chat ${randomUUID().slice(
           0,
@@ -207,7 +180,7 @@ test.describe("Chat History", () => {
         const olderPinnedChat = {
           title: olderPinnedTitle,
           pinned: true,
-          updatedAt: new Date(Date.now() - 5000), // 5 seconds ago (older)
+          updatedAt: new Date(Date.now() - 60000), // 1 minute ago (older)
           messages: [{ role: "user" as const, content: "Hello" }],
         };
         const newerUnpinnedChat = {
@@ -222,7 +195,7 @@ test.describe("Chat History", () => {
         const historyPage = new HistoryPage(page);
         await historyPage.goto();
 
-        // Wait for chats to be visible before checking order
+        // Wait for both chats to be visible before checking order
         await historyPage.assertChatVisible(newerUnpinnedTitle);
         await historyPage.assertChatVisible(olderPinnedTitle);
 
@@ -244,10 +217,7 @@ test.describe("Chat History", () => {
       test("should preserve updatedAt and order when pinning a chat", async ({
         page,
         db,
-        authenticatedUser,
       }) => {
-        expect(authenticatedUser).toBeDefined();
-
         // Use unique titles to avoid collisions with worker-shared user
         const olderChatTitle = `Older Chat For Pinning ${randomUUID().slice(
           0,
@@ -261,7 +231,7 @@ test.describe("Chat History", () => {
         const olderChat = {
           title: olderChatTitle,
           pinned: false,
-          updatedAt: new Date(Date.now() - 5000), // 5 seconds ago (older)
+          updatedAt: new Date(Date.now() - 60000), // 1 minute ago (older)
           messages: [{ role: "user" as const, content: "Hello" }],
         };
         const newerChat = {
@@ -276,7 +246,7 @@ test.describe("Chat History", () => {
         const historyPage = new HistoryPage(page);
         await historyPage.goto();
 
-        // Wait for chats to be visible before checking order
+        // Wait for both chats to be visible before checking order
         await historyPage.assertChatVisible(newerChatTitle);
         await historyPage.assertChatVisible(olderChatTitle);
 
@@ -301,6 +271,11 @@ test.describe("Chat History", () => {
 
         // Reload to verify server state
         await page.reload();
+
+        // Wait for list to reload after navigation
+        await historyPage.assertChatVisible(newerChatTitle);
+        await historyPage.assertChatVisible(olderChatTitle);
+
         items = await historyPage.historyList
           .getByRole("listitem")
           .allTextContents();
@@ -312,9 +287,7 @@ test.describe("Chat History", () => {
       test("should NOT disable trash button when pinning a chat", async ({
         page,
         db,
-        authenticatedUser,
       }) => {
-        expect(authenticatedUser).toBeDefined();
         const chatTitle = "Chat For Pinning State Check";
         const chats = [
           {

@@ -46,6 +46,11 @@ export class NavigationComponent {
     });
   }
 
+  async scrollToMessage(index: number) {
+    const message = this.container.locator('[data-role="user"]').nth(index);
+    await message.scrollIntoViewIfNeeded();
+  }
+
   async scrollToPosition(top: number) {
     await this.scrollContainer.evaluate((el, scrollTop) => {
       el.scrollTo({ top: scrollTop, behavior: "instant" });
@@ -84,11 +89,16 @@ export class NavigationComponent {
 
   /**
    * Assert that a user message is in the viewport using native Playwright assertion.
-   * This is more reliable than pixel calculations, especially in CI/headless.
+   * Uses toPass for retry logic to handle scroll animation timing.
    */
   async assertUserMessageInViewport(index: number) {
     const message = this.container.locator('[data-role="user"]').nth(index);
-    await expect(message).toBeInViewport();
+    await expect(async () => {
+      await expect(message).toBeInViewport();
+    }).toPass({
+      intervals: [500, 1_000, 2_000],
+      timeout: 10_000,
+    });
   }
 
   /**

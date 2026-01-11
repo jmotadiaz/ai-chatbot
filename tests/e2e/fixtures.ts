@@ -23,13 +23,9 @@ type NewChat = {
   pinned?: boolean;
   updatedAt?: Date;
 };
-
-interface WorkerFixtures {
-  workerUser: User;
-}
-
 interface TestFixtures {
-  authenticatedUser: { id: string; email: string };
+  authenticatedUser: User;
+  testUser: User;
   db: {
     testUser: User;
     addChats: (newChats: NewChat[]) => Promise<Chat[]>;
@@ -40,35 +36,69 @@ interface TestFixtures {
  * Extended test with fixtures for AI providers and database
  * This allows dependency injection for testing
  */
-export const test = base.extend<TestFixtures, WorkerFixtures>({
-  // Worker-scoped fixture: creates ONE user per worker thread
-  workerUser: [
-    async ({}, use) => {
-      const client = postgres(
-        process.env.POSTGRES_URL ??
-          "postgres://postgres:postgres@localhost:5434/test"
-      );
-      const db = drizzle(client, { schema });
+export const test = base.extend<TestFixtures>({
+  // Main User Fixture: Creates user in DB AND authenticates them in the browser
+  authenticatedUser: async ({ page, baseURL }, use) => {
+    // 1. Create User in DB
+    const client = postgres(
+      process.env.POSTGRES_URL ??
+        "postgres://postgres:postgres@localhost:5434/test"
+    );
+    const db = drizzle(client, { schema });
 
-      // Use salt rounds = 1 for fast hashing in tests
-      const hashedPassword = hashSync("test-password", 1);
+    // Use salt rounds = 1 for fast hashing in tests
+    const hashedPassword = hashSync("test-password", 1);
 
-      const [testUser] = await db
-        .insert(user)
-        .values({
-          email: `worker-${randomUUID()}@test.com`,
-          password: hashedPassword,
-        })
-        .returning();
+    const [newUser] = await db
+      .insert(user)
+      .values({
+        email: `test-${randomUUID()}@test.com`,
+        password: hashedPassword,
+      })
+      .returning();
 
-      await use(testUser);
-      await client.end();
-    },
-    { scope: "worker" },
-  ],
+    // 2. Authenticate (Inject Cookie)
+    const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
+    const token: DefaultJWT = {
+      id: newUser.id,
+      email: newUser.email,
+      type: "regular",
+    };
 
-  // Test-scoped fixture: reuses workerUser, provides DB helpers
-  db: async ({ workerUser }, use) => {
+    const { encode } = await import("next-auth/jwt");
+    const cookieName = "authjs.session-token";
+
+    const encodedToken = await encode({
+      token,
+      secret,
+      salt: cookieName,
+    });
+
+    const url = new URL(baseURL ?? "http://localhost:3000");
+    const domain = url.hostname;
+
+    await page.context().addCookies([
+      {
+        name: cookieName,
+        value: encodedToken,
+        domain,
+        path: "/",
+        httpOnly: true,
+        sameSite: "Lax",
+        secure: false,
+        expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 1 week
+      },
+    ]);
+
+    // Provide the authenticated user (full object) to the test
+    await use(newUser);
+
+    // Cleanup
+    await client.end();
+  },
+
+  // DB Fixture: Depends on authenticatedUser, so accessing db guarantees an authenticated session
+  db: async ({ authenticatedUser }, use) => {
     const client = postgres(
       process.env.POSTGRES_URL ??
         "postgres://postgres:postgres@localhost:5434/test"
@@ -83,7 +113,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
             .insert(chat)
             .values({
               title: newChat.title,
-              userId: workerUser.id,
+              userId: authenticatedUser.id,
               pinned: newChat.pinned,
               updatedAt: newChat.updatedAt,
             })
@@ -102,51 +132,14 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       return insertedChats;
     };
 
-    await use({ testUser: workerUser, addChats });
+    await use({ testUser: authenticatedUser, addChats });
     await client.end();
   },
 
-  authenticatedUser: async ({ page, baseURL, db }, use) => {
-    const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
-
-    const { testUser } = db;
-
-    const token: DefaultJWT = {
-      id: testUser.id,
-      email: testUser.email,
-      type: "regular",
-    };
-
-    const { encode } = await import("next-auth/jwt");
-    const cookieName = "authjs.session-token";
-
-    const encodedToken = await encode({
-      token,
-      secret,
-      salt: cookieName,
-    });
-
-    // --- Step 3: Set session cookie ---
-
-    // Derive correct domain from baseURL (strip protocol and port)
-    const url = new URL(baseURL ?? "http://localhost:3000");
-    const domain = url.hostname;
-
-    await page.context().addCookies([
-      {
-        name: cookieName,
-        value: encodedToken,
-        domain,
-        path: "/",
-        httpOnly: true,
-        sameSite: "Lax",
-        secure: false,
-        expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 1 week
-      },
-    ]);
-
-    // Provide the authenticated user to the test
-    await use({ id: testUser.id, email: testUser.email });
+  // Deprecated/Alias provided for backward compatibility if strict types needed,
+  // but pointing to authenticatedUser to ensure singleton behavior per test
+  testUser: async ({ authenticatedUser }, use) => {
+    await use(authenticatedUser);
   },
 });
 

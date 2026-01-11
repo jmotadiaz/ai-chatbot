@@ -10,7 +10,7 @@ test.describe("Chat Sidebar", () => {
   const chatTitle1 = `Sidebar Chat 1 - ${randomUUID().slice(0, 8)}`;
   const chatTitle2 = `Sidebar Chat 2 - ${randomUUID().slice(0, 8)}`;
 
-  test.beforeEach(async ({ db, authenticatedUser }) => {
+  test.beforeEach(async ({ db }) => {
     const chats = [
       {
         title: chatTitle1,
@@ -22,7 +22,6 @@ test.describe("Chat Sidebar", () => {
       },
     ];
     createdChats = await db.addChats(chats);
-    expect(authenticatedUser).toBeDefined();
   });
 
   test("should navigate between chats", async ({ page }) => {

@@ -39,14 +39,13 @@ test.describe("Chat Navigation", () => {
   let longChat: Chat;
   let singleMessageChat: Chat;
 
-  test.beforeEach(async ({ db, authenticatedUser }) => {
+  test.beforeEach(async ({ db }) => {
     const chats = await db.addChats([
       chatWithManyMessages,
       chatWithSingleMessage,
     ]);
     longChat = chats[0];
     singleMessageChat = chats[1];
-    expect(authenticatedUser).toBeDefined();
   });
 
   test.describe("Initial scroll position", () => {
@@ -99,10 +98,10 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Get position of second message and scroll there
-      const secondMessagePos =
-        await chatPage.chat.navigation.getUserMessageScrollPosition(1);
-      await chatPage.chat.navigation.scrollToPosition(secondMessagePos + 100);
+      // Scroll so that message 2 is visible (message 0 leaves viewport)
+      await chatPage.chat.navigation.scrollToMessage(2);
+      await chatPage.chat.navigation.assertUserMessageInViewport(2);
+      await chatPage.chat.navigation.assertUserMessageNotInViewport(0);
 
       // Wait for prev button to appear
       await chatPage.chat.navigation.assertPrevButtonVisible();
@@ -117,10 +116,9 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to message 5 position
-      const message5Pos =
-        await chatPage.chat.navigation.getUserMessageScrollPosition(5);
-      await chatPage.chat.navigation.scrollToPosition(message5Pos);
+      // Scroll to message 5
+      await chatPage.chat.navigation.scrollToMessage(5);
+      await chatPage.chat.navigation.assertUserMessageInViewport(5);
 
       // Wait for prev button to be visible
       await chatPage.chat.navigation.assertPrevButtonVisible();
@@ -128,11 +126,8 @@ test.describe("Chat Navigation", () => {
       // Click prev button
       await chatPage.chat.navigation.clickPrev();
 
-      // After clicking prev from position of message 5, we should scroll to a previous message
-      // The scroll position should be less than where we started
-      // After clicking prev from position of message 5, we should scroll to a previous message
-      // The scroll position should be less than where we started
-      await chatPage.chat.navigation.assertScrollTopLessThan(message5Pos);
+      // After clicking prev, we should have navigated to message 4
+      await chatPage.chat.navigation.assertUserMessageInViewport(4);
     });
   });
 
@@ -213,21 +208,18 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to top
+      // Scroll to top so message 0 is visible
       await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.assertUserMessageInViewport(0);
 
       // Wait for next button to appear
       await chatPage.chat.navigation.assertNextButtonVisible();
 
-      const initialScrollTop = await chatPage.chat.navigation.getScrollTop();
-
       // Click next button
       await chatPage.chat.navigation.clickNext();
 
-      // Should have scrolled down
-      await chatPage.chat.navigation.assertScrollTopGreaterThan(
-        initialScrollTop
-      );
+      // After clicking next, message 1 should be visible
+      await chatPage.chat.navigation.assertUserMessageInViewport(1);
     });
   });
 
@@ -286,8 +278,8 @@ test.describe("Chat Navigation", () => {
       // Click bottom button
       await chatPage.chat.navigation.clickBottom();
 
-      // Should be near bottom
-      await chatPage.chat.navigation.assertDistanceFromBottomLessThan(100);
+      // Last message (9) should be visible
+      await chatPage.chat.navigation.assertUserMessageInViewport(9);
     });
   });
 

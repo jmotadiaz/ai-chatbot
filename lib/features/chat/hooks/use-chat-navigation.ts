@@ -6,7 +6,15 @@ interface UseChatNavigationProps {
   messages?: Array<ChatbotMessage>;
 }
 
-const getScrollPosition = (element: HTMLElement, container: HTMLElement, offset = 0) => {
+// Use instant scroll in test environments for reliable E2E testing
+const isTestEnv = process.env.NEXT_PUBLIC_ENV === "test";
+const scrollBehavior: ScrollBehavior = isTestEnv ? "instant" : "smooth";
+
+const getScrollPosition = (
+  element: HTMLElement,
+  container: HTMLElement,
+  offset = 0
+) => {
   const elementRect = element.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
   return elementRect.top - containerRect.top + container.scrollTop - offset;
@@ -18,8 +26,6 @@ const getLastUserMessageElement = (container: HTMLElement) => {
   ) as HTMLElement[];
   return userMessageElements[userMessageElements.length - 1] ?? null;
 };
-
-
 
 export const useChatNavigation = ({
   scrollContainerRef,
@@ -95,7 +101,9 @@ export const useChatNavigation = ({
     initialAnchorContainerRef.current = container;
 
     // Stop if the user interacts (we should not fight manual scroll).
-    container.addEventListener("wheel", stopInitialAnchorLock, { passive: true });
+    container.addEventListener("wheel", stopInitialAnchorLock, {
+      passive: true,
+    });
     container.addEventListener("touchstart", stopInitialAnchorLock, {
       passive: true,
     });
@@ -107,7 +115,8 @@ export const useChatNavigation = ({
 
     // Prefer observing the inner content container to reduce noise.
     const contentContainer =
-      (container.querySelector(".max-w-5xl") as HTMLElement | null) ?? container;
+      (container.querySelector(".max-w-5xl") as HTMLElement | null) ??
+      container;
 
     const scheduleStop = () => {
       if (initialAnchorStopTimerRef.current) {
@@ -208,8 +217,8 @@ export const useChatNavigation = ({
             // Show next when last user message is below viewport AND there's more than 1 user message
             setShowNext(
               !entry.isIntersecting &&
-              isBelowViewport &&
-              userMessageElements.length > 1
+                isBelowViewport &&
+                userMessageElements.length > 1
             );
           }
         });
@@ -308,7 +317,7 @@ export const useChatNavigation = ({
       .sort((a, b) => b.top - a.top)[0];
 
     if (target) {
-      container.scrollTo({ top: target.top, behavior: "smooth" });
+      container.scrollTo({ top: target.top, behavior: scrollBehavior });
     }
   }, [scrollContainerRef]);
 
@@ -329,7 +338,7 @@ export const useChatNavigation = ({
       .sort((a, b) => a.top - b.top)[0];
 
     if (target) {
-      container.scrollTo({ top: target.top, behavior: "smooth" });
+      container.scrollTo({ top: target.top, behavior: scrollBehavior });
     }
   }, [scrollContainerRef]);
 
@@ -338,7 +347,7 @@ export const useChatNavigation = ({
     if (container) {
       container.scrollTo({
         top: container.scrollHeight,
-        behavior: "smooth",
+        behavior: scrollBehavior,
       });
     }
   }, [scrollContainerRef]);
@@ -348,7 +357,7 @@ export const useChatNavigation = ({
     if (container) {
       container.scrollTo({
         top: 0,
-        behavior: "smooth",
+        behavior: scrollBehavior,
       });
     }
   }, [scrollContainerRef]);

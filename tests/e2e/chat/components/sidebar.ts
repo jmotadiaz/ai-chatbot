@@ -22,10 +22,11 @@ export class SidebarComponent {
    * Get all chat titles from the sidebar
    */
   getChatItemByTitle(title: string): Locator {
+    // Use .first() because sidebar creates animation clones with opacity-0
     return this.chatList
-      .getByText(title, { exact: true })
-      .first()
-      .locator('xpath=ancestor::div[@role="listitem"]');
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .first();
   }
 
   /**
@@ -33,11 +34,7 @@ export class SidebarComponent {
    * @param title The title of the chat to delete
    */
   async deleteChat(title: string) {
-    // Use first() to handle cases where multiple chats with similar titles exist
-    await this.getChatItemByTitle(title)
-      .first()
-      .getByLabel("Delete chat")
-      .click();
+    await this.getChatItemByTitle(title).getByLabel("Delete chat").click();
   }
 
   /**
