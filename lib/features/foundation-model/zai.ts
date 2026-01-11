@@ -11,6 +11,7 @@ export const ZAI_CONFIG = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
+        order: ["deepinfra", "cerebras"],
       },
     },
   },
