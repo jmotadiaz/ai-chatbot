@@ -106,11 +106,12 @@ export const useHandleProjectForm = ({
     });
   }, [modelConfig]);
 
-  const { refinePrompt, isLoadingRefinedPrompt } = usePromptRefiner({
-    input: systemPrompt,
-    setInput: setSystemPrompt,
-    metaPrompt: systemMetaPrompt,
-  });
+  const { refinePrompt, isLoadingRefinedPrompt, undo, hasPreviousMessage } =
+    usePromptRefiner({
+      input: systemPrompt,
+      setInput: setSystemPrompt,
+      metaPrompt: systemMetaPrompt,
+    });
 
   const handleToggleTool = (tool: Tool) => () => {
     setTools((prev) =>
@@ -192,6 +193,8 @@ export const useHandleProjectForm = ({
     handleSaveProject,
     refinePrompt,
     isLoadingRefinedPrompt,
+    undo,
+    hasPreviousMessage,
     models,
   };
 };

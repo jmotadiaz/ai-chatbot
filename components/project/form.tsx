@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Database, Globe, Save, WandSparkles } from "lucide-react";
+import { Database, Globe, Save, Undo, WandSparkles } from "lucide-react";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +66,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     handleSaveProject,
     refinePrompt,
     isLoadingRefinedPrompt,
+    undo,
+    hasPreviousMessage,
     models,
   } = useHandleProjectForm({ project });
 
@@ -114,6 +116,22 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                   value={systemPrompt}
                   isLoading={isLoadingRefinedPrompt}
                   extraCommands={[
+                    ...(hasPreviousMessage
+                      ? [
+                          {
+                            name: "undo",
+                            keyCommand: "undo",
+                            icon: (
+                              <div
+                                className={markdownCommandStyle}
+                                onClick={undo}
+                              >
+                                <Undo size={12} />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
                     {
                       name: "refine",
                       keyCommand: "refine",
@@ -165,9 +183,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 onToggle={handleAdvancedToggle}
                 className="mt-2 border-none"
               >
-                <h4 className="text-base font-semibold mb-4">
-                  Model Settings
-                </h4>
+                <h4 className="text-base font-semibold mb-4">Model Settings</h4>
                 <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
                   {modelConfig.temperature !== undefined && (
                     <div className="flex flex-col gap-2">
@@ -223,7 +239,10 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                     <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
                       {hasTool(RAG_TOOL) && (
                         <div className="flex flex-col gap-2">
-                          <Label className="text-base" htmlFor="ragMaxResources">
+                          <Label
+                            className="text-base"
+                            htmlFor="ragMaxResources"
+                          >
                             RAG Max Resources
                           </Label>
                           <InputNumber
@@ -246,7 +265,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                           </Label>
                           <InputNumber
                             id="webSearchNumResults"
-                            value={webSearchNumResults ?? defaultWebSearchNumResults}
+                            value={
+                              webSearchNumResults ?? defaultWebSearchNumResults
+                            }
                             min={1}
                             max={10}
                             step={1}
@@ -288,7 +309,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                 metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
                 title={title}
                 preventChatPersistence={true}
-                webSearchNumResults={isAdvancedOpen ? webSearchNumResults : undefined}
+                webSearchNumResults={
+                  isAdvancedOpen ? webSearchNumResults : undefined
+                }
                 ragMaxResources={isAdvancedOpen ? ragMaxResources : undefined}
               >
                 <Chat className="flex-1 justify-center" />
