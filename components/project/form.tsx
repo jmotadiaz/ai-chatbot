@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Database, Globe, Save, WandSparkles } from "lucide-react";
+import { Database, Globe, Save, WandSparkles, Undo } from "lucide-react";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +67,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     refinePrompt,
     isLoadingRefinedPrompt,
     models,
+    undo,
+    hasPreviousMessage,
   } = useHandleProjectForm({ project });
 
   return (
@@ -114,6 +116,19 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
                   value={systemPrompt}
                   isLoading={isLoadingRefinedPrompt}
                   extraCommands={[
+                    ...(hasPreviousMessage
+                      ? [
+                          {
+                            name: "undo",
+                            keyCommand: "undo",
+                            icon: (
+                              <div className={markdownCommandStyle} onClick={undo}>
+                                <Undo size={12} />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
                     {
                       name: "refine",
                       keyCommand: "refine",
