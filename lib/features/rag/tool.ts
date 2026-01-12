@@ -3,7 +3,6 @@ import { z } from "zod";
 import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
-import { logOnFile } from "@/lib/utils/server-utils";
 
 export interface RagFactoryArgs {
   messages: UIMessage[];
@@ -92,8 +91,6 @@ export const ragFactory = ({
           userId,
           limit: ragMaxResources,
         });
-
-        logOnFile("resources.json", resources);
 
         return resources;
       },

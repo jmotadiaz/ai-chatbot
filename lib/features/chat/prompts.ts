@@ -26,26 +26,38 @@ export const codeBlockPrompt = `
     ~~~
 
     ### Mermaid Code Blocks
-    When providing diagrams using Mermaid syntax, follow these guidelines to ensure clarity, compatibility, and proper rendering:
+    When generating diagrams, use \`mermaid\` code blocks. Adhere to the following syntax strictures to ensure rendering success and leverage v11+ capabilities:
 
-    #### Character Requirements
-    - **Incorporate ASCII characters** in all node text and labels to maintain broad compatibility.
-    - **Employ standard keyboard characters** for all diagram elements to support reliable display.
-    - **Represent conceptual arrows within text** using: \`->\`, \`to\`, \`towards\`, or descriptive words to convey direction clearly.
+    #### 1. Syntax Safety & Text Handling
+    - **Quote Strings:** Enclose **all** node labels and descriptions in double quotes \`""\` to prevent syntax errors caused by special characters (e.g., \`id["User: Action (Details)"]\`).
+    - **Escape Characters:** Within quoted labels, escape double quotes (\`\\"\`) and utilize HTML entities for brackets if necessary (\`#40;\` for \`(\`, \`#41;\` for \`)\`).
+    - **Markdown Strings:** For **Flowcharts** and **Mindmaps**, prefer using the Markdown string syntax (double quotes + backticks) for rich formatting and auto-wrapping: \`\` id["\`**Bold** and *Italic* text\`"] \`\`.
+    - **Avoid Reserved Keywords:** Do not use keywords like \`end\`, \`subgraph\`, or \`class\` as identifiers unless enclosed in quotes.
 
-    #### Recommended Characters
-    - **Apply arrows** such as \`->\`, \`to\`, or \`towards\` to indicate flow and connections effectively.
-    - **Utilize bullet points** with \`-\` or \`*\` to organize lists neatly.
-    - **Provide emphasis** through descriptive words to highlight important elements without relying on symbols.
+    #### 2. Diagram Selection & V11 Features
+    - **Flowcharts (Enhanced):** Use standard syntax (\`flowchart TD\` or \`graph\`), but leverage Mermaid v11+ expanded shapes using the \`@{ shape: ... }\` syntax when specific semantics are required (e.g., \`A@{ shape: doc }\` for documents, \`B@{ shape: cloud }\` for cloud, \`C@{ shape: db }\` for database).
+    - **Architecture Diagrams:** For high-level cloud/infrastructure overviews, use the \`architecture-beta\` syntax rather than generic flowcharts.
+    - **Block Diagrams:** Use \`block-beta\` for precise layout control of nested systems where auto-layout flowcharts fail.
+    - **Packet Diagrams:** Use \`packet-beta\` for network packet structures, utilizing the start-end bit syntax or length syntax.
+    - **Kanban:** Use \`kanban\` for visualizing workflow stages and tasks.
 
-    #### Node Format
-    - **Craft node text** in the format \`[Simple description using standard characters]\` to keep it straightforward and compatible.
-    - **Establish connections** using standard Mermaid syntax like \`-->\`, \`->\`, \`-.->\`, or \`==>\` based on the diagram type to create accurate relationships.
+    #### 3. Best Practices by Type
+    - **Flowcharts:**
+        - Use \`TB\` (Top-to-Bottom) or \`LR\` (Left-to-Right) for orientation.
+        - Use distinct node IDs (e.g., \`node1\`) separate from label text.
+    - **Sequence Diagrams:**
+        - Use \`actor\`, \`participant\`, or \`box\` to define structure explicitly before messages.
+        - Use \`activate\` and \`deactivate\` (or \`+\`/\`-\`) to show lifecycle focus.
+    - **Class Diagrams:**
+        - Use generic type syntax with tildes: \`List~int~\` instead of brackets.
+        - Define relationships clearly: \`classA <|-- classB\` (Inheritance).
+    - **ER Diagrams:**
+        - Use quotes for entity names with spaces: \`block-beta\` \`PERSON\` \`||--o{\` \`"CREDIT CARD"\`.
 
-    #### Validation
-    - **Confirm that all node texts include ASCII characters** to support universal rendering.
-    - **Verify that the diagram renders correctly** with a standard character set to ensure optimal functionality.
-
+    #### 4. Styling & Readability
+    - **Theme Neutrality:** Do not hardcode dark/light text colors unless necessary. Rely on default themes.
+    - **Class Definitions:** For flowcharts/state diagrams, prefer defining styles via \`classDef\` at the end of the code block and assigning them (e.g., \`classDef accent fill:#f9f; class A accent;\`) rather than inline styles.
+    - **Complexity Management:** If a diagram becomes too large, break it down using subgraphs or suggest splitting it into multiple diagrams.
 `;
 
 export const defaultSystemPrompt = `
