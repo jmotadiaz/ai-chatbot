@@ -3,6 +3,7 @@ import { z } from "zod";
 import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { logOnFile } from "@/lib/utils/server-utils";
 
 export interface RagFactoryArgs {
   messages: UIMessage[];
@@ -39,26 +40,28 @@ export const ragFactory = ({
 }: RagFactoryArgs) =>
   ({
     [RAG_TOOL]: tool({
-      description:
-        "Advanced retrieval tool for answering complex questions from the knowledge base. It employs a Multi-hop QA strategy by decomposing the user's request into multiple sub-queries (`multiHopQueries`) to retrieve diverse information. It also requires a synthesized query (`queryRewriting`) for a subsequent reranking step to ensure high relevance. All queries must be in English.",
+      description: `
+        Primary interface for retrieving information from the knowledge base. Use this tool whenever the user asks technical questions, requests code examples, or needs clarification on concepts documentation.
+
+        CRITICAL: You must decompose the user's request into multiple distinct search angles to ensure full context coverage. The generated queries (multiHopQueries and queryRewriting) must be in English language.
+      `,
       inputSchema: z.object({
-        multiHopQueries: z
-          .array(z.string())
-          .min(1)
-          .max(5)
-          .describe(
-            "An array of search queries to perform a Multi-hop QA (max 5 queries), maximizing relevant keywords to retrieve relevant corpus segments. Each query MUST be in english and optimized for rag search."
-          ),
-        queryRewriting: z
-          .string()
-          .describe(
-            "Your task is to refine the user's original query by enriching it with key concepts extracted from the generated 'multiHopQueries'. Use the original query as the structural anchor and 'decorate' it with the most significant keywords found in the multi-hop synthesis to maximize retrieval density. The output must be a single, semantically coherent query in English that preserves the user's original intent while expanding its lexical coverage."
-          ),
+        multiHopQueries: z.array(z.string()).min(1).max(5).describe(`
+            Decompose the user's complex question into 3-5 distinct, atomic sub-queries. Each sub-query should target a specific aspect (e.g., definition, implementation, configuration, error handling) or a prerequisite piece of knowledge needed to answer the main question. \n\nStrategy: \n1. Strip conversational filler.\n2. Focus on high-value technical entities and keywords.\n3. Ensure queries are 'orthogonal' (don't repeat the same search intent twice).
+          `),
+        queryRewriting: z.string().describe(`
+            Generate a single, fully self-contained search query that encapsulates the core user intent.
+
+            Requirements:
+              1. This string will be used for the Reranking step, so it must be a grammatically correct, semantically dense question or statement.
+              2. Identify the main keywords.
+              3. Resolve any pronouns (it, they, this) or ambiguous references based on conversation history (Contextual De-aliasing).
+          `),
         queryType: z
           .enum(QUERY_TYPES)
           .default("RETRIEVAL_QUERY")
           .describe(
-            "The type of the query, which can be either 'RETRIEVAL_QUERY' (general search queries) or 'CODE_RETRIEVAL_QUERY' (for retrieval of code blocks based on natural language queries)."
+            "Classify the intent: use 'CODE_RETRIEVAL_QUERY' ONLY if the user explicitly asks for code snippets, implementation examples, or syntax. Use 'RETRIEVAL_QUERY' for concepts, debugging, architectural questions, or general knowledge."
           ),
       }),
       outputSchema: z.array(
@@ -89,6 +92,8 @@ export const ragFactory = ({
           userId,
           limit: ragMaxResources,
         });
+
+        logOnFile("resources.json", resources);
 
         return resources;
       },

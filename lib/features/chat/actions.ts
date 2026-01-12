@@ -223,7 +223,7 @@ export async function processChatResponse({
             executedTools.add(RAG_TOOL);
             return {
               ...(!modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-3-flash-preview"),
+                model: providers.google("gemini-2.5-flash"),
                 providerOptions: {
                   google: {
                     thinkingConfig: {

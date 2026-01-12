@@ -1,3 +1,4 @@
+import deepmerge from "deepmerge";
 import type { ModelConfiguration, ProviderOptions } from "./types";
 
 import { ALIBABA_CONFIG } from "./alibaba";
@@ -44,7 +45,6 @@ export const chatModelKeys = [
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Llama 4 Scout",
-  "Llama 4 Maverick",
   "Sonar",
   "Sonar Pro",
   "Claude Haiku 4.5",
@@ -77,9 +77,17 @@ export const languageModelConfigurations = (
 ): ModelConfiguration => {
   const baseConfig: ModelConfiguration =
     LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
+
+  if (providerOptions && baseConfig.providerOptions) {
+    return {
+      ...baseConfig,
+      providerOptions: deepmerge(baseConfig.providerOptions, providerOptions),
+    };
+  }
+
   return {
     ...baseConfig,
-    ...(providerOptions && { providerOptions: { ...providerOptions } }),
+    ...(providerOptions && { providerOptions }),
   };
 };
 
@@ -106,7 +114,9 @@ export const getChatConfigurationByModelId = (
     supportedFiles: [] as Required<ModelConfiguration>["supportedFiles"],
     reasoning: false,
     zeroDataRetention: false,
-    supportedOutput: ["text"] as Required<ModelConfiguration>["supportedOutput"],
+    supportedOutput: [
+      "text",
+    ] as Required<ModelConfiguration>["supportedOutput"],
   };
 
   if (modelId === "Router") {
@@ -133,4 +143,3 @@ export const getChatConfigurationByModelId = (
     supportedOutput: modelConfig.supportedOutput ?? ["text"],
   };
 };
-

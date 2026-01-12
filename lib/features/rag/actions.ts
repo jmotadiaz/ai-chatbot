@@ -9,7 +9,7 @@ import {
   deleteResourcesByTitles,
   getUniqueResourceTitlesByUserIdPaginated,
 } from "./queries";
-import { saveUrlResource } from "./ingestion/pipeline";
+import { saveUrlResource, saveMarkdownResource } from "./ingestion/pipeline";
 import { auth } from "@/lib/features/auth/auth-config";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
@@ -33,13 +33,14 @@ export async function uploadResources(
   try {
     const startTime = Date.now();
     const jsonFiles = formData.getAll("jsonFile") as File[];
+    const markdownFiles = formData.getAll("markdownFile") as File[];
     const url = formData.get("url") as string;
     const container = formData.get("container") as string | undefined;
     const excludeSelectors = formData.get("excludeSelectors") as
       | string
       | undefined;
 
-    if (jsonFiles.length === 0 && !url) {
+    if (jsonFiles.length === 0 && markdownFiles.length === 0 && !url) {
       return { success: false, error: "No files provided" };
     }
 
@@ -119,6 +120,33 @@ export async function uploadResources(
               }
             })
           );
+        }
+      }
+    }
+
+    // Process markdown files if provided
+    if (markdownFiles.length > 0) {
+      for (const markdownFile of markdownFiles) {
+        try {
+          const fileContent = await markdownFile.text();
+          // Use filename without extension as title
+          const title = markdownFile.name.replace(/\.md$/i, "");
+
+          const { success } = await saveMarkdownResource(
+            title,
+            fileContent,
+            session.user.id
+          );
+
+          if (success) {
+            result.resourcesCreated++;
+          }
+        } catch (error) {
+          console.error(
+            `Error processing markdown file ${markdownFile.name}:`,
+            error
+          );
+          // Continue processing other files
         }
       }
     }

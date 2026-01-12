@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 
 export const RAGUploadForm = () => {
   const [jsonFiles, setJsonFiles] = useState<File[]>([]);
+  const [markdownFiles, setMarkdownFiles] = useState<File[]>([]);
   const [url, setUrl] = useState("");
   const [container, setContainer] = useState("");
   const [excludeSelectors, setExcludeSelectors] = useState("");
@@ -31,10 +32,28 @@ export const RAGUploadForm = () => {
     }
   };
 
+  const handleMarkdownFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      const validFiles: File[] = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        if (!file.name.toLowerCase().endsWith(".md")) {
+          toast.error(`File ${file.name} is not a Markdown file`);
+          continue;
+        }
+        validFiles.push(file);
+      }
+      setMarkdownFiles(validFiles);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (jsonFiles.length === 0 && !url) {
-      toast.error("Please provide a source: JSON file(s) or a URL.");
+    if (jsonFiles.length === 0 && markdownFiles.length === 0 && !url) {
+      toast.error(
+        "Please provide a source: JSON file(s), Markdown file(s), or a URL."
+      );
       return;
     }
 
@@ -45,6 +64,12 @@ export const RAGUploadForm = () => {
         if (jsonFiles.length > 0) {
           jsonFiles.forEach((file) => {
             formData.append("jsonFile", file);
+          });
+        }
+
+        if (markdownFiles.length > 0) {
+          markdownFiles.forEach((file) => {
+            formData.append("markdownFile", file);
           });
         }
 
@@ -62,6 +87,7 @@ export const RAGUploadForm = () => {
             `Successfully processed ${result.resourcesCreated} resources`
           );
           setJsonFiles([]);
+          setMarkdownFiles([]);
           setUrl("");
           setContainer("");
           setExcludeSelectors("");
@@ -151,6 +177,32 @@ export const RAGUploadForm = () => {
             {'{ "urls": ["https://example.com", "https://example2.com"] }'}
           </p>
         </div>
+        <div className="relative flex items-center my-8">
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <span className="flex-shrink mx-4 text-xs text-gray-500 dark:text-gray-400">
+            AND / OR
+          </span>
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
+        <div className="space-y-4">
+          <Label className="mb-2" htmlFor="markdownFile">
+            Markdown File(s) - Optional
+          </Label>
+          <div className="relative">
+            <Input
+              id="markdownFile"
+              type="file"
+              accept=".md,.markdown"
+              multiple
+              onChange={handleMarkdownFileChange}
+              disabled={isLoading}
+              className="file:mr-4 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/20 dark:file:text-purple-400 border-none shadow-none px-0 py-2 cursor-pointer file:cursor-pointer"
+            />
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Upload one or more Markdown files (.md) to be processed directly.
+          </p>
+        </div>
 
         {url && (
           <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
@@ -176,10 +228,30 @@ export const RAGUploadForm = () => {
           </div>
         )}
 
+        {markdownFiles.length > 0 && (
+          <div className="space-y-2">
+            {markdownFiles.map((file, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg"
+              >
+                <FileText className="w-4 h-4 text-purple-500" />
+                <span className="text-sm font-semibold">{file.name}</span>
+                <span className="text-xs text-gray-500">
+                  ({(file.size / 1024).toFixed(1)} KB)
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="text-right mt-4">
           <Button
             type="submit"
-            disabled={(jsonFiles.length === 0 && !url) || isLoading}
+            disabled={
+              (jsonFiles.length === 0 && markdownFiles.length === 0 && !url) ||
+              isLoading
+            }
             isLoading={isLoading}
           >
             <Upload className="w-4 h-4 mr-2" />

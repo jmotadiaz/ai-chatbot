@@ -32,7 +32,7 @@ test.describe("Chat attachments", () => {
     // Get available models after upload
     await chatPage.header.modelPicker.openSelectModelDropdown();
     await expect
-      .soft(chatPage.header.modelPicker.getModelOption("Llama 4 Maverick"))
+      .soft(chatPage.header.modelPicker.getModelOption("Llama 4 Scout"))
       .toBeAttached();
     await expect
       .soft(chatPage.header.modelPicker.getModelOption("Deepseek Chat"))
