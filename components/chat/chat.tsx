@@ -106,6 +106,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
                       </div>
                     )}
                   </div>
+                  <div id="chat-bottom-sentinel" className="h-[1px] w-full" />
                 </>
               )}
             </div>
