@@ -39,7 +39,6 @@ export const useChatNavigation = ({
   const prevUserMessageCount = useRef(0);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const bottomObserverRef = useRef<IntersectionObserver | null>(null);
-  const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
 
   // During initial navigation, Streamdown/code-block rendering can change heights after
   // we already scrolled to the last user message. This lock keeps the last user message
@@ -251,26 +250,12 @@ export const useChatNavigation = ({
       bottomObserverRef.current.disconnect();
     }
 
-    // Create or reuse bottom sentinel element
-    let sentinel = bottomSentinelRef.current;
-    if (!sentinel) {
-      sentinel = document.createElement("div");
-      sentinel.style.height = "1px";
-      sentinel.style.width = "100%";
-      sentinel.setAttribute("data-bottom-sentinel", "true");
-      bottomSentinelRef.current = sentinel;
-    }
-
-    // Find the inner content container and append sentinel
-    const contentContainer = container.querySelector(".max-w-5xl");
-    if (contentContainer && !contentContainer.contains(sentinel)) {
-      contentContainer.appendChild(sentinel);
-    }
+    const sentinel = container.querySelector("#chat-bottom-sentinel");
 
     const bottomObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.target === sentinel) {
+          if (entry.target.id === "chat-bottom-sentinel") {
             // Show bottom button when sentinel is NOT visible
             setShowBottom(!entry.isIntersecting);
           } else if (entry.target.id === "chat-top-sentinel") {
@@ -287,7 +272,9 @@ export const useChatNavigation = ({
     );
 
     bottomObserverRef.current = bottomObserver;
-    bottomObserver.observe(sentinel);
+    if (sentinel) {
+      bottomObserver.observe(sentinel);
+    }
 
     // Observe top sentinel if it exists
     const topSentinel = container.querySelector("#chat-top-sentinel");
