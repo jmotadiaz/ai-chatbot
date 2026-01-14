@@ -11,6 +11,7 @@ import { filterTools } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { ChatLifecycleShell } from "@/components/chat/lifecycle-shell";
 
 interface ProjectPageProps extends Authenticated {
   params: Promise<{
@@ -41,7 +42,7 @@ const Page: React.FC<ProjectPageProps> = async ({
   }
 
   return (
-    <>
+    <ChatLifecycleShell>
       <Sidebar projectId={id} user={user} />
       <ChatLayout
         chatConfig={{
@@ -59,7 +60,7 @@ const Page: React.FC<ProjectPageProps> = async ({
           ragMaxResources: project.ragMaxResources ?? defaultRagMaxResources,
         }}
       />
-    </>
+    </ChatLifecycleShell>
   );
 };
 

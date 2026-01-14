@@ -13,11 +13,11 @@ import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { ToolsControl } from "@/components/chat/tools/control";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 
-export interface HubClientProps {
+export interface ChatHubProps {
   className?: string;
 }
 
-export const HubClient: React.FC<HubClientProps> = ({ className }) => {
+export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
   const hub = useChatHub();
   const inputContainerClassName = "w-full max-w-5xl mx-auto px-4";
 
@@ -32,8 +32,8 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
       visibleSlotsCount <= 1
         ? "2xl:max-w-5xl"
         : visibleSlotsCount === 2
-          ? "2xl:max-w-screen-2xl"
-          : "2xl:max-w-[120rem]";
+        ? "2xl:max-w-screen-2xl"
+        : "2xl:max-w-[120rem]";
     return cn(base, desktopMaxWidth);
   }, [hub.instances.length, hub.instancesLocked]);
 
@@ -44,7 +44,9 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
       : ids;
   }, [hub.instances, hub.instancesLocked]);
 
-  const [activeTab, setActiveTab] = React.useState<string>(() => tabIds[0] ?? "new-model");
+  const [activeTab, setActiveTab] = React.useState<string>(
+    () => tabIds[0] ?? "new-model"
+  );
 
   // Keep active tab valid when instances are added/removed or hub locks.
   React.useEffect(() => {
@@ -70,7 +72,12 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
       {/* Top area (panels) */}
       <div className="flex-1 w-full pb-6 min-h-0">
         {/* Desktop grid */}
-        <div className={cn("hidden 2xl:block h-full min-h-0", panelsContainerClassName)}>
+        <div
+          className={cn(
+            "hidden 2xl:block h-full min-h-0",
+            panelsContainerClassName
+          )}
+        >
           <div className="grid grid-flow-col auto-cols-fr gap-4 h-full min-h-0">
             {hub.instances.map((inst) => (
               <HubInstancePanel
@@ -101,7 +108,12 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
         </div>
 
         {/* Mobile tabs */}
-        <div className={cn("2xl:hidden h-full flex flex-col", panelsContainerClassName)}>
+        <div
+          className={cn(
+            "2xl:hidden h-full flex flex-col",
+            panelsContainerClassName
+          )}
+        >
           <Tabs.Container>
             {hub.instances.map((inst) => (
               <Tabs.Tab
@@ -142,7 +154,9 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
             ))}
 
             {hub.instances.length < 3 && !hub.instancesLocked && (
-              <div className={cn("h-full", activeTab !== "new-model" && "hidden")}>
+              <div
+                className={cn("h-full", activeTab !== "new-model" && "hidden")}
+              >
                 <AddModelDropdown
                   availableModels={hub.availableModels}
                   onSelectModel={(model) => hub.addInstance(model)}
@@ -215,5 +229,3 @@ export const HubClient: React.FC<HubClientProps> = ({ className }) => {
     </div>
   );
 };
-
-

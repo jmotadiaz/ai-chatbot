@@ -1,17 +1,22 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
-import { ChatProvider, type ChatProviderProps } from "@/components/chat/provider";
-import { ChatLifecycleProvider } from "@/components/chat/lifecycle";
+import {
+  ChatProvider,
+  type ChatProviderProps,
+} from "@/components/chat/provider";
+import { useChatLifecycleShell } from "@/components/chat/lifecycle-shell";
 
 export interface ChatShellProps {
   children: React.ReactNode;
   chatConfig: Omit<ChatProviderProps, "children">;
 }
 
-export const ChatShell: React.FC<ChatShellProps> = ({ children, chatConfig }) => {
+export const ChatShell: React.FC<ChatShellProps> = ({
+  children,
+  chatConfig,
+}) => {
   const searchParams = useSearchParams();
   const chatType = searchParams.get("chatType");
   const isTemporary = chatType === "temporary";
@@ -19,14 +24,13 @@ export const ChatShell: React.FC<ChatShellProps> = ({ children, chatConfig }) =>
   // If the server didn't provide a chatId, we're in a "new chat" flow.
   const isNewChat = !chatConfig.chatId;
 
-  const [draftChatId, setDraftChatId] = useState<string>(() => uuidv4());
+  // Get the draftChatId from the parent ChatLifecycleShell
+  const { draftChatId } = useChatLifecycleShell();
 
   const effectiveChatId = isNewChat ? draftChatId : chatConfig.chatId;
-  const providerKey = `${effectiveChatId ?? "chat"}:${isTemporary ? "tmp" : "perm"}`;
-
-  const startNewChat = () => {
-    setDraftChatId(uuidv4());
-  };
+  const providerKey = `${effectiveChatId ?? "chat"}:${
+    isTemporary ? "tmp" : "perm"
+  }`;
 
   const providerProps = useMemo<Omit<ChatProviderProps, "children">>(() => {
     return {
@@ -38,12 +42,8 @@ export const ChatShell: React.FC<ChatShellProps> = ({ children, chatConfig }) =>
   }, [chatConfig, effectiveChatId, isNewChat, isTemporary]);
 
   return (
-    <ChatLifecycleProvider startNewChat={startNewChat}>
-      <ChatProvider key={providerKey} {...providerProps}>
-        {children}
-      </ChatProvider>
-    </ChatLifecycleProvider>
+    <ChatProvider key={providerKey} {...providerProps}>
+      {children}
+    </ChatProvider>
   );
 };
-
-

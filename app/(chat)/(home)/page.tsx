@@ -6,6 +6,7 @@ import {
 } from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { ChatHomeComponent } from "@/app/(chat)/(home)/component";
+import { ChatLifecycleShell } from "@/components/chat/lifecycle-shell";
 
 export interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -22,10 +23,10 @@ const Page: React.FC<PageProps & Authenticated> = async ({
   }
 
   return (
-    <>
+    <ChatLifecycleShell>
       <Sidebar user={user} />
       <ChatHomeComponent />
-    </>
+    </ChatLifecycleShell>
   );
 };
 

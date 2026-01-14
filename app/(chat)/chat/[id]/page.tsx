@@ -18,6 +18,7 @@ import {
   withAuth,
   type Authenticated,
 } from "@/lib/features/auth/with-auth/hoc";
+import { ChatLifecycleShell } from "@/components/chat/lifecycle-shell";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -53,7 +54,7 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
   const initialMessages = dbMessageToChatbotMessage(messages);
 
   return (
-    <>
+    <ChatLifecycleShell>
       <Sidebar chatId={id} user={user} />
       <ChatLayout
         chatConfig={{
@@ -72,7 +73,7 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
           ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,
         }}
       />
-    </>
+    </ChatLifecycleShell>
   );
 };
 

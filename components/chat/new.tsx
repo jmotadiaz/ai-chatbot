@@ -1,6 +1,6 @@
 "use client";
 import { Edit, MessageCircleDashed, LayoutGrid } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils/helpers";
@@ -23,10 +23,27 @@ export const NewChatLink: React.FC<NewChatProps> = ({
   const { status } = useChatContext();
   const { startNewChat } = useChatLifecycle();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentChatType = searchParams.get("chatType");
+  const isCurrentlyTemporary = currentChatType === "temporary";
+
+  const targetPathname = projectId ? `/project/${projectId}/chat` : "/";
+  const isOnTargetPath = pathname === targetPathname;
+  // Check if clicking on same chat type (temporary -> temporary or regular -> regular)
+  const isSameChatType = !!temporary === isCurrentlyTemporary;
+
+  const handleClick = () => {
+    // If we're already on the same path AND same chat type, start a new chat
+    // This handles the case where Next.js won't trigger navigation for identical URLs
+    if (isOnTargetPath && isSameChatType) {
+      startNewChat();
+    }
+  };
+
   return (
     <ChatLink
       href={{
-        pathname: projectId ? `/project/${projectId}/chat` : "/",
+        pathname: targetPathname,
         query: temporary ? { chatType: "temporary" } : {},
       }}
       className={cn(
@@ -34,11 +51,7 @@ export const NewChatLink: React.FC<NewChatProps> = ({
           ? "pointer-events-none opacity-50"
           : "cursor-pointer"
       )}
-      onNavigate={() => {
-        if (pathname === "/" || pathname === `/project/${projectId}/chat`) {
-          startNewChat();
-        }
-      }}
+      onClick={handleClick}
     >
       {children}
     </ChatLink>

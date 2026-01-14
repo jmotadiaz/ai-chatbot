@@ -1,5 +1,5 @@
 import React from "react";
-import { HubClient } from "@/components/chat/hub/hub-client";
+import { ChatHub } from "@/components/chat/hub/chat-hub";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
@@ -17,9 +17,7 @@ export const ChatHubComponent: React.FC = () => {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <HubClient className="pt-16" />
+      <ChatHub className="pt-16" />
     </div>
   );
 };
-
-
