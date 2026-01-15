@@ -4,15 +4,18 @@ import { motion } from "motion/react";
 import type { ChatStatus, UITool, UIToolInvocation } from "ai";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { DotsLoadingIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils/helpers";
 
 interface LoadingMessageProps {
   message: ChatbotMessage;
   status: ChatStatus;
+  className?: string;
 }
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = ({
   message,
   status,
+  className,
 }) => {
   if (
     status === "ready" ||
@@ -24,7 +27,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
 
   return (
     <motion.div
-      className="flex items-center ml-4 h-4"
+      className={cn("flex items-center ml-4 h-4", className)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}

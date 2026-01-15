@@ -1,6 +1,7 @@
 import { ChevronUp, ChevronDown, ChevronsDown, ChevronsUp } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils/helpers";
 
 interface ChatNavigationProps {
   showPrev: boolean;
@@ -11,6 +12,7 @@ interface ChatNavigationProps {
   scrollToNext: () => void;
   scrollToBottom: () => void;
   scrollToTop: () => void;
+  className?: string;
 }
 
 const buttonVariants = {
@@ -59,11 +61,12 @@ export const ChatNavigation: React.FC<ChatNavigationProps> = ({
   scrollToNext,
   scrollToBottom,
   scrollToTop,
+  className,
 }) => {
   return (
     <AnimatePresence>
       <div
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+        className={cn("absolute left-1/2 -translate-x-1/2 z-10 pointer-events-none", className)}
         data-testid="chat-navigation-wrapper"
       >
         <div className="grid grid-cols-4 gap-2 w-[152px]">

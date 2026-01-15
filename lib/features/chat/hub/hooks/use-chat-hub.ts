@@ -2,15 +2,18 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { v4 } from "uuid";
-import type { ChatHub, HubInstance, SubmitHandler, SubmitMessage } from "../types";
+import type {
+  ChatHub,
+  HubInstance,
+  SubmitHandler,
+  SubmitMessage,
+} from "../types";
 import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import type { ChatbotMessage, Tools, Tool } from "@/lib/features/chat/types";
-import {
-  useChatInputState,
-} from "@/lib/features/chat/hooks/use-chat-input-state";
+import { useChatInputState } from "@/lib/features/chat/hooks/use-chat-input-state";
 import { useChatSendEnabled } from "@/lib/features/chat/hooks/use-chat-send-enabled";
 import { useChatTools } from "@/lib/features/chat/hooks/use-chat-tools";
 import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-models";
@@ -69,18 +72,20 @@ export const useChatHub = ({
   const [instancesLocked, setInstancesLocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
-  const [persistingChatId, setPersistingChatId] = useState<string | null>(
-    null
-  );
+  const [persistingChatId, setPersistingChatId] = useState<string | null>(null);
 
   const { input, setInput, handleInputChange } = useChatInputState("");
   const [files, setFiles] = useState<FilePart[]>([]);
 
   const { tools, setTools, toggleTool, hasTool } = useChatTools(initialTools);
 
-  const sendEnabled = useChatSendEnabled({ input, files });
+  const sendEnabled =
+    useChatSendEnabled({ input, files }) && instances.length > 0;
 
-  const instanceModels = useMemo(() => instances.map((i) => i.model), [instances]);
+  const instanceModels = useMemo(
+    () => instances.map((i) => i.model),
+    [instances]
+  );
 
   const baseAvailableModels = useAvailableModels({
     models: HUB_MODELS,
@@ -134,7 +139,11 @@ export const useChatHub = ({
 
   const handleFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
-      await handleFileUpload(setFiles, event.target.files, supportedFilesForPicker);
+      await handleFileUpload(
+        setFiles,
+        event.target.files,
+        supportedFilesForPicker
+      );
     },
     [supportedFilesForPicker]
   );
@@ -230,5 +239,3 @@ export const useChatHub = ({
     handleSubmit,
   };
 };
-
-

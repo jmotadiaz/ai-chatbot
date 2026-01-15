@@ -81,51 +81,56 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     <div
       data-testid="chat-container"
       className={cn(
-        "flex flex-col",
-        messages.length ? "h-full" : "h-vh",
+        "flex flex-col relative",
+        messages.length ? "h-full" : "h-vh gap-10",
         className
       )}
     >
       <div
         className={cn(
-          "w-full overflow-hidden relative",
-          messages.length && "h-full"
+          "w-full overflow-y-auto pt-4",
+          messages.length && "flex-1"
         )}
+        ref={scrollContainerRef}
       >
-        <div className="h-full overflow-y-auto" ref={scrollContainerRef}>
-          <div className="pt-4 pb-20 px-4">
-            <div className="w-full max-w-5xl mx-auto">
-              {messages.length === 0 ? (
-                <ProjectOverview title={title} />
-              ) : (
-                <>
-                  <div ref={topSentinelRef} className="h-[1px] w-full" />
-                  {/* Turnos anteriores - altura natural */}
-                  {previousMessages.length > 0 && (
-                    <Messages messages={previousMessages} />
-                  )}
-
-                  {/* Último turno - min-height para permitir scroll al inicio */}
-                  <div className="min-h-[calc(100dvh-16rem)]">
-                    {lastTurnMessages.map((m) => (
-                      <Message key={m.id} message={m} />
-                    ))}
-                    <LoadingMessage
-                      message={messages[messages.length - 1]}
-                      status={status}
-                    />
-                    {(status === "ready" || status === "error") && (
-                      <div className="mt-1 ml-4">
-                        <ChatReload />
-                      </div>
-                    )}
-                  </div>
-                  <div ref={bottomSentinelRef} className="h-[1px] w-full" />
-                </>
+        <>
+          {messages.length === 0 ? (
+            <ProjectOverview title={title} />
+          ) : (
+            <>
+              <div ref={topSentinelRef} className="h-[1px] w-full" />
+              {/* Turnos anteriores - altura natural */}
+              {previousMessages.length > 0 && (
+                <div className="max-w-5xl mx-auto px-4">
+                  <Messages messages={previousMessages} />
+                </div>
               )}
-            </div>
-          </div>
-        </div>
+
+              {/* Último turno - min-height para permitir scroll al inicio */}
+              <div className="min-h-full max-w-5xl mx-auto px-4 pb-20">
+                {lastTurnMessages.map((m) => (
+                  <Message key={m.id} message={m} />
+                ))}
+                <LoadingMessage
+                  message={messages[messages.length - 1]}
+                  status={status}
+                  className="mt-2"
+                />
+                {(status === "ready" || status === "error") && (
+                  <div className="mt-1 ml-4">
+                    <ChatReload />
+                  </div>
+                )}
+              </div>
+              <div ref={bottomSentinelRef} className="h-[1px] w-full" />
+            </>
+          )}
+        </>
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
+      >
         <ChatNavigation
           showPrev={showPrev}
           showNext={showNext}
@@ -135,12 +140,8 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
           scrollToNext={scrollToNext}
           scrollToBottom={scrollToBottom}
           scrollToTop={scrollToTop}
+          className="-top-12"
         />
-      </div>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4"
-      >
         <div className="relative w-full">
           <Textarea
             onChangeInput={setInput}
