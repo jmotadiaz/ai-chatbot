@@ -4,7 +4,11 @@ import { AnimatePresence, motion } from "motion/react";
 import React, { useMemo, useState } from "react";
 import { useCollapse } from "react-collapsed";
 import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
-import type { ReasoningUIPart, SourceDocumentUIPart, SourceUrlUIPart } from "ai";
+import type {
+  ReasoningUIPart,
+  SourceDocumentUIPart,
+  SourceUrlUIPart,
+} from "ai";
 import Image from "next/image";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
@@ -12,7 +16,10 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import { FileThumbnail } from "@/components/chat/attachments/thumbnail";
 import { Response } from "@/components/chat/response";
-import { mergeReasoningParts, destructuringMessageParts } from "@/lib/features/chat/utils";
+import {
+  mergeReasoningParts,
+  destructuringMessageParts,
+} from "@/lib/features/chat/utils";
 import {
   Reasoning,
   ReasoningContent,
@@ -37,13 +44,11 @@ export interface MessageProps {
   message: ChatbotMessage;
 }
 
-export const Message: React.FC<MessageProps> = ({
-  message,
-}) => {
+export const Message: React.FC<MessageProps> = ({ message }) => {
   return (
     <AnimatePresence key={message.id}>
       <motion.div
-        className="w-full mx-auto px-4 wrap-anywhere"
+        className="w-full mx-auto wrap-anywhere"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         key={`message-${message.id}`}
@@ -52,9 +57,7 @@ export const Message: React.FC<MessageProps> = ({
         {message.role === "user" ? (
           <UserMessage message={message} />
         ) : (
-          <AssistantMessage
-            message={message}
-          />
+          <AssistantMessage message={message} />
         )}
       </motion.div>
     </AnimatePresence>
@@ -147,9 +150,7 @@ interface AssistantMessageProps {
   message: ChatbotMessage;
 }
 
-const AssistantMessage: React.FC<AssistantMessageProps> = ({
-  message,
-}) => {
+const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
   const { sourceParts, reasoningParts } = useMemo(
     () => destructuringMessageParts(message),
     [message]
@@ -172,7 +173,9 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
           <ReasoningPart
             key={`message-${message.id}-reasoning`}
             part={mergedReasoning}
-            isStreaming={mergedReasoning.state === "streaming" && !hasTextTokens}
+            isStreaming={
+              mergedReasoning.state === "streaming" && !hasTextTokens
+            }
             hasTextTokens={hasTextTokens}
           />
         )}

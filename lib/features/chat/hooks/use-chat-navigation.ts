@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 interface UseChatNavigationProps {
-  scrollContainerRef: React.RefObject<HTMLElement | null>;
   messages?: Array<ChatbotMessage>;
 }
 
@@ -28,7 +27,6 @@ const getLastUserMessageElement = (container: HTMLElement) => {
 };
 
 export const useChatNavigation = ({
-  scrollContainerRef,
   messages = [],
 }: UseChatNavigationProps) => {
   const [showPrev, setShowPrev] = useState(false);
@@ -40,7 +38,8 @@ export const useChatNavigation = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const bottomObserverRef = useRef<IntersectionObserver | null>(null);
 
-  // Internal refs for sentinels
+  // Internal refs
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -360,6 +359,7 @@ export const useChatNavigation = ({
     scrollToBottom,
     scrollToTop,
     scrollToLastUserMessage,
+    scrollContainerRef,
     topSentinelRef,
     bottomSentinelRef,
   };

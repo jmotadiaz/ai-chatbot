@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import type { Tools } from "@/lib/features/chat/types";
@@ -36,7 +36,6 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   className,
 }) => {
   const router = useRouter();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const chat = useChatHubInstance({
     chatId: instance.chatId,
@@ -59,10 +58,10 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     scrollToNext,
     scrollToBottom,
     scrollToTop,
+    scrollContainerRef,
     topSentinelRef,
     bottomSentinelRef,
   } = useChatNavigation({
-    scrollContainerRef,
     messages: chat.messages,
   });
 
@@ -156,6 +155,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
           scrollToNext={scrollToNext}
           scrollToBottom={scrollToBottom}
           scrollToTop={scrollToTop}
+          className="bottom-4"
         />
       </div>
     </div>

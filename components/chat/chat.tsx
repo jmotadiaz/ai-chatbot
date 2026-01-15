@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUp, WandSparkles, Undo } from "lucide-react";
-import { useRef } from "react";
 import { Textarea } from "@/components/chat/textarea";
 import { ProjectOverview } from "@/components/project/overview";
 import { Messages, Message } from "@/components/chat/message";
@@ -52,7 +51,6 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
       metaPrompt,
       status,
     });
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const modelConfig = getChatConfigurationByModelId(selectedModel);
   const { previousMessages, lastTurnMessages } = useChatMessagesTurns(messages);
 
@@ -65,10 +63,10 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     scrollToNext,
     scrollToBottom,
     scrollToTop,
+    scrollContainerRef,
     topSentinelRef,
     bottomSentinelRef,
   } = useChatNavigation({
-    scrollContainerRef,
     messages,
   });
 
@@ -101,13 +99,13 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               <div ref={topSentinelRef} className="h-[1px] w-full" />
               {/* Turnos anteriores - altura natural */}
               {previousMessages.length > 0 && (
-                <div className="max-w-5xl mx-auto px-4">
+                <div className="max-w-5xl mx-auto px-8">
                   <Messages messages={previousMessages} />
                 </div>
               )}
 
               {/* Último turno - min-height para permitir scroll al inicio */}
-              <div className="min-h-full max-w-5xl mx-auto px-4 pb-20">
+              <div className="min-h-full max-w-5xl mx-auto px-8 pb-20">
                 {lastTurnMessages.map((m) => (
                   <Message key={m.id} message={m} />
                 ))}
