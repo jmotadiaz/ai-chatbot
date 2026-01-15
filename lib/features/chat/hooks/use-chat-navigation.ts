@@ -40,6 +40,10 @@ export const useChatNavigation = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const bottomObserverRef = useRef<IntersectionObserver | null>(null);
 
+  // Internal refs for sentinels
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
   // During initial navigation, Streamdown/code-block rendering can change heights after
   // we already scrolled to the last user message. This lock keeps the last user message
   // aligned until layout stabilizes (or the user interacts).
@@ -250,15 +254,13 @@ export const useChatNavigation = ({
       bottomObserverRef.current.disconnect();
     }
 
-    const sentinel = container.querySelector("#chat-bottom-sentinel");
-
     const bottomObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.target.id === "chat-bottom-sentinel") {
+          if (entry.target === bottomSentinelRef.current) {
             // Show bottom button when sentinel is NOT visible
             setShowBottom(!entry.isIntersecting);
-          } else if (entry.target.id === "chat-top-sentinel") {
+          } else if (entry.target === topSentinelRef.current) {
             // Show top button when top sentinel is NOT visible
             setShowTop(!entry.isIntersecting);
           }
@@ -272,14 +274,13 @@ export const useChatNavigation = ({
     );
 
     bottomObserverRef.current = bottomObserver;
-    if (sentinel) {
-      bottomObserver.observe(sentinel);
+
+    if (bottomSentinelRef.current) {
+      bottomObserver.observe(bottomSentinelRef.current);
     }
 
-    // Observe top sentinel if it exists
-    const topSentinel = container.querySelector("#chat-top-sentinel");
-    if (topSentinel) {
-      bottomObserver.observe(topSentinel);
+    if (topSentinelRef.current) {
+      bottomObserver.observe(topSentinelRef.current);
     } else {
       setShowTop(false);
     }
@@ -359,5 +360,7 @@ export const useChatNavigation = ({
     scrollToBottom,
     scrollToTop,
     scrollToLastUserMessage,
+    topSentinelRef,
+    bottomSentinelRef,
   };
 };

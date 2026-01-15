@@ -1,12 +1,16 @@
 import { ChevronUp, ChevronDown, ChevronsDown, ChevronsUp } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 interface ChatNavigationProps {
-  scrollContainerRef: React.RefObject<HTMLElement | null>;
-  messages?: Array<ChatbotMessage>;
+  showPrev: boolean;
+  showNext: boolean;
+  showBottom: boolean;
+  showTop: boolean;
+  scrollToPrev: () => void;
+  scrollToNext: () => void;
+  scrollToBottom: () => void;
+  scrollToTop: () => void;
 }
 
 const buttonVariants = {
@@ -47,20 +51,15 @@ const ChatNavigationButton: React.FC<{
 );
 
 export const ChatNavigation: React.FC<ChatNavigationProps> = ({
-  scrollContainerRef,
-  messages,
+  showPrev,
+  showNext,
+  showBottom,
+  showTop,
+  scrollToPrev,
+  scrollToNext,
+  scrollToBottom,
+  scrollToTop,
 }) => {
-  const {
-    showPrev,
-    showNext,
-    showBottom,
-    showTop,
-    scrollToPrev,
-    scrollToNext,
-    scrollToBottom,
-    scrollToTop,
-  } = useChatNavigation({ scrollContainerRef, messages });
-
   return (
     <AnimatePresence>
       <div

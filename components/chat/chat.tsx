@@ -16,6 +16,7 @@ import { LoadingMessage } from "@/components/chat/loading-message";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { ChatReload } from "@/components/chat/reload";
 import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
+import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
@@ -55,6 +56,22 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
   const modelConfig = getChatConfigurationByModelId(selectedModel);
   const { previousMessages, lastTurnMessages } = useChatMessagesTurns(messages);
 
+  const {
+    showPrev,
+    showNext,
+    showBottom,
+    showTop,
+    scrollToPrev,
+    scrollToNext,
+    scrollToBottom,
+    scrollToTop,
+    topSentinelRef,
+    bottomSentinelRef,
+  } = useChatNavigation({
+    scrollContainerRef,
+    messages,
+  });
+
   const onPasteFiles = (files: FileList) => {
     handleFileUpload(setFiles, files, modelConfig.supportedFiles);
   };
@@ -75,17 +92,14 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
           messages.length && "h-full"
         )}
       >
-        <div
-          className="h-full overflow-y-auto"
-          ref={scrollContainerRef}
-        >
+        <div className="h-full overflow-y-auto" ref={scrollContainerRef}>
           <div className="pt-4 pb-20 px-4">
             <div className="w-full max-w-5xl mx-auto">
               {messages.length === 0 ? (
                 <ProjectOverview title={title} />
               ) : (
                 <>
-                  <div id="chat-top-sentinel" className="h-[1px] w-full" />
+                  <div ref={topSentinelRef} className="h-[1px] w-full" />
                   {/* Turnos anteriores - altura natural */}
                   {previousMessages.length > 0 && (
                     <Messages messages={previousMessages} />
@@ -106,15 +120,21 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
                       </div>
                     )}
                   </div>
-                  <div id="chat-bottom-sentinel" className="h-[1px] w-full" />
+                  <div ref={bottomSentinelRef} className="h-[1px] w-full" />
                 </>
               )}
             </div>
           </div>
         </div>
         <ChatNavigation
-          scrollContainerRef={scrollContainerRef}
-          messages={messages}
+          showPrev={showPrev}
+          showNext={showNext}
+          showBottom={showBottom}
+          showTop={showTop}
+          scrollToPrev={scrollToPrev}
+          scrollToNext={scrollToNext}
+          scrollToBottom={scrollToBottom}
+          scrollToTop={scrollToTop}
         />
       </div>
       <form

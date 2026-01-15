@@ -8,11 +8,9 @@ export const MINIMAX_CONFIG = {
     company: "minimax",
     temperature: 1,
     topP: 0.9,
-    topK: 40,
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        only: ["deepinfra"],
       },
     },
   },

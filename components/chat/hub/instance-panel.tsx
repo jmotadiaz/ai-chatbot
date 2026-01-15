@@ -7,6 +7,7 @@ import type { Tools } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
 import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
+import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
 import { Messages, Message } from "@/components/chat/message";
 import { LoadingMessage } from "@/components/chat/loading-message";
 import { ChatNavigation } from "@/components/chat/navigation";
@@ -48,6 +49,22 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   const { previousMessages, lastTurnMessages } = useChatMessagesTurns(
     chat.messages
   );
+
+  const {
+    showPrev,
+    showNext,
+    showBottom,
+    showTop,
+    scrollToPrev,
+    scrollToNext,
+    scrollToBottom,
+    scrollToTop,
+    topSentinelRef,
+    bottomSentinelRef,
+  } = useChatNavigation({
+    scrollContainerRef,
+    messages: chat.messages,
+  });
 
   const onSelectThisChat = useCallback(async () => {
     const { chatId } = await persistChat({
@@ -110,7 +127,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
             </div>
           ) : (
             <>
-              <div id="chat-top-sentinel" className="h-[1px] w-full" />
+              <div ref={topSentinelRef} className="h-[1px] w-full" />
               {/* Previous turns - natural height */}
               {previousMessages.length > 0 && (
                 <Messages messages={previousMessages} />
@@ -126,12 +143,19 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
                   status={chat.status}
                 />
               </div>
+              <div ref={bottomSentinelRef} className="h-[1px] w-full" />
             </>
           )}
         </div>
         <ChatNavigation
-          scrollContainerRef={scrollContainerRef}
-          messages={chat.messages}
+          showPrev={showPrev}
+          showNext={showNext}
+          showBottom={showBottom}
+          showTop={showTop}
+          scrollToPrev={scrollToPrev}
+          scrollToNext={scrollToNext}
+          scrollToBottom={scrollToBottom}
+          scrollToTop={scrollToTop}
         />
       </div>
     </div>
