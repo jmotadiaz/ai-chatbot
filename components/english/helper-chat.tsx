@@ -5,7 +5,10 @@ import type { UseCompletionHelpers } from "@ai-sdk/react";
 import { useCompletion } from "@ai-sdk/react";
 import { Tabs, useTabs } from "@/components/ui/tabs";
 import { ChatControl } from "@/components/chat/control";
-import { LoadingAssistantMessageIcon, SpinnerIcon } from "@/components/ui/icons";
+import {
+  LoadingAssistantMessageIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons";
 import { Textarea } from "@/components/chat/textarea";
 import { CopyBlock } from "@/components/ui/copy-block";
 import { cn } from "@/lib/utils/helpers";
@@ -103,7 +106,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
           {completion && (
             <>
               <div className="font-semibold animate-fade">Translation:</div>
-              <CopyBlock className="p-3 animate-fade" text={completion}>
+              <CopyBlock className="p-3 pt-6 animate-fade" text={completion}>
                 <Response>{completion}</Response>
               </CopyBlock>
               <SpeechControl input={completion} className="my-2" />
@@ -162,10 +165,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
                 <div className="font-semibold animate-fade">
                   Corrected Text:
                 </div>
-                <CopyBlock
-                  className="p-3 animate-fade"
-                  text={object.correctedText}
-                >
+                <CopyBlock className="p-3 pt-6" text={object.correctedText}>
                   <Response>{object.correctedText}</Response>
                 </CopyBlock>
                 {object.correctedText && (
