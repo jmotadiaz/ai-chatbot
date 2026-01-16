@@ -200,16 +200,6 @@ export async function processChatResponse({
 
       const result = streamText({
         ...modelConfiguration,
-        ...((tools.length > 0 || isUrlPresentInLastMessage) && {
-          providerOptions: {
-            ...modelConfiguration.providerOptions,
-            anthropic: {
-              ...modelConfiguration.providerOptions?.anthropic,
-              sendReasoning: false,
-              thinking: { type: "disabled" },
-            },
-          },
-        }),
         maxRetries: 3,
         system: systemPrompt,
         messages: messagesToSend,
@@ -227,7 +217,7 @@ export async function processChatResponse({
                 providerOptions: {
                   google: {
                     thinkingConfig: {
-                      includeThoughts: false,
+                      includeThoughts: modelConfiguration.reasoning,
                     },
                   },
                 },
@@ -246,6 +236,13 @@ export async function processChatResponse({
             return {
               ...(!modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash-lite"),
+                providerOptions: {
+                  google: {
+                    thinkingConfig: {
+                      includeThoughts: modelConfiguration.reasoning,
+                    },
+                  },
+                },
               }),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
@@ -260,6 +257,13 @@ export async function processChatResponse({
             return {
               ...(!modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash-lite"),
+                providerOptions: {
+                  google: {
+                    thinkingConfig: {
+                      includeThoughts: modelConfiguration.reasoning,
+                    },
+                  },
+                },
               }),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
