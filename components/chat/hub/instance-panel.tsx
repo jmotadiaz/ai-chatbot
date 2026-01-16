@@ -6,13 +6,9 @@ import { Trash2 } from "lucide-react";
 import type { Tools } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
-import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
-import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
-import { Messages, Message } from "@/components/chat/message";
-import { LoadingMessage } from "@/components/chat/loading-message";
-import { ChatNavigation } from "@/components/chat/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/helpers";
+import { ChatConversation } from "@/components/chat/chat-conversation";
 
 export interface HubInstancePanelProps {
   instance: HubInstance;
@@ -43,26 +39,6 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     submitSubscribe,
     tools,
     preventChatPersistence: true,
-  });
-
-  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(
-    chat.messages
-  );
-
-  const {
-    showPrev,
-    showNext,
-    showBottom,
-    showTop,
-    scrollToPrev,
-    scrollToNext,
-    scrollToBottom,
-    scrollToTop,
-    scrollContainerRef,
-    topSentinelRef,
-    bottomSentinelRef,
-  } = useChatNavigation({
-    messages: chat.messages,
   });
 
   const onSelectThisChat = useCallback(async () => {
@@ -115,49 +91,15 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 relative">
-        <div
-          className="h-full overflow-y-auto px-4 pt-3 pb-20"
-          ref={scrollContainerRef}
-        >
-          {chat.messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              Start chatting to compare models.
-            </div>
-          ) : (
-            <>
-              <div ref={topSentinelRef} className="h-[1px] w-full" />
-              {/* Previous turns - natural height */}
-              {previousMessages.length > 0 && (
-                <Messages messages={previousMessages} />
-              )}
-
-              {/* Last turn - min-height for scroll positioning */}
-              <div className="min-h-full">
-                {lastTurnMessages.map((m) => (
-                  <Message key={m.id} message={m} />
-                ))}
-                <LoadingMessage
-                  message={chat.messages[chat.messages.length - 1]}
-                  status={chat.status}
-                />
-              </div>
-              <div ref={bottomSentinelRef} className="h-[1px] w-full" />
-            </>
-          )}
-        </div>
-        <ChatNavigation
-          showPrev={showPrev}
-          showNext={showNext}
-          showBottom={showBottom}
-          showTop={showTop}
-          scrollToPrev={scrollToPrev}
-          scrollToNext={scrollToNext}
-          scrollToBottom={scrollToBottom}
-          scrollToTop={scrollToTop}
-          className="bottom-4"
-        />
-      </div>
+      <ChatConversation
+        messages={chat.messages}
+        status={chat.status}
+        title={instance.model}
+        className={cn(
+          "flex-1 flex",
+          chat.messages.length ? "items-start" : "items-center"
+        )}
+      />
     </div>
   );
 };

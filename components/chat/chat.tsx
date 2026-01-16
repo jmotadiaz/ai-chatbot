@@ -2,23 +2,17 @@
 
 import { ArrowUp, WandSparkles, Undo } from "lucide-react";
 import { Textarea } from "@/components/chat/textarea";
-import { ProjectOverview } from "@/components/project/overview";
-import { Messages, Message } from "@/components/chat/message";
 import { ChatControl } from "@/components/chat/control";
 import { ChatSettingsButton } from "@/components/chat/settings-button";
 import { ToolsControl } from "@/components/chat/tools/control";
-import { ChatNavigation } from "@/components/chat/navigation";
 import { cn } from "@/lib/utils/helpers";
 import { useChatContext } from "@/components/chat/provider";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
-import { LoadingMessage } from "@/components/chat/loading-message";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
-import { ChatReload } from "@/components/chat/reload";
-import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
-import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
+import { ChatConversation } from "@/components/chat/chat-conversation";
 
 export interface ChatProps {
   className?: string;
@@ -52,23 +46,6 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
       status,
     });
   const modelConfig = getChatConfigurationByModelId(selectedModel);
-  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(messages);
-
-  const {
-    showPrev,
-    showNext,
-    showBottom,
-    showTop,
-    scrollToPrev,
-    scrollToNext,
-    scrollToBottom,
-    scrollToTop,
-    scrollContainerRef,
-    topSentinelRef,
-    bottomSentinelRef,
-  } = useChatNavigation({
-    messages,
-  });
 
   const onPasteFiles = (files: FileList) => {
     handleFileUpload(setFiles, files, modelConfig.supportedFiles);
@@ -84,62 +61,17 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
         className
       )}
     >
-      <div
-        className={cn(
-          "w-full overflow-y-auto pt-4",
-          messages.length && "flex-1"
-        )}
-        ref={scrollContainerRef}
-      >
-        <>
-          {messages.length === 0 ? (
-            <ProjectOverview title={title} />
-          ) : (
-            <>
-              <div ref={topSentinelRef} className="h-[1px] w-full" />
-              {/* Turnos anteriores - altura natural */}
-              {previousMessages.length > 0 && (
-                <div className="max-w-5xl mx-auto px-8">
-                  <Messages messages={previousMessages} />
-                </div>
-              )}
-
-              {/* Último turno - min-height para permitir scroll al inicio */}
-              <div className="min-h-full max-w-5xl mx-auto px-8 pb-20">
-                {lastTurnMessages.map((m) => (
-                  <Message key={m.id} message={m} />
-                ))}
-                <LoadingMessage
-                  message={messages[messages.length - 1]}
-                  status={status}
-                  className="mt-2"
-                />
-                {(status === "ready" || status === "error") && (
-                  <div className="mt-1 ml-4">
-                    <ChatReload />
-                  </div>
-                )}
-              </div>
-              <div ref={bottomSentinelRef} className="h-[1px] w-full" />
-            </>
-          )}
-        </>
-      </div>
+      <ChatConversation
+        messages={messages}
+        status={status}
+        title={title}
+        className={cn("pt-4", messages.length && "flex-1")}
+        reload={true}
+      />
       <form
         onSubmit={handleSubmit}
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
-        <ChatNavigation
-          showPrev={showPrev}
-          showNext={showNext}
-          showBottom={showBottom}
-          showTop={showTop}
-          scrollToPrev={scrollToPrev}
-          scrollToNext={scrollToNext}
-          scrollToBottom={scrollToBottom}
-          scrollToTop={scrollToTop}
-          className="-top-12"
-        />
         <div className="relative w-full">
           <Textarea
             onChangeInput={setInput}
