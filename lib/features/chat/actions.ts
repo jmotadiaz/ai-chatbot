@@ -214,7 +214,7 @@ export async function processChatResponse({
         activeTools: [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async () => {
+        prepareStep: async ({ messages }) => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
@@ -259,6 +259,43 @@ export async function processChatResponse({
               }),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
+            };
+          }
+
+          if (
+            modelConfiguration.company === "anthropic" &&
+            modelConfiguration.reasoning
+          ) {
+            return {
+              messages: messages.map((message) => {
+                if (
+                  message.role === "assistant" &&
+                  Array.isArray(message.content)
+                ) {
+                  const hasToolCall = message.content.some(
+                    (part) => part.type === "tool-call"
+                  );
+                  const hasThinking = message.content.some(
+                    (part) => part.type === "reasoning"
+                  );
+
+                  // Si hay tool_use pero no hay thinking, inyectamos uno falso
+                  if (hasToolCall && !hasThinking) {
+                    return {
+                      ...message,
+                      content: [
+                        {
+                          type: "reasoning",
+                          text: "Thinking skipped during forced tool execution.",
+                          signature: "redacted_thinking", // Firma para satisfacer a la API
+                        },
+                        ...message.content,
+                      ],
+                    };
+                  }
+                }
+                return message;
+              }),
             };
           }
         },
