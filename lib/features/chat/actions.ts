@@ -200,16 +200,6 @@ export async function processChatResponse({
 
       const result = streamText({
         ...modelConfiguration,
-        ...((tools.length > 0 || isUrlPresentInLastMessage) && {
-          providerOptions: {
-            ...modelConfiguration.providerOptions,
-            anthropic: {
-              ...modelConfiguration.providerOptions?.anthropic,
-              sendReasoning: false,
-              thinking: { type: "disabled" },
-            },
-          },
-        }),
         maxRetries: 3,
         system: systemPrompt,
         messages: messagesToSend,
