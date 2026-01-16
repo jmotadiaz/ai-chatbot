@@ -8,7 +8,7 @@ export const MOONSHOTAI_CONFIG = {
     temperature: 0.6,
   },
   "Kimi K2 Thinking": {
-    model: providers.gateway("moonshotai/kimi-k2-thinking-turbo"),
+    model: providers.openrouter("moonshotai/kimi-k2-thinking"),
     company: "moonshotai",
     reasoning: true,
     temperature: 1.0,
