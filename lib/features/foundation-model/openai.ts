@@ -70,7 +70,7 @@ export const OPENAI_CONFIG = {
     providerOptions: {
       openai: {
         textVerbosity: "low",
-        reasoningEffort: "high",
+        reasoningEffort: "xhigh",
         reasoningSummary: "auto",
         serviceTier: "priority",
       },
