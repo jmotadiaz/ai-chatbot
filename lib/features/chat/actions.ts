@@ -200,6 +200,12 @@ export async function processChatResponse({
 
       const result = streamText({
         ...modelConfiguration,
+        ...((modelConfiguration.company === "anthropic" &&
+          modelConfiguration.reasoning) && {
+          headers: {
+            "anthropic-beta": "interleaved-thinking-2025-05-14",
+          },
+        }),
         maxRetries: 3,
         system: systemPrompt,
         messages: messagesToSend,
@@ -214,13 +220,6 @@ export async function processChatResponse({
             return {
               ...(!modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-3-flash-preview"),
-                providerOptions: {
-                  google: {
-                    thinkingConfig: {
-                      includeThoughts: modelConfiguration.reasoning,
-                    },
-                  },
-                },
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
@@ -236,13 +235,6 @@ export async function processChatResponse({
             return {
               ...(!modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash-lite"),
-                providerOptions: {
-                  google: {
-                    thinkingConfig: {
-                      includeThoughts: modelConfiguration.reasoning,
-                    },
-                  },
-                },
               }),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
@@ -257,13 +249,6 @@ export async function processChatResponse({
             return {
               ...(!modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash-lite"),
-                providerOptions: {
-                  google: {
-                    thinkingConfig: {
-                      includeThoughts: modelConfiguration.reasoning,
-                    },
-                  },
-                },
               }),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
