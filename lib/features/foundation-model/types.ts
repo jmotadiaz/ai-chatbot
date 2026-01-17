@@ -1,6 +1,10 @@
 import type { GroqProviderOptions } from "@ai-sdk/groq";
 import type { LanguageModel } from "ai";
-import type { LanguageModelV3, EmbeddingModelV3, LanguageModelV2 as LanguageModelV2Interface } from "@ai-sdk/provider";
+import type {
+  LanguageModelV3,
+  EmbeddingModelV3,
+  LanguageModelV2 as LanguageModelV2Interface,
+} from "@ai-sdk/provider";
 import type { XaiProviderOptions } from "@ai-sdk/xai";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
@@ -46,6 +50,12 @@ export interface ModelConfiguration {
   providerOptions?: ProviderOptions;
   toolCalling?: boolean;
   nativeToolCalling?: boolean;
+  /**
+   * When true, tools are instructed via system prompts instead of toolChoice.
+   * This allows models with extended thinking (like Claude) to generate
+   * thinking blocks before calling tools.
+   */
+  toolCallingByPrompt?: boolean;
   reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;
@@ -56,7 +66,6 @@ export interface ModelConfiguration {
 }
 
 // Model and Routing Types
-
 
 // --- From providers.ts ---
 

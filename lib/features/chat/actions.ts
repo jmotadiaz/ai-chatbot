@@ -41,6 +41,7 @@ import {
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import {
   TOOLS,
+  TOOL_PROMPTS,
   type Tool,
   type ChatbotMessage,
 } from "@/lib/features/chat/types";
@@ -198,31 +199,47 @@ export async function processChatResponse({
             reasoning: "all",
           });
 
+      // Build tool prompts for models using toolCallingByPrompt
+      // This simply adds prompts to system prompt without duplicating prepareStep logic
+      const toolPrompts: string[] = [];
+      if (modelConfiguration.toolCallingByPrompt) {
+        if (tools.includes(RAG_TOOL)) {
+          toolPrompts.push(TOOL_PROMPTS[RAG_TOOL]);
+        }
+        if (isUrlPresentInLastMessage) {
+          toolPrompts.push(TOOL_PROMPTS[URL_CONTEXT_TOOL]);
+        }
+        if (tools.includes(WEB_SEARCH_TOOL)) {
+          toolPrompts.push(TOOL_PROMPTS[WEB_SEARCH_TOOL]);
+        }
+      }
+
+      const finalSystemPrompt =
+        toolPrompts.length > 0
+          ? `${systemPrompt}\n\n${toolPrompts.join("\n\n")}`
+          : systemPrompt;
+
       const result = streamText({
         ...modelConfiguration,
-        ...((tools.length > 0 || isUrlPresentInLastMessage) && {
-          providerOptions: {
-            ...modelConfiguration.providerOptions,
-            anthropic: {
-              ...modelConfiguration.providerOptions?.anthropic,
-              sendReasoning: false,
-              thinking: { type: "disabled" },
-            },
-          },
-        }),
         maxRetries: 3,
-        system: systemPrompt,
+        system: finalSystemPrompt,
         messages: messagesToSend,
         tools: toolSet,
         stopWhen: stepCountIs(4),
-        activeTools: [],
+        // For toolCallingByPrompt: enable all tools, model uses them based on prompts
+        activeTools: modelConfiguration.toolCallingByPrompt ? tools : [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async () => {
+          // Skip prepareStep logic for toolCallingByPrompt - tools are already enabled
+          if (modelConfiguration.toolCallingByPrompt) {
+            return undefined;
+          }
+
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
-              ...(!modelConfiguration.nativeToolCalling && {
+              ...(modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-3-flash-preview"),
                 providerOptions: {
                   google: {
@@ -244,7 +261,7 @@ export async function processChatResponse({
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
             return {
-              ...(!modelConfiguration.nativeToolCalling && {
+              ...(modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash-lite"),
               }),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
@@ -258,7 +275,7 @@ export async function processChatResponse({
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
             return {
-              ...(!modelConfiguration.nativeToolCalling && {
+              ...(modelConfiguration.nativeToolCalling && {
                 model: providers.google("gemini-2.5-flash-lite"),
               }),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
