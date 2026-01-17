@@ -60,10 +60,6 @@ export interface ModelConfiguration {
 
 // --- From providers.ts ---
 
-export type LanguageModelV2 = LanguageModelV3;
-
-export type EmbeddingModelV2 = EmbeddingModelV3;
-
 export interface RerankArgs {
   query: string;
   documents: string[];
@@ -81,7 +77,7 @@ export interface Providers {
   perplexity: (modelId: string) => LanguageModelV3;
   gateway: (modelId: string) => LanguageModelV3;
   lmstudio: (modelId: string) => LanguageModelV3;
-  embedding: () => EmbeddingModelV2;
+  embedding: () => EmbeddingModelV3;
   rerank: () => (args: RerankArgs) => Promise<RerankResponseResultsItem[]>;
 }
 
