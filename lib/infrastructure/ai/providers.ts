@@ -39,7 +39,8 @@ export const providers: Providers =
         google: (modelId: string) => createMockModel(modelId),
         xai: (modelId: string) => createMockModel(modelId),
         groq: (modelId: string) => createMockModel(modelId),
-        openrouter: (modelId: string) => createMockModel(modelId),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        openrouter: (modelId: string) => createMockModel(modelId) as any,
         deepseek: (modelId: string) => createMockModel(modelId),
         perplexity: (modelId: string) => createMockModel(modelId),
         gateway: (modelId: string) => createMockModel(modelId),
@@ -58,7 +59,7 @@ export const providers: Providers =
         perplexity: (modelId: string) => perplexity(modelId),
         gateway: (modelId: string) => gateway(modelId),
         lmstudio: (modelId: string) => lmstudio(modelId),
-        embedding: () => google.textEmbeddingModel("gemini-embedding-001"),
+        embedding: () => google.embeddingModel("gemini-embedding-001"),
         rerank: () => async (args: RerankArgs) => {
           const response = await cohere.rerank({
             ...args,

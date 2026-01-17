@@ -15,7 +15,7 @@ export async function refinePrompt({
   messages,
   metaPrompt = defaultMetaPrompt,
 }: RefinePromptInput) {
-  const chatHistory = convertToModelMessages(messages || []).reduce(
+  const chatHistory = (await convertToModelMessages(messages || [])).reduce(
     (acc, message) => {
       const role = message.role === "user" ? "user" : "assistant";
       const content =

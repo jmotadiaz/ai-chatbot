@@ -1,11 +1,12 @@
-import { EmbeddingModel, LanguageModel, simulateReadableStream } from "ai";
+import { simulateReadableStream } from "ai";
+import { LanguageModelV3, EmbeddingModelV3, LanguageModelV3StreamPart, LanguageModelV3GenerateResult } from "@ai-sdk/provider";
 
-export type LanguageModelV2 = Exclude<LanguageModel, string>;
+export type LanguageModelV2 = LanguageModelV3;
 
-export type EmbeddingModelV2<T = string> = Exclude<EmbeddingModel<T>, string>;
+export type EmbeddingModelV2 = EmbeddingModelV3;
 
-export class MockLanguageModelV2 implements LanguageModelV2 {
-  readonly specificationVersion = "v2";
+export class MockLanguageModelV3 implements LanguageModelV2 {
+  readonly specificationVersion = "v3";
 
   private _supportedUrls: () => LanguageModelV2["supportedUrls"];
 
@@ -74,15 +75,15 @@ export class MockLanguageModelV2 implements LanguageModelV2 {
   }
 }
 
-export class MockEmbeddingModelV2<VALUE> implements EmbeddingModelV2<VALUE> {
-  readonly specificationVersion = "v2";
+export class MockEmbeddingModelV3 implements EmbeddingModelV2 {
+  readonly specificationVersion = "v3";
 
-  readonly provider: EmbeddingModelV2<VALUE>["provider"];
-  readonly modelId: EmbeddingModelV2<VALUE>["modelId"];
-  readonly maxEmbeddingsPerCall: EmbeddingModelV2<VALUE>["maxEmbeddingsPerCall"];
-  readonly supportsParallelCalls: EmbeddingModelV2<VALUE>["supportsParallelCalls"];
+  readonly provider: EmbeddingModelV2["provider"];
+  readonly modelId: EmbeddingModelV2["modelId"];
+  readonly maxEmbeddingsPerCall: EmbeddingModelV2["maxEmbeddingsPerCall"];
+  readonly supportsParallelCalls: EmbeddingModelV2["supportsParallelCalls"];
 
-  doEmbed: EmbeddingModelV2<VALUE>["doEmbed"];
+  doEmbed: EmbeddingModelV2["doEmbed"];
 
   constructor({
     provider = "mock-provider",
@@ -91,13 +92,13 @@ export class MockEmbeddingModelV2<VALUE> implements EmbeddingModelV2<VALUE> {
     supportsParallelCalls = false,
     doEmbed = notImplemented,
   }: {
-    provider?: EmbeddingModelV2<VALUE>["provider"];
-    modelId?: EmbeddingModelV2<VALUE>["modelId"];
+    provider?: EmbeddingModelV2["provider"];
+    modelId?: EmbeddingModelV2["modelId"];
     maxEmbeddingsPerCall?:
-      | EmbeddingModelV2<VALUE>["maxEmbeddingsPerCall"]
+      | EmbeddingModelV2["maxEmbeddingsPerCall"]
       | null;
-    supportsParallelCalls?: EmbeddingModelV2<VALUE>["supportsParallelCalls"];
-    doEmbed?: EmbeddingModelV2<VALUE>["doEmbed"];
+    supportsParallelCalls?: EmbeddingModelV2["supportsParallelCalls"];
+    doEmbed?: EmbeddingModelV2["doEmbed"];
   } = {}) {
     this.provider = provider;
     this.modelId = modelId;
@@ -112,7 +113,7 @@ function notImplemented(): never {
 }
 
 export const createMockModel = (modelId: string): LanguageModelV2 => {
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV3({
     modelId,
     doStream: async ({ temperature }) => ({
       stream: simulateReadableStream({
@@ -130,15 +131,45 @@ export const createMockModel = (modelId: string): LanguageModelV2 => {
           { type: "text-end", id: "text-1" },
           {
             type: "finish",
-            finishReason: "stop",
+            finishReason: { unified: "stop", raw: "stop" },
             logprobs: undefined,
-            usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
+            usage: {
+              inputTokens: { total: 3, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+              outputTokens: { total: 10, text: undefined, reasoning: undefined },
+            },
           },
-        ],
+        ] as LanguageModelV3StreamPart[],
       }),
       rawCall: { rawPrompt: null, rawSettings: {} },
     }),
     doGenerate: async ({ prompt }) => {
+      // Check for system prompt indicating tools decision
+      const isToolsDecision = prompt.some(
+        (p) =>
+          p.role === "system" &&
+          typeof p.content === "string" &&
+          p.content.includes(
+            "Determine if a user's request necessitates the use of the 'web search' tool"
+          )
+      );
+
+      if (isToolsDecision) {
+        return {
+          finishReason: { unified: "stop", raw: "stop" },
+          usage: {
+            inputTokens: { total: 10, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+            outputTokens: { total: 20, text: undefined, reasoning: undefined },
+          },
+          content: [
+            {
+              type: "text",
+              text: `{ "tools": [] }`,
+            },
+          ],
+          warnings: [],
+        } as LanguageModelV3GenerateResult;
+      }
+
       const lastPrompt = prompt[prompt.length - 1];
       const lastMessageContent =
         lastPrompt.role === "user"
@@ -155,8 +186,11 @@ export const createMockModel = (modelId: string): LanguageModelV2 => {
       const complexity = complexityMatch ? complexityMatch[1] : "simple";
 
       return {
-        finishReason: "stop",
-        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+        finishReason: { unified: "stop", raw: "stop" },
+        usage: {
+          inputTokens: { total: 10, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+          outputTokens: { total: 20, text: undefined, reasoning: undefined },
+        },
         content: [
           {
             type: "text",
@@ -164,16 +198,17 @@ export const createMockModel = (modelId: string): LanguageModelV2 => {
           },
         ],
         warnings: [],
-      };
+      } as LanguageModelV3GenerateResult;
     },
   });
 };
 
 export const createMockEmbeddingModel = (): EmbeddingModelV2 => {
-  return new MockEmbeddingModelV2({
+  return new MockEmbeddingModelV3({
     doEmbed: async () => ({
       embeddings: [[0.1, 0.2, 0.3]],
       usage: { tokens: 10 },
+      warnings: [],
     }),
   });
 };
