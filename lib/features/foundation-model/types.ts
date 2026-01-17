@@ -1,5 +1,6 @@
 import type { GroqProviderOptions } from "@ai-sdk/groq";
-import type { LanguageModel, EmbeddingModel } from "ai";
+import type { LanguageModel } from "ai";
+import type { LanguageModelV3, EmbeddingModelV3, LanguageModelV2 as LanguageModelV2Interface } from "@ai-sdk/provider";
 import type { XaiProviderOptions } from "@ai-sdk/xai";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
@@ -59,9 +60,9 @@ export interface ModelConfiguration {
 
 // --- From providers.ts ---
 
-export type LanguageModelV2 = Exclude<LanguageModel, string>;
+export type LanguageModelV2 = LanguageModelV3;
 
-export type EmbeddingModelV2<T = string> = Exclude<EmbeddingModel<T>, string>;
+export type EmbeddingModelV2 = EmbeddingModelV3;
 
 export interface RerankArgs {
   query: string;
@@ -70,16 +71,16 @@ export interface RerankArgs {
 }
 
 export interface Providers {
-  anthropic: (modelId: string) => LanguageModelV2;
-  openai: (modelId: string) => LanguageModelV2;
-  google: (modelId: string) => LanguageModelV2;
-  xai: (modelId: string) => LanguageModelV2;
-  groq: (modelId: string) => LanguageModelV2;
-  openrouter: (modelId: string) => LanguageModelV2;
-  deepseek: (modelId: string) => LanguageModelV2;
-  perplexity: (modelId: string) => LanguageModelV2;
-  gateway: (modelId: string) => LanguageModelV2;
-  lmstudio: (modelId: string) => LanguageModelV2;
+  anthropic: (modelId: string) => LanguageModelV3;
+  openai: (modelId: string) => LanguageModelV3;
+  google: (modelId: string) => LanguageModelV3;
+  xai: (modelId: string) => LanguageModelV3;
+  groq: (modelId: string) => LanguageModelV3;
+  openrouter: (modelId: string) => LanguageModelV2Interface;
+  deepseek: (modelId: string) => LanguageModelV3;
+  perplexity: (modelId: string) => LanguageModelV3;
+  gateway: (modelId: string) => LanguageModelV3;
+  lmstudio: (modelId: string) => LanguageModelV3;
   embedding: () => EmbeddingModelV2;
   rerank: () => (args: RerankArgs) => Promise<RerankResponseResultsItem[]>;
 }

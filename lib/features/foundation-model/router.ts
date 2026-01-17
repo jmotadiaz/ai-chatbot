@@ -363,7 +363,7 @@ export async function modelRouting({
     return memo;
   }, [] as ChatbotMessage[]);
 
-  const modelMessages = convertToModelMessages(userMessages);
+  const modelMessages = await convertToModelMessages(userMessages);
 
   const modelRouterResponse = generateObject({
     ...languageModelConfigurations("GPT OSS Mini"),

@@ -54,7 +54,7 @@ export const generateImages = async (
         google: { responseModalities: ["IMAGE"] },
       },
     }),
-    messages: convertToModelMessages([message]),
+    messages: await convertToModelMessages([message]),
   });
 
   return files;

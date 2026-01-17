@@ -190,7 +190,7 @@ export async function processChatResponse({
       });
 
       // Convert to model messages and prune reasoning parts if model doesn't support reasoning
-      const modelMessages = convertToModelMessages(processedMessages);
+      const modelMessages = await convertToModelMessages(processedMessages);
       const messagesToSend = modelConfiguration.reasoning
         ? modelMessages
         : pruneMessages({
