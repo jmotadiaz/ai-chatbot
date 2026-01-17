@@ -5,12 +5,19 @@ import type { ChatStatus, UITool, UIToolInvocation } from "ai";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { DotsLoadingIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/helpers";
+import { destructuringMessageParts } from "@/lib/features/chat/utils";
 
 interface LoadingMessageProps {
   message: ChatbotMessage;
   status: ChatStatus;
   className?: string;
 }
+
+const LOADING_MESSAGES: Record<string, string> = {
+  "tool-rag": "Searching documents",
+  "tool-webSearch": "Searching the web",
+  "tool-urlContext": "Fetching URL content",
+};
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = ({
   message,
@@ -25,9 +32,11 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
     return null;
   }
 
+  const { toolParts } = destructuringMessageParts(message);
+
   return (
     <motion.div
-      className={cn("flex items-center ml-4 h-4", className)}
+      className={cn("flex items-center h-4", className)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -37,22 +46,15 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
         <DotsLoadingIcon />
       </div>
       {(() => {
-        for (const part of message.parts) {
-          switch (part.type) {
-            case "tool-rag":
-              if (isToolLoading(part.state)) {
-                return (
-                  <ToolLoading key={`message-rag`} text="Searching documents" />
-                );
-              }
-              break;
-            case "tool-webSearch":
-              if (isToolLoading(part.state)) {
-                return (
-                  <ToolLoading key={`message-web`} text="Searching the web" />
-                );
-              }
-              break;
+        // Check all parts for any tool in loading state
+        for (const part of toolParts) {
+          if (isToolLoading(part.state)) {
+            return (
+              <ToolLoading
+                key={`message-${part.type}`}
+                text={LOADING_MESSAGES[part.type] || "Loading tool"}
+              />
+            );
           }
         }
 

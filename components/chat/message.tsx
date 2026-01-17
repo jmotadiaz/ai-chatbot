@@ -167,7 +167,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
   );
 
   return (
-    <div className={cn("flex gap-4 w-full")}>
+    <div className={cn("flex w-full")}>
       <div className="flex flex-col w-full space-y-4">
         {mergedReasoning && (
           <ReasoningPart

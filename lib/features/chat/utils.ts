@@ -4,6 +4,7 @@ import type {
   SourceDocumentUIPart,
   SourceUrlUIPart,
   TextUIPart,
+  ToolUIPart,
 } from "ai";
 import { generateText } from "ai";
 import { put } from "@vercel/blob";
@@ -137,11 +138,12 @@ export const messagePartsToText = (message: ChatbotMessage): string => {
   }, "");
 };
 
-export interface SegregatedMessagePartsReturn {
+export interface DestructuringMessagePartsReturn {
   reasoningParts: ReasoningUIPart[];
   textParts: TextUIPart[];
   fileParts: FileUIPart[];
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
+  toolParts: Array<ToolUIPart>;
 }
 
 const ragChunksToSourceParts = (
@@ -169,13 +171,8 @@ const ragChunksToSourceParts = (
 
 export const destructuringMessageParts = (
   message: ChatbotMessage
-): {
-  reasoningParts: ReasoningUIPart[];
-  textParts: TextUIPart[];
-  fileParts: FileUIPart[];
-  sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
-} => {
-  return message.parts?.reduce<SegregatedMessagePartsReturn>(
+): DestructuringMessagePartsReturn => {
+  return message.parts?.reduce<DestructuringMessagePartsReturn>(
     (acc, part) => {
       switch (part.type) {
         case "reasoning":
@@ -195,6 +192,11 @@ export const destructuringMessageParts = (
           acc.sourceParts.push(
             ...ragChunksToSourceParts(part.output, part.toolCallId)
           );
+          acc.toolParts.push(part);
+          break;
+        case "tool-webSearch":
+        case "tool-urlContext":
+          acc.toolParts.push(part);
           break;
       }
       return acc;
@@ -203,6 +205,7 @@ export const destructuringMessageParts = (
       reasoningParts: [],
       textParts: [],
       sourceParts: [],
+      toolParts: [],
       fileParts: [],
     }
   );
