@@ -207,8 +207,10 @@ export const useChatNavigation = ({
 
         entries.forEach((entry) => {
           if (entry.target === firstUserMessageEl) {
-            // Show prev when first user message is NOT visible (completely left viewport)
-            setShowPrev(!entry.isIntersecting);
+            // Show prev when first user message is NOT visible AND there's more than 1 user message
+            setShowPrev(
+              !entry.isIntersecting && userMessageElements.length > 1
+            );
           }
           if (entry.target === lastUserMessageEl) {
             // Only show next when last message is BELOW the viewport (not when it's above)

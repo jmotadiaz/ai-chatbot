@@ -8,7 +8,7 @@ import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/helpers";
-import { ChatConversation } from "@/components/chat/chat-conversation";
+import { ChatConversation } from "@/components/chat/conversation";
 
 export interface HubInstancePanelProps {
   instance: HubInstance;

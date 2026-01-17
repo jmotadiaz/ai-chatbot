@@ -67,14 +67,15 @@ export const Reasoning = memo(
     const [hasAutoClosed, setHasAutoClosed] = useState(false);
     const [startTime, setStartTime] = useState<number | null>(null);
 
-    // Track duration when streaming starts and ends
+    // Track duration when streaming starts and ends (accumulates across turns)
     useEffect(() => {
       if (isStreaming) {
         if (startTime === null) {
           setStartTime(Date.now());
         }
       } else if (startTime !== null) {
-        setDuration(Math.ceil((Date.now() - startTime) / MS_IN_S));
+        const turnDuration = Math.ceil((Date.now() - startTime) / MS_IN_S);
+        setDuration((prev) => (prev ?? 0) + turnDuration);
         setStartTime(null);
       }
     }, [isStreaming, startTime, setDuration]);
@@ -121,28 +122,40 @@ export const Reasoning = memo(
   }
 );
 
-export type ReasoningTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
+export type ReasoningTriggerProps = ComponentProps<
+  typeof CollapsibleTrigger
+> & {
   getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
 };
 
 const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
   if (isStreaming) {
-    return <div className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
-      <Shimmer duration={1}>
-        Thinking.
-      </Shimmer>
-    </div>;
+    return (
+      <div className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
+        <Shimmer duration={1}>Thinking.</Shimmer>
+      </div>
+    );
   }
 
-  const durationText = duration && duration > 0
-    ? `Thought for ${duration} second${duration > 1 ? 's' : ''}`
-    : 'Thought for a few seconds';
+  const durationText =
+    duration && duration > 0
+      ? `Thought for ${duration} second${duration > 1 ? "s" : ""}`
+      : "Thought for a few seconds";
 
-  return <p className="font-semibold text-base text-zinc-500 dark:text-zinc-400">{durationText}</p>;
+  return (
+    <p className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
+      {durationText}
+    </p>
+  );
 };
 
 export const ReasoningTrigger = memo(
-  ({ className, children, getThinkingMessage = defaultGetThinkingMessage, ...props }: ReasoningTriggerProps) => {
+  ({
+    className,
+    children,
+    getThinkingMessage = defaultGetThinkingMessage,
+    ...props
+  }: ReasoningTriggerProps) => {
     const { isStreaming, isOpen, duration } = useReasoning();
 
     const content = children ?? (

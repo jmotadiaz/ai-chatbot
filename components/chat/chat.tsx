@@ -12,7 +12,7 @@ import { AttachmentsControl } from "@/components/chat/attachments/control";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
-import { ChatConversation } from "@/components/chat/chat-conversation";
+import { ChatConversation } from "@/components/chat/conversation";
 
 export interface ChatProps {
   className?: string;
