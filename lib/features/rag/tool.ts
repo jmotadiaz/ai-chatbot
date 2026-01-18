@@ -53,29 +53,20 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         })
       ),
-      execute: async (
-        { multiHopQueries, queryRewriting, queryType },
-        { experimental_context }
-      ): Promise<Array<RagChunk>> => {
+      execute: async ({
+        multiHopQueries,
+        queryRewriting,
+        queryType,
+      }): Promise<Array<RagChunk>> => {
         console.log("RAG tool called with multiHopQueries:", multiHopQueries);
         console.log("RAG tool called with queryRewriting:", queryRewriting);
         console.log("RAG tool called with queryType:", queryType);
-
-        // Combine resource IDs from messages and from previous steps (via experimental_context)
-        const messageResourceIds = extractResourceIdsFromMessages(messages);
-        const stepResourceIds =
-          (experimental_context as { previousIds?: Set<string> })
-            ?.previousIds ?? new Set<string>();
-        const allPreviousResources = new Set([
-          ...messageResourceIds,
-          ...stepResourceIds,
-        ]);
 
         const resources = await retrieveResources({
           multiHopQueries,
           queryRewriting,
           queryType,
-          previousResources: [...allPreviousResources],
+          previousResources: [...extractResourceIdsFromMessages(messages)],
           userId,
           limit: ragMaxResources,
         });
