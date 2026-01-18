@@ -54,7 +54,6 @@ import {
   urlContextFactory,
 } from "@/lib/features/web-search/tools";
 import { hasContextUrls } from "@/lib/features/web-search/utils";
-import { extractResourceIds } from "@/lib/features/rag/extract-resource-ids";
 import { ragFactory } from "@/lib/features/rag/tool";
 import { hasUrls } from "@/lib/utils/helpers";
 import { getDb } from "@/lib/infrastructure/db/db";
@@ -203,7 +202,7 @@ export async function processChatResponse({
       // Build tool prompts for models using toolCallingByPrompt
       // This simply adds prompts to system prompt without duplicating prepareStep logic
       const toolPrompts: string[] = [];
-      if (modelConfiguration.toolCallingByPrompt) {
+      if (modelConfiguration.nativeToolCalling) {
         if (tools.includes(RAG_TOOL)) {
           toolPrompts.push(TOOL_PROMPTS[RAG_TOOL]);
         }
@@ -228,37 +227,35 @@ export async function processChatResponse({
         tools: toolSet,
         stopWhen: stepCountIs(4),
         // For toolCallingByPrompt: enable all tools, model uses them based on prompts
-        activeTools: modelConfiguration.toolCallingByPrompt ? tools : [],
+        activeTools: modelConfiguration.nativeToolCalling ? tools : [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async ({ steps }) => {
-          const previousRagResourcesIds = extractResourceIds(steps);
-
-          if (modelConfiguration.toolCallingByPrompt) {
+        prepareStep: async () => {
+          if (modelConfiguration.nativeToolCalling) {
             return {
-              experimental_context: { previousIds: previousRagResourcesIds },
+              system: finalSystemPrompt,
+              activeTools: tools,
             };
           }
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
             return {
-              ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash"),
-                providerOptions: {
-                  google: {
-                    thinkingConfig: {
-                      thinkingBudget: 0,
-                      includeThoughts: false,
+              ...(modelConfiguration.nativeToolCalling
+                ? {
+                    model: providers.google("gemini-2.5-flash"),
+                    providerOptions: {
+                      google: {
+                        thinkingConfig: {
+                          thinkingBudget: 0,
+                          includeThoughts: false,
+                        },
+                      },
                     },
-                  },
-                },
-              }),
+                  }
+                : {}),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
-              experimental_context: {
-                previousIds: previousRagResourcesIds,
-              },
             };
           }
 
@@ -269,9 +266,11 @@ export async function processChatResponse({
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
             return {
-              ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash-lite"),
-              }),
+              ...(modelConfiguration.nativeToolCalling
+                ? {
+                    model: providers.google("gemini-2.5-flash-lite"),
+                  }
+                : {}),
               toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
               activeTools: [URL_CONTEXT_TOOL],
             };
@@ -283,9 +282,11 @@ export async function processChatResponse({
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
             return {
-              ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash-lite"),
-              }),
+              ...(modelConfiguration.nativeToolCalling
+                ? {
+                    model: providers.google("gemini-2.5-flash-lite"),
+                  }
+                : {}),
               toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
               activeTools: [WEB_SEARCH_TOOL],
             };
