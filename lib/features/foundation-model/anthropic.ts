@@ -7,7 +7,7 @@ export const ANTHROPIC_CONFIG = {
     company: "anthropic",
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
-    toolCallingByPrompt: true,
+    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -25,7 +25,7 @@ export const ANTHROPIC_CONFIG = {
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    toolCallingByPrompt: true, // Use prompts instead of toolChoice for extended thinking
+    nativeToolCalling: true, // Use prompts instead of toolChoice for extended thinking
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -43,7 +43,7 @@ export const ANTHROPIC_CONFIG = {
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    toolCallingByPrompt: true, // Use prompts instead of toolChoice for extended thinking
+    nativeToolCalling: true, // Use prompts instead of toolChoice for extended thinking
     providerOptions: {
       anthropic: {
         sendReasoning: true,
