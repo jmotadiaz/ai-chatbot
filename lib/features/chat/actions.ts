@@ -226,15 +226,18 @@ export async function processChatResponse({
         system: finalSystemPrompt,
         messages: messagesToSend,
         tools: toolSet,
-        stopWhen: stepCountIs(5),
+        stopWhen: stepCountIs(4),
         // For toolCallingByPrompt: enable all tools, model uses them based on prompts
         activeTools: modelConfiguration.toolCallingByPrompt ? tools : [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
         prepareStep: async ({ steps }) => {
-          // Skip prepareStep logic for toolCallingByPrompt - tools are already enabled
+          const previousRagResourcesIds = extractResourceIds(steps);
+
           if (modelConfiguration.toolCallingByPrompt) {
-            return undefined;
+            return {
+              experimental_context: { previousIds: previousRagResourcesIds },
+            };
           }
 
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
@@ -254,7 +257,7 @@ export async function processChatResponse({
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
               experimental_context: {
-                previousIds: extractResourceIds(steps),
+                previousIds: previousRagResourcesIds,
               },
             };
           }
