@@ -55,7 +55,7 @@ export const TOOLS: Tools = [RAG_TOOL, WEB_SEARCH_TOOL, URL_CONTEXT_TOOL];
  */
 export const TOOL_PROMPTS: Record<Tool, string> = {
   [RAG_TOOL]:
-    "IMPORTANT: You MUST use the 'rag' tool to search the knowledge base before providing your response. Do not respond without first calling this tool.",
+    "IMPORTANT: You MUST use the 'rag' tool to search the knowledge base before providing your response. Do not respond without first calling this tool. The input of the tool call MUST be in English.",
   [URL_CONTEXT_TOOL]:
     "IMPORTANT: You MUST use the 'urlContext' tool to fetch and analyze the content from the URLs mentioned in the conversation. Do not respond without first calling this tool.",
   [WEB_SEARCH_TOOL]:

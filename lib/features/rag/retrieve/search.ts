@@ -111,7 +111,7 @@ export async function rerankResources({
 export interface RetrieveResourcesInput {
   multiHopQueries: string[];
   queryRewriting: string;
-  previousChunks: string[];
+  previousResources: string[];
   queryType?: QueryType;
   userId: string;
   limit?: number;
@@ -123,7 +123,7 @@ const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 export const retrieveResources = async ({
   multiHopQueries,
   queryRewriting,
-  previousChunks,
+  previousResources,
   queryType,
   userId,
   limit = 6,
@@ -136,7 +136,7 @@ export const retrieveResources = async ({
         userId,
         limit: K_VECTOR_SEARCHES,
         similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
-        previousChunkIds: previousChunks,
+        previousChunkIds: previousResources,
       })
     )
   );

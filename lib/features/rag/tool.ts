@@ -1,35 +1,14 @@
-import { InferUITools, tool, ToolSet, ToolUIPart, UIMessage } from "ai";
+import { tool, ToolSet, UIMessage } from "ai";
 import { z } from "zod";
 import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
+import { extractResourceIdsFromMessages } from "./extract-resource-ids";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 
 export interface RagFactoryArgs {
   messages: UIMessage[];
   userId: string;
   ragMaxResources?: number;
-}
-
-function isRagPart(
-  part: UIMessage["parts"][number]
-): part is ToolUIPart<InferUITools<RagTool>> {
-  return part.type === "tool-rag";
-}
-
-function extractChunkIdsFromMessages(messages: UIMessage[]): string[] {
-  const chunkIds: string[] = [];
-
-  for (const message of messages) {
-    for (const part of message.parts) {
-      if (isRagPart(part)) {
-        chunkIds.push(
-          ...(part.output?.map(({ id }: { id: string }) => id) || [])
-        );
-      }
-    }
-  }
-
-  return [...new Set(chunkIds)]; // Remove duplicates
 }
 
 export const ragFactory = ({
@@ -74,20 +53,29 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         })
       ),
-      execute: async ({
-        multiHopQueries,
-        queryRewriting,
-        queryType,
-      }): Promise<Array<RagChunk>> => {
+      execute: async (
+        { multiHopQueries, queryRewriting, queryType },
+        { experimental_context }
+      ): Promise<Array<RagChunk>> => {
         console.log("RAG tool called with multiHopQueries:", multiHopQueries);
         console.log("RAG tool called with queryRewriting:", queryRewriting);
         console.log("RAG tool called with queryType:", queryType);
+
+        // Combine resource IDs from messages and from previous steps (via experimental_context)
+        const messageResourceIds = extractResourceIdsFromMessages(messages);
+        const stepResourceIds =
+          (experimental_context as { previousIds?: Set<string> })
+            ?.previousIds ?? new Set<string>();
+        const allPreviousResources = new Set([
+          ...messageResourceIds,
+          ...stepResourceIds,
+        ]);
 
         const resources = await retrieveResources({
           multiHopQueries,
           queryRewriting,
           queryType,
-          previousChunks: extractChunkIdsFromMessages(messages),
+          previousResources: [...allPreviousResources],
           userId,
           limit: ragMaxResources,
         });

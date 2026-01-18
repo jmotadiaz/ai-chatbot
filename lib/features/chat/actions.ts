@@ -54,6 +54,7 @@ import {
   urlContextFactory,
 } from "@/lib/features/web-search/tools";
 import { hasContextUrls } from "@/lib/features/web-search/utils";
+import { extractResourceIds } from "@/lib/features/rag/extract-resource-ids";
 import { ragFactory } from "@/lib/features/rag/tool";
 import { hasUrls } from "@/lib/utils/helpers";
 import { getDb } from "@/lib/infrastructure/db/db";
@@ -225,12 +226,12 @@ export async function processChatResponse({
         system: finalSystemPrompt,
         messages: messagesToSend,
         tools: toolSet,
-        stopWhen: stepCountIs(4),
+        stopWhen: stepCountIs(5),
         // For toolCallingByPrompt: enable all tools, model uses them based on prompts
         activeTools: modelConfiguration.toolCallingByPrompt ? tools : [],
         experimental_transform: smoothStream(),
         experimental_telemetry: { isEnabled: true },
-        prepareStep: async () => {
+        prepareStep: async ({ steps }) => {
           // Skip prepareStep logic for toolCallingByPrompt - tools are already enabled
           if (modelConfiguration.toolCallingByPrompt) {
             return undefined;
@@ -240,10 +241,11 @@ export async function processChatResponse({
             executedTools.add(RAG_TOOL);
             return {
               ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-3-flash-preview"),
+                model: providers.google("gemini-2.5-flash"),
                 providerOptions: {
                   google: {
                     thinkingConfig: {
+                      thinkingBudget: 0,
                       includeThoughts: false,
                     },
                   },
@@ -251,6 +253,9 @@ export async function processChatResponse({
               }),
               toolChoice: { type: "tool", toolName: RAG_TOOL },
               activeTools: [RAG_TOOL],
+              experimental_context: {
+                previousIds: extractResourceIds(steps),
+              },
             };
           }
 
