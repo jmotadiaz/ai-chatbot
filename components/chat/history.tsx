@@ -46,6 +46,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
       <div className="flex flex-col lg:flex-row gap-4 mb-8 items-center">
         <div className="relative flex-1 w-full">
           <Input
+            data-testid="chat-history-filter"
             className="pl-10"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}

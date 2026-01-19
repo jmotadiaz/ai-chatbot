@@ -36,13 +36,13 @@ export class NavigationComponent {
 
   async scrollToTop() {
     await this.scrollContainer.evaluate((el) => {
-      el.scrollTo({ top: 0, behavior: "instant" });
+      el.scrollTop = 0;
     });
   }
 
   async scrollToBottom() {
     await this.scrollContainer.evaluate((el) => {
-      el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+      el.scrollTop = el.scrollHeight;
     });
   }
 

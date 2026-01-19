@@ -18,7 +18,7 @@ export class HistoryPage {
     this.historyList = container
       .locator('ul[aria-label="Chat history list"]')
       .first();
-    this.filterInput = container.getByPlaceholder("Filter chats...");
+    this.filterInput = container.getByTestId("chat-history-filter");
     this.pageTitle = container
       .getByRole("heading", { name: "Chat History" })
       .first();
