@@ -10,7 +10,15 @@ export class HubHeaderComponent {
   }
 
   async addModel(modelName: string) {
-    await this.modelPicker.click();
+    // The "New Model" can be a button or part of the combobox
+    const newModelButton = this.container.getByRole("button", {
+      name: "New Model",
+    });
+    if (await newModelButton.isVisible()) {
+      await newModelButton.click();
+    } else {
+      await this.modelPicker.click();
+    }
     await this.container
       .page()
       .getByRole("option", { name: modelName })
@@ -19,6 +27,9 @@ export class HubHeaderComponent {
   }
 
   async selectTab(name: string) {
-    await this.container.getByRole("button", { name, exact: true }).click();
+    const tabButton = this.container.getByRole("button", { name, exact: true });
+    if (await tabButton.isVisible()) {
+      await tabButton.click();
+    }
   }
 }

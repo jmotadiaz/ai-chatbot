@@ -23,11 +23,20 @@ export class ChatHubPage {
     await this.page.goto("/chat/hub");
   }
 
+  async isTabMode(): Promise<boolean> {
+    // Heuristic: when the hub renders a top tab bar, it typically includes a "New Model" button.
+    // In grid mode, the add-model UI is usually a combobox and the "New Model" button is absent.
+    return await this.page
+      .getByRole("button", { name: "New Model" })
+      .isVisible();
+  }
+
   getPanel(modelName: string): HubPanelComponent {
     return new HubPanelComponent(
       this.page
-        .getByTestId("hub-instance-panel")
-        .filter({ hasText: modelName }),
+        .locator('[data-testid="hub-instance-panel"]:visible')
+        .filter({ hasText: modelName })
+        .first(),
     );
   }
 }

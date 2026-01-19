@@ -42,15 +42,15 @@ test.describe("Model Router", () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page, authenticatedUser }) => {
+    expect(authenticatedUser.email).toBeDefined();
     chatPage = new ChatPage(page);
     await chatPage.goto();
-    expect(authenticatedUser.email).toBeDefined();
   });
 
   modelRouterTestCases.forEach(({ category, complexity, expected }) => {
     test(`should use ${expected} for category ${category} and complexity ${complexity}`, async () => {
       await chatPage.chat.sendMessage(
-        `category=${category} complexity=${complexity}`
+        `category=${category} complexity=${complexity}`,
       );
       await chatPage.chat.waitForLoadingComplete();
 

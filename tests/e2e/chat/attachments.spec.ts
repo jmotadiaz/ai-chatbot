@@ -5,9 +5,9 @@ test.describe("Chat attachments", () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page, authenticatedUser }) => {
+    expect(authenticatedUser.email).toBeDefined();
     chatPage = new ChatPage(page);
     await chatPage.goto();
-    expect(authenticatedUser.email).toBeDefined();
   });
 
   test("should show correct attachment options for image-only models", async () => {

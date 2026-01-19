@@ -3,16 +3,26 @@ import { Locator } from "@playwright/test";
 export class HubPanelComponent {
   readonly container: Locator;
   readonly messages: Locator;
+  readonly removeButton: Locator;
+  readonly selectButton: Locator;
 
   constructor(container: Locator) {
     this.container = container;
     this.messages = container.getByRole("paragraph");
+    this.removeButton = container.getByRole("button", {
+      name: "Remove instance",
+    });
+    this.selectButton = container.getByRole("button", {
+      name: "Select this chat",
+    });
   }
 
   async getLastAssistantMessage(): Promise<string | null> {
     // Wait for the message to be visible and have content (not loading)
-    const lastMessage = this.container.locator('[data-role="assistant"]').last();
-    await lastMessage.waitFor({ state: "visible" });
-    return lastMessage.textContent();
+    // The hub renders the assistant reply as a <p> (role=paragraph). Using role-based selectors
+    // is more resilient than relying on custom attributes.
+    const lastParagraph = this.messages.last();
+    await lastParagraph.waitFor({ state: "visible" });
+    return lastParagraph.textContent();
   }
 }

@@ -5,9 +5,9 @@ test.describe("Prompt Refiner", () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page, authenticatedUser }) => {
+    expect(authenticatedUser.email).toBeDefined();
     chatPage = new ChatPage(page);
     await chatPage.goto();
-    expect(authenticatedUser.email).toBeDefined();
   });
 
   test("should refine the prompt and allow undoing", async ({ page }) => {

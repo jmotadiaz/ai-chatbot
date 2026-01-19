@@ -42,7 +42,7 @@ export const test = base.extend<TestFixtures>({
     // 1. Create User in DB
     const client = postgres(
       process.env.POSTGRES_URL ??
-        "postgres://postgres:postgres@localhost:5434/test"
+        "postgres://postgres:postgres@localhost:5434/test",
     );
     const db = drizzle(client, { schema });
 
@@ -101,7 +101,7 @@ export const test = base.extend<TestFixtures>({
   db: async ({ authenticatedUser }, use) => {
     const client = postgres(
       process.env.POSTGRES_URL ??
-        "postgres://postgres:postgres@localhost:5434/test"
+        "postgres://postgres:postgres@localhost:5434/test",
     );
     const db = drizzle(client, { schema });
 
@@ -124,7 +124,7 @@ export const test = base.extend<TestFixtures>({
               role,
               parts: [{ type: "text", text: content }],
               chatId: insertedChat.id,
-            }))
+            })),
           );
           insertedChats.push(insertedChat);
         }
