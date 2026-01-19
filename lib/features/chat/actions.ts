@@ -3,7 +3,7 @@
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 
-import type { ToolSet } from "ai";
+import type { ModelMessage, PrepareStepFunction, ToolSet } from "ai";
 import {
   streamText,
   convertToModelMessages,
@@ -57,6 +57,7 @@ import { hasContextUrls } from "@/lib/features/web-search/utils";
 import { ragFactory } from "@/lib/features/rag/tool";
 import { hasUrls } from "@/lib/utils/helpers";
 import { getDb } from "@/lib/infrastructure/db/db";
+import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 // -- Server Actions --
 
@@ -98,7 +99,79 @@ export async function togglePinChat(id: string) {
   }
 }
 
+const processMesaggesToSend = async ({
+  messages,
+  modelConfiguration,
+}: {
+  messages: ChatbotMessage[];
+  modelConfiguration: ModelConfiguration;
+}): Promise<ModelMessage[]> => {
+  // Convert to model messages and prune reasoning parts if model doesn't support reasoning
+  const modelMessages = await convertToModelMessages(
+    messages.map((msg) => {
+      if (msg.role === "user" && msg.metadata?.textFiles?.length) {
+        const textFileContents = msg.metadata.textFiles
+          .map(
+            (f) => `\n\n---\nAttached File: ${f.filename}\n${f.content}\n---`
+          )
+          .join("");
+
+        return {
+          ...msg,
+          parts: msg.parts.map((part) =>
+            part.type === "text"
+              ? { ...part, text: part.text + textFileContents }
+              : part
+          ),
+        };
+      }
+      return msg;
+    })
+  );
+  return modelConfiguration.reasoning
+    ? modelMessages
+    : pruneMessages({
+        messages: modelMessages,
+        reasoning: "all",
+      });
+};
+
 // -- Service Logic --
+
+const configureStep = ({
+  modelConfiguration,
+  systemPrompt,
+  tool,
+}: {
+  modelConfiguration: ModelConfiguration;
+  systemPrompt: string;
+  tool: Tool;
+}): ReturnType<PrepareStepFunction> => {
+  return {
+    ...(modelConfiguration.nativeToolCalling
+      ? {
+          system: `
+            ${systemPrompt}
+
+            ## Tools
+            ${TOOL_PROMPTS[tool]}
+          `,
+        }
+      : {
+          model: providers.google("gemini-2.5-flash"),
+          providerOptions: {
+            google: {
+              thinkingConfig: {
+                thinkingBudget: 0,
+                includeThoughts: false,
+              },
+            },
+          },
+          toolChoice: { type: "tool", toolName: tool },
+        }),
+    activeTools: [tool],
+  };
+};
 
 export async function processChatResponse({
   messages,
@@ -170,34 +243,10 @@ export async function processChatResponse({
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
 
       // Process messages to attach text file contents from metadata
-      const processedMessages = messages.map((msg) => {
-        if (msg.role === "user" && msg.metadata?.textFiles?.length) {
-          const textFileContents = msg.metadata.textFiles
-            .map(
-              (f) => `\n\n---\nAttached File: ${f.filename}\n${f.content}\n---`
-            )
-            .join("");
-
-          return {
-            ...msg,
-            parts: msg.parts.map((part) =>
-              part.type === "text"
-                ? { ...part, text: part.text + textFileContents }
-                : part
-            ),
-          };
-        }
-        return msg;
+      const messagesToSend = await processMesaggesToSend({
+        messages,
+        modelConfiguration,
       });
-
-      // Convert to model messages and prune reasoning parts if model doesn't support reasoning
-      const modelMessages = await convertToModelMessages(processedMessages);
-      const messagesToSend = modelConfiguration.reasoning
-        ? modelMessages
-        : pruneMessages({
-            messages: modelMessages,
-            reasoning: "all",
-          });
 
       const result = streamText({
         ...modelConfiguration,
@@ -212,27 +261,11 @@ export async function processChatResponse({
         prepareStep: async () => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
             executedTools.add(RAG_TOOL);
-            return {
-              ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash"),
-                providerOptions: {
-                  google: {
-                    thinkingConfig: {
-                      thinkingBudget: 0,
-                      includeThoughts: false,
-                    },
-                  },
-                },
-              }),
-              ...(modelConfiguration.toolCallingByPrompt
-                ? {
-                    system: `${systemPrompt}\n\n${TOOL_PROMPTS[RAG_TOOL]}`,
-                  }
-                : {
-                    toolChoice: { type: "tool", toolName: RAG_TOOL },
-                  }),
-              activeTools: [RAG_TOOL],
-            };
+            return configureStep({
+              modelConfiguration,
+              systemPrompt,
+              tool: RAG_TOOL,
+            });
           }
 
           if (
@@ -241,19 +274,11 @@ export async function processChatResponse({
             (await hasContextUrls(lastMessage))
           ) {
             executedTools.add(URL_CONTEXT_TOOL);
-            return {
-              ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash-lite"),
-              }),
-              ...(modelConfiguration.toolCallingByPrompt
-                ? {
-                    system: `${systemPrompt}\n\n${TOOL_PROMPTS[URL_CONTEXT_TOOL]}`,
-                  }
-                : {
-                    toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
-                  }),
-              activeTools: [URL_CONTEXT_TOOL],
-            };
+            return configureStep({
+              modelConfiguration,
+              systemPrompt,
+              tool: URL_CONTEXT_TOOL,
+            });
           }
 
           if (
@@ -261,19 +286,11 @@ export async function processChatResponse({
             !executedTools.has(WEB_SEARCH_TOOL)
           ) {
             executedTools.add(WEB_SEARCH_TOOL);
-            return {
-              ...(modelConfiguration.nativeToolCalling && {
-                model: providers.google("gemini-2.5-flash-lite"),
-              }),
-              ...(modelConfiguration.toolCallingByPrompt
-                ? {
-                    system: `${systemPrompt}\n\n${TOOL_PROMPTS[WEB_SEARCH_TOOL]}`,
-                  }
-                : {
-                    toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
-                  }),
-              activeTools: [WEB_SEARCH_TOOL],
-            };
+            return configureStep({
+              modelConfiguration,
+              systemPrompt,
+              tool: WEB_SEARCH_TOOL,
+            });
           }
         },
       });

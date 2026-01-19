@@ -50,12 +50,6 @@ export interface ModelConfiguration {
   providerOptions?: ProviderOptions;
   toolCalling?: boolean;
   nativeToolCalling?: boolean;
-  /**
-   * When true, tools are instructed via system prompts instead of toolChoice.
-   * This allows models with extended thinking (like Claude) to generate
-   * thinking blocks before calling tools.
-   */
-  toolCallingByPrompt?: boolean;
   reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;

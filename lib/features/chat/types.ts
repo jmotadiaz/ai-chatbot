@@ -51,15 +51,12 @@ export const TOOLS: Tools = [RAG_TOOL, WEB_SEARCH_TOOL, URL_CONTEXT_TOOL];
 
 /**
  * Prompts that instruct the model to use specific tools.
- * Used when toolCallingByPrompt is enabled (e.g., for models with extended thinking).
+ * Used when nativeToolCalling is enabled (e.g., for models with extended thinking).
  */
 export const TOOL_PROMPTS: Record<Tool, string> = {
-  [RAG_TOOL]:
-    "IMPORTANT: You MUST use the 'rag' tool to search the knowledge base before providing your response. Do not respond without first calling this tool. The input of the tool call MUST be in English.",
-  [URL_CONTEXT_TOOL]:
-    "IMPORTANT: You MUST use the 'urlContext' tool to fetch and analyze the content from the URLs mentioned in the conversation. Do not respond without first calling this tool.",
-  [WEB_SEARCH_TOOL]:
-    "IMPORTANT: You MUST use the 'webSearch' tool to search the web for current and relevant information. Do not respond without first calling this tool.",
+  [RAG_TOOL]: `IMPORTANT: You MUST use the '${RAG_TOOL}' tool to search the knowledge base before providing your response. Do not respond without first calling this tool. The input of the tool call MUST be in English.`,
+  [URL_CONTEXT_TOOL]: `IMPORTANT: You MUST use the '${URL_CONTEXT_TOOL}' tool to fetch and analyze the content from the URLs mentioned in the conversation. Do not respond without first calling this tool.`,
+  [WEB_SEARCH_TOOL]: `IMPORTANT: You MUST use the '${WEB_SEARCH_TOOL}' tool to search the web for current and relevant information. Do not respond without first calling this tool.`,
 };
 
 // Re-export specific database types for domain usage
