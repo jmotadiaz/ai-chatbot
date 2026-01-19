@@ -27,6 +27,7 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
   if (
     status === "ready" ||
     status === "error" ||
+    message.role !== "assistant" ||
     (message.role === "assistant" && message.metadata?.status === "finished")
   ) {
     return null;
