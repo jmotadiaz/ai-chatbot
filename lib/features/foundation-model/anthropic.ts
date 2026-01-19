@@ -5,7 +5,6 @@ export const ANTHROPIC_CONFIG = {
   "Claude Haiku 4.5": {
     model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
-    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     nativeToolCalling: true,
     providerOptions: {
@@ -22,7 +21,6 @@ export const ANTHROPIC_CONFIG = {
   "Claude Sonnet 4.5": {
     model: providers.gateway("anthropic/claude-sonnet-4.5"),
     company: "anthropic",
-    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     nativeToolCalling: true,
@@ -40,7 +38,6 @@ export const ANTHROPIC_CONFIG = {
   "Claude Opus 4.5": {
     model: providers.gateway("anthropic/claude-opus-4.5"),
     company: "anthropic",
-    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     nativeToolCalling: true,
