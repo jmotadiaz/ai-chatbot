@@ -137,7 +137,7 @@ export class SidebarComponent {
 Components can compose other components, creating a nested hierarchy:
 
 ```typescript
-// tests/e2e/chat/chat.component.ts
+// tests/e2e/chat/components/chat.ts
 export class ChatComponent {
   readonly container: Locator;
   readonly chatInput: Locator;
@@ -159,7 +159,7 @@ export class ChatComponent {
   }
 }
 
-// tests/e2e/chat/tools.component.ts
+// tests/e2e/chat/components/tools.ts
 export class ToolsComponent {
   readonly container: Locator;
   readonly ragToolLabel: Locator;

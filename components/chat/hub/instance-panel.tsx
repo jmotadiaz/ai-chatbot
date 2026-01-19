@@ -62,9 +62,10 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
 
   return (
     <div
+      data-testid="hub-instance-panel"
       className={cn(
         "rounded-xl border bg-secondary/30 overflow-hidden h-full min-h-0 flex flex-col",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b">
@@ -97,7 +98,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
         title={instance.model}
         className={cn(
           "flex-1 flex",
-          chat.messages.length ? "items-start" : "items-center"
+          chat.messages.length ? "items-start" : "items-center",
         )}
       />
     </div>
