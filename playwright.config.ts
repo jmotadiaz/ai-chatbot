@@ -41,6 +41,8 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
+
+    /* Use reduced motion for reliable E2E testing (instant scroll animations) */
     contextOptions: {
       reducedMotion: "reduce",
     },

@@ -2,6 +2,9 @@ import { test, expect } from "../fixtures";
 import { ChatPage } from "./pages/chat";
 import type { Chat } from "@/lib/infrastructure/db/schema";
 
+// Helper to get unique message text prefix for a given message number (1-indexed)
+const userMessageText = (n: number) => `User message ${n}:`;
+
 // Generate a chat with many messages to enable scrolling
 const generateLongChat = () => {
   const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
@@ -9,12 +12,12 @@ const generateLongChat = () => {
   for (let i = 1; i <= 10; i++) {
     messages.push({
       role: "user",
-      content: `User message ${i}: ${"Lorem ipsum dolor sit amet. ".repeat(5)}`,
+      content: `${userMessageText(i)} ${"Lorem ipsum dolor sit amet. ".repeat(5)}`,
     });
     messages.push({
       role: "assistant",
       content: `Assistant response ${i}: ${"This is a detailed response to help test scrolling. ".repeat(
-        10
+        10,
       )}`,
     });
   }
@@ -57,16 +60,22 @@ test.describe("Chat Navigation", () => {
 
       // Wait for messages to render and initial scroll
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
-      await chatPage.chat.navigation.waitForMessageInViewport(9);
+      await chatPage.chat.navigation.waitForMessageInViewport(
+        userMessageText(10),
+      );
 
       // The last user message should be visible
       const isLastVisible =
-        await chatPage.chat.navigation.isUserMessageInViewport(9);
+        await chatPage.chat.navigation.isUserMessageInViewport(
+          userMessageText(10),
+        );
       expect.soft(isLastVisible).toBe(true);
 
       // The first user message should NOT be visible (scrolled past)
       const isFirstVisible =
-        await chatPage.chat.navigation.isUserMessageInViewport(0);
+        await chatPage.chat.navigation.isUserMessageInViewport(
+          userMessageText(1),
+        );
       expect.soft(isFirstVisible).toBe(false);
     });
   });
@@ -83,7 +92,9 @@ test.describe("Chat Navigation", () => {
 
       // Scroll to top to make first message visible
       await chatPage.chat.navigation.scrollToTop();
-      await chatPage.chat.navigation.waitForMessageInViewport(0);
+      await chatPage.chat.navigation.waitForMessageInViewport(
+        userMessageText(1),
+      );
 
       // Wait for prev button to disappear (if it was visible)
       await chatPage.chat.navigation.assertPrevButtonHidden();
@@ -99,9 +110,13 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll so that message 2 is visible (message 0 leaves viewport)
-      await chatPage.chat.navigation.scrollToMessage(2);
-      await chatPage.chat.navigation.assertUserMessageInViewport(2);
-      await chatPage.chat.navigation.assertUserMessageNotInViewport(0);
+      await chatPage.chat.navigation.scrollToMessage(userMessageText(3));
+      await chatPage.chat.navigation.assertUserMessageInViewport(
+        userMessageText(3),
+      );
+      await chatPage.chat.navigation.assertUserMessageNotInViewport(
+        userMessageText(1),
+      );
 
       // Wait for prev button to appear
       await chatPage.chat.navigation.assertPrevButtonVisible();
@@ -117,8 +132,10 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Scroll to message 5
-      await chatPage.chat.navigation.scrollToMessage(5);
-      await chatPage.chat.navigation.assertUserMessageInViewport(5);
+      await chatPage.chat.navigation.scrollToMessage(userMessageText(6));
+      await chatPage.chat.navigation.assertUserMessageInViewport(
+        userMessageText(6),
+      );
 
       // Wait for prev button to be visible
       await chatPage.chat.navigation.assertPrevButtonVisible();
@@ -127,7 +144,9 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.clickPrev();
 
       // After clicking prev, we should have navigated to message 4
-      await chatPage.chat.navigation.assertUserMessageInViewport(4);
+      await chatPage.chat.navigation.assertUserMessageInViewport(
+        userMessageText(5),
+      );
     });
   });
 
@@ -210,7 +229,9 @@ test.describe("Chat Navigation", () => {
 
       // Scroll to top so message 0 is visible
       await chatPage.chat.navigation.scrollToTop();
-      await chatPage.chat.navigation.assertUserMessageInViewport(0);
+      await chatPage.chat.navigation.assertUserMessageInViewport(
+        userMessageText(1),
+      );
 
       // Wait for next button to appear
       await chatPage.chat.navigation.assertNextButtonVisible();
@@ -219,7 +240,9 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.clickNext();
 
       // After clicking next, message 1 should be visible
-      await chatPage.chat.navigation.assertUserMessageInViewport(1);
+      await chatPage.chat.navigation.assertUserMessageInViewport(
+        userMessageText(2),
+      );
     });
   });
 
@@ -267,7 +290,9 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
       // Ensure we are initially at the bottom (default behavior) or have content
-      await chatPage.chat.navigation.waitForMessageInViewport(9);
+      await chatPage.chat.navigation.waitForMessageInViewport(
+        userMessageText(10),
+      );
 
       // Scroll to top
       await chatPage.chat.navigation.scrollToTop();
@@ -279,7 +304,9 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.clickBottom();
 
       // Last message (9) should be visible
-      await chatPage.chat.navigation.assertUserMessageInViewport(9);
+      await chatPage.chat.navigation.assertUserMessageInViewport(
+        userMessageText(10),
+      );
     });
   });
 });

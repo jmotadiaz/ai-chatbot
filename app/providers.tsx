@@ -23,23 +23,7 @@ export const Providers: React.FC<ProvidersProps> = ({ children }) => {
         enableSystem
         defaultTheme="system"
       >
-        <MotionConfig
-          transition={
-            process.env.NEXT_PUBLIC_ENV === "test" ? { duration: 0 } : undefined
-          }
-        >
-          {process.env.NEXT_PUBLIC_ENV === "test" && (
-            <style>
-              {`
-                *, *::before, *::after {
-                  transition: none !important;
-                  animation: none !important;
-                }
-              `}
-            </style>
-          )}
-          {children}
-        </MotionConfig>
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
       </ThemeProvider>
     </SessionProvider>
   );

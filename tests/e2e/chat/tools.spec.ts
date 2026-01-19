@@ -14,7 +14,7 @@ test.describe("Chat functionality", () => {
     await chatPage.header.modelPicker.selectModel("Sonar Pro");
     await expect.soft(chatPage.chat.toolsControl).not.toBeVisible();
 
-    await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.modelPicker.selectModel("Gemini 3 Flash");
     await expect.soft(chatPage.chat.toolsControl).toBeVisible();
 
     await chatPage.chat.openTools();
@@ -26,7 +26,7 @@ test.describe("Chat functionality", () => {
       .soft(chatPage.header.modelPicker.getModelOption("Sonar Pro"))
       .not.toBeAttached();
     await expect
-      .soft(chatPage.header.modelPicker.getModelOption("Claude Sonnet 4.5"))
+      .soft(chatPage.header.modelPicker.getModelOption("Gemini 3 Flash"))
       .toBeAttached();
     await chatPage.closeDropdown();
 
@@ -44,7 +44,7 @@ test.describe("Chat functionality", () => {
   });
 
   test("should show tool configuration options when tools are enabled", async () => {
-    await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.modelPicker.selectModel("Gemini 3 Flash");
 
     await chatPage.chat.openTools();
     await chatPage.chat.tools.toggleTool("rag");

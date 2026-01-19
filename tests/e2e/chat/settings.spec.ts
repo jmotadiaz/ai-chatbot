@@ -15,17 +15,13 @@ test.describe("Chat functionality", () => {
     await chatPage.header.modelPicker.selectModel("Router");
     await expect.soft(chatPage.chat.settingsButton).not.toBeVisible();
 
-    // Claude Sonnet 4.5 should show settings (has temperature: 0.6)
-    await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.modelPicker.selectModel("Kimi K2 Thinking");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
-    await expect
-      .soft(chatPage.chat.settings.temperatureInput)
-      .toHaveValue("0.6");
+    await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
     await chatPage.closeDropdown();
 
-    // Qwen3 Instruct should show settings (has temperature: 0.7, topP: 0.8)
     await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
@@ -38,12 +34,9 @@ test.describe("Chat functionality", () => {
     await chatPage.chat.settings.setTemperature(0.5);
     await chatPage.closeDropdown();
 
-    // Switch back to Claude Sonnet 4.5 - should show its default temperature (0.6)
-    await chatPage.header.modelPicker.selectModel("Claude Sonnet 4.5");
+    await chatPage.header.modelPicker.selectModel("Kimi K2 Thinking");
     await chatPage.chat.openSettings();
-    await expect
-      .soft(chatPage.chat.settings.temperatureInput)
-      .toHaveValue("0.6");
+    await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
   });
 
   test("should send config to the assistant correctly", async () => {
@@ -64,7 +57,7 @@ test.describe("Chat functionality", () => {
     expect
       .soft(lastMessage)
       .toContain(
-        "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6"
+        "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6",
       );
   });
 });

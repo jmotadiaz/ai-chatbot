@@ -5,9 +5,19 @@ interface UseChatNavigationProps {
   messages?: Array<ChatbotMessage>;
 }
 
-// Use instant scroll in test environments for reliable E2E testing
-const isTestEnv = process.env.NEXT_PUBLIC_ENV === "test";
-const scrollBehavior: ScrollBehavior = isTestEnv ? "instant" : "smooth";
+/**
+ * Wrapper for Element.scrollTo that respects prefers-reduced-motion accessibility setting.
+ * When the user has reduced motion enabled, scroll behavior becomes 'instant'.
+ */
+const scrollTo = (element: HTMLElement, options: ScrollToOptions): void => {
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
+  element.scrollTo({
+    ...options,
+    behavior: prefersReducedMotion ? "instant" : options.behavior ?? "smooth",
+  });
+};
 
 const getScrollPosition = (
   element: HTMLElement,
@@ -87,7 +97,7 @@ export const useChatNavigation = ({
         const lastUserMessageEl = getLastUserMessageElement(container);
         if (lastUserMessageEl) {
           const top = getScrollPosition(lastUserMessageEl, container);
-          container.scrollTo({ top, behavior });
+          scrollTo(container, { top, behavior });
         }
       });
     },
@@ -306,7 +316,7 @@ export const useChatNavigation = ({
       .sort((a, b) => b.top - a.top)[0];
 
     if (target) {
-      container.scrollTo({ top: target.top, behavior: scrollBehavior });
+      scrollTo(container, { top: target.top, behavior: "smooth" });
     }
   }, [scrollContainerRef]);
 
@@ -327,16 +337,16 @@ export const useChatNavigation = ({
       .sort((a, b) => a.top - b.top)[0];
 
     if (target) {
-      container.scrollTo({ top: target.top, behavior: scrollBehavior });
+      scrollTo(container, { top: target.top, behavior: "smooth" });
     }
   }, [scrollContainerRef]);
 
   const scrollToBottom = useCallback(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      container.scrollTo({
+      scrollTo(container, {
         top: container.scrollHeight,
-        behavior: scrollBehavior,
+        behavior: "smooth",
       });
     }
   }, [scrollContainerRef]);
@@ -344,9 +354,9 @@ export const useChatNavigation = ({
   const scrollToTop = useCallback(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      container.scrollTo({
+      scrollTo(container, {
         top: 0,
-        behavior: scrollBehavior,
+        behavior: "smooth",
       });
     }
   }, [scrollContainerRef]);

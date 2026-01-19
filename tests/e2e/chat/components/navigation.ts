@@ -46,8 +46,10 @@ export class NavigationComponent {
     });
   }
 
-  async scrollToMessage(index: number) {
-    const message = this.container.locator('[data-role="user"]').nth(index);
+  async scrollToMessage(text: string) {
+    const message = this.container
+      .locator('[data-role="user"]')
+      .filter({ hasText: text });
     await message.scrollIntoViewIfNeeded();
   }
 
@@ -69,9 +71,10 @@ export class NavigationComponent {
     return await this.scrollContainer.evaluate((el) => el.clientHeight);
   }
 
-  async isUserMessageInViewport(index: number): Promise<boolean> {
-    const userMessages = this.container.locator('[data-role="user"]');
-    const message = userMessages.nth(index);
+  async isUserMessageInViewport(text: string): Promise<boolean> {
+    const message = this.container
+      .locator('[data-role="user"]')
+      .filter({ hasText: text });
 
     return await message.evaluate((el) => {
       const container = el.closest(".overflow-y-auto");
@@ -91,8 +94,10 @@ export class NavigationComponent {
    * Assert that a user message is in the viewport using native Playwright assertion.
    * Uses toPass for retry logic to handle scroll animation timing.
    */
-  async assertUserMessageInViewport(index: number) {
-    const message = this.container.locator('[data-role="user"]').nth(index);
+  async assertUserMessageInViewport(text: string) {
+    const message = this.container
+      .locator('[data-role="user"]')
+      .filter({ hasText: text });
     await expect(async () => {
       await expect(message).toBeInViewport();
     }).toPass({
@@ -104,14 +109,17 @@ export class NavigationComponent {
   /**
    * Assert that a user message is NOT in the viewport using native Playwright assertion.
    */
-  async assertUserMessageNotInViewport(index: number) {
-    const message = this.container.locator('[data-role="user"]').nth(index);
+  async assertUserMessageNotInViewport(text: string) {
+    const message = this.container
+      .locator('[data-role="user"]')
+      .filter({ hasText: text });
     await expect(message).not.toBeInViewport();
   }
 
-  async getUserMessageScrollPosition(index: number): Promise<number> {
-    const userMessages = this.container.locator('[data-role="user"]');
-    const message = userMessages.nth(index);
+  async getUserMessageScrollPosition(text: string): Promise<number> {
+    const message = this.container
+      .locator('[data-role="user"]')
+      .filter({ hasText: text });
 
     return await message.evaluate((el) => {
       const container = el.closest(".overflow-y-auto");
@@ -178,11 +186,11 @@ export class NavigationComponent {
   }
 
   async waitForMessageInViewport(
-    index: number,
-    shouldBeVisible: boolean = true
+    text: string,
+    shouldBeVisible: boolean = true,
   ) {
     await expect(async () => {
-      const isVisible = await this.isUserMessageInViewport(index);
+      const isVisible = await this.isUserMessageInViewport(text);
       expect(isVisible).toBe(shouldBeVisible);
     }).toPass({
       intervals: [500, 1_000, 2_000, 5_000],
