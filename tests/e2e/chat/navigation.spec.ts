@@ -227,8 +227,8 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to top so message 0 is visible
-      await chatPage.chat.navigation.scrollToTop();
+      // Scroll to first user message
+      await chatPage.chat.navigation.scrollToMessage(userMessageText(1));
       await chatPage.chat.navigation.assertUserMessageInViewport(
         userMessageText(1),
       );
@@ -239,7 +239,7 @@ test.describe("Chat Navigation", () => {
       // Click next button
       await chatPage.chat.navigation.clickNext();
 
-      // After clicking next, message 1 should be visible
+      // After clicking next, message 2 should be visible
       await chatPage.chat.navigation.assertUserMessageInViewport(
         userMessageText(2),
       );
