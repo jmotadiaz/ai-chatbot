@@ -75,7 +75,7 @@ export class HistoryPage {
 
     // 2. Execute scroll with instant behavior
     await this.historyList.evaluate((el) =>
-      el.scrollTo({ top: el.scrollHeight, behavior: "instant" })
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" }),
     );
 
     // 3. Confirm scroll success by checking last item is visible
@@ -89,7 +89,7 @@ export class HistoryPage {
   async assertChatVisible(title: string) {
     await expect(async () => {
       await expect(
-        this.historyList.getByText(title, { exact: true })
+        this.historyList.getByText(title, { exact: true }),
       ).toBeVisible();
     }).toPass({
       intervals: [500, 1_000, 2_000],
@@ -100,7 +100,7 @@ export class HistoryPage {
   async assertChatHidden(title: string) {
     await expect(async () => {
       await expect(
-        this.historyList.getByText(title, { exact: true })
+        this.historyList.getByText(title, { exact: true }),
       ).not.toBeVisible();
     }).toPass({
       intervals: [500, 1_000, 2_000],
