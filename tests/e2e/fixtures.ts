@@ -11,8 +11,21 @@ import {
   chat,
   message,
   Chat,
+  project,
+  Project,
 } from "@/lib/infrastructure/db/schema";
 import { schema } from "@/lib/infrastructure/db/db";
+
+type NewProject = {
+  name: string;
+  systemPrompt: string;
+  defaultModel?: string;
+  defaultTemperature?: number;
+  tools?: string[];
+  hasPromptRefiner?: boolean;
+  ragMaxResources?: number;
+  webSearchNumResults?: number;
+};
 
 type NewChat = {
   title: string;
@@ -29,6 +42,7 @@ interface TestFixtures {
   db: {
     testUser: User;
     addChats: (newChats: NewChat[]) => Promise<Chat[]>;
+    addProjects: (newProjects: NewProject[]) => Promise<Project[]>;
   };
 }
 
@@ -132,7 +146,29 @@ export const test = base.extend<TestFixtures>({
       return insertedChats;
     };
 
-    await use({ testUser: authenticatedUser, addChats });
+    const addProjects = async (newProjects: NewProject[]) => {
+      const insertedProjects: Project[] = [];
+      for (const newProject of newProjects) {
+        const [insertedProject] = await db
+          .insert(project)
+          .values({
+            userId: authenticatedUser.id,
+            name: newProject.name,
+            systemPrompt: newProject.systemPrompt,
+            defaultModel: newProject.defaultModel,
+            defaultTemperature: newProject.defaultTemperature,
+            tools: newProject.tools,
+            hasPromptRefiner: newProject.hasPromptRefiner ?? false,
+            ragMaxResources: newProject.ragMaxResources,
+            webSearchNumResults: newProject.webSearchNumResults,
+          })
+          .returning();
+        insertedProjects.push(insertedProject);
+      }
+      return insertedProjects;
+    };
+
+    await use({ testUser: authenticatedUser, addChats, addProjects });
     await client.end();
   },
 

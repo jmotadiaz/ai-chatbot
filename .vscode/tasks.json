@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Create project test directories",
+			"type": "shell",
+			"command": "mkdir -p tests/e2e/project/pages tests/e2e/project/components",
+			"args": [],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Create project test files",
+			"type": "shell",
+			"command": "touch tests/e2e/project/pages/project.page.ts tests/e2e/project/components/project-form.component.ts tests/e2e/project/components/project-list.component.ts tests/e2e/project/components/test-chat.component.ts",
+			"args": [],
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}

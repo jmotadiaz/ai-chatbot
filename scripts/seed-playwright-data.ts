@@ -3,20 +3,22 @@ import { config } from "dotenv";
 import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { reset } from "drizzle-seed";
 import postgres from "postgres";
 
 import { generateHashedPassword } from "../lib/features/auth/utils";
 import { schema, type DB } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
 
-const TEST_USER_EMAIL = "playwright@test.com";
-const TEST_USER_PASSWORD = "playwright123";
+const TEST_USER_EMAIL = "test@test.com";
+const TEST_USER_PASSWORD = "123456";
 const TEST_USER_ID = "f47ac10b-58cc-4372-a567-0e02b2c3d480";
 const SEED_PROJECT_NAME = "Playwright Test Project";
-const SEED_PROJECT_SYSTEM_PROMPT = "You are a helpful assistant for Playwright testing.";
+const SEED_PROJECT_SYSTEM_PROMPT =
+  "You are a helpful assistant for Playwright testing.";
 
 type Tx = Parameters<DB["transaction"]>[0] extends (
-  tx: infer T
+  tx: infer T,
 ) => Promise<unknown>
   ? T
   : never;
@@ -42,6 +44,7 @@ async function runMigrations(client: postgres.Sql) {
   const start = Date.now();
   await migrate(db, { migrationsFolder: "./lib/infrastructure/db/migrations" });
   console.log("✅ Migrations completed in", Date.now() - start, "ms");
+  await reset(db, schema);
 }
 
 async function upsertTestUser(tx: Tx) {
@@ -121,7 +124,7 @@ async function createPlaywrightTestChats(
   userId: string,
   projectId: string,
   chatsCount: number,
-  messagesPerChat: number
+  messagesPerChat: number,
 ) {
   const createdChatIds: string[] = [];
 
@@ -208,7 +211,7 @@ async function main() {
         userId,
         seedProject.id,
         args.chats,
-        args.messagesPerChat
+        args.messagesPerChat,
       );
 
       return {
