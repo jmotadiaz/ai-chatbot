@@ -72,6 +72,10 @@ pnpm test
 
 ### Testing Guidelines
 
+#### User Test for Agents
+ - User: "test@test.com"
+ - Password: "123456"
+
 #### E2E Testing Architecture
 
 The project uses Playwright for end-to-end testing with a component-based Page Object pattern that promotes reusability and maintainability.
@@ -109,7 +113,7 @@ export class ChatPage {
 
 **Component Object Structure:**
 ```typescript
-// tests/e2e/chat/sidebar.component.ts
+// tests/e2e/chat/components/sidebar.ts
 export class SidebarComponent {
   readonly container: Locator;
   readonly chatList: Locator;
