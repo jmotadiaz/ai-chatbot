@@ -19,25 +19,29 @@ export const Collapsible: React.FC<CollapsibleProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("border-t border-zinc-200 dark:border-zinc-700", className)}>
+    <div
+      className={cn("border-t border-zinc-200 dark:border-zinc-700", className)}
+    >
       <button
         type="button"
         onClick={onToggle}
         className="flex w-full items-center justify-between py-4 text-left text-lg font-semibold text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
         aria-expanded={isOpen}
+        data-testid="collapsible-toggle"
+        aria-label={title}
       >
         {title}
         <ChevronDown
           className={cn(
             "h-5 w-5 text-zinc-500 transition-transform duration-200",
-            isOpen && "rotate-180"
+            isOpen && "rotate-180",
           )}
         />
       </button>
       <div
         className={cn(
           "grid transition-all duration-200 ease-in-out",
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
         <div className="overflow-hidden">
@@ -47,4 +51,3 @@ export const Collapsible: React.FC<CollapsibleProps> = ({
     </div>
   );
 };
-

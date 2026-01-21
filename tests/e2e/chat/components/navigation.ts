@@ -36,13 +36,13 @@ export class NavigationComponent {
 
   async scrollToTop() {
     await this.scrollContainer.evaluate((el) => {
-      el.scrollTop = 0;
+      el.scrollTo({ top: 0, behavior: "instant" });
     });
   }
 
   async scrollToBottom() {
     await this.scrollContainer.evaluate((el) => {
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
     });
   }
 
@@ -200,6 +200,7 @@ export class NavigationComponent {
 
   async assertScrollTopLessThan(value: number) {
     await expect(async () => {
+      await this.scrollToTop();
       const scrollTop = await this.getScrollTop();
       expect(scrollTop).toBeLessThan(value);
     }).toPass({

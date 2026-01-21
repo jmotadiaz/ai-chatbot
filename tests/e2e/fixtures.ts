@@ -52,64 +52,67 @@ interface TestFixtures {
  */
 export const test = base.extend<TestFixtures>({
   // Main User Fixture: Creates user in DB AND authenticates them in the browser
-  authenticatedUser: async ({ page, baseURL }, use) => {
-    // 1. Create User in DB
-    const client = postgres(
-      process.env.POSTGRES_URL ??
-        "postgres://postgres:postgres@localhost:5434/test",
-    );
-    const db = drizzle(client, { schema });
+  authenticatedUser: [
+    async ({ page, baseURL }, use) => {
+      // 1. Create User in DB
+      const client = postgres(
+        process.env.POSTGRES_URL ??
+          "postgres://postgres:postgres@localhost:5434/test",
+      );
+      const db = drizzle(client, { schema });
 
-    // Use salt rounds = 1 for fast hashing in tests
-    const hashedPassword = hashSync("test-password", 1);
+      // Use salt rounds = 1 for fast hashing in tests
+      const hashedPassword = hashSync("test-password", 1);
 
-    const [newUser] = await db
-      .insert(user)
-      .values({
-        email: `test-${randomUUID()}@test.com`,
-        password: hashedPassword,
-      })
-      .returning();
+      const [newUser] = await db
+        .insert(user)
+        .values({
+          email: `test-${randomUUID()}@test.com`,
+          password: hashedPassword,
+        })
+        .returning();
 
-    // 2. Authenticate (Inject Cookie)
-    const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
-    const token: DefaultJWT = {
-      id: newUser.id,
-      email: newUser.email,
-      type: "regular",
-    };
+      // 2. Authenticate (Inject Cookie)
+      const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
+      const token: DefaultJWT = {
+        id: newUser.id,
+        email: newUser.email,
+        type: "regular",
+      };
 
-    const { encode } = await import("next-auth/jwt");
-    const cookieName = "authjs.session-token";
+      const { encode } = await import("next-auth/jwt");
+      const cookieName = "authjs.session-token";
 
-    const encodedToken = await encode({
-      token,
-      secret,
-      salt: cookieName,
-    });
+      const encodedToken = await encode({
+        token,
+        secret,
+        salt: cookieName,
+      });
 
-    const url = new URL(baseURL ?? "http://localhost:3000");
-    const domain = url.hostname;
+      const url = new URL(baseURL ?? "http://localhost:3000");
+      const domain = url.hostname;
 
-    await page.context().addCookies([
-      {
-        name: cookieName,
-        value: encodedToken,
-        domain,
-        path: "/",
-        httpOnly: true,
-        sameSite: "Lax",
-        secure: false,
-        expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 1 week
-      },
-    ]);
+      await page.context().addCookies([
+        {
+          name: cookieName,
+          value: encodedToken,
+          domain,
+          path: "/",
+          httpOnly: true,
+          sameSite: "Lax",
+          secure: false,
+          expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 1 week
+        },
+      ]);
 
-    // Provide the authenticated user (full object) to the test
-    await use(newUser);
+      // Provide the authenticated user (full object) to the test
+      await use(newUser);
 
-    // Cleanup
-    await client.end();
-  },
+      // Cleanup
+      await client.end();
+    },
+    { auto: true },
+  ],
 
   // DB Fixture: Depends on authenticatedUser, so accessing db guarantees an authenticated session
   db: async ({ authenticatedUser }, use) => {

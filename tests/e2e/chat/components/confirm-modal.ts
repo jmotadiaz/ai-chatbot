@@ -12,7 +12,10 @@ export class ConfirmModalComponent {
     this.modal = root
       .locator("div")
       .filter({
-        has: root.page().locator("h3", { hasText: /^Delete Chat\?$/ }),
+        has: root
+          .page()
+          .locator("h3")
+          .filter({ hasText: /Delete (Chat|Project)/ }),
       })
       .last();
     this.message = this.modal.locator("p");

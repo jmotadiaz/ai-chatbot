@@ -19,7 +19,7 @@ export const Toggle: React.FC<ToggleProps> = ({
       htmlFor={id}
       className={cn(
         "flex flex-nowrap items-center text-sm font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer select-none",
-        className
+        className,
       )}
     >
       <div className="relative flex items-center">
@@ -27,6 +27,7 @@ export const Toggle: React.FC<ToggleProps> = ({
           type="checkbox"
           id={id}
           checked={checked}
+          aria-checked={checked}
           onChange={onChange}
           className="sr-only"
         />

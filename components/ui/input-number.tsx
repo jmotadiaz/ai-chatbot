@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/helpers";
 import { Button } from "@/components/ui/button";
 
-interface InputNumberProps
-  extends Omit<ComponentProps<typeof Input>, "onChange" | "type" | "value"> {
+interface InputNumberProps extends Omit<
+  ComponentProps<typeof Input>,
+  "onChange" | "type" | "value"
+> {
   value: number;
   min?: number;
   max?: number;
@@ -43,7 +45,7 @@ export function InputNumber({
 
   const change = (newVal: number) => {
     onChange(
-      Math.max(min, Math.min(max, parseFloat(newVal.toFixed(precision))))
+      Math.max(min, Math.min(max, parseFloat(newVal.toFixed(precision)))),
     );
   };
 
@@ -98,7 +100,10 @@ export function InputNumber({
   const decrement = once(() => handleMouseDown(-step));
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div
+      className={cn("flex items-center space-x-2", className)}
+      data-testid={id ? `input-number-${id}` : "input-number"}
+    >
       <Button
         type="button"
         onClick={() => change(value - step)}

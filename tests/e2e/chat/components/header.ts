@@ -17,7 +17,8 @@ export class HeaderComponent {
       container,
       "header-model-picker"
     );
-    this.sidebarToggleButton = container.getByLabel("Toggle sidebar").first();
+    // The toggle is rendered as a div with an aria-label; use a locator that targets the attribute
+    this.sidebarToggleButton = container.locator('[aria-label="Toggle sidebar"]').first();
   }
 
   async toggleSidebar() {

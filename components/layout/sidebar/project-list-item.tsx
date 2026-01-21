@@ -36,12 +36,17 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
   });
   return (
     <div className="flex flex-col gap-2">
-      <Item className="cursor-pointer" {...getToggleProps()}>
+      <Item
+        className="cursor-pointer"
+        aria-label={name}
+        data-testid="project-item-toggle"
+        {...getToggleProps()}
+      >
         <div className="flex-1">{name}</div>
         <ChevronDown
           className={cn(
             "h-4 w-4 transition-transform duration-300",
-            isExpanded && "rotate-180"
+            isExpanded && "rotate-180",
           )}
         />
       </Item>
@@ -49,22 +54,23 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">
             <NewChatLink projectId={id}>
-              <Button variant="outline">
+              <Button variant="outline" aria-label="Chat">
                 <MessageCircle className="h-4 w-4" />
               </Button>
             </NewChatLink>
             <NewChatLink projectId={id} temporary>
-              <Button variant="outline">
+              <Button variant="outline" aria-label="Temporary Chat">
                 <MessageCircleDashed className="h-4 w-4" />
               </Button>
             </NewChatLink>
             <ChatLink href={`/project/${id}/edit`}>
-              <Button variant="outline">
+              <Button variant="outline" aria-label="Edit project">
                 <Pencil className="h-4 w-4" />
               </Button>
             </ChatLink>
             <Button
               variant="outline"
+              aria-label="Delete project"
               onClick={() =>
                 startTransition(() => {
                   setIsModalOpen(true);
