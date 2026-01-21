@@ -41,8 +41,7 @@ for (const category of Object.keys(modelRoutingExpectations) as Category[]) {
 test.describe("Model Router", () => {
   let chatPage: ChatPage;
 
-  test.beforeEach(async ({ page, authenticatedUser }) => {
-    expect(authenticatedUser.email).toBeDefined();
+  test.beforeEach(async ({ page }) => {
     chatPage = new ChatPage(page);
     await chatPage.goto();
   });

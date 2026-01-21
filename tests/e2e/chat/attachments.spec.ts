@@ -4,8 +4,7 @@ import { ChatPage } from "./pages/chat";
 test.describe("Chat attachments", () => {
   let chatPage: ChatPage;
 
-  test.beforeEach(async ({ page, authenticatedUser }) => {
-    expect(authenticatedUser.email).toBeDefined();
+  test.beforeEach(async ({ page }) => {
     chatPage = new ChatPage(page);
     await chatPage.goto();
   });

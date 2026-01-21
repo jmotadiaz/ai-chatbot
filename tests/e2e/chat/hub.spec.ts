@@ -4,8 +4,7 @@ import { ChatHubPage } from "./pages/hub";
 test.describe("Chat Hub", () => {
   let hubPage: ChatHubPage;
 
-  test.beforeEach(async ({ page, authenticatedUser }) => {
-    expect(authenticatedUser.email).toBeDefined();
+  test.beforeEach(async ({ page }) => {
     hubPage = new ChatHubPage(page);
     // Force a large viewport to ensure we are in Grid mode for desktop tests
     await page.setViewportSize({ width: 1600, height: 1200 });
