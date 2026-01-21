@@ -194,7 +194,10 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
                   className={cn("max-w-full")}
                 >
                   <CopyBlock className="pt-2 -top-2" text={part.text}>
-                    <Response className="[&>*:first-child]:mt-6 [&>*:last-child]:mb-6">
+                    <Response
+                      isAnimating={part.state === "streaming"}
+                      className="[&>*:first-child]:mt-6 [&>*:last-child]:mb-6"
+                    >
                       {part.text}
                     </Response>
                   </CopyBlock>

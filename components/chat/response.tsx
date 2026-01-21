@@ -4,6 +4,10 @@ import { memo } from "react";
 import type { StreamdownProps } from "streamdown";
 import { Streamdown } from "streamdown";
 import addClasses from "rehype-class-names";
+import { code } from "@streamdown/code";
+import { mermaid } from "@streamdown/mermaid";
+import { math } from "@streamdown/math";
+import { cjk } from "@streamdown/cjk";
 import { cn } from "@/lib/utils/helpers";
 
 export const Response = memo(
@@ -11,8 +15,9 @@ export const Response = memo(
     <Streamdown
       className={cn(
         "size-full animate-streaming [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
+        className,
       )}
+      plugins={{ code, mermaid, math, cjk }}
       rehypePlugins={[
         [
           addClasses,
@@ -25,7 +30,7 @@ export const Response = memo(
       {...props}
     />
   ),
-  (prevProps, nextProps) => prevProps.children === nextProps.children
+  (prevProps, nextProps) => prevProps.children === nextProps.children,
 );
 
 Response.displayName = "Response";
