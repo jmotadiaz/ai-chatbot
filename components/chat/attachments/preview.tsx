@@ -27,7 +27,10 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({
   return (
     <div
       data-testid="attachments-preview"
-      className={cn("flex space-x-3 items-center", className)}
+      className={cn(
+        "flex space-x-3 items-center overflow-x-auto scrollbar-none",
+        className,
+      )}
     >
       {files.map((file, idx) => (
         <div
@@ -41,7 +44,7 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({
                 "bg-secondary absolute p-1 rounded-full opacity-80",
                 file.mediaType.startsWith("image/")
                   ? "top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
-                  : "top-1/2 right-2 transform -translate-y-1/2"
+                  : "top-1/2 right-2 transform -translate-y-1/2",
               )}
             >
               <X size={15} />
@@ -50,7 +53,7 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({
           {file.loading && (
             <div
               className={cn(
-                "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80 text-xs"
+                "bg-secondary absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 p-1 rounded-full opacity-80 text-xs",
               )}
             >
               <CircleProgress size={15} progress={file.loading.percentage} />
