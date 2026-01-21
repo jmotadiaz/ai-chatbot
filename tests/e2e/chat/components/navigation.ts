@@ -50,7 +50,25 @@ export class NavigationComponent {
     const message = this.container
       .locator('[data-role="user"]')
       .filter({ hasText: text });
-    await message.scrollIntoViewIfNeeded();
+
+    // Ensure the message is attached and visible before attempting to scroll
+    await message.waitFor({ state: "attached", timeout: 5000 });
+
+    // scrollIntoViewIfNeeded is usually reliable, but if the element is detached
+    // during the process (e.g. React re-render), we try once more after a small wait
+    try {
+      await message.scrollIntoViewIfNeeded();
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Element is not attached to the DOM")
+      ) {
+        await this.scrollContainer.page().waitForTimeout(100);
+        await message.scrollIntoViewIfNeeded();
+      } else {
+        throw error;
+      }
+    }
   }
 
   async scrollToPosition(top: number) {

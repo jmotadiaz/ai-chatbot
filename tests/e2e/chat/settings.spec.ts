@@ -53,6 +53,7 @@ test.describe("Chat functionality", () => {
 
     await chatPage.chat.sendMessage("Hello with all custom settings");
     await chatPage.chat.waitForLoadingComplete();
+    await chatPage.chat.waitForAssistantMessage();
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
     expect
       .soft(lastMessage)
