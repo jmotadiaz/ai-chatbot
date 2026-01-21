@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import type { Tools } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
@@ -18,6 +17,7 @@ export interface HubInstancePanelProps {
   persistChat: ChatHub["persistChat"];
   isPersisting: boolean;
   persistingChatId: string | null;
+  isPersisted: boolean;
   className?: string;
 }
 
@@ -29,10 +29,9 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   persistChat,
   isPersisting,
   persistingChatId,
+  isPersisted,
   className,
 }) => {
-  const router = useRouter();
-
   const chat = useChatHubInstance({
     chatId: instance.chatId,
     model: instance.model,
@@ -42,21 +41,14 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   });
 
   const onSelectThisChat = useCallback(async () => {
-    const { chatId } = await persistChat({
+    await persistChat({
       chatId: instance.chatId,
       messages: chat.messages,
       model: instance.model,
       tools,
     });
-    router.push(`/chat/${chatId}`);
-  }, [
-    chat.messages,
-    instance.chatId,
-    instance.model,
-    persistChat,
-    router,
-    tools,
-  ]);
+    // Removed navigation: router.push(...)
+  }, [chat.messages, instance.chatId, instance.model, persistChat, tools]);
 
   const isThisPersisting = isPersisting && persistingChatId === instance.chatId;
 
@@ -71,24 +63,37 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="font-semibold truncate">{instance.model}</div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onSelectThisChat}
-            isLoading={isThisPersisting}
-            disabled={isPersisting || chat.messages.length === 0}
-          >
-            Select this chat
-          </Button>
-          <Button
-            variant="icon"
-            size="icon"
-            aria-label="Remove instance"
-            onClick={() => onRemove(instance.chatId)}
-            disabled={isPersisting}
-          >
-            <Trash2 />
-          </Button>
+          {isPersisted ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onRemove(instance.chatId)}
+            >
+              Delete chat
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onSelectThisChat}
+              isLoading={isThisPersisting}
+              disabled={isPersisting || chat.messages.length === 0}
+            >
+              Select this chat
+            </Button>
+          )}
+
+          {!isPersisted && (
+            <Button
+              variant="icon"
+              size="icon"
+              aria-label="Remove instance"
+              onClick={() => onRemove(instance.chatId)}
+              disabled={isPersisting}
+            >
+              <Trash2 />
+            </Button>
+          )}
         </div>
       </div>
 

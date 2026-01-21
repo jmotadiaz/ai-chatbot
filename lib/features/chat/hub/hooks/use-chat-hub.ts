@@ -24,7 +24,7 @@ import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 // Important: keep the runtime exclusion of "Router", but widen the type so
 // downstream code can still accept `chatModelId` without TS `includes(...)` issues.
 const HUB_MODELS: chatModelId[] = CHAT_MODELS.filter(
-  (m) => m !== "Router"
+  (m) => m !== "Router",
 ) as chatModelId[];
 
 const HUB_MAX_INSTANCES = 3;
@@ -73,6 +73,9 @@ export const useChatHub = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
   const [persistingChatId, setPersistingChatId] = useState<string | null>(null);
+  const [persistedChatIds, setPersistedChatIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const { input, setInput, handleInputChange } = useChatInputState("");
   const [files, setFiles] = useState<FilePart[]>([]);
@@ -84,7 +87,7 @@ export const useChatHub = ({
 
   const instanceModels = useMemo(
     () => instances.map((i) => i.model),
-    [instances]
+    [instances],
   );
 
   const baseAvailableModels = useAvailableModels({
@@ -134,7 +137,7 @@ export const useChatHub = ({
 
       setInstances((prev) => [...prev, { chatId: v4(), model }]);
     },
-    [availableModels, instances.length, instancesLocked, isPersisting]
+    [availableModels, instances.length, instancesLocked, isPersisting],
   );
 
   const handleFileChange = useCallback(
@@ -142,10 +145,10 @@ export const useChatHub = ({
       await handleFileUpload(
         setFiles,
         event.target.files,
-        supportedFilesForPicker
+        supportedFilesForPicker,
       );
     },
-    [supportedFilesForPicker]
+    [supportedFilesForPicker],
   );
 
   const safeToggleTool = useCallback(
@@ -154,7 +157,7 @@ export const useChatHub = ({
       if (!toolsEnabled) return;
       toggleTool(tool);
     },
-    [toggleTool, toolsEnabled]
+    [toggleTool, toolsEnabled],
   );
 
   const handleSubmit = useCallback(
@@ -174,13 +177,13 @@ export const useChatHub = ({
 
       // Collect all handler promises and wait for all to settle
       const promises = Array.from(submitHandlersRef.current).map((handler) =>
-        Promise.resolve(handler(message))
+        Promise.resolve(handler(message)),
       );
 
       await Promise.allSettled(promises);
       setIsSubmitting(false);
     },
-    [files, input, isSubmitting, sendEnabled, setInput]
+    [files, input, isSubmitting, sendEnabled, setInput],
   );
 
   const persistChat = useCallback<ChatHub["persistChat"]>(
@@ -192,19 +195,32 @@ export const useChatHub = ({
       setPersistingChatId(chatId);
       try {
         // Server action proxy (hub orchestrates UI state; instance controls navigation).
-        return await persistHubChatFromTranscript({
+        const result = await persistHubChatFromTranscript({
           chatId,
           messages: messages as ChatbotMessage[],
           model,
           tools,
           ...rest,
         });
+
+        setPersistedChatIds((prev) => {
+          const next = new Set(prev);
+          next.add(chatId);
+          return next;
+        });
+
+        return result;
       } finally {
         setIsPersisting(false);
         setPersistingChatId(null);
       }
     },
-    [isPersisting]
+    [isPersisting],
+  );
+
+  const isChatPersisted = useCallback(
+    (chatId: string) => persistedChatIds.has(chatId),
+    [persistedChatIds],
   );
 
   return {
@@ -216,6 +232,7 @@ export const useChatHub = ({
     isSubmitting,
     isPersisting,
     persistingChatId,
+    isChatPersisted,
     addInstance,
     removeInstance,
     persistChat,

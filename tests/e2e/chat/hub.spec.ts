@@ -106,9 +106,14 @@ test.describe("Chat Hub", () => {
     await expect(claudePanel.selectButton).toBeVisible();
     await claudePanel.selectButton.click();
 
-    // 3.2 Verificar redirección a la ruta persistente /[chatId]
-    await expect(page).toHaveURL(/\/chat\/[0-9a-f-]+/);
-    await expect(page).not.toHaveURL(/\/chat\/hub/);
+    // 3.2 Verificar que permanece en el Hub y el botón cambia a Delete
+    await expect(page).toHaveURL(/\/chat\/hub/);
+    await expect(claudePanel.selectButton).toBeHidden();
+    await expect(claudePanel.deleteButton).toBeVisible();
+
+    // 3.3 Verificar que Delete elimina la instancia (limpia)
+    await claudePanel.deleteButton.click();
+    await expect(claudePanel.container).toBeHidden();
   });
 
   test("UI & Responsive Grid", async ({ page }) => {

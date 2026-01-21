@@ -32,8 +32,8 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
       visibleSlotsCount <= 1
         ? "2xl:max-w-5xl"
         : visibleSlotsCount === 2
-        ? "2xl:max-w-screen-2xl"
-        : "2xl:max-w-[120rem]";
+          ? "2xl:max-w-screen-2xl"
+          : "2xl:max-w-[120rem]";
     return cn(base, desktopMaxWidth);
   }, [hub.instances.length, hub.instancesLocked]);
 
@@ -45,7 +45,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
   }, [hub.instances, hub.instancesLocked]);
 
   const [activeTab, setActiveTab] = React.useState<string>(
-    () => tabIds[0] ?? "new-model"
+    () => tabIds[0] ?? "new-model",
   );
 
   // Keep active tab valid when instances are added/removed or hub locks.
@@ -75,7 +75,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
         <div
           className={cn(
             "hidden 2xl:block h-full min-h-0",
-            panelsContainerClassName
+            panelsContainerClassName,
           )}
         >
           <div className="grid grid-flow-col auto-cols-fr gap-4 h-full min-h-0">
@@ -89,6 +89,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 persistChat={hub.persistChat}
                 isPersisting={hub.isPersisting}
                 persistingChatId={hub.persistingChatId}
+                isPersisted={hub.isChatPersisted(inst.chatId)}
                 className="h-full"
               />
             ))}
@@ -98,7 +99,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 availableModels={hub.availableModels}
                 onSelectModel={(model) => hub.addInstance(model)}
                 triggerClassName={cn(
-                  "w-full h-full rounded-xl border border-dashed bg-secondary/30"
+                  "w-full h-full rounded-xl border border-dashed bg-secondary/30",
                 )}
                 triggerLabel="Add Model"
                 variant="tile"
@@ -111,7 +112,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
         <div
           className={cn(
             "2xl:hidden h-full flex flex-col",
-            panelsContainerClassName
+            panelsContainerClassName,
           )}
         >
           <Tabs.Container>
@@ -148,6 +149,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                   persistChat={hub.persistChat}
                   isPersisting={hub.isPersisting}
                   persistingChatId={hub.persistingChatId}
+                  isPersisted={hub.isChatPersisted(inst.chatId)}
                   className="h-full"
                 />
               </div>
@@ -161,7 +163,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                   availableModels={hub.availableModels}
                   onSelectModel={(model) => hub.addInstance(model)}
                   triggerClassName={cn(
-                    "w-full h-full rounded-xl border border-dashed bg-secondary/30"
+                    "w-full h-full rounded-xl border border-dashed bg-secondary/30",
                   )}
                   triggerLabel="Add Model"
                   variant="tile"

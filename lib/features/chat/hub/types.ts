@@ -47,7 +47,7 @@ export interface ChatHub {
   input: string;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   handleInputChange: (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
 
   files: FilePart[];
@@ -61,6 +61,9 @@ export interface ChatHub {
 
   sendEnabled: boolean;
 
+  /* Verifica si un chat ya ha sido persistido en esta sesión */
+  isChatPersisted: (chatId: string) => boolean;
+
   /** Permite a las instancias registrar su callback de envío */
   submitSubscribe: (handler: SubmitHandler) => () => void;
   /** Único submit del form: construye el mensaje una vez y lo dispara a todos los suscriptores */
@@ -72,5 +75,3 @@ export interface UseChatHubInstanceArgs {
   model: chatModelId;
   submitSubscribe: ChatHub["submitSubscribe"];
 }
-
-

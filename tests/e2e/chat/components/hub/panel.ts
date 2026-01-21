@@ -5,6 +5,7 @@ export class HubPanelComponent {
   readonly messages: Locator;
   readonly removeButton: Locator;
   readonly selectButton: Locator;
+  readonly deleteButton: Locator;
 
   constructor(container: Locator) {
     this.container = container;
@@ -14,6 +15,9 @@ export class HubPanelComponent {
     });
     this.selectButton = container.getByRole("button", {
       name: "Select this chat",
+    });
+    this.deleteButton = container.getByRole("button", {
+      name: "Delete chat",
     });
   }
 
