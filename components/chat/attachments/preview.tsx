@@ -28,7 +28,7 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({
     <div
       data-testid="attachments-preview"
       className={cn(
-        "flex space-x-3 items-center overflow-x-auto scrollbar-none",
+        "flex max-w-full space-x-3 items-center overflow-x-auto scrollbar-none",
         className,
       )}
     >

@@ -71,7 +71,7 @@ interface UserMessageProps {
 const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const { textParts, fileParts: files } = useMemo(
     () => destructuringMessageParts(message),
-    [message]
+    [message],
   );
   const text = textParts[0].text ?? "";
   const textFiles = message.metadata?.textFiles || [];
@@ -87,10 +87,15 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
 
   return (
     <div className="mb-8 pt-4">
-      <div className={cn("flex gap-4 w-full ml-auto max-w-4xl", "w-fit")}>
+      <div
+        className={cn(
+          "flex gap-4 w-full ml-auto max-w-full 4xl:max-w-4xl",
+          "w-fit",
+        )}
+      >
         <div className="flex flex-col w-full space-y-2">
           {(files.length > 0 || textFiles.length > 0) && (
-            <div className="flex space-x-2 items-center justify-end">
+            <div className="flex gap-3 max-w-3/4 self-end overflow-x-auto scrollbar-none">
               {files.map((part, i) => (
                 <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
               ))}
@@ -153,17 +158,17 @@ interface AssistantMessageProps {
 const AssistantMessage: React.FC<AssistantMessageProps> = ({ message }) => {
   const { sourceParts, reasoningParts } = useMemo(
     () => destructuringMessageParts(message),
-    [message]
+    [message],
   );
 
   const mergedReasoning = useMemo(
     () => mergeReasoningParts(reasoningParts),
-    [reasoningParts]
+    [reasoningParts],
   );
 
   // Check if message has text tokens (to auto-close reasoning)
   const hasTextTokens = message.parts.some(
-    (part) => part.type === "text" && part.text.trim().length > 0
+    (part) => part.type === "text" && part.text.trim().length > 0,
   );
 
   return (
