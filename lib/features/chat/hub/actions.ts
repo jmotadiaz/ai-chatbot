@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { auth } from "@/lib/features/auth/auth-config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
@@ -56,6 +58,10 @@ export async function persistHubChatFromTranscript({
 
     return chat.id;
   });
+
+  revalidatePath("/");
+  revalidatePath("/chat/history");
+  revalidatePath("/chat/hub");
 
   return { chatId: persistedChatId };
 }
