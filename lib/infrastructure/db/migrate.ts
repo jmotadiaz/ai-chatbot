@@ -4,7 +4,10 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
 config({
-  path: ".env.development.local",
+  path:
+    process.env.NEXT_PUBLIC_ENV === "test"
+      ? ".env.test"
+      : ".env.development.local",
 });
 
 const runMigrate = async () => {
