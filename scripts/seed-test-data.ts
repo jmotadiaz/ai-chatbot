@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import { config } from "dotenv";
 import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { faker } from "@faker-js/faker";
 
@@ -17,7 +16,7 @@ const SEED_PROJECT_NAME = "Seed Project";
 const SEED_PROJECT_SYSTEM_PROMPT = "Test project";
 
 type Tx = Parameters<DB["transaction"]>[0] extends (
-  tx: infer T
+  tx: infer T,
 ) => Promise<unknown>
   ? T
   : never;
@@ -38,14 +37,6 @@ function parseArgs(argv: string[]) {
     projectChats: getNumber("--project-chats", 5),
     seed: getNumber("--seed", 1234),
   };
-}
-
-async function runMigrations(client: postgres.Sql) {
-  const db = drizzle(client);
-  console.log("⏳ Running migrations...");
-  const start = Date.now();
-  await migrate(db, { migrationsFolder: "./lib/infrastructure/db/migrations" });
-  console.log("✅ Migrations completed in", Date.now() - start, "ms");
 }
 
 async function upsertTestUser(tx: Tx) {
@@ -138,8 +129,6 @@ async function main() {
 
   const client = postgres(process.env.POSTGRES_URL, { max: 1 });
   try {
-    await runMigrations(client);
-
     const db = drizzle(client, { schema }) as DB;
 
     const result = await db.transaction(async (tx) => {
@@ -162,7 +151,7 @@ async function main() {
 
       const safeProjectChats = Math.max(
         0,
-        Math.min(args.projectChats, args.chats)
+        Math.min(args.projectChats, args.chats),
       );
 
       const createdChatIds: string[] = [];
@@ -194,7 +183,7 @@ async function main() {
         // Interleave user/assistant as much as possible
         const maxTurns = Math.max(
           args.userMessagesPerChat,
-          args.assistantMessagesPerChat
+          args.assistantMessagesPerChat,
         );
         let userLeft = args.userMessagesPerChat;
         let assistantLeft = args.assistantMessagesPerChat;
