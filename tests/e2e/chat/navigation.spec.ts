@@ -90,8 +90,9 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to top to make first message visible
+      // Scroll to top to make first message visible and wait for scroll to stabilize
       await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.assertScrollTopLessThan(50);
       await chatPage.chat.navigation.waitForMessageInViewport(
         userMessageText(1),
       );
@@ -227,11 +228,9 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to first user message
-      await chatPage.chat.navigation.scrollToMessage(userMessageText(1));
-      await chatPage.chat.navigation.assertUserMessageInViewport(
-        userMessageText(1),
-      );
+      // Scroll to first user message and wait for scroll position to stabilize
+      await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.assertScrollTopLessThan(50);
 
       // Wait for next button to appear
       await chatPage.chat.navigation.assertNextButtonVisible();
@@ -256,8 +255,9 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to top
+      // Scroll to top and wait for scroll position to stabilize
       await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.assertScrollTopLessThan(50);
 
       // Wait for bottom button to appear
       await chatPage.chat.navigation.assertBottomButtonVisible();
@@ -294,8 +294,9 @@ test.describe("Chat Navigation", () => {
         userMessageText(10),
       );
 
-      // Scroll to top
+      // Scroll to top and wait for scroll to stabilize
       await chatPage.chat.navigation.scrollToTop();
+      await chatPage.chat.navigation.assertScrollTopLessThan(50);
 
       // Wait for bottom button to appear
       await chatPage.chat.navigation.assertBottomButtonVisible();
