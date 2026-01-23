@@ -22,7 +22,7 @@ test.describe("Project Creation", () => {
     await expect.soft(page).toHaveURL(/\/project\/.*\/chat/);
 
     // - The project 'Alpha Project' appears in the sidebar
-    await projectPage.ensureSidebarOpen();
+    await projectPage.openSidebar();
     await expect
       .soft(projectPage.sidebar.getProjectItemByTitle(title))
       .toBeVisible();
@@ -48,7 +48,7 @@ test.describe("Project Creation", () => {
 
     await expect.soft(page).toHaveURL(/\/project\/.*\/chat/);
 
-    await projectPage.ensureSidebarOpen();
+    await projectPage.openSidebar();
     await expect
       .soft(projectPage.sidebar.getProjectItemByTitle(title))
       .toBeVisible();

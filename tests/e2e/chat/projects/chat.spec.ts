@@ -25,7 +25,7 @@ test.describe("Project Chat", () => {
     ]);
 
     await page.reload();
-    await projectPage.ensureSidebarOpen();
+    await projectPage.openSidebar();
     await projectPage.sidebar.navigateProjectAction(title, "chat");
 
     // Wait for project chat to load
@@ -44,7 +44,7 @@ test.describe("Project Chat", () => {
     await db.addProjects([{ name: title, systemPrompt: "Temp prompt" }]);
 
     await page.reload();
-    await projectPage.ensureSidebarOpen();
+    await projectPage.openSidebar();
     await projectPage.sidebar.navigateProjectAction(title, "temporary-chat");
 
     // Wait for project chat to load
@@ -57,7 +57,7 @@ test.describe("Project Chat", () => {
 
     // If we navigate away and back, it should be gone (non-persisted)
     await page.goto("/");
-    await projectPage.ensureSidebarOpen();
+    await projectPage.openSidebar();
     await projectPage.sidebar.navigateProjectAction(title, "chat"); // Back to normal chat
 
     await projectPage.ensureSidebarClosed();

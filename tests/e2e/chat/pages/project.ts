@@ -64,7 +64,7 @@ export class ProjectPage {
     await btn.click();
   }
 
-  async ensureSidebarOpen() {
+  async openSidebar() {
     try {
       // Ensure header exists before toggling
       await this.page.getByTestId("header-container").first().waitFor({

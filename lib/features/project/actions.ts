@@ -15,7 +15,7 @@ import { auth } from "@/lib/features/auth/auth-config";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
 export async function createProject(
-  project: Omit<InsertProject, "id" | "userId">
+  project: Omit<InsertProject, "id" | "userId">,
 ) {
   const session = await auth();
   if (!session?.user) {
@@ -26,7 +26,7 @@ export async function createProject(
   const validatedFields = createProjectSchema.safeParse(project);
   if (!validatedFields.success) {
     throw new Error(
-      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`
+      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`,
     );
   }
 
@@ -34,7 +34,7 @@ export async function createProject(
 
   try {
     const [newProject] = await transaction(createDBProject(projectWithUserId));
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     revalidatePath("/project/new");
     return newProject;
   } catch (error) {
@@ -45,7 +45,7 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  project: Partial<Omit<InsertProject, "id" | "userId">>
+  project: Partial<Omit<InsertProject, "id" | "userId">>,
 ) {
   const session = await auth();
   if (!session?.user) {
@@ -56,15 +56,15 @@ export async function updateProject(
   const validatedFields = updateProjectSchema.safeParse(project);
   if (!validatedFields.success) {
     throw new Error(
-      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`
+      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`,
     );
   }
 
   try {
     await transaction(
-      updateDBProject({ id, userId: session.user.id }, project)
+      updateDBProject({ id, userId: session.user.id }, project),
     );
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     revalidatePath(`/project/${id}`);
   } catch (error) {
     console.error("Failed to update project:", error);
@@ -80,7 +80,7 @@ export async function deleteProject(id: string) {
 
   try {
     await transaction(deleteDBProject({ id, userId: session.user.id }));
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     revalidatePath("/project/new");
   } catch (error) {
     console.error("Failed to delete project:", error);
