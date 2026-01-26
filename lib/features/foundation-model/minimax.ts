@@ -3,7 +3,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MINIMAX_CONFIG = {
   "MiniMax M2": {
-    model: providers.gateway("minimax/minimax-m2"),
+    model: providers.gateway("minimax/minimax-m2.1"),
     reasoning: true,
     company: "minimax",
     temperature: 1,
