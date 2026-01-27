@@ -5,13 +5,14 @@ import { Messages, Message } from "@/components/chat/message";
 import { ChatNavigation } from "@/components/chat/navigation";
 import { cn } from "@/lib/utils/helpers";
 import { LoadingMessage } from "@/components/chat/loading-message";
-import { ChatReload } from "@/components/chat/reload";
 import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
 import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
 import { UseChatResult } from "@/lib/features/chat/hooks/use-chat";
 
-export interface ChatConversationProps
-  extends Pick<UseChatResult, "messages" | "status" | "title"> {
+export interface ChatConversationProps extends Pick<
+  UseChatResult,
+  "messages" | "status" | "title"
+> {
   className?: string;
   reload?: boolean;
 }
@@ -62,19 +63,23 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
 
               {/* Último turno - min-height para permitir scroll al inicio, restando los sentinels */}
               <div className="min-h-[calc(100%-2px)] max-w-5xl mx-auto px-8 pb-15">
-                {lastTurnMessages.map((m) => (
-                  <Message key={m.id} message={m} />
+                {lastTurnMessages.map((m, index) => (
+                  <Message
+                    key={m.id}
+                    message={m}
+                    showReload={
+                      reload &&
+                      index === lastTurnMessages.length - 1 &&
+                      m.role === "assistant" &&
+                      (status === "ready" || status === "error")
+                    }
+                  />
                 ))}
                 <LoadingMessage
                   message={messages[messages.length - 1]}
                   status={status}
                   className="mt-2"
                 />
-                {reload && (status === "ready" || status === "error") && (
-                  <div className="mt-1">
-                    <ChatReload />
-                  </div>
-                )}
               </div>
               <div ref={bottomSentinelRef} className="h-[1px] w-full" />
             </>
