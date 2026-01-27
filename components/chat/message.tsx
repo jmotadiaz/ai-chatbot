@@ -260,7 +260,7 @@ const AssistantMessageActions: React.FC<{
   };
 
   return (
-    <div className="overflow-x-auto no-scrollbar">
+    <div className="overflow-x-auto scrollbar-none">
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center gap-3">
           {showReload && <ChatReload />}

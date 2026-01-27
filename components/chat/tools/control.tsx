@@ -1,5 +1,6 @@
 import type { ClassValue } from "clsx";
 import { Wrench, Globe, Database } from "lucide-react";
+import { ActiveToolsPill } from "./active-tools-pill";
 import { ChatControl } from "@/components/chat/control";
 import { Toggle } from "@/components/ui/toggle";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
@@ -26,8 +27,6 @@ export const ToolsControl: React.FC<ToolsControlProps> = ({
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
 
-  const isActive = tools.length > 0;
-
   if (!enabled) {
     return null;
   }
@@ -36,38 +35,44 @@ export const ToolsControl: React.FC<ToolsControlProps> = ({
   const webSearchToggleId = "web-search-tool";
 
   return (
-    <Dropdown.Container data-testid="tools-control-dropdown">
-      <ChatControl
-        Icon={Wrench}
-        type="button"
-        className={className}
-        isActive={isActive}
-        aria-label="Configure tools"
-        {...getDropdownTriggerProps()}
-      />
-      <Dropdown.Popup {...getDropdownPopupProps()}>
-        {!projectId && (
+    <div className="flex items-center gap-2">
+      <Dropdown.Container data-testid="tools-control-dropdown">
+        <ChatControl
+          Icon={Wrench}
+          type="button"
+          className={className}
+          aria-label="Configure tools"
+          {...getDropdownTriggerProps()}
+        />
+        <Dropdown.Popup {...getDropdownPopupProps()}>
+          {!projectId && (
+            <Dropdown.Item
+              as={Toggle}
+              id={ragToggleId}
+              checked={hasTool(RAG_TOOL)}
+              onChange={() => toggleTool(RAG_TOOL)}
+            >
+              <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+              <span className="whitespace-nowrap">RAG (Document Search)</span>
+            </Dropdown.Item>
+          )}
+
           <Dropdown.Item
             as={Toggle}
-            id={ragToggleId}
-            checked={hasTool(RAG_TOOL)}
-            onChange={() => toggleTool(RAG_TOOL)}
+            id={webSearchToggleId}
+            checked={hasTool(WEB_SEARCH_TOOL)}
+            onChange={() => toggleTool(WEB_SEARCH_TOOL)}
           >
-            <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-            <span className="whitespace-nowrap">RAG (Document Search)</span>
+            <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+            <span className="whitespace-nowrap">Web Search</span>
           </Dropdown.Item>
-        )}
-
-        <Dropdown.Item
-          as={Toggle}
-          id={webSearchToggleId}
-          checked={hasTool(WEB_SEARCH_TOOL)}
-          onChange={() => toggleTool(WEB_SEARCH_TOOL)}
-        >
-          <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-          <span className="whitespace-nowrap">Web Search</span>
-        </Dropdown.Item>
-      </Dropdown.Popup>
-    </Dropdown.Container>
+        </Dropdown.Popup>
+      </Dropdown.Container>
+      <ActiveToolsPill
+        tools={tools}
+        projectId={projectId}
+        onDeleteTool={toggleTool}
+      />
+    </div>
   );
 };

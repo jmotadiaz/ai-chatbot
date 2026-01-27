@@ -1,5 +1,6 @@
 import { test, expect } from "../../fixtures";
 import { ProjectPage } from "../pages/project";
+import { ChatComponent } from "../components/chat";
 
 test.describe("Project Creation", () => {
   let projectPage: ProjectPage;
@@ -13,6 +14,12 @@ test.describe("Project Creation", () => {
   test("1.1 Create Valid Project with Basic Settings", async ({ page }) => {
     const title = "Alpha Project";
     const systemPrompt = "You are a specialized research assistant.";
+
+    await projectPage.openSidebar();
+    await expect
+      .soft(projectPage.sidebar.getProjectItemByTitle("Untitled Project"))
+      .not.toBeVisible();
+    await projectPage.ensureSidebarClosed();
 
     await projectPage.form.fillBasic(title, systemPrompt);
     await projectPage.form.save();
@@ -51,6 +58,16 @@ test.describe("Project Creation", () => {
     await projectPage.openSidebar();
     await expect
       .soft(projectPage.sidebar.getProjectItemByTitle(title))
+      .toBeVisible();
+
+    // Verify Active Tools Pill behavior
+    // RAG should be hidden (filtered out for projects), Web Search should be visible
+    const chat = new ChatComponent(page.getByTestId("chat-container").first());
+    await expect
+      .soft(chat.container.getByTestId("active-tool-pill-rag"))
+      .not.toBeVisible();
+    await expect
+      .soft(chat.container.getByTestId("active-tool-pill-webSearch"))
       .toBeVisible();
   });
 });

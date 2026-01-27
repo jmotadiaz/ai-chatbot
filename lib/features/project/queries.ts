@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/infrastructure/db/db";
 import {
   project,
@@ -26,6 +26,7 @@ export const createProject =
     ragMaxResources,
     webSearchNumResults,
     tools,
+    isActive,
   }: InsertProject): Transactional<Project> =>
   (tx) => {
     return tx
@@ -42,6 +43,7 @@ export const createProject =
         ragMaxResources,
         webSearchNumResults,
         tools,
+        isActive,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -91,7 +93,11 @@ export async function getProjectsByUserId({
   try {
     if (joinChats) {
       return await getDb().query.project.findMany({
-        where: and(eq(project.userId, userId), eq(project.isActive, true)),
+        where: and(
+          eq(project.userId, userId),
+          eq(project.isActive, true),
+          ne(project.name, ""),
+        ),
         with: {
           chats: {
             orderBy: desc(chat.updatedAt),
@@ -106,7 +112,13 @@ export async function getProjectsByUserId({
       return await getDb()
         .select()
         .from(project)
-        .where(and(eq(project.userId, userId), eq(project.isActive, true)))
+        .where(
+          and(
+            eq(project.userId, userId),
+            eq(project.isActive, true),
+            ne(project.name, ""),
+          ),
+        )
         .orderBy(desc(project.updatedAt))
         .limit(limit)
         .offset(offset);

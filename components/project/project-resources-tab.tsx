@@ -131,7 +131,7 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
             No resources linked to this project yet.
           </div>
         ) : (
-          <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+          <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto scrollbar-none">
             {projectResources.map((resource) => (
               <li
                 key={resource.id}
@@ -157,7 +157,7 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
       </div>
 
       <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6">
-        <h4 className="text-base font-semibold mb-4">Add Existing Resources</h4>
+        <h4 className="text-lg font-semibold mb-4">Add Existing Resources</h4>
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <Input
@@ -177,7 +177,7 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
               : "No available resources to add."}
           </div>
         ) : (
-          <ul className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+          <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto scrollbar-none">
             {availableResources.map((resource) => (
               <li
                 key={resource.id}
@@ -203,7 +203,7 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
       </div>
 
       <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6">
-        <h4 className="text-base font-semibold mb-4">Create New Resource</h4>
+        <h4 className="text-lg font-semibold mb-4">Create New Resource</h4>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
           Upload a file or add a URL to create a new resource and automatically
           link it to this project.
