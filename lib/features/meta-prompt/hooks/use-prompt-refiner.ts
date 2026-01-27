@@ -9,6 +9,7 @@ export interface UsePromptRefinerParams {
   messages?: ChatbotMessage[];
   metaPrompt?: string | null;
   status?: UseChatHelpers<never>["status"];
+  projectId?: string;
 }
 
 export interface UsePromptRefinerReturn {
@@ -24,6 +25,7 @@ export const usePromptRefiner = ({
   messages,
   metaPrompt,
   status,
+  projectId,
 }: UsePromptRefinerParams): UsePromptRefinerReturn => {
   const [previousMessage, setPreviousMessage] = useState<string | null>(null);
   const { generate, isLoading } = useGeneratedText({
@@ -38,6 +40,7 @@ export const usePromptRefiner = ({
       body: {
         messages: messages || null,
         metaPrompt: metaPrompt || null,
+        projectId,
       },
       onFinish: (generatedText) => {
         setPreviousMessage(input);

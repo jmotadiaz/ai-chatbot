@@ -14,10 +14,12 @@ export async function POST(req: Request) {
     message,
     messages,
     metaPrompt = defaultMetaPrompt,
+    projectId,
   }: {
     message: ChatbotMessage;
     messages?: ChatbotMessage[]; // Using generic type from features/chat/types matching route expectation
     metaPrompt?: string;
+    projectId?: string;
   } = await req.json();
 
   const input = messagePartsToText(message);
@@ -26,6 +28,8 @@ export async function POST(req: Request) {
     input,
     messages,
     metaPrompt,
+    projectId,
+    userId: session.user.id,
   });
 
   return Response.json({ text });

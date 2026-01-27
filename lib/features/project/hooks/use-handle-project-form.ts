@@ -119,6 +119,7 @@ export const useHandleProjectForm = ({
       input: systemPrompt,
       setInput: setSystemPrompt,
       metaPrompt: systemMetaPrompt,
+      projectId: project?.id,
     });
 
   const handleToggleTool = (tool: Tool) => () => {
