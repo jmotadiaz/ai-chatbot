@@ -38,7 +38,7 @@ export const ActiveToolsPill = ({
             data-testid={`active-tool-pill-${tool}`}
           >
             <Icon size={12} />
-            <span>{config.label}</span>
+            <span className="hidden sm:block">{config.label}</span>
             <span className="cursor-pointer" onClick={() => onDeleteTool(tool)}>
               <X className="w-3 h-3" />
             </span>

@@ -162,4 +162,8 @@ export class ChatComponent {
   async openSettings() {
     await this.settingsButton.click();
   }
+
+  getActiveToolPill(tool: string): Locator {
+    return this.container.getByTestId(`active-tool-pill-${tool}`);
+  }
 }
