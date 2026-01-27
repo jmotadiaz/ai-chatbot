@@ -13,6 +13,7 @@ export interface ToolsControlProps {
   toggleTool: (tool: Tool) => void;
   hasTool: (tool: Tool) => boolean;
   enabled: boolean;
+  projectId?: string;
 }
 
 export const ToolsControl: React.FC<ToolsControlProps> = ({
@@ -21,6 +22,7 @@ export const ToolsControl: React.FC<ToolsControlProps> = ({
   toggleTool,
   hasTool,
   enabled,
+  projectId,
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
 
@@ -44,15 +46,17 @@ export const ToolsControl: React.FC<ToolsControlProps> = ({
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup {...getDropdownPopupProps()}>
-        <Dropdown.Item
-          as={Toggle}
-          id={ragToggleId}
-          checked={hasTool(RAG_TOOL)}
-          onChange={() => toggleTool(RAG_TOOL)}
-        >
-          <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-          <span className="whitespace-nowrap">RAG (Document Search)</span>
-        </Dropdown.Item>
+        {!projectId && (
+          <Dropdown.Item
+            as={Toggle}
+            id={ragToggleId}
+            checked={hasTool(RAG_TOOL)}
+            onChange={() => toggleTool(RAG_TOOL)}
+          >
+            <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+            <span className="whitespace-nowrap">RAG (Document Search)</span>
+          </Dropdown.Item>
+        )}
 
         <Dropdown.Item
           as={Toggle}

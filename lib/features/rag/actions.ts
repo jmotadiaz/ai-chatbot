@@ -8,6 +8,10 @@ import {
   deleteResourcesByTitle,
   deleteResourcesByTitles,
   getUniqueResourceTitlesByUserIdPaginated,
+  addResourceToProject,
+  removeResourceFromProject,
+  getProjectResourcesPaginated,
+  getUserResourcesNotInProject,
 } from "./queries";
 import { saveUrlResource, saveMarkdownResource } from "./ingestion/pipeline";
 import { auth } from "@/lib/features/auth/auth-config";
@@ -21,7 +25,7 @@ export interface ProcessResult {
 }
 
 export async function uploadResources(
-  formData: FormData
+  formData: FormData,
 ): Promise<ProcessResult> {
   const session = await auth();
   const result = { resourcesCreated: 0 };
@@ -40,6 +44,8 @@ export async function uploadResources(
       | string
       | undefined;
 
+    const projectId = formData.get("projectId") as string | undefined;
+
     if (jsonFiles.length === 0 && markdownFiles.length === 0 && !url) {
       return { success: false, error: "No files provided" };
     }
@@ -53,7 +59,8 @@ export async function uploadResources(
             ? excludeSelectors.split(",").map((s) => s.trim())
             : undefined,
         },
-        session.user.id
+        session.user.id,
+        projectId,
       );
 
       if (success) {
@@ -113,12 +120,12 @@ export async function uploadResources(
                   container,
                   excludeSelectors,
                 },
-                session.user.id
+                session.user.id,
               );
               if (success) {
                 result.resourcesCreated++;
               }
-            })
+            }),
           );
         }
       }
@@ -135,7 +142,8 @@ export async function uploadResources(
           const { success } = await saveMarkdownResource(
             title,
             fileContent,
-            session.user.id
+            session.user.id,
+            projectId,
           );
 
           if (success) {
@@ -144,7 +152,7 @@ export async function uploadResources(
         } catch (error) {
           console.error(
             `Error processing markdown file ${markdownFile.name}:`,
-            error
+            error,
           );
           // Continue processing other files
         }
@@ -185,7 +193,7 @@ export async function deleteResource(title: string): Promise<ProcessResult> {
       deleteResourcesByTitle({
         title,
         userId: session.user.id,
-      })
+      }),
     );
 
     if (result.length === 0) {
@@ -204,7 +212,7 @@ export async function deleteResource(title: string): Promise<ProcessResult> {
 }
 
 export async function deleteSelectedResources(
-  titles: string[]
+  titles: string[],
 ): Promise<ProcessResult> {
   const session = await auth();
 
@@ -217,7 +225,7 @@ export async function deleteSelectedResources(
       deleteResourcesByTitles({
         titles,
         userId: session.user.id,
-      })
+      }),
     );
 
     if (result.length === 0) {
@@ -236,7 +244,7 @@ export async function deleteSelectedResources(
 }
 
 export async function deleteResourcesByFilter(
-  filter: string
+  filter: string,
 ): Promise<ProcessResult> {
   const session = await auth();
 
@@ -249,7 +257,7 @@ export async function deleteResourcesByFilter(
       deleteResourcesByTitleFilter({
         filter,
         userId: session.user.id,
-      })
+      }),
     );
 
     if (result.length === 0) {
@@ -278,7 +286,7 @@ export async function deleteAllResources(): Promise<ProcessResult> {
     const [deletedResources] = await transaction(
       deleteResources({
         userId: session.user.id,
-      })
+      }),
     );
 
     if (deletedResources.length === 0) {
@@ -320,6 +328,131 @@ export async function getRagResourcesAction({
 
   return getUniqueResourceTitlesByUserIdPaginated({
     userId: session.user.id,
+    limit,
+    offset,
+    filter,
+  });
+}
+
+// Project Resource Actions
+
+export async function addResourceToProjectAction(
+  resourceId: string,
+  projectId: string,
+): Promise<ProcessResult> {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  try {
+    await transaction(
+      addResourceToProject({
+        projectId,
+        resourceId,
+      }),
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in addResourceToProjectAction:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+export async function removeResourceFromProjectAction(
+  resourceId: string,
+  projectId: string,
+): Promise<ProcessResult> {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  try {
+    const [result] = await transaction(
+      removeResourceFromProject({
+        projectId,
+        resourceId,
+      }),
+    );
+
+    if (result.length === 0) {
+      return { success: false, error: "Resource not found in project" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in removeResourceFromProjectAction:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+export async function getProjectResourcesAction({
+  projectId,
+  limit = 20,
+  offset = 0,
+  filter = "",
+}: {
+  projectId: string;
+  limit?: number;
+  offset?: number;
+  filter?: string;
+}): Promise<{
+  resources: Array<{ id: string; title: string; url: string | null }>;
+  hasMore: boolean;
+}> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      resources: [],
+      hasMore: false,
+    };
+  }
+
+  return getProjectResourcesPaginated({
+    projectId,
+    limit,
+    offset,
+    filter,
+  });
+}
+
+export async function getUserResourcesNotInProjectAction({
+  projectId,
+  limit = 20,
+  offset = 0,
+  filter = "",
+}: {
+  projectId: string;
+  limit?: number;
+  offset?: number;
+  filter?: string;
+}): Promise<{
+  resources: Array<{ id: string; title: string; url: string | null }>;
+  hasMore: boolean;
+}> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      resources: [],
+      hasMore: false,
+    };
+  }
+
+  return getUserResourcesNotInProject({
+    userId: session.user.id,
+    projectId,
     limit,
     offset,
     filter,

@@ -26,7 +26,7 @@ export async function createProject(
   const validatedFields = createProjectSchema.safeParse(project);
   if (!validatedFields.success) {
     throw new Error(
-      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`,
+      `Invalid project data: ${JSON.stringify(validatedFields.error.flatten().fieldErrors)}`,
     );
   }
 
@@ -56,7 +56,7 @@ export async function updateProject(
   const validatedFields = updateProjectSchema.safeParse(project);
   if (!validatedFields.success) {
     throw new Error(
-      `Invalid project data: ${validatedFields.error.flatten().fieldErrors}`,
+      `Invalid project data: ${JSON.stringify(validatedFields.error.flatten().fieldErrors)}`,
     );
   }
 

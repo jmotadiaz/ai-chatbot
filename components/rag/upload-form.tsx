@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const RAGUploadForm = () => {
+interface RAGUploadFormProps {
+  projectId?: string;
+  onSuccess?: () => void;
+}
+
+export const RAGUploadForm = ({ projectId, onSuccess }: RAGUploadFormProps) => {
   const [jsonFiles, setJsonFiles] = useState<File[]>([]);
   const [markdownFiles, setMarkdownFiles] = useState<File[]>([]);
   const [url, setUrl] = useState("");
@@ -52,7 +57,7 @@ export const RAGUploadForm = () => {
     e.preventDefault();
     if (jsonFiles.length === 0 && markdownFiles.length === 0 && !url) {
       toast.error(
-        "Please provide a source: JSON file(s), Markdown file(s), or a URL."
+        "Please provide a source: JSON file(s), Markdown file(s), or a URL.",
       );
       return;
     }
@@ -80,11 +85,15 @@ export const RAGUploadForm = () => {
             formData.append("excludeSelectors", excludeSelectors);
         }
 
+        if (projectId) {
+          formData.append("projectId", projectId);
+        }
+
         const result = await uploadResources(formData);
 
         if (result.success) {
           toast.success(
-            `Successfully processed ${result.resourcesCreated} resources`
+            `Successfully processed ${result.resourcesCreated} resources`,
           );
           setJsonFiles([]);
           setMarkdownFiles([]);
@@ -93,6 +102,9 @@ export const RAGUploadForm = () => {
           setExcludeSelectors("");
           const form = e.target as HTMLFormElement;
           form.reset();
+          if (onSuccess) {
+            onSuccess();
+          }
         } else {
           toast.error(result.error || "Failed to process resources");
         }

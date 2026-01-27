@@ -1,10 +1,20 @@
 import "server-only";
 
-import { and, desc, eq, gt, ilike, sql, notInArray, inArray } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  ilike,
+  sql,
+  notInArray,
+  inArray,
+} from "drizzle-orm";
 import {
   resource,
   chunk,
   embedding,
+  projectResource,
   type Resource,
   type Chunk,
   type Embedding,
@@ -16,17 +26,28 @@ import { getDb } from "@/lib/infrastructure/db/db";
 import { Transactional } from "@/lib/infrastructure/db/queries";
 
 export const saveResource =
-  (data: InsertResource & { userId: string }): Transactional<Resource> =>
+  (
+    data: InsertResource & { userId?: string | null; projectId?: string },
+  ): Transactional<Resource> =>
   async (tx) => {
     try {
       const [newResource] = await tx
         .insert(resource)
         .values({
           ...data,
+          userId: data.userId ?? null, // Ensure explicit null if undefined
           createdAt: new Date(),
           updatedAt: new Date(),
         })
         .returning();
+
+      if (data.projectId) {
+        await tx.insert(projectResource).values({
+          projectId: data.projectId,
+          resourceId: newResource.id,
+        });
+      }
+
       return newResource;
     } catch (error) {
       console.error("Failed to create resource");
@@ -74,12 +95,14 @@ export type SimilarChunks = Array<SimilarChunk>;
 export async function findSimilarChunks({
   embedding: queryEmbedding,
   userId,
+  projectId,
   limit = 10,
   similarityThreshold = 0.6,
   previousChunkIds = [],
 }: {
   embedding: number[];
   userId: string;
+  projectId?: string;
   limit?: number;
   similarityThreshold?: number; // value between 0 and 1
   previousChunkIds?: string[];
@@ -89,17 +112,15 @@ export async function findSimilarChunks({
       embedding.embedding
     } <=> ${JSON.stringify(queryEmbedding)}::vector)`;
 
-    const whereConditions = [
-      gt(similarity, similarityThreshold),
-      eq(resource.userId, userId),
-    ];
+    const whereConditions = [gt(similarity, similarityThreshold)];
 
     // Add exclusion condition if chunk contents (parents) are provided
     if (previousChunkIds.length > 0) {
       whereConditions.push(notInArray(chunk.id, previousChunkIds));
     }
 
-    const results = await getDb()
+    // Build base query
+    const baseQuery = getDb()
       .select({
         id: chunk.id,
         resourceUrl: resource.url,
@@ -114,10 +135,25 @@ export async function findSimilarChunks({
       })
       .from(embedding)
       .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
-      .innerJoin(resource, eq(chunk.resourceId, resource.id))
-      .where(and(...whereConditions))
-      .orderBy(desc(similarity))
-      .limit(limit);
+      .innerJoin(resource, eq(chunk.resourceId, resource.id));
+
+    // If projectId is provided, join with projectResource table
+    // Otherwise, filter by userId
+    let results;
+    if (projectId) {
+      whereConditions.push(eq(projectResource.projectId, projectId));
+      results = await baseQuery
+        .innerJoin(projectResource, eq(resource.id, projectResource.resourceId))
+        .where(and(...whereConditions))
+        .orderBy(desc(similarity))
+        .limit(limit);
+    } else {
+      whereConditions.push(eq(resource.userId, userId));
+      results = await baseQuery
+        .where(and(...whereConditions))
+        .orderBy(desc(similarity))
+        .limit(limit);
+    }
 
     return results;
   } catch (error) {
@@ -132,7 +168,7 @@ export const deleteResources =
     tx.delete(resource).where(eq(resource.userId, userId)).returning();
 
 export async function getUniqueResourceTitlesByUserId(
-  userId: string
+  userId: string,
 ): Promise<Array<{ title: string; url: string | null }>> {
   try {
     return await getDb()
@@ -165,14 +201,11 @@ export async function getUniqueResourceTitlesByUserIdPaginated({
 }> {
   try {
     const extendedLimit = limit + 1;
-    const words = (filter ?? "")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+    const words = (filter ?? "").trim().split(/\s+/).filter(Boolean);
 
     const whereClause = and(
       eq(resource.userId, userId),
-      ...words.map((w) => ilike(resource.title, `%${w}%`))
+      ...words.map((w) => ilike(resource.title, `%${w}%`)),
     );
 
     const rows = await getDb()
@@ -211,7 +244,7 @@ export const deleteResourcesByTitleFilter =
 
       const whereClause = and(
         eq(resource.userId, userId),
-        ...words.map((w) => ilike(resource.title, `%${w}%`))
+        ...words.map((w) => ilike(resource.title, `%${w}%`)),
       );
 
       return await tx.delete(resource).where(whereClause).returning();
@@ -254,7 +287,7 @@ export const deleteResourcesByTitles =
       return await tx
         .delete(resource)
         .where(
-          and(inArray(resource.title, titles), eq(resource.userId, userId))
+          and(inArray(resource.title, titles), eq(resource.userId, userId)),
         )
         .returning();
     } catch (error) {
@@ -262,3 +295,156 @@ export const deleteResourcesByTitles =
       throw error;
     }
   };
+
+// Project Resource queries
+
+export const addResourceToProject =
+  ({
+    projectId,
+    resourceId,
+  }: {
+    projectId: string;
+    resourceId: string;
+  }): Transactional<{ id: string }> =>
+  async (tx) => {
+    try {
+      const [result] = await tx
+        .insert(projectResource)
+        .values({
+          projectId,
+          resourceId,
+        })
+        .returning({ id: projectResource.id });
+      return result;
+    } catch (error) {
+      console.error("Failed to add resource to project");
+      throw error;
+    }
+  };
+
+export const removeResourceFromProject =
+  ({
+    projectId,
+    resourceId,
+  }: {
+    projectId: string;
+    resourceId: string;
+  }): Transactional<{ id: string }[]> =>
+  async (tx) => {
+    try {
+      return await tx
+        .delete(projectResource)
+        .where(
+          and(
+            eq(projectResource.projectId, projectId),
+            eq(projectResource.resourceId, resourceId),
+          ),
+        )
+        .returning({ id: projectResource.id });
+    } catch (error) {
+      console.error("Failed to remove resource from project");
+      throw error;
+    }
+  };
+
+export async function getProjectResourcesPaginated({
+  projectId,
+  limit,
+  offset,
+  filter,
+}: {
+  projectId: string;
+  limit: number;
+  offset: number;
+  filter?: string;
+}): Promise<{
+  resources: Array<{ id: string; title: string; url: string | null }>;
+  hasMore: boolean;
+}> {
+  try {
+    const extendedLimit = limit + 1;
+    const words = (filter ?? "").trim().split(/\s+/).filter(Boolean);
+
+    const whereClause = and(
+      eq(projectResource.projectId, projectId),
+      ...words.map((w) => ilike(resource.title, `%${w}%`)),
+    );
+
+    const rows = await getDb()
+      .select({
+        id: resource.id,
+        title: resource.title,
+        url: resource.url,
+      })
+      .from(projectResource)
+      .innerJoin(resource, eq(projectResource.resourceId, resource.id))
+      .where(whereClause)
+      .orderBy(resource.title, desc(resource.updatedAt))
+      .limit(extendedLimit)
+      .offset(offset);
+
+    const hasMore = rows.length > limit;
+    return {
+      resources: hasMore ? rows.slice(0, limit) : rows,
+      hasMore,
+    };
+  } catch (error) {
+    console.error("Failed to get project resources paginated");
+    throw error;
+  }
+}
+
+export async function getUserResourcesNotInProject({
+  userId,
+  projectId,
+  limit,
+  offset,
+  filter,
+}: {
+  userId: string;
+  projectId: string;
+  limit: number;
+  offset: number;
+  filter?: string;
+}): Promise<{
+  resources: Array<{ id: string; title: string; url: string | null }>;
+  hasMore: boolean;
+}> {
+  try {
+    const extendedLimit = limit + 1;
+    const words = (filter ?? "").trim().split(/\s+/).filter(Boolean);
+
+    // Get resource IDs already in project
+    const projectResourceIds = getDb()
+      .select({ resourceId: projectResource.resourceId })
+      .from(projectResource)
+      .where(eq(projectResource.projectId, projectId));
+
+    const whereClause = and(
+      eq(resource.userId, userId),
+      notInArray(resource.id, projectResourceIds),
+      ...words.map((w) => ilike(resource.title, `%${w}%`)),
+    );
+
+    const rows = await getDb()
+      .selectDistinctOn([resource.title], {
+        id: resource.id,
+        title: resource.title,
+        url: resource.url,
+      })
+      .from(resource)
+      .where(whereClause)
+      .orderBy(resource.title, desc(resource.updatedAt))
+      .limit(extendedLimit)
+      .offset(offset);
+
+    const hasMore = rows.length > limit;
+    return {
+      resources: hasMore ? rows.slice(0, limit) : rows,
+      hasMore,
+    };
+  } catch (error) {
+    console.error("Failed to get user resources not in project");
+    throw error;
+  }
+}

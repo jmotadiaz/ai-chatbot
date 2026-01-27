@@ -8,11 +8,13 @@ import { RAG_TOOL } from "@/lib/features/rag/constants";
 export interface RagFactoryArgs {
   messages: UIMessage[];
   userId: string;
+  projectId?: string;
   ragMaxResources?: number;
 }
 
 export const ragFactory = ({
   userId,
+  projectId,
   messages,
   ragMaxResources = 6,
 }: RagFactoryArgs) =>
@@ -39,7 +41,7 @@ export const ragFactory = ({
           .enum(QUERY_TYPES)
           .default("RETRIEVAL_QUERY")
           .describe(
-            "Classify the intent: use 'CODE_RETRIEVAL_QUERY' ONLY if the user explicitly asks for code snippets, implementation examples, or syntax. Use 'RETRIEVAL_QUERY' for concepts, debugging, architectural questions, or general knowledge."
+            "Classify the intent: use 'CODE_RETRIEVAL_QUERY' ONLY if the user explicitly asks for code snippets, implementation examples, or syntax. Use 'RETRIEVAL_QUERY' for concepts, debugging, architectural questions, or general knowledge.",
           ),
       }),
       outputSchema: z.array(
@@ -51,7 +53,7 @@ export const ragFactory = ({
             .string()
             .nullable()
             .describe("The URL of the resource."),
-        })
+        }),
       ),
       execute: async ({
         multiHopQueries,
@@ -68,12 +70,13 @@ export const ragFactory = ({
           queryType,
           previousResources: [...extractResourceIdsFromMessages(messages)],
           userId,
+          projectId,
           limit: ragMaxResources,
         });
 
         return resources;
       },
     }),
-  } satisfies ToolSet);
+  }) satisfies ToolSet;
 
 export type RagTool = ReturnType<typeof ragFactory>;

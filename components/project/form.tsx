@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Database, Globe, Save, Undo, WandSparkles } from "lucide-react";
+import { Globe, Save, Undo, WandSparkles } from "lucide-react";
 import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +25,9 @@ import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/config";
+import { ProjectResourcesTab } from "@/components/project/project-resources-tab";
 
-const tabs = ["configuration", "testChat"] as const;
+const tabs = ["configuration", "resources", "testChat"] as const;
 
 export interface ProjectFormProps {
   project?: Project;
@@ -76,6 +77,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
       <div className="px-6">
         <Tabs.Container className="max-w-4xl mx-auto pt-18 xl:pt-24 my-4">
           <Tabs.Tab {...getTabProps("configuration")}>Configuration</Tabs.Tab>
+          <Tabs.Tab {...getTabProps("resources")}>Resources</Tabs.Tab>
           <Tabs.Tab {...getTabProps("testChat")}>Test Chat</Tabs.Tab>
         </Tabs.Container>
       </div>
@@ -151,14 +153,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               <div className="flex flex-col space-y-4">
                 <h3 className="text-lg font-semibold mb-6">Tools</h3>
                 <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
-                  <Toggle
-                    id="rag-tool"
-                    checked={hasTool(RAG_TOOL)}
-                    onChange={handleToggleTool(RAG_TOOL)}
-                  >
-                    <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                    <span className="whitespace-nowrap">RAG</span>
-                  </Toggle>
                   <Toggle
                     id="web-search-tool"
                     checked={hasTool(WEB_SEARCH_TOOL)}
@@ -292,6 +286,11 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
               </div>
             </div>
           </Tabs.Panel>
+          {project && (
+            <Tabs.Panel {...getPanelProps("resources")}>
+              <ProjectResourcesTab projectId={project.id} />
+            </Tabs.Panel>
+          )}
         </div>
         <div className="px-2 flex-1 flex flex-col overflow-auto">
           <Tabs.Panel

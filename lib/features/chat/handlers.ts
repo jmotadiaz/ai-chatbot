@@ -165,6 +165,7 @@ export async function processChatResponse({
         ...ragFactory({
           messages,
           userId: user.id,
+          projectId,
           ragMaxResources: safeRagMaxResources,
         }),
         ...urlContextFactory({ writer }),

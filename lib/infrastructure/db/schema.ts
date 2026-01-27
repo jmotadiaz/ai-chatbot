@@ -91,15 +91,26 @@ export const message = pgTable("Message", {
 
 export const resource = pgTable("Resource", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  userId: uuid("userId").references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   url: varchar("url", { length: 255 }),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const projectResource = pgTable("ProjectResource", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  projectId: uuid("projectId")
+    .notNull()
+    .references(() => project.id, { onDelete: "cascade" }),
+  resourceId: uuid("resourceId")
+    .notNull()
+    .references(() => resource.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),
 });
@@ -137,13 +148,14 @@ export const embedding = pgTable(
   (table) => ({
     embeddingIndex: index("embeddingIndex").using(
       "hnsw",
-      table.embedding.op("vector_cosine_ops")
+      table.embedding.op("vector_cosine_ops"),
     ),
-  })
+  }),
 );
 
 export const projectRelations = relations(project, ({ many }) => ({
   chats: many(chat),
+  projectResources: many(projectResource),
 }));
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -171,7 +183,22 @@ export const resourceRelations = relations(resource, ({ many, one }) => ({
     references: [user.id],
   }),
   chunks: many(chunk),
+  projectResources: many(projectResource),
 }));
+
+export const projectResourceRelations = relations(
+  projectResource,
+  ({ one }) => ({
+    project: one(project, {
+      fields: [projectResource.projectId],
+      references: [project.id],
+    }),
+    resource: one(resource, {
+      fields: [projectResource.resourceId],
+      references: [resource.id],
+    }),
+  }),
+);
 
 export const chunkRelations = relations(chunk, ({ one, many }) => ({
   resource: one(resource, {
@@ -221,5 +248,11 @@ export type InsertChunk = Omit<
 export type Embedding = InferSelectModel<typeof embedding>;
 export type InsertEmbedding = Omit<
   InferInsertModel<typeof embedding>,
+  "createdAt" | "id"
+>;
+
+export type ProjectResource = InferSelectModel<typeof projectResource>;
+export type InsertProjectResource = Omit<
+  InferInsertModel<typeof projectResource>,
   "createdAt" | "id"
 >;

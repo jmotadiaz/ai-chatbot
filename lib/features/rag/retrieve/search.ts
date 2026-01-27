@@ -14,6 +14,7 @@ export interface VectorSearchInput {
   query: string;
   queryType?: QueryType;
   userId: string;
+  projectId?: string;
   limit?: number;
   similarityThreshold?: number; // 0-100
   previousChunkIds?: string[];
@@ -26,6 +27,7 @@ export async function vectorSearch({
   query,
   queryType = "RETRIEVAL_QUERY",
   userId,
+  projectId,
   limit = 10,
   similarityThreshold = 0.6,
   previousChunkIds = [],
@@ -35,6 +37,7 @@ export async function vectorSearch({
     const similarChunks = await findSimilarChunks({
       embedding: userQueryEmbedded,
       userId,
+      projectId,
       limit,
       similarityThreshold,
       previousChunkIds,
@@ -114,6 +117,7 @@ export interface RetrieveResourcesInput {
   previousResources: string[];
   queryType?: QueryType;
   userId: string;
+  projectId?: string;
   limit?: number;
 }
 
@@ -126,6 +130,7 @@ export const retrieveResources = async ({
   previousResources,
   queryType,
   userId,
+  projectId,
   limit = 6,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
   const results = await Promise.all(
@@ -134,11 +139,12 @@ export const retrieveResources = async ({
         query,
         queryType,
         userId,
+        projectId,
         limit: K_VECTOR_SEARCHES,
         similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
         previousChunkIds: previousResources,
-      })
-    )
+      }),
+    ),
   );
 
   const vectorSearchResults: SimilarChunks = [];

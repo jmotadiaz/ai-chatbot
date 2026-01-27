@@ -36,6 +36,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     toggleTool,
     hasTool,
     metaPrompt,
+    projectId,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     usePromptRefiner({
@@ -58,7 +59,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
       className={cn(
         "flex flex-col relative",
         messages.length ? "h-full" : "h-vh gap-10",
-        className
+        className,
       )}
     >
       <ChatConversation
@@ -92,6 +93,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               toggleTool={toggleTool}
               hasTool={hasTool}
               enabled={modelConfig.toolCalling}
+              projectId={projectId}
             />
           </div>
 

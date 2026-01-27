@@ -15,6 +15,8 @@ import {
 } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { Tool, Tools } from "@/lib/features/chat/types";
+import { getProjectResourcesAction } from "@/lib/features/rag/actions";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
 
 const models = CHAT_MODELS.filter((model) => model !== "Router");
 
@@ -43,43 +45,43 @@ export const useHandleProjectForm = ({
   const [title, setTitle] = useState(project?.name || "");
   const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
   const [hasPromptRefiner, setHasPromptRefiner] = useState(
-    project?.hasPromptRefiner || false
+    project?.hasPromptRefiner || false,
   );
   const [tools, setTools] = useState<Tools>((project?.tools as Tools) || []);
   const [model, setModel] = useState<chatModelId>(
-    (project?.defaultModel as chatModelId) || models[0]
+    (project?.defaultModel as chatModelId) || models[0],
   );
 
   // Advanced settings - collapsible state
   // Closed by default for new projects, open if editing a project with custom config
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(() =>
-    hasAdvancedConfig(project)
+    hasAdvancedConfig(project),
   );
 
   // Get model config for defaults
   const getModelConfig = useCallback(
     (modelId: chatModelId) => getChatConfigurationByModelId(modelId),
-    []
+    [],
   );
 
   const modelConfig = getModelConfig(model);
 
   // Temperature, topP, topK states - undefined means use model defaults
   const [temperature, setTemperature] = useState<number | undefined>(
-    project?.defaultTemperature ?? undefined
+    project?.defaultTemperature ?? undefined,
   );
   const [topP, setTopP] = useState<number | undefined>(
-    project?.defaultTopP ?? undefined
+    project?.defaultTopP ?? undefined,
   );
   const [topK, setTopK] = useState<number | undefined>(
-    project?.defaultTopK ?? undefined
+    project?.defaultTopK ?? undefined,
   );
 
   const [webSearchNumResults, setWebSearchNumResults] = useState<
     number | undefined
   >(project?.webSearchNumResults ?? undefined);
   const [ragMaxResources, setRagMaxResources] = useState<number | undefined>(
-    project?.ragMaxResources ?? undefined
+    project?.ragMaxResources ?? undefined,
   );
   const [isCreating, setIsCreating] = useState(false);
 
@@ -115,7 +117,7 @@ export const useHandleProjectForm = ({
 
   const handleToggleTool = (tool: Tool) => () => {
     setTools((prev) =>
-      prev.includes(tool) ? prev.filter((t) => t !== tool) : [...prev, tool]
+      prev.includes(tool) ? prev.filter((t) => t !== tool) : [...prev, tool],
     );
   };
 
@@ -129,6 +131,23 @@ export const useHandleProjectForm = ({
 
     setIsCreating(true);
     try {
+      // Logic to automatically handle RAG tool based on resources
+      let finalTools = [...tools];
+      if (project) {
+        const { resources } = await getProjectResourcesAction({
+          projectId: project.id,
+          limit: 1,
+        });
+        if (resources.length > 0) {
+          if (!finalTools.includes(RAG_TOOL)) finalTools.push(RAG_TOOL);
+        } else {
+          finalTools = finalTools.filter((t) => t !== RAG_TOOL);
+        }
+      } else {
+        // New projects start with no resources, so RAG tool is disabled
+        finalTools = finalTools.filter((t) => t !== RAG_TOOL);
+      }
+
       // Only include advanced settings if collapsible is open
       const projectData = {
         name: title,
@@ -137,7 +156,7 @@ export const useHandleProjectForm = ({
         defaultTopP: isAdvancedOpen ? topP : undefined,
         defaultTopK: isAdvancedOpen ? topK : undefined,
         systemPrompt,
-        tools,
+        tools: finalTools,
         hasPromptRefiner,
         ragMaxResources: isAdvancedOpen ? ragMaxResources : undefined,
         webSearchNumResults: isAdvancedOpen ? webSearchNumResults : undefined,
@@ -155,7 +174,7 @@ export const useHandleProjectForm = ({
     } catch (error) {
       console.error("Error creating project:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to create project"
+        error instanceof Error ? error.message : "Failed to create project",
       );
     } finally {
       setIsCreating(false);

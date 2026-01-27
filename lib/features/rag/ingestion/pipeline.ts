@@ -8,7 +8,8 @@ import type { InsertChunk } from "@/lib/infrastructure/db/schema";
 
 export const saveUrlResource = async (
   urlResource: UrlResource,
-  userId: string
+  userId: string,
+  projectId?: string,
 ): Promise<{ success: boolean }> => {
   const resource = await fetchAndConvertURL(urlResource);
 
@@ -22,6 +23,7 @@ export const saveUrlResource = async (
       title: resource.title,
       url: resource.url,
       userId,
+      projectId,
     })(tx);
 
     // 2. Generar Chunk Groups
@@ -74,7 +76,8 @@ export const saveUrlResource = async (
 export const saveMarkdownResource = async (
   title: string,
   content: string,
-  userId: string
+  userId: string,
+  projectId?: string,
 ): Promise<{ success: boolean }> => {
   const [result] = await transaction(async (tx) => {
     // 1. Crear el Recurso (Resource)
@@ -82,6 +85,7 @@ export const saveMarkdownResource = async (
       title,
       url: null,
       userId,
+      projectId,
     })(tx);
 
     // 2. Generar Chunk Groups
