@@ -2,19 +2,8 @@ import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const GOOGLE_CONFIG = {
-  "Gemini 2.0 Flash": {
-    model: providers.gateway("google/gemini-2.0-flash"),
-    company: "google",
-    temperature: 0.6,
-    supportedFiles: ["img", "pdf"],
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
-    },
-  },
   "Gemini 2.5 Flash Lite": {
-    model: providers.gateway("google/gemini-2.5-flash-lite"),
+    model: providers.google("gemini-2.5-flash-lite"),
     company: "google",
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
@@ -25,7 +14,7 @@ export const GOOGLE_CONFIG = {
     },
   },
   "Gemini 2.5 Flash": {
-    model: providers.gateway("google/gemini-2.5-flash"),
+    model: providers.google("gemini-2.5-flash"),
     company: "google",
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
@@ -36,21 +25,6 @@ export const GOOGLE_CONFIG = {
         thinkingConfig: {
           thinkingBudget: 0,
           includeThoughts: false,
-        },
-      },
-    },
-  },
-  "Gemini 2.5 Pro": {
-    model: providers.gateway("google/gemini-2.5-pro"),
-    company: "google",
-    temperature: 0.6,
-    supportedFiles: ["img", "pdf"],
-    reasoning: true,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 1024,
-          includeThoughts: true,
         },
       },
     },

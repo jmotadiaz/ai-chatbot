@@ -227,10 +227,10 @@ const decisionTree = ({
     },
     processing: {
       simple: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Scout"),
+        modelConfiguration: findModelByRequestedFileTypes("Qwen3 Instruct"),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Qwen3 Instruct"),
+        modelConfiguration: findModelByRequestedFileTypes("MiMo V2 Flash"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes("Gemini 3 Flash"),

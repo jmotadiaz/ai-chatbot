@@ -15,7 +15,6 @@ import {
 } from "ai";
 
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { providers } from "@/lib/infrastructure/ai/providers";
 import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
   deleteMessageById,
@@ -43,6 +42,7 @@ import {
 import {
   defaultRagMaxResources,
   defaultWebSearchNumResults,
+  languageModelConfigurations,
 } from "@/lib/features/foundation-model/config";
 import {
   webSearchFactory,
@@ -67,7 +67,7 @@ const processMesaggesToSend = async ({
       if (msg.role === "user" && msg.metadata?.textFiles?.length) {
         const textFileContents = msg.metadata.textFiles
           .map(
-            (f) => `\n\n---\nAttached File: ${f.filename}\n${f.content}\n---`
+            (f) => `\n\n---\nAttached File: ${f.filename}\n${f.content}\n---`,
           )
           .join("");
 
@@ -76,12 +76,12 @@ const processMesaggesToSend = async ({
           parts: msg.parts.map((part) =>
             part.type === "text"
               ? { ...part, text: part.text + textFileContents }
-              : part
+              : part,
           ),
         };
       }
       return msg;
-    })
+    }),
   );
   return modelConfiguration.reasoning
     ? modelMessages
@@ -111,15 +111,7 @@ const configureStep = ({
           `,
         }
       : {
-          model: providers.google("gemini-2.5-flash"),
-          providerOptions: {
-            google: {
-              thinkingConfig: {
-                thinkingBudget: 0,
-                includeThoughts: false,
-              },
-            },
-          },
+          ...languageModelConfigurations("Gemini 2.5 Flash"),
           toolChoice: { type: "tool", toolName: tool },
         }),
     activeTools: [tool],
@@ -160,7 +152,7 @@ export async function processChatResponse({
   const safeRagMaxResources = Math.min(Math.max(ragMaxResources, 1), 50);
   const safeWebSearchNumResults = Math.min(
     Math.max(webSearchNumResults, 1),
-    10
+    10,
   );
 
   return createUIMessageStream<ChatbotMessage>({
@@ -188,9 +180,9 @@ export async function processChatResponse({
         });
       const executedTools = new Set<Tool>(
         !!(process.env.NEXT_PUBLIC_ENV === "test") ||
-        modelConfiguration.toolCalling === false
+          modelConfiguration.toolCalling === false
           ? TOOLS
-          : []
+          : [],
       );
       const lastMessage = messagePartsToText(messages[messages.length - 1]);
       const isUrlPresentInLastMessage = hasUrls(lastMessage);
@@ -291,7 +283,7 @@ export async function processChatResponse({
                           ragMaxResources: safeRagMaxResources,
                           webSearchNumResults: safeWebSearchNumResults,
                           tools,
-                        }
+                        },
                       )(tx)
                     : undefined;
 
@@ -314,9 +306,9 @@ export async function processChatResponse({
                   await saveMessages(
                     await Promise.all(
                       [userMessage, assistantMessage].map(
-                        chatbotMessageToDbMessage(id)
-                      )
-                    )
+                        chatbotMessageToDbMessage(id),
+                      ),
+                    ),
                   )(tx);
 
                   return id;
@@ -343,7 +335,7 @@ export async function processChatResponse({
             }
             return `Runtime error: ${error}`;
           },
-        })
+        }),
       );
     },
   });
