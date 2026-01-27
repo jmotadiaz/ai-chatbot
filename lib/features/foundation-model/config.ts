@@ -37,7 +37,7 @@ export type LanguageModelKeys =
 export const chatModelKeys = [
   "Kimi K2",
   "Kimi K2 Thinking",
-  "MiniMax M2",
+  "MiniMax M2.1",
   "GLM-4.7",
   "Qwen3 Instruct",
   "Qwen3 Thinking",
@@ -73,7 +73,7 @@ export const defaultWebSearchNumResults = 5;
 // Helpers
 export const languageModelConfigurations = (
   modelKey: LanguageModelKeys,
-  { providerOptions }: { providerOptions?: ProviderOptions } = {}
+  { providerOptions }: { providerOptions?: ProviderOptions } = {},
 ): ModelConfiguration => {
   const baseConfig: ModelConfiguration =
     LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
@@ -105,7 +105,7 @@ export interface ChatModelConfiguration {
 }
 
 export const getChatConfigurationByModelId = (
-  modelId: chatModelId
+  modelId: chatModelId,
 ): ChatModelConfiguration => {
   const defaultConfig = {
     toolCalling: true,

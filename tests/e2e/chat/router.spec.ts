@@ -7,16 +7,16 @@ type Complexity = "simple" | "moderate" | "complex" | "advanced";
 
 const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
   technical: {
-    simple: "meta/llama-4-scout",
+    simple: "openai/gpt-oss-20b",
     moderate: "anthropic/claude-haiku-4.5",
     complex: "anthropic/claude-sonnet-4.5",
     advanced: "anthropic/claude-opus-4.5",
   },
   prompt_engineering: {
-    simple: "meta/llama-4-scout",
+    simple: "alibaba/qwen3-next-80b-a3b-instruct",
     moderate: "moonshotai/kimi-k2-instruct-0905",
-    complex: "openai/gpt-oss-120b",
-    advanced: "gemini-2.5-pro",
+    complex: "grok-4-1-fast",
+    advanced: "gpt-5.2",
   },
 };
 
@@ -61,11 +61,11 @@ test.describe("Model Router", () => {
   test(`should adapt model when an attachment is included in the prompt`, async () => {
     await chatPage.chat.openAttachmentMenu();
     await chatPage.chat.uploadFile("./tests/mocks/dummy-image.png", "image");
-    await chatPage.chat.sendMessage(`category=factual complexity=simple`);
+    await chatPage.chat.sendMessage(`category=factual complexity=complex`);
     await chatPage.chat.waitForLoadingComplete();
 
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
-    expect.soft(lastMessage).not.toContain("meta-llama/meta/llama-3.1-8b");
-    expect.soft(lastMessage).toContain("meta/llama-4-scout");
+    expect.soft(lastMessage).not.toContain("moonshotai/kimi-k2-instruct-0905");
+    expect.soft(lastMessage).toContain("google/gemini-3-flash");
   });
 });

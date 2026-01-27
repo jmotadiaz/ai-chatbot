@@ -34,8 +34,8 @@ export const GOOGLE_CONFIG = {
     providerOptions: {
       google: {
         thinkingConfig: {
-          thinkingBudget: 1024,
-          includeThoughts: true,
+          thinkingBudget: 0,
+          includeThoughts: false,
         },
       },
     },

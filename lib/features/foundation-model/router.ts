@@ -77,7 +77,7 @@ const toolsSystemPrompt = `
 `;
 
 const findModelWithSupportedFileTypes = (
-  fileTypes: Set<Required<ModelConfiguration>["supportedFiles"][number]>
+  fileTypes: Set<Required<ModelConfiguration>["supportedFiles"][number]>,
 ) => {
   const requestedFileTypes = [...fileTypes];
   return (...modelIds: Array<LanguageModelKeys>): ModelConfiguration => {
@@ -85,9 +85,9 @@ const findModelWithSupportedFileTypes = (
       modelIds.find((modelId) =>
         requestedFileTypes.every((fileType) =>
           languageModelConfigurations(modelId).supportedFiles?.includes(
-            fileType
-          )
-        )
+            fileType,
+          ),
+        ),
       ) || "GPT 5 Mini";
     return languageModelConfigurations(modelSelected);
   };
@@ -112,58 +112,45 @@ const decisionTree = ({
     factual: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Scout",
-          "GPT 5 Nano"
+          "Gemini 2.5 Flash Lite",
         ),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Maverick"),
+        modelConfiguration: findModelByRequestedFileTypes("Qwen3 Instruct"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
           "Kimi K2",
-          "Gemini 2.5 Flash"
+          "Gemini 3 Flash",
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 3 Flash"),
       },
     },
     analytical: {
       simple: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Maverick",
-          "Gemini 2.5 Flash Lite"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT OSS Mini"),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Qwen3 Thinking",
-          "GPT 5 Mini"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT OSS"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes(
           "Grok 4.1 Fast",
-          "Gemini 2.5 Flash"
+          "Gemini 3 Flash",
         ),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Grok 4", "GPT 5.2"),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5.2"),
       },
     },
     technical: {
       simple: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Scout",
-          "GPT 5 Nano"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT OSS Mini"),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Claude Haiku 4.5",
-          "GPT 5 Mini"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Claude Haiku 4.5"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4.5"),
@@ -175,101 +162,81 @@ const decisionTree = ({
     creative: {
       simple: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes(
-            "Llama 3.1 Instant",
-            "Llama 4 Scout",
-            "Gemini 2.5 Flash Lite"
-          ),
+          ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
           temperature: 1.5,
         },
       },
       moderate: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
+          ...findModelByRequestedFileTypes("Qwen3 Instruct"),
           temperature: 1.5,
         },
       },
       complex: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes(
-            "Llama 4 Maverick",
-            "Gemini 2.5 Flash"
-          ),
+          ...findModelByRequestedFileTypes("Gemini 3 Flash"),
           temperature: 1.5,
         },
       },
       advanced: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+          ...findModelByRequestedFileTypes("Gemini 3 Flash"),
           temperature: 1.5,
         },
       },
     },
     prompt_engineering: {
       simple: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Scout",
-          "GPT 5 Nano"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Qwen3 Instruct"),
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes("Kimi K2"),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("GPT OSS"),
+        modelConfiguration: findModelByRequestedFileTypes("Grok 4.1 Fast"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5.2"),
       },
     },
     conversational: {
       simple: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes(
-            "Llama 3.1 Instant",
-            "Llama 4 Scout",
-            "GPT 5 Nano"
-          ),
+          ...findModelByRequestedFileTypes("Llama 4 Scout", "GPT 5 Nano"),
           temperature: 1,
         },
       },
       moderate: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes(
-            "Llama 4 Scout",
-            "Gemini 2.5 Flash Lite"
-          ),
+          ...findModelByRequestedFileTypes("Gemini 2.5 Flash Lite"),
           temperature: 1,
         },
       },
       complex: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Llama 4 Maverick"),
+          ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
           temperature: 1,
         },
       },
       advanced: {
         modelConfiguration: {
-          ...findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+          ...findModelByRequestedFileTypes("Gemini 3 Flash"),
           temperature: 1,
         },
       },
     },
     processing: {
       simple: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 3.1 Instant",
-          "GPT 5 Nano"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("Llama 4 Scout"),
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes("Qwen3 Instruct"),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Flash"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 3 Flash"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes("Gemini 2.5 Pro"),
+        modelConfiguration: findModelByRequestedFileTypes("Gemini 3 Pro"),
       },
     },
     image_generation: {
@@ -289,29 +256,21 @@ const decisionTree = ({
     other: {
       simple: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 3.1 Instant",
           "Llama 4 Scout",
-          "GPT 5 Nano"
+          "GPT 5 Nano",
         ),
       },
       moderate: {
         modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 3.1 Instant",
           "Llama 4 Scout",
-          "GPT 5 Nano"
+          "GPT 5 Nano",
         ),
       },
       complex: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Maverick",
-          "GPT 5 Mini"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5 Mini"),
       },
       advanced: {
-        modelConfiguration: findModelByRequestedFileTypes(
-          "Llama 4 Maverick",
-          "GPT 5 Mini"
-        ),
+        modelConfiguration: findModelByRequestedFileTypes("GPT 5 Mini"),
       },
     },
   };
