@@ -31,9 +31,13 @@ const tabs = ["configuration", "resources", "testChat"] as const;
 
 export interface ProjectFormProps {
   project?: Project;
+  mode?: "create" | "edit";
 }
 
-export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
+export const ProjectForm: React.FC<ProjectFormProps> = ({
+  project,
+  mode = "edit",
+}) => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
 
   const {
@@ -70,7 +74,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project }) => {
     undo,
     hasPreviousMessage,
     models,
-  } = useHandleProjectForm({ project });
+  } = useHandleProjectForm({ project, mode });
 
   return (
     <div className="overflow-x-hidden h-full flex stretch flex-col">

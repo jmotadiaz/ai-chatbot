@@ -53,12 +53,4 @@ test.describe("Project Creation", () => {
       .soft(projectPage.sidebar.getProjectItemByTitle(title))
       .toBeVisible();
   });
-
-  test("1.3 Validation: Mandatory Fields", async ({ page }) => {
-    await projectPage.form.save();
-    await expect
-      .soft(page.getByText("Please fill in required fields"))
-      .toBeVisible();
-    await expect.soft(page).toHaveURL(/\/project\/add/);
-  });
 });

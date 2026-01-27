@@ -9,6 +9,7 @@
     "agent:start": "export NEXT_PUBLIC_ENV=test && npm run db:test:start && npm run db:migrate && npm run db:seed && NODE_ENV=test npx next dev",
     "jules:start": "export NEXT_PUBLIC_ENV=test && npm run db:jules:start && npm run db:migrate && npm run db:seed && NODE_ENV=test npx next dev",
     "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
     "db:migrate": "npx tsx lib/infrastructure/db/migrate.ts",
     "db:seed": "npx tsx scripts/seed-test-data.ts",
     "db:start": "docker compose up -d --wait",

@@ -1,39 +1,36 @@
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { Suspense } from "react";
 import { ProjectForm } from "@/components/project/form";
+import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
+import { getProjectById } from "@/lib/features/project/queries";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
-import { getProjectById } from "@/lib/features/project/queries";
-import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
-interface EditProjectPageProps extends Authenticated {
+interface AddProjectPageProps extends Authenticated {
   params: Promise<{
     id: string;
   }>;
 }
 
-const EditProjectPage: React.FC<EditProjectPageProps> = async ({
-  params,
-  user,
-}) => {
+const Page = async ({ params, user }: AddProjectPageProps) => {
   const { id } = await params;
 
-  const project = await getProjectById({ id, userId: user.id });
+  const project = await getProjectById({
+    id,
+    userId: user.id!,
+  });
 
-  if (!project || project.userId !== user.id) {
+  if (!project) {
     redirect("/project/add");
-  }
-
-  if (!project.isActive) {
-    redirect(`/project/${project.id}/add`);
   }
 
   return (
     <>
+      <Sidebar user={user} />
       <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Sidebar projectId={id} user={user} />
         <Header.Container>
           <Header.Left>
             <Logo />
@@ -43,10 +40,12 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({
             <ThemeToggle />
           </Header.Right>
         </Header.Container>
-        <ProjectForm project={project} />
+        <Suspense fallback={null}>
+          <ProjectForm project={project} mode="create" />
+        </Suspense>
       </div>
     </>
   );
 };
 
-export default withAuth(EditProjectPage);
+export default withAuth(Page);

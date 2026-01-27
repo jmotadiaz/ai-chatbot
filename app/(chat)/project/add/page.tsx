@@ -1,14 +1,10 @@
-import { NewProject } from "./component";
-import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { redirect } from "next/navigation";
+import { createEmptyProject } from "@/lib/features/project/actions";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 
-const AddProjectPage: React.FC<Authenticated> = ({ user }) => {
-  return (
-    <>
-      <Sidebar user={user} />
-      <NewProject />
-    </>
-  );
+const AddProjectPage: React.FC<Authenticated> = async () => {
+  const project = await createEmptyProject();
+  redirect(`/project/${project.id}/add`);
 };
 
 export default withAuth(AddProjectPage);

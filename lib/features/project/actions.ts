@@ -35,10 +35,32 @@ export async function createProject(
   try {
     const [newProject] = await transaction(createDBProject(projectWithUserId));
     revalidatePath("/", "layout");
-    revalidatePath("/project/new");
+    revalidatePath(`/project/${newProject.id}`);
     return newProject;
   } catch (error) {
     console.error("Failed to create project:", error);
+    throw error;
+  }
+}
+
+export async function createEmptyProject() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const emptyProject = {
+    userId: session.user.id,
+    name: "",
+    systemPrompt: "",
+    isActive: false,
+  };
+
+  try {
+    const [newProject] = await transaction(createDBProject(emptyProject));
+    return newProject;
+  } catch (error) {
+    console.error("Failed to create empty project:", error);
     throw error;
   }
 }
@@ -81,7 +103,7 @@ export async function deleteProject(id: string) {
   try {
     await transaction(deleteDBProject({ id, userId: session.user.id }));
     revalidatePath("/", "layout");
-    revalidatePath("/project/new");
+    revalidatePath(`/project/${id}`);
   } catch (error) {
     console.error("Failed to delete project:", error);
   }

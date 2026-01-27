@@ -36,14 +36,20 @@ const hasAdvancedConfig = (project?: Project): boolean => {
 
 interface UseHandleProjectFormProps {
   project?: Project;
+  mode?: "create" | "edit";
 }
 
 export const useHandleProjectForm = ({
   project,
+  mode = "edit",
 }: UseHandleProjectFormProps = {}) => {
   const router = useRouter();
-  const [title, setTitle] = useState(project?.name || "");
-  const [systemPrompt, setSystemPrompt] = useState(project?.systemPrompt || "");
+  const [title, setTitle] = useState(
+    mode === "create" ? "" : project?.name || "",
+  );
+  const [systemPrompt, setSystemPrompt] = useState(
+    mode === "create" ? "" : project?.systemPrompt || "",
+  );
   const [hasPromptRefiner, setHasPromptRefiner] = useState(
     project?.hasPromptRefiner || false,
   );
@@ -160,13 +166,21 @@ export const useHandleProjectForm = ({
         hasPromptRefiner,
         ragMaxResources: isAdvancedOpen ? ragMaxResources : undefined,
         webSearchNumResults: isAdvancedOpen ? webSearchNumResults : undefined,
+        isActive: true, // Always set active on save
       };
 
       if (project) {
+        // Even in create mode, we update the existing inactive project
         await updateProject(project.id, projectData);
-        toast.success("Project updated successfully!");
+        if (mode === "create") {
+          toast.success("Project created successfully!");
+        } else {
+          toast.success("Project updated successfully!");
+        }
         router.push(`/project/${project.id}/chat`);
       } else {
+        // Check: this branch might be unreachable now if we always pass a project for 'create'
+        // But keeping it for safety or if logic used without project ID
         const newProject = await createProject(projectData);
         toast.success("Project created successfully!");
         router.push(`/project/${newProject.id}/chat`);

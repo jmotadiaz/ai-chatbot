@@ -42,6 +42,7 @@ export const project = pgTable("Project", {
   systemPrompt: text("systemPrompt").notNull(),
   hasPromptRefiner: boolean("hasMetaPrompt").default(false).notNull(),
   tools: varchar("tools", { length: 100 }).array(),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),

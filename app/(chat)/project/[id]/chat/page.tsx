@@ -38,7 +38,11 @@ const Page: React.FC<ProjectPageProps> = async ({
   });
 
   if (!project || project.userId !== user.id) {
-    redirect("/project/new");
+    redirect("/project/add");
+  }
+
+  if (!project.isActive) {
+    redirect(`/project/${project.id}/add`);
   }
 
   return (

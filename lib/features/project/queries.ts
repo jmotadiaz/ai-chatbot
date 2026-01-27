@@ -75,10 +75,10 @@ interface GetProjectByUserIdParams {
 }
 
 export async function getProjectsByUserId(
-  params: GetProjectByUserIdParams & { joinChats?: false }
+  params: GetProjectByUserIdParams & { joinChats?: false },
 ): Promise<Array<Project>>;
 export async function getProjectsByUserId(
-  params: GetProjectByUserIdParams & { joinChats: true }
+  params: GetProjectByUserIdParams & { joinChats: true },
 ): Promise<Array<Project & { chats: Array<Chat> }>>;
 export async function getProjectsByUserId({
   userId,
@@ -91,7 +91,7 @@ export async function getProjectsByUserId({
   try {
     if (joinChats) {
       return await getDb().query.project.findMany({
-        where: eq(project.userId, userId),
+        where: and(eq(project.userId, userId), eq(project.isActive, true)),
         with: {
           chats: {
             orderBy: desc(chat.updatedAt),
@@ -106,7 +106,7 @@ export async function getProjectsByUserId({
       return await getDb()
         .select()
         .from(project)
-        .where(eq(project.userId, userId))
+        .where(and(eq(project.userId, userId), eq(project.isActive, true)))
         .orderBy(desc(project.updatedAt))
         .limit(limit)
         .offset(offset);
@@ -120,7 +120,7 @@ export async function getProjectsByUserId({
 export const updateProject =
   (
     { id, userId }: SafeTransaction,
-    updateProjectData: Partial<Omit<InsertProject, "userId">>
+    updateProjectData: Partial<Omit<InsertProject, "userId">>,
   ): Transactional<Project | undefined> =>
   (tx) => {
     return tx

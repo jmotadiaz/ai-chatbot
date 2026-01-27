@@ -17,6 +17,7 @@ export const createProjectSchema = z.object({
   systemPrompt: z.string().min(1, "System prompt is required"),
   hasPromptRefiner: z.boolean().default(false),
   tools: z.array(z.string()).optional(),
+  isActive: z.boolean().default(false),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
