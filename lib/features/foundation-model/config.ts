@@ -67,7 +67,7 @@ export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 // Constants
 export const defaultModel: chatModelId = "Router";
 export const defaultRagSimilarityPercentage = 65;
-export const defaultRagMaxResources = 6;
+export const defaultRagMaxResources = 10;
 export const defaultWebSearchNumResults = 5;
 
 // Helpers

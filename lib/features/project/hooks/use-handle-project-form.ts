@@ -9,7 +9,6 @@ import type { Project } from "@/lib/features/project/types";
 import {
   CHAT_MODELS,
   defaultWebSearchNumResults,
-  defaultRagMaxResources,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -26,8 +25,6 @@ const hasAdvancedConfig = (project?: Project): boolean => {
     project.defaultTemperature !== null ||
     project.defaultTopP !== null ||
     project.defaultTopK !== null ||
-    (project.ragMaxResources !== null &&
-      project.ragMaxResources !== defaultRagMaxResources) ||
     (project.webSearchNumResults !== null &&
       project.webSearchNumResults !== defaultWebSearchNumResults)
   );
@@ -85,9 +82,6 @@ export const useHandleProjectForm = ({
   const [webSearchNumResults, setWebSearchNumResults] = useState<
     number | undefined
   >(project?.webSearchNumResults ?? undefined);
-  const [ragMaxResources, setRagMaxResources] = useState<number | undefined>(
-    project?.ragMaxResources ?? undefined,
-  );
   const [isCreating, setIsCreating] = useState(false);
 
   // Handle advanced toggle - when opening, initialize with model defaults
@@ -99,14 +93,12 @@ export const useHandleProjectForm = ({
         setTemperature((t) => t ?? modelConfig.temperature);
         setTopP((p) => p ?? modelConfig.topP);
         setTopK((k) => k ?? modelConfig.topK);
-        setRagMaxResources((r) => r ?? defaultRagMaxResources);
         setWebSearchNumResults((w) => w ?? defaultWebSearchNumResults);
       } else {
         // Closing: clear values to use model defaults
         setTemperature(undefined);
         setTopP(undefined);
         setTopK(undefined);
-        setRagMaxResources(undefined);
         setWebSearchNumResults(undefined);
       }
       return newOpen;
@@ -164,7 +156,6 @@ export const useHandleProjectForm = ({
         systemPrompt,
         tools: finalTools,
         hasPromptRefiner,
-        ragMaxResources: isAdvancedOpen ? ragMaxResources : undefined,
         webSearchNumResults: isAdvancedOpen ? webSearchNumResults : undefined,
         isActive: true, // Always set active on save
       };
@@ -220,8 +211,6 @@ export const useHandleProjectForm = ({
     // Tool config
     webSearchNumResults,
     setWebSearchNumResults,
-    ragMaxResources,
-    setRagMaxResources,
     isCreating,
     handleSaveProject,
     refinePrompt,

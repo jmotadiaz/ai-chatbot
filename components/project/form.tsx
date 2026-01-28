@@ -12,7 +12,7 @@ import { Tabs, useTabs } from "@/components/ui/tabs";
 import type { Project } from "@/lib/features/project/types";
 import { ChatProvider } from "@/components/chat/provider";
 import { Toggle } from "@/components/ui/toggle";
-import { RAG_TOOL } from "@/lib/features/rag/constants";
+
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {
   markdownCommandStyle,
@@ -20,10 +20,7 @@ import {
 } from "@/components/ui/markdown-editor";
 import { Collapsible } from "@/components/ui/internal-collapsible";
 import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-project-form";
-import {
-  defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/config";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { ProjectResourcesTab } from "@/components/project/project-resources-tab";
 
 const tabs = ["configuration", "resources", "testChat"] as const;
@@ -64,8 +61,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     // Tool config
     webSearchNumResults,
     setWebSearchNumResults,
-    ragMaxResources,
-    setRagMaxResources,
     isCreating,
     handleSaveProject,
     refinePrompt,
@@ -228,50 +223,30 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                     </div>
                   )}
                 </div>
-                {(hasTool(RAG_TOOL) || hasTool(WEB_SEARCH_TOOL)) && (
+                {hasTool(WEB_SEARCH_TOOL) && (
                   <div className="flex flex-col mt-6">
                     <h4 className="text-base font-semibold mb-4">
                       Tool Configuration
                     </h4>
                     <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
-                      {hasTool(RAG_TOOL) && (
-                        <div className="flex flex-col gap-2">
-                          <Label
-                            className="text-base"
-                            htmlFor="ragMaxResources"
-                          >
-                            RAG Max Resources
-                          </Label>
-                          <InputNumber
-                            id="ragMaxResources"
-                            value={ragMaxResources ?? defaultRagMaxResources}
-                            min={1}
-                            max={50}
-                            step={1}
-                            onChange={setRagMaxResources}
-                          />
-                        </div>
-                      )}
-                      {hasTool(WEB_SEARCH_TOOL) && (
-                        <div className="flex flex-col gap-2">
-                          <Label
-                            className="text-base"
-                            htmlFor="webSearchNumResults"
-                          >
-                            Web Search Results
-                          </Label>
-                          <InputNumber
-                            id="webSearchNumResults"
-                            value={
-                              webSearchNumResults ?? defaultWebSearchNumResults
-                            }
-                            min={1}
-                            max={10}
-                            step={1}
-                            onChange={setWebSearchNumResults}
-                          />
-                        </div>
-                      )}
+                      <div className="flex flex-col gap-2">
+                        <Label
+                          className="text-base"
+                          htmlFor="webSearchNumResults"
+                        >
+                          Web Search Results
+                        </Label>
+                        <InputNumber
+                          id="webSearchNumResults"
+                          value={
+                            webSearchNumResults ?? defaultWebSearchNumResults
+                          }
+                          min={1}
+                          max={10}
+                          step={1}
+                          onChange={setWebSearchNumResults}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -314,7 +289,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 webSearchNumResults={
                   isAdvancedOpen ? webSearchNumResults : undefined
                 }
-                ragMaxResources={isAdvancedOpen ? ragMaxResources : undefined}
+                ragMaxResources={undefined}
               >
                 <Chat className="flex-1 justify-center" />
               </ChatProvider>
