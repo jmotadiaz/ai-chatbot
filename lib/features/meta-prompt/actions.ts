@@ -41,7 +41,7 @@ export async function refinePrompt({
   let ragCalled = false;
 
   const { text } = await generateText({
-    ...languageModelConfigurations("Grok 4.1 Fast"),
+    ...languageModelConfigurations("Gemini 3 Flash"),
     system: `
       ${metaPrompt}
       ${metaPromptInputFormat}

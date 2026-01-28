@@ -25,7 +25,7 @@ export const ActiveToolsPill = ({
   if (visibleTools.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {visibleTools.map((tool) => {
         const config = getToolConfig(tool);
         if (!config) return null;
@@ -34,11 +34,11 @@ export const ActiveToolsPill = ({
         return (
           <div
             key={tool}
-            className="flex items-center font-medium gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full border-2 border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 font-medium select-none"
+            className="flex items-center gap-1.5 text-xs text-zinc-800 dark:text-zinc-300 select-none"
             data-testid={`active-tool-pill-${tool}`}
           >
-            <Icon size={12} />
-            <span>{config.label}</span>
+            <Icon size={14} />
+            <span className="hidden md:inline font-medium">{config.label}</span>
             <span className="cursor-pointer" onClick={() => onDeleteTool(tool)}>
               <X className="w-3 h-3" />
             </span>
