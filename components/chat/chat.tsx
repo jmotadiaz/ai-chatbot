@@ -35,7 +35,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     tools,
     toggleTool,
     hasTool,
-    metaPrompt,
+    refinePromptMode,
     projectId,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
@@ -43,8 +43,9 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
       input,
       setInput,
       messages,
-      metaPrompt,
+      mode: refinePromptMode,
       status,
+      projectId,
     });
   const modelConfig = getChatConfigurationByModelId(selectedModel);
 
@@ -106,7 +107,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
                 aria-label="Undo refined prompt"
               />
             )}
-            {metaPrompt && (
+            {refinePromptMode && (
               <ChatControl
                 Icon={WandSparkles}
                 onClick={refinePrompt}

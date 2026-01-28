@@ -6,7 +6,6 @@ import {
   defaultRagMaxResources,
 } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { filterTools } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
@@ -56,7 +55,7 @@ const Page: React.FC<ProjectPageProps> = async ({
           topP: project.defaultTopP ?? undefined,
           topK: project.defaultTopK ?? undefined,
           systemPrompt: project.systemPrompt,
-          metaPrompt: project.hasPromptRefiner ? defaultMetaPrompt : null,
+          refinePromptMode: project.hasPromptRefiner ? "project" : undefined,
           title: project.name,
           tools: filterTools(project.tools || []),
           webSearchNumResults:

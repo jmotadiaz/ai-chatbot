@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
-import { systemMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { createProject, updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
 import {
@@ -118,7 +117,7 @@ export const useHandleProjectForm = ({
     usePromptRefiner({
       input: systemPrompt,
       setInput: setSystemPrompt,
-      metaPrompt: systemMetaPrompt,
+      mode: "project",
       projectId: project?.id,
     });
 

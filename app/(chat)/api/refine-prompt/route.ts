@@ -2,7 +2,7 @@ import { auth } from "@/lib/features/auth/auth-config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/features/chat/utils";
 import { refinePrompt } from "@/lib/features/meta-prompt/actions";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
+import type { RefinePromptMode } from "@/lib/features/meta-prompt/types";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -13,12 +13,12 @@ export async function POST(req: Request) {
   const {
     message,
     messages,
-    metaPrompt = defaultMetaPrompt,
+    mode,
     projectId,
   }: {
     message: ChatbotMessage;
-    messages?: ChatbotMessage[]; // Using generic type from features/chat/types matching route expectation
-    metaPrompt?: string;
+    messages?: ChatbotMessage[];
+    mode?: RefinePromptMode;
     projectId?: string;
   } = await req.json();
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const text = await refinePrompt({
     input,
     messages,
-    metaPrompt,
+    mode,
     projectId,
     userId: session.user.id,
   });

@@ -2,12 +2,13 @@ import type { UseChatHelpers } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
 import { useGeneratedText } from "@/lib/utils/hooks/use-generated-text";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { RefinePromptMode } from "@/lib/features/meta-prompt/types";
 
 export interface UsePromptRefinerParams {
   input: string;
   setInput: (value: string) => void;
   messages?: ChatbotMessage[];
-  metaPrompt?: string | null;
+  mode?: RefinePromptMode;
   status?: UseChatHelpers<never>["status"];
   projectId?: string;
 }
@@ -23,7 +24,7 @@ export const usePromptRefiner = ({
   input,
   setInput,
   messages,
-  metaPrompt,
+  mode,
   status,
   projectId,
 }: UsePromptRefinerParams): UsePromptRefinerReturn => {
@@ -39,7 +40,7 @@ export const usePromptRefiner = ({
       prompt: input,
       body: {
         messages: messages || null,
-        metaPrompt: metaPrompt || null,
+        mode,
         projectId,
       },
       onFinish: (generatedText) => {

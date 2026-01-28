@@ -2,7 +2,6 @@
 
 import React, { Suspense } from "react";
 import { Globe, Save, Undo, WandSparkles } from "lucide-react";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
@@ -309,7 +308,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 selectedModel={model}
                 systemPrompt={systemPrompt}
                 tools={tools}
-                metaPrompt={hasPromptRefiner ? defaultMetaPrompt : undefined}
+                refinePromptMode={hasPromptRefiner ? "project" : undefined}
                 title={title}
                 preventChatPersistence={true}
                 webSearchNumResults={

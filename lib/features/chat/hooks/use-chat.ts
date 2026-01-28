@@ -35,6 +35,7 @@ import type {
 } from "@/lib/features/chat/types";
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 import { FilePart } from "@/lib/features/attachment/types";
+import type { RefinePromptMode } from "@/lib/features/meta-prompt/types";
 
 export interface UseChatArgs {
   initialMessages?: ChatbotMessage[];
@@ -46,7 +47,7 @@ export interface UseChatArgs {
   topP?: number;
   topK?: number;
   systemPrompt?: string;
-  metaPrompt?: string | null;
+  refinePromptMode?: RefinePromptMode;
   title?: string;
   tools?: Tools;
   preventChatPersistence?: boolean;
@@ -56,12 +57,9 @@ export interface UseChatArgs {
 }
 
 export interface UseChatResult
-  extends UseChatHelpers<ChatbotMessage>,
-    ChatConfig,
-    ChatTools,
-    InputState {
+  extends UseChatHelpers<ChatbotMessage>, ChatConfig, ChatTools, InputState {
   selectedModel: chatModelId;
-  metaPrompt?: string | null;
+  refinePromptMode?: RefinePromptMode;
   chatId?: string;
   title?: string;
   projectId?: string;
@@ -81,7 +79,7 @@ export const useChat = ({
   topP,
   topK,
   systemPrompt,
-  metaPrompt,
+  refinePromptMode,
   chatId,
   isNewChat = false,
   projectId,
@@ -171,7 +169,7 @@ export const useChat = ({
     ...chatResult,
     ...chatConfig,
     projectId,
-    metaPrompt,
+    refinePromptMode,
     chatId,
     setConfig,
     input,

@@ -8,7 +8,6 @@ import {
 } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 import {
   filterTools,
   dbMessageToChatbotMessage,
@@ -19,6 +18,7 @@ import {
   type Authenticated,
 } from "@/lib/features/auth/with-auth/hoc";
 import { ChatLifecycleShell } from "@/components/chat/lifecycle-shell";
+import type { RefinePromptMode } from "@/lib/features/meta-prompt/types";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -44,10 +44,10 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
       })
     : null;
 
-  let metaPrompt: string | null = defaultMetaPrompt;
+  let refinePromptMode: RefinePromptMode | undefined = "chat";
 
-  if (project && !project.hasPromptRefiner) {
-    metaPrompt = null;
+  if (project) {
+    refinePromptMode = project.hasPromptRefiner ? "project" : undefined;
   }
 
   // Convert to UI messages format
@@ -67,7 +67,7 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
           systemPrompt: project ? project.systemPrompt : undefined,
           initialMessages,
           tools: filterTools(chat.tools || []),
-          metaPrompt: metaPrompt,
+          refinePromptMode,
           webSearchNumResults:
             chat.webSearchNumResults ?? defaultWebSearchNumResults,
           ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,

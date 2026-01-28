@@ -5,7 +5,6 @@ import {
   defaultRagSimilarityPercentage,
   defaultRagMaxResources,
 } from "@/lib/features/foundation-model/config";
-import { defaultMetaPrompt } from "@/lib/features/meta-prompt/prompts";
 
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 
@@ -14,7 +13,7 @@ export const ChatHomeComponent: React.FC = () => {
     <ChatLayout
       chatConfig={{
         selectedModel: defaultModel,
-        metaPrompt: defaultMetaPrompt,
+        refinePromptMode: "chat",
         webSearchNumResults: defaultWebSearchNumResults,
         ragSimilarityPercentage: defaultRagSimilarityPercentage,
         ragMaxResources: defaultRagMaxResources,
