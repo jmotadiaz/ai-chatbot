@@ -350,33 +350,34 @@ const SourceMessagePartContent: React.FC<{
   const { getCollapseProps } = useCollapse({ isExpanded });
 
   return (
-    <div
-      className="flex flex-col space-y-2 text-sm ml-2 pl-3 my-2 py-1 border-l-4 border-secondary overflow-hidden"
-      {...getCollapseProps()}
-    >
-      {sourceParts.map((part) => (
-        <React.Fragment key={part.sourceId}>
-          {part.type === "source-url" ? (
-            <a
-              href={part.url}
-              className="font-semibold flex items-center space-x-2 text-zinc-500 dark:text-zinc-400 hover:underline cursor-pointer"
-              target="_blank"
-            >
-              <span>
-                <LinkIcon className="h-4 w-4" />
-              </span>
-              <span>{part.title || part.url}</span>
-            </a>
-          ) : (
-            <div className="font-semibold flex items-center space-x-2 text-zinc-500 dark:text-zinc-400">
-              <span>
-                <Book className="h-4 w-4" />
-              </span>
-              <span>{part.title}</span>
-            </div>
-          )}
-        </React.Fragment>
-      ))}
+    <div {...getCollapseProps()}>
+      <div className="py-2 pl-2">
+        <div className="flex flex-col space-y-2 text-sm pl-3 py-1 border-l-4 border-secondary overflow-hidden">
+          {sourceParts.map((part) => (
+            <React.Fragment key={part.sourceId}>
+              {part.type === "source-url" ? (
+                <a
+                  href={part.url}
+                  className="font-semibold flex items-center space-x-2 text-zinc-500 dark:text-zinc-400 hover:underline cursor-pointer"
+                  target="_blank"
+                >
+                  <span>
+                    <LinkIcon className="h-4 w-4" />
+                  </span>
+                  <span>{part.title || part.url}</span>
+                </a>
+              ) : (
+                <div className="font-semibold flex items-center space-x-2 text-zinc-500 dark:text-zinc-400">
+                  <span>
+                    <Book className="h-4 w-4" />
+                  </span>
+                  <span>{part.title}</span>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
@@ -412,17 +413,19 @@ const RouterDetailsContent: React.FC<{
   const { getCollapseProps } = useCollapse({ isExpanded });
   return (
     <div className="overflow-hidden" {...getCollapseProps()}>
-      <div className="flex flex-col space-y-1 text-sm ml-2 pl-3 my-2 text-zinc-500 dark:text-zinc-400 py-1 border-l-4 border-secondary">
-        <div>
-          <span className="font-semibold">Category:</span>{" "}
-          {capitalize(metadata.category)}
-        </div>
-        <div>
-          <span className="font-semibold">Complexity:</span>{" "}
-          {capitalize(metadata.complexity)}
-        </div>
-        <div>
-          <span className="font-semibold">Model:</span> {metadata.model}
+      <div className="py-2 pl-2">
+        <div className="flex flex-col space-y-1 text-sm pl-3 text-zinc-500 dark:text-zinc-400 py-1 border-l-4 border-secondary">
+          <div>
+            <span className="font-semibold">Category:</span>{" "}
+            {capitalize(metadata.category)}
+          </div>
+          <div>
+            <span className="font-semibold">Complexity:</span>{" "}
+            {capitalize(metadata.complexity)}
+          </div>
+          <div>
+            <span className="font-semibold">Model:</span> {metadata.model}
+          </div>
         </div>
       </div>
     </div>

@@ -1,119 +1,48 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useTransition } from "react";
+import React from "react";
 import { Plus, Trash2, Search, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  addResourceToProjectAction,
-  removeResourceFromProjectAction,
-  getProjectResourcesAction,
-  getUserResourcesNotInProjectAction,
-} from "@/lib/features/rag/actions";
 import { RAGUploadForm } from "@/components/rag/upload-form";
-
-interface Resource {
-  id: string;
-  title: string;
-  url: string | null;
-}
+import type { Resource } from "@/lib/features/project/hooks/use-project-resources";
+import { useResourceMutations } from "@/lib/features/project/hooks/use-resource-mutations";
 
 interface ProjectResourcesTabProps {
   projectId: string;
+  projectResources: Resource[];
+  setProjectResources: React.Dispatch<React.SetStateAction<Resource[]>>;
+  isLoadingProject: boolean;
+  loadProjectResources: () => Promise<void>;
+  availableResources: Resource[];
+  setAvailableResources: React.Dispatch<React.SetStateAction<Resource[]>>;
+  searchFilter: string;
+  setSearchFilter: React.Dispatch<React.SetStateAction<string>>;
+  isLoadingAvailable: boolean;
+  loadAvailableResources: (filter?: string) => Promise<void>;
 }
 
 export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
   projectId,
+  projectResources,
+  setProjectResources,
+  isLoadingProject,
+  loadProjectResources,
+  availableResources,
+  setAvailableResources,
+  searchFilter,
+  setSearchFilter,
+  isLoadingAvailable,
+  loadAvailableResources,
 }) => {
-  const [projectResources, setProjectResources] = useState<Resource[]>([]);
-  const [availableResources, setAvailableResources] = useState<Resource[]>([]);
-  const [searchFilter, setSearchFilter] = useState("");
-  const [isLoadingProject, setIsLoadingProject] = useState(true);
-  const [isLoadingAvailable, setIsLoadingAvailable] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const loadProjectResources = useCallback(async () => {
-    setIsLoadingProject(true);
-    try {
-      const { resources } = await getProjectResourcesAction({
-        projectId,
-        limit: 50,
-        offset: 0,
-      });
-      setProjectResources(resources);
-    } catch (error) {
-      console.error("Failed to load project resources:", error);
-    } finally {
-      setIsLoadingProject(false);
-    }
-  }, [projectId]);
-
-  const loadAvailableResources = useCallback(
-    async (filter?: string) => {
-      setIsLoadingAvailable(true);
-      try {
-        const { resources } = await getUserResourcesNotInProjectAction({
-          projectId,
-          limit: 50,
-          offset: 0,
-          filter,
-        });
-        setAvailableResources(resources);
-      } catch (error) {
-        console.error("Failed to load available resources:", error);
-      } finally {
-        setIsLoadingAvailable(false);
-      }
-    },
-    [projectId],
-  );
-
-  useEffect(() => {
-    loadProjectResources();
-  }, [loadProjectResources]);
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      loadAvailableResources(searchFilter);
-    }, 300);
-    return () => clearTimeout(debounce);
-  }, [searchFilter, loadAvailableResources]);
-
-  const handleAddResource = (resource: Resource) => {
-    startTransition(async () => {
-      try {
-        const result = await addResourceToProjectAction(resource.id, projectId);
-        if (result.success) {
-          setProjectResources((prev) => [...prev, resource]);
-          setAvailableResources((prev) =>
-            prev.filter((r) => r.id !== resource.id),
-          );
-        }
-      } catch (error) {
-        console.error("Failed to add resource to project:", error);
-      }
+  const { isPending, handleAddResource, handleRemoveResource } =
+    useResourceMutations({
+      projectId,
+      setProjectResources,
+      setAvailableResources,
+      loadAvailableResources,
+      searchFilter,
     });
-  };
-
-  const handleRemoveResource = (resource: Resource) => {
-    startTransition(async () => {
-      try {
-        const result = await removeResourceFromProjectAction(
-          resource.id,
-          projectId,
-        );
-        if (result.success) {
-          setProjectResources((prev) =>
-            prev.filter((r) => r.id !== resource.id),
-          );
-          // Optionally refresh available resources
-          loadAvailableResources(searchFilter);
-        }
-      } catch (error) {
-        console.error("Failed to remove resource from project:", error);
-      }
-    });
-  };
 
   return (
     <div className="flex flex-col gap-6 pb-8 lg:px-4">
