@@ -15,11 +15,11 @@ type SupportedLanguages = (typeof SupportedTextSplitterLanguages)[number];
 
 // Cohere rerank-v3.5 supports up to 4096 tokens (~14-16K chars)
 // Using aggressive limits to maximize context per chunk
-const MIN_PARENT_SIZE = 500; // Minimum size to avoid tiny useless chunks
-const PARENT_CHUNK_SIZE = 8000; // ~2000 tokens - good balance
-const HARD_LIMIT = 12000; // ~3000 tokens - max before forcing split
-const CHILD_CHUNK_SIZE = 400;
-const CHILD_OVERLAP = 50;
+const MIN_PARENT_SIZE = 500; 
+const PARENT_CHUNK_SIZE = 5000;
+const HARD_LIMIT = 8000; 
+const CHILD_CHUNK_SIZE = 600;
+const CHILD_OVERLAP = 100;
 
 // Splitter para generar los hijos (vectores de búsqueda)
 const childSplitter = new RecursiveCharacterTextSplitter({
