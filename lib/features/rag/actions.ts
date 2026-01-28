@@ -12,6 +12,8 @@ import {
   removeResourceFromProject,
   getProjectResourcesPaginated,
   getUserResourcesNotInProject,
+  getResourceById,
+  deleteResourceById,
 } from "./queries";
 import { saveUrlResource, saveMarkdownResource } from "./ingestion/pipeline";
 import { auth } from "@/lib/features/auth/auth-config";
@@ -51,17 +53,17 @@ export async function uploadResources(
     }
 
     if (url) {
-      const { success } = await saveUrlResource(
-        {
+      const { success } = await saveUrlResource({
+        urlResource: {
           url,
           container,
           excludeSelectors: excludeSelectors
             ? excludeSelectors.split(",").map((s) => s.trim())
             : undefined,
         },
-        session.user.id,
+        userId: session.user.id,
         projectId,
-      );
+      });
 
       if (success) {
         result.resourcesCreated++;
@@ -114,14 +116,15 @@ export async function uploadResources(
 
           await Promise.all(
             batchUrls.map(async (url) => {
-              const { success } = await saveUrlResource(
-                {
+              const { success } = await saveUrlResource({
+                urlResource: {
                   url,
                   container,
                   excludeSelectors,
                 },
-                session.user.id,
-              );
+                userId: session.user.id,
+                projectId,
+              });
               if (success) {
                 result.resourcesCreated++;
               }
@@ -139,12 +142,12 @@ export async function uploadResources(
           // Use filename without extension as title
           const title = markdownFile.name.replace(/\.md$/i, "");
 
-          const { success } = await saveMarkdownResource(
+          const { success } = await saveMarkdownResource({
             title,
-            fileContent,
-            session.user.id,
+            content: fileContent,
+            userId: session.user.id,
             projectId,
-          );
+          });
 
           if (success) {
             result.resourcesCreated++;
@@ -375,6 +378,27 @@ export async function removeResourceFromProjectAction(
   }
 
   try {
+    // First, check if the resource has a userId
+    const resourceData = await getResourceById(resourceId);
+
+    if (!resourceData) {
+      return { success: false, error: "Resource not found" };
+    }
+
+    // If resource has no userId, it was created only for the project, so delete it completely
+    if (!resourceData.userId) {
+      const [deleted] = await transaction(deleteResourceById({ resourceId }));
+
+      if (deleted.length === 0) {
+        return { success: false, error: "Failed to delete resource" };
+      }
+
+      console.log("Resource deleted successfully");
+
+      return { success: true };
+    }
+
+    // Otherwise, just remove the relationship
     const [result] = await transaction(
       removeResourceFromProject({
         projectId,

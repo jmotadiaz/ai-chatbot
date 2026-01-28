@@ -347,6 +347,36 @@ export const removeResourceFromProject =
     }
   };
 
+export async function getResourceById(
+  resourceId: string,
+): Promise<{ id: string; userId: string | null } | null> {
+  try {
+    const [result] = await getDb()
+      .select({ id: resource.id, userId: resource.userId })
+      .from(resource)
+      .where(eq(resource.id, resourceId))
+      .limit(1);
+    return result ?? null;
+  } catch (error) {
+    console.error("Failed to get resource by id");
+    throw error;
+  }
+}
+
+export const deleteResourceById =
+  ({ resourceId }: { resourceId: string }): Transactional<{ id: string }[]> =>
+  async (tx) => {
+    try {
+      return await tx
+        .delete(resource)
+        .where(eq(resource.id, resourceId))
+        .returning({ id: resource.id });
+    } catch (error) {
+      console.error("Failed to delete resource by id");
+      throw error;
+    }
+  };
+
 export async function getProjectResourcesPaginated({
   projectId,
   limit,

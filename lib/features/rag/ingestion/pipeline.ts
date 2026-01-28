@@ -6,11 +6,15 @@ import { generateChunks } from "./chunking";
 import { transaction } from "@/lib/infrastructure/db/queries";
 import type { InsertChunk } from "@/lib/infrastructure/db/schema";
 
-export const saveUrlResource = async (
-  urlResource: UrlResource,
-  userId: string,
-  projectId?: string,
-): Promise<{ success: boolean }> => {
+export const saveUrlResource = async ({
+  urlResource,
+  userId,
+  projectId,
+}: {
+  urlResource: UrlResource;
+  userId: string;
+  projectId?: string;
+}): Promise<{ success: boolean }> => {
   const resource = await fetchAndConvertURL(urlResource);
 
   if (!resource) {
@@ -22,7 +26,7 @@ export const saveUrlResource = async (
     const newResource = await saveResource({
       title: resource.title,
       url: resource.url,
-      userId,
+      userId: !!projectId ? undefined : userId,
       projectId,
     })(tx);
 
@@ -73,18 +77,23 @@ export const saveUrlResource = async (
   return result;
 };
 
-export const saveMarkdownResource = async (
-  title: string,
-  content: string,
-  userId: string,
-  projectId?: string,
-): Promise<{ success: boolean }> => {
+export const saveMarkdownResource = async ({
+  title,
+  content,
+  projectId,
+  userId,
+}: {
+  title: string;
+  content: string;
+  userId: string;
+  projectId?: string;
+}): Promise<{ success: boolean }> => {
   const [result] = await transaction(async (tx) => {
     // 1. Crear el Recurso (Resource)
     const newResource = await saveResource({
       title,
       url: null,
-      userId,
+      userId: !!projectId ? undefined : userId,
       projectId,
     })(tx);
 
