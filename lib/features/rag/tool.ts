@@ -27,11 +27,11 @@ export const ragFactory = ({
       `,
       inputSchema: z.object({
         queries: z.array(z.string()).min(1).max(3).describe(`
-            Identify one to three distinct core subjects or entities from the user's request.
+            Identify one to three distinct core subjects or entities from the user's request. **Order them by relevance/importance to the user's goal.**
 
             For each subject, generate a targeted, standalone search query following these rules:
 
-            1. **Quantity Limit**: Generate a MAXIMUM of 3 queries. If more than 3 concepts exist, select the top 3 most critical ones.
+            1. **Quantity Limit**: Generate a MAXIMUM of 3 queries. If more than 3 concepts exist, prioritize the top 3 most critical ones.
             2. **Atomic & Isolated Scope**: Strictly isolate distinct technologies, frameworks, or domains. A query describing one core subject MUST NOT mention other core subjects from the request. Example:
                - ** Idenfied Core Contepts**: Node.js and Redis
                - **BAD**: "Optimizing Node.js APIs for Redis caching" (Mixes Node.js and Redis)
@@ -42,7 +42,7 @@ export const ragFactory = ({
             **Example 1**:
             User: *"I need to implement a secure webhook handler in my Node.js Express server to listen for Stripe 'payment_intent.succeeded' events. The handler must verify the Stripe signature to prevent spoofing and then update the user's subscription status in the database asynchronously."*
 
-            **Identified Concepts:**
+            **Identified Concepts (Ordered by Relevance):**
             1. **Stripe Webhooks** (Primary Trigger/Event)
             2. **Express.js** (Implementation Context)
 
@@ -53,7 +53,7 @@ export const ragFactory = ({
             **Example 2**:
             User: *"I need to build a shopping cart feature in React that uses Redux Toolkit for global state management (add/remove items) and fully test the logic with Jest."*
 
-            **Identified Concepts:**
+            **Identified Concepts (Ordered by Relevance):**
             1. **Redux Toolkit** (Core State Logic)
             2. **Jest** (Testing Requirement)
             3. **React** (UI Context)
@@ -66,7 +66,7 @@ export const ragFactory = ({
             **Example 3 (Constraint Handling)**:
             User: *"I want to build a full stack app using Next.js, Tailwind CSS, Supabase for auth and DB, Stripe for payments, and deploy it to Vercel with a Redis cache."*
 
-            **Identified Concepts (Top 3):**
+            **Identified Concepts (Prioritized Top 3):**
             1. **Next.js** (Core Framework)
             2. **Supabase** (Backend Infrastructure)
             3. **Stripe** (Critical Integration)

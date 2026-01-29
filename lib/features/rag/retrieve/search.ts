@@ -166,16 +166,28 @@ export const retrieveResources = async ({
 
   const uniqueResultsMap = new Map<string, SimilarChunk>();
 
-  // Equitable Distribution Strategy
-  // Example: 6 maxRagResources, 3 queries = 2 resources per query.
-  // Round up if not a multiple: Math.ceil(limit / queries.length)
-  const resourcesPerQuery = Math.ceil(limit / queries.length);
+  // Weighted Priority Strategy
+  // 1 query: 100%
+  // 2 queries: 70% / 30%
+  // 3 queries: 50% / 40% / 10%
+  let weights: number[];
+  if (queries.length === 1) {
+    weights = [1.0];
+  } else if (queries.length === 2) {
+    weights = [0.7, 0.3];
+  } else if (queries.length === 3) {
+    weights = [0.5, 0.4, 0.1];
+  } else {
+    weights = new Array(queries.length).fill(1 / queries.length);
+  }
 
   for (let i = 0; i < queries.length; i++) {
     const queryResults = results[i];
+    const weight = weights[i];
+    const queryQuota = Math.floor(limit * weight);
 
     // Slice candidates based on quota
-    const candidates = queryResults.slice(0, resourcesPerQuery);
+    const candidates = queryResults.slice(0, queryQuota);
 
     for (const chunk of candidates) {
       if (!uniqueResultsMap.has(chunk.id)) {
