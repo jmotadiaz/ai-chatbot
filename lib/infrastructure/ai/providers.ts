@@ -63,7 +63,7 @@ export const providers: Providers =
         rerank: () => async (args: RerankArgs) => {
           const response = await cohere.rerank({
             ...args,
-            model: "rerank-v3.5",
+            model: "rerank-v4.0-fast",
           });
 
           return response.results;
