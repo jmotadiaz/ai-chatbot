@@ -1,4 +1,4 @@
-import { Camera, FileText, ImageIcon, Paperclip } from "lucide-react";
+import { Camera, FileSearch, ImageIcon, Paperclip } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ChatControl } from "@/components/chat/control";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
@@ -83,12 +83,8 @@ export const AttachmentsControl: React.FC<AttachmentsControlProps> = ({
             </>
           </>
         )}
-        <Dropdown.Item
-          as={Label}
-          className="text-sm"
-          htmlFor={documentInputId}
-        >
-          <FileText className="w-5 h-5" /> <span>Document</span>
+        <Dropdown.Item as={Label} className="text-sm" htmlFor={documentInputId}>
+          <FileSearch className="w-5 h-5" /> <span>Document</span>
           <input
             id={documentInputId}
             type="file"

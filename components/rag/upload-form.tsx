@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Upload, FileText, Link as LinkIcon } from "lucide-react";
+import { Upload, FileSearch, Link as LinkIcon } from "lucide-react";
 import { uploadResources } from "@/lib/features/rag/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,7 +230,7 @@ export const RAGUploadForm = ({ projectId, onSuccess }: RAGUploadFormProps) => {
                 key={index}
                 className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
               >
-                <FileText className="w-4 h-4 text-blue-500" />
+                <FileSearch className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-semibold">{file.name}</span>
                 <span className="text-xs text-gray-500">
                   ({(file.size / 1024).toFixed(1)} KB)
@@ -247,7 +247,7 @@ export const RAGUploadForm = ({ projectId, onSuccess }: RAGUploadFormProps) => {
                 key={index}
                 className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg"
               >
-                <FileText className="w-4 h-4 text-purple-500" />
+                <FileSearch className="w-4 h-4 text-purple-500" />
                 <span className="text-sm font-semibold">{file.name}</span>
                 <span className="text-xs text-gray-500">
                   ({(file.size / 1024).toFixed(1)} KB)

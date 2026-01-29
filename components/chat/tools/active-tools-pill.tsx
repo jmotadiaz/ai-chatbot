@@ -1,4 +1,4 @@
-import { Database, Globe, Link, X } from "lucide-react";
+import { FileSearch, Globe, Link, X } from "lucide-react";
 import { type Tool } from "@/lib/features/chat/types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import {
@@ -37,7 +37,7 @@ export const ActiveToolsPill = ({
             className="flex items-center gap-1.5 text-xs text-zinc-800 dark:text-zinc-300 select-none"
             data-testid={`active-tool-pill-${tool}`}
           >
-            <Icon size={14} />
+            <Icon className="relative -top-0.5" size={18} />
             <span className="hidden md:inline font-medium">{config.label}</span>
             <span className="cursor-pointer" onClick={() => onDeleteTool(tool)}>
               <X className="w-3 h-3" />
@@ -52,7 +52,7 @@ export const ActiveToolsPill = ({
 const getToolConfig = (tool: Tool) => {
   switch (tool) {
     case RAG_TOOL:
-      return { icon: Database, label: "RAG" };
+      return { icon: FileSearch, label: "RAG" };
     case WEB_SEARCH_TOOL:
       return { icon: Globe, label: "Web Search" };
     case URL_CONTEXT_TOOL:

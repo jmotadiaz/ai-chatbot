@@ -49,7 +49,7 @@ export const NewChatLink: React.FC<NewChatProps> = ({
       className={cn(
         status === "streaming" || status === "submitted"
           ? "pointer-events-none opacity-50"
-          : "cursor-pointer"
+          : "cursor-pointer",
       )}
       onClick={handleClick}
     >
@@ -87,7 +87,7 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
         <div className="flex items-center justify-between">
           <NewChatLink>
             <Item>
-              <Edit className="h-4 w-4" /> New Chat
+              <Edit size={18} /> New Chat
             </Item>
           </NewChatLink>
           <NewChatLink temporary>
@@ -99,7 +99,7 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
 
         <ChatLink href="/chat/hub">
           <Item>
-            <LayoutGrid className="h-4 w-4" /> Chat Hub
+            <LayoutGrid size={18} /> Chat Hub
           </Item>
         </ChatLink>
       </div>

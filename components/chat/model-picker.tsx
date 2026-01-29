@@ -1,6 +1,13 @@
 "use client";
 
-import { FileText, ImageIcon, Plus, Shield, Wrench, Brain } from "lucide-react";
+import {
+  FileSearch,
+  ImageIcon,
+  Plus,
+  Shield,
+  Wrench,
+  Brain,
+} from "lucide-react";
 import { useChatContext } from "@/components/chat/provider";
 import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
@@ -169,14 +176,20 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               switch (supportedFile) {
                 case "img":
                   return (
-                    <div key={`${name}-supported-input-${supportedFile}`} className="ml-1">
+                    <div
+                      key={`${name}-supported-input-${supportedFile}`}
+                      className="ml-1"
+                    >
                       <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );
                 case "pdf":
                   return (
-                    <div key={`${name}-supported-input-${supportedFile}`} className="ml-1">
-                      <FileText key={supportedFile} size={16} />
+                    <div
+                      key={`${name}-supported-input-${supportedFile}`}
+                      className="ml-1"
+                    >
+                      <FileSearch key={supportedFile} size={16} />
                     </div>
                   );
               }
@@ -192,7 +205,10 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
               switch (supportedFile) {
                 case "img":
                   return (
-                    <div key={`${name}-supported-output-${supportedFile}`} className="ml-1">
+                    <div
+                      key={`${name}-supported-output-${supportedFile}`}
+                      className="ml-1"
+                    >
                       <ImageIcon key={supportedFile} size={16} />
                     </div>
                   );

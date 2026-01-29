@@ -1,5 +1,5 @@
 import type { ClassValue } from "clsx";
-import { Wrench, Globe, Database } from "lucide-react";
+import { Wrench, Globe, FileSearch } from "lucide-react";
 import { ActiveToolsPill } from "./active-tools-pill";
 import { ChatControl } from "@/components/chat/control";
 import { Toggle } from "@/components/ui/toggle";
@@ -52,7 +52,10 @@ export const ToolsControl: React.FC<ToolsControlProps> = ({
               checked={hasTool(RAG_TOOL)}
               onChange={() => toggleTool(RAG_TOOL)}
             >
-              <Database className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+              <FileSearch
+                size={18}
+                className="mr-2 text-zinc-600 dark:text-zinc-400"
+              />
               <span className="whitespace-nowrap">RAG (Document Search)</span>
             </Dropdown.Item>
           )}
@@ -63,7 +66,10 @@ export const ToolsControl: React.FC<ToolsControlProps> = ({
             checked={hasTool(WEB_SEARCH_TOOL)}
             onChange={() => toggleTool(WEB_SEARCH_TOOL)}
           >
-            <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+            <Globe
+              size={18}
+              className="mr-2 text-zinc-600 dark:text-zinc-400"
+            />
             <span className="whitespace-nowrap">Web Search</span>
           </Dropdown.Item>
         </Dropdown.Popup>
