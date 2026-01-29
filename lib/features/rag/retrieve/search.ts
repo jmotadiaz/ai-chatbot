@@ -112,7 +112,8 @@ export async function rerankResources({
 }
 
 export interface RetrieveResourcesInput {
-  queries: string[];
+  multiHopQueries: string[];
+  queryRewriting: string;
   previousResources: string[];
   queryType?: QueryType;
   userId: string;
@@ -120,11 +121,12 @@ export interface RetrieveResourcesInput {
   limit?: number;
 }
 
-const K_VECTOR_SEARCHES = 50;
-const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.6;
+const K_VECTOR_SEARCHES = 10;
+const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 export const retrieveResources = async ({
-  queries,
+  multiHopQueries,
+  queryRewriting,
   previousResources,
   queryType,
   userId,
@@ -132,9 +134,8 @@ export const retrieveResources = async ({
   limit = 6,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
   const results = await Promise.all(
-    queries.map(async (query) => {
-      // 1. Vector Search
-      const vectorRes = await vectorSearch({
+    multiHopQueries.map((query) =>
+      vectorSearch({
         query,
         queryType,
         userId,
@@ -142,54 +143,37 @@ export const retrieveResources = async ({
         limit: K_VECTOR_SEARCHES,
         similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
         previousChunkIds: previousResources,
-      });
-
-      if (!vectorRes.success || !vectorRes.similarChunks) {
-        console.warn(
-          `Vector search failed for query: "${query}"`,
-          vectorRes.error,
-        );
-        return [];
-      }
-
-      // 2. Rerank
-      // Request 'limit' to have enough candidates for deduplication fallback
-      const reranked = await rerankResources({
-        query,
-        resources: vectorRes.similarChunks,
-        topN: limit,
-      });
-
-      return reranked;
-    }),
+      }),
+    ),
   );
 
-  const uniqueResultsMap = new Map<string, SimilarChunk>();
+  const vectorSearchResults: SimilarChunks = [];
 
-  // Equitable Distribution Strategy
-  // Example: 6 maxRagResources, 3 queries = 2 resources per query.
-  // Round up if not a multiple: Math.ceil(limit / queries.length)
-  const resourcesPerQuery = Math.ceil(limit / queries.length);
-
-  for (let i = 0; i < queries.length; i++) {
-    const queryResults = results[i];
-
-    // Slice candidates based on quota
-    const candidates = queryResults.slice(0, resourcesPerQuery);
-
-    for (const chunk of candidates) {
-      if (!uniqueResultsMap.has(chunk.id)) {
-        uniqueResultsMap.set(chunk.id, chunk);
-      }
+  for (const result of results) {
+    if (result.success && result.similarChunks) {
+      vectorSearchResults.push(...result.similarChunks);
+    } else if (!result.success) {
+      console.warn("One of the RAG queries failed:", result.error);
     }
   }
 
-  return Array.from(uniqueResultsMap.values()).map(
-    ({ id, content, resourceTitle, resourceUrl }) => ({
+  if (vectorSearchResults.length === 0) {
+    console.error("No resources or similar chunks found for any query");
+    return [];
+  }
+
+  const finalResults = await rerankResources({
+    query: queryRewriting,
+    resources: vectorSearchResults,
+    topN: limit,
+  });
+
+  return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {
+    return {
       id,
       resourceTitle,
       resourceUrl,
       content,
-    }),
-  );
+    };
+  });
 };
