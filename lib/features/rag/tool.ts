@@ -32,8 +32,11 @@ export const ragFactory = ({
             For each subject, generate a targeted, standalone search query following these rules:
 
             1. **Quantity Limit**: Generate a MAXIMUM of 3 queries. If more than 3 concepts exist, prioritize the top 3 most critical ones.
-            2. **Focused Scope**: Isolate distinct domains or tasks. Split combined requests (e.g., "React and SQL") into separate queries, ensuring each query targets a single core subject while retaining the original query context.
-            3. **Descriptive**: Generate detailed, self-contained queries for each isolated subject. Fully capture the semantic depth and constraints of the user's intent, resolving all implicit references (pronouns) so the query is comprehensive and executable without external history.
+            2. **Atomic & Isolated Scope**: Strictly isolate distinct technologies, frameworks, or domains. A query describing one core subject MUST NOT mention other core subjects from the request. Example:
+               - ** Idenfied Core Contepts**: Node.js and Redis
+               - **BAD**: "Optimizing Node.js APIs for Redis caching" (Mixes Node.js and Redis)
+               - **GOOD**: Query 1: "Node.js API optimization techniques", Query 2: "Redis caching patterns"
+            3. **Descriptive**: Generate detailed, self-contained queries for each isolated subject. Fully capture the semantic depth and constraints of the user's intent, resolving all implicit references (pronouns).
             4. **Language**: Queries MUST be in English.
 
             **Example 1**:
@@ -104,8 +107,6 @@ export const ragFactory = ({
           projectId,
           limit: ragMaxResources,
         });
-
-        console.log("RAG tool returned resources:", resources.length);
 
         return resources;
       },

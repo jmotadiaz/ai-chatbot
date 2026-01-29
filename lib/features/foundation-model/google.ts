@@ -47,7 +47,7 @@ export const GOOGLE_CONFIG = {
       },
     },
   },
-  "Gemini 3 Flash Low": {
+  "Gemini 3 Flash Tools": {
     model: providers.google("gemini-3-flash-preview"),
     company: "google",
     temperature: 1,
@@ -57,7 +57,7 @@ export const GOOGLE_CONFIG = {
     providerOptions: {
       google: {
         thinkingConfig: {
-          thinkingLevel: "low",
+          thinkingLevel: "high",
           includeThoughts: false,
         },
       },
