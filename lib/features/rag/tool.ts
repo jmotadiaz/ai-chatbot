@@ -1,6 +1,6 @@
 import { tool, ToolSet, UIMessage } from "ai";
 import { z } from "zod";
-import { RagChunk } from "./types";
+import { QUERY_TYPES, RagChunk } from "./types";
 import { retrieveResources } from "./retrieve/search";
 import { extractResourceIdsFromMessages } from "./extract-resource-ids";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
@@ -21,18 +21,28 @@ export const ragFactory = ({
   ({
     [RAG_TOOL]: tool({
       description: `
-        Retrieves information from the knowledge base. Use for questions, code examples, or documentation clarification.
+        Primary interface for retrieving information from the knowledge base. Use this tool whenever the user asks technical questions, requests code examples, or needs clarification on concepts documentation.
+
+        CRITICAL: You must decompose the user's request into multiple distinct search angles to ensure full context coverage. The generated queries (multiHopQueries and queryRewriting) must be in English language.
       `,
       inputSchema: z.object({
-        queries: z.array(z.string()).min(1).max(3).describe(`
-            Identify one to three distinct core subjects or entities from the user's request.
+        multiHopQueries: z.array(z.string()).min(1).max(5).describe(`
+            Decompose the user's complex question into 3-5 distinct, atomic sub-queries. Each sub-query should target a specific aspect (e.g., definition, implementation, configuration, error handling) or a prerequisite piece of knowledge needed to answer the main question. \n\nStrategy: \n1. Strip conversational filler.\n2. Focus on high-value technical entities and keywords.\n3. Ensure queries are 'orthogonal' (don't repeat the same search intent twice).
+          `),
+        queryRewriting: z.string().describe(`
+            Generate a single, fully self-contained search query that encapsulates the core user intent.
 
-            For each subject, generate a targeted, standalone search query following these rules:
-
-            1. **Atomic & Isolated Scope**: A query describing one core subject MUST NOT mention the other core subjects.
-            2. **Descriptive**: Generate detailed, self-contained queries for each isolated subject, fully capturing the semantic depth and constraints of the user's intent and resolving all implicit references (pronouns).
-            3. **Language**: Queries MUST be in English.
-        `),
+            Requirements:
+              1. This string will be used for the Reranking step, so it must be a grammatically correct, semantically dense question or statement.
+              2. Identify the main keywords.
+              3. Resolve any pronouns (it, they, this) or ambiguous references based on conversation history (Contextual De-aliasing).
+          `),
+        queryType: z
+          .enum(QUERY_TYPES)
+          .default("RETRIEVAL_QUERY")
+          .describe(
+            "Classify the intent: use 'CODE_RETRIEVAL_QUERY' ONLY if the user explicitly asks for code snippets, implementation examples, or syntax. Use 'RETRIEVAL_QUERY' for concepts, debugging, architectural questions, or general knowledge.",
+          ),
       }),
       outputSchema: z.array(
         z.object({
@@ -45,12 +55,19 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         }),
       ),
-      execute: async ({ queries }): Promise<Array<RagChunk>> => {
-        console.log("RAG tool called with queries:", queries);
+      execute: async ({
+        multiHopQueries,
+        queryRewriting,
+        queryType,
+      }): Promise<Array<RagChunk>> => {
+        console.log("RAG tool called with multiHopQueries:", multiHopQueries);
+        console.log("RAG tool called with queryRewriting:", queryRewriting);
+        console.log("RAG tool called with queryType:", queryType);
 
         const resources = await retrieveResources({
-          queries,
-          queryType: "RETRIEVAL_QUERY",
+          multiHopQueries,
+          queryRewriting,
+          queryType,
           previousResources: [...extractResourceIdsFromMessages(messages)],
           userId,
           projectId,
