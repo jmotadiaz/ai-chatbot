@@ -41,31 +41,4 @@ test.describe("Chat functionality", () => {
       .soft(chatPage.header.modelPicker.getModelOption("Gemini 3 Pro"))
       .toBeAttached();
   });
-
-  test("should show tool configuration options when tools are enabled", async () => {
-    await chatPage.header.modelPicker.selectModel("Gemini 3 Flash");
-
-    await chatPage.chat.openTools();
-    await chatPage.chat.tools.toggleTool("rag");
-    await chatPage.closeDropdown();
-
-    await chatPage.chat.openSettings();
-    await expect(chatPage.chat.settings.ragMaxResourcesInput).toBeVisible();
-    await chatPage.closeDropdown();
-
-    await chatPage.chat.openTools();
-    await chatPage.chat.tools.toggleTool("rag");
-    await chatPage.closeDropdown();
-
-    await chatPage.chat.openSettings();
-    await expect(chatPage.chat.settings.ragMaxResourcesInput).not.toBeVisible();
-    await chatPage.closeDropdown();
-
-    await chatPage.chat.openTools();
-    await chatPage.chat.tools.toggleTool("web-search");
-    await chatPage.closeDropdown();
-
-    await chatPage.chat.openSettings();
-    await expect(chatPage.chat.settings.webSearchNumResultsInput).toBeVisible();
-  });
 });

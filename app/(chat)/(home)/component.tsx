@@ -2,7 +2,6 @@ import React from "react";
 import {
   defaultModel,
   defaultWebSearchNumResults,
-  defaultRagSimilarityPercentage,
   defaultRagMaxResources,
 } from "@/lib/features/foundation-model/config";
 
@@ -15,7 +14,6 @@ export const ChatHomeComponent: React.FC = () => {
         selectedModel: defaultModel,
         refinePromptMode: "chat",
         webSearchNumResults: defaultWebSearchNumResults,
-        ragSimilarityPercentage: defaultRagSimilarityPercentage,
         ragMaxResources: defaultRagMaxResources,
         tools: [],
       }}

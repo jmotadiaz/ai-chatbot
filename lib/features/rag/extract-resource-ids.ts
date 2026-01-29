@@ -9,13 +9,13 @@ import type { RagTool } from "./tool";
 type RagSource = ToolUIPart<InferUITools<RagTool>> | StepResult<ToolSet>;
 
 function isToolUIPart(
-  source: RagSource
+  source: RagSource,
 ): source is ToolUIPart<InferUITools<RagTool>> {
   return "output" in source && !("toolResults" in source);
 }
 
 function isRagMessagePart(
-  part: UIMessage["parts"][number]
+  part: UIMessage["parts"][number],
 ): part is ToolUIPart<InferUITools<RagTool>> {
   return part.type === "tool-rag";
 }
@@ -36,16 +36,20 @@ function extractResourceIdsFromSource(source: RagSource): Set<string> {
   }
 
   // Handle StepResult from prepareStep
-  const resourceIds = new Set<string>();
-  for (const toolResult of source.toolResults) {
-    if (toolResult.toolName === RAG_TOOL && toolResult.output) {
-      const output = toolResult.output as RagChunk[];
-      for (const resource of output) {
-        resourceIds.add(resource.id);
+  if (source.toolResults) {
+    const resourceIds = new Set<string>();
+    for (const toolResult of source.toolResults) {
+      if (toolResult.toolName === RAG_TOOL && toolResult.output) {
+        const output = toolResult.output as RagChunk[];
+        for (const resource of output) {
+          resourceIds.add(resource.id);
+        }
       }
     }
+    return resourceIds;
   }
-  return resourceIds;
+
+  return new Set<string>();
 }
 
 /**
@@ -65,7 +69,7 @@ export function extractResourceIds(sources: RagSource[]): Set<string> {
  * Extracts resource IDs from UIMessages containing RAG tool parts.
  */
 export function extractResourceIdsFromMessages(
-  messages: UIMessage[]
+  messages: UIMessage[],
 ): Set<string> {
   const ragParts: ToolUIPart<InferUITools<RagTool>>[] = [];
 

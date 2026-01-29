@@ -24,7 +24,10 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   title,
   reload,
 }) => {
-  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(messages);
+  const { previousMessages, lastTurnMessages } = useChatMessagesTurns(
+    messages,
+    status,
+  );
 
   const {
     showPrev,

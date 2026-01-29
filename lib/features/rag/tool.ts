@@ -21,21 +21,58 @@ export const ragFactory = ({
   ({
     [RAG_TOOL]: tool({
       description: `
-        Primary interface for retrieving information from the knowledge base. Use this tool whenever the user asks technical questions, requests code examples, or needs clarification on concepts documentation.
+        Retrieves information from the knowledge base. Use for questions, code examples, or documentation clarification.
 
-        CRITICAL: You must decompose the user's request into multiple distinct search angles to ensure full context coverage. The generated queries (multiHopQueries and queryRewriting) must be in English language.
+        CRITICAL: Decompose the request into distinct, fundamental core concepts. Generate parallel, self-contained search queries where each query focuses on a single concept (3 maximum). Queries MUST be in English.
       `,
       inputSchema: z.object({
-        multiHopQueries: z.array(z.string()).min(1).max(5).describe(`
-            Decompose the user's complex question into 3-5 distinct, atomic sub-queries. Each sub-query should target a specific aspect (e.g., definition, implementation, configuration, error handling) or a prerequisite piece of knowledge needed to answer the main question. \n\nStrategy: \n1. Strip conversational filler.\n2. Focus on high-value technical entities and keywords.\n3. Ensure queries are 'orthogonal' (don't repeat the same search intent twice).
-          `),
-        queryRewriting: z.string().describe(`
-            Generate a single, fully self-contained search query that encapsulates the core user intent.
+        queries: z.array(z.string()).min(1).max(3).describe(`
+            Identify one to three distinct core subjects or entities from the user's request. **Order them by relevance/importance to the user's goal.**
 
-            Requirements:
-              1. This string will be used for the Reranking step, so it must be a grammatically correct, semantically dense question or statement.
-              2. Identify the main keywords.
-              3. Resolve any pronouns (it, they, this) or ambiguous references based on conversation history (Contextual De-aliasing).
+            For each subject, generate a targeted, standalone search query following these rules:
+
+            1. **Quantity Limit**: Generate a MAXIMUM of 3 queries. If more than 3 concepts exist, prioritize the top 3 most critical ones.
+            2. **Focused Scope**: Isolate distinct domains or tasks. Split combined requests (e.g., "React and SQL") into separate queries, ensuring each query targets a single core subject while retaining the original query context.
+            3. **Descriptive**: Generate detailed, self-contained queries for each isolated subject. Fully capture the semantic depth and constraints of the user's intent, resolving all implicit references (pronouns) so the query is comprehensive and executable without external history.
+            4. **Language**: Queries MUST be in English.
+
+            **Example 1**:
+            User: *"I need to implement a secure webhook handler in my Node.js Express server to listen for Stripe 'payment_intent.succeeded' events. The handler must verify the Stripe signature to prevent spoofing and then update the user's subscription status in the database asynchronously."*
+
+            **Identified Concepts (Ordered by Relevance):**
+            1. **Stripe Webhooks** (Primary Trigger/Event)
+            2. **Express.js** (Implementation Context)
+
+            Queries:
+            1. "Documentation on verifying signatures and parsing event payloads for Stripe webhooks."
+            2. "Guide to configuring middleware and secure route handlers for asynchronous events in Express.js applications."
+
+            **Example 2**:
+            User: *"I need to build a shopping cart feature in React that uses Redux Toolkit for global state management (add/remove items) and fully test the logic with Jest."*
+
+            **Identified Concepts (Ordered by Relevance):**
+            1. **Redux Toolkit** (Core State Logic)
+            2. **Jest** (Testing Requirement)
+            3. **React** (UI Context)
+
+            Queries:
+            1. "Guide to configuring Redux Toolkit slices and selectors for managing global application state."
+            2. "Documentation and examples for writing unit tests for Javascript state logic and components using Jest."
+            3. "Best practices for building responsive shopping cart user interfaces and component structures in React."
+
+            **Example 3 (Constraint Handling)**:
+            User: *"I want to build a full stack app using Next.js, Tailwind CSS, Supabase for auth and DB, Stripe for payments, and deploy it to Vercel with a Redis cache."*
+
+            **Identified Concepts (Prioritized Top 3):**
+            1. **Next.js** (Core Framework)
+            2. **Supabase** (Backend Infrastructure)
+            3. **Stripe** (Critical Integration)
+            *(Tailwind, Vercel, and Redis are omitted to strictly adhere to the 3-query limit)*
+
+            Queries:
+            1. "Guide to building full stack applications with Next.js App Router and server components."
+            2. "Documentation on setting up authentication and database schemas with Supabase."
+            3. "Integration guide for processing payments with Stripe in a Next.js application."
           `),
         queryType: z
           .enum(QUERY_TYPES)
@@ -55,24 +92,20 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         }),
       ),
-      execute: async ({
-        multiHopQueries,
-        queryRewriting,
-        queryType,
-      }): Promise<Array<RagChunk>> => {
-        console.log("RAG tool called with multiHopQueries:", multiHopQueries);
-        console.log("RAG tool called with queryRewriting:", queryRewriting);
+      execute: async ({ queries, queryType }): Promise<Array<RagChunk>> => {
+        console.log("RAG tool called with queries:", queries);
         console.log("RAG tool called with queryType:", queryType);
 
         const resources = await retrieveResources({
-          multiHopQueries,
-          queryRewriting,
+          queries,
           queryType,
           previousResources: [...extractResourceIdsFromMessages(messages)],
           userId,
           projectId,
           limit: ragMaxResources,
         });
+
+        console.log("RAG tool returned resources:", resources.length);
 
         return resources;
       },

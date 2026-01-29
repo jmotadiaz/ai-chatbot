@@ -47,6 +47,22 @@ export const GOOGLE_CONFIG = {
       },
     },
   },
+  "Gemini 3 Flash Low": {
+    model: providers.google("gemini-3-flash-preview"),
+    company: "google",
+    temperature: 1,
+    supportedFiles: ["img", "pdf"],
+    nativeToolCalling: true,
+    reasoning: true,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingLevel: "low",
+          includeThoughts: false,
+        },
+      },
+    },
+  },
   "Gemini 3 Pro": {
     model: providers.gateway("google/gemini-3-pro-preview"),
     company: "google",

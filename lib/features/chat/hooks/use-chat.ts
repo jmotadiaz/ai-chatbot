@@ -51,7 +51,6 @@ export interface UseChatArgs {
   title?: string;
   tools?: Tools;
   preventChatPersistence?: boolean;
-  ragSimilarityPercentage?: number;
   ragMaxResources?: number;
   webSearchNumResults?: number;
 }

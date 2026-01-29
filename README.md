@@ -126,7 +126,6 @@ To adjust values in code for a chat session, pass them to `ChatProvider`:
 ```tsx
 <ChatProvider
   temperature={0.7}
-  ragSimilarityPercentage={70}
   ragMaxResources={8}
   webSearchNumResults={5}
   /* other props */

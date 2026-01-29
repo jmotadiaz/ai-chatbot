@@ -112,8 +112,7 @@ export async function rerankResources({
 }
 
 export interface RetrieveResourcesInput {
-  multiHopQueries: string[];
-  queryRewriting: string;
+  queries: string[];
   previousResources: string[];
   queryType?: QueryType;
   userId: string;
@@ -121,12 +120,11 @@ export interface RetrieveResourcesInput {
   limit?: number;
 }
 
-const K_VECTOR_SEARCHES = 10;
-const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
+const K_VECTOR_SEARCHES = 50;
+const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.6;
 
 export const retrieveResources = async ({
-  multiHopQueries,
-  queryRewriting,
+  queries,
   previousResources,
   queryType,
   userId,
@@ -134,8 +132,9 @@ export const retrieveResources = async ({
   limit = 6,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
   const results = await Promise.all(
-    multiHopQueries.map((query) =>
-      vectorSearch({
+    queries.map(async (query) => {
+      // 1. Vector Search
+      const vectorRes = await vectorSearch({
         query,
         queryType,
         userId,
@@ -143,37 +142,66 @@ export const retrieveResources = async ({
         limit: K_VECTOR_SEARCHES,
         similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
         previousChunkIds: previousResources,
-      }),
-    ),
+      });
+
+      if (!vectorRes.success || !vectorRes.similarChunks) {
+        console.warn(
+          `Vector search failed for query: "${query}"`,
+          vectorRes.error,
+        );
+        return [];
+      }
+
+      // 2. Rerank
+      // Request 'limit' to have enough candidates for deduplication fallback
+      const reranked = await rerankResources({
+        query,
+        resources: vectorRes.similarChunks,
+        topN: limit,
+      });
+
+      return reranked;
+    }),
   );
 
-  const vectorSearchResults: SimilarChunks = [];
+  const uniqueResultsMap = new Map<string, SimilarChunk>();
 
-  for (const result of results) {
-    if (result.success && result.similarChunks) {
-      vectorSearchResults.push(...result.similarChunks);
-    } else if (!result.success) {
-      console.warn("One of the RAG queries failed:", result.error);
+  // Weighted Priority Strategy
+  // 1 query: 100%
+  // 2 queries: 70% / 30%
+  // 3 queries: 50% / 40% / 10%
+  let weights: number[];
+  if (queries.length === 1) {
+    weights = [1.0];
+  } else if (queries.length === 2) {
+    weights = [0.7, 0.3];
+  } else if (queries.length === 3) {
+    weights = [0.5, 0.4, 0.1];
+  } else {
+    weights = new Array(queries.length).fill(1 / queries.length);
+  }
+
+  for (let i = 0; i < queries.length; i++) {
+    const queryResults = results[i];
+    const weight = weights[i];
+    const queryQuota = Math.floor(limit * weight);
+
+    // Slice candidates based on quota
+    const candidates = queryResults.slice(0, queryQuota);
+
+    for (const chunk of candidates) {
+      if (!uniqueResultsMap.has(chunk.id)) {
+        uniqueResultsMap.set(chunk.id, chunk);
+      }
     }
   }
 
-  if (vectorSearchResults.length === 0) {
-    console.error("No resources or similar chunks found for any query");
-    return [];
-  }
-
-  const finalResults = await rerankResources({
-    query: queryRewriting,
-    resources: vectorSearchResults,
-    topN: limit,
-  });
-
-  return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {
-    return {
+  return Array.from(uniqueResultsMap.values()).map(
+    ({ id, content, resourceTitle, resourceUrl }) => ({
       id,
       resourceTitle,
       resourceUrl,
       content,
-    };
-  });
+    }),
+  );
 };

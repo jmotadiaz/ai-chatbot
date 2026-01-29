@@ -111,7 +111,7 @@ const configureStep = ({
           `,
         }
       : {
-          ...languageModelConfigurations("Gemini 2.5 Flash"),
+          ...languageModelConfigurations("Gemini 3 Flash Low"),
           toolChoice: { type: "tool", toolName: tool },
         }),
     activeTools: [tool],
