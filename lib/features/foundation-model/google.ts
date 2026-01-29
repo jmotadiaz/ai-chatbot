@@ -57,7 +57,6 @@ export const GOOGLE_CONFIG = {
     providerOptions: {
       google: {
         thinkingConfig: {
-          thinkingLevel: "high",
           includeThoughts: false,
         },
       },
