@@ -1,3 +1,15 @@
+import { Tool } from "@/lib/features/chat/types";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
+import { systemPrompt as ragSystemPrompt } from "@/lib/features/rag/prompts";
+import {
+  URL_CONTEXT_TOOL,
+  WEB_SEARCH_TOOL,
+} from "@/lib/features/web-search/constants";
+import {
+  urlContextSystemPrompt,
+  webSearchSystemPrompt,
+} from "@/lib/features/web-search/prompts";
+
 export const codeBlockPrompt = `
   ## Code Block Formatting
   Use a code block anytime you need to show a code snippet to the user. A code block presents the code as plain text, preserving its original formatting and syntax, and ensures it is not interpreted as part of your own response.
@@ -90,3 +102,9 @@ export const titlePrompt = `
   - the title should be a summary of the user's message
   - do not use quotes or colons\n
 `;
+
+export const toolPrompts: Record<Tool, string> = {
+  [RAG_TOOL]: ragSystemPrompt,
+  [URL_CONTEXT_TOOL]: urlContextSystemPrompt,
+  [WEB_SEARCH_TOOL]: webSearchSystemPrompt,
+};

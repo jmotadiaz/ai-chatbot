@@ -4,6 +4,12 @@ import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "./constants";
+import {
+  urlContextDescriptionPrompt,
+  urlContextUrlsPrompt,
+  webSearchDescriptionPrompt,
+  webSearchQueryPrompt,
+} from "./prompts";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
@@ -25,13 +31,11 @@ export interface WebSearchFactoryArgs {
 }
 
 const webSearchInputSchema = z.object({
-  query: z.string().min(1).max(300).describe("Optimized query for web search"),
+  query: z.string().min(1).max(300).describe(webSearchQueryPrompt),
 });
 
 const urlContextInputSchema = z.object({
-  urls: z
-    .array(z.string())
-    .describe("The urls provided directly in the user prompt"),
+  urls: z.array(z.string()).describe(urlContextUrlsPrompt),
 });
 
 const outputSchema = z.array(
@@ -45,7 +49,7 @@ const outputSchema = z.array(
       .string()
       .optional()
       .describe("The date the content was published"),
-  })
+  }),
 );
 
 export const webSearchFactory = ({
@@ -53,11 +57,7 @@ export const webSearchFactory = ({
   webSearchNumResults = defaultWebSearchNumResults,
 }: WebSearchFactoryArgs) => ({
   [WEB_SEARCH_TOOL]: tool({
-    description: `
-    Search the web for up-to-date information
-    - Input: An object with a single string property 'query'.
-    - Output: An array of objects, where each object represents a search result and contains 'title' (string), 'url' (string), 'content' (string), and an optional 'publishedDate' (string).
-    `,
+    description: webSearchDescriptionPrompt,
     inputSchema: webSearchInputSchema,
     outputSchema,
     execute: async ({ query }) => {
@@ -66,7 +66,7 @@ export const webSearchFactory = ({
       const exa = getExaClient();
       if (!exa) {
         console.warn(
-          "Web Search skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results."
+          "Web Search skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results.",
         );
         return [];
       }
@@ -98,18 +98,14 @@ export const webSearchFactory = ({
 
 export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
   [URL_CONTEXT_TOOL]: tool({
-    description: `
-    Retrieves the textual content from a list of specific URLs provided by the user.
-    - Input: An object with a single property 'urls', which is an array of strings representing the URLs.
-    - Output: An array of objects, where each object contains 'title' (string),
-    `,
+    description: urlContextDescriptionPrompt,
     inputSchema: urlContextInputSchema,
     outputSchema: outputSchema,
     execute: async ({ urls }) => {
       const exa = getExaClient();
       if (!exa) {
         console.warn(
-          "URL Context skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results."
+          "URL Context skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results.",
         );
         return [];
       }

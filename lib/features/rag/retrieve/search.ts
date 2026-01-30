@@ -121,7 +121,7 @@ export interface RetrieveResourcesInput {
   limit?: number;
 }
 
-const K_VECTOR_SEARCHES = 10;
+const K_VECTOR_SEARCHES = 50;
 const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 export const retrieveResources = async ({

@@ -15,7 +15,7 @@ import {
 } from "ai";
 
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
+import { defaultSystemPrompt, toolPrompts } from "@/lib/features/chat/prompts";
 import {
   deleteMessageById,
   saveChat,
@@ -35,7 +35,6 @@ import {
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import {
   TOOLS,
-  TOOL_PROMPTS,
   type Tool,
   type ChatbotMessage,
 } from "@/lib/features/chat/types";
@@ -93,27 +92,17 @@ const processMesaggesToSend = async ({
 
 const configureStep = ({
   modelConfiguration,
-  systemPrompt,
   tool,
 }: {
   modelConfiguration: ModelConfiguration;
-  systemPrompt: string;
   tool: Tool;
 }): ReturnType<PrepareStepFunction> => {
   return {
-    ...(modelConfiguration.nativeToolCalling
-      ? {
-          system: `
-            ${systemPrompt}
-
-            ## Tools
-            ${TOOL_PROMPTS[tool]}
-          `,
-        }
-      : {
-          ...languageModelConfigurations("Gemini 3 Flash Tools"),
-          toolChoice: { type: "tool", toolName: tool },
-        }),
+    ...(!modelConfiguration.nativeToolCalling && {
+      ...languageModelConfigurations("Gemini 3 Flash Tools"),
+      toolChoice: { type: "tool", toolName: tool },
+    }),
+    system: toolPrompts[tool],
     activeTools: [tool],
   };
 };
@@ -206,10 +195,10 @@ export async function processChatResponse({
         experimental_telemetry: { isEnabled: true },
         prepareStep: async () => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
+            console.log("RAG tool called");
             executedTools.add(RAG_TOOL);
             return configureStep({
               modelConfiguration,
-              systemPrompt,
               tool: RAG_TOOL,
             });
           }
@@ -222,7 +211,6 @@ export async function processChatResponse({
             executedTools.add(URL_CONTEXT_TOOL);
             return configureStep({
               modelConfiguration,
-              systemPrompt,
               tool: URL_CONTEXT_TOOL,
             });
           }
@@ -234,7 +222,6 @@ export async function processChatResponse({
             executedTools.add(WEB_SEARCH_TOOL);
             return configureStep({
               modelConfiguration,
-              systemPrompt,
               tool: WEB_SEARCH_TOOL,
             });
           }
