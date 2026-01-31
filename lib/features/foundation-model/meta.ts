@@ -26,6 +26,7 @@ export const META_CONFIG = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
+        only: ["deepinfra"],
       },
     },
   },
@@ -37,6 +38,7 @@ export const META_CONFIG = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
+        only: ["deepinfra", "vertex"],
       },
     },
   },
