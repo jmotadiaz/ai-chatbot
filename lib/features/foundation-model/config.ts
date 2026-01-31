@@ -45,7 +45,6 @@ export const chatModelKeys = [
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Llama 4 Scout",
-  "Llama 4 Maverick",
   "Sonar",
   "Sonar Pro",
   "Claude Haiku 4.5",
