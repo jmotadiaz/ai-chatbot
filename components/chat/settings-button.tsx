@@ -1,5 +1,6 @@
 import type { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { useChatContext } from "@/components/chat/provider";
 import { ChatControl } from "@/components/chat/control";
 import { Label } from "@/components/ui/label";
@@ -12,12 +13,22 @@ export interface ChatSettingsButtonProps {
 
 export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
-  const { temperature, topP, topK, setConfig, selectedModel } =
-    useChatContext();
+  const {
+    temperature,
+    topP,
+    topK,
+    ragMaxResources,
+    setConfig,
+    selectedModel,
+    hasTool,
+    projectId,
+  } = useChatContext();
 
   const setTemperature = (value: number) => setConfig({ temperature: value });
   const setTopP = (value: number) => setConfig({ topP: value });
   const setTopK = (value: number) => setConfig({ topK: value });
+  const setRagMaxResources = (value: number) =>
+    setConfig({ ragMaxResources: value });
 
   const isRouter = selectedModel === "Router";
 
@@ -26,8 +37,13 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const showTopPSetting = !isRouter && isDefined(topP);
   const showTopKSetting = !isRouter && isDefined(topK);
 
+  const showRagSettings = hasTool(RAG_TOOL) && !projectId;
+
   const showModelConfig =
-    showTemperatureSetting || showTopPSetting || showTopKSetting;
+    showTemperatureSetting ||
+    showTopPSetting ||
+    showTopKSetting ||
+    showRagSettings;
 
   if (!showModelConfig) {
     return null;
@@ -89,6 +105,21 @@ export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
               max={100}
               step={1}
               onChange={setTopK}
+            />
+          </Dropdown.Item>
+        )}
+        {showRagSettings && (
+          <Dropdown.Item className="justify-between">
+            <Label className="mr-8 text-nowrap" htmlFor="ragMaxResources">
+              RAG Max Resources
+            </Label>
+            <InputNumber
+              id="ragMaxResources"
+              value={ragMaxResources}
+              min={1}
+              max={50}
+              step={1}
+              onChange={setRagMaxResources}
             />
           </Dropdown.Item>
         )}

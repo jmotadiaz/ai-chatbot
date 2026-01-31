@@ -60,4 +60,33 @@ test.describe("Chat functionality", () => {
         "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6",
       );
   });
+
+  test("should show RAG Max Resources setting when RAG tool is active and not in a project", async () => {
+    await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
+
+    await chatPage.chat.openSettings();
+    await expect
+      .soft(chatPage.chat.settings.ragMaxResourcesInput)
+      .not.toBeVisible();
+    await chatPage.closeDropdown();
+
+    await chatPage.chat.openTools();
+    await chatPage.chat.tools.toggleTool("rag");
+    await chatPage.closeDropdown();
+
+    await chatPage.chat.openSettings();
+    await expect
+      .soft(chatPage.chat.settings.ragMaxResourcesInput)
+      .toBeVisible();
+    await expect
+      .soft(chatPage.chat.settings.ragMaxResourcesInput)
+      .toHaveValue("6");
+
+    await chatPage.chat.settings.setRagMaxResources(10);
+    await expect
+      .soft(chatPage.chat.settings.ragMaxResourcesInput)
+      .toHaveValue("10");
+
+    await chatPage.closeDropdown();
+  });
 });
