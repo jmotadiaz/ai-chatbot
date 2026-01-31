@@ -45,30 +45,6 @@ export const multiHopQueryPrompt = `
       - **BAD**: "Optimizing Node.js APIs for Redis caching" (Mixes Node.js and Redis)
       - **GOOD**: Query 1: "Node.js API optimization techniques", Query 2: "Redis caching patterns"
   2. **Language**: Queries MUST be in English.
-
-  **Example 1**:
-  User: *"I need to implement a secure webhook handler in my Node.js Express server to listen for Stripe 'payment_intent.succeeded' events. The handler must verify the Stripe signature to prevent spoofing and then update the user's subscription status in the database asynchronously."*
-
-  **Identified Concepts:**
-  1. **Stripe Webhooks** (Primary Trigger/Event)
-  2. **Express.js** (Implementation Context)
-
-  Queries:
-  1. "Documentation on verifying signatures and parsing event payloads for Stripe webhooks."
-  2. "Guide to configuring middleware and secure route handlers for asynchronous events in Express.js applications."
-
-  **Example 2**:
-  User: *"Necesito desarrollar una función de carrito de compras en React que utilice Redux Toolkit para la gestión del estado global (añadir/eliminar artículos) y probar completamente la lógica con Jest."*
-
-  **Identified Concepts:**
-  1. **Redux Toolkit** (Core State Logic)
-  2. **Jest** (Testing Requirement)
-  3. **React** (UI Context)
-
-  Queries:
-  1. "Guide to configuring Redux Toolkit slices and selectors for managing global application state."
-  2. "Documentation and examples for writing unit tests for Javascript state logic and components using Jest."
-  3. "Best practices for building responsive shopping cart user interfaces and component structures in React."
 `;
 
 export const queryRewritePrompt = `
