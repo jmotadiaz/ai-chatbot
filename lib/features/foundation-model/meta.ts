@@ -10,7 +10,6 @@ export const META_CONFIG = {
       gateway: {
         zeroDataRetention: true,
         order: ["cerebras", "deepinfra"],
-        only: ["cerebras", "deepinfra"],
       },
     },
   },
@@ -27,8 +26,6 @@ export const META_CONFIG = {
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
-        order: ["deepinfra"],
-        only: ["deepinfra"],
       },
     },
   },
@@ -37,5 +34,10 @@ export const META_CONFIG = {
     company: "meta",
     temperature: 0.6,
     supportedFiles: ["img"],
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
+    },
   },
 } as const satisfies Record<string, ModelConfiguration>;
