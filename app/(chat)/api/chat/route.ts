@@ -3,10 +3,7 @@ import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
-import {
-  defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/config";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { processChatResponse } from "@/lib/features/chat/handlers";
@@ -26,7 +23,7 @@ export const POST = withAuth(async (user, req) => {
     messageId,
     projectId,
     preventChatPersistence = false,
-    ragMaxResources = defaultRagMaxResources,
+
     webSearchNumResults = defaultWebSearchNumResults,
   }: {
     messages: ChatbotMessage[];
@@ -40,7 +37,7 @@ export const POST = withAuth(async (user, req) => {
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
-    ragMaxResources?: number;
+
     webSearchNumResults?: number;
   } = await req.json();
 
@@ -56,7 +53,7 @@ export const POST = withAuth(async (user, req) => {
     messageId,
     projectId,
     preventChatPersistence,
-    ragMaxResources,
+
     webSearchNumResults,
     user: { id: user.id },
   });

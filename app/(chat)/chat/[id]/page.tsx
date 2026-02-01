@@ -2,10 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import {
-  defaultWebSearchNumResults,
-  defaultRagMaxResources,
-} from "@/lib/features/foundation-model/config";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import {
@@ -70,7 +67,6 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
           refinePromptMode,
           webSearchNumResults:
             chat.webSearchNumResults ?? defaultWebSearchNumResults,
-          ragMaxResources: chat.ragMaxResources ?? defaultRagMaxResources,
         }}
       />
     </ChatLifecycleShell>

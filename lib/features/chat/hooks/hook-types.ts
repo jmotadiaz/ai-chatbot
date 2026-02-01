@@ -10,7 +10,7 @@ export interface ChatConfig {
   topP?: number;
   topK?: number;
   // Tool-specific configuration (only used if tool active)
-  ragMaxResources: number; // max number of RAG chunks/resources returned
+
   webSearchNumResults: number; // number of web search results
 }
 
@@ -38,7 +38,7 @@ export interface InputState {
   files: FilePart[];
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>;
   handleInputChange: (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;

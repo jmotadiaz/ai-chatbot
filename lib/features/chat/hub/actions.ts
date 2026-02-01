@@ -6,11 +6,11 @@ import { auth } from "@/lib/features/auth/auth-config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 import { saveChat, saveMessages } from "@/lib/features/chat/queries";
-import { chatbotMessageToDbMessage, generateTitle } from "@/lib/features/chat/utils";
 import {
-  defaultRagMaxResources,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/config";
+  chatbotMessageToDbMessage,
+  generateTitle,
+} from "@/lib/features/chat/utils";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getDb } from "@/lib/infrastructure/db/db";
 
 export async function persistHubChatFromTranscript({
@@ -20,7 +20,7 @@ export async function persistHubChatFromTranscript({
   tools = [],
   projectId,
   temperature,
-  ragMaxResources = defaultRagMaxResources,
+
   webSearchNumResults = defaultWebSearchNumResults,
 }: {
   chatId: string;
@@ -29,7 +29,7 @@ export async function persistHubChatFromTranscript({
   tools?: Tools;
   projectId?: string;
   temperature?: number;
-  ragMaxResources?: number;
+
   webSearchNumResults?: number;
 }): Promise<{ chatId: string }> {
   const session = await auth();
@@ -47,13 +47,13 @@ export async function persistHubChatFromTranscript({
       projectId,
       defaultModel: model,
       defaultTemperature: temperature,
-      ragMaxResources,
+
       webSearchNumResults,
       tools,
     })(tx);
 
     await saveMessages(
-      await Promise.all(messages.map(chatbotMessageToDbMessage(chat.id)))
+      await Promise.all(messages.map(chatbotMessageToDbMessage(chat.id))),
     )(tx);
 
     return chat.id;
@@ -65,5 +65,3 @@ export async function persistHubChatFromTranscript({
 
   return { chatId: persistedChatId };
 }
-
-

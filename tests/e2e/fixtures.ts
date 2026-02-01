@@ -23,7 +23,7 @@ type NewProject = {
   defaultTemperature?: number;
   tools?: string[];
   hasPromptRefiner?: boolean;
-  ragMaxResources?: number;
+
   webSearchNumResults?: number;
 };
 
@@ -162,7 +162,7 @@ export const test = base.extend<TestFixtures>({
             defaultTemperature: newProject.defaultTemperature,
             tools: newProject.tools,
             hasPromptRefiner: newProject.hasPromptRefiner ?? false,
-            ragMaxResources: newProject.ragMaxResources,
+
             webSearchNumResults: newProject.webSearchNumResults,
           })
           .returning();

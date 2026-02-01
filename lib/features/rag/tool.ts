@@ -14,15 +14,9 @@ export interface RagFactoryArgs {
   messages: UIMessage[];
   userId: string;
   projectId?: string;
-  ragMaxResources?: number;
 }
 
-export const ragFactory = ({
-  userId,
-  projectId,
-  messages,
-  ragMaxResources = 6,
-}: RagFactoryArgs) =>
+export const ragFactory = ({ userId, projectId, messages }: RagFactoryArgs) =>
   ({
     [RAG_TOOL]: tool({
       description: toolDescriptionPrompt,
@@ -59,7 +53,6 @@ export const ragFactory = ({
           previousResources: [...extractResourceIdsFromMessages(messages)],
           userId,
           projectId,
-          limit: ragMaxResources,
         });
 
         return resources;

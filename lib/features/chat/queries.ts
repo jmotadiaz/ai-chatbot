@@ -24,7 +24,7 @@ export const saveChat =
     defaultTemperature,
     defaultTopP,
     defaultTopK,
-    ragMaxResources,
+
     webSearchNumResults,
     tools,
     projectId,
@@ -42,7 +42,7 @@ export const saveChat =
           defaultTemperature,
           defaultTopP,
           defaultTopK,
-          ragMaxResources,
+
           webSearchNumResults,
           tools,
           projectId,
@@ -70,14 +70,13 @@ export const updateChat =
         | "defaultTemperature"
         | "defaultTopP"
         | "defaultTopK"
-        | "ragMaxResources"
         | "webSearchNumResults"
         | "tools"
         | "projectId"
         | "pinned"
         | "updatedAt"
       >
-    >
+    >,
   ): Transactional<Chat> =>
   async (tx) => {
     const [updatedChat] = await tx
@@ -142,8 +141,8 @@ export async function getChats({
           eq(chat.userId, userId),
           projectId === null
             ? isNull(chat.projectId)
-            : eq(chat.projectId, projectId)
-        )
+            : eq(chat.projectId, projectId),
+        ),
       )
       .orderBy(desc(chat.pinned), desc(chat.updatedAt))
       .limit(extendedLimit);
@@ -171,7 +170,7 @@ export const saveMessages =
             parts,
             metadata,
             createdAt: new Date(),
-          }))
+          })),
         )
         .onConflictDoUpdate({
           target: message.id,

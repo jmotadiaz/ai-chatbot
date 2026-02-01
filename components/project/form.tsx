@@ -320,7 +320,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 webSearchNumResults={
                   isAdvancedOpen ? webSearchNumResults : undefined
                 }
-                ragMaxResources={undefined}
               >
                 <Chat className="flex-1 justify-center" />
               </ChatProvider>

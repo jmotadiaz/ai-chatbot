@@ -120,14 +120,24 @@ export async function findSimilarChunks({
     }
 
     // Build base query
-    const baseQuery = getDb()
-      .select({
+    // We use a subquery to first get the best embedding for each chunk (DISTINCT ON chunk.id)
+    // and then limit the result in the outer query.
+
+    // Condition handling for Project vs User scope
+    if (projectId) {
+      whereConditions.push(eq(projectResource.projectId, projectId));
+    } else {
+      whereConditions.push(eq(resource.userId, userId));
+    }
+
+    const subQueryBuilder = getDb()
+      .selectDistinctOn([chunk.id], {
         id: chunk.id,
-        resourceUrl: resource.url,
+        resourceUrl: sql<string | null>`${resource.url}`.as("resourceUrl"),
         content: chunk.content,
-        similarity,
-        resourceTitle: resource.title,
-        embeddingId: embedding.id,
+        similarity: similarity.as("similarity"),
+        resourceTitle: sql<string>`${resource.title}`.as("resourceTitle"),
+        embeddingId: sql<string>`${embedding.id}`.as("embeddingId"),
         type: chunk.type,
         language: chunk.language,
         boundaryType: chunk.boundaryType,
@@ -137,27 +147,32 @@ export async function findSimilarChunks({
       .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
       .innerJoin(resource, eq(chunk.resourceId, resource.id));
 
-    // If projectId is provided, join with projectResource table
-    // Otherwise, filter by userId
-    let results;
+    // Apply joins for projectId filtering if needed
+    let subQuery;
     if (projectId) {
-      whereConditions.push(eq(projectResource.projectId, projectId));
-      results = await baseQuery
+      subQuery = subQueryBuilder
         .innerJoin(projectResource, eq(resource.id, projectResource.resourceId))
         .where(and(...whereConditions))
-        .orderBy(desc(similarity))
-        .limit(limit);
+        .orderBy(chunk.id, desc(similarity))
+        .as("sq");
     } else {
-      whereConditions.push(eq(resource.userId, userId));
-      results = await baseQuery
+      subQuery = subQueryBuilder
         .where(and(...whereConditions))
-        .orderBy(desc(similarity))
-        .limit(limit);
+        .orderBy(chunk.id, desc(similarity))
+        .as("sq");
     }
+
+    const results = await getDb()
+      .select()
+      .from(subQuery)
+      .orderBy(desc(subQuery.similarity))
+      .limit(limit);
+
+    console.log(`[findSimilarChunks] Found ${results.length} chunks`);
 
     return results;
   } catch (error) {
-    console.error("Failed to find similar chunks");
+    console.error("Failed to find similar chunks", error);
     throw error;
   }
 }

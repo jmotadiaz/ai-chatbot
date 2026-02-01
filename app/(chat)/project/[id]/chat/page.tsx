@@ -1,10 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import {
-  defaultWebSearchNumResults,
-  defaultRagMaxResources,
-} from "@/lib/features/foundation-model/config";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { filterTools } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
@@ -60,7 +57,6 @@ const Page: React.FC<ProjectPageProps> = async ({
           tools: filterTools(project.tools || []),
           webSearchNumResults:
             project.webSearchNumResults ?? defaultWebSearchNumResults,
-          ragMaxResources: project.ragMaxResources ?? defaultRagMaxResources,
         }}
       />
     </ChatLifecycleShell>

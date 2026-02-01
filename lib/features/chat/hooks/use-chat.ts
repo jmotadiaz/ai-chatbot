@@ -25,7 +25,6 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
   CHAT_MODELS,
   defaultModel,
-  defaultRagMaxResources,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/config";
 import type {
@@ -51,7 +50,7 @@ export interface UseChatArgs {
   title?: string;
   tools?: Tools;
   preventChatPersistence?: boolean;
-  ragMaxResources?: number;
+
   webSearchNumResults?: number;
 }
 
@@ -85,7 +84,7 @@ export const useChat = ({
   title,
   preventChatPersistence = false,
   tools: initialTools = [],
-  ragMaxResources = defaultRagMaxResources,
+
   webSearchNumResults = defaultWebSearchNumResults,
 }: UseChatArgs): UseChatResult => {
   const { chatConfig, setConfig } = useChatConfig({
@@ -93,7 +92,7 @@ export const useChat = ({
     temperature,
     topP,
     topK,
-    ragMaxResources,
+
     webSearchNumResults,
   });
   const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);

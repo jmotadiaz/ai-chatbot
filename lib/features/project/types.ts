@@ -12,7 +12,7 @@ export const createProjectSchema = z.object({
   defaultTemperature: z.number().min(0).max(2).optional(),
   defaultTopP: z.number().min(0).max(1).optional(),
   defaultTopK: z.number().min(0).optional(),
-  ragMaxResources: z.number().min(1).optional(),
+
   webSearchNumResults: z.number().min(1).optional(),
   systemPrompt: z.string().min(1, "System prompt is required"),
   hasPromptRefiner: z.boolean().default(false),

@@ -23,7 +23,7 @@ export const createProject =
     defaultTopK,
     systemPrompt,
     hasPromptRefiner,
-    ragMaxResources,
+
     webSearchNumResults,
     tools,
     isActive,
@@ -40,7 +40,7 @@ export const createProject =
         defaultTopK,
         systemPrompt,
         hasPromptRefiner,
-        ragMaxResources,
+
         webSearchNumResults,
         tools,
         isActive,

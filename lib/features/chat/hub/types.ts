@@ -40,7 +40,7 @@ export interface ChatHub {
     tools?: Tools;
     projectId?: string;
     temperature?: number;
-    ragMaxResources?: number;
+
     webSearchNumResults?: number;
   }) => Promise<{ chatId: string }>;
 

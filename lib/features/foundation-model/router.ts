@@ -51,7 +51,8 @@ const modelRouterSystemPrompt = `\n
   *   **other**: Queries that don't fit the above (e.g., spam, unclear, or off-topic). Use this sparingly and explain in reasoning.
 
   ### 2. Complexity Levels
-  Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length. Additionally, factor in the **specificity of the query**: If the query is well-specified (clear, detailed, with all necessary context and instructions provided), reduce the complexity level accordingly, as it minimizes the need for assumptions or additional inference. Vague or incomplete queries increase complexity.
+  Assess complexity based on the **nature of the task, required expertise, and expected output structure**, not just query length.
+  Important: Ignore the role assigned to the model (e.g., you are an expert.., you are an advanced technical assistant, etc.) to determine the complexity level.
 
   *   **Simple**: Straightforward tasks requiring minimal reasoning or expertise, such as basic facts, simple transformations, or casual responses with clear, direct outputs.
   *   **Moderate**: Tasks involving some analysis or synthesis, moderate expertise (e.g., standard problem-solving or content generation), and structured but not intricate outputs.
@@ -150,7 +151,7 @@ const decisionTree = ({
         modelConfiguration: findModelByRequestedFileTypes("GPT OSS Mini"),
       },
       moderate: {
-        modelConfiguration: findModelByRequestedFileTypes("Claude Haiku 4.5"),
+        modelConfiguration: findModelByRequestedFileTypes("MiniMax M2.1"),
       },
       complex: {
         modelConfiguration: findModelByRequestedFileTypes("Claude Sonnet 4.5"),

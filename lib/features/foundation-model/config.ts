@@ -66,7 +66,7 @@ export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
 
 // Constants
 export const defaultModel: chatModelId = "Router";
-export const defaultRagMaxResources = 6;
+
 export const defaultWebSearchNumResults = 5;
 
 // Helpers

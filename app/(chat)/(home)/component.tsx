@@ -2,7 +2,6 @@ import React from "react";
 import {
   defaultModel,
   defaultWebSearchNumResults,
-  defaultRagMaxResources,
 } from "@/lib/features/foundation-model/config";
 
 import { ChatLayout } from "@/app/(chat)/chat-layout";
@@ -14,7 +13,7 @@ export const ChatHomeComponent: React.FC = () => {
         selectedModel: defaultModel,
         refinePromptMode: "chat",
         webSearchNumResults: defaultWebSearchNumResults,
-        ragMaxResources: defaultRagMaxResources,
+
         tools: [],
       }}
     />

@@ -3,25 +3,31 @@
 import { useEffect } from "react";
 import { DataUIPart } from "ai";
 import type { UseChatHubInstanceArgs } from "../types";
-import type { Tools, ChatbotMessage, ChatbotDataPart } from "@/lib/features/chat/types";
+import type {
+  Tools,
+  ChatbotMessage,
+  ChatbotDataPart,
+} from "@/lib/features/chat/types";
 import {
-  defaultRagMaxResources,
-  defaultWebSearchNumResults, chatModelId 
+  defaultWebSearchNumResults,
+  chatModelId,
 } from "@/lib/features/foundation-model/config";
 import { useChatConfig } from "@/lib/features/chat/hooks/use-chat-config";
 import { useChatRequestBody } from "@/lib/features/chat/hooks/use-chat-request-body";
-import { useChatSession, UseChatSessionResult } from "@/lib/features/chat/hooks/use-chat-session";
+import {
+  useChatSession,
+  UseChatSessionResult,
+} from "@/lib/features/chat/hooks/use-chat-session";
 import { useChatDataPartState } from "@/lib/features/chat/hooks/use-chat-data-part-state";
 
-export interface UseChatHubInstanceConfig
-  extends UseChatHubInstanceArgs {
+export interface UseChatHubInstanceConfig extends UseChatHubInstanceArgs {
   initialMessages?: ChatbotMessage[];
   projectId?: string;
   temperature?: number;
   systemPrompt?: string;
   tools?: Tools;
   preventChatPersistence?: boolean;
-  ragMaxResources?: number;
+
   webSearchNumResults?: number;
 }
 
@@ -41,7 +47,7 @@ export const useChatHubInstance = ({
   systemPrompt,
   tools = [],
   preventChatPersistence = false,
-  ragMaxResources = defaultRagMaxResources,
+
   webSearchNumResults = defaultWebSearchNumResults,
 }: UseChatHubInstanceConfig): UseChatHubInstanceResult => {
   const { dataPart, setDataPart } = useChatDataPartState();
@@ -56,7 +62,7 @@ export const useChatHubInstance = ({
   const { chatConfig } = useChatConfig({
     selectedModel: model,
     temperature,
-    ragMaxResources,
+
     webSearchNumResults,
   });
 
@@ -84,5 +90,3 @@ export const useChatHubInstance = ({
     dataPart,
   };
 };
-
-

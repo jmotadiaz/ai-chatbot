@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import type { ChatConfig, SetChatConfig } from "./hook-types";
 import {
   defaultModel,
-  defaultRagMaxResources,
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
@@ -14,7 +13,7 @@ export const useChatConfig = ({
   temperature,
   topP,
   topK,
-  ragMaxResources,
+
   webSearchNumResults,
 }: Partial<ChatConfig>): {
   chatConfig: ChatConfig;
@@ -27,7 +26,7 @@ export const useChatConfig = ({
       temperature: temperature ?? modelConfig.temperature,
       topP: topP ?? modelConfig.topP,
       topK: topK ?? modelConfig.topK,
-      ragMaxResources: ragMaxResources ?? defaultRagMaxResources,
+
       webSearchNumResults: webSearchNumResults ?? defaultWebSearchNumResults,
     };
   });
@@ -41,5 +40,3 @@ export const useChatConfig = ({
 
   return { chatConfig, setConfig };
 };
-
-

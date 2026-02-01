@@ -7,22 +7,18 @@ import { Locator } from "@playwright/test";
 export class SettingsComponent {
   readonly container: Locator;
   readonly temperatureInput: Locator;
-  readonly ragMaxResourcesInput: Locator;
+
   readonly webSearchNumResultsInput: Locator;
 
   constructor(container: Locator) {
     this.container = container;
     this.temperatureInput = container.getByLabel("Temperature");
-    this.ragMaxResourcesInput = container.getByLabel("RAG Max Resources");
+
     this.webSearchNumResultsInput = container.getByLabel("Web Search Results");
   }
 
   async setTemperature(value: number) {
     await this.temperatureInput.fill(value.toString());
-  }
-
-  async setRagMaxResources(value: number) {
-    await this.ragMaxResourcesInput.fill(value.toString());
   }
 
   async setWebSearchNumResults(value: number) {

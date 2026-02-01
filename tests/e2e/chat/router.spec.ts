@@ -8,7 +8,7 @@ type Complexity = "simple" | "moderate" | "complex" | "advanced";
 const modelRoutingExpectations: Record<Category, Record<Complexity, string>> = {
   technical: {
     simple: "openai/gpt-oss-20b",
-    moderate: "anthropic/claude-haiku-4.5",
+    moderate: "minimax/minimax-m2.1",
     complex: "anthropic/claude-sonnet-4.5",
     advanced: "anthropic/claude-opus-4.5",
   },

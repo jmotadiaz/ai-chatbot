@@ -39,7 +39,6 @@ import {
   type ChatbotMessage,
 } from "@/lib/features/chat/types";
 import {
-  defaultRagMaxResources,
   defaultWebSearchNumResults,
   languageModelConfigurations,
 } from "@/lib/features/foundation-model/config";
@@ -119,7 +118,7 @@ export async function processChatResponse({
   messageId,
   projectId,
   preventChatPersistence = false,
-  ragMaxResources = defaultRagMaxResources,
+
   webSearchNumResults = defaultWebSearchNumResults,
   user,
 }: {
@@ -134,11 +133,10 @@ export async function processChatResponse({
   messageId?: string;
   projectId?: string;
   preventChatPersistence?: boolean;
-  ragMaxResources?: number;
+
   webSearchNumResults?: number;
   user: { id: string };
 }) {
-  const safeRagMaxResources = Math.min(Math.max(ragMaxResources, 1), 50);
   const safeWebSearchNumResults = Math.min(
     Math.max(webSearchNumResults, 1),
     10,
@@ -155,7 +153,6 @@ export async function processChatResponse({
           messages,
           userId: user.id,
           projectId,
-          ragMaxResources: safeRagMaxResources,
         }),
         ...urlContextFactory({ writer }),
       };
@@ -268,7 +265,7 @@ export async function processChatResponse({
                         {
                           defaultModel: selectedModel,
                           defaultTemperature: temperature,
-                          ragMaxResources: safeRagMaxResources,
+
                           webSearchNumResults: safeWebSearchNumResults,
                           tools,
                         },
@@ -284,7 +281,7 @@ export async function processChatResponse({
                       projectId,
                       defaultModel: selectedModel,
                       defaultTemperature: temperature,
-                      ragMaxResources: safeRagMaxResources,
+
                       webSearchNumResults: safeWebSearchNumResults,
                       tools,
                     })(tx));

@@ -1,3 +1,4 @@
+import { RerankResponseResultsItem } from "cohere-ai/api";
 import type { SimilarChunk, SimilarChunks } from "../queries";
 import { findSimilarChunks } from "../queries";
 import { QueryType, RagChunk } from "../types";
@@ -69,7 +70,6 @@ export async function vectorSearch({
 interface RerankInput {
   query: string;
   resources: SimilarChunks; // Acepta strings u objetos
-  topN: number;
 }
 
 const rerank = providers.rerank();
@@ -77,7 +77,7 @@ const rerank = providers.rerank();
 const getUniqueResources = (resources: SimilarChunks) => {
   const map = new Map<string, SimilarChunk>();
   resources.forEach((doc) => {
-    map.set(doc.content, doc);
+    if (!map.has(doc.id)) map.set(doc.id, doc);
   });
   return Array.from(map.values());
 };
@@ -88,28 +88,45 @@ const getUniqueResources = (resources: SimilarChunks) => {
 export async function rerankResources({
   query,
   resources,
-  topN,
 }: RerankInput): Promise<SimilarChunks> {
   const uniqueResources = getUniqueResources(resources);
-
-  if (uniqueResources.length <= topN) {
-    return uniqueResources;
-  }
 
   try {
     // 2. Llamada a la API
     const results = await rerank({
       query: query,
       documents: uniqueResources.map(({ content }) => content),
-      topN: topN,
+      topN: 20,
     });
 
-    return results.map(({ index }) => uniqueResources[index]);
+    console.dir(results, { depth: null });
+
+    return resourcesByScore(results, uniqueResources);
   } catch (error) {
     console.error("Error al reordenar documentos con Cohere:", error);
     return [];
   }
 }
+
+const resourcesByScore = (
+  results: RerankResponseResultsItem[],
+  resources: SimilarChunks,
+) => {
+  const map = new Map<string, SimilarChunk>();
+  let count = 0;
+  for (const result of results) {
+    if (result.relevanceScore >= 0.6) {
+      map.set(resources[result.index].id, resources[result.index]);
+    } else if (result.relevanceScore >= 0.35) {
+      count++;
+      map.set(resources[result.index].id, resources[result.index]);
+    }
+
+    if (count >= 4) break;
+  }
+
+  return Array.from(map.values());
+};
 
 export interface RetrieveResourcesInput {
   multiHopQueries: string[];
@@ -121,7 +138,7 @@ export interface RetrieveResourcesInput {
   limit?: number;
 }
 
-const K_VECTOR_SEARCHES = 50;
+const K_VECTOR_SEARCHES = 100;
 const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 export const retrieveResources = async ({
@@ -131,7 +148,6 @@ export const retrieveResources = async ({
   queryType,
   userId,
   projectId,
-  limit = 6,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
   const results = await Promise.all(
     multiHopQueries.map((query) =>
@@ -165,7 +181,6 @@ export const retrieveResources = async ({
   const finalResults = await rerankResources({
     query: queryRewriting,
     resources: vectorSearchResults,
-    topN: limit,
   });
 
   return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {
