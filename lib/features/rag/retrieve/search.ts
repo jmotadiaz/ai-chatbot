@@ -99,8 +99,6 @@ export async function rerankResources({
       topN: 20,
     });
 
-    console.dir(results, { depth: null });
-
     return resourcesByScore(results, uniqueResources);
   } catch (error) {
     console.error("Error al reordenar documentos con Cohere:", error);

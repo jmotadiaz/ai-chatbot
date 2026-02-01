@@ -168,8 +168,6 @@ export async function findSimilarChunks({
       .orderBy(desc(subQuery.similarity))
       .limit(limit);
 
-    console.log(`[findSimilarChunks] Found ${results.length} chunks`);
-
     return results;
   } catch (error) {
     console.error("Failed to find similar chunks", error);
