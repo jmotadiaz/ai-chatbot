@@ -82,7 +82,6 @@ export type SimilarChunk = {
   similarity: number;
   resourceTitle: string;
   resourceUrl: string | null;
-  embeddingId: string;
   content: string;
   type: string;
   language: string | null;
@@ -137,7 +136,6 @@ export async function findSimilarChunks({
         content: chunk.content,
         similarity: similarity.as("similarity"),
         resourceTitle: sql<string>`${resource.title}`.as("resourceTitle"),
-        embeddingId: sql<string>`${embedding.id}`.as("embeddingId"),
         type: chunk.type,
         language: chunk.language,
         boundaryType: chunk.boundaryType,
@@ -210,41 +208,31 @@ export async function findSimilarChunksByKeyword({
       whereConditions.push(notInArray(chunk.id, previousChunkIds));
     }
 
-    const subQueryBuilder = getDb()
-      .selectDistinctOn([chunk.id], {
+    let queryBuilder = getDb()
+      .select({
         id: chunk.id,
         resourceUrl: sql<string | null>`${resource.url}`.as("resourceUrl"),
         content: chunk.content,
         similarity: rank.as("similarity"),
         resourceTitle: sql<string>`${resource.title}`.as("resourceTitle"),
-        embeddingId: sql<string>`${embedding.id}`.as("embeddingId"),
         type: chunk.type,
         language: chunk.language,
         boundaryType: chunk.boundaryType,
         boundaryName: chunk.boundaryName,
       })
-      .from(embedding)
-      .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
+      .from(chunk)
       .innerJoin(resource, eq(chunk.resourceId, resource.id));
 
-    let subQuery;
     if (projectId) {
-      subQuery = subQueryBuilder
-        .innerJoin(projectResource, eq(resource.id, projectResource.resourceId))
-        .where(and(...whereConditions))
-        .orderBy(chunk.id, desc(rank))
-        .as("sq");
-    } else {
-      subQuery = subQueryBuilder
-        .where(and(...whereConditions))
-        .orderBy(chunk.id, desc(rank))
-        .as("sq");
+      queryBuilder = queryBuilder.innerJoin(
+        projectResource,
+        eq(resource.id, projectResource.resourceId),
+      );
     }
 
-    const results = await getDb()
-      .select()
-      .from(subQuery)
-      .orderBy(desc(subQuery.similarity))
+    const results = await queryBuilder
+      .where(and(...whereConditions))
+      .orderBy(desc(rank))
       .limit(limit);
 
     return results;
