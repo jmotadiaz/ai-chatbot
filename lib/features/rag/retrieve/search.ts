@@ -1,9 +1,9 @@
-import { RerankResponseResultsItem } from "cohere-ai/api";
 import type { SimilarChunk, SimilarChunks } from "../queries";
 import { findSimilarChunks } from "../queries";
 import { QueryType, RagChunk } from "../types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 import { generateEmbedding } from "@/lib/features/rag/retrieve/embeddings";
+import { RerankResult } from "@/lib/features/foundation-model/types";
 
 export interface VectorSearchResult {
   success: boolean;
@@ -69,14 +69,14 @@ export async function vectorSearch({
 
 interface RerankInput {
   query: string;
-  resources: SimilarChunks; // Acepta strings u objetos
+  chunks: SimilarChunks; // Acepta strings u objetos
 }
 
 const rerank = providers.rerank();
 
-const getUniqueResources = (resources: SimilarChunks) => {
+const getUniqueChunks = (chunks: SimilarChunks) => {
   const map = new Map<string, SimilarChunk>();
-  resources.forEach((doc) => {
+  chunks.forEach((doc) => {
     if (!map.has(doc.id)) map.set(doc.id, doc);
   });
   return Array.from(map.values());
@@ -85,45 +85,43 @@ const getUniqueResources = (resources: SimilarChunks) => {
 /**
  * Reordena una lista de documentos basada en su relevancia semántica con una consulta.
  */
-export async function rerankResources({
+export async function rerankChunks({
   query,
-  resources,
+  chunks,
 }: RerankInput): Promise<SimilarChunks> {
-  const uniqueResources = getUniqueResources(resources);
+  const uniqueChunks = getUniqueChunks(chunks);
 
   try {
     // 2. Llamada a la API
     const results = await rerank({
       query: query,
-      documents: uniqueResources.map(({ content }) => content),
+      documents: uniqueChunks.map(({ content }) => content),
       topN: 20,
     });
 
-    return resourcesByScore(results, uniqueResources);
+    return chunksByScore(results, uniqueChunks);
   } catch (error) {
     console.error("Error al reordenar documentos con Cohere:", error);
     return [];
   }
 }
 
-const resourcesByScore = (
-  results: RerankResponseResultsItem[],
-  resources: SimilarChunks,
-) => {
-  const map = new Map<string, SimilarChunk>();
+const chunksByScore = (results: RerankResult[], chunks: SimilarChunks) => {
+  const rerankedChunks: SimilarChunk[] = [];
   let count = 0;
   for (const result of results) {
-    if (result.relevanceScore >= 0.6) {
-      map.set(resources[result.index].id, resources[result.index]);
-    } else if (result.relevanceScore >= 0.35) {
+    const chunk = chunks[result.originalIndex];
+    if (result.score >= 0.6) {
+      rerankedChunks.push(chunk);
+    } else if (result.score >= 0.35 && rerankedChunks.length < 6) {
       count++;
-      map.set(resources[result.index].id, resources[result.index]);
+      rerankedChunks.push(chunk);
     }
 
     if (count >= 4) break;
   }
 
-  return Array.from(map.values());
+  return rerankedChunks;
 };
 
 export interface RetrieveResourcesInput {
@@ -139,11 +137,10 @@ export interface RetrieveResourcesInput {
 const K_VECTOR_SEARCHES = 100;
 const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
-export const retrieveResources = async ({
+export const retrieveResourceChunks = async ({
   multiHopQueries,
   queryRewriting,
   previousResources,
-  queryType,
   userId,
   projectId,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
@@ -151,7 +148,6 @@ export const retrieveResources = async ({
     multiHopQueries.map((query) =>
       vectorSearch({
         query,
-        queryType,
         userId,
         projectId,
         limit: K_VECTOR_SEARCHES,
@@ -176,9 +172,9 @@ export const retrieveResources = async ({
     return [];
   }
 
-  const finalResults = await rerankResources({
+  const finalResults = await rerankChunks({
     query: queryRewriting,
-    resources: vectorSearchResults,
+    chunks: vectorSearchResults,
   });
 
   return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {

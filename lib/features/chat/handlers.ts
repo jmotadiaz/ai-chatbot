@@ -192,7 +192,6 @@ export async function processChatResponse({
         experimental_telemetry: { isEnabled: true },
         prepareStep: async () => {
           if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
-            console.log("RAG tool called");
             executedTools.add(RAG_TOOL);
             return configureStep({
               modelConfiguration,

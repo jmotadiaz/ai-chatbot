@@ -1,5 +1,5 @@
 import type { GroqProviderOptions } from "@ai-sdk/groq";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, rerank } from "ai";
 import type {
   LanguageModelV3,
   EmbeddingModelV3,
@@ -10,7 +10,6 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
-import type { RerankResponseResultsItem } from "cohere-ai/api";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 // Types definitions for the models feature
@@ -69,6 +68,11 @@ export interface RerankArgs {
   topN: number;
 }
 
+export interface RerankResult {
+  originalIndex: number;
+  score: number;
+}
+
 export interface Providers {
   anthropic: (modelId: string) => LanguageModelV3;
   openai: (modelId: string) => LanguageModelV3;
@@ -81,7 +85,9 @@ export interface Providers {
   gateway: (modelId: string) => LanguageModelV3;
   lmstudio: (modelId: string) => LanguageModelV3;
   embedding: () => EmbeddingModelV3;
-  rerank: () => (args: RerankArgs) => Promise<RerankResponseResultsItem[]>;
+  rerank: () => (
+    args: Omit<Parameters<typeof rerank>[0], "model">,
+  ) => Promise<RerankResult[]>;
 }
 
 export interface ProvidersFactory {

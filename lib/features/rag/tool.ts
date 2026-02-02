@@ -1,8 +1,8 @@
 import { tool, ToolSet, UIMessage } from "ai";
 import { z } from "zod";
 import { RagChunk } from "./types";
-import { retrieveResources } from "./retrieve/search";
-import { extractResourceIdsFromMessages } from "./extract-resource-ids";
+import { retrieveResourceChunks } from "./retrieve/search";
+import { extractChunkIdsFromMessages } from "./extract-resource-ids";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import {
   multiHopQueryPrompt,
@@ -46,16 +46,15 @@ export const ragFactory = ({ userId, projectId, messages }: RagFactoryArgs) =>
         console.log("RAG tool called with multiHopQueries:", multiHopQueries);
         console.log("RAG tool called with queryRewriting:", queryRewriting);
 
-        const resources = await retrieveResources({
+        const chunks = await retrieveResourceChunks({
           multiHopQueries,
           queryRewriting,
-          queryType: "RETRIEVAL_QUERY",
-          previousResources: [...extractResourceIdsFromMessages(messages)],
+          previousResources: [...extractChunkIdsFromMessages(messages)],
           userId,
           projectId,
         });
 
-        return resources;
+        return chunks;
       },
     }),
   }) satisfies ToolSet;

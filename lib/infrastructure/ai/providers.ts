@@ -1,5 +1,5 @@
 import { groq } from "@ai-sdk/groq";
-import { gateway } from "ai";
+import { gateway, rerank } from "ai";
 import { createXai } from "@ai-sdk/xai";
 import { openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -7,21 +7,14 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { CohereClient } from "cohere-ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type {
-  Providers,
-  RerankArgs,
-} from "@/lib/features/foundation-model/types";
+import { cohere } from "@ai-sdk/cohere";
+import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 
 const lmstudio = createOpenAICompatible({
   name: "lmstudio",
   baseURL: "http://localhost:1234/v1",
-});
-
-const cohere = new CohereClient({
-  token: process.env.COHERE_API_KEY,
 });
 
 const openrouter = createOpenRouter({
@@ -60,12 +53,12 @@ export const providers: Providers =
         gateway: (modelId: string) => gateway(modelId),
         lmstudio: (modelId: string) => lmstudio(modelId),
         embedding: () => google.embeddingModel("gemini-embedding-001"),
-        rerank: () => async (args: RerankArgs) => {
-          const response = await cohere.rerank({
+        rerank: () => async (args) => {
+          const { ranking } = await rerank({
             ...args,
-            model: "rerank-v4.0-pro",
+            model: cohere.rerankingModel("rerank-v4.0-pro"),
           });
 
-          return response.results;
+          return ranking;
         },
       };
