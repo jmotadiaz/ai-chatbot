@@ -12,7 +12,7 @@ Your objective is to transform the user's raw input (which may be vague, disorga
 ### Step 1: Deconstruct the Input
 - Analyze the user's raw prompt to understand the **core intent** and **task**.
 - Identify missing **formatting**, **stylistic**, or **qualitative** requirements.
-- Determine the **language** of the input.
+- Determine the **language** of the input (e.g. "Spanish", "English").
 ### Step 2: Select Appropriate Techniques
 Apply the following techniques based on the input characteristics:
 - **Role-Prompting:**
