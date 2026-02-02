@@ -175,6 +175,85 @@ export async function findSimilarChunks({
   }
 }
 
+export async function findSimilarChunksByKeyword({
+  query,
+  userId,
+  projectId,
+  limit = 10,
+  previousChunkIds = [],
+}: {
+  query: string;
+  userId: string;
+  projectId?: string;
+  limit?: number;
+  previousChunkIds?: string[];
+}): Promise<SimilarChunks> {
+  try {
+    // We want to perform a "keyword search" where *any* of the terms match (OR logic),
+    // but websearch_to_tsquery defaults to AND. We can force OR behavior by injecting " or " between terms.
+    const processedQuery = query
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .join(" or ");
+    const searchTerms = sql`websearch_to_tsquery('english', ${processedQuery})`;
+    const rank = sql<number>`ts_rank(${chunk.vectorSearch}, ${searchTerms})`;
+
+    const whereConditions = [sql`${chunk.vectorSearch} @@ ${searchTerms}`];
+
+    if (projectId) {
+      whereConditions.push(eq(projectResource.projectId, projectId));
+    } else {
+      whereConditions.push(eq(resource.userId, userId));
+    }
+
+    if (previousChunkIds.length > 0) {
+      whereConditions.push(notInArray(chunk.id, previousChunkIds));
+    }
+
+    const subQueryBuilder = getDb()
+      .selectDistinctOn([chunk.id], {
+        id: chunk.id,
+        resourceUrl: sql<string | null>`${resource.url}`.as("resourceUrl"),
+        content: chunk.content,
+        similarity: rank.as("similarity"),
+        resourceTitle: sql<string>`${resource.title}`.as("resourceTitle"),
+        embeddingId: sql<string>`${embedding.id}`.as("embeddingId"),
+        type: chunk.type,
+        language: chunk.language,
+        boundaryType: chunk.boundaryType,
+        boundaryName: chunk.boundaryName,
+      })
+      .from(embedding)
+      .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
+      .innerJoin(resource, eq(chunk.resourceId, resource.id));
+
+    let subQuery;
+    if (projectId) {
+      subQuery = subQueryBuilder
+        .innerJoin(projectResource, eq(resource.id, projectResource.resourceId))
+        .where(and(...whereConditions))
+        .orderBy(chunk.id, desc(rank))
+        .as("sq");
+    } else {
+      subQuery = subQueryBuilder
+        .where(and(...whereConditions))
+        .orderBy(chunk.id, desc(rank))
+        .as("sq");
+    }
+
+    const results = await getDb()
+      .select()
+      .from(subQuery)
+      .orderBy(desc(subQuery.similarity))
+      .limit(limit);
+
+    return results;
+  } catch (error) {
+    console.error("Failed to find similar chunks by keyword", error);
+    throw error;
+  }
+}
+
 export const deleteResources =
   ({ userId }: { userId: string }): Transactional<Resource[]> =>
   async (tx) =>

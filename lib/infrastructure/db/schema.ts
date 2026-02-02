@@ -1,5 +1,5 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -13,7 +13,14 @@ import {
   serial,
   boolean,
   integer,
+  customType,
 } from "drizzle-orm/pg-core";
+
+const vectorSearch = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -116,23 +123,37 @@ export const projectResource = pgTable("ProjectResource", {
     .notNull(),
 });
 
-export const chunk = pgTable("Chunk", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  resourceId: uuid("resourceId")
-    .notNull()
-    .references(() => resource.id, { onDelete: "cascade" }),
-  content: text("content").notNull(), // Stores the parent content
-  type: varchar("type", { length: 50 }).notNull(), // 'text' or 'code'
-  language: varchar("language", { length: 50 }),
-  boundaryType: varchar("boundaryType", { length: 50 }),
-  boundaryName: text("boundaryName"),
-  createdAt: timestamp("createdAt", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updatedAt", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const chunk = pgTable(
+  "Chunk",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    resourceId: uuid("resourceId")
+      .notNull()
+      .references(() => resource.id, { onDelete: "cascade" }),
+    content: text("content").notNull(), // Stores the parent content
+    type: varchar("type", { length: 50 }).notNull(), // 'text' or 'code'
+    language: varchar("language", { length: 50 }),
+    boundaryType: varchar("boundaryType", { length: 50 }),
+    boundaryName: text("boundaryName"),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    vectorSearch: vectorSearch("vectorSearch")
+      .generatedAlwaysAs(
+        (): SQL => sql`to_tsvector('english', ${chunk.content})`,
+      )
+      .notNull(),
+  },
+  (table) => ({
+    vectorSearchIndex: index("vectorSearchIndex").using(
+      "gin",
+      table.vectorSearch,
+    ),
+  }),
+);
 
 export const embedding = pgTable(
   "Embedding",

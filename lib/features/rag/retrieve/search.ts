@@ -1,5 +1,5 @@
 import type { SimilarChunk, SimilarChunks } from "../queries";
-import { findSimilarChunks } from "../queries";
+import { findSimilarChunks, findSimilarChunksByKeyword } from "../queries";
 import { QueryType, RagChunk } from "../types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 import { generateEmbedding } from "@/lib/features/rag/retrieve/embeddings";
@@ -32,7 +32,7 @@ export async function vectorSearch({
   limit = 10,
   similarityThreshold = 0.6,
   previousChunkIds = [],
-}: VectorSearchInput): Promise<VectorSearchResult> {
+}: VectorSearchInput): Promise<SimilarChunks> {
   try {
     const userQueryEmbedded = await generateEmbedding(query, queryType);
     const similarChunks = await findSimilarChunks({
@@ -44,28 +44,34 @@ export async function vectorSearch({
       previousChunkIds,
     });
 
-    if (similarChunks.length === 0) {
-      return {
-        success: false,
-        error: "No relevant context found in knowledge base",
-      };
-    }
-
-    return {
-      success: true,
-      similarChunks,
-    };
+    return similarChunks;
   } catch (error) {
     console.error("Error in retrieve function:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unknown error in retrieve function",
-    };
+    return [];
   }
 }
+
+const keywordSearch = async ({
+  query,
+  userId,
+  projectId,
+  previousChunkIds = [],
+}: VectorSearchInput): Promise<SimilarChunks> => {
+  try {
+    const similarChunks = await findSimilarChunksByKeyword({
+      query,
+      userId,
+      projectId,
+      limit: 10,
+      previousChunkIds,
+    });
+
+    return similarChunks;
+  } catch (error) {
+    console.error("Error in retrieve function:", error);
+    return [];
+  }
+};
 
 interface RerankInput {
   query: string;
@@ -89,17 +95,15 @@ export async function rerankChunks({
   query,
   chunks,
 }: RerankInput): Promise<SimilarChunks> {
-  const uniqueChunks = getUniqueChunks(chunks);
-
   try {
     // 2. Llamada a la API
     const results = await rerank({
       query: query,
-      documents: uniqueChunks.map(({ content }) => content),
+      documents: chunks.map(({ content }) => content),
       topN: 20,
     });
 
-    return chunksByScore(results, uniqueChunks);
+    return chunksByScore(results, chunks);
   } catch (error) {
     console.error("Error al reordenar documentos con Cohere:", error);
     return [];
@@ -144,37 +148,36 @@ export const retrieveResourceChunks = async ({
   userId,
   projectId,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
-  const results = await Promise.all(
-    multiHopQueries.map((query) =>
-      vectorSearch({
-        query,
-        userId,
-        projectId,
-        limit: K_VECTOR_SEARCHES,
-        similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
-        previousChunkIds: previousResources,
-      }),
-    ),
+  const chunks = getUniqueChunks(
+    (
+      await Promise.all(
+        multiHopQueries.map(async (query) => {
+          const [vectorResult, keywordResult] = await Promise.all([
+            vectorSearch({
+              query,
+              userId,
+              projectId,
+              limit: K_VECTOR_SEARCHES,
+              similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
+              previousChunkIds: previousResources,
+            }),
+            keywordSearch({
+              query,
+              userId,
+              projectId,
+              previousChunkIds: previousResources,
+            }),
+          ]);
+
+          return [...vectorResult, ...keywordResult];
+        }),
+      )
+    ).flat(),
   );
-
-  const vectorSearchResults: SimilarChunks = [];
-
-  for (const result of results) {
-    if (result.success && result.similarChunks) {
-      vectorSearchResults.push(...result.similarChunks);
-    } else if (!result.success) {
-      console.warn("One of the RAG queries failed:", result.error);
-    }
-  }
-
-  if (vectorSearchResults.length === 0) {
-    console.error("No resources or similar chunks found for any query");
-    return [];
-  }
 
   const finalResults = await rerankChunks({
     query: queryRewriting,
-    chunks: vectorSearchResults,
+    chunks,
   });
 
   return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {
