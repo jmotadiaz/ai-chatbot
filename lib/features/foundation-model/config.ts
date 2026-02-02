@@ -39,6 +39,7 @@ export const chatModelKeys = [
   "Kimi K2 Thinking",
   "MiniMax M2.1",
   "GLM-4.7",
+  "GLM-4.7 Flash",
   "Qwen3 Instruct",
   "Qwen3 Thinking",
   "MiMo V2 Flash",
