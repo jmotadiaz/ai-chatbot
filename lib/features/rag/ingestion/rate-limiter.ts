@@ -52,7 +52,7 @@ export class EmbeddingRateLimiter {
     const currentRequestCount = this.requestTimestamps.length;
     const currentTokenSum = this.tokenCounts.reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
 
     return (
@@ -87,5 +87,5 @@ export class EmbeddingRateLimiter {
 // Singleton instance for the application
 export const embeddingRateLimiter = new EmbeddingRateLimiter({
   maxRequestsPerMinute: 2000,
-  maxTokensPerMinute: 150000,
+  maxTokensPerMinute: 250000,
 });
