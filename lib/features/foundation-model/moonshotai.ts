@@ -3,7 +3,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MOONSHOTAI_CONFIG = {
   "Kimi K2": {
-    model: providers.gateway("moonshotai/kimi-k2.5"),
+    model: providers.openrouter("moonshotai/kimi-k2.5"),
     company: "moonshotai",
     temperature: 1,
     topP: 0.95,
