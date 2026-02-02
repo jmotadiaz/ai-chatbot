@@ -3,7 +3,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const XIAOMI_CONFIG = {
   "MiMo V2 Flash": {
-    model: providers.gateway("xiaomi/mimo-v2-flash"),
+    model: providers.openrouter("xiaomi/mimo-v2-flash"),
     reasoning: true,
     company: "xiaomi",
     temperature: 0.8,
