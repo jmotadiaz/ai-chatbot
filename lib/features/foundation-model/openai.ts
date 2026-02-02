@@ -8,7 +8,7 @@ export const OPENAI_CONFIG = {
     temperature: 0.6,
     reasoning: true,
     providerOptions: {
-      openai: { reasoningEffort: "high" },
+      openai: { reasoningEffort: "high", textVerbosity: "low" },
       gateway: {
         zeroDataRetention: true,
         order: ["cerebras", "baseten"],

@@ -21,6 +21,10 @@ export interface VectorSearchInput {
   previousChunkIds?: string[];
 }
 
+const K_VECTOR_SEARCHES = 100;
+const K_KEYWORD_SEARCHES = 10;
+const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
+
 /**
  * Retrieves relevant context from RAG database for a given query
  */
@@ -55,6 +59,7 @@ const keywordSearch = async ({
   query,
   userId,
   projectId,
+  limit = 10,
   previousChunkIds = [],
 }: VectorSearchInput): Promise<SimilarChunks> => {
   try {
@@ -62,7 +67,7 @@ const keywordSearch = async ({
       query,
       userId,
       projectId,
-      limit: 10,
+      limit,
       previousChunkIds,
     });
 
@@ -138,9 +143,6 @@ export interface RetrieveResourcesInput {
   limit?: number;
 }
 
-const K_VECTOR_SEARCHES = 100;
-const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
-
 export const retrieveResourceChunks = async ({
   multiHopQueries,
   queryRewriting,
@@ -157,6 +159,7 @@ export const retrieveResourceChunks = async ({
               query,
               userId,
               projectId,
+              queryType: "RETRIEVAL_QUERY",
               limit: K_VECTOR_SEARCHES,
               similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
               previousChunkIds: previousResources,
@@ -165,6 +168,7 @@ export const retrieveResourceChunks = async ({
               query,
               userId,
               projectId,
+              limit: K_KEYWORD_SEARCHES,
               previousChunkIds: previousResources,
             }),
           ]);
