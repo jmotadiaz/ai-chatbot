@@ -118,7 +118,7 @@ const chunksByScore = (results: RerankResult[], chunks: SimilarChunks) => {
   const rerankedChunks: SimilarChunk[] = [];
   for (const result of results) {
     const chunk = chunks[result.originalIndex];
-    if (result.score >= 0.6) {
+    if (result.score >= 0.8) {
       rerankedChunks.push(chunk);
     } else if (result.score >= 0.35 && rerankedChunks.length < 4) {
       rerankedChunks.push(chunk);
