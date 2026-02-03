@@ -43,6 +43,7 @@ export const chatModelKeys = [
   "Qwen3 Next Instruct",
   "Qwen3 Next Thinking",
   "MiMo V2 Flash",
+  "MiMo V2 Flash Thinking",
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Llama 4 Scout",
