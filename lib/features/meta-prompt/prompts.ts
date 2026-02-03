@@ -7,9 +7,8 @@ export const defaultMetaPrompt = `
 
   1. **Role Assignment**: Assign a specific expert role relevant to the task when not previously provided in <chat_history>.
   2. **Context & Specifics**: Infer or extract necessary background information and explicitly state it in the prompt to guide the model. If the user's request is vague, frame it within a professional context.
-  3. **Clear Instructions**: Use positive, specific directives.
+  3. **Workflow**: Defines the steps of the task.
   4. **Output Specification**: Define exactly how the result should be formatted.
-  5. **Structural Delimiters**: Markdown headers (##) to separate sections within the refined prompt for clarity and to prevent prompt injection.
 
   Ensure the refined prompt is concise, unambiguous, and written in the same language as the original input. Do not answer the user's request; simply construct the prompt that would allow another AI to answer it perfectly.
 `;
