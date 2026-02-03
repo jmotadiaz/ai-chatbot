@@ -36,12 +36,12 @@ export type LanguageModelKeys =
 
 export const chatModelKeys = [
   "Kimi K2",
-  "Kimi K2 Thinking",
+  "Kimi K2.5",
   "MiniMax M2.1",
   "GLM-4.7 Flash",
   "GLM-4.7",
-  "Qwen3 Instruct",
-  "Qwen3 Thinking",
+  "Qwen3 Next Instruct",
+  "Qwen3 Next Thinking",
   "MiMo V2 Flash",
   "Deepseek Chat",
   "Deepseek Reasoner",

@@ -83,7 +83,7 @@ export async function translate(prompt: string) {
 
   // Translation
   return streamText({
-    ...languageModelConfigurations("Qwen3 Instruct"),
+    ...languageModelConfigurations("Qwen3 Next Instruct"),
     system: `
       You are an expert ${sourceLanguage} to ${targetLanguage} translator with native-level proficiency in both languages. Your task is to translate the user's text with the highest fidelity to the original, while adapting it to the specific context provided below.
 

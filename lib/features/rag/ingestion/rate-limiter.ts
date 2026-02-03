@@ -45,7 +45,7 @@ export class EmbeddingRateLimiter {
     this.tokenCounts = this.tokenCounts.slice(j);
   }
 
-  private canMakeRequest(tokenEstimate: number): boolean {
+  private canMakeRequest(tokenEstimate: number, requestCount: number): boolean {
     const now = Date.now();
     this.cleanupOldEntries(now);
 
@@ -56,30 +56,34 @@ export class EmbeddingRateLimiter {
     );
 
     return (
-      currentRequestCount < this.maxRequestsPerMinute &&
-      currentTokenSum + tokenEstimate < this.maxTokensPerMinute
+      currentRequestCount + requestCount <= this.maxRequestsPerMinute &&
+      currentTokenSum + tokenEstimate <= this.maxTokensPerMinute
     );
   }
 
-  private recordRequest(tokenEstimate: number) {
+  private recordRequest(tokenEstimate: number, requestCount: number) {
     const now = Date.now();
-    this.requestTimestamps.push(now);
+    for (let i = 0; i < requestCount; i++) {
+      this.requestTimestamps.push(now);
+    }
     this.tokenTimestamps.push(now);
     this.tokenCounts.push(tokenEstimate);
   }
 
-  async acquire(content: string): Promise<void> {
-    const tokenEstimate = this.estimateTokens(content);
+  async acquire(contents: string[]): Promise<void> {
+    const concatenatedContent = contents.join("");
+    const tokenEstimate = this.estimateTokens(concatenatedContent);
+    const requestCount = contents.length;
 
-    while (!this.canMakeRequest(tokenEstimate)) {
+    while (!this.canMakeRequest(tokenEstimate, requestCount)) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    this.recordRequest(tokenEstimate);
+    this.recordRequest(tokenEstimate, requestCount);
   }
 
-  async execute<T>(content: string, fn: () => Promise<T>): Promise<T> {
-    await this.acquire(content);
+  async execute<T>(contents: string[], fn: () => Promise<T>): Promise<T> {
+    await this.acquire(contents);
     return fn();
   }
 }
@@ -87,5 +91,5 @@ export class EmbeddingRateLimiter {
 // Singleton instance for the application
 export const embeddingRateLimiter = new EmbeddingRateLimiter({
   maxRequestsPerMinute: 2000,
-  maxTokensPerMinute: 250000,
+  maxTokensPerMinute: 350000,
 });

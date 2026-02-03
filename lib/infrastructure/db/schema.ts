@@ -143,7 +143,8 @@ export const chunk = pgTable(
       .notNull(),
     vectorSearch: vectorSearch("vectorSearch")
       .generatedAlwaysAs(
-        (): SQL => sql`to_tsvector('english', ${chunk.content})`,
+        (): SQL =>
+          sql`to_tsvector('english', regexp_replace(${chunk.content}, '(.{100})', E'\\1 ', 'g'))`,
       )
       .notNull(),
   },

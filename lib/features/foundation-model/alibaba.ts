@@ -2,7 +2,7 @@ import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const ALIBABA_CONFIG = {
-  "Qwen3 Instruct": {
+  "Qwen3 Next Instruct": {
     model: providers.gateway("alibaba/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
@@ -14,7 +14,7 @@ export const ALIBABA_CONFIG = {
       },
     },
   },
-  "Qwen3 Thinking": {
+  "Qwen3 Next Thinking": {
     model: providers.gateway("alibaba/qwen3-next-80b-a3b-thinking"),
     reasoning: true,
     company: "alibaba",

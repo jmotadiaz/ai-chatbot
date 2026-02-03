@@ -27,6 +27,9 @@ export const useProjectResources = ({
   const [isLoading, setIsLoading] = useState(true);
 
   const loadProjectResources = useCallback(async () => {
+    if (!projectId) {
+      return;
+    }
     setIsLoading(true);
     try {
       const { resources } = await getProjectResourcesAction({

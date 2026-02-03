@@ -14,7 +14,7 @@ interface EmbeddingOutput {
 }
 
 export async function generateEmbeddings(
-  inputs: EmbeddingInput[]
+  inputs: EmbeddingInput[],
 ): Promise<EmbeddingOutput[]> {
   const BATCH_SIZE = 99; // Límite común de APIs
   if (inputs.length === 0) {
@@ -28,16 +28,16 @@ export async function generateEmbeddings(
   for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
     const batch = inputs.slice(i, i + BATCH_SIZE);
 
-    // Rate Limiter: Calcular tokens estimados y esperar si es necesario
-    const batchContent = batch.map((item) => item.content).join("");
+    // Rate Limiter: Passa el array de contenidos directamente
+    // (internamente concatena para tokens y usa length para requests)
+    const batchContents = batch.map((item) => item.content);
 
     // Solo enviamos el texto al modelo
     const { embeddings } = await embeddingRateLimiter.execute(
-      batchContent,
+      batchContents,
       () =>
         embedMany({
           model: providers.embedding(),
-          maxParallelCalls: 1,
           providerOptions: {
             google: {
               outputDimensionality: 768,
@@ -45,7 +45,7 @@ export async function generateEmbeddings(
             },
           },
           values: batch.map((item) => item.content),
-        })
+        }),
     );
 
     // Mapeamos de vuelta usando la posición en el lote (garantizada por la API de AI SDK)

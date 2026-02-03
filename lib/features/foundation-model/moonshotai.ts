@@ -7,10 +7,11 @@ export const MOONSHOTAI_CONFIG = {
     company: "moonshotai",
     temperature: 0.6,
   },
-  "Kimi K2 Thinking": {
+  "Kimi K2.5": {
     model: providers.openrouter("moonshotai/kimi-k2.5"),
     company: "moonshotai",
     reasoning: true,
+    supportedFiles: ["img", "pdf"],
     temperature: 1.0,
     topP: 0.95,
   },

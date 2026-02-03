@@ -65,6 +65,7 @@ export const {
       },
     }),
   ],
+  trustHost: process.env.AUTH_TRUST_HOST === "true",
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

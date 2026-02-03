@@ -14,14 +14,14 @@ test.describe("Chat functionality", () => {
     await chatPage.header.modelPicker.selectModel("Router");
     await expect.soft(chatPage.chat.settingsButton).not.toBeVisible();
 
-    await chatPage.header.modelPicker.selectModel("Kimi K2 Thinking");
+    await chatPage.header.modelPicker.selectModel("Kimi K2.5");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
     await chatPage.closeDropdown();
 
-    await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
+    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
@@ -33,7 +33,7 @@ test.describe("Chat functionality", () => {
     await chatPage.chat.settings.setTemperature(0.5);
     await chatPage.closeDropdown();
 
-    await chatPage.header.modelPicker.selectModel("Kimi K2 Thinking");
+    await chatPage.header.modelPicker.selectModel("Kimi K2.5");
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
   });
@@ -43,7 +43,7 @@ test.describe("Chat functionality", () => {
     await chatPage.chat.tools.toggleTool("rag");
     await chatPage.closeDropdown();
 
-    await chatPage.header.modelPicker.selectModel("Qwen3 Instruct");
+    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
 
     await chatPage.chat.openSettings();
 

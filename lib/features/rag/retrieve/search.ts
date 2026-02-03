@@ -101,11 +101,10 @@ export async function rerankChunks({
   chunks,
 }: RerankInput): Promise<SimilarChunks> {
   try {
-    // 2. Llamada a la API
     const results = await rerank({
       query: query,
       documents: chunks.map(({ content }) => content),
-      topN: 20,
+      topN: 10,
     });
 
     return chunksByScore(results, chunks);

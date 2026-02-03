@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import TurndownService from "turndown";
 import type { Resource } from "@/lib/features/rag/types";
 
@@ -11,6 +11,14 @@ export interface UrlResource {
 const turndownService = new TurndownService({
   headingStyle: "atx",
   codeBlockStyle: "fenced",
+});
+
+turndownService.addRule("soloTextoEnEnlaces", {
+  filter: "a", // Identifica todas las etiquetas <a>
+  replacement: function (content) {
+    // 'content' es el texto que está dentro del enlace
+    return content;
+  },
 });
 
 turndownService.addRule("removeDistractions", {
@@ -145,7 +153,9 @@ export async function fetchAndConvertURL({
     }
 
     const html = await response.text();
-    const dom = new JSDOM(html);
+    const virtualConsole = new VirtualConsole();
+    virtualConsole.sendTo(console, { omitJSDOMErrors: true });
+    const dom = new JSDOM(html, { virtualConsole });
     const doc = dom.window.document;
 
     // Convert HTML to Markdown

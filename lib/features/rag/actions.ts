@@ -99,7 +99,7 @@ export async function uploadResources(
           continue;
         }
 
-        if (process.env.NODE_ENV === "production" && urls.length > 200) {
+        if (process.env.RAG_UPLOAD_LIMIT !== "false" && urls.length > 200) {
           console.warn(`Max 200 URLs per file: ${jsonFile.name}`);
           // We could return error here or just process first 200.
           // For now let's stick to previous behavior but maybe just warn and skip or process?
@@ -436,7 +436,7 @@ export async function getProjectResourcesAction({
 }> {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user || !projectId) {
     return {
       resources: [],
       hasMore: false,
@@ -467,7 +467,7 @@ export async function getUserResourcesNotInProjectAction({
 }> {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user || !projectId) {
     return {
       resources: [],
       hasMore: false,
