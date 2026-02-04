@@ -1,7 +1,14 @@
 "use server";
 
+import { z } from "zod";
 import { getHistoryChats } from "./queries";
-import { auth } from "@/lib/features/auth/auth-config";
+import { getSession } from "@/lib/features/auth/cached-auth";
+
+const paginationSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(20),
+  offset: z.number().int().min(0).default(0),
+  filter: z.string().default(""),
+});
 
 export async function getHistoryChatsAction({
   limit = 20,
@@ -12,7 +19,8 @@ export async function getHistoryChatsAction({
   offset?: number;
   filter?: string;
 }) {
-  const session = await auth();
+  const validated = paginationSchema.parse({ limit, offset, filter });
+  const session = await getSession();
 
   if (!session?.user) {
     return {
@@ -23,8 +31,8 @@ export async function getHistoryChatsAction({
 
   return getHistoryChats({
     userId: session.user.id,
-    limit,
-    offset,
-    filter,
+    limit: validated.limit,
+    offset: validated.offset,
+    filter: validated.filter,
   });
 }

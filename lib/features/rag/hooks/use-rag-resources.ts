@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 
@@ -70,7 +63,6 @@ export const useRagResources = ({
   useEffect(() => {
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
-      // Avoid duplicate fetch on mount; server already provided initial data.
       if (debouncedFilter.trim() === "") return;
     }
 
@@ -89,35 +81,21 @@ export const useRagResources = ({
   const loadMore = useCallback(() => {
     if (!hasMore || isFetching) return;
 
-    const offset = resources.length;
-    startFetchTransition(async () => {
-      const result = await getRagResourcesAction({
-        limit: itemsPerPage,
-        offset,
-        filter: debouncedFilter,
+    setResources((prev) => {
+      const offset = prev.length;
+      startFetchTransition(async () => {
+        const result = await getRagResourcesAction({
+          limit: itemsPerPage,
+          offset,
+          filter: debouncedFilter,
+        });
+
+        setResources((current) => [...current, ...result.resources]);
+        setHasMore(result.hasMore);
       });
-
-      setResources((prev) => [...prev, ...result.resources]);
-      setHasMore(result.hasMore);
+      return prev;
     });
-  }, [
-    debouncedFilter,
-    hasMore,
-    isFetching,
-    itemsPerPage,
-    startFetchTransition,
-    resources.length,
-  ]);
-
-  const { scrollContainer, getItemProps } = useInfiniteScrollItems({
-    items: resources,
-    hasMore,
-    itemsPerPage,
-    onLoadMore: loadMore,
-    getItemKey: (resource) => resource.title,
-    getItemDeletingState: (resource) => deletingTitles.has(resource.title),
-    onItemDelete: (resource) => onDeleteResource(resource.title),
-  });
+  }, [debouncedFilter, hasMore, isFetching, itemsPerPage]);
 
   const onDeleteResource = useCallback(
     (title: string) => {
@@ -150,25 +128,21 @@ export const useRagResources = ({
     startMutateTransition(async () => {
       try {
         const trimmed = debouncedFilter.trim();
-        if (trimmed.length > 0) {
-          const result = await deleteResourcesByFilter(trimmed);
-          if (result.success) {
-            setResources([]);
-            setHasMore(false);
-            toast.success("Selected resources deleted successfully");
-          } else {
-            toast.error(result.error || "Failed to delete selected resources");
-          }
-          return;
-        }
+        const result =
+          trimmed.length > 0
+            ? await deleteResourcesByFilter(trimmed)
+            : await deleteAllResources();
 
-        const result = await deleteAllResources();
         if (result.success) {
           setResources([]);
           setHasMore(false);
-          toast.success("All resources deleted successfully");
+          toast.success(
+            trimmed
+              ? "Selected resources deleted successfully"
+              : "All resources deleted successfully",
+          );
         } else {
-          toast.error(result.error || "Failed to delete all resources");
+          toast.error(result.error || "Failed to delete resources");
         }
       } catch (error) {
         console.error("Error deleting resources:", error);
@@ -177,34 +151,25 @@ export const useRagResources = ({
     });
   }, [debouncedFilter, startMutateTransition]);
 
-  const getResourceItemProps = useCallback(
-    (resource: RagResourceListItem, index: number) => {
-      return getItemProps(resource, index);
-    },
-    [getItemProps],
-  );
+  const { scrollContainer, getItemProps } = useInfiniteScrollItems({
+    items: resources,
+    hasMore,
+    itemsPerPage,
+    onLoadMore: loadMore,
+    getItemKey: (resource) => resource.title,
+    getItemDeletingState: (resource) => deletingTitles.has(resource.title),
+    onItemDelete: (resource) => onDeleteResource(resource.title),
+  });
 
-  return useMemo(
-    () => ({
-      resources,
-      hasMore,
-      isFetching,
-      isMutating,
-      filter,
-      setFilter,
-      onBulkDelete,
-      scrollContainer,
-      getResourceItemProps,
-    }),
-    [
-      resources,
-      hasMore,
-      isFetching,
-      isMutating,
-      filter,
-      onBulkDelete,
-      scrollContainer,
-      getResourceItemProps,
-    ],
-  );
+  return {
+    resources,
+    hasMore,
+    isFetching,
+    isMutating,
+    filter,
+    setFilter,
+    onBulkDelete,
+    scrollContainer,
+    getResourceItemProps: getItemProps,
+  };
 };

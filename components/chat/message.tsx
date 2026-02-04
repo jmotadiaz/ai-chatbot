@@ -10,6 +10,7 @@ import type {
   SourceUrlUIPart,
 } from "ai";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
@@ -20,11 +21,18 @@ import {
   mergeReasoningParts,
   destructuringMessageParts,
 } from "@/lib/features/chat/utils";
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningTrigger,
-} from "@/components/chat/reasoning";
+const Reasoning = dynamic(
+  () => import("@/components/chat/reasoning").then((m) => m.Reasoning),
+  { ssr: false },
+);
+const ReasoningContent = dynamic(
+  () => import("@/components/chat/reasoning").then((m) => m.ReasoningContent),
+  { ssr: false },
+);
+const ReasoningTrigger = dynamic(
+  () => import("@/components/chat/reasoning").then((m) => m.ReasoningTrigger),
+  { ssr: false },
+);
 import { ChatReload } from "@/components/chat/reload";
 
 export interface MessagesProps {

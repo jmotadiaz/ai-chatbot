@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/lib/features/auth/auth-config";
+import { getSession } from "@/lib/features/auth/cached-auth";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 import { saveChat, saveMessages } from "@/lib/features/chat/queries";
@@ -32,7 +32,7 @@ export async function persistHubChatFromTranscript({
 
   webSearchNumResults?: number;
 }): Promise<{ chatId: string }> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     throw new Error("Unauthorized");
   }

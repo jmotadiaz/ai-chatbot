@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import {
   deleteResources,
   deleteResourcesByTitleFilter,
@@ -16,8 +17,18 @@ import {
   deleteResourceById,
 } from "./queries";
 import { saveUrlResource, saveMarkdownResource } from "./ingestion/pipeline";
-import { auth } from "@/lib/features/auth/auth-config";
+import { getSession } from "@/lib/features/auth/cached-auth";
+// ... (trimmed imports)
 import { transaction } from "@/lib/infrastructure/db/queries";
+
+// Schemas for input validation
+const resourceIdSchema = z.string().uuid();
+const projectIdSchema = z.string().uuid();
+const paginationSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(20),
+  offset: z.number().int().min(0).default(0),
+  filter: z.string().default(""),
+});
 
 export interface ProcessResult {
   success: boolean;
@@ -29,7 +40,7 @@ export interface ProcessResult {
 export async function uploadResources(
   formData: FormData,
 ): Promise<ProcessResult> {
-  const session = await auth();
+  const session = await getSession();
   const result = { resourcesCreated: 0 };
 
   if (!session?.user) {
@@ -189,7 +200,7 @@ export async function uploadResources(
 }
 
 export async function deleteResource(title: string): Promise<ProcessResult> {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -221,7 +232,7 @@ export async function deleteResource(title: string): Promise<ProcessResult> {
 export async function deleteSelectedResources(
   titles: string[],
 ): Promise<ProcessResult> {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -253,7 +264,7 @@ export async function deleteSelectedResources(
 export async function deleteResourcesByFilter(
   filter: string,
 ): Promise<ProcessResult> {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -283,7 +294,7 @@ export async function deleteResourcesByFilter(
 }
 
 export async function deleteAllResources(): Promise<ProcessResult> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     redirect("/login");
   } else if (!session.user.id) {
@@ -324,7 +335,8 @@ export async function getRagResourcesAction({
   resources: Array<{ title: string; url: string | null }>;
   hasMore: boolean;
 }> {
-  const session = await auth();
+  const validated = paginationSchema.parse({ limit, offset, filter });
+  const session = await getSession();
 
   if (!session?.user) {
     return {
@@ -335,9 +347,9 @@ export async function getRagResourcesAction({
 
   return getUniqueResourceTitlesByUserIdPaginated({
     userId: session.user.id,
-    limit,
-    offset,
-    filter,
+    limit: validated.limit,
+    offset: validated.offset,
+    filter: validated.filter,
   });
 }
 
@@ -347,7 +359,10 @@ export async function addResourceToProjectAction(
   resourceId: string,
   projectId: string,
 ): Promise<ProcessResult> {
-  const session = await auth();
+  const validatedResourceId = resourceIdSchema.parse(resourceId);
+  const validatedProjectId = projectIdSchema.parse(projectId);
+
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -356,8 +371,8 @@ export async function addResourceToProjectAction(
   try {
     await transaction(
       addResourceToProject({
-        projectId,
-        resourceId,
+        projectId: validatedProjectId,
+        resourceId: validatedResourceId,
       }),
     );
 
@@ -378,7 +393,10 @@ export async function removeResourceFromProjectAction(
   resourceId: string,
   projectId: string,
 ): Promise<ProcessResult> {
-  const session = await auth();
+  const validatedResourceId = resourceIdSchema.parse(resourceId);
+  const validatedProjectId = projectIdSchema.parse(projectId);
+
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -394,7 +412,9 @@ export async function removeResourceFromProjectAction(
 
     // If resource has no userId, it was created only for the project, so delete it completely
     if (!resourceData.userId) {
-      const [deleted] = await transaction(deleteResourceById({ resourceId }));
+      const [deleted] = await transaction(
+        deleteResourceById({ resourceId: validatedResourceId }),
+      );
 
       if (deleted.length === 0) {
         return { success: false, error: "Failed to delete resource" };
@@ -402,8 +422,8 @@ export async function removeResourceFromProjectAction(
 
       console.log("Resource deleted successfully");
 
-      revalidatePath(`/project/${projectId}/edit`);
-      revalidatePath(`/project/${projectId}/add`);
+      revalidatePath(`/project/${validatedProjectId}/edit`);
+      revalidatePath(`/project/${validatedProjectId}/add`);
 
       return { success: true };
     }
@@ -411,8 +431,8 @@ export async function removeResourceFromProjectAction(
     // Otherwise, just remove the relationship
     const [result] = await transaction(
       removeResourceFromProject({
-        projectId,
-        resourceId,
+        projectId: validatedProjectId,
+        resourceId: validatedResourceId,
       }),
     );
 
@@ -447,9 +467,11 @@ export async function getProjectResourcesAction({
   resources: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
-  const session = await auth();
+  const validatedProjectId = projectIdSchema.parse(projectId);
+  const validatedPagination = paginationSchema.parse({ limit, offset, filter });
+  const session = await getSession();
 
-  if (!session?.user || !projectId) {
+  if (!session?.user || !validatedProjectId) {
     return {
       resources: [],
       hasMore: false,
@@ -457,10 +479,10 @@ export async function getProjectResourcesAction({
   }
 
   return getProjectResourcesPaginated({
-    projectId,
-    limit,
-    offset,
-    filter,
+    projectId: validatedProjectId,
+    limit: validatedPagination.limit,
+    offset: validatedPagination.offset,
+    filter: validatedPagination.filter,
   });
 }
 
@@ -478,9 +500,12 @@ export async function getUserResourcesNotInProjectAction({
   resources: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
-  const session = await auth();
+  const validatedProjectId = projectIdSchema.parse(projectId);
+  const validatedPagination = paginationSchema.parse({ limit, offset, filter });
 
-  if (!session?.user || !projectId) {
+  const session = await getSession();
+
+  if (!session?.user || !validatedProjectId) {
     return {
       resources: [],
       hasMore: false,
@@ -489,9 +514,9 @@ export async function getUserResourcesNotInProjectAction({
 
   return getUserResourcesNotInProject({
     userId: session.user.id,
-    projectId,
-    limit,
-    offset,
-    filter,
+    projectId: validatedProjectId,
+    limit: validatedPagination.limit,
+    offset: validatedPagination.offset,
+    filter: validatedPagination.filter,
   });
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/features/auth/auth-config";
+import { getSession } from "@/lib/features/auth/cached-auth";
 
 import {
   deleteChat as deleteDBChat,
@@ -11,7 +11,7 @@ import {
 import { transaction } from "@/lib/infrastructure/db/queries";
 
 export async function deleteChat(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     return;
   }
@@ -26,7 +26,7 @@ export async function deleteChat(id: string) {
 }
 
 export async function togglePinChat(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     return;
   }
@@ -38,8 +38,8 @@ export async function togglePinChat(id: string) {
     await transaction(
       updateChat(
         { id, userId: session.user.id },
-        { pinned: !dbChat.pinned, updatedAt: dbChat.updatedAt }
-      )
+        { pinned: !dbChat.pinned, updatedAt: dbChat.updatedAt },
+      ),
     );
     revalidatePath("/");
     revalidatePath("/chat/history");

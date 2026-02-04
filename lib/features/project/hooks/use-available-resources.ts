@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useTransition, useRef } from "react";
 import { useDebounce } from "use-debounce";
 import type { Resource } from "./use-project-resources";
 import { getUserResourcesNotInProjectAction } from "@/lib/features/rag/actions";
@@ -43,8 +43,11 @@ export const useAvailableResources = ({
     useState<Resource[]>(initialResources);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [searchFilter, setSearchFilter] = useState("");
-  const [isLoadingState, setIsLoadingState] = useState(false);
+  const [isLoading, startTransition] = useTransition();
   const [debouncedFilter] = useDebounce(searchFilter, 300);
+
+  const hasMountedRef = useRef(false);
+
   // Sync with server data ONLY when projectId changes to avoid resetting infinite scroll state on revalidation
   useEffect(() => {
     setAvailableResources(initialResources);
@@ -56,51 +59,44 @@ export const useAvailableResources = ({
   useEffect(() => {
     if (!projectId) return;
 
-    const loadFiltered = async () => {
-      setIsLoadingState(true);
-      try {
-        const { resources, hasMore: newHasMore } =
-          await getUserResourcesNotInProjectAction({
-            projectId,
-            limit: ITEMS_PER_PAGE,
-            offset: 0,
-            filter: debouncedFilter || undefined,
-          });
-        setAvailableResources(resources);
-        setHasMore(newHasMore);
-      } finally {
-        setIsLoadingState(false);
-      }
-    };
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      if (debouncedFilter.trim() === "") return;
+    }
 
-    loadFiltered();
+    startTransition(async () => {
+      const { resources, hasMore: newHasMore } =
+        await getUserResourcesNotInProjectAction({
+          projectId,
+          limit: ITEMS_PER_PAGE,
+          offset: 0,
+          filter: debouncedFilter || undefined,
+        });
+      setAvailableResources(resources);
+      setHasMore(newHasMore);
+    });
   }, [debouncedFilter, projectId]);
 
   // Load MORE pages (infinite scroll only)
   const loadMore = useCallback(() => {
-    if (!hasMore || isLoadingState || !projectId) return;
+    if (!hasMore || isLoading || !projectId) return;
 
-    setIsLoadingState(true);
-    getUserResourcesNotInProjectAction({
-      projectId,
-      limit: ITEMS_PER_PAGE,
-      offset: availableResources.length,
-      filter: debouncedFilter || undefined,
-    })
-      .then(({ resources, hasMore: newHasMore }) => {
-        setAvailableResources((prev) => [...prev, ...resources]);
+    setAvailableResources((prev) => {
+      const offset = prev.length;
+      startTransition(async () => {
+        const { resources, hasMore: newHasMore } =
+          await getUserResourcesNotInProjectAction({
+            projectId,
+            limit: ITEMS_PER_PAGE,
+            offset,
+            filter: debouncedFilter || undefined,
+          });
+        setAvailableResources((current) => [...current, ...resources]);
         setHasMore(newHasMore);
-      })
-      .finally(() => {
-        setIsLoadingState(false);
       });
-  }, [
-    projectId,
-    hasMore,
-    isLoadingState,
-    debouncedFilter,
-    availableResources.length,
-  ]);
+      return prev;
+    });
+  }, [projectId, hasMore, isLoading, debouncedFilter]);
 
   const { scrollContainer, getItemProps } = useInfiniteScrollItems({
     items: availableResources,
@@ -116,7 +112,7 @@ export const useAvailableResources = ({
     searchFilter,
     setSearchFilter,
     hasMore,
-    isLoading: isLoadingState,
+    isLoading,
     scrollContainer,
     getAvailableItemProps: getItemProps,
   };

@@ -11,13 +11,13 @@ import {
   updateProjectSchema,
   type InsertProject,
 } from "./types";
-import { auth } from "@/lib/features/auth/auth-config";
+import { getSession } from "@/lib/features/auth/cached-auth";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
 export async function createProject(
   project: Omit<InsertProject, "id" | "userId">,
 ) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
@@ -44,7 +44,7 @@ export async function createProject(
 }
 
 export async function createEmptyProject() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
@@ -69,7 +69,7 @@ export async function updateProject(
   id: string,
   project: Partial<Omit<InsertProject, "id" | "userId">>,
 ) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
@@ -95,7 +95,7 @@ export async function updateProject(
 }
 
 export async function deleteProject(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     return;
   }

@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
   experimental: {
     viewTransition: true,
     authInterrupts: true,
+    optimizePackageImports: [
+      "@radix-ui/react-collapsible",
+      "@radix-ui/react-use-controllable-state",
+      "motion/react",
+      "sonner",
+      "use-debounce",
+    ],
   },
   // Ensure Turbopack resolves modules from this project root (avoid picking an incorrect parent workspace root).
   turbopack: {
@@ -21,6 +28,5 @@ const nextConfig: NextConfig = {
 
   ...(disableDevIndicators && { devIndicators: false }),
 };
-
 
 export default nextConfig;

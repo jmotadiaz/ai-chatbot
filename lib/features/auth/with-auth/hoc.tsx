@@ -1,17 +1,17 @@
 import { Session } from "next-auth";
 import { redirect } from "next/navigation";
 import React from "react";
-import { auth } from "@/lib/features/auth/auth-config";
+import { getSession } from "@/lib/features/auth/cached-auth";
 
 export interface Authenticated {
   user: NonNullable<Session["user"]>;
 }
 
 export function withAuth<P extends object>(
-  Component: React.ComponentType<P & Authenticated>
+  Component: React.ComponentType<P & Authenticated>,
 ) {
   async function WithAuth(props: P) {
-    const session = await auth();
+    const session = await getSession();
 
     if (!session?.user) {
       redirect("/login");

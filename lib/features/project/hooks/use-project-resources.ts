@@ -56,18 +56,21 @@ export const useProjectResources = ({
   const loadMore = useCallback(() => {
     if (!hasMore || isLoading || !projectId) return;
 
-    const offset = projectResources.length;
-    startTransition(async () => {
-      const result = await getProjectResourcesAction({
-        projectId,
-        limit: ITEMS_PER_PAGE,
-        offset,
-      });
+    setProjectResources((prev) => {
+      const offset = prev.length;
+      startTransition(async () => {
+        const result = await getProjectResourcesAction({
+          projectId,
+          limit: ITEMS_PER_PAGE,
+          offset,
+        });
 
-      setProjectResources((prev) => [...prev, ...result.resources]);
-      setHasMore(result.hasMore);
+        setProjectResources((current) => [...current, ...result.resources]);
+        setHasMore(result.hasMore);
+      });
+      return prev;
     });
-  }, [hasMore, isLoading, projectId, projectResources.length]);
+  }, [hasMore, isLoading, projectId]);
 
   const { scrollContainer, getItemProps } = useInfiniteScrollItems({
     items: projectResources,
