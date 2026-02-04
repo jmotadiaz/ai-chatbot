@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { toast } from "sonner";
 import type { Resource } from "./use-project-resources";
 import {
   addResourceToProjectAction,
@@ -11,8 +12,6 @@ interface UseResourceMutationsParams {
   projectId: string;
   setProjectResources: React.Dispatch<React.SetStateAction<Resource[]>>;
   setAvailableResources: React.Dispatch<React.SetStateAction<Resource[]>>;
-  loadAvailableResources: (filter?: string) => Promise<void>;
-  searchFilter: string;
 }
 
 interface UseResourceMutationsReturn {
@@ -25,8 +24,6 @@ export const useResourceMutations = ({
   projectId,
   setProjectResources,
   setAvailableResources,
-  loadAvailableResources,
-  searchFilter,
 }: UseResourceMutationsParams): UseResourceMutationsReturn => {
   const [isPending, startTransition] = useTransition();
 
@@ -39,9 +36,13 @@ export const useResourceMutations = ({
           setAvailableResources((prev) =>
             prev.filter((r) => r.id !== resource.id),
           );
+          toast.success("Resource added to project");
+        } else {
+          toast.error(result.error || "Failed to add resource");
         }
       } catch (error) {
         console.error("Failed to add resource to project:", error);
+        toast.error("An error occurred while adding the resource");
       }
     });
   };
@@ -57,11 +58,14 @@ export const useResourceMutations = ({
           setProjectResources((prev) =>
             prev.filter((r) => r.id !== resource.id),
           );
-          // Refresh available resources
-          loadAvailableResources(searchFilter);
+          setAvailableResources((prev) => [...prev, resource]);
+          toast.success("Resource removed from project");
+        } else {
+          toast.error(result.error || "Failed to remove resource");
         }
       } catch (error) {
         console.error("Failed to remove resource from project:", error);
+        toast.error("An error occurred while removing the resource");
       }
     });
   };

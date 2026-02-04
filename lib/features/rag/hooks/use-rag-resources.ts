@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 
@@ -10,7 +17,7 @@ import {
   deleteResourcesByFilter,
   getRagResourcesAction,
 } from "@/lib/features/rag/actions";
-import { useIntersectionObserver } from "@/lib/utils/hooks/intersection";
+import { useInfiniteScrollItems } from "@/lib/utils/hooks/use-infinite-scroll-items";
 
 export interface RagResourceListItem {
   title: string;
@@ -30,11 +37,17 @@ export interface UseRagResourcesReturn {
   isMutating: boolean;
   filter: string;
   setFilter: (value: string) => void;
-  isDeleting: (title: string) => boolean;
-  onDeleteResource: (title: string) => void;
   onBulkDelete: () => void;
   scrollContainer: React.RefObject<HTMLUListElement | null>;
-  loader: React.RefCallback<HTMLLIElement>;
+  getResourceItemProps: (
+    resource: RagResourceListItem,
+    index: number,
+  ) => {
+    item: RagResourceListItem;
+    isDeleting?: boolean;
+    onDelete?: (item: RagResourceListItem) => void;
+    loaderRef?: React.RefCallback<HTMLLIElement>;
+  };
 }
 
 export const useRagResources = ({
@@ -51,10 +64,7 @@ export const useRagResources = ({
   const [debouncedFilter] = useDebounce(filter, 300);
   const [deletingTitles, setDeletingTitles] = useState<Set<string>>(new Set());
 
-  const resourcesRef = useRef<RagResourceListItem[]>(initialResources);
-  useEffect(() => {
-    resourcesRef.current = resources;
-  }, [resources]);
+  // Removed resourcesCountRef in favor of direct state dependency
 
   const hasMountedRef = useRef(false);
   useEffect(() => {
@@ -79,7 +89,7 @@ export const useRagResources = ({
   const loadMore = useCallback(() => {
     if (!hasMore || isFetching) return;
 
-    const offset = resourcesRef.current.length;
+    const offset = resources.length;
     startFetchTransition(async () => {
       const result = await getRagResourcesAction({
         limit: itemsPerPage,
@@ -90,13 +100,23 @@ export const useRagResources = ({
       setResources((prev) => [...prev, ...result.resources]);
       setHasMore(result.hasMore);
     });
-  }, [debouncedFilter, hasMore, isFetching, itemsPerPage, startFetchTransition]);
+  }, [
+    debouncedFilter,
+    hasMore,
+    isFetching,
+    itemsPerPage,
+    startFetchTransition,
+    resources.length,
+  ]);
 
-  const { loader, scrollContainer } = useIntersectionObserver<
-    HTMLUListElement,
-    HTMLLIElement
-  >({
-    onIntersect: loadMore,
+  const { scrollContainer, getItemProps } = useInfiniteScrollItems({
+    items: resources,
+    hasMore,
+    itemsPerPage,
+    onLoadMore: loadMore,
+    getItemKey: (resource) => resource.title,
+    getItemDeletingState: (resource) => deletingTitles.has(resource.title),
+    onItemDelete: (resource) => onDeleteResource(resource.title),
   });
 
   const onDeleteResource = useCallback(
@@ -123,12 +143,7 @@ export const useRagResources = ({
         }
       });
     },
-    [startMutateTransition]
-  );
-
-  const isDeleting = useCallback(
-    (title: string) => deletingTitles.has(title),
-    [deletingTitles]
+    [startMutateTransition],
   );
 
   const onBulkDelete = useCallback(() => {
@@ -162,6 +177,13 @@ export const useRagResources = ({
     });
   }, [debouncedFilter, startMutateTransition]);
 
+  const getResourceItemProps = useCallback(
+    (resource: RagResourceListItem, index: number) => {
+      return getItemProps(resource, index);
+    },
+    [getItemProps],
+  );
+
   return useMemo(
     () => ({
       resources,
@@ -170,11 +192,9 @@ export const useRagResources = ({
       isMutating,
       filter,
       setFilter,
-      isDeleting,
-      onDeleteResource,
       onBulkDelete,
       scrollContainer,
-      loader,
+      getResourceItemProps,
     }),
     [
       resources,
@@ -182,13 +202,9 @@ export const useRagResources = ({
       isFetching,
       isMutating,
       filter,
-      isDeleting,
-      onDeleteResource,
       onBulkDelete,
       scrollContainer,
-      loader,
-    ]
+      getResourceItemProps,
+    ],
   );
 };
-
-

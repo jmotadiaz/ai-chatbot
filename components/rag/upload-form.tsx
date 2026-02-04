@@ -10,10 +10,9 @@ import { Label } from "@/components/ui/label";
 
 interface RAGUploadFormProps {
   projectId?: string;
-  onSuccess?: () => void;
 }
 
-export const RAGUploadForm = ({ projectId, onSuccess }: RAGUploadFormProps) => {
+export const RAGUploadForm = ({ projectId }: RAGUploadFormProps) => {
   const [jsonFiles, setJsonFiles] = useState<File[]>([]);
   const [markdownFiles, setMarkdownFiles] = useState<File[]>([]);
   const [url, setUrl] = useState("");
@@ -102,9 +101,6 @@ export const RAGUploadForm = ({ projectId, onSuccess }: RAGUploadFormProps) => {
           setExcludeSelectors("");
           const form = e.target as HTMLFormElement;
           form.reset();
-          if (onSuccess) {
-            onSuccess();
-          }
         } else {
           toast.error(result.error || "Failed to process resources");
         }

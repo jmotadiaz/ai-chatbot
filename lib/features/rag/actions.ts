@@ -163,6 +163,10 @@ export async function uploadResources(
     }
 
     revalidatePath("/rag");
+    if (projectId) {
+      revalidatePath(`/project/${projectId}/edit`);
+      revalidatePath(`/project/${projectId}/add`);
+    }
 
     console.log(`Completed: ${result.resourcesCreated} resources`);
 
@@ -357,6 +361,9 @@ export async function addResourceToProjectAction(
       }),
     );
 
+    revalidatePath(`/project/${projectId}/edit`);
+    revalidatePath(`/project/${projectId}/add`);
+
     return { success: true };
   } catch (error) {
     console.error("Error in addResourceToProjectAction:", error);
@@ -395,6 +402,9 @@ export async function removeResourceFromProjectAction(
 
       console.log("Resource deleted successfully");
 
+      revalidatePath(`/project/${projectId}/edit`);
+      revalidatePath(`/project/${projectId}/add`);
+
       return { success: true };
     }
 
@@ -409,6 +419,9 @@ export async function removeResourceFromProjectAction(
     if (result.length === 0) {
       return { success: false, error: "Resource not found in project" };
     }
+
+    revalidatePath(`/project/${projectId}/edit`);
+    revalidatePath(`/project/${projectId}/add`);
 
     return { success: true };
   } catch (error) {

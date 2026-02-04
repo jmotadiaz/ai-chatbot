@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { ProjectForm } from "@/components/project/form";
+import { ProjectFormContainer } from "@/components/project/form-container";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { getProjectById } from "@/lib/features/project/queries";
 import { Header } from "@/components/layout/header/header";
@@ -40,9 +39,7 @@ const Page = async ({ params, user }: AddProjectPageProps) => {
             <ThemeToggle />
           </Header.Right>
         </Header.Container>
-        <Suspense fallback={null}>
-          <ProjectForm project={project} mode="create" />
-        </Suspense>
+        <ProjectFormContainer project={project} mode="create" />
       </div>
     </>
   );

@@ -19,15 +19,11 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
   const { modalProps, triggerModalProps } = useConfirmModal();
   const {
     resources,
-    hasMore,
-    isFetching,
     isMutating,
     filter,
     setFilter,
-    isDeleting,
-    loader,
     scrollContainer,
-    onDeleteResource,
+    getResourceItemProps,
     onBulkDelete,
   } = useRagResources({
     initialResources,
@@ -62,11 +58,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
         {...modalProps()}
         onConfirm={onBulkDelete}
         isLoading={isMutating}
-        title={
-          hasFilter
-            ? "Delete Selected Resources"
-            : "Delete All Resources"
-        }
+        title={hasFilter ? "Delete Selected Resources" : "Delete All Resources"}
         message={
           hasFilter
             ? "Are you sure you want to delete the selected resources? This action cannot be undone."
@@ -77,22 +69,18 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
         ref={scrollContainer}
         className="space-y-3 max-h-[70dvh] overflow-auto scrollbar-none"
       >
-        {resources.map((resource) => (
-          <RagResourceItem
-            key={resource.title}
-            resource={resource}
-            isDeleting={isDeleting(resource.title)}
-            onDelete={onDeleteResource}
-          />
-        ))}
-        {hasMore && (
-          <li
-            ref={loader}
-            className="h-8 w-full flex items-center justify-center text-muted-foreground text-sm"
-          >
-            {isFetching ? "Loading more..." : ""}
-          </li>
-        )}
+        {resources.map((resource, index) => {
+          const props = getResourceItemProps(resource, index);
+          return (
+            <RagResourceItem
+              key={resource.title}
+              resource={props.item}
+              isDeleting={props.isDeleting}
+              onDelete={() => props.onDelete?.(props.item)}
+              loaderRef={props.loaderRef}
+            />
+          );
+        })}
       </ul>
     </div>
   );

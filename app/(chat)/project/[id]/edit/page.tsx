@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { ProjectForm } from "@/components/project/form";
+import { ProjectFormContainer } from "@/components/project/form-container";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
@@ -43,7 +43,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({
             <ThemeToggle />
           </Header.Right>
         </Header.Container>
-        <ProjectForm project={project} />
+        <ProjectFormContainer project={project} />
       </div>
     </>
   );

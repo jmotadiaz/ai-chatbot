@@ -12,6 +12,7 @@ import { Tabs, useTabs } from "@/components/ui/tabs";
 import type { Project } from "@/lib/features/project/types";
 import { ChatProvider } from "@/components/chat/provider";
 import { Toggle } from "@/components/ui/toggle";
+import { DotsLoadingIcon } from "@/components/ui/icons";
 
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {
@@ -20,21 +21,20 @@ import {
 } from "@/components/ui/markdown-editor";
 import { Collapsible } from "@/components/ui/internal-collapsible";
 import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-project-form";
-import { useProjectResources } from "@/lib/features/project/hooks/use-project-resources";
-import { useAvailableResources } from "@/lib/features/project/hooks/use-available-resources";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
-import { ProjectResourcesTab } from "@/components/project/project-resources-tab";
 
 const tabs = ["configuration", "resources", "testChat"] as const;
 
 export interface ProjectFormProps {
   project?: Project;
   mode?: "create" | "edit";
+  resourcesSlot?: React.ReactNode;
 }
 
 export const ProjectForm: React.FC<ProjectFormProps> = ({
   project,
   mode = "edit",
+  resourcesSlot,
 }) => {
   const { getPanelProps, getTabProps } = useTabs({ tabs });
 
@@ -71,23 +71,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     hasPreviousMessage,
     models,
   } = useHandleProjectForm({ project, mode });
-
-  // Load resources at parent level so data is prefetched before switching tabs
-  const {
-    projectResources,
-    setProjectResources,
-    isLoading: isLoadingProjectResources,
-    loadProjectResources,
-  } = useProjectResources({ projectId: project?.id ?? "" });
-
-  const {
-    availableResources,
-    setAvailableResources,
-    searchFilter,
-    setSearchFilter,
-    isLoading: isLoadingAvailableResources,
-    loadAvailableResources,
-  } = useAvailableResources({ projectId: project?.id ?? "" });
 
   return (
     <div className="overflow-x-hidden h-full flex stretch flex-col">
@@ -285,19 +268,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           </Tabs.Panel>
           {project && (
             <Tabs.Panel {...getPanelProps("resources")}>
-              <ProjectResourcesTab
-                projectId={project.id}
-                projectResources={projectResources}
-                setProjectResources={setProjectResources}
-                isLoadingProject={isLoadingProjectResources}
-                loadProjectResources={loadProjectResources}
-                availableResources={availableResources}
-                setAvailableResources={setAvailableResources}
-                searchFilter={searchFilter}
-                setSearchFilter={setSearchFilter}
-                isLoadingAvailable={isLoadingAvailableResources}
-                loadAvailableResources={loadAvailableResources}
-              />
+              <Suspense
+                fallback={
+                  <div className="flex justify-center p-8">
+                    <DotsLoadingIcon />
+                  </div>
+                }
+              >
+                {resourcesSlot}
+              </Suspense>
             </Tabs.Panel>
           )}
         </div>

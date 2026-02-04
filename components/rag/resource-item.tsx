@@ -9,14 +9,18 @@ interface RagResourceItemProps {
     title: string;
     url: string | null;
   };
-  isDeleting: boolean;
-  onDelete: (title: string) => void;
+  isDeleting?: boolean;
+  onDelete?: (title: string) => void;
+  loaderRef?: React.RefCallback<HTMLLIElement>;
 }
 
 export const RagResourceItem: React.FC<RagResourceItemProps> = memo(
-  ({ resource, isDeleting, onDelete }) => {
+  ({ resource, isDeleting, onDelete, loaderRef }) => {
     return (
-      <li className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+      <li
+        ref={loaderRef}
+        className="flex items-center justify-between p-3 bg-secondary rounded-lg"
+      >
         <>
           {!!resource.url ? (
             <a
@@ -35,7 +39,7 @@ export const RagResourceItem: React.FC<RagResourceItemProps> = memo(
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          onClick={() => onDelete(resource.title)}
+          onClick={() => onDelete?.(resource.title)}
           disabled={isDeleting}
           aria-label={`Delete resource ${resource.title}`}
         >
@@ -43,7 +47,7 @@ export const RagResourceItem: React.FC<RagResourceItemProps> = memo(
         </Button>
       </li>
     );
-  }
+  },
 );
 
 RagResourceItem.displayName = "RagResourceItem";
