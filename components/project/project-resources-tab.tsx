@@ -11,6 +11,7 @@ import {
 } from "@/lib/features/project/hooks/use-project-resources";
 import { useAvailableResources } from "@/lib/features/project/hooks/use-available-resources";
 import { useResourceMutations } from "@/lib/features/project/hooks/use-resource-mutations";
+import { DotsLoadingIcon } from "@/components/ui/icons";
 
 interface ProjectResourcesTabProps {
   projectId: string;
@@ -32,6 +33,7 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
     setProjectResources,
     isLoading: isLoadingProject,
     scrollContainer: scrollContainerProject,
+    hasMore: projectHasMore,
     getProjectItemProps,
   } = useProjectResources({
     projectId,
@@ -46,6 +48,7 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
     setSearchFilter,
     isLoading: isLoadingAvailable,
     scrollContainer: scrollContainerAvailable,
+    hasMore: availableHasMore,
     getAvailableItemProps,
   } = useAvailableResources({
     projectId,
@@ -105,6 +108,11 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
                   </li>
                 );
               })}
+              {projectHasMore && (
+                <li className="flex items-center justify-center p-3">
+                  <DotsLoadingIcon className="w-4 h-4" />
+                </li>
+              )}
             </ul>
           </>
         )}
@@ -160,6 +168,11 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
                   </li>
                 );
               })}
+              {availableHasMore && (
+                <li className="flex items-center justify-center p-3">
+                  <DotsLoadingIcon className="w-4 h-4" />
+                </li>
+              )}
             </ul>
           </>
         )}

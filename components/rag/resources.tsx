@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
 import { useRagResources } from "@/lib/features/rag/hooks/use-rag-resources";
+import { DotsLoadingIcon } from "@/components/ui/icons";
 
 interface RAGResourcesProps {
   initialResources: Array<{ title: string; url: string | null }>;
@@ -25,6 +26,7 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
     scrollContainer,
     getResourceItemProps,
     onBulkDelete,
+    hasMore,
   } = useRagResources({
     initialResources,
     initialHasMore,
@@ -81,6 +83,11 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
             />
           );
         })}
+        {hasMore && (
+          <li className="flex items-center justify-center p-3">
+            <DotsLoadingIcon className="w-4 h-4" />
+          </li>
+        )}
       </ul>
     </div>
   );
