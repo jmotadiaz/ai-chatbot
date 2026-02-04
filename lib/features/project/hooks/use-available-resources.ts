@@ -49,6 +49,8 @@ export const useAvailableResources = ({
   const hasMountedRef = useRef(false);
 
   // Sync with server data ONLY when projectId changes to avoid resetting infinite scroll state on revalidation
+  // Note: initialResources/initialHasMore are intentionally excluded - we only reset on project change,
+  // not when parent re-renders with same data (which would reset scroll position)
   useEffect(() => {
     setAvailableResources(initialResources);
     setHasMore(initialHasMore);
@@ -78,25 +80,28 @@ export const useAvailableResources = ({
   }, [debouncedFilter, projectId]);
 
   // Load MORE pages (infinite scroll only)
+  // Uses functional setState to append without stale closure issues
   const loadMore = useCallback(() => {
     if (!hasMore || isLoading || !projectId) return;
 
-    setAvailableResources((prev) => {
-      const offset = prev.length;
-      startTransition(async () => {
-        const { resources, hasMore: newHasMore } =
-          await getUserResourcesNotInProjectAction({
-            projectId,
-            limit: ITEMS_PER_PAGE,
-            offset,
-            filter: debouncedFilter || undefined,
-          });
-        setAvailableResources((current) => [...current, ...resources]);
-        setHasMore(newHasMore);
-      });
-      return prev;
+    startTransition(async () => {
+      const { resources, hasMore: newHasMore } =
+        await getUserResourcesNotInProjectAction({
+          projectId,
+          limit: ITEMS_PER_PAGE,
+          offset: availableResources.length,
+          filter: debouncedFilter || undefined,
+        });
+      setAvailableResources((current) => [...current, ...resources]);
+      setHasMore(newHasMore);
     });
-  }, [projectId, hasMore, isLoading, debouncedFilter]);
+  }, [
+    projectId,
+    hasMore,
+    isLoading,
+    debouncedFilter,
+    availableResources.length,
+  ]);
 
   const { scrollContainer, getItemProps } = useInfiniteScrollItems({
     items: availableResources,
