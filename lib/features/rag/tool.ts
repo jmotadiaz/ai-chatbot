@@ -9,6 +9,7 @@ import {
   queryRewritePrompt,
   toolDescriptionPrompt,
 } from "@/lib/features/rag/prompts";
+import { logOnFile } from "@/lib/utils/server-utils";
 
 export interface RagFactoryArgs {
   messages: UIMessage[];
@@ -53,6 +54,8 @@ export const ragFactory = ({ userId, projectId, messages }: RagFactoryArgs) =>
           userId,
           projectId,
         });
+
+        logOnFile("rag-results.json", chunks);
 
         return chunks;
       },

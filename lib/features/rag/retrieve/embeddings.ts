@@ -1,13 +1,13 @@
-import { embed } from "ai";
+import { embedMany } from "ai";
 import { providers } from "@/lib/infrastructure/ai/providers";
 import { QueryType } from "@/lib/features/rag/types";
 
-export const generateEmbedding = async (
-  value: string,
-  queryType: QueryType
-): Promise<number[]> => {
-  const input = value.replaceAll("\\n", " ");
-  const { embedding } = await embed({
+export const generateEmbeddings = async (
+  values: string[],
+  queryType: QueryType,
+): Promise<number[][]> => {
+  const inputs = values.map((v) => v.replaceAll("\\n", " "));
+  const { embeddings } = await embedMany({
     model: providers.embedding(),
     providerOptions: {
       google: {
@@ -15,7 +15,7 @@ export const generateEmbedding = async (
         taskType: queryType,
       },
     },
-    value: input,
+    values: inputs,
   });
-  return embedding;
+  return embeddings;
 };

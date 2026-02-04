@@ -45,7 +45,7 @@ export const setDb = (newDb: DB) => {
 export const getDb = (): DB => {
   if (!db) {
     const client = postgres(process.env.POSTGRES_URL!);
-    db = drizzle(client, { schema });
+    db = drizzle({ client, schema }) as unknown as DB;
   }
   return db;
 };

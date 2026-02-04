@@ -91,109 +91,145 @@ export type SimilarChunk = {
 
 export type SimilarChunks = Array<SimilarChunk>;
 
-export async function findSimilarChunks({
-  embedding: queryEmbedding,
+/**
+ * Optimized semantic search that executes multiple vector searches in a single db.batch call.
+ * More efficient than individual queries as it reduces network round-trips.
+ */
+export async function findSimilarChunksBySemantic({
+  embeddings,
   userId,
   projectId,
-  limit = 10,
+  limitByQuery: limit = 10,
   similarityThreshold = 0.6,
   previousChunkIds = [],
 }: {
-  embedding: number[];
+  embeddings: number[][];
   userId: string;
   projectId?: string;
-  limit?: number;
-  similarityThreshold?: number; // value between 0 and 1
+  limitByQuery?: number;
+  similarityThreshold?: number;
   previousChunkIds?: string[];
 }): Promise<SimilarChunks> {
+  if (embeddings.length === 0) return [];
+
   try {
-    const similarity = sql<number>`1 - (${
-      embedding.embedding
-    } <=> ${JSON.stringify(queryEmbedding)}::vector)`;
+    const db = getDb();
 
-    const whereConditions = [gt(similarity, similarityThreshold)];
+    // Execute all queries within a single transaction
+    // db.batch is NOT supported by postgres-js driver in Drizzle ORM.
+    // Using db.transaction ensures all queries run in a single atomic transaction.
+    const batchResults = await db.transaction<SimilarChunks[]>(async (tx) => {
+      // Re-build queries using the transaction context (tx)
+      const txQueries = embeddings.map((queryEmbedding) => {
+        const similarity = sql<number>`1 - (${
+          embedding.embedding
+        } <=> ${JSON.stringify(queryEmbedding)}::vector)`;
 
-    // Add exclusion condition if chunk contents (parents) are provided
-    if (previousChunkIds.length > 0) {
-      whereConditions.push(notInArray(chunk.id, previousChunkIds));
-    }
+        const whereConditions = [gt(similarity, similarityThreshold)];
 
-    // Build base query
-    // We use a subquery to first get the best embedding for each chunk (DISTINCT ON chunk.id)
-    // and then limit the result in the outer query.
+        if (previousChunkIds.length > 0) {
+          whereConditions.push(notInArray(chunk.id, previousChunkIds));
+        }
 
-    // Condition handling for Project vs User scope
-    if (projectId) {
-      whereConditions.push(eq(projectResource.projectId, projectId));
-    } else {
-      whereConditions.push(eq(resource.userId, userId));
-    }
+        if (projectId) {
+          whereConditions.push(eq(projectResource.projectId, projectId));
+        } else {
+          whereConditions.push(eq(resource.userId, userId));
+        }
 
-    const subQueryBuilder = getDb()
-      .selectDistinctOn([chunk.id], {
-        id: chunk.id,
-        resourceUrl: sql<string | null>`${resource.url}`.as("resourceUrl"),
-        content: chunk.content,
-        similarity: similarity.as("similarity"),
-        resourceTitle: sql<string>`${resource.title}`.as("resourceTitle"),
-        type: chunk.type,
-        language: chunk.language,
-        boundaryType: chunk.boundaryType,
-        boundaryName: chunk.boundaryName,
-      })
-      .from(embedding)
-      .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
-      .innerJoin(resource, eq(chunk.resourceId, resource.id));
+        const subQueryBuilder = tx
+          .selectDistinctOn([chunk.id], {
+            id: chunk.id,
+            resourceUrl: sql<string | null>`${resource.url}`.as("resourceUrl"),
+            content: chunk.content,
+            similarity: similarity.as("similarity"),
+            resourceTitle: sql<string>`${resource.title}`.as("resourceTitle"),
+            type: chunk.type,
+            language: chunk.language,
+            boundaryType: chunk.boundaryType,
+            boundaryName: chunk.boundaryName,
+          })
+          .from(embedding)
+          .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
+          .innerJoin(resource, eq(chunk.resourceId, resource.id));
 
-    // Apply joins for projectId filtering if needed
-    let subQuery;
-    if (projectId) {
-      subQuery = subQueryBuilder
-        .innerJoin(projectResource, eq(resource.id, projectResource.resourceId))
-        .where(and(...whereConditions))
-        .orderBy(chunk.id, desc(similarity))
-        .as("sq");
-    } else {
-      subQuery = subQueryBuilder
-        .where(and(...whereConditions))
-        .orderBy(chunk.id, desc(similarity))
-        .as("sq");
-    }
+        let subQuery;
+        if (projectId) {
+          subQuery = subQueryBuilder
+            .innerJoin(
+              projectResource,
+              eq(resource.id, projectResource.resourceId),
+            )
+            .where(and(...whereConditions))
+            .orderBy(chunk.id, desc(similarity))
+            .as("sq");
+        } else {
+          subQuery = subQueryBuilder
+            .where(and(...whereConditions))
+            .orderBy(chunk.id, desc(similarity))
+            .as("sq");
+        }
 
-    const results = await getDb()
-      .select()
-      .from(subQuery)
-      .orderBy(desc(subQuery.similarity))
-      .limit(limit);
+        return tx
+          .select()
+          .from(subQuery)
+          .orderBy(desc(subQuery.similarity))
+          .limit(limit);
+      });
 
-    return results;
+      // Execute all queries in parallel within the transaction
+      return Promise.all(txQueries);
+    });
+
+    // Flatten and deduplicate results by chunk ID
+    const allChunks = batchResults.flat();
+    const uniqueChunks = Array.from(
+      new Map<string, SimilarChunk>(
+        allChunks.map((item: SimilarChunk) => [item.id, item]),
+      ).values(),
+    );
+
+    return uniqueChunks;
   } catch (error) {
-    console.error("Failed to find similar chunks", error);
+    console.error("Failed to find similar chunks by semantic batch", error);
     throw error;
   }
 }
 
+/**
+ * Optimized keyword search that combines multiple queries into a single SQL statement.
+ * Uses OR logic across all queries for efficient GIN index utilization.
+ */
 export async function findSimilarChunksByKeyword({
-  query,
+  queries,
   userId,
   projectId,
   limit = 10,
   previousChunkIds = [],
 }: {
-  query: string;
+  queries: string[];
   userId: string;
   projectId?: string;
   limit?: number;
   previousChunkIds?: string[];
 }): Promise<SimilarChunks> {
+  if (queries.length === 0) return [];
+
   try {
-    // We want to perform a "keyword search" where *any* of the terms match (OR logic),
-    // but websearch_to_tsquery defaults to AND. We can force OR behavior by injecting " or " between terms.
-    const processedQuery = query
-      .split(/[\s,]+/)
-      .filter(Boolean)
-      .join(" or ");
-    const searchTerms = sql`websearch_to_tsquery('english', ${processedQuery})`;
+    // Combine all queries into a single OR logic:
+    // ["who is ceo", "apple revenue"] => "(who | is | ceo) | (apple | revenue)"
+    const combinedQuery = queries
+      .map(
+        (q) =>
+          `(${q
+            .trim()
+            .split(/[\s,]+/)
+            .filter(Boolean)
+            .join(" | ")})`,
+      )
+      .join(" | ");
+
+    const searchTerms = sql`websearch_to_tsquery('english', ${combinedQuery})`;
     const rank = sql<number>`ts_rank(${chunk.vectorSearch}, ${searchTerms})`;
 
     const whereConditions = [sql`${chunk.vectorSearch} @@ ${searchTerms}`];
@@ -237,7 +273,7 @@ export async function findSimilarChunksByKeyword({
 
     return results;
   } catch (error) {
-    console.error("Failed to find similar chunks by keyword", error);
+    console.error("Failed to find similar chunks by keyword combined", error);
     throw error;
   }
 }

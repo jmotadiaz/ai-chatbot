@@ -1,82 +1,16 @@
 import type { SimilarChunk, SimilarChunks } from "../queries";
-import { findSimilarChunks, findSimilarChunksByKeyword } from "../queries";
+import {
+  findSimilarChunksByKeyword,
+  findSimilarChunksBySemantic,
+} from "../queries";
 import { QueryType, RagChunk } from "../types";
 import { providers } from "@/lib/infrastructure/ai/providers";
-import { generateEmbedding } from "@/lib/features/rag/retrieve/embeddings";
+import { generateEmbeddings } from "@/lib/features/rag/retrieve/embeddings";
 import { RerankResult } from "@/lib/features/foundation-model/types";
 
-export interface VectorSearchResult {
-  success: boolean;
-  similarChunks?: SimilarChunks;
-  error?: string;
-}
-
-export interface VectorSearchInput {
-  query: string;
-  queryType?: QueryType;
-  userId: string;
-  projectId?: string;
-  limit?: number;
-  similarityThreshold?: number; // 0-100
-  previousChunkIds?: string[];
-}
-
-const K_VECTOR_SEARCHES = 100;
+const K_SEMANTIC_SEARCHES = 100;
 const K_KEYWORD_SEARCHES = 10;
-const VECTOR_SEARCH_SIMILARITY_THRESHOLD = 0.5;
-
-/**
- * Retrieves relevant context from RAG database for a given query
- */
-export async function vectorSearch({
-  query,
-  queryType = "RETRIEVAL_QUERY",
-  userId,
-  projectId,
-  limit = 10,
-  similarityThreshold = 0.6,
-  previousChunkIds = [],
-}: VectorSearchInput): Promise<SimilarChunks> {
-  try {
-    const userQueryEmbedded = await generateEmbedding(query, queryType);
-    const similarChunks = await findSimilarChunks({
-      embedding: userQueryEmbedded,
-      userId,
-      projectId,
-      limit,
-      similarityThreshold,
-      previousChunkIds,
-    });
-
-    return similarChunks;
-  } catch (error) {
-    console.error("Error in retrieve function:", error);
-    return [];
-  }
-}
-
-const keywordSearch = async ({
-  query,
-  userId,
-  projectId,
-  limit = 10,
-  previousChunkIds = [],
-}: VectorSearchInput): Promise<SimilarChunks> => {
-  try {
-    const similarChunks = await findSimilarChunksByKeyword({
-      query,
-      userId,
-      projectId,
-      limit,
-      previousChunkIds,
-    });
-
-    return similarChunks;
-  } catch (error) {
-    console.error("Error in retrieve function:", error);
-    return [];
-  }
-};
+const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 interface RerankInput {
   query: string;
@@ -104,7 +38,7 @@ export async function rerankChunks({
     const results = await rerank({
       query: query,
       documents: chunks.map(({ content }) => content),
-      topN: 10,
+      topN: 20,
     });
 
     return chunksByScore(results, chunks);
@@ -120,7 +54,7 @@ const chunksByScore = (results: RerankResult[], chunks: SimilarChunks) => {
     const chunk = chunks[result.originalIndex];
     if (result.score >= 0.8) {
       rerankedChunks.push(chunk);
-    } else if (result.score >= 0.35 && rerankedChunks.length < 4) {
+    } else if (result.score >= 0.4 && rerankedChunks.length < 4) {
       rerankedChunks.push(chunk);
     } else {
       return rerankedChunks;
@@ -147,34 +81,34 @@ export const retrieveResourceChunks = async ({
   userId,
   projectId,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
-  const chunks = getUniqueChunks(
-    (
-      await Promise.all(
-        multiHopQueries.map(async (query) => {
-          const [vectorResult, keywordResult] = await Promise.all([
-            vectorSearch({
-              query,
-              userId,
-              projectId,
-              queryType: "RETRIEVAL_QUERY",
-              limit: K_VECTOR_SEARCHES,
-              similarityThreshold: VECTOR_SEARCH_SIMILARITY_THRESHOLD,
-              previousChunkIds: previousResources,
-            }),
-            keywordSearch({
-              query,
-              userId,
-              projectId,
-              limit: K_KEYWORD_SEARCHES,
-              previousChunkIds: previousResources,
-            }),
-          ]);
+  if (multiHopQueries.length === 0) return [];
 
-          return [...vectorResult, ...keywordResult];
-        }),
-      )
-    ).flat(),
+  // 1. Generate embeddings in batch
+  const embeddings = await generateEmbeddings(
+    multiHopQueries,
+    "RETRIEVAL_QUERY",
   );
+
+  // 2. Execute optimized batch searches in parallel
+  const [vectorResults, keywordResults] = await Promise.all([
+    findSimilarChunksBySemantic({
+      embeddings,
+      userId,
+      projectId,
+      limitByQuery: K_SEMANTIC_SEARCHES,
+      similarityThreshold: SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
+      previousChunkIds: previousResources,
+    }),
+    findSimilarChunksByKeyword({
+      queries: multiHopQueries,
+      userId,
+      projectId,
+      limit: K_KEYWORD_SEARCHES * multiHopQueries.length,
+      previousChunkIds: previousResources,
+    }),
+  ]);
+
+  const chunks = getUniqueChunks([...vectorResults, ...keywordResults]);
 
   const finalResults = await rerankChunks({
     query: queryRewriting,
