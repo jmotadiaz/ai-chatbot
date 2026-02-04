@@ -24,6 +24,7 @@ export const ProjectResourcesLoader = async ({
 
   return (
     <ProjectResourcesTab
+      key={projectId}
       projectId={projectId}
       initialProjectResources={projectResourcesData.resources}
       initialProjectHasMore={projectResourcesData.hasMore}

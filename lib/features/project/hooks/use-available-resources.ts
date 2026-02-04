@@ -42,20 +42,12 @@ export const useAvailableResources = ({
   const [availableResources, setAvailableResources] =
     useState<Resource[]>(initialResources);
   const [hasMore, setHasMore] = useState(initialHasMore);
+  const [offset, setOffset] = useState(initialResources.length);
   const [searchFilter, setSearchFilter] = useState("");
   const [isLoading, startTransition] = useTransition();
   const [debouncedFilter] = useDebounce(searchFilter, 300);
 
   const hasMountedRef = useRef(false);
-
-  // Sync with server data ONLY when projectId changes to avoid resetting infinite scroll state on revalidation
-  // Note: initialResources/initialHasMore are intentionally excluded - we only reset on project change,
-  // not when parent re-renders with same data (which would reset scroll position)
-  useEffect(() => {
-    setAvailableResources(initialResources);
-    setHasMore(initialHasMore);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   // Load filtered results when search changes
   useEffect(() => {
@@ -75,12 +67,12 @@ export const useAvailableResources = ({
           filter: debouncedFilter || undefined,
         });
       setAvailableResources(resources);
+      setOffset(resources.length);
       setHasMore(newHasMore);
     });
   }, [debouncedFilter, projectId]);
 
   // Load MORE pages (infinite scroll only)
-  // Uses functional setState to append without stale closure issues
   const loadMore = useCallback(() => {
     if (!hasMore || isLoading || !projectId) return;
 
@@ -89,19 +81,14 @@ export const useAvailableResources = ({
         await getUserResourcesNotInProjectAction({
           projectId,
           limit: ITEMS_PER_PAGE,
-          offset: availableResources.length,
+          offset,
           filter: debouncedFilter || undefined,
         });
       setAvailableResources((current) => [...current, ...resources]);
       setHasMore(newHasMore);
+      setOffset((o) => o + resources.length);
     });
-  }, [
-    projectId,
-    hasMore,
-    isLoading,
-    debouncedFilter,
-    availableResources.length,
-  ]);
+  }, [projectId, hasMore, isLoading, debouncedFilter, offset]);
 
   const { scrollContainer, getItemProps } = useInfiniteScrollItems({
     items: availableResources,

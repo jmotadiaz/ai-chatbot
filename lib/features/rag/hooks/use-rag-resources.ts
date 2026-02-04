@@ -51,6 +51,7 @@ export const useRagResources = ({
   const [resources, setResources] =
     useState<RagResourceListItem[]>(initialResources);
   const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
+  const [offset, setOffset] = useState<number>(initialResources.length);
   const [isFetching, startFetchTransition] = useTransition();
   const [isMutating, startMutateTransition] = useTransition();
   const [filter, setFilter] = useState<string>("");
@@ -75,25 +76,26 @@ export const useRagResources = ({
 
       setResources(result.resources);
       setHasMore(result.hasMore);
+      setOffset(result.resources.length);
     });
   }, [debouncedFilter, itemsPerPage]);
 
   // Load more items for infinite scroll
-  // Uses functional setState to append without stale closure issues
   const loadMore = useCallback(() => {
     if (!hasMore || isFetching) return;
 
     startFetchTransition(async () => {
       const result = await getRagResourcesAction({
         limit: itemsPerPage,
-        offset: resources.length,
+        offset,
         filter: debouncedFilter,
       });
 
       setResources((current) => [...current, ...result.resources]);
       setHasMore(result.hasMore);
+      setOffset((o) => o + result.resources.length);
     });
-  }, [debouncedFilter, hasMore, isFetching, itemsPerPage, resources.length]);
+  }, [debouncedFilter, hasMore, isFetching, itemsPerPage, offset]);
 
   const onDeleteResource = useCallback(
     (title: string) => {

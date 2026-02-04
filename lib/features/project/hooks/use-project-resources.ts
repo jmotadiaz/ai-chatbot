@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition, useEffect } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { getProjectResourcesAction } from "@/lib/features/rag/actions";
 import { useInfiniteScrollItems } from "@/lib/utils/hooks/use-infinite-scroll-items";
 
@@ -44,18 +44,10 @@ export const useProjectResources = ({
   const [projectResources, setProjectResources] =
     useState<Resource[]>(initialResources);
   const [hasMore, setHasMore] = useState(initialHasMore);
+  const [offset, setOffset] = useState(initialResources.length);
   const [isLoading, startTransition] = useTransition();
-  // Sync with server data ONLY when projectId changes to avoid resetting infinite scroll state on revalidation
-  // Note: initialResources/initialHasMore are intentionally excluded - we only reset on project change,
-  // not when parent re-renders with same data (which would reset scroll position)
-  useEffect(() => {
-    setProjectResources(initialResources);
-    setHasMore(initialHasMore);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   // Load MORE pages (infinite scroll only)
-  // Uses functional setState to append without stale closure issues
   const loadMore = useCallback(() => {
     if (!hasMore || isLoading || !projectId) return;
 
@@ -63,13 +55,14 @@ export const useProjectResources = ({
       const result = await getProjectResourcesAction({
         projectId,
         limit: ITEMS_PER_PAGE,
-        offset: projectResources.length,
+        offset,
       });
 
       setProjectResources((current) => [...current, ...result.resources]);
       setHasMore(result.hasMore);
+      setOffset((o) => o + result.resources.length);
     });
-  }, [hasMore, isLoading, projectId, projectResources.length]);
+  }, [hasMore, isLoading, projectId, offset]);
 
   const { scrollContainer, getItemProps } = useInfiniteScrollItems({
     items: projectResources,
