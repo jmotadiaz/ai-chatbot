@@ -9,7 +9,7 @@ import { generateEmbeddings } from "@/lib/features/rag/retrieve/embeddings";
 import { RerankResult } from "@/lib/features/foundation-model/types";
 
 const K_SEMANTIC_SEARCHES = 100;
-const K_KEYWORD_SEARCHES = 10;
+const K_KEYWORD_SEARCHES = 20;
 const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 interface RerankInput {
@@ -54,7 +54,7 @@ const chunksByScore = (results: RerankResult[], chunks: SimilarChunks) => {
     const chunk = chunks[result.originalIndex];
     if (result.score >= 0.8) {
       rerankedChunks.push(chunk);
-    } else if (result.score >= 0.4 && rerankedChunks.length < 4) {
+    } else if (result.score >= 0.4 && rerankedChunks.length < 6) {
       rerankedChunks.push(chunk);
     } else {
       return rerankedChunks;
@@ -103,7 +103,7 @@ export const retrieveResourceChunks = async ({
       queries: multiHopQueries,
       userId,
       projectId,
-      limit: K_KEYWORD_SEARCHES * multiHopQueries.length,
+      limitByQuery: K_KEYWORD_SEARCHES,
       previousChunkIds: previousResources,
     }),
   ]);
