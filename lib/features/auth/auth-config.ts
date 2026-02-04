@@ -86,4 +86,7 @@ export const {
       return !!auth;
     },
   },
+  ...(process.env.AUTH_TRUST_HOST === "true" && {
+    trustHost: true,
+  }),
 });

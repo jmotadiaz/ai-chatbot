@@ -24,6 +24,7 @@ export const systemPrompt = `
 
   * **Action:** Create a semantically complete and autonomous version of the user's request for the \`queryRewriting\` field.
   * **Requirement:** You must analyze the conversation history to strictly resolve pronouns (e.g., "it," "him," "that process") and remove ambiguities. The final rewrite must be understandable on its own, providing the reranker with a clear and direct context of the current information need.
+  * **Requirement:** The query rewrite must be in English.
 
   **Step 5: Execute the ${RAG_TOOL} tool**
   * **MANDATORY Action:** Use the generated multi-hop queries and query rewrite to execute the ${RAG_TOOL} tool.
