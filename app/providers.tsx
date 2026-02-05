@@ -1,4 +1,5 @@
 "use client";
+
 import { MotionConfig } from "motion/react";
 import React, {
   useCallback,
@@ -10,6 +11,7 @@ import React, {
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { usePathname } from "next/navigation";
+import { ThemeColorManager } from "@/components/theme-color-manager";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -23,11 +25,13 @@ export const Providers: React.FC<ProvidersProps> = ({ children }) => {
         enableSystem
         defaultTheme="system"
       >
+        <ThemeColorManager />
         <MotionConfig reducedMotion="user">{children}</MotionConfig>
       </ThemeProvider>
     </SessionProvider>
   );
 };
+
 export interface SidebarContext {
   showSidebar: boolean;
   setShowSidebar: (showSidebar: boolean) => void;
