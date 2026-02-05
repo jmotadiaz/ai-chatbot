@@ -136,6 +136,7 @@ export async function generateViewport(): Promise<Viewport> {
       maximumScale: 1,
       userScalable: false,
       interactiveWidget: "resizes-visual",
+      viewportFit: "cover",
       themeColor: "#161618",
       colorScheme: "dark",
     };
@@ -148,6 +149,7 @@ export async function generateViewport(): Promise<Viewport> {
       maximumScale: 1,
       userScalable: false,
       interactiveWidget: "resizes-visual",
+      viewportFit: "cover",
       themeColor: "#ffffff",
       colorScheme: "light",
     };
@@ -159,6 +161,7 @@ export async function generateViewport(): Promise<Viewport> {
     maximumScale: 1,
     userScalable: false,
     interactiveWidget: "resizes-visual",
+    viewportFit: "cover",
     themeColor: [
       { media: "(prefers-color-scheme: light)", color: "#ffffff" },
       { media: "(prefers-color-scheme: dark)", color: "#161618" },
