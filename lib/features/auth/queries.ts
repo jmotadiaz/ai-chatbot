@@ -23,3 +23,16 @@ export const createUser =
       .values({ email, password: hashedPassword })
       .returning();
   };
+
+export const updateUserTheme =
+  (
+    email: string,
+    theme: "light" | "dark" | "system",
+  ): Transactional<Array<User>> =>
+  (tx) => {
+    return tx
+      .update(user)
+      .set({ theme })
+      .where(eq(user.email, email))
+      .returning();
+  };

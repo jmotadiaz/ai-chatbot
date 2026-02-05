@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { updateTheme } from "@/app/actions/theme";
 
 export const ThemeToggle = () => {
   const { theme, setTheme, systemTheme } = useTheme();
@@ -21,7 +22,13 @@ export const ThemeToggle = () => {
       variant="icon"
       size="icon"
       aria-label="Toggle Dark Mode"
-      onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+      onClick={() => {
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+        setTheme(newTheme);
+        // Sync with server
+
+        updateTheme(newTheme);
+      }}
     >
       {currentTheme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
     </Button>

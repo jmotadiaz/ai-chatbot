@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "AI Chatbot",
     start_url: "/",
     display: "standalone",
-    background_color: "#161618",
+    background_color: "#ffffff",
     icons: [
       {
         src: "/app-logo.png",

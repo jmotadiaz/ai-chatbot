@@ -4,7 +4,8 @@ import localFont from "next/font/local";
 import { Providers } from "@/app/providers";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-
+import { getSession } from "@/lib/features/auth/cached-auth";
+import { getUser } from "@/lib/features/auth/queries";
 const albertSans = localFont({
   src: [
     {
@@ -115,17 +116,53 @@ export const metadata: Metadata = {
     "Project to use different AI models to create a chatbot with Next.js and Vercel AI SDK",
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  interactiveWidget: "resizes-visual",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#161618" },
-  ],
-};
+export async function generateViewport(): Promise<Viewport> {
+  const session = await getSession();
+  const userEmail = session?.user?.email;
+
+  let theme = "system";
+
+  if (userEmail) {
+    const [user] = await getUser(userEmail);
+    if (user?.theme) {
+      theme = user.theme;
+    }
+  }
+
+  if (theme === "dark") {
+    return {
+      width: "device-width",
+      initialScale: 1,
+      maximumScale: 1,
+      userScalable: false,
+      interactiveWidget: "resizes-visual",
+      themeColor: "#161618",
+    };
+  }
+
+  if (theme === "light") {
+    return {
+      width: "device-width",
+      initialScale: 1,
+      maximumScale: 1,
+      userScalable: false,
+      interactiveWidget: "resizes-visual",
+      themeColor: "#ffffff",
+    };
+  }
+
+  return {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    interactiveWidget: "resizes-visual",
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+      { media: "(prefers-color-scheme: dark)", color: "#161618" },
+    ],
+  };
+}
 
 interface RootLayoutProps {
   children: React.ReactNode;
