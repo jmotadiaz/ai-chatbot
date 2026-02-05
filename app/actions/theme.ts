@@ -7,7 +7,8 @@ import { updateUserTheme } from "@/lib/features/auth/queries";
 
 export async function updateTheme(theme: string) {
   const session = await getSession();
-  if (!session?.user?.email) {
+  const email = session?.user?.email;
+  if (!email) {
     return;
   }
 
@@ -20,7 +21,7 @@ export async function updateTheme(theme: string) {
   const typedTheme = theme as "light" | "dark" | "system";
 
   await getDb().transaction(async (tx) => {
-    await updateUserTheme(session.user!.email!, typedTheme)(tx);
+    await updateUserTheme(email, typedTheme)(tx);
   });
 
   // Revalidate the root layout so generateViewport can pick up the new theme
