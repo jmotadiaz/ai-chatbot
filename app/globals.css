@@ -37,7 +37,7 @@
 }
 
 html, body {
-  height: 100svh;
+  min-height: 100dvh;
   text-size-adjust: 100%;
   font-family: var(--font-albert-sans);
   font-weight: 450;
