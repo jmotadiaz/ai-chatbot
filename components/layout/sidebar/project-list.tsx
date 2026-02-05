@@ -8,6 +8,7 @@ import { ChatList } from "@/components/layout/sidebar/chat-list";
 import { cn } from "@/lib/utils/helpers";
 import { getProjectsByUserId } from "@/lib/features/project/queries";
 import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
+import { AddProjectButton } from "@/components/layout/sidebar/add-project-button";
 
 export interface ProjectListProps {
   limit?: number;
@@ -32,11 +33,11 @@ export const ProjectList: React.FC<ProjectListProps> = async ({
 
   return (
     <div className={cn("my-4", className)}>
-      <ChatLink href="/project/add">
+      <AddProjectButton>
         <SidebarSectionTitle>
           Projects <CirclePlus className="h-4 w-4 ml-3" />
         </SidebarSectionTitle>
-      </ChatLink>
+      </AddProjectButton>
       <div role="list" className="space-y-1">
         <ChatLink href="/english-helper">
           <Item>English Helper</Item>

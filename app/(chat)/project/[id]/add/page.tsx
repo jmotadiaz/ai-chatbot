@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { ProjectFormContainer } from "@/components/project/form-container";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { getProjectById } from "@/lib/features/project/queries";
+import { createEmptyProject } from "@/lib/features/project/actions";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { NewChatHeader } from "@/components/chat/new";
@@ -17,13 +17,13 @@ interface AddProjectPageProps extends Authenticated {
 const Page = async ({ params, user }: AddProjectPageProps) => {
   const { id } = await params;
 
-  const project = await getProjectById({
+  let project = await getProjectById({
     id,
     userId: user.id!,
   });
 
   if (!project) {
-    redirect("/project/add");
+    project = await createEmptyProject(id);
   }
 
   return (

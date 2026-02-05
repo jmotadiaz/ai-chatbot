@@ -27,6 +27,7 @@ export const createProject =
     webSearchNumResults,
     tools,
     isActive,
+    id,
   }: InsertProject): Transactional<Project> =>
   (tx) => {
     return tx
@@ -44,6 +45,7 @@ export const createProject =
         webSearchNumResults,
         tools,
         isActive,
+        id,
         createdAt: new Date(),
         updatedAt: new Date(),
       })

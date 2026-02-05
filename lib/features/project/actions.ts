@@ -43,7 +43,7 @@ export async function createProject(
   }
 }
 
-export async function createEmptyProject() {
+export async function createEmptyProject(id?: string) {
   const session = await getSession();
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
@@ -54,6 +54,7 @@ export async function createEmptyProject() {
     name: "",
     systemPrompt: "",
     isActive: false,
+    id,
   };
 
   try {

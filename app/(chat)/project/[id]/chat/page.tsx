@@ -34,7 +34,8 @@ const Page: React.FC<ProjectPageProps> = async ({
   });
 
   if (!project || project.userId !== user.id) {
-    redirect("/project/add");
+    const uuid = crypto.randomUUID();
+    redirect(`/project/${uuid}/add`);
   }
 
   if (!project.isActive) {

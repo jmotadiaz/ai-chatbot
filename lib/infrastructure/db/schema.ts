@@ -265,7 +265,7 @@ export type User = InferSelectModel<typeof user>;
 export type Project = InferSelectModel<typeof project>;
 export type InsertProject = Omit<
   InferInsertModel<typeof project>,
-  "createdAt" | "updatedAt" | "id"
+  "createdAt" | "updatedAt"
 >;
 export type Chat = InferSelectModel<typeof chat>;
 export type InsertChat = Omit<

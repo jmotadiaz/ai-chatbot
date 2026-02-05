@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Page } from "@playwright/test";
 import { SidebarComponent } from "../components/sidebar";
 import { HeaderComponent } from "../components/header";
@@ -34,7 +35,8 @@ export class ProjectPage {
   }
 
   async gotoAdd() {
-    await this.page.goto("/project/add");
+    const projectId = randomUUID();
+    await this.page.goto(`/project/${projectId}/add`);
     // Wait for the main tabs to be visible
     await this.page
       .getByRole("button", { name: "Configuration" })
