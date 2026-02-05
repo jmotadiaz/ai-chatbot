@@ -1,5 +1,5 @@
 import React from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Providers } from "@/app/providers";
 import { Toaster } from "@/components/ui/sonner";
@@ -115,12 +115,16 @@ export const metadata: Metadata = {
     "Project to use different AI models to create a chatbot with Next.js and Vercel AI SDK",
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
   interactiveWidget: "resizes-visual",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#161618" },
+  ],
 };
 
 interface RootLayoutProps {
