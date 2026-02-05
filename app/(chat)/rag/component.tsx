@@ -26,10 +26,6 @@ export const RAGManager: React.FC<RAGManagerProps> = async ({
         </Header.Right>
       </Header.Container>
       <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-6 px-4 pt-28">
-        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-6">
-          Manage RAG Resources
-        </h1>
-
         <Suspense fallback={null}>
           <RAGTabs
             upload={<RAGUploadForm />}
