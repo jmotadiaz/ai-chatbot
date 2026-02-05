@@ -6,7 +6,13 @@ import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { SidebarContainer } from "@/components/layout/sidebar/container";
 
-export const LoadingTemplate: React.FC = () => {
+export interface LoadingTemplateProps {
+  includeForm?: boolean;
+}
+
+export const LoadingTemplate: React.FC<LoadingTemplateProps> = ({
+  includeForm = true,
+}) => {
   return (
     <>
       <SidebarContainer />
@@ -20,9 +26,11 @@ export const LoadingTemplate: React.FC = () => {
         </Header.Right>
       </Header.Container>
       <div className="h-svh flex flex-col justify-center w-full stretch">
-        <Suspense fallback={null}>
-          <ProjectForm />
-        </Suspense>
+        {includeForm && (
+          <Suspense fallback={null}>
+            <ProjectForm />
+          </Suspense>
+        )}
       </div>
     </>
   );
