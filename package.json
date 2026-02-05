@@ -2,6 +2,9 @@
   "name": "ai-sdk-starter",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "rag-mcp-chatbot": "./mcp-server/index.ts"
+  },
   "scripts": {
     "dev": "npm run db:start && next dev",
     "build": "npx tsx lib/infrastructure/db/migrate.ts && next build",
@@ -27,6 +30,8 @@
     "test:e2e:ui": "npm run db:test:start && trap 'npm run db:test:stop' EXIT && playwright test --ui $PLAYWRIGHT_ARGS",
     "test:e2e:headed": "npm run db:test:start && trap 'npm run db:test:stop' EXIT && playwright test --headed $PLAYWRIGHT_ARGS",
     "test:e2e:jules": "npm run db:jules:stop && npm run db:jules:start && playwright test",
+    "mcp:start": "npm run mcp-server",
+    "mcp-server": "dotenv -e .env.development.local -- tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -46,6 +51,7 @@
     "@faker-js/faker": "^8.4.1",
     "@langchain/core": "^1.1.0",
     "@langchain/textsplitters": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@openrouter/ai-sdk-provider": "1.0.0-beta.5",
     "@opentelemetry/api-logs": "^0.200.0",
     "@opentelemetry/instrumentation": "^0.200.0",

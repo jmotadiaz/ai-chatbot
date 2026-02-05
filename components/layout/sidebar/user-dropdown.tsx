@@ -21,7 +21,7 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
           size={16}
           className={cn(
             "transition-transform duration-300",
-            isShown ? "rotate-0" : "rotate-180"
+            isShown ? "rotate-0" : "rotate-180",
           )}
         />
       </button>
@@ -29,12 +29,20 @@ export const UserDropdown = ({ email }: UserDropdownProps) => {
         {...getDropdownPopupProps()}
         className="lg:w-full p-0 border-2 border-gray-300 dark:border-zinc-700"
       >
-        <button
-          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-zinc-600 cursor-pointer"
-          onClick={() => signOut()}
-        >
-          Sign out
-        </button>
+        <div className="flex flex-col">
+          <a
+            href="/api-keys"
+            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-zinc-600 cursor-pointer border-b border-gray-200 dark:border-zinc-800"
+          >
+            API Keys
+          </a>
+          <button
+            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-zinc-600 cursor-pointer"
+            onClick={() => signOut()}
+          >
+            Sign out
+          </button>
+        </div>
       </Dropdown.Popup>
     </Dropdown.Container>
   );

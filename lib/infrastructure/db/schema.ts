@@ -155,6 +155,18 @@ export const chunk = pgTable(
   }),
 );
 
+export const userApiKey = pgTable("UserApiKey", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  key: varchar("key", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
+  createdAt: timestamp("createdAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const embedding = pgTable(
   "Embedding",
   {
@@ -182,6 +194,7 @@ export const projectRelations = relations(project, ({ many }) => ({
 
 export const userRelations = relations(user, ({ many }) => ({
   resources: many(resource),
+  apiKeys: many(userApiKey),
 }));
 
 export const chatRelations = relations(chat, ({ one, many }) => ({
@@ -230,6 +243,13 @@ export const chunkRelations = relations(chunk, ({ one, many }) => ({
   embeddings: many(embedding),
 }));
 
+export const userApiKeyRelations = relations(userApiKey, ({ one }) => ({
+  user: one(user, {
+    fields: [userApiKey.userId],
+    references: [user.id],
+  }),
+}));
+
 export const embeddingRelations = relations(embedding, ({ one }) => ({
   chunk: one(chunk, {
     fields: [embedding.chunkId],
@@ -276,5 +296,11 @@ export type InsertEmbedding = Omit<
 export type ProjectResource = InferSelectModel<typeof projectResource>;
 export type InsertProjectResource = Omit<
   InferInsertModel<typeof projectResource>,
+  "createdAt" | "id"
+>;
+
+export type UserApiKey = InferSelectModel<typeof userApiKey>;
+export type InsertUserApiKey = Omit<
+  InferInsertModel<typeof userApiKey>,
   "createdAt" | "id"
 >;
