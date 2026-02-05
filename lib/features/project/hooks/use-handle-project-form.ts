@@ -132,11 +132,11 @@ export const useHandleProjectForm = ({
       // Logic to automatically handle RAG tool based on resources
       let finalTools = [...tools];
       if (project) {
-        const { resources } = await getProjectResourcesAction({
+        const { items } = await getProjectResourcesAction({
           projectId: project.id,
           limit: 1,
         });
-        if (resources.length > 0) {
+        if (items.length > 0) {
           if (!finalTools.includes(RAG_TOOL)) finalTools.push(RAG_TOOL);
         } else {
           finalTools = finalTools.filter((t) => t !== RAG_TOOL);

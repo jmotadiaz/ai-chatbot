@@ -11,7 +11,10 @@ import {
   getRagResourcesAction,
 } from "@/lib/features/rag/actions";
 import { type UIResource } from "@/lib/features/rag/types";
-import { useInfiniteScroll } from "@/lib/utils/hooks/use-infinite-scroll";
+import {
+  InfiniteScrollAction,
+  useInfiniteScroll,
+} from "@/lib/utils/hooks/use-infinite-scroll";
 
 export interface UseRagResourcesParams {
   initialResources: UIResource[];
@@ -47,16 +50,33 @@ export const useRagResources = ({
   initialHasMore,
   itemsPerPage = 20,
 }: UseRagResourcesParams): UseRagResourcesReturn => {
-  const [resources, setResources] = useState<UIResource[]>(initialResources);
-  const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
-  const [isFetching, startFetchTransition] = useTransition();
   const [isMutating, startMutateTransition] = useTransition();
   const [filter, setFilter] = useState<string>("");
   const [debouncedFilter] = useDebounce(filter, 300);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const offsetRef = useRef(initialResources.length);
 
-  // Removed resourcesCountRef in favor of direct state dependency
+  // Wrap server action in useCallback with filter dependency
+  const loadAction = useCallback<InfiniteScrollAction<UIResource>>(
+    async ({ limit, offset }) => {
+      return getRagResourcesAction({ limit, offset, filter: debouncedFilter });
+    },
+    [debouncedFilter],
+  );
+
+  const {
+    items: resources,
+    setItems: setResources,
+    hasMore,
+    isFetching,
+    refresh,
+    scrollContainer,
+    getItemProps,
+  } = useInfiniteScroll<UIResource>({
+    loadAction,
+    itemsPerPage,
+    initialItems: initialResources,
+    initialHasMore,
+  });
 
   const hasMountedRef = useRef(false);
   useEffect(() => {
@@ -65,35 +85,8 @@ export const useRagResources = ({
       if (debouncedFilter.trim() === "") return;
     }
 
-    startFetchTransition(async () => {
-      const result = await getRagResourcesAction({
-        limit: itemsPerPage,
-        offset: 0,
-        filter: debouncedFilter,
-      });
-
-      setResources(result.resources);
-      setHasMore(result.hasMore);
-      offsetRef.current = result.resources.length;
-    });
-  }, [debouncedFilter, itemsPerPage]);
-
-  // Load more items for infinite scroll
-  const loadMore = useCallback(() => {
-    if (!hasMore || isFetching) return;
-
-    startFetchTransition(async () => {
-      const result = await getRagResourcesAction({
-        limit: itemsPerPage,
-        offset: offsetRef.current,
-        filter: debouncedFilter,
-      });
-
-      setResources((current) => [...current, ...result.resources]);
-      setHasMore(result.hasMore);
-      offsetRef.current += result.resources.length;
-    });
-  }, [debouncedFilter, hasMore, isFetching, itemsPerPage]);
+    refresh();
+  }, [debouncedFilter, refresh]);
 
   const onDeleteResource = useCallback(
     (resource: UIResource) => {
@@ -119,7 +112,7 @@ export const useRagResources = ({
         }
       });
     },
-    [startMutateTransition],
+    [startMutateTransition, setResources],
   );
 
   const onBulkDelete = useCallback(() => {
@@ -133,7 +126,6 @@ export const useRagResources = ({
 
         if (result.success) {
           setResources([]);
-          setHasMore(false);
           toast.success(
             trimmed
               ? "Selected resources deleted successfully"
@@ -147,14 +139,7 @@ export const useRagResources = ({
         toast.error("An error occurred while deleting resources");
       }
     });
-  }, [debouncedFilter, startMutateTransition]);
-
-  const { scrollContainer, getItemProps } = useInfiniteScroll({
-    items: resources,
-    hasMore,
-    itemsPerPage,
-    onLoadMore: loadMore,
-  });
+  }, [debouncedFilter, startMutateTransition, setResources]);
 
   const getResourceItemProps = useCallback(
     ({ resource, index }: { resource: UIResource; index: number }) => {

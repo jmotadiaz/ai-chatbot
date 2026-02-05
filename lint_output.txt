@@ -1,0 +1,30 @@
+
+> ai-sdk-starter@0.1.0 lint:fix /Users/javier.mota/Projects/ai-chatbot
+> eslint --fix . && npm run type:check
+
+
+/Users/javier.mota/Projects/ai-chatbot/lib/features/project/hooks/use-available-resources.ts
+  3:20  error  'useCallback' is defined but never used    @typescript-eslint/no-unused-vars
+  3:44  error  'useTransition' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/javier.mota/Projects/ai-chatbot/lib/features/project/hooks/use-project-resources.ts
+  1:10  error  'useState' is defined but never used       @typescript-eslint/no-unused-vars
+  1:20  error  'useCallback' is defined but never used    @typescript-eslint/no-unused-vars
+  1:33  error  'useTransition' is defined but never used  @typescript-eslint/no-unused-vars
+  1:48  error  'useRef' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/javier.mota/Projects/ai-chatbot/lib/features/rag/hooks/use-rag-resources.ts
+  108:5  warning  React Hook useCallback has a missing dependency: 'setResources'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  135:6  warning  React Hook useCallback has a missing dependency: 'setResources'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/javier.mota/Projects/ai-chatbot/lib/utils/hooks/use-infinite-scroll.ts
+  13:73  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  46:34  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  46:41  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+✖ 11 problems (9 errors, 2 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

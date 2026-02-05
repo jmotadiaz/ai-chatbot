@@ -330,7 +330,7 @@ export async function getRagResourcesAction({
   offset?: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ id: string; title: string; url: string | null }>;
+  items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   const validated = paginationSchema.parse({ limit, offset, filter });
@@ -338,7 +338,7 @@ export async function getRagResourcesAction({
 
   if (!session?.user) {
     return {
-      resources: [],
+      items: [],
       hasMore: false,
     };
   }
@@ -462,7 +462,7 @@ export async function getProjectResourcesAction({
   offset?: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ id: string; title: string; url: string | null }>;
+  items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   const validatedProjectId = projectIdSchema.parse(projectId);
@@ -471,7 +471,7 @@ export async function getProjectResourcesAction({
 
   if (!session?.user || !validatedProjectId) {
     return {
-      resources: [],
+      items: [],
       hasMore: false,
     };
   }
@@ -495,7 +495,7 @@ export async function getUserResourcesNotInProjectAction({
   offset?: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ id: string; title: string; url: string | null }>;
+  items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   const validatedProjectId = projectIdSchema.parse(projectId);
@@ -505,7 +505,7 @@ export async function getUserResourcesNotInProjectAction({
 
   if (!session?.user || !validatedProjectId) {
     return {
-      resources: [],
+      items: [],
       hasMore: false,
     };
   }

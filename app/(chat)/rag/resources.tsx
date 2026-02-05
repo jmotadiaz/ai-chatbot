@@ -9,14 +9,14 @@ export const Resources: React.FC = async () => {
     redirect("/login");
   }
 
-  const { resources, hasMore } = await getRagResourcesAction({
+  const { items, hasMore } = await getRagResourcesAction({
     limit: 20,
     offset: 0,
   });
 
   return (
     <>
-      <RAGResources initialResources={resources} initialHasMore={hasMore} />
+      <RAGResources initialResources={items} initialHasMore={hasMore} />
     </>
   );
 };

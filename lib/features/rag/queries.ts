@@ -347,7 +347,7 @@ export async function getUserResourcesPaginated({
   offset: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ id: string; title: string; url: string | null }>;
+  items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
@@ -373,7 +373,7 @@ export async function getUserResourcesPaginated({
 
     const hasMore = rows.length > limit;
     return {
-      resources: hasMore ? rows.slice(0, limit) : rows,
+      items: hasMore ? rows.slice(0, limit) : rows,
       hasMore,
     };
   } catch (error) {
@@ -554,7 +554,7 @@ export async function getProjectResourcesPaginated({
   offset: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ id: string; title: string; url: string | null }>;
+  items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
@@ -581,7 +581,7 @@ export async function getProjectResourcesPaginated({
 
     const hasMore = rows.length > limit;
     return {
-      resources: hasMore ? rows.slice(0, limit) : rows,
+      items: hasMore ? rows.slice(0, limit) : rows,
       hasMore,
     };
   } catch (error) {
@@ -603,7 +603,7 @@ export async function getUserResourcesNotInProject({
   offset: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ id: string; title: string; url: string | null }>;
+  items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
@@ -636,7 +636,7 @@ export async function getUserResourcesNotInProject({
 
     const hasMore = rows.length > limit;
     return {
-      resources: hasMore ? rows.slice(0, limit) : rows,
+      items: hasMore ? rows.slice(0, limit) : rows,
       hasMore,
     };
   } catch (error) {

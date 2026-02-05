@@ -1,7 +1,10 @@
-import { useState, useCallback, useTransition, useRef } from "react";
+import { useCallback } from "react";
 import { getProjectResourcesAction } from "@/lib/features/rag/actions";
 import { type UIResource } from "@/lib/features/rag/types";
-import { useInfiniteScroll } from "@/lib/utils/hooks/use-infinite-scroll";
+import {
+  InfiniteScrollAction,
+  useInfiniteScroll,
+} from "@/lib/utils/hooks/use-infinite-scroll";
 
 export type Resource = UIResource;
 
@@ -29,35 +32,26 @@ export const useProjectResources = ({
   initialResources = [],
   initialHasMore = false,
 }: UseProjectResourcesParams): UseProjectResourcesReturn => {
-  // Initialize with server data
-  const [projectResources, setProjectResources] =
-    useState<Resource[]>(initialResources);
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const offsetRef = useRef(initialResources.length);
-  const [isLoading, startTransition] = useTransition();
+  // Wrap server action in useCallback with projectId dependency
+  const loadAction = useCallback<InfiniteScrollAction<Resource>>(
+    async ({ limit, offset }) => {
+      return getProjectResourcesAction({ projectId, limit, offset });
+    },
+    [projectId],
+  );
 
-  // Load MORE pages (infinite scroll only)
-  const loadMore = useCallback(() => {
-    if (!hasMore || isLoading || !projectId) return;
-
-    startTransition(async () => {
-      const result = await getProjectResourcesAction({
-        projectId,
-        limit: ITEMS_PER_PAGE,
-        offset: offsetRef.current,
-      });
-
-      setProjectResources((current) => [...current, ...result.resources]);
-      setHasMore(result.hasMore);
-      offsetRef.current += result.resources.length;
-    });
-  }, [hasMore, isLoading, projectId]);
-
-  const { scrollContainer, getItemProps } = useInfiniteScroll({
+  const {
     items: projectResources,
+    setItems: setProjectResources,
     hasMore,
+    isFetching: isLoading,
+    scrollContainer,
+    getItemProps,
+  } = useInfiniteScroll<Resource>({
+    loadAction,
     itemsPerPage: ITEMS_PER_PAGE,
-    onLoadMore: loadMore,
+    initialItems: initialResources,
+    initialHasMore,
   });
 
   return {
