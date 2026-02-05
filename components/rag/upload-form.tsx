@@ -116,7 +116,7 @@ export const RAGUploadForm = ({ projectId }: RAGUploadFormProps) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <Label className="mb-2" htmlFor="url">
-            URL - Optional
+            URL
           </Label>
           <div className="relative">
             <Input
@@ -132,7 +132,7 @@ export const RAGUploadForm = ({ projectId }: RAGUploadFormProps) => {
           </div>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="space-y-2">
-              <Label htmlFor="container">Container Selector (Optional)</Label>
+              <Label htmlFor="container">Container Selector</Label>
               <Input
                 id="container"
                 placeholder="e.g. article, #content"
@@ -143,7 +143,7 @@ export const RAGUploadForm = ({ projectId }: RAGUploadFormProps) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="excludeSelectors">
-                Exclude Selectors (Optional)
+                Exclude Selectors
               </Label>
               <Input
                 id="excludeSelectors"
@@ -167,7 +167,7 @@ export const RAGUploadForm = ({ projectId }: RAGUploadFormProps) => {
         </div>
         <div className="space-y-4">
           <Label className="mb-2" htmlFor="jsonFile">
-            JSON File(s) (URLs) - Optional
+            JSON File(s) (URLs)
           </Label>
           <div className="relative">
             <Input
@@ -194,7 +194,7 @@ export const RAGUploadForm = ({ projectId }: RAGUploadFormProps) => {
         </div>
         <div className="space-y-4">
           <Label className="mb-2" htmlFor="markdownFile">
-            Markdown File(s) - Optional
+            Markdown File(s)
           </Label>
           <div className="relative">
             <Input
