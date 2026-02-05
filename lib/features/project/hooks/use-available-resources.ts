@@ -2,9 +2,9 @@
 
 import { useState, useCallback, useEffect, useTransition, useRef } from "react";
 import { useDebounce } from "use-debounce";
-import type { Resource } from "./use-project-resources";
+import { type UIResource as Resource } from "@/lib/features/rag/types";
 import { getUserResourcesNotInProjectAction } from "@/lib/features/rag/actions";
-import { useInfiniteScrollItems } from "@/lib/utils/hooks/use-infinite-scroll-items";
+import { useInfiniteScroll } from "@/lib/utils/hooks/use-infinite-scroll";
 
 interface UseAvailableResourcesParams {
   projectId: string;
@@ -20,13 +20,7 @@ interface UseAvailableResourcesReturn {
   hasMore: boolean;
   isLoading: boolean;
   scrollContainer: React.RefObject<HTMLUListElement | null>;
-  getAvailableItemProps: (
-    resource: Resource,
-    index: number,
-  ) => {
-    item: Resource;
-    isDeleting?: boolean;
-    onDelete?: (item: Resource) => void;
+  getAvailableItemProps: (index: number) => {
     loaderRef?: React.RefCallback<HTMLLIElement>;
   };
 }
@@ -42,7 +36,7 @@ export const useAvailableResources = ({
   const [availableResources, setAvailableResources] =
     useState<Resource[]>(initialResources);
   const [hasMore, setHasMore] = useState(initialHasMore);
-  const [offset, setOffset] = useState(initialResources.length);
+  const offsetRef = useRef(initialResources.length);
   const [searchFilter, setSearchFilter] = useState("");
   const [isLoading, startTransition] = useTransition();
   const [debouncedFilter] = useDebounce(searchFilter, 300);
@@ -67,7 +61,7 @@ export const useAvailableResources = ({
           filter: debouncedFilter || undefined,
         });
       setAvailableResources(resources);
-      setOffset(resources.length);
+      offsetRef.current = resources.length;
       setHasMore(newHasMore);
     });
   }, [debouncedFilter, projectId]);
@@ -81,21 +75,20 @@ export const useAvailableResources = ({
         await getUserResourcesNotInProjectAction({
           projectId,
           limit: ITEMS_PER_PAGE,
-          offset,
+          offset: offsetRef.current,
           filter: debouncedFilter || undefined,
         });
       setAvailableResources((current) => [...current, ...resources]);
       setHasMore(newHasMore);
-      setOffset((o) => o + resources.length);
+      offsetRef.current += resources.length;
     });
-  }, [projectId, hasMore, isLoading, debouncedFilter, offset]);
+  }, [projectId, hasMore, isLoading, debouncedFilter]);
 
-  const { scrollContainer, getItemProps } = useInfiniteScrollItems({
+  const { scrollContainer, getItemProps } = useInfiniteScroll({
     items: availableResources,
     hasMore,
     itemsPerPage: ITEMS_PER_PAGE,
     onLoadMore: loadMore,
-    getItemKey: (resource) => resource.id,
   });
 
   return {

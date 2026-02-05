@@ -10,21 +10,17 @@ import {
   deleteResourcesByFilter,
   getRagResourcesAction,
 } from "@/lib/features/rag/actions";
-import { useInfiniteScrollItems } from "@/lib/utils/hooks/use-infinite-scroll-items";
-
-export interface RagResourceListItem {
-  title: string;
-  url: string | null;
-}
+import { type UIResource } from "@/lib/features/rag/types";
+import { useInfiniteScroll } from "@/lib/utils/hooks/use-infinite-scroll";
 
 export interface UseRagResourcesParams {
-  initialResources: RagResourceListItem[];
+  initialResources: UIResource[];
   initialHasMore: boolean;
   itemsPerPage?: number;
 }
 
 export interface UseRagResourcesReturn {
-  resources: RagResourceListItem[];
+  resources: UIResource[];
   hasMore: boolean;
   isFetching: boolean;
   isMutating: boolean;
@@ -32,14 +28,17 @@ export interface UseRagResourcesReturn {
   setFilter: (value: string) => void;
   onBulkDelete: () => void;
   scrollContainer: React.RefObject<HTMLUListElement | null>;
-  getResourceItemProps: (
-    resource: RagResourceListItem,
-    index: number,
-  ) => {
-    item: RagResourceListItem;
-    isDeleting?: boolean;
-    onDelete?: (item: RagResourceListItem) => void;
+  getResourceItemProps: ({
+    resource,
+    index,
+  }: {
+    resource: UIResource;
+    index: number;
+  }) => {
     loaderRef?: React.RefCallback<HTMLLIElement>;
+    resource: UIResource;
+    isDeleting?: boolean;
+    onDelete?: (item: UIResource) => void;
   };
 }
 
@@ -48,15 +47,14 @@ export const useRagResources = ({
   initialHasMore,
   itemsPerPage = 20,
 }: UseRagResourcesParams): UseRagResourcesReturn => {
-  const [resources, setResources] =
-    useState<RagResourceListItem[]>(initialResources);
+  const [resources, setResources] = useState<UIResource[]>(initialResources);
   const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
-  const [offset, setOffset] = useState<number>(initialResources.length);
   const [isFetching, startFetchTransition] = useTransition();
   const [isMutating, startMutateTransition] = useTransition();
   const [filter, setFilter] = useState<string>("");
   const [debouncedFilter] = useDebounce(filter, 300);
-  const [deletingTitles, setDeletingTitles] = useState<Set<string>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const offsetRef = useRef(initialResources.length);
 
   // Removed resourcesCountRef in favor of direct state dependency
 
@@ -76,7 +74,7 @@ export const useRagResources = ({
 
       setResources(result.resources);
       setHasMore(result.hasMore);
-      setOffset(result.resources.length);
+      offsetRef.current = result.resources.length;
     });
   }, [debouncedFilter, itemsPerPage]);
 
@@ -87,25 +85,25 @@ export const useRagResources = ({
     startFetchTransition(async () => {
       const result = await getRagResourcesAction({
         limit: itemsPerPage,
-        offset,
+        offset: offsetRef.current,
         filter: debouncedFilter,
       });
 
       setResources((current) => [...current, ...result.resources]);
       setHasMore(result.hasMore);
-      setOffset((o) => o + result.resources.length);
+      offsetRef.current += result.resources.length;
     });
-  }, [debouncedFilter, hasMore, isFetching, itemsPerPage, offset]);
+  }, [debouncedFilter, hasMore, isFetching, itemsPerPage]);
 
   const onDeleteResource = useCallback(
-    (title: string) => {
-      setDeletingTitles((prev) => new Set(prev).add(title));
+    (resource: UIResource) => {
+      setDeletingIds((prev) => new Set(prev).add(resource.id));
       startMutateTransition(async () => {
         try {
-          const result = await deleteResource(title);
+          const result = await deleteResource(resource.id);
           if (result.success) {
-            setResources((prev) => prev.filter((r) => r.title !== title));
-            toast.success(`Resource "${title}" deleted successfully`);
+            setResources((prev) => prev.filter((r) => r.id !== resource.id));
+            toast.success(`Resource "${resource.title}" deleted successfully`);
           } else {
             toast.error(result.error || "Failed to delete resource");
           }
@@ -113,9 +111,9 @@ export const useRagResources = ({
           console.error("Error deleting resource:", error);
           toast.error("An error occurred while deleting the resource");
         } finally {
-          setDeletingTitles((prev) => {
+          setDeletingIds((prev) => {
             const next = new Set(prev);
-            next.delete(title);
+            next.delete(resource.id);
             return next;
           });
         }
@@ -151,15 +149,25 @@ export const useRagResources = ({
     });
   }, [debouncedFilter, startMutateTransition]);
 
-  const { scrollContainer, getItemProps } = useInfiniteScrollItems({
+  const { scrollContainer, getItemProps } = useInfiniteScroll({
     items: resources,
     hasMore,
     itemsPerPage,
     onLoadMore: loadMore,
-    getItemKey: (resource) => resource.title,
-    getItemDeletingState: (resource) => deletingTitles.has(resource.title),
-    onItemDelete: (resource) => onDeleteResource(resource.title),
   });
+
+  const getResourceItemProps = useCallback(
+    ({ resource, index }: { resource: UIResource; index: number }) => {
+      const { loaderRef } = getItemProps(index);
+      return {
+        resource,
+        loaderRef,
+        isDeleting: deletingIds.has(resource.id),
+        onDelete: onDeleteResource,
+      };
+    },
+    [getItemProps, onDeleteResource, deletingIds],
+  );
 
   return {
     resources,
@@ -170,6 +178,6 @@ export const useRagResources = ({
     setFilter,
     onBulkDelete,
     scrollContainer,
-    getResourceItemProps: getItemProps,
+    getResourceItemProps,
   };
 };

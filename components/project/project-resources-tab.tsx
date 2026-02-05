@@ -85,11 +85,11 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
               className="flex flex-col gap-2 max-h-80 overflow-y-auto scrollbar-none"
             >
               {projectResources.map((resource, index) => {
-                const props = getProjectItemProps(resource, index);
+                const { loaderRef } = getProjectItemProps(index);
                 return (
                   <li
                     key={resource.id}
-                    ref={props.loaderRef}
+                    ref={loaderRef}
                     className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg"
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -145,11 +145,11 @@ export const ProjectResourcesTab: React.FC<ProjectResourcesTabProps> = ({
               className="flex flex-col gap-2 max-h-80 overflow-y-auto scrollbar-none"
             >
               {availableResources.map((resource, index) => {
-                const props = getAvailableItemProps(resource, index);
+                const { loaderRef } = getAvailableItemProps(index);
                 return (
                   <li
                     key={resource.id}
-                    ref={props.loaderRef}
+                    ref={loaderRef}
                     className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg"
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">

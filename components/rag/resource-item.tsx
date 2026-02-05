@@ -4,13 +4,12 @@ import React, { memo } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { type UIResource as RagResource } from "@/lib/features/rag/types";
+
 interface RagResourceItemProps {
-  resource: {
-    title: string;
-    url: string | null;
-  };
+  resource: RagResource;
   isDeleting?: boolean;
-  onDelete?: (title: string) => void;
+  onDelete?: (resource: RagResource) => void;
   loaderRef?: React.RefCallback<HTMLLIElement>;
 }
 
@@ -39,7 +38,7 @@ export const RagResourceItem: React.FC<RagResourceItemProps> = memo(
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          onClick={() => onDelete?.(resource.title)}
+          onClick={() => onDelete?.(resource)}
           disabled={isDeleting}
           aria-label={`Delete resource ${resource.title}`}
         >

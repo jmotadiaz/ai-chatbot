@@ -6,31 +6,23 @@ interface UseInfiniteScrollItemsParams<T> {
   hasMore: boolean;
   itemsPerPage: number;
   onLoadMore: () => void;
-  getItemKey: (item: T) => string;
-  getItemDeletingState?: (item: T) => boolean;
-  onItemDelete?: (item: T) => void;
 }
 
-interface ItemProps<T> {
-  item: T;
-  isDeleting?: boolean;
-  onDelete?: (item: T) => void;
+interface ItemProps {
   loaderRef?: React.RefCallback<HTMLLIElement>;
 }
 
-interface UseInfiniteScrollItemsReturn<T> {
+interface UseInfiniteScrollItemsReturn {
   scrollContainer: React.RefObject<HTMLUListElement | null>;
-  getItemProps: (item: T, index: number) => ItemProps<T>;
+  getItemProps: (index: number) => ItemProps;
 }
 
-export function useInfiniteScrollItems<T>({
+export function useInfiniteScroll<T>({
   items,
   hasMore,
   itemsPerPage,
   onLoadMore,
-  getItemDeletingState,
-  onItemDelete,
-}: UseInfiniteScrollItemsParams<T>): UseInfiniteScrollItemsReturn<T> {
+}: UseInfiniteScrollItemsParams<T>): UseInfiniteScrollItemsReturn {
   const { loader, scrollContainer } = useIntersectionObserver<
     HTMLUListElement,
     HTMLLIElement
@@ -39,25 +31,15 @@ export function useInfiniteScrollItems<T>({
   });
 
   const getItemProps = useCallback(
-    (item: T, index: number): ItemProps<T> => {
+    (index: number): ItemProps => {
       const targetIndex = items.length - Math.ceil(itemsPerPage / 2);
       const shouldAttachRef = hasMore && index === targetIndex;
 
       return {
-        item,
-        isDeleting: getItemDeletingState?.(item),
-        onDelete: onItemDelete,
         loaderRef: shouldAttachRef ? loader : undefined,
       };
     },
-    [
-      items.length,
-      itemsPerPage,
-      hasMore,
-      loader,
-      getItemDeletingState,
-      onItemDelete,
-    ],
+    [items.length, itemsPerPage, hasMore, loader],
   );
 
   return {

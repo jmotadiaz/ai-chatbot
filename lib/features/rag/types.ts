@@ -11,5 +11,11 @@ export interface Resource {
   content: string;
 }
 
+export interface UIResource {
+  id: string;
+  title: string;
+  url: string | null;
+}
+
 export const QUERY_TYPES = ["RETRIEVAL_QUERY", "CODE_RETRIEVAL_QUERY"] as const;
 export type QueryType = (typeof QUERY_TYPES)[number];

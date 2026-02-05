@@ -5,10 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   deleteResources,
+  deleteResourcesByIds,
   deleteResourcesByTitleFilter,
-  deleteResourcesByTitle,
-  deleteResourcesByTitles,
-  getUniqueResourceTitlesByUserIdPaginated,
+  getUserResourcesPaginated,
   addResourceToProject,
   removeResourceFromProject,
   getProjectResourcesPaginated,
@@ -199,7 +198,7 @@ export async function uploadResources(
   }
 }
 
-export async function deleteResource(title: string): Promise<ProcessResult> {
+export async function deleteResource(id: string): Promise<ProcessResult> {
   const session = await getSession();
 
   if (!session?.user) {
@@ -208,9 +207,8 @@ export async function deleteResource(title: string): Promise<ProcessResult> {
 
   try {
     const [result] = await transaction(
-      deleteResourcesByTitle({
-        title,
-        userId: session.user.id,
+      deleteResourceById({
+        resourceId: id,
       }),
     );
 
@@ -230,7 +228,7 @@ export async function deleteResource(title: string): Promise<ProcessResult> {
 }
 
 export async function deleteSelectedResources(
-  titles: string[],
+  ids: string[],
 ): Promise<ProcessResult> {
   const session = await getSession();
 
@@ -240,8 +238,8 @@ export async function deleteSelectedResources(
 
   try {
     const [result] = await transaction(
-      deleteResourcesByTitles({
-        titles,
+      deleteResourcesByIds({
+        ids,
         userId: session.user.id,
       }),
     );
@@ -332,7 +330,7 @@ export async function getRagResourcesAction({
   offset?: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ title: string; url: string | null }>;
+  resources: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   const validated = paginationSchema.parse({ limit, offset, filter });
@@ -345,7 +343,7 @@ export async function getRagResourcesAction({
     };
   }
 
-  return getUniqueResourceTitlesByUserIdPaginated({
+  return getUserResourcesPaginated({
     userId: session.user.id,
     limit: validated.limit,
     offset: validated.offset,

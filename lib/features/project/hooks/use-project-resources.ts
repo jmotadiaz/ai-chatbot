@@ -1,14 +1,9 @@
-"use client";
-
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useRef } from "react";
 import { getProjectResourcesAction } from "@/lib/features/rag/actions";
-import { useInfiniteScrollItems } from "@/lib/utils/hooks/use-infinite-scroll-items";
+import { type UIResource } from "@/lib/features/rag/types";
+import { useInfiniteScroll } from "@/lib/utils/hooks/use-infinite-scroll";
 
-export interface Resource {
-  id: string;
-  title: string;
-  url: string | null;
-}
+export type Resource = UIResource;
 
 interface UseProjectResourcesParams {
   projectId: string;
@@ -22,13 +17,7 @@ interface UseProjectResourcesReturn {
   hasMore: boolean;
   isLoading: boolean;
   scrollContainer: React.RefObject<HTMLUListElement | null>;
-  getProjectItemProps: (
-    resource: Resource,
-    index: number,
-  ) => {
-    item: Resource;
-    isDeleting?: boolean;
-    onDelete?: (item: Resource) => void;
+  getProjectItemProps: (index: number) => {
     loaderRef?: React.RefCallback<HTMLLIElement>;
   };
 }
@@ -44,7 +33,7 @@ export const useProjectResources = ({
   const [projectResources, setProjectResources] =
     useState<Resource[]>(initialResources);
   const [hasMore, setHasMore] = useState(initialHasMore);
-  const [offset, setOffset] = useState(initialResources.length);
+  const offsetRef = useRef(initialResources.length);
   const [isLoading, startTransition] = useTransition();
 
   // Load MORE pages (infinite scroll only)
@@ -55,21 +44,20 @@ export const useProjectResources = ({
       const result = await getProjectResourcesAction({
         projectId,
         limit: ITEMS_PER_PAGE,
-        offset,
+        offset: offsetRef.current,
       });
 
       setProjectResources((current) => [...current, ...result.resources]);
       setHasMore(result.hasMore);
-      setOffset((o) => o + result.resources.length);
+      offsetRef.current += result.resources.length;
     });
-  }, [hasMore, isLoading, projectId, offset]);
+  }, [hasMore, isLoading, projectId]);
 
-  const { scrollContainer, getItemProps } = useInfiniteScrollItems({
+  const { scrollContainer, getItemProps } = useInfiniteScroll({
     items: projectResources,
     hasMore,
     itemsPerPage: ITEMS_PER_PAGE,
     onLoadMore: loadMore,
-    getItemKey: (resource) => resource.id,
   });
 
   return {

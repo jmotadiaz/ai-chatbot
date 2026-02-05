@@ -336,7 +336,7 @@ export async function getUniqueResourceTitlesByUserId(
   }
 }
 
-export async function getUniqueResourceTitlesByUserIdPaginated({
+export async function getUserResourcesPaginated({
   userId,
   limit,
   offset,
@@ -347,7 +347,7 @@ export async function getUniqueResourceTitlesByUserIdPaginated({
   offset: number;
   filter?: string;
 }): Promise<{
-  resources: Array<{ title: string; url: string | null }>;
+  resources: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
@@ -360,13 +360,14 @@ export async function getUniqueResourceTitlesByUserIdPaginated({
     );
 
     const rows = await getDb()
-      .selectDistinctOn([resource.title], {
+      .select({
+        id: resource.id,
         title: resource.title,
         url: resource.url,
       })
       .from(resource)
       .where(whereClause)
-      .orderBy(resource.title, desc(resource.updatedAt))
+      .orderBy(desc(resource.updatedAt), desc(resource.id))
       .limit(extendedLimit)
       .offset(offset);
 
@@ -376,7 +377,7 @@ export async function getUniqueResourceTitlesByUserIdPaginated({
       hasMore,
     };
   } catch (error) {
-    console.error("Failed to get paginated resource titles by user id");
+    console.error("Failed to get paginated user resources");
     throw error;
   }
 }
@@ -425,24 +426,22 @@ export const deleteResourcesByTitle =
     }
   };
 
-export const deleteResourcesByTitles =
+export const deleteResourcesByIds =
   ({
-    titles,
+    ids,
     userId,
   }: {
-    titles: string[];
+    ids: string[];
     userId: string;
-  }): Transactional<Resource[]> =>
+  }): Transactional<{ id: string }[]> =>
   async (tx) => {
     try {
       return await tx
         .delete(resource)
-        .where(
-          and(inArray(resource.title, titles), eq(resource.userId, userId)),
-        )
-        .returning();
+        .where(and(inArray(resource.id, ids), eq(resource.userId, userId)))
+        .returning({ id: resource.id });
     } catch (error) {
-      console.error("Failed to delete resources by titles");
+      console.error("Failed to delete resources by ids");
       throw error;
     }
   };
@@ -459,6 +458,22 @@ export const addResourceToProject =
   }): Transactional<{ id: string }> =>
   async (tx) => {
     try {
+      // Check if already linked
+      const existing = await tx
+        .select({ id: projectResource.id })
+        .from(projectResource)
+        .where(
+          and(
+            eq(projectResource.projectId, projectId),
+            eq(projectResource.resourceId, resourceId),
+          ),
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        return existing[0];
+      }
+
       const [result] = await tx
         .insert(projectResource)
         .values({
@@ -560,7 +575,7 @@ export async function getProjectResourcesPaginated({
       .from(projectResource)
       .innerJoin(resource, eq(projectResource.resourceId, resource.id))
       .where(whereClause)
-      .orderBy(resource.title, desc(resource.updatedAt))
+      .orderBy(desc(resource.updatedAt), desc(resource.id))
       .limit(extendedLimit)
       .offset(offset);
 
@@ -608,14 +623,14 @@ export async function getUserResourcesNotInProject({
     );
 
     const rows = await getDb()
-      .selectDistinctOn([resource.title], {
+      .select({
         id: resource.id,
         title: resource.title,
         url: resource.url,
       })
       .from(resource)
       .where(whereClause)
-      .orderBy(resource.title, desc(resource.updatedAt))
+      .orderBy(desc(resource.updatedAt), desc(resource.id))
       .limit(extendedLimit)
       .offset(offset);
 

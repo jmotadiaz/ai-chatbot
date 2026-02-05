@@ -8,8 +8,10 @@ import { ConfirmModal, useConfirmModal } from "@/components/ui/confirm-modal";
 import { useRagResources } from "@/lib/features/rag/hooks/use-rag-resources";
 import { DotsLoadingIcon } from "@/components/ui/icons";
 
+import { type UIResource } from "@/lib/features/rag/types";
+
 interface RAGResourcesProps {
-  initialResources: Array<{ title: string; url: string | null }>;
+  initialResources: UIResource[];
   initialHasMore: boolean;
 }
 
@@ -72,14 +74,10 @@ export const RAGResources: React.FC<RAGResourcesProps> = ({
         className="space-y-3 max-h-[70dvh] overflow-auto scrollbar-none"
       >
         {resources.map((resource, index) => {
-          const props = getResourceItemProps(resource, index);
           return (
             <RagResourceItem
-              key={resource.title}
-              resource={props.item}
-              isDeleting={props.isDeleting}
-              onDelete={() => props.onDelete?.(props.item)}
-              loaderRef={props.loaderRef}
+              key={resource.id}
+              {...getResourceItemProps({ resource, index })}
             />
           );
         })}
