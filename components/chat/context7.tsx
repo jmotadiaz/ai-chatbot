@@ -3,14 +3,17 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
-import { useContext7Chat } from "@/lib/features/chat/hooks/use-context7-chat";
+import { UseContext7ChatResult } from "@/lib/features/chat/hooks/use-context7-chat";
 import { ChatConversation } from "@/components/chat/conversation";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
-import { ModelPickerSelector } from "@/components/chat/model-picker";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 
-export const Context7Chat: React.FC = () => {
+interface Context7ChatProps {
+  chatResult: UseContext7ChatResult;
+}
+
+export const Context7Chat: React.FC<Context7ChatProps> = ({ chatResult }) => {
   const {
     messages,
     input,
@@ -23,14 +26,9 @@ export const Context7Chat: React.FC = () => {
     setFiles,
     handleFileChange,
     supportedFiles,
-    selectedModel,
-    setConfig,
-    availableModels,
-  } = useContext7Chat();
+  } = chatResult;
 
   const isLoading = status === "streaming" || status === "submitted";
-
-  console.log("messages", messages);
 
   return (
     <div
@@ -40,15 +38,6 @@ export const Context7Chat: React.FC = () => {
         messages.length ? "h-full" : "h-vh gap-10",
       )}
     >
-      <div className="absolute top-20 right-8 z-10">
-        <ModelPickerSelector
-          id="context7-model-picker"
-          selectedModel={selectedModel}
-          setSelectedModel={(model) => setConfig({ selectedModel: model })}
-          models={availableModels}
-        />
-      </div>
-
       <ChatConversation
         messages={messages}
         status={status}
