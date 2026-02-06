@@ -2,5 +2,5 @@ import { Context7Agent } from "@upstash/context7-tools-ai-sdk";
 import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
 
 export const agent = new Context7Agent({
-  ...languageModelConfigurations("GLM-4.7 Flash"),
+  ...languageModelConfigurations("Gemini 3 Flash"),
 });
