@@ -1,0 +1,916 @@
+
+> ai-sdk-starter@0.1.0 jules:start /app
+> export NEXT_PUBLIC_ENV=test && npm run db:jules:start && npm run db:migrate && npm run db:seed && NODE_ENV=test npx next dev
+
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_jsr-registry". This will stop working in the next major version of npm.
+
+> ai-sdk-starter@0.1.0 db:jules:start
+> sudo docker compose -f docker-compose.test.yml up --wait
+
+ postgres Pulling
+ 4831516dd0cb Pulling fs layer
+ badb97e81c14 Pulling fs layer
+ 5a76629586bf Pulling fs layer
+ 53c3a7608671 Pulling fs layer
+ e89503f3fc88 Pulling fs layer
+ 53c3a7608671 Waiting
+ 0ad97e848d7b Pulling fs layer
+ e89503f3fc88 Waiting
+ 0ad97e848d7b Waiting
+ acd32fbeaa7e Pulling fs layer
+ acd32fbeaa7e Waiting
+ 175a54555945 Pulling fs layer
+ 2862a781b6b9 Pulling fs layer
+ f24480079ff2 Pulling fs layer
+ 69908cc7142f Pulling fs layer
+ 073fedf2a066 Pulling fs layer
+ f4d95e72779e Pulling fs layer
+ cd77705f6bb6 Pulling fs layer
+ 5201d8eed026 Pulling fs layer
+ 75809feb3081 Pulling fs layer
+ 175a54555945 Waiting
+ 2862a781b6b9 Waiting
+ f4d95e72779e Waiting
+ cd77705f6bb6 Waiting
+ f24480079ff2 Waiting
+ 5201d8eed026 Waiting
+ 75809feb3081 Waiting
+ 69908cc7142f Waiting
+ 073fedf2a066 Waiting
+ 5a76629586bf Downloading [>                                                  ]  46.39kB/4.534MB
+ 4831516dd0cb Downloading [>                                                  ]    290kB/28.23MB
+ 5a76629586bf Verifying Checksum
+ 5a76629586bf Download complete
+ 4831516dd0cb Downloading [================>                                  ]  9.578MB/28.23MB
+ badb97e81c14 Downloading [==============================>                    ]     720B/1.168kB
+ badb97e81c14 Downloading [==================================================>]  1.168kB/1.168kB
+ badb97e81c14 Verifying Checksum
+ badb97e81c14 Download complete
+ 4831516dd0cb Downloading [======================================>            ]  21.48MB/28.23MB
+ 53c3a7608671 Downloading [>                                                  ]  13.02kB/1.25MB
+ 4831516dd0cb Verifying Checksum
+ 4831516dd0cb Download complete
+ 53c3a7608671 Verifying Checksum
+ 53c3a7608671 Download complete
+ e89503f3fc88 Downloading [>                                                  ]   84.2kB/8.066MB
+ 0ad97e848d7b Downloading [>                                                  ]  12.11kB/1.196MB
+ 4831516dd0cb Extracting [>                                                  ]  294.9kB/28.23MB
+ e89503f3fc88 Downloading [============================================>      ]   7.12MB/8.066MB
+ e89503f3fc88 Verifying Checksum
+ e89503f3fc88 Download complete
+ acd32fbeaa7e Downloading [==================================================>]     116B/116B
+ acd32fbeaa7e Verifying Checksum
+ acd32fbeaa7e Download complete
+ 0ad97e848d7b Verifying Checksum
+ 0ad97e848d7b Download complete
+ 4831516dd0cb Extracting [===>                                               ]  2.064MB/28.23MB
+ 175a54555945 Downloading [===========>                                       ]     720B/3.141kB
+ 175a54555945 Downloading [==================================================>]  3.141kB/3.141kB
+ 175a54555945 Verifying Checksum
+ 175a54555945 Download complete
+ 4831516dd0cb Extracting [========>                                          ]  4.719MB/28.23MB
+ f24480079ff2 Downloading [===>                                               ]     699B/10.24kB
+ f24480079ff2 Downloading [==================================================>]  10.24kB/10.24kB
+ f24480079ff2 Download complete
+ 2862a781b6b9 Downloading [>                                                  ]  535.8kB/112.7MB
+ 4831516dd0cb Extracting [=============>                                     ]  7.373MB/28.23MB
+ 2862a781b6b9 Downloading [===>                                               ]  8.584MB/112.7MB
+ 69908cc7142f Downloading [==================================================>]     128B/128B
+ 69908cc7142f Verifying Checksum
+ 69908cc7142f Download complete
+ 073fedf2a066 Downloading [==================================================>]     167B/167B
+ 073fedf2a066 Verifying Checksum
+ 073fedf2a066 Download complete
+ 2862a781b6b9 Downloading [========>                                          ]  19.28MB/112.7MB
+ 4831516dd0cb Extracting [================>                                  ]  9.142MB/28.23MB
+ f4d95e72779e Downloading [=====>                                             ]     700B/5.838kB
+ f4d95e72779e Downloading [==================================================>]  5.838kB/5.838kB
+ f4d95e72779e Download complete
+ 2862a781b6b9 Downloading [==============>                                    ]  33.18MB/112.7MB
+ cd77705f6bb6 Downloading [==================================================>]     187B/187B
+ cd77705f6bb6 Verifying Checksum
+ cd77705f6bb6 Download complete
+ 4831516dd0cb Extracting [=================>                                 ]  10.03MB/28.23MB
+ 2862a781b6b9 Downloading [==================>                                ]  40.65MB/112.7MB
+ 4831516dd0cb Extracting [===================>                               ]  11.21MB/28.23MB
+ 5201d8eed026 Downloading [>                                                  ]  2.088kB/123.1kB
+ 5201d8eed026 Verifying Checksum
+ 5201d8eed026 Download complete
+ 2862a781b6b9 Downloading [======================>                            ]  51.35MB/112.7MB
+ 75809feb3081 Downloading [>                                                  ]  15.06kB/1.451MB
+ 4831516dd0cb Extracting [=======================>                           ]  13.27MB/28.23MB
+ 75809feb3081 Verifying Checksum
+ 75809feb3081 Download complete
+ 2862a781b6b9 Downloading [============================>                      ]  64.22MB/112.7MB
+ 4831516dd0cb Extracting [============================>                      ]  15.93MB/28.23MB
+ 2862a781b6b9 Downloading [===================================>               ]  79.69MB/112.7MB
+ 4831516dd0cb Extracting [==================================>                ]  19.46MB/28.23MB
+ 2862a781b6b9 Downloading [========================================>          ]  90.88MB/112.7MB
+ 4831516dd0cb Extracting [========================================>          ]     23MB/28.23MB
+ 2862a781b6b9 Downloading [=========================================>         ]  93.01MB/112.7MB
+ 2862a781b6b9 Downloading [==========================================>        ]  95.16MB/112.7MB
+ 2862a781b6b9 Downloading [===========================================>       ]  97.31MB/112.7MB
+ 2862a781b6b9 Downloading [============================================>      ]  99.44MB/112.7MB
+ 4831516dd0cb Extracting [==========================================>        ]  23.89MB/28.23MB
+ 2862a781b6b9 Downloading [=============================================>     ]  101.6MB/112.7MB
+ 4831516dd0cb Extracting [============================================>      ]  25.36MB/28.23MB
+ 2862a781b6b9 Downloading [==============================================>    ]  103.7MB/112.7MB
+ 2862a781b6b9 Downloading [==============================================>    ]  105.8MB/112.7MB
+ 4831516dd0cb Extracting [===============================================>   ]  26.84MB/28.23MB
+ 2862a781b6b9 Downloading [===============================================>   ]    108MB/112.7MB
+ 4831516dd0cb Extracting [================================================>  ]  27.13MB/28.23MB
+ 2862a781b6b9 Downloading [================================================>  ]  110.1MB/112.7MB
+ 2862a781b6b9 Downloading [=================================================> ]  112.2MB/112.7MB
+ 2862a781b6b9 Verifying Checksum
+ 2862a781b6b9 Download complete
+ 4831516dd0cb Extracting [================================================>  ]  27.43MB/28.23MB
+ 4831516dd0cb Extracting [=================================================> ]  28.02MB/28.23MB
+ 4831516dd0cb Extracting [==================================================>]  28.23MB/28.23MB
+ 4831516dd0cb Pull complete
+ badb97e81c14 Extracting [==================================================>]  1.168kB/1.168kB
+ badb97e81c14 Extracting [==================================================>]  1.168kB/1.168kB
+ badb97e81c14 Pull complete
+ 5a76629586bf Extracting [>                                                  ]  65.54kB/4.534MB
+ 5a76629586bf Extracting [==>                                                ]  262.1kB/4.534MB
+ 5a76629586bf Extracting [=================================>                 ]   3.08MB/4.534MB
+ 5a76629586bf Extracting [==================================================>]  4.534MB/4.534MB
+ 5a76629586bf Pull complete
+ 53c3a7608671 Extracting [=>                                                 ]  32.77kB/1.25MB
+ 53c3a7608671 Extracting [==========>                                        ]  262.1kB/1.25MB
+ 53c3a7608671 Extracting [==================================================>]   1.25MB/1.25MB
+ 53c3a7608671 Pull complete
+ e89503f3fc88 Extracting [>                                                  ]   98.3kB/8.066MB
+ e89503f3fc88 Extracting [=>                                                 ]  196.6kB/8.066MB
+ e89503f3fc88 Extracting [==========>                                        ]  1.671MB/8.066MB
+ e89503f3fc88 Extracting [==================>                                ]  3.047MB/8.066MB
+ e89503f3fc88 Extracting [=======================>                           ]  3.834MB/8.066MB
+ e89503f3fc88 Extracting [=============================>                     ]  4.719MB/8.066MB
+ e89503f3fc88 Extracting [================================>                  ]  5.308MB/8.066MB
+ e89503f3fc88 Extracting [==================================>                ]  5.505MB/8.066MB
+ e89503f3fc88 Extracting [====================================>              ]  5.898MB/8.066MB
+ e89503f3fc88 Extracting [========================================>          ]  6.488MB/8.066MB
+ e89503f3fc88 Extracting [==============================================>    ]  7.471MB/8.066MB
+ e89503f3fc88 Extracting [==================================================>]  8.066MB/8.066MB
+ e89503f3fc88 Pull complete
+ 0ad97e848d7b Extracting [=>                                                 ]  32.77kB/1.196MB
+ 0ad97e848d7b Extracting [==========>                                        ]  262.1kB/1.196MB
+ 0ad97e848d7b Extracting [==================================================>]  1.196MB/1.196MB
+ 0ad97e848d7b Extracting [==================================================>]  1.196MB/1.196MB
+ 0ad97e848d7b Pull complete
+ acd32fbeaa7e Extracting [==================================================>]     116B/116B
+ acd32fbeaa7e Extracting [==================================================>]     116B/116B
+ acd32fbeaa7e Pull complete
+ 175a54555945 Extracting [==================================================>]  3.141kB/3.141kB
+ 175a54555945 Extracting [==================================================>]  3.141kB/3.141kB
+ 175a54555945 Pull complete
+ 2862a781b6b9 Extracting [>                                                  ]  557.1kB/112.7MB
+ 2862a781b6b9 Extracting [>                                                  ]  1.114MB/112.7MB
+ 2862a781b6b9 Extracting [>                                                  ]  2.228MB/112.7MB
+ 2862a781b6b9 Extracting [=>                                                 ]  3.899MB/112.7MB
+ 2862a781b6b9 Extracting [==>                                                ]  6.685MB/112.7MB
+ 2862a781b6b9 Extracting [===>                                               ]  7.799MB/112.7MB
+ 2862a781b6b9 Extracting [===>                                               ]  8.913MB/112.7MB
+ 2862a781b6b9 Extracting [====>                                              ]  10.03MB/112.7MB
+ 2862a781b6b9 Extracting [=====>                                             ]   11.7MB/112.7MB
+ 2862a781b6b9 Extracting [=====>                                             ]  13.37MB/112.7MB
+ 2862a781b6b9 Extracting [======>                                            ]   15.6MB/112.7MB
+ 2862a781b6b9 Extracting [=======>                                           ]  17.27MB/112.7MB
+ 2862a781b6b9 Extracting [========>                                          ]  18.38MB/112.7MB
+ 2862a781b6b9 Extracting [=========>                                         ]  20.61MB/112.7MB
+ 2862a781b6b9 Extracting [=========>                                         ]  21.73MB/112.7MB
+ 2862a781b6b9 Extracting [==========>                                        ]   23.4MB/112.7MB
+ 2862a781b6b9 Extracting [==========>                                        ]  24.51MB/112.7MB
+ 2862a781b6b9 Extracting [===========>                                       ]  26.18MB/112.7MB
+ 2862a781b6b9 Extracting [============>                                      ]  28.41MB/112.7MB
+ 2862a781b6b9 Extracting [=============>                                     ]   31.2MB/112.7MB
+ 2862a781b6b9 Extracting [===============>                                   ]  33.98MB/112.7MB
+ 2862a781b6b9 Extracting [================>                                  ]  36.77MB/112.7MB
+ 2862a781b6b9 Extracting [=================>                                 ]  39.55MB/112.7MB
+ 2862a781b6b9 Extracting [===================>                               ]  42.89MB/112.7MB
+ 2862a781b6b9 Extracting [====================>                              ]  46.24MB/112.7MB
+ 2862a781b6b9 Extracting [======================>                            ]  50.14MB/112.7MB
+ 2862a781b6b9 Extracting [=======================>                           ]  52.92MB/112.7MB
+ 2862a781b6b9 Extracting [========================>                          ]  54.59MB/112.7MB
+ 2862a781b6b9 Extracting [========================>                          ]  55.71MB/112.7MB
+ 2862a781b6b9 Extracting [=========================>                         ]  57.38MB/112.7MB
+ 2862a781b6b9 Extracting [==========================>                        ]  59.05MB/112.7MB
+ 2862a781b6b9 Extracting [==========================>                        ]  60.72MB/112.7MB
+ 2862a781b6b9 Extracting [===========================>                       ]  62.95MB/112.7MB
+ 2862a781b6b9 Extracting [=============================>                     ]  65.73MB/112.7MB
+ 2862a781b6b9 Extracting [==============================>                    ]  69.63MB/112.7MB
+ 2862a781b6b9 Extracting [================================>                  ]  72.42MB/112.7MB
+ 2862a781b6b9 Extracting [=================================>                 ]   75.2MB/112.7MB
+ 2862a781b6b9 Extracting [==================================>                ]  77.43MB/112.7MB
+ 2862a781b6b9 Extracting [===================================>               ]  79.66MB/112.7MB
+ 2862a781b6b9 Extracting [====================================>              ]  81.89MB/112.7MB
+ 2862a781b6b9 Extracting [=====================================>             ]  84.12MB/112.7MB
+ 2862a781b6b9 Extracting [======================================>            ]   86.9MB/112.7MB
+ 2862a781b6b9 Extracting [=======================================>           ]  89.13MB/112.7MB
+ 2862a781b6b9 Extracting [========================================>          ]  91.91MB/112.7MB
+ 2862a781b6b9 Extracting [=========================================>         ]  94.14MB/112.7MB
+ 2862a781b6b9 Extracting [==========================================>        ]  95.26MB/112.7MB
+ 2862a781b6b9 Extracting [==========================================>        ]  96.37MB/112.7MB
+ 2862a781b6b9 Extracting [==========================================>        ]  96.93MB/112.7MB
+ 2862a781b6b9 Extracting [===========================================>       ]   98.6MB/112.7MB
+ 2862a781b6b9 Extracting [============================================>      ]  99.71MB/112.7MB
+ 2862a781b6b9 Extracting [============================================>      ]  100.8MB/112.7MB
+ 2862a781b6b9 Extracting [=============================================>     ]  102.5MB/112.7MB
+ 2862a781b6b9 Extracting [=============================================>     ]  103.6MB/112.7MB
+ 2862a781b6b9 Extracting [==============================================>    ]  104.7MB/112.7MB
+ 2862a781b6b9 Extracting [==============================================>    ]  105.8MB/112.7MB
+ 2862a781b6b9 Extracting [===============================================>   ]    107MB/112.7MB
+ 2862a781b6b9 Extracting [===============================================>   ]  107.5MB/112.7MB
+ 2862a781b6b9 Extracting [================================================>  ]  108.6MB/112.7MB
+ 2862a781b6b9 Extracting [================================================>  ]  109.2MB/112.7MB
+ 2862a781b6b9 Extracting [================================================>  ]  110.3MB/112.7MB
+ 2862a781b6b9 Extracting [=================================================> ]  110.9MB/112.7MB
+ 2862a781b6b9 Extracting [=================================================> ]  111.4MB/112.7MB
+ 2862a781b6b9 Extracting [=================================================> ]    112MB/112.7MB
+ 2862a781b6b9 Extracting [==================================================>]  112.7MB/112.7MB
+ 2862a781b6b9 Pull complete
+ f24480079ff2 Extracting [==================================================>]  10.24kB/10.24kB
+ f24480079ff2 Extracting [==================================================>]  10.24kB/10.24kB
+ f24480079ff2 Pull complete
+ 69908cc7142f Extracting [==================================================>]     128B/128B
+ 69908cc7142f Extracting [==================================================>]     128B/128B
+ 69908cc7142f Pull complete
+ 073fedf2a066 Extracting [==================================================>]     167B/167B
+ 073fedf2a066 Extracting [==================================================>]     167B/167B
+ 073fedf2a066 Pull complete
+ f4d95e72779e Extracting [==================================================>]  5.838kB/5.838kB
+ f4d95e72779e Extracting [==================================================>]  5.838kB/5.838kB
+ f4d95e72779e Pull complete
+ cd77705f6bb6 Extracting [==================================================>]     187B/187B
+ cd77705f6bb6 Extracting [==================================================>]     187B/187B
+ cd77705f6bb6 Pull complete
+ 5201d8eed026 Extracting [=============>                                     ]  32.77kB/123.1kB
+ 5201d8eed026 Extracting [==================================================>]  123.1kB/123.1kB
+ 5201d8eed026 Pull complete
+ 75809feb3081 Extracting [=>                                                 ]  32.77kB/1.451MB
+ 75809feb3081 Extracting [=======>                                           ]  229.4kB/1.451MB
+ 75809feb3081 Extracting [==================================================>]  1.451MB/1.451MB
+ 75809feb3081 Pull complete
+ postgres Pulled
+ Network ai-chatbot-test-db_default  Creating
+ Network ai-chatbot-test-db_default  Created
+ Container postgres-test  Creating
+ Container postgres-test  Created
+ Container postgres-test  Starting
+ Container postgres-test  Started
+ Container postgres-test  Waiting
+ Container postgres-test  Healthy
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_jsr-registry". This will stop working in the next major version of npm.
+
+> ai-sdk-starter@0.1.0 db:migrate
+> npx tsx lib/infrastructure/db/migrate.ts
+
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_jsr-registry". This will stop working in the next major version of npm.
+⏳ Running migrations...
+✅ Migrations completed in 254 ms
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_jsr-registry". This will stop working in the next major version of npm.
+
+> ai-sdk-starter@0.1.0 db:seed
+> npx tsx scripts/seed-test-data.ts
+
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_jsr-registry". This will stop working in the next major version of npm.
+✅ Seed completed
+{
+  userId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+  projectId: 'fbfcfd4f-d7b9-480c-9f60-c52947504ce3',
+  createdChats: 100,
+  projectChats: 5,
+  messagesPerChat: 10
+}
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_jsr-registry". This will stop working in the next major version of npm.
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Environments: .env.test
+- Experiments (use with caution):
+  ✓ authInterrupts
+  · optimizePackageImports
+  ✓ viewTransition
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 2.6s
+○ Compiling /login ...
+ GET /login 200 in 6.7s (compile: 5.9s, render: 784ms)
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at Module.callback (/app/.next/dev/server/chunks/ssr/73503_@auth_core_e7f78301._.js:4314:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AuthInternal (/app/.next/dev/server/chunks/ssr/73503_@auth_core_e7f78301._.js:5148:24)
+    at async Auth (/app/.next/dev/server/chunks/ssr/73503_@auth_core_e7f78301._.js:5370:34)
+    at async signIn (/app/.next/dev/server/chunks/ssr/node_modules__pnpm_5c691492._.js:5529:17)
+    at async login (/app/.next/dev/server/chunks/ssr/_98b8c9f9._.js:70:21)
+    at async executeActionAndPrepareForRender (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:36:3803)
+    at async /app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:36:1109
+    at async handleAction (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:34:23598)
+    at async renderToHTMLOrFlightImpl (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:41:42106)
+    at async doRender (/app/.next/dev/server/chunks/ssr/7e561_next_dist_e29c458d._.js:2855:28)
+    at async AppPageRouteModule.handleResponse (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:43:64241)
+    at async handleResponse (/app/.next/dev/server/chunks/ssr/7e561_next_dist_e29c458d._.js:3061:32)
+    at async Module.handler (/app/.next/dev/server/chunks/ssr/7e561_next_dist_e29c458d._.js:3432:20)
+    at async DevServer.renderToResponseWithComponentsImpl (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/base-server.js:1422:9)
+    at async DevServer.renderPageComponent (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/base-server.js:1474:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/base-server.js:1524:32)
+    at async DevServer.pipeImpl (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/base-server.js:1018:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/next-server.js:395:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/base-server.js:909:17)
+    at async /app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/dev/next-dev-server.js:387:20
+    at async Span.traceAsyncFn (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/dev/next-dev-server.js:383:24)
+    at async invokeRender (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/lib/router-server.js:248:21)
+    at async handleRequest (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/lib/router-server.js:447:24)
+    at async requestHandlerImpl (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/lib/router-server.js:496:13)
+    at async Server.requestListener (/app/node_modules/.pnpm/next@16.1.1_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_react-dom@19.2.3_react@19.2.3__react@19.2.3/node_modules/next/dist/server/lib/start-server.js:226:13)
+ POST /login 200 in 305ms (compile: 19ms, render: 286ms)
+ GET /api/auth/session 200 in 4.4s (compile: 4.3s, render: 35ms)
+ GET /api/auth/session 200 in 37ms (compile: 28ms, render: 9ms)
+○ Compiling /context7 ...
+ GET /context7 307 in 22.8s (compile: 22.4s, render: 360ms)
+ GET /login 200 in 166ms (compile: 9ms, render: 157ms)
+ GET /api/auth/session 200 in 100ms (compile: 91ms, render: 9ms)
+ GET /api/auth/session 200 in 10ms (compile: 4ms, render: 7ms)
+ GET /login 200 in 149ms (compile: 9ms, render: 140ms)
+ GET /api/auth/session 200 in 104ms (compile: 91ms, render: 13ms)
+ GET /api/auth/session 200 in 136ms (compile: 100ms, render: 36ms)
+○ Compiling / ...
+ GET / 200 in 9.2s (compile: 8.2s, render: 934ms)
+ POST /login 303 in 9.6s (compile: 7ms, render: 9.6s)
+messages []
+ GET /context7 200 in 2.4s (compile: 32ms, render: 2.3s)
+ GET /api/auth/session 200 in 189ms (compile: 117ms, render: 72ms)
+ GET /api/auth/session 200 in 31ms (compile: 23ms, render: 8ms)
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/model-picker.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/model-picker.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/model-picker.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/model-picker.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/model-picker.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/model-picker.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/model-picker.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/model-picker.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  #1 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #2 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+  #3 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #4 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  #1 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #2 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+  #3 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #4 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  #1 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #2 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+  #3 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #4 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-chat.ts:15:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 13 |[39m [36mimport[39m { useChatConfig } [36mfrom[39m [32m"./use-chat-config"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { useChatTools } [36mfrom[39m [32m"./use-chat-tools"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m [36mimport[39m { useChatInputState } [36mfrom[39m [32m"./use-chat-input-state"[39m[33m;[39m
+ [90m 17 |[39m [36mimport[39m { useChatSendEnabled } [36mfrom[39m [32m"./use-chat-send-enabled"[39m[33m;[39m
+ [90m 18 |[39m [36mimport[39m { useChatSubmit } [36mfrom[39m [32m"./use-chat-submit"[39m[33m;[39m[0m
+
+
+
+Import traces:
+  #1 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #2 [Client Component Browser]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component Browser]
+    ./components/chat/provider.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Client Component Browser]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+  #3 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/loading.tsx [Server Component]
+
+  #4 [Client Component SSR]:
+    ./lib/features/chat/hooks/use-chat.ts [Client Component SSR]
+    ./components/chat/provider.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Client Component SSR]
+    ./components/chat/shell.tsx [Server Component]
+    ./app/(chat)/chat-layout.tsx [Server Component]
+    ./app/(chat)/(home)/component.tsx [Server Component]
+    ./app/(chat)/(home)/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./lib/features/chat/hooks/use-context7-chat.ts:14:1
+Module not found: Can't resolve './use-handle-file=change'
+[0m [90m 12 |[39m [36mimport[39m { useAvailableModels } [36mfrom[39m [32m"./use-available-models"[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { useSupportedFiles } [36mfrom[39m [32m"./use-supported-files"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { useHandleFileChange } [36mfrom[39m [32m"./use-handle-file=change"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 15 |[39m [36mimport[39m type { [33mSetChatConfig[39m } [36mfrom[39m [32m"./hook-types"[39m[33m;[39m
+ [90m 16 |[39m [36mimport[39m type {
+ [90m 17 |[39m   [33mChatbotDataPart[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component Browser]
+    ./components/chat/context7.tsx [Client Component Browser]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./lib/features/chat/hooks/use-context7-chat.ts [Client Component SSR]
+    ./components/chat/context7.tsx [Client Component SSR]
+    ./components/chat/context7.tsx [Server Component]
+    ./app/(chat)/context7/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+✓ Compiled in 2.7s
+✓ Compiled in 421ms

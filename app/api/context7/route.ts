@@ -1,14 +1,24 @@
-import { createUIMessageStreamResponse, convertToModelMessages  } from "ai";
-import { agent } from "@/lib/features/chat/context7-agent";
+import { createUIMessageStreamResponse, convertToModelMessages } from "ai";
+import { createAgent } from "@/lib/features/chat/context7-agent";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
+import {
+  defaultModel,
+  type chatModelId,
+} from "@/lib/features/foundation-model/config";
 
 export const maxDuration = 240;
 
 export const POST = withAuth(async (user, req) => {
-  const { messages }: { messages: ChatbotMessage[] } = await req.json();
+  const {
+    messages,
+    selectedModel,
+  }: { messages: ChatbotMessage[]; selectedModel?: chatModelId } =
+    await req.json();
 
   const modelMessages = await convertToModelMessages(messages);
+
+  const agent = createAgent(selectedModel || defaultModel);
 
   const result = await agent.stream({
     messages: modelMessages,
