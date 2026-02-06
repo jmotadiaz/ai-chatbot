@@ -62,7 +62,7 @@ export const chatModelKeys = [
   "Nano Banana",
 ] satisfies LanguageModelKeys[];
 
-export type chatModelId = (typeof chatModelKeys)[number];
+export type chatModelId = (typeof chatModelKeys)[number] | "Router";
 
 export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 
