@@ -35,13 +35,13 @@ export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const chatModelKeys = [
+  "MiMo V2 Flash",
+  "MiMo V2 Flash Thinking",
   "Kimi K2",
   "Kimi K2.5",
   "MiniMax M2.1",
   "GLM-4.7 Flash",
   "GLM-4.7",
-  "MiMo V2 Flash",
-  "MiMo V2 Flash Thinking",
   "Qwen3 Next Instruct",
   "Qwen3 Next Thinking",
   "Deepseek Chat",
@@ -67,9 +67,9 @@ export type chatModelId = (typeof chatModelKeys)[number] | "Router";
 export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 
 // Constants
-export const defaultModel: chatModelId = "Kimi K2";
+export const defaultModel: chatModelId = "MiMo V2 Flash";
 
-export const defaultWebSearchNumResults = 5;
+export const defaultSearchNumResults = 5;
 
 // Helpers
 export const languageModelConfigurations = (
