@@ -4,7 +4,10 @@ import { generateEmbeddings } from "./embeddings";
 import { fetchAndConvertURL, UrlResource } from "./fetch";
 import { generateChunks } from "./chunking";
 import { transaction } from "@/lib/infrastructure/db/queries";
-import type { InsertChunk } from "@/lib/infrastructure/db/schema";
+import type {
+  InsertChunk,
+  InsertEmbedding,
+} from "@/lib/infrastructure/db/schema";
 
 export const saveUrlResource = async ({
   urlResource,
@@ -21,8 +24,42 @@ export const saveUrlResource = async ({
     return { success: false };
   }
 
+  // 1. Prepare data (CPU work) - Outside transaction
+  const chunkGroups = await generateChunks(resource.content);
+
+  const chunksToInsert: Omit<InsertChunk, "resourceId">[] = [];
+  const contentToEmbed: { chunkId: string; content: string }[] = [];
+
+  for (const { content, type, language, embeddableContent } of chunkGroups) {
+    const chunkId = randomUUID();
+
+    // Prepare Chunk data (we need resourceId later, but we can assign chunkId now)
+    chunksToInsert.push({
+      id: chunkId,
+      content,
+      type,
+      language,
+    });
+
+    // Prepare content for embeddings
+    for (const childContent of embeddableContent) {
+      contentToEmbed.push({
+        chunkId: chunkId,
+        content: childContent,
+      });
+    }
+  }
+
+  // 2. Generate Embeddings (External API I/O) - Outside transaction!
+  // This is the critical fix: prevent holding DB connection during slow API call
+  let embeddingsToInsert: InsertEmbedding[] = [];
+  if (contentToEmbed.length > 0) {
+    embeddingsToInsert = await generateEmbeddings(contentToEmbed);
+  }
+
+  // 3. Database Write - Inside Transaction (Fast)
   const [result] = await transaction(async (tx) => {
-    // 1. Crear el Recurso (Resource)
+    // A. Create Resource
     const newResource = await saveResource({
       title: resource.title,
       url: resource.url,
@@ -30,42 +67,12 @@ export const saveUrlResource = async ({
       projectId,
     })(tx);
 
-    // 2. Generar Chunk Groups
-    const chunkGroups = await generateChunks(resource.content);
+    // B. Insert Chunks
+    await saveChunks(
+      chunksToInsert.map((chunk) => ({ ...chunk, resourceId: newResource.id })),
+    )(tx);
 
-    // A. Preparar datos asignando UUIDs en la aplicación
-    const chunksToInsert: InsertChunk[] = [];
-    const contentToEmbed: { chunkId: string; content: string }[] = [];
-
-    for (const { content, type, language, embeddableContent } of chunkGroups) {
-      // Generamos el ID aquí, explícitamente
-      const chunkId = randomUUID();
-
-      // Preparamos el Chunk Padre para DB
-      chunksToInsert.push({
-        id: chunkId, // <--- ID pre-generado
-        resourceId: newResource.id,
-        content,
-        type,
-        language,
-      });
-
-      // Preparamos los hijos para Embeddings vinculados a ese ID
-      // (Small-to-Big: el embedding del hijo apunta al chunk padre)
-      for (const childContent of embeddableContent) {
-        contentToEmbed.push({
-          chunkId: chunkId, // Vinculamos al ID generado arriba
-          content: childContent,
-        });
-      }
-    }
-
-    // B. Insertar Chunks (ya tienen ID, no dependemos del retorno ordenado de la DB)
-    await saveChunks(chunksToInsert)(tx);
-
-    // C. Generar Embeddings (usando la lista plana con IDs explícitos)
-    const embeddingsToInsert = await generateEmbeddings(contentToEmbed);
-
+    // C. Insert Embeddings
     if (embeddingsToInsert.length > 0) {
       await createEmbeddings(embeddingsToInsert)(tx);
       return { success: true };
@@ -88,8 +95,40 @@ export const saveMarkdownResource = async ({
   userId: string;
   projectId?: string;
 }): Promise<{ success: boolean }> => {
+  // 1. Prepare data (CPU work) - Outside transaction
+  const chunkGroups = await generateChunks(content);
+
+  const chunksToInsert: InsertChunk[] = [];
+  const contentToEmbed: { chunkId: string; content: string }[] = [];
+
+  for (const { content, type, language, embeddableContent } of chunkGroups) {
+    const chunkId = randomUUID();
+
+    chunksToInsert.push({
+      id: chunkId,
+      resourceId: "" as string, // Placeholder
+      content,
+      type,
+      language,
+    });
+
+    for (const childContent of embeddableContent) {
+      contentToEmbed.push({
+        chunkId: chunkId,
+        content: childContent,
+      });
+    }
+  }
+
+  // 2. Generate Embeddings (External API I/O) - Outside transaction!
+  let embeddingsToInsert: InsertEmbedding[] = [];
+  if (contentToEmbed.length > 0) {
+    embeddingsToInsert = await generateEmbeddings(contentToEmbed);
+  }
+
+  // 3. Database Write - Inside Transaction (Fast)
   const [result] = await transaction(async (tx) => {
-    // 1. Crear el Recurso (Resource)
+    // A. Create Resource
     const newResource = await saveResource({
       title,
       url: null,
@@ -97,42 +136,15 @@ export const saveMarkdownResource = async ({
       projectId,
     })(tx);
 
-    // 2. Generar Chunk Groups
-    const chunkGroups = await generateChunks(content);
+    // B. Fix up resourceId in chunks
+    chunksToInsert.forEach((chunk) => {
+      chunk.resourceId = newResource.id;
+    });
 
-    // A. Preparar datos asignando UUIDs en la aplicación
-    const chunksToInsert: InsertChunk[] = [];
-    const contentToEmbed: { chunkId: string; content: string }[] = [];
-
-    for (const { content, type, language, embeddableContent } of chunkGroups) {
-      // Generamos el ID aquí, explícitamente
-      const chunkId = randomUUID();
-
-      // Preparamos el Chunk Padre para DB
-      chunksToInsert.push({
-        id: chunkId, // <--- ID pre-generado
-        resourceId: newResource.id,
-        content,
-        type,
-        language,
-      });
-
-      // Preparamos los hijos para Embeddings vinculados a ese ID
-      // (Small-to-Big: el embedding del hijo apunta al chunk padre)
-      for (const childContent of embeddableContent) {
-        contentToEmbed.push({
-          chunkId: chunkId, // Vinculamos al ID generado arriba
-          content: childContent,
-        });
-      }
-    }
-
-    // B. Insertar Chunks (ya tienen ID, no dependemos del retorno ordenado de la DB)
+    // C. Insert Chunks
     await saveChunks(chunksToInsert)(tx);
 
-    // C. Generar Embeddings (usando la lista plana con IDs explícitos)
-    const embeddingsToInsert = await generateEmbeddings(contentToEmbed);
-
+    // D. Insert Embeddings
     if (embeddingsToInsert.length > 0) {
       await createEmbeddings(embeddingsToInsert)(tx);
       return { success: true };

@@ -52,7 +52,7 @@
     "@langchain/core": "^1.1.0",
     "@langchain/textsplitters": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "@openrouter/ai-sdk-provider": "1.0.0-beta.5",
+    "@openrouter/ai-sdk-provider": "2.1.1",
     "@opentelemetry/api-logs": "^0.200.0",
     "@opentelemetry/instrumentation": "^0.200.0",
     "@opentelemetry/sdk-logs": "^0.200.0",

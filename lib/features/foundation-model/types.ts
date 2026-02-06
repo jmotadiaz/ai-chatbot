@@ -1,10 +1,6 @@
 import type { GroqProviderOptions } from "@ai-sdk/groq";
 import type { LanguageModel, rerank } from "ai";
-import type {
-  LanguageModelV3,
-  EmbeddingModelV3,
-  LanguageModelV2 as LanguageModelV2Interface,
-} from "@ai-sdk/provider";
+import type { LanguageModelV3, EmbeddingModelV3 } from "@ai-sdk/provider";
 import type { XaiProviderOptions } from "@ai-sdk/xai";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
@@ -79,7 +75,7 @@ export interface Providers {
   google: (modelId: string) => LanguageModelV3;
   xai: (modelId: string) => LanguageModelV3;
   groq: (modelId: string) => LanguageModelV3;
-  openrouter: (modelId: string) => LanguageModelV2Interface;
+  openrouter: (modelId: string) => LanguageModelV3;
   deepseek: (modelId: string) => LanguageModelV3;
   perplexity: (modelId: string) => LanguageModelV3;
   gateway: (modelId: string) => LanguageModelV3;
