@@ -3,18 +3,28 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
-import { useContext7Chat } from "@/lib/features/chat/hooks/use-context7-chat";
+import { useContext7ChatContext } from "@/components/chat/context7/provider";
 import { ChatConversation } from "@/components/chat/conversation";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
+import { AttachmentsControl } from "@/components/chat/attachments/control";
 
 export const Context7Chat: React.FC = () => {
-  const { messages, input, setInput, status, handleSubmit, sendEnabled, stop } =
-    useContext7Chat();
+  const {
+    messages,
+    input,
+    setInput,
+    status,
+    handleSubmit,
+    sendEnabled,
+    stop,
+    files,
+    setFiles,
+    handleFileChange,
+    supportedFiles,
+  } = useContext7ChatContext();
 
   const isLoading = status === "streaming" || status === "submitted";
-
-  console.log("messages", messages);
 
   return (
     <div
@@ -41,11 +51,15 @@ export const Context7Chat: React.FC = () => {
             input={input}
             onChangeInput={setInput}
             isLoading={isLoading}
-            files={[]}
-            setFiles={() => {}}
+            files={files}
+            setFiles={setFiles}
             placeholder="Ask anything..."
           />
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            <AttachmentsControl
+              handleFileChange={handleFileChange}
+              supportedFiles={supportedFiles}
+            />
             <ChatControl
               Icon={ArrowUp}
               type="submit"
