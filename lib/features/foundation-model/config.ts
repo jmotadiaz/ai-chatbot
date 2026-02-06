@@ -69,7 +69,7 @@ export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 // Constants
 export const defaultModel: chatModelId = chatModelKeys[0];
 
-export const defaultSearchNumResults = 5;
+export const defaultWebSearchNumResults = 5;
 
 // Helpers
 export const languageModelConfigurations = (
