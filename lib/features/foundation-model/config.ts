@@ -40,10 +40,10 @@ export const chatModelKeys = [
   "MiniMax M2.1",
   "GLM-4.7 Flash",
   "GLM-4.7",
-  "Qwen3 Next Instruct",
-  "Qwen3 Next Thinking",
   "MiMo V2 Flash",
   "MiMo V2 Flash Thinking",
+  "Qwen3 Next Instruct",
+  "Qwen3 Next Thinking",
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Llama 4 Scout",
@@ -62,12 +62,12 @@ export const chatModelKeys = [
   "Nano Banana",
 ] satisfies LanguageModelKeys[];
 
-export type chatModelId = (typeof chatModelKeys)[number] | "Router";
+export type chatModelId = (typeof chatModelKeys)[number];
 
-export const CHAT_MODELS: chatModelId[] = ["Router", ...chatModelKeys];
+export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 
 // Constants
-export const defaultModel: chatModelId = "Router";
+export const defaultModel: chatModelId = "Kimi K2";
 
 export const defaultWebSearchNumResults = 5;
 
