@@ -3,17 +3,13 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
-import { UseContext7ChatResult } from "@/lib/features/chat/hooks/use-context7-chat";
+import { useContext7ChatContext } from "@/components/chat/context7/provider";
 import { ChatConversation } from "@/components/chat/conversation";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 
-interface Context7ChatProps {
-  chatResult: UseContext7ChatResult;
-}
-
-export const Context7Chat: React.FC<Context7ChatProps> = ({ chatResult }) => {
+export const Context7Chat: React.FC = () => {
   const {
     messages,
     input,
@@ -26,7 +22,7 @@ export const Context7Chat: React.FC<Context7ChatProps> = ({ chatResult }) => {
     setFiles,
     handleFileChange,
     supportedFiles,
-  } = chatResult;
+  } = useContext7ChatContext();
 
   const isLoading = status === "streaming" || status === "submitted";
 

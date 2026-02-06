@@ -5,16 +5,34 @@ import {
   type Authenticated,
 } from "@/lib/features/auth/with-auth/hoc";
 import { ChatLifecycleShell } from "@/components/chat/lifecycle-shell";
-import { Context7ClientPage } from "@/components/chat/context7-client-page";
+import { Context7Chat } from "@/components/chat/context7";
 import { Main } from "@/components/ui/main";
+import { Header } from "@/components/layout/header/header";
+import { Logo } from "@/components/layout/header/logo";
+import { ThemeToggle } from "@/components/layout/header/theme-toggle";
+import { Context7Provider } from "@/components/chat/context7/provider";
+import { Context7ModelPicker } from "@/components/chat/context7/model-picker";
 
 const Context7Page: React.FC<Authenticated> = async ({ user }) => {
   return (
     <ChatLifecycleShell>
-      <Sidebar user={user} />
-      <Main>
-        <Context7ClientPage />
-      </Main>
+      <Context7Provider>
+        <Sidebar user={user} />
+        <Header.Container>
+          <Header.Left>
+            <Logo />
+          </Header.Left>
+          <div className="flex items-center gap-2">
+            <Context7ModelPicker id="context7-model-picker" />
+          </div>
+          <Header.Right>
+            <ThemeToggle />
+          </Header.Right>
+        </Header.Container>
+        <Main>
+          <Context7Chat />
+        </Main>
+      </Context7Provider>
     </ChatLifecycleShell>
   );
 };
