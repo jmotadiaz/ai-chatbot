@@ -7,6 +7,15 @@ export const XIAOMI_CONFIG = {
     company: "xiaomi",
     temperature: 0.8,
     topP: 0.95,
+    providerOptions: {
+      openrouter: {
+        reasoning: {
+          enabled: false,
+          exclude: true,
+          max_tokens: 0,
+        },
+      },
+    },
   },
   "MiMo V2 Flash Thinking": {
     model: providers.openrouter("xiaomi/mimo-v2-flash"),

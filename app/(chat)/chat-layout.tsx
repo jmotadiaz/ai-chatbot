@@ -8,6 +8,7 @@ import { ActiveChatMenu } from "@/components/chat/menu";
 import { NewChatHeader } from "@/components/chat/new";
 import type { ChatProviderProps } from "@/components/chat/provider";
 import { ChatShell } from "@/components/chat/shell";
+import { Main } from "@/components/ui/main";
 
 interface ChatLayoutProps {
   chatConfig: Omit<ChatProviderProps, "children">;
@@ -17,20 +18,20 @@ export const ChatLayout: React.FC<ChatLayoutProps> = async ({ chatConfig }) => {
   return (
     <Suspense fallback={null}>
       <ChatShell chatConfig={chatConfig}>
-        <div className="h-svh flex flex-col justify-center w-full stretch">
-          <Header.Container>
-            <Header.Left>
-              <Logo />
-              <NewChatHeader projectId={chatConfig.projectId} />
-              <ModelPicker id="header-model-picker" />
-            </Header.Left>
-            <Header.Right>
-              <ActiveChatMenu />
-              <ThemeToggle />
-            </Header.Right>
-          </Header.Container>
+        <Header.Container>
+          <Header.Left>
+            <Logo />
+            <NewChatHeader projectId={chatConfig.projectId} />
+            <ModelPicker id="header-model-picker" />
+          </Header.Left>
+          <Header.Right>
+            <ActiveChatMenu />
+            <ThemeToggle />
+          </Header.Right>
+        </Header.Container>
+        <Main>
           <Chat className="pt-16" />
-        </div>
+        </Main>
       </ChatShell>
     </Suspense>
   );

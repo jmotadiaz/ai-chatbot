@@ -8,6 +8,7 @@ import ChatLink from "@/components/chat/link";
 import { useChatContext } from "@/components/chat/provider";
 import { useChatLifecycle } from "@/components/chat/lifecycle";
 import { Item } from "@/components/ui/item";
+import { MCPIcon } from "@/components/ui/icons";
 
 interface NewChatProps {
   children: React.ReactNode;
@@ -100,6 +101,11 @@ export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
         <ChatLink href="/chat/hub">
           <Item>
             <LayoutGrid size={18} /> Chat Hub
+          </Item>
+        </ChatLink>
+        <ChatLink href="/context7">
+          <Item>
+            <MCPIcon size={18} /> Context7 Chat
           </Item>
         </ChatLink>
       </div>
