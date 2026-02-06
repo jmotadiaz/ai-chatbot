@@ -67,7 +67,7 @@ export type chatModelId = (typeof chatModelKeys)[number] | "Router";
 export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 
 // Constants
-export const defaultModel: chatModelId = "MiMo V2 Flash";
+export const defaultModel: chatModelId = chatModelKeys[0];
 
 export const defaultSearchNumResults = 5;
 
@@ -102,7 +102,7 @@ export interface ChatModelConfiguration {
   nativeToolCalling: boolean;
   zeroDataRetention?: boolean;
   supportedFiles: Required<ModelConfiguration>["supportedFiles"];
-  supportedOutput: Required<ModelConfiguration>["supportedOutput"];
+  supportedOutput: ReqModelConfiguration>["supportedOutput"];
 }
 
 export const getChatConfigurationByModelId = (
