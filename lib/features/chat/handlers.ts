@@ -2,11 +2,9 @@
 
 import { randomUUID } from "crypto";
 
-import type { ModelMessage, PrepareStepFunction, ToolSet } from "ai";
+import type { ModelMessage } from "ai";
 import {
-  streamText,
   convertToModelMessages,
-  stepCountIs,
   createUIMessageStream,
   smoothStream,
   NoSuchToolError,
@@ -15,7 +13,7 @@ import {
 } from "ai";
 
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { defaultSystemPrompt, toolPrompts } from "@/lib/features/chat/prompts";
+import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
   deleteMessageById,
   saveChat,
@@ -23,34 +21,17 @@ import {
   updateChat,
 } from "@/lib/features/chat/queries";
 import {
-  messagePartsToText,
   chatbotMessageToDbMessage,
   generateTitle,
 } from "@/lib/features/chat/utils";
 import { calculateModelConfiguration } from "@/lib/features/foundation-model/router";
-import {
-  URL_CONTEXT_TOOL,
-  WEB_SEARCH_TOOL,
-} from "@/lib/features/web-search/constants";
+import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
-import {
-  TOOLS,
-  type Tool,
-  type ChatbotMessage,
-} from "@/lib/features/chat/types";
-import {
-  defaultWebSearchNumResults,
-  languageModelConfigurations,
-} from "@/lib/features/foundation-model/config";
-import {
-  webSearchFactory,
-  urlContextFactory,
-} from "@/lib/features/web-search/tools";
-import { hasContextUrls } from "@/lib/features/web-search/utils";
-import { ragFactory } from "@/lib/features/rag/tool";
-import { hasUrls } from "@/lib/utils/helpers";
+import { type ChatbotMessage } from "@/lib/features/chat/types";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getDb } from "@/lib/infrastructure/db/db";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import { createAgent } from "@/lib/features/chat/agent";
 
 const processMesaggesToSend = async ({
   messages,
@@ -87,23 +68,6 @@ const processMesaggesToSend = async ({
         messages: modelMessages,
         reasoning: "all",
       });
-};
-
-const configureStep = ({
-  modelConfiguration,
-  tool,
-}: {
-  modelConfiguration: ModelConfiguration;
-  tool: Tool;
-}): ReturnType<PrepareStepFunction> => {
-  return {
-    ...(!modelConfiguration.nativeToolCalling && {
-      ...languageModelConfigurations("Gemini 3 Flash Tools"),
-      toolChoice: { type: "tool", toolName: tool },
-    }),
-    system: toolPrompts[tool],
-    activeTools: [tool],
-  };
 };
 
 export async function processChatResponse({
@@ -144,18 +108,6 @@ export async function processChatResponse({
 
   return createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
-      const toolSet: ToolSet = {
-        ...webSearchFactory({
-          writer,
-          webSearchNumResults: safeWebSearchNumResults,
-        }),
-        ...ragFactory({
-          messages,
-          userId: user.id,
-          projectId,
-        }),
-        ...urlContextFactory({ writer }),
-      };
       const { modelConfiguration, autoModelMetadata, tools } =
         await calculateModelConfiguration({
           selectedModel,
@@ -165,63 +117,25 @@ export async function processChatResponse({
           topK,
           tools: selectedTools,
         });
-      const executedTools = new Set<Tool>(
-        !!(process.env.NEXT_PUBLIC_ENV === "test") ||
-          modelConfiguration.toolCalling === false
-          ? TOOLS
-          : [],
-      );
-      const lastMessage = messagePartsToText(messages[messages.length - 1]);
-      const isUrlPresentInLastMessage = hasUrls(lastMessage);
 
-      // Process messages to attach text file contents from metadata
       const messagesToSend = await processMesaggesToSend({
         messages,
         modelConfiguration,
       });
 
-      const result = streamText({
-        ...modelConfiguration,
-        maxRetries: 3,
-        system: systemPrompt,
+      const agent = createAgent({
+        modelConfiguration,
+        systemPrompt,
+        selectedTools: tools,
+        messages,
+        webSearchNumResults: safeWebSearchNumResults,
+        userId: user.id,
+        projectId,
+      });
+
+      const result = await agent.stream({
         messages: messagesToSend,
-        tools: toolSet,
-        stopWhen: stepCountIs(4),
-        activeTools: [],
         experimental_transform: smoothStream(),
-        experimental_telemetry: { isEnabled: true },
-        prepareStep: async () => {
-          if (tools.includes(RAG_TOOL) && !executedTools.has(RAG_TOOL)) {
-            executedTools.add(RAG_TOOL);
-            return configureStep({
-              modelConfiguration,
-              tool: RAG_TOOL,
-            });
-          }
-
-          if (
-            !executedTools.has(URL_CONTEXT_TOOL) &&
-            isUrlPresentInLastMessage &&
-            (await hasContextUrls(lastMessage))
-          ) {
-            executedTools.add(URL_CONTEXT_TOOL);
-            return configureStep({
-              modelConfiguration,
-              tool: URL_CONTEXT_TOOL,
-            });
-          }
-
-          if (
-            tools.includes(WEB_SEARCH_TOOL) &&
-            !executedTools.has(WEB_SEARCH_TOOL)
-          ) {
-            executedTools.add(WEB_SEARCH_TOOL);
-            return configureStep({
-              modelConfiguration,
-              tool: WEB_SEARCH_TOOL,
-            });
-          }
-        },
       });
 
       writer.merge(

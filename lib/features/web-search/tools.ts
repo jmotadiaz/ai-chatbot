@@ -1,4 +1,3 @@
-import type { UIMessageStreamWriter } from "ai";
 import { tool } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
@@ -11,7 +10,6 @@ import {
   webSearchQueryPrompt,
 } from "./prompts";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 // Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY
 const getExaClient = () => {
@@ -26,7 +24,6 @@ const getExaClient = () => {
 };
 
 export interface WebSearchFactoryArgs {
-  writer: UIMessageStreamWriter<ChatbotMessage>;
   webSearchNumResults?: number;
 }
 
@@ -53,7 +50,6 @@ const outputSchema = z.array(
 );
 
 export const webSearchFactory = ({
-  writer,
   webSearchNumResults = defaultWebSearchNumResults,
 }: WebSearchFactoryArgs) => ({
   [WEB_SEARCH_TOOL]: tool({
@@ -79,13 +75,6 @@ export const webSearchFactory = ({
 
       console.log("Web Search results:", results.length);
       return results.map((result) => {
-        writer.write({
-          type: "source-url",
-          sourceId: `source-web-search-${result.id}`,
-          url: result.url,
-          title: result.title || "",
-        });
-
         return {
           title: result.title?.trim() || result.url,
           url: result.url,
@@ -96,7 +85,7 @@ export const webSearchFactory = ({
   }),
 });
 
-export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
+export const urlContextFactory = () => ({
   [URL_CONTEXT_TOOL]: tool({
     description: urlContextDescriptionPrompt,
     inputSchema: urlContextInputSchema,
@@ -116,13 +105,6 @@ export const urlContextFactory = ({ writer }: WebSearchFactoryArgs) => ({
       });
 
       return results.map((result) => {
-        writer.write({
-          type: "source-url",
-          sourceId: `source-url-context-${result.id}`,
-          url: result.url,
-          title: result.title || "",
-        });
-
         return {
           title: result.title?.trim() || result.url,
           url: result.url,

@@ -87,7 +87,7 @@ const buildBlobPart = async (part: FileUIPart): Promise<FileUIPart> => {
     {
       access: "public",
       addRandomSuffix: true,
-    }
+    },
   );
 
   return {
@@ -110,15 +110,15 @@ export const chatbotMessageToDbMessage =
       role,
       parts: await Promise.all(
         parts.map(async (part) =>
-          part.type === "file" ? await buildBlobPart(part) : part
-        )
+          part.type === "file" ? await buildBlobPart(part) : part,
+        ),
       ),
       metadata,
     };
   };
 
 export function dbMessageToChatbotMessage(
-  messages: Array<Message>
+  messages: Array<Message>,
 ): Array<ChatbotMessage> {
   return messages.map((message) => ({
     id: message.id,
@@ -148,7 +148,7 @@ export interface DestructuringMessagePartsReturn {
 
 const ragChunksToSourceParts = (
   chunks: RagChunk[] = [],
-  toolCallId: string
+  toolCallId: string,
 ): Array<SourceUrlUIPart | SourceDocumentUIPart> => {
   const uniqueChunks = new Map<string, RagChunk>();
   for (const chunk of chunks) {
@@ -169,8 +169,23 @@ const ragChunksToSourceParts = (
   });
 };
 
+const webResultToSourceParts = (
+  results: Array<{ title: string; url: string }> = [],
+  toolCallId: string,
+  prefix: string,
+): Array<SourceUrlUIPart | SourceDocumentUIPart> => {
+  return results.map((result, idx) => {
+    return {
+      type: "source-url",
+      sourceId: `${prefix}-${toolCallId}-${idx}`,
+      title: result.title || result.url,
+      url: result.url,
+    };
+  });
+};
+
 export const destructuringMessageParts = (
-  message: ChatbotMessage
+  message: ChatbotMessage,
 ): DestructuringMessagePartsReturn => {
   return message.parts?.reduce<DestructuringMessagePartsReturn>(
     (acc, part) => {
@@ -190,12 +205,28 @@ export const destructuringMessageParts = (
           break;
         case "tool-rag":
           acc.sourceParts.push(
-            ...ragChunksToSourceParts(part.output, part.toolCallId)
+            ...ragChunksToSourceParts(part.output, part.toolCallId),
           );
           acc.toolParts.push(part);
           break;
         case "tool-webSearch":
+          acc.sourceParts.push(
+            ...webResultToSourceParts(
+              part.output,
+              part.toolCallId,
+              "web-search",
+            ),
+          );
+          acc.toolParts.push(part);
+          break;
         case "tool-urlContext":
+          acc.sourceParts.push(
+            ...webResultToSourceParts(
+              part.output,
+              part.toolCallId,
+              "url-context",
+            ),
+          );
           acc.toolParts.push(part);
           break;
       }
@@ -207,12 +238,12 @@ export const destructuringMessageParts = (
       sourceParts: [],
       toolParts: [],
       fileParts: [],
-    }
+    },
   );
 };
 
 export const mergeReasoningParts = (
-  parts: ReasoningUIPart[]
+  parts: ReasoningUIPart[],
 ): ReasoningUIPart | null => {
   if (parts.length === 0) return null;
 
