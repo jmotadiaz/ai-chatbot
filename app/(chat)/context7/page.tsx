@@ -21,10 +21,8 @@ const Context7Page: React.FC<Authenticated> = async ({ user }) => {
         <Header.Container>
           <Header.Left>
             <Logo />
-          </Header.Left>
-          <div className="flex items-center gap-2">
             <Context7ModelPicker id="context7-model-picker" />
-          </div>
+          </Header.Left>
           <Header.Right>
             <ThemeToggle />
           </Header.Right>
