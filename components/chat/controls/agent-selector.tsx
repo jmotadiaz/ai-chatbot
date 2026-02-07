@@ -20,7 +20,7 @@ export interface AgentSelectorProps {
 const AGENT_LABELS: Record<Agent, string> = {
   rag: "RAG Agent",
   web: "Web Agent",
-  context7: "Context7 Agent",
+  context7: "Ctx7 Agent",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
