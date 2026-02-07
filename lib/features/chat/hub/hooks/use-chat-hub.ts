@@ -12,14 +12,14 @@ import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import type { ChatbotMessage, Tools, Tool } from "@/lib/features/chat/types";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { useChatInputState } from "@/lib/features/chat/hooks/use-chat-input-state";
 import { useChatSendEnabled } from "@/lib/features/chat/hooks/use-chat-send-enabled";
-import { useChatTools } from "@/lib/features/chat/hooks/use-chat-tools";
 import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-models";
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 import { useToolsEnabled } from "@/lib/features/chat/hooks/use-tools-enabled";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
+import { useChatAgent } from "@/lib/features/chat/hooks/use-chat-agent";
 
 // Important: keep the runtime exclusion of "Router", but widen the type so
 // downstream code can still accept `chatModelId` without TS `includes(...)` issues.
@@ -61,12 +61,10 @@ const buildHubUserMessage = ({
 
 export interface UseChatHubArgs {
   initialInstances?: HubInstance[];
-  initialTools?: Tools;
 }
 
 export const useChatHub = ({
   initialInstances = [],
-  initialTools = [],
 }: UseChatHubArgs = {}): ChatHub => {
   const [instances, setInstances] = useState<HubInstance[]>(initialInstances);
   const [instancesLocked, setInstancesLocked] = useState(false);
@@ -79,8 +77,7 @@ export const useChatHub = ({
 
   const { input, setInput, handleInputChange } = useChatInputState("");
   const [files, setFiles] = useState<FilePart[]>([]);
-
-  const { tools, setTools, toggleTool, hasTool } = useChatTools(initialTools);
+  const { agent, setAgent } = useChatAgent();
 
   const sendEnabled =
     useChatSendEnabled({ input, files }) && instances.length > 0;
@@ -93,7 +90,6 @@ export const useChatHub = ({
   const baseAvailableModels = useAvailableModels({
     models: HUB_MODELS,
     messages: [],
-    tools,
     files,
   });
 
@@ -151,15 +147,6 @@ export const useChatHub = ({
     [supportedFilesForPicker],
   );
 
-  const safeToggleTool = useCallback(
-    (tool: Tool) => {
-      // Prevent enabling tools if any current instance doesn't support tool-calling.
-      if (!toolsEnabled) return;
-      toggleTool(tool);
-    },
-    [toggleTool, toolsEnabled],
-  );
-
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -187,7 +174,7 @@ export const useChatHub = ({
   );
 
   const persistChat = useCallback<ChatHub["persistChat"]>(
-    async ({ chatId, messages, model, tools = [], ...rest }) => {
+    async ({ chatId, messages, model, agent, ...rest }) => {
       if (isPersisting) {
         throw new Error("Already persisting a chat");
       }
@@ -199,7 +186,7 @@ export const useChatHub = ({
           chatId,
           messages: messages as ChatbotMessage[],
           model,
-          tools,
+          agent,
           ...rest,
         });
 
@@ -245,10 +232,8 @@ export const useChatHub = ({
     setFiles,
     handleFileChange,
 
-    tools,
-    setTools,
-    toggleTool: safeToggleTool,
-    hasTool,
+    agent,
+    setAgent,
 
     sendEnabled,
 

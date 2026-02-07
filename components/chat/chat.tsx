@@ -3,8 +3,8 @@
 import { ArrowUp, WandSparkles, Undo } from "lucide-react";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
-import { ChatSettingsButton } from "@/components/chat/settings-button";
-import { ToolsControl } from "@/components/chat/tools/control";
+import { AgentSelector } from "@/components/chat/controls/agent-selector";
+import { SettingsControl } from "@/components/chat/controls/settings-control";
 import { cn } from "@/lib/utils/helpers";
 import { useChatContext } from "@/components/chat/provider";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
@@ -32,9 +32,6 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     selectedModel,
     setFiles,
     handleFileChange,
-    tools,
-    toggleTool,
-    hasTool,
     refinePromptMode,
     projectId,
   } = useChatContext();
@@ -89,17 +86,11 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               handleFileChange={handleFileChange}
               supportedFiles={modelConfig.supportedFiles}
             />
-            <ToolsControl
-              tools={tools}
-              toggleTool={toggleTool}
-              hasTool={hasTool}
-              enabled={modelConfig.toolCalling}
-              projectId={projectId}
-            />
+            <AgentSelector />
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
-            <ChatSettingsButton />
+            <SettingsControl />
             {hasPreviousMessage && (
               <ChatControl
                 Icon={Undo}

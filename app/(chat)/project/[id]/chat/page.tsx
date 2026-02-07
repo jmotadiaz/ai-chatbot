@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
-import { filterTools } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
@@ -55,7 +54,6 @@ const Page: React.FC<ProjectPageProps> = async ({
           systemPrompt: project.systemPrompt,
           refinePromptMode: project.hasPromptRefiner ? "project" : undefined,
           title: project.name,
-          tools: filterTools(project.tools || []),
           webSearchNumResults:
             project.webSearchNumResults ?? defaultWebSearchNumResults,
         }}

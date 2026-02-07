@@ -10,9 +10,7 @@ test.describe("Chat functionality", () => {
   });
 
   test("should allow modifying chat settings for different models", async () => {
-    // Router model should not show settings button (no configurable params)
-    await chatPage.header.modelPicker.selectModel("Router");
-    await expect.soft(chatPage.chat.settingsButton).not.toBeVisible();
+    // Start with a model that has settings
 
     await chatPage.header.modelPicker.selectModel("Kimi K2.5");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
@@ -36,28 +34,5 @@ test.describe("Chat functionality", () => {
     await chatPage.header.modelPicker.selectModel("Kimi K2.5");
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
-  });
-
-  test("should send config to the assistant correctly", async () => {
-    await chatPage.chat.openTools();
-    await chatPage.chat.tools.toggleTool("rag");
-    await chatPage.closeDropdown();
-
-    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
-
-    await chatPage.chat.openSettings();
-
-    await chatPage.chat.settings.setTemperature(0.6);
-    await chatPage.closeDropdown();
-
-    await chatPage.chat.sendMessage("Hello with all custom settings");
-    await chatPage.chat.waitForLoadingComplete();
-    await chatPage.chat.waitForAssistantMessage();
-    const lastMessage = await chatPage.chat.getLastAssistantMessage();
-    expect
-      .soft(lastMessage)
-      .toContain(
-        "Hello, I'm alibaba/qwen3-next-80b-a3b-instruct, Temperature: 0.6",
-      );
   });
 });

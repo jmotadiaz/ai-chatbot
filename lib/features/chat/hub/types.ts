@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import type { ChatbotMessage, Tools, Tool } from "@/lib/features/chat/types";
+import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
 
 export type SubmitMessage = Parameters<
@@ -37,7 +37,7 @@ export interface ChatHub {
     chatId: string;
     messages: ChatbotMessage[];
     model: chatModelId;
-    tools?: Tools;
+    agent?: Agent;
     projectId?: string;
     temperature?: number;
 
@@ -54,10 +54,8 @@ export interface ChatHub {
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 
-  tools: Tools;
-  setTools: React.Dispatch<React.SetStateAction<Tools>>;
-  toggleTool: (tool: Tool) => void;
-  hasTool: (tool: Tool) => boolean;
+  agent: Agent;
+  setAgent: (agent: Agent) => void;
 
   sendEnabled: boolean;
 
@@ -74,4 +72,5 @@ export interface UseChatHubInstanceArgs {
   chatId: string;
   model: chatModelId;
   submitSubscribe: ChatHub["submitSubscribe"];
+  agent?: Agent;
 }

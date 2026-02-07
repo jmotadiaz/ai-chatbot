@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Globe, Save, Undo, WandSparkles } from "lucide-react";
+import { Save, Undo, WandSparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
@@ -14,14 +14,12 @@ import { ChatProvider } from "@/components/chat/provider";
 import { Toggle } from "@/components/ui/toggle";
 import { DotsLoadingIcon } from "@/components/ui/icons";
 
-import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import {
   markdownCommandStyle,
   MarkdownEditor,
 } from "@/components/ui/markdown-editor";
 import { Collapsible } from "@/components/ui/internal-collapsible";
 import { useHandleProjectForm } from "@/lib/features/project/hooks/use-handle-project-form";
-import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 
 const tabs = ["configuration", "resources", "testChat"] as const;
 
@@ -45,9 +43,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     setSystemPrompt,
     hasPromptRefiner,
     setHasPromptRefiner,
-    tools,
-    handleToggleTool,
-    hasTool,
     model,
     setModel,
     // Advanced settings
@@ -60,9 +55,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     setTopP,
     topK,
     setTopK,
-    // Tool config
-    webSearchNumResults,
-    setWebSearchNumResults,
     isCreating,
     handleSaveProject,
     refinePrompt,
@@ -154,14 +146,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 <h3 className="text-lg font-semibold mb-6">Tools</h3>
                 <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
                   <Toggle
-                    id="web-search-tool"
-                    checked={hasTool(WEB_SEARCH_TOOL)}
-                    onChange={handleToggleTool(WEB_SEARCH_TOOL)}
-                  >
-                    <Globe className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                    <span className="whitespace-nowrap">Web Search</span>
-                  </Toggle>
-                  <Toggle
                     id="refine-prompt"
                     checked={hasPromptRefiner}
                     onChange={() => setHasPromptRefiner((prev) => !prev)}
@@ -225,33 +209,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                     </div>
                   )}
                 </div>
-                {hasTool(WEB_SEARCH_TOOL) && (
-                  <div className="flex flex-col mt-6">
-                    <h4 className="text-base font-semibold mb-4">
-                      Tool Configuration
-                    </h4>
-                    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
-                      <div className="flex flex-col gap-2">
-                        <Label
-                          className="text-base"
-                          htmlFor="webSearchNumResults"
-                        >
-                          Web Search Results
-                        </Label>
-                        <InputNumber
-                          id="webSearchNumResults"
-                          value={
-                            webSearchNumResults ?? defaultWebSearchNumResults
-                          }
-                          min={1}
-                          max={10}
-                          step={1}
-                          onChange={setWebSearchNumResults}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </Collapsible>
 
               <div className="pt-4 text-right">
@@ -292,13 +249,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 topK={isAdvancedOpen ? topK : undefined}
                 selectedModel={model}
                 systemPrompt={systemPrompt}
-                tools={tools}
                 refinePromptMode={hasPromptRefiner ? "project" : undefined}
                 title={title}
                 preventChatPersistence={true}
-                webSearchNumResults={
-                  isAdvancedOpen ? webSearchNumResults : undefined
-                }
               >
                 <Chat className="flex-1 justify-center" />
               </ChatProvider>

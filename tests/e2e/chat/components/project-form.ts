@@ -10,11 +10,9 @@ export class ProjectFormComponent {
   readonly modelSelect: Locator;
   readonly systemPromptInput: Locator;
   readonly ragToggle: Locator;
-  readonly webSearchToggle: Locator;
   readonly refinePromptToggle: Locator;
   readonly advancedAccordion: Locator;
   readonly temperatureSelector: NumericSelectorComponent;
-  readonly webSearchResultsSelector: NumericSelectorComponent;
   readonly saveButton: Locator;
 
   constructor(container: Locator) {
@@ -32,7 +30,6 @@ export class ProjectFormComponent {
       .last();
 
     this.ragToggle = page.locator("#rag-tool");
-    this.webSearchToggle = page.locator("#web-search-tool");
     this.refinePromptToggle = page.locator("#refine-prompt");
 
     this.advancedAccordion = page
@@ -42,9 +39,6 @@ export class ProjectFormComponent {
     // Scoped selectors for numeric inputs based on their IDs
     this.temperatureSelector = new NumericSelectorComponent(
       page.getByTestId("input-number-temperature"),
-    );
-    this.webSearchResultsSelector = new NumericSelectorComponent(
-      page.getByTestId("input-number-webSearchNumResults"),
     );
 
     // Some locales or UI changes may alter the button text; also accept testid
@@ -57,27 +51,6 @@ export class ProjectFormComponent {
     await this.titleInput.fill(title);
     await this.systemPromptInput.click();
     await this.systemPromptInput.fill(prompt);
-  }
-
-  async toggleWebSearch(on: boolean) {
-    const isChecked = await this.webSearchToggle.isChecked();
-    if (isChecked !== on) {
-      // Click the label associated with the checkbox
-      await this.container
-        .page()
-        .locator('label[for="web-search-tool"]')
-        .click();
-      // Wait for the state to update
-      await this.webSearchToggle
-        .page()
-        .waitForFunction(
-          (id) =>
-            (document.getElementById(id) as HTMLInputElement).checked === true,
-          "web-search-tool",
-          { timeout: 5000 },
-        )
-        .catch(() => {}); // Ignore timeout, we'll see if it works
-    }
   }
 
   async toggleRag(on: boolean) {

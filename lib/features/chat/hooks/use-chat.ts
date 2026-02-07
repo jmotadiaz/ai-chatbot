@@ -5,13 +5,13 @@ import type { DataUIPart } from "ai";
 import { useState } from "react";
 import {
   type ChatConfig,
-  type ChatTools,
+  type ChatAgent,
   type InputState,
   type SetChatConfig,
 } from "./hook-types";
 import { useAvailableModels } from "./use-available-models";
 import { useChatConfig } from "./use-chat-config";
-import { useChatTools } from "./use-chat-tools";
+import { useChatAgent } from "./use-chat-agent";
 import { useHandleFileChange } from "./use-handle-file-change";
 import { useChatInputState } from "./use-chat-input-state";
 import { useChatSendEnabled } from "./use-chat-send-enabled";
@@ -30,7 +30,7 @@ import {
 import type {
   ChatbotDataPart,
   ChatbotMessage,
-  Tools,
+  Agent,
 } from "@/lib/features/chat/types";
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 import { FilePart } from "@/lib/features/attachment/types";
@@ -48,14 +48,14 @@ export interface UseChatArgs {
   systemPrompt?: string;
   refinePromptMode?: RefinePromptMode;
   title?: string;
-  tools?: Tools;
+  agent?: Agent;
   preventChatPersistence?: boolean;
 
   webSearchNumResults?: number;
 }
 
 export interface UseChatResult
-  extends UseChatHelpers<ChatbotMessage>, ChatConfig, ChatTools, InputState {
+  extends UseChatHelpers<ChatbotMessage>, ChatConfig, ChatAgent, InputState {
   selectedModel: chatModelId;
   refinePromptMode?: RefinePromptMode;
   chatId?: string;
@@ -83,7 +83,7 @@ export const useChat = ({
   projectId,
   title,
   preventChatPersistence = false,
-  tools: initialTools = [],
+  agent: initialAgent = "rag",
 
   webSearchNumResults = defaultWebSearchNumResults,
 }: UseChatArgs): UseChatResult => {
@@ -95,7 +95,7 @@ export const useChat = ({
 
     webSearchNumResults,
   });
-  const { tools, setTools, hasTool, toggleTool } = useChatTools(initialTools);
+  const { agent, setAgent } = useChatAgent(initialAgent);
   const { setQueryParamChatId, validQueryParamChatId } = useChatQueryParamId();
   const { dataPart, setDataPart } = useChatDataPartState();
   const effectiveChatId = chatId || validQueryParamChatId;
@@ -118,7 +118,7 @@ export const useChat = ({
     validQueryParamChatId,
     projectId,
     preventChatPersistence,
-    tools,
+    agent,
     systemPrompt,
     chatConfig,
   });
@@ -141,7 +141,6 @@ export const useChat = ({
   const availableModels = useAvailableModels({
     models: CHAT_MODELS,
     messages: chatResult.messages,
-    tools,
     files,
   });
 
@@ -182,11 +181,9 @@ export const useChat = ({
     title,
     sendEnabled,
     availableModels,
-    tools,
-    toggleTool,
-    hasTool,
-    setTools,
     isNewChat,
     preventChatPersistence,
+    agent,
+    setAgent,
   };
 };

@@ -13,6 +13,11 @@ import {
 } from "ai";
 
 import type { chatModelId } from "@/lib/features/foundation-model/config";
+import {
+  languageModelConfigurations,
+  chatModelKeys,
+  defaultWebSearchNumResults,
+} from "@/lib/features/foundation-model/config";
 import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
   deleteMessageById,
@@ -24,14 +29,12 @@ import {
   chatbotMessageToDbMessage,
   generateTitle,
 } from "@/lib/features/chat/utils";
-import { calculateModelConfiguration } from "@/lib/features/foundation-model/router";
-import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
-import { RAG_TOOL } from "@/lib/features/rag/constants";
-import { type ChatbotMessage } from "@/lib/features/chat/types";
-import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
+import { type ChatbotMessage, type Agent } from "@/lib/features/chat/types";
 import { getDb } from "@/lib/infrastructure/db/db";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { createAgent } from "@/lib/features/chat/agent";
+import { createRagAgent } from "@/lib/features/chat/agents/rag";
+import { createWebAgent } from "@/lib/features/chat/agents/web";
+import { createAgent as createContext7Agent } from "@/lib/features/chat/agents/context7";
 
 const processMesaggesToSend = async ({
   messages,
@@ -78,10 +81,10 @@ export async function processChatResponse({
   topK,
   chatId,
   systemPrompt = defaultSystemPrompt,
-  selectedTools = [],
   messageId,
   projectId,
   preventChatPersistence = false,
+  agent = "rag",
 
   webSearchNumResults = defaultWebSearchNumResults,
   user,
@@ -93,10 +96,10 @@ export async function processChatResponse({
   topK?: number;
   chatId?: string;
   systemPrompt?: string;
-  selectedTools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
   messageId?: string;
   projectId?: string;
   preventChatPersistence?: boolean;
+  agent?: Agent;
 
   webSearchNumResults?: number;
   user: { id: string };
@@ -108,34 +111,53 @@ export async function processChatResponse({
 
   return createUIMessageStream<ChatbotMessage>({
     async execute({ writer }) {
-      const { modelConfiguration, autoModelMetadata, tools } =
-        await calculateModelConfiguration({
-          selectedModel,
-          messages,
-          temperature,
-          topP,
-          topK,
-          tools: selectedTools,
-        });
+      let modelId = selectedModel;
+      if (modelId === "Router") {
+        modelId = chatModelKeys[0];
+      }
+
+      const modelConfig: ModelConfiguration =
+        languageModelConfigurations(modelId) ||
+        languageModelConfigurations(chatModelKeys[0]);
+
+      const modelConfiguration = {
+        ...modelConfig,
+        temperature: temperature ?? modelConfig.temperature,
+        topP: topP ?? modelConfig.topP,
+        topK: topK ?? modelConfig.topK,
+      };
 
       const messagesToSend = await processMesaggesToSend({
         messages,
         modelConfiguration,
       });
 
-      const agent = createAgent({
-        modelConfiguration,
-        systemPrompt,
-        selectedTools: tools,
-        messages,
-        webSearchNumResults: safeWebSearchNumResults,
-        userId: user.id,
-        projectId,
-      });
+      let currentAgent;
 
-      const result = await agent.stream({
+      if (agent === "context7") {
+        currentAgent = createContext7Agent(selectedModel);
+      } else if (agent === "web") {
+        currentAgent = createWebAgent({
+          modelConfiguration,
+          systemPrompt,
+          messages,
+          webSearchNumResults: safeWebSearchNumResults,
+        });
+      } else {
+        // Default to RAG agent
+        currentAgent = createRagAgent({
+          modelConfiguration,
+          systemPrompt,
+          messages,
+          userId: user.id,
+          projectId,
+        });
+      }
+
+      const result = await currentAgent.stream({
         messages: messagesToSend,
-        experimental_transform: smoothStream(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        experimental_transform: smoothStream() as any,
       });
 
       writer.merge(
@@ -153,7 +175,6 @@ export async function processChatResponse({
               case "finish":
                 return {
                   status: "finished",
-                  autoModel: autoModelMetadata,
                 };
               default:
                 return undefined;
@@ -178,9 +199,8 @@ export async function processChatResponse({
                         {
                           defaultModel: selectedModel,
                           defaultTemperature: temperature,
-
+                          agent,
                           webSearchNumResults: safeWebSearchNumResults,
-                          tools,
                         },
                       )(tx)
                     : undefined;
@@ -194,9 +214,8 @@ export async function processChatResponse({
                       projectId,
                       defaultModel: selectedModel,
                       defaultTemperature: temperature,
-
+                      agent,
                       webSearchNumResults: safeWebSearchNumResults,
-                      tools,
                     })(tx));
 
                   const { id } = ensuredChat;

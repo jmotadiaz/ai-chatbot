@@ -2,7 +2,7 @@
 
 import React, { useCallback } from "react";
 import { Trash2 } from "lucide-react";
-import type { Tools } from "@/lib/features/chat/types";
+import type { Agent } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { ChatConversation } from "@/components/chat/conversation";
 export interface HubInstancePanelProps {
   instance: HubInstance;
   submitSubscribe: ChatHub["submitSubscribe"];
-  tools: Tools;
+  agent: Agent;
   onRemove: (id: string) => void;
   persistChat: ChatHub["persistChat"];
   isPersisting: boolean;
@@ -24,7 +24,7 @@ export interface HubInstancePanelProps {
 export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   instance,
   submitSubscribe,
-  tools,
+  agent,
   onRemove,
   persistChat,
   isPersisting,
@@ -36,7 +36,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     chatId: instance.chatId,
     model: instance.model,
     submitSubscribe,
-    tools,
+    agent,
     preventChatPersistence: true,
   });
 
@@ -45,10 +45,10 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       chatId: instance.chatId,
       messages: chat.messages,
       model: instance.model,
-      tools,
+      agent,
     });
     // Removed navigation: router.push(...)
-  }, [chat.messages, instance.chatId, instance.model, persistChat, tools]);
+  }, [chat.messages, instance.chatId, instance.model, persistChat, agent]);
 
   const isThisPersisting = isPersisting && persistingChatId === instance.chatId;
 

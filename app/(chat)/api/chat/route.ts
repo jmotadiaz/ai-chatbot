@@ -1,10 +1,8 @@
 import { createUIMessageStreamResponse } from "ai";
 import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { RAG_TOOL } from "@/lib/features/rag/constants";
-import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { processChatResponse } from "@/lib/features/chat/handlers";
 
@@ -19,7 +17,7 @@ export const POST = withAuth(async (user, req) => {
     topK,
     chatId,
     systemPrompt = defaultSystemPrompt,
-    tools: selectedTools = [],
+    agent,
     messageId,
     projectId,
     preventChatPersistence = false,
@@ -33,7 +31,7 @@ export const POST = withAuth(async (user, req) => {
     topK?: number;
     chatId?: string;
     systemPrompt?: string;
-    tools?: Array<typeof RAG_TOOL | typeof WEB_SEARCH_TOOL>;
+    agent?: Agent;
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
@@ -49,7 +47,7 @@ export const POST = withAuth(async (user, req) => {
     topK,
     chatId,
     systemPrompt,
-    selectedTools,
+    agent,
     messageId,
     projectId,
     preventChatPersistence,

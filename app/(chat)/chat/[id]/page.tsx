@@ -5,10 +5,7 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
-import {
-  filterTools,
-  dbMessageToChatbotMessage,
-} from "@/lib/features/chat/utils";
+import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import {
   withAuth,
@@ -61,9 +58,9 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
           topK: chat.defaultTopK ?? undefined,
           chatId: id,
           projectId: chat.projectId ?? undefined,
+          agent: project ? "rag" : chat.agent,
           systemPrompt: project ? project.systemPrompt : undefined,
           initialMessages,
-          tools: filterTools(chat.tools || []),
           refinePromptMode,
           webSearchNumResults:
             chat.webSearchNumResults ?? defaultWebSearchNumResults,

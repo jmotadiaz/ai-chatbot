@@ -12,13 +12,13 @@ test.describe("Chat functionality", () => {
   test("user sends a message and assistant responds correctly", async () => {
     const userQuery = "What is the capital of France?";
 
-    await chatPage.header.modelPicker.selectModel("Llama 4 Scout");
+    await chatPage.header.modelPicker.selectModel("Gemini 3 Flash");
 
     await chatPage.chat.sendMessage(userQuery);
 
     await chatPage.chat.waitForLoadingComplete();
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
-    expect(lastMessage).toContain("Hello, I'm meta/llama-4-scout");
+    expect(lastMessage).toContain("gemini");
 
     const userMessages = await chatPage.chat.getUserMessages();
     const assistantMessages = await chatPage.chat.getAssistantMessages();

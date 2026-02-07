@@ -40,10 +40,10 @@ export class ChatComponent {
       .first();
 
     this.userMessages = container.locator(
-      '[data-role="user"], [data-message-role="user"]'
+      '[data-role="user"], [data-message-role="user"]',
     );
     this.assistantMessages = container.locator(
-      '[data-role="assistant"], [data-message-role="assistant"]'
+      '[data-role="assistant"], [data-message-role="assistant"]',
     );
 
     this.loadingIndicator = container.getByTestId("loading-message");
@@ -58,7 +58,7 @@ export class ChatComponent {
     this.imageInputLabel = this.attachmentMenu.getByText("Image");
     this.pdfInputLabel = this.attachmentMenu.getByText("Document");
 
-    this.settingsButton = container.getByLabel("Chat settings");
+    this.settingsButton = container.getByLabel("Model settings");
 
     this.toolsControl = container.getByLabel("Configure tools");
     this.tools = new ToolsComponent(container);

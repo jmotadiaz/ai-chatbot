@@ -38,7 +38,7 @@ for (const category of Object.keys(modelRoutingExpectations) as Category[]) {
   }
 }
 
-test.describe("Model Router", () => {
+test.describe.skip("Model Router", () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page }) => {

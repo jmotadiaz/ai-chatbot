@@ -40,7 +40,7 @@ test.describe("Project Creation", () => {
     const systemPrompt = "Testing advanced settings.";
 
     await projectPage.form.fillBasic(title, systemPrompt);
-    await projectPage.form.toggleWebSearch(true);
+    // await projectPage.form.toggleWebSearch(true); // Web search removed
 
     await projectPage.form.expandAdvanced();
 
@@ -49,7 +49,7 @@ test.describe("Project Creation", () => {
     await projectPage.form.temperatureSelector.increment();
 
     // Web Search Results (should be visible now)
-    await projectPage.form.webSearchResultsSelector.increment();
+    // await projectPage.form.webSearchResultsSelector.increment(); // Web Search config removed
 
     await projectPage.form.save();
 
@@ -66,8 +66,8 @@ test.describe("Project Creation", () => {
     await expect
       .soft(chat.container.getByTestId("active-tool-pill-rag"))
       .not.toBeVisible();
-    await expect
-      .soft(chat.container.getByTestId("active-tool-pill-webSearch"))
-      .toBeVisible();
+    // await expect
+    //   .soft(chat.container.getByTestId("active-tool-pill-webSearch"))
+    //   .toBeVisible(); // Web Search disabled by default
   });
 });

@@ -10,7 +10,8 @@ import { HubInstancePanel } from "@/components/chat/hub/instance-panel";
 import { AddModelDropdown } from "@/components/chat/hub/add-model-dropdown";
 import { Textarea } from "@/components/chat/textarea";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
-import { ToolsControl } from "@/components/chat/tools/control";
+import { AgentSelector } from "@/components/chat/controls/agent-selector";
+import { SettingsControl } from "@/components/chat/controls/settings-control";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 
 export interface ChatHubProps {
@@ -84,7 +85,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 key={inst.chatId}
                 instance={inst}
                 submitSubscribe={hub.submitSubscribe}
-                tools={hub.tools}
+                agent={hub.agent}
                 onRemove={hub.removeInstance}
                 persistChat={hub.persistChat}
                 isPersisting={hub.isPersisting}
@@ -144,7 +145,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 <HubInstancePanel
                   instance={inst}
                   submitSubscribe={hub.submitSubscribe}
-                  tools={hub.tools}
+                  agent={hub.agent}
                   onRemove={hub.removeInstance}
                   persistChat={hub.persistChat}
                   isPersisting={hub.isPersisting}
@@ -195,15 +196,11 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
               handleFileChange={hub.handleFileChange}
               supportedFiles={hub.supportedFilesForPicker}
             />
-            <ToolsControl
-              tools={hub.tools}
-              toggleTool={hub.toggleTool}
-              hasTool={hub.hasTool}
-              enabled={hub.toolsEnabled}
-            />
+            <AgentSelector />
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            <SettingsControl />
             {hasPreviousMessage && (
               <ChatControl
                 Icon={Undo}

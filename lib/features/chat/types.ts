@@ -9,6 +9,9 @@ import {
 } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 
+export const AGENTS = ["rag", "web", "context7"] as const;
+export type Agent = (typeof AGENTS)[number];
+
 export interface TextFile {
   filename: string;
   content: string;
