@@ -34,6 +34,8 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     handleFileChange,
     refinePromptMode,
     projectId,
+    agent,
+    setAgent,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     usePromptRefiner({
@@ -86,7 +88,9 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               handleFileChange={handleFileChange}
               supportedFiles={modelConfig.supportedFiles}
             />
-            <AgentSelector />
+            {!projectId && (
+              <AgentSelector value={agent} onValueChange={setAgent} />
+            )}
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">

@@ -8,35 +8,38 @@ import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-i
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/helpers";
 import { ChatConversation } from "@/components/chat/conversation";
+import { AgentSelector } from "@/components/chat/controls/agent-selector";
 
 export interface HubInstancePanelProps {
   instance: HubInstance;
   submitSubscribe: ChatHub["submitSubscribe"];
-  agent: Agent;
   onRemove: (id: string) => void;
+  updateInstanceAgent: (chatId: string, agent: Agent) => void;
   persistChat: ChatHub["persistChat"];
   isPersisting: boolean;
   persistingChatId: string | null;
   isPersisted: boolean;
   className?: string;
+  layoutMode?: "grid" | "tabs";
 }
 
 export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   instance,
   submitSubscribe,
-  agent,
   onRemove,
+  updateInstanceAgent,
   persistChat,
   isPersisting,
   persistingChatId,
   isPersisted,
   className,
+  layoutMode = "grid",
 }) => {
   const chat = useChatHubInstance({
     chatId: instance.chatId,
     model: instance.model,
     submitSubscribe,
-    agent,
+    agent: instance.agent,
     preventChatPersistence: true,
   });
 
@@ -45,10 +48,16 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       chatId: instance.chatId,
       messages: chat.messages,
       model: instance.model,
-      agent,
+      agent: instance.agent,
     });
     // Removed navigation: router.push(...)
-  }, [chat.messages, instance.chatId, instance.model, persistChat, agent]);
+  }, [
+    chat.messages,
+    instance.chatId,
+    instance.model,
+    instance.agent,
+    persistChat,
+  ]);
 
   const isThisPersisting = isPersisting && persistingChatId === instance.chatId;
 
@@ -56,13 +65,33 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     <div
       data-testid="hub-instance-panel"
       className={cn(
-        "rounded-xl border bg-secondary/30 overflow-hidden h-full min-h-0 flex flex-col",
+        "rounded-xl border bg-secondary/30 h-full min-h-0 flex flex-col",
         className,
       )}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="font-semibold truncate">{instance.model}</div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {layoutMode === "grid" && (
+            <div
+              className="font-semibold truncate min-w-0 flex-1"
+              title={instance.model}
+            >
+              {instance.model}
+            </div>
+          )}
+          {!isPersisted && (
+            <AgentSelector
+              value={instance.agent}
+              onValueChange={(agent) =>
+                updateInstanceAgent(instance.chatId, agent)
+              }
+              variant="bottom-right"
+              className="shrink-0"
+            />
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 ml-2">
           {isPersisted ? (
             <Button
               variant="destructive"

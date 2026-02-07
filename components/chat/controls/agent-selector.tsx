@@ -4,12 +4,17 @@ import type { ClassValue } from "clsx";
 import { FileSearch, Globe, ChevronUp } from "lucide-react";
 import { MCPIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/helpers";
-import { useChatContext } from "@/components/chat/provider";
+
 import { Select, useSelect } from "@/components/ui/select";
 import type { Agent } from "@/lib/features/chat/types";
 
+import type { DropdownPopupProps } from "@/components/ui/dropdown";
+
 export interface AgentSelectorProps {
   className?: ClassValue;
+  value: Agent;
+  onValueChange: (agent: Agent) => void;
+  variant?: DropdownPopupProps["variant"];
 }
 
 const AGENT_LABELS: Record<Agent, string> = {
@@ -25,19 +30,20 @@ const AGENT_ICONS: Record<Agent, React.ComponentType<any>> = {
   context7: MCPIcon,
 };
 
-export const AgentSelector = ({ className }: AgentSelectorProps) => {
-  const { agent, setAgent, projectId } = useChatContext();
-
+export const AgentSelector = ({
+  className,
+  value,
+  onValueChange,
+  variant = "top-right",
+}: AgentSelectorProps) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
-      value: agent,
-      onValueChange: setAgent,
+      value,
+      onValueChange,
       id: "agent-selector",
     });
 
-  if (projectId) return null;
-
-  const CurrentIcon = AGENT_ICONS[agent];
+  const CurrentIcon = AGENT_ICONS[value];
   const { toggle, isOpen } = getSelectTriggerProps();
 
   return (
@@ -48,7 +54,7 @@ export const AgentSelector = ({ className }: AgentSelectorProps) => {
         className="flex items-center space-x-2 font-semibold text-black dark:text-white select-none cursor-pointer text-[15px] hover:opacity-80 transition-opacity px-2"
       >
         <CurrentIcon size={18} />
-        <span className="truncate">{AGENT_LABELS[agent]}</span>
+        <span className="truncate">{AGENT_LABELS[value]}</span>
         <ChevronUp
           size={16}
           className={cn(
@@ -59,8 +65,8 @@ export const AgentSelector = ({ className }: AgentSelectorProps) => {
       </button>
       <Select.Dropdown
         {...getSelectContentProps()}
-        variant="top-left"
-        className="w-[220px]"
+        variant={variant}
+        className="lg:w-[220px]"
       >
         {Object.entries(AGENT_LABELS).map(([key, label]) => {
           const agentKey = key as Agent;
@@ -76,13 +82,13 @@ export const AgentSelector = ({ className }: AgentSelectorProps) => {
                   size={16}
                   className={cn(
                     "text-muted-foreground",
-                    agent === agentKey && "text-foreground",
+                    value === agentKey && "text-foreground",
                   )}
                 />
                 <span
                   className={cn(
                     "text-sm",
-                    agent === agentKey
+                    value === agentKey
                       ? "font-medium"
                       : "text-muted-foreground",
                   )}

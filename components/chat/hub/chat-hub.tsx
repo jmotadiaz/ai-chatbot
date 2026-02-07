@@ -10,7 +10,7 @@ import { HubInstancePanel } from "@/components/chat/hub/instance-panel";
 import { AddModelDropdown } from "@/components/chat/hub/add-model-dropdown";
 import { Textarea } from "@/components/chat/textarea";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
-import { AgentSelector } from "@/components/chat/controls/agent-selector";
+
 import { SettingsControl } from "@/components/chat/controls/settings-control";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 
@@ -85,13 +85,14 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 key={inst.chatId}
                 instance={inst}
                 submitSubscribe={hub.submitSubscribe}
-                agent={hub.agent}
+                updateInstanceAgent={hub.updateInstanceAgent}
                 onRemove={hub.removeInstance}
                 persistChat={hub.persistChat}
                 isPersisting={hub.isPersisting}
                 persistingChatId={hub.persistingChatId}
                 isPersisted={hub.isChatPersisted(inst.chatId)}
                 className="h-full"
+                layoutMode="grid"
               />
             ))}
 
@@ -145,13 +146,14 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 <HubInstancePanel
                   instance={inst}
                   submitSubscribe={hub.submitSubscribe}
-                  agent={hub.agent}
+                  updateInstanceAgent={hub.updateInstanceAgent}
                   onRemove={hub.removeInstance}
                   persistChat={hub.persistChat}
                   isPersisting={hub.isPersisting}
                   persistingChatId={hub.persistingChatId}
                   isPersisted={hub.isChatPersisted(inst.chatId)}
                   className="h-full"
+                  layoutMode="tabs"
                 />
               </div>
             ))}
@@ -196,7 +198,6 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
               handleFileChange={hub.handleFileChange}
               supportedFiles={hub.supportedFilesForPicker}
             />
-            <AgentSelector />
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">

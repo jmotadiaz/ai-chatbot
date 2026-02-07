@@ -12,14 +12,13 @@ import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import { useChatInputState } from "@/lib/features/chat/hooks/use-chat-input-state";
 import { useChatSendEnabled } from "@/lib/features/chat/hooks/use-chat-send-enabled";
 import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-models";
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 import { useToolsEnabled } from "@/lib/features/chat/hooks/use-tools-enabled";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
-import { useChatAgent } from "@/lib/features/chat/hooks/use-chat-agent";
 
 // Important: keep the runtime exclusion of "Router", but widen the type so
 // downstream code can still accept `chatModelId` without TS `includes(...)` issues.
@@ -66,7 +65,9 @@ export interface UseChatHubArgs {
 export const useChatHub = ({
   initialInstances = [],
 }: UseChatHubArgs = {}): ChatHub => {
-  const [instances, setInstances] = useState<HubInstance[]>(initialInstances);
+  const [instances, setInstances] = useState<HubInstance[]>(
+    initialInstances.map((i) => ({ ...i, agent: i.agent || "rag" })),
+  );
   const [instancesLocked, setInstancesLocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
@@ -77,7 +78,6 @@ export const useChatHub = ({
 
   const { input, setInput, handleInputChange } = useChatInputState("");
   const [files, setFiles] = useState<FilePart[]>([]);
-  const { agent, setAgent } = useChatAgent();
 
   const sendEnabled =
     useChatSendEnabled({ input, files }) && instances.length > 0;
@@ -98,9 +98,8 @@ export const useChatHub = ({
     // Hard cap: no more than 3 instances.
     if (instances.length >= HUB_MAX_INSTANCES) return [];
 
-    const usedModels = new Set(instances.map((i) => i.model));
-    return baseAvailableModels.filter((m) => !usedModels.has(m));
-  }, [baseAvailableModels, instances, instancesLocked]);
+    return baseAvailableModels;
+  }, [baseAvailableModels, instances.length, instancesLocked]);
 
   const supportedFilesForPicker = useSupportedFiles({
     selectedModels: instanceModels,
@@ -122,8 +121,14 @@ export const useChatHub = ({
     setInstances((prev) => prev.filter((i) => i.chatId !== chatId));
   }, []);
 
+  const updateInstanceAgent = useCallback((chatId: string, agent: Agent) => {
+    setInstances((prev) =>
+      prev.map((i) => (i.chatId === chatId ? { ...i, agent } : i)),
+    );
+  }, []);
+
   const addInstance = useCallback(
-    (model: chatModelId) => {
+    (model: chatModelId, agent: Agent = "rag") => {
       if (model === "Router") return;
       if (isPersisting) return;
       if (instancesLocked) return;
@@ -131,7 +136,7 @@ export const useChatHub = ({
       // Prevent adding incompatible models based on current tools + files.
       if (!availableModels.includes(model)) return;
 
-      setInstances((prev) => [...prev, { chatId: v4(), model }]);
+      setInstances((prev) => [...prev, { chatId: v4(), model, agent }]);
     },
     [availableModels, instances.length, instancesLocked, isPersisting],
   );
@@ -186,7 +191,7 @@ export const useChatHub = ({
           chatId,
           messages: messages as ChatbotMessage[],
           model,
-          agent,
+          agent: agent || "rag",
           ...rest,
         });
 
@@ -222,6 +227,7 @@ export const useChatHub = ({
     isChatPersisted,
     addInstance,
     removeInstance,
+    updateInstanceAgent,
     persistChat,
 
     input,
@@ -231,9 +237,6 @@ export const useChatHub = ({
     files,
     setFiles,
     handleFileChange,
-
-    agent,
-    setAgent,
 
     sendEnabled,
 

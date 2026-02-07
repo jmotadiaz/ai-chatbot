@@ -15,6 +15,7 @@ export type SubmitHandler = (message: SubmitMessage) => void | Promise<void>;
 export interface HubInstance {
   chatId: string;
   model: chatModelId;
+  agent: Agent;
 }
 
 export interface ChatHub {
@@ -31,8 +32,9 @@ export interface ChatHub {
   /** Which chatId is currently being persisted (for per-panel loading UI). */
   persistingChatId: string | null;
 
-  addInstance: (model: chatModelId) => void;
+  addInstance: (model: chatModelId, agent?: Agent) => void;
   removeInstance: (chatId: string) => void;
+  updateInstanceAgent: (chatId: string, agent: Agent) => void;
   persistChat: (args: {
     chatId: string;
     messages: ChatbotMessage[];
@@ -53,9 +55,6 @@ export interface ChatHub {
   files: FilePart[];
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-
-  agent: Agent;
-  setAgent: (agent: Agent) => void;
 
   sendEnabled: boolean;
 
