@@ -47,8 +47,6 @@ export const chatModelKeys = [
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Llama 4 Scout",
-  "Sonar",
-  "Sonar Pro",
   "Claude Haiku 4.5",
   "Claude Sonnet 4.5",
   "Claude Opus 4.5",
@@ -102,7 +100,7 @@ export interface ChatModelConfiguration {
   nativeToolCalling: boolean;
   zeroDataRetention?: boolean;
   supportedFiles: Required<ModelConfiguration>["supportedFiles"];
-  supportedOutput: ReqModelConfiguration>["supportedOutput"];
+  supportedOutput: Required<ModelConfiguration>["supportedOutput"];
 }
 
 export const getChatConfigurationByModelId = (
