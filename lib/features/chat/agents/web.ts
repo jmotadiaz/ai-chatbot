@@ -1,6 +1,5 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
-import { toolPrompts } from "@/lib/features/chat/prompts";
 import {
   URL_CONTEXT_TOOL,
   WEB_SEARCH_TOOL,
@@ -15,7 +14,6 @@ import {
   hasToExecuteUrlContext,
   urlContextStep,
 } from "@/lib/features/chat/agents/url-context-step";
-import { s } from "motion/react-client";
 
 interface CreateWebAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -41,6 +39,7 @@ export const createWebAgent = ({
 
   return new ToolLoopAgent({
     ...modelConfiguration,
+    instructions: systemPrompt,
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
@@ -51,8 +50,8 @@ export const createWebAgent = ({
 
       if (!hasToolCallSteps({ steps, toolName: WEB_SEARCH_TOOL })) {
         return {
-          system: toolPrompts[WEB_SEARCH_TOOL],
           activeTools: [WEB_SEARCH_TOOL],
+          toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
         };
       }
 
@@ -62,10 +61,6 @@ export const createWebAgent = ({
       ) {
         return urlContextStep();
       }
-
-      return {
-        system: systemPrompt,
-      };
     },
   });
 };
