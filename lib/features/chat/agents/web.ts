@@ -10,7 +10,6 @@ import {
   urlContextFactory,
   webSearchFactory,
 } from "@/lib/features/web-search/tools";
-import { hasToolCallSteps } from "@/lib/features/chat/agents/utils";
 import {
   hasToExecuteUrlContext,
   urlContextStep,
@@ -53,9 +52,6 @@ export const createWebAgent = ({
         return {
           system: toolPrompts[WEB_SEARCH_TOOL],
           activeTools: [WEB_SEARCH_TOOL],
-          ...(!hasWebSearchToolCalled(messages) && {
-            toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
-          }),
         };
       }
 
