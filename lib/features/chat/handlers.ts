@@ -35,6 +35,8 @@ import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { createRagAgent } from "@/lib/features/chat/agents/rag";
 import { createWebAgent } from "@/lib/features/chat/agents/web";
 import { createAgent as createContext7Agent } from "@/lib/features/chat/agents/context7";
+import { getProjectById } from "@/lib/features/project/queries";
+import { RAG_TOOL } from "@/lib/features/rag/constants";
 
 const processMesaggesToSend = async ({
   messages,
@@ -145,12 +147,25 @@ export async function processChatResponse({
         });
       } else {
         // Default to RAG agent
+        let isRagEnabled = true;
+
+        if (projectId) {
+          const project = await getProjectById({
+            id: projectId,
+            userId: user.id,
+          });
+          if (project) {
+            isRagEnabled = project.tools?.includes(RAG_TOOL) ?? false;
+          }
+        }
+
         currentAgent = createRagAgent({
           modelConfiguration,
           systemPrompt,
           messages,
           userId: user.id,
           projectId,
+          isRagEnabled,
         });
       }
 

@@ -16,6 +16,7 @@ interface CreateRagAgentParams {
   messages: ChatbotMessage[];
   userId: string;
   projectId?: string;
+  isRagEnabled?: boolean;
 }
 
 export const createRagAgent = ({
@@ -24,6 +25,7 @@ export const createRagAgent = ({
   messages,
   userId,
   projectId,
+  isRagEnabled = true,
 }: CreateRagAgentParams) => {
   const lastMessage = messagePartsToText(messages[messages.length - 1]);
   const isUrlPresentInLastMessage = hasUrls(lastMessage);
@@ -52,7 +54,7 @@ export const createRagAgent = ({
     activeTools: [],
     prepareStep: async () => {
       // Always try RAG tool first if not executed
-      if (!executedTools.has(RAG_TOOL)) {
+      if (isRagEnabled && !executedTools.has(RAG_TOOL)) {
         executedTools.add(RAG_TOOL);
         return {
           system: toolPrompts[RAG_TOOL],
