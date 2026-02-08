@@ -43,18 +43,19 @@ export const createWebAgent = ({
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(4),
-    activeTools: [WEB_SEARCH_TOOL],
+    stopWhen: stepCountIs(3),
+    activeTools: [],
     prepareStep: async ({ steps, stepNumber }) => {
-      if (isTestEnv) return {
-        activeTools: [],
-      };
+      if (isTestEnv) return undefined;
 
       if (
         stepNumber === 0 &&
         !hasToolCallSteps({ steps, toolName: WEB_SEARCH_TOOL })
       ) {
-        return {toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL }};
+        return {
+          toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
+          activeTools: [WEB_SEARCH_TOOL],
+        };
       }
 
       if (
