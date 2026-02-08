@@ -9,6 +9,7 @@ import { hasUrls } from "@/lib/utils/helpers";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
 import { messagePartsToText } from "@/lib/features/chat/utils";
+import { getProjectById } from "@/lib/features/project/queries";
 
 interface CreateRagAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -18,7 +19,7 @@ interface CreateRagAgentParams {
   projectId?: string;
 }
 
-export const createRagAgent = ({
+export const createRagAgent = async ({
   modelConfiguration,
   systemPrompt,
   messages,
@@ -42,6 +43,14 @@ export const createRagAgent = ({
     isTestEnv || modelConfiguration.toolCalling === false ? TOOLS : [],
   );
 
+  let shouldForceRag = true;
+  if (projectId) {
+    const project = await getProjectById({ id: projectId, userId });
+    if (project && project.tools) {
+      shouldForceRag = project.tools.includes(RAG_TOOL);
+    }
+  }
+
   return new ToolLoopAgent({
     ...modelConfiguration,
     tools: toolSet,
@@ -52,7 +61,7 @@ export const createRagAgent = ({
     activeTools: [],
     prepareStep: async () => {
       // Always try RAG tool first if not executed
-      if (!executedTools.has(RAG_TOOL)) {
+      if (shouldForceRag && !executedTools.has(RAG_TOOL)) {
         executedTools.add(RAG_TOOL);
         return {
           system: toolPrompts[RAG_TOOL],
