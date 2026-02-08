@@ -44,7 +44,7 @@ export const createWebAgent = ({
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(4),
+    stopWhen: stepCountIs(5),
     activeTools: [],
     prepareStep: async ({ steps }) => {
       if (isTestEnv) return;
