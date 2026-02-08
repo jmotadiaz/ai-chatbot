@@ -1,18 +1,20 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
-import { type Tool, TOOLS, ChatbotMessage } from "@/lib/features/chat/types";
+import { ChatbotMessage } from "@/lib/features/chat/types";
 import { toolPrompts } from "@/lib/features/chat/prompts";
 import {
   URL_CONTEXT_TOOL,
   WEB_SEARCH_TOOL,
 } from "@/lib/features/web-search/constants";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { hasContextUrls } from "@/lib/features/web-search/utils";
-import { hasUrls } from "@/lib/utils/helpers";
 import {
   urlContextFactory,
   webSearchFactory,
 } from "@/lib/features/web-search/tools";
-import { messagePartsToText } from "@/lib/features/chat/utils";
+import { hasToolCallSteps } from "@/lib/features/chat/agents/utils";
+import {
+  hasToExecuteUrlContext,
+  urlContextStep,
+} from "@/lib/features/chat/agents/url-context-step";
 
 interface CreateWebAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -27,8 +29,6 @@ export const createWebAgent = ({
   messages,
   webSearchNumResults,
 }: CreateWebAgentParams) => {
-  const lastMessage = messagePartsToText(messages[messages.length - 1]);
-  const isUrlPresentInLastMessage = hasUrls(lastMessage);
   const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
 
   const toolSet = {
@@ -38,10 +38,6 @@ export const createWebAgent = ({
     ...urlContextFactory(),
   };
 
-  const executedTools = new Set<Tool>(
-    isTestEnv || modelConfiguration.toolCalling === false ? TOOLS : [],
-  );
-
   return new ToolLoopAgent({
     ...modelConfiguration,
     tools: toolSet,
@@ -50,31 +46,33 @@ export const createWebAgent = ({
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(4),
     activeTools: [],
-    prepareStep: async () => {
-      // Always try Web Search tool first if not executed
-      if (!executedTools.has(WEB_SEARCH_TOOL)) {
-        executedTools.add(WEB_SEARCH_TOOL);
+    prepareStep: async ({ steps }) => {
+      if (isTestEnv) return;
+
+      if (!hasToolCallSteps({ steps, toolName: WEB_SEARCH_TOOL })) {
         return {
-          toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
           system: toolPrompts[WEB_SEARCH_TOOL],
           activeTools: [WEB_SEARCH_TOOL],
+          ...(!hasWebSearchToolCalled(messages) && {
+            toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL },
+          }),
         };
       }
 
       if (
-        !executedTools.has(URL_CONTEXT_TOOL) &&
-        isUrlPresentInLastMessage &&
-        (await hasContextUrls(lastMessage))
+        !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
+        (await hasToExecuteUrlContext(messages))
       ) {
-        executedTools.add(URL_CONTEXT_TOOL);
-        return {
-          toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
-          system: toolPrompts[URL_CONTEXT_TOOL],
-          activeTools: [URL_CONTEXT_TOOL],
-        };
+        return urlContextStep();
       }
 
       return {};
     },
   });
+};
+
+const hasWebSearchToolCalled = (messages: ChatbotMessage[]) => {
+  return messages.some((message) =>
+    message.parts?.some((part) => part.type === "tool-webSearch"),
+  );
 };

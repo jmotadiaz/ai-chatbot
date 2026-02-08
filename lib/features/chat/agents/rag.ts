@@ -1,15 +1,17 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
-import { type Tool, TOOLS, ChatbotMessage } from "@/lib/features/chat/types";
+import { ChatbotMessage } from "@/lib/features/chat/types";
 import { toolPrompts } from "@/lib/features/chat/prompts";
 import { URL_CONTEXT_TOOL } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { hasContextUrls } from "@/lib/features/web-search/utils";
-import { hasUrls } from "@/lib/utils/helpers";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
-import { messagePartsToText } from "@/lib/features/chat/utils";
 import { getProjectById } from "@/lib/features/project/queries";
+import {
+  hasToExecuteUrlContext,
+  urlContextStep,
+} from "@/lib/features/chat/agents/url-context-step";
+import { hasToolCallSteps } from "@/lib/features/chat/agents/utils";
 
 interface CreateRagAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -26,8 +28,6 @@ export const createRagAgent = async ({
   userId,
   projectId,
 }: CreateRagAgentParams) => {
-  const lastMessage = messagePartsToText(messages[messages.length - 1]);
-  const isUrlPresentInLastMessage = hasUrls(lastMessage);
   const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
 
   const toolSet = {
@@ -39,15 +39,11 @@ export const createRagAgent = async ({
     ...urlContextFactory(),
   };
 
-  const executedTools = new Set<Tool>(
-    isTestEnv || modelConfiguration.toolCalling === false ? TOOLS : [],
-  );
-
-  let shouldForceRag = true;
+  let isRagEnabled = true;
   if (projectId) {
     const project = await getProjectById({ id: projectId, userId });
     if (project && project.tools) {
-      shouldForceRag = project.tools.includes(RAG_TOOL);
+      isRagEnabled = project.tools.includes(RAG_TOOL);
     }
   }
 
@@ -59,30 +55,33 @@ export const createRagAgent = async ({
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(4),
     activeTools: [],
-    prepareStep: async () => {
-      // Always try RAG tool first if not executed
-      if (shouldForceRag && !executedTools.has(RAG_TOOL)) {
-        executedTools.add(RAG_TOOL);
+    prepareStep: async ({ steps }) => {
+      if (isTestEnv) return;
+
+      if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
         return {
           system: toolPrompts[RAG_TOOL],
           activeTools: [RAG_TOOL],
+          ...(!hasRagCalled(messages) && {
+            toolChoice: { type: "tool", toolName: RAG_TOOL },
+          }),
         };
       }
 
       if (
-        !executedTools.has(URL_CONTEXT_TOOL) &&
-        isUrlPresentInLastMessage &&
-        (await hasContextUrls(lastMessage))
+        !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
+        (await hasToExecuteUrlContext(messages))
       ) {
-        executedTools.add(URL_CONTEXT_TOOL);
-        return {
-          toolChoice: { type: "tool", toolName: URL_CONTEXT_TOOL },
-          system: toolPrompts[URL_CONTEXT_TOOL],
-          activeTools: [URL_CONTEXT_TOOL],
-        };
+        return urlContextStep();
       }
 
       return {};
     },
   });
+};
+
+const hasRagCalled = (messages: ChatbotMessage[]) => {
+  return messages.some((message) =>
+    message.parts?.some((part) => part.type === "tool-rag"),
+  );
 };

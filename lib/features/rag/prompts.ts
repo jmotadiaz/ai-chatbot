@@ -29,7 +29,7 @@ export const systemPrompt = `
   **Step 5: Execute the ${RAG_TOOL} tool**
   * **MANDATORY Action:** Use the generated multi-hop queries and query rewrite to execute the ${RAG_TOOL} tool.
 
-  **CRITICAL**: Do not answer to the user's request until the ${RAG_TOOL} tool has been executed.
+  **CRITICAL**: Do not answer to the user's request until you have all information needed from the ${RAG_TOOL} tool.
 `;
 
 export const toolDescriptionPrompt = `
