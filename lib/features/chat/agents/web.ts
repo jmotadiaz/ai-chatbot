@@ -51,7 +51,7 @@ export const createWebAgent = ({
       };
 
       if (
-        stepNunber === 0 &&
+        stepNumber === 0 &&
         !hasToolCallSteps({ steps, toolName: WEB_SEARCH_TOOL })
       ) {
         return {toolChoice: { type: "tool", toolName: WEB_SEARCH_TOOL }};
