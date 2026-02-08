@@ -30,17 +30,28 @@ export interface DropdownPopupProps
     | "top-right"
     | "bottom-left"
     | "bottom-right"
-    | "center";
+    | "center"
+    | "responsive-top-left"
+    | "responsive-top-right"
+    | "responsive-bottom-left"
+    | "responsive-bottom-right";
   className?: string;
 }
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
-  "top-right": "lg:absolute lg:bottom-full lg:mb-2",
-  "top-left": "lg:absolute lg:bottom-full lg:right-0 lg:left-auto lg:mb-2",
-  "bottom-left":
+  // Static variants
+  "top-right": "absolute bottom-full mb-2",
+  "top-left": "absolute bottom-full right-0 left-auto mb-2",
+  "bottom-left": "absolute top-auto top-full bottom-auto right-0 left-auto mt-2",
+  "bottom-right": "absolute top-auto top-full bottom-auto mt-2",
+  center: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+
+  // Responsive variants
+  "responsive-top-right": "lg:absolute lg:bottom-full lg:mb-2",
+  "responsive-top-left": "lg:absolute lg:bottom-full lg:right-0 lg:left-auto lg:mb-2",
+  "responsive-bottom-left":
     "lg:absolute top-auto lg:top-full lg:bottom-auto lg:right-0 lg:left-auto lg:mt-2",
-  "bottom-right": "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
-  center: "lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
+  "responsive-bottom-right": "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
 };
 
 const DropdownPopup: React.FC<DropdownPopupProps> = ({
@@ -51,10 +62,13 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   variant = "top-right",
   ...props
 }) => {
+  const isResponsive = variant.startsWith("responsive-");
+  const baseVariant = variant.replace("responsive-", "");
+
   const initialY =
-    variant === "bottom-left" || variant === "bottom-right"
+    baseVariant === "bottom-left" || baseVariant === "bottom-right"
       ? -8
-      : variant === "center"
+      : baseVariant === "center"
       ? 8
       : 8;
 
@@ -75,7 +89,10 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
           <motion.div
             key="dropdown-popup"
             className={cn(
-              "fixed w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-50 overflow-hidden pb-4 lg:pb-0",
+              "bg-secondary-foreground shadow-lg z-50 overflow-hidden",
+              isResponsive
+                ? "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:pb-0"
+                : "w-auto rounded-lg pb-0",
               variants[variant],
               className
             )}
