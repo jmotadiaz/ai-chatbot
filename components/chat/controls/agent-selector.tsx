@@ -73,7 +73,7 @@ export const AgentSelector = ({
           const Icon = AGENT_ICONS[agentKey];
           return (
             <Select.Item key={agentKey} {...getSelectItemProps(agentKey)}>
-              <div className="flex items-center gap-3 p-1">
+              <div className="flex items-center gap-3 p-2">
                 <Icon
                   size={16}
                   className={cn(
