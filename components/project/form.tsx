@@ -97,6 +97,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                     selectedModel={model}
                     setSelectedModel={setModel}
                     models={models}
+                    dropdownVariant="responsive-top-right"
                   />
                 </div>
               </div>

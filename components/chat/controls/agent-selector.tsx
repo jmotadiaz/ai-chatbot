@@ -34,7 +34,7 @@ export const AgentSelector = ({
   className,
   value,
   onValueChange,
-  variant = "top-right",
+  variant = "top-left",
 }: AgentSelectorProps) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -72,11 +72,8 @@ export const AgentSelector = ({
           const agentKey = key as Agent;
           const Icon = AGENT_ICONS[agentKey];
           return (
-            <Select.Item
-              key={agentKey}
-              {...getSelectItemProps(agentKey)}
-            >
-              <div className="flex items-center gap-3 p-4">
+            <Select.Item key={agentKey} {...getSelectItemProps(agentKey)}>
+              <div className="flex items-center gap-3 p-1">
                 <Icon
                   size={16}
                   className={cn(

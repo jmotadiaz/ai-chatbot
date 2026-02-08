@@ -17,11 +17,10 @@ const DropdownContainer: React.FC<DropdownContainerProps> = ({
   return <div className={cn("relative", className)}>{children}</div>;
 };
 
-export interface DropdownPopupProps
-  extends Omit<
-    React.HTMLAttributes<HTMLDivElement>,
-    "onAnimationStart" | "onAnimationEnd" | "onAnimationIteration"
-  > {
+export interface DropdownPopupProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onAnimationStart" | "onAnimationEnd" | "onAnimationIteration"
+> {
   children: React.ReactNode;
   isShown: boolean;
   close: () => void;
@@ -30,17 +29,35 @@ export interface DropdownPopupProps
     | "top-right"
     | "bottom-left"
     | "bottom-right"
-    | "center";
+    | "center"
+    | "responsive-top-left"
+    | "responsive-top-right"
+    | "responsive-bottom-left"
+    | "responsive-bottom-right"
+    | "responsive-center";
   className?: string;
 }
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
-  "top-right": "lg:absolute lg:bottom-full lg:mb-2",
-  "top-left": "lg:absolute lg:bottom-full lg:right-0 lg:left-auto lg:mb-2",
-  "bottom-left":
-    "lg:absolute top-auto lg:top-full lg:bottom-auto lg:right-0 lg:left-auto lg:mt-2",
-  "bottom-right": "lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
-  center: "lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
+  // Static variants
+  "top-right": "absolute w-auto rounded-lg pb-0 bottom-full right-0 mb-2",
+  "top-left": "absolute w-auto rounded-lg pb-0 bottom-full left-0 mb-2",
+  "bottom-right": "absolute w-auto rounded-lg pb-0 top-full left-0 mt-2",
+  "bottom-left": "absolute w-auto rounded-lg pb-0 top-full right-0 mt-2",
+  center:
+    "fixed w-auto rounded-lg pb-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+
+  // Responsive variants
+  "responsive-top-right":
+    "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:pb-0 lg:absolute lg:bottom-full lg:mb-2",
+  "responsive-top-left":
+    "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:pb-0 lg:absolute lg:bottom-full lg:right-0 lg:left-auto lg:mb-2",
+  "responsive-bottom-left":
+    "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:absolute top-auto lg:top-full lg:bottom-auto lg:right-0 lg:left-auto lg:mt-2",
+  "responsive-bottom-right":
+    "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:pb-0 lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
+  "responsive-center":
+    "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
 };
 
 const DropdownPopup: React.FC<DropdownPopupProps> = ({
@@ -51,12 +68,14 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   variant = "top-right",
   ...props
 }) => {
+  const baseVariant = variant.replace("responsive-", "");
+
   const initialY =
-    variant === "bottom-left" || variant === "bottom-right"
+    baseVariant === "bottom-left" || baseVariant === "bottom-right"
       ? -8
-      : variant === "center"
-      ? 8
-      : 8;
+      : baseVariant === "center"
+        ? 8
+        : 8;
 
   return (
     <AnimatePresence>
@@ -75,9 +94,9 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
           <motion.div
             key="dropdown-popup"
             className={cn(
-              "fixed w-full lg:w-auto left-0 bottom-0 bg-secondary-foreground rounded-t-lg lg:rounded-lg shadow-lg z-50 overflow-hidden pb-4 lg:pb-0",
+              "bg-secondary-foreground shadow-lg z-50 overflow-hidden",
               variants[variant],
-              className
+              className,
             )}
             initial={{ opacity: 0, y: initialY }}
             animate={{ opacity: 1, y: 0 }}
@@ -109,7 +128,7 @@ export function DropdownItem<T extends React.ElementType = "div">({
     <Component
       className={cn(
         "flex items-center space-x-1 px-5 py-3 first:pt-4 last:pb-4 hover:bg-secondary-accent-foreground active:bg-secondary-accent-foreground/70 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
-        className
+        className,
       )}
       {...props}
     >

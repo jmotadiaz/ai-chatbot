@@ -74,8 +74,9 @@ const SelectContainer: React.FC<SelectContainerProps> = ({
   );
 };
 
-export interface SelectTriggerProps<T extends string>
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SelectTriggerProps<
+  T extends string,
+> extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isOpen?: boolean;
   value: T;
   id: string;
@@ -99,7 +100,7 @@ function SelectTriggerComponent<T extends string>({
       aria-expanded={isOpen}
       className={cn(
         "flex items-center space-x-3 font-semibold text-black dark:text-white select-none cursor-pointer",
-        className
+        className,
       )}
       {...props}
       onClick={toggle}
@@ -109,7 +110,7 @@ function SelectTriggerComponent<T extends string>({
         size={16}
         className={cn(
           "transition-transform duration-300",
-          isOpen ? "rotate-0" : "rotate-180"
+          isOpen ? "rotate-0" : "rotate-180",
         )}
       />
     </button>
@@ -139,15 +140,16 @@ const SelectDropdownComponent: React.FC<SelectContentProps> = ({
       isShown={isShown}
       close={close}
       variant={variant}
-      className={cn("w-full p-0 overflow-auto", className)}
+      className={cn("p-0 overflow-auto", className)}
     >
       <div className="flex flex-col">{children}</div>
     </Dropdown.Popup>
   );
 };
 
-export interface SelectItemProps<T extends string>
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface SelectItemProps<
+  T extends string,
+> extends React.HTMLAttributes<HTMLDivElement> {
   value: T;
   children: React.ReactNode;
   className?: string;
@@ -171,7 +173,7 @@ function SelectItemComponent<T extends string>({
         "relative flex w-full cursor-pointer select-none items-center px-3 py-2 whitespace-nowrap",
         "hover:bg-secondary-accent-foreground active:bg-secondary-accent-foreground/70",
         selected && "bg-secondary-accent-foreground",
-        className
+        className,
       )}
       onClick={() => {
         onValueChange?.(value);

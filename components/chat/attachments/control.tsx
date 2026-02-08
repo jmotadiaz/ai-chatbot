@@ -42,6 +42,7 @@ export const AttachmentsControl: React.FC<AttachmentsControlProps> = ({
       <Dropdown.Popup
         {...getDropdownPopupProps()}
         aria-label="Attachment options"
+        variant="top-left"
         data-testid="attachment-menu"
       >
         {supportedFiles.includes("img") && (
