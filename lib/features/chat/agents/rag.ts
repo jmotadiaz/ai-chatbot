@@ -55,7 +55,6 @@ export const createRagAgent = ({
       if (!executedTools.has(RAG_TOOL)) {
         executedTools.add(RAG_TOOL);
         return {
-          toolChoice: { type: "tool", toolName: RAG_TOOL },
           system: toolPrompts[RAG_TOOL],
           activeTools: [RAG_TOOL],
         };
