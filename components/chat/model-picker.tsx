@@ -45,7 +45,7 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({ id }) => {
     <ModelPickerSelector
       id={id}
       {...{ selectedModel, setSelectedModel, models: availableModels }}
-      dropdownVariant="responsive-top-right"
+      dropdownVariant="responsive-bottom-right"
     />
   );
 };

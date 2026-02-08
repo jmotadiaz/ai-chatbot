@@ -41,7 +41,7 @@ export const AddModelDropdown: React.FC<AddModelDropdownProps> = ({
             onSelectModel(model);
           }}
           models={availableModels}
-          dropdownVariant="center"
+          dropdownVariant="responsive-center"
           triggerVariant="button"
         />
       ) : (
@@ -52,5 +52,3 @@ export const AddModelDropdown: React.FC<AddModelDropdownProps> = ({
     </div>
   );
 };
-
-

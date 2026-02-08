@@ -50,7 +50,7 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
         isShown={isShown}
         close={close}
         className="max-h-[400px] lg:max-h-[600px] overflow-auto scrollbar-none"
-        variant="center"
+        variant="responsive-center"
       >
         {availableModels.map((model) => (
           <Dropdown.Item
