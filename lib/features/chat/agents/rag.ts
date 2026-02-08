@@ -50,19 +50,21 @@ export const createRagAgent = async ({
   return new ToolLoopAgent({
     ...modelConfiguration,
     tools: toolSet,
-    instructions: systemPrompt,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(4),
     activeTools: [],
     prepareStep: async ({ steps }) => {
-      if (isTestEnv) return;
+      if (isTestEnv)
+        return {
+          system: systemPrompt,
+        };
 
       if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
         return {
           system: toolPrompts[RAG_TOOL],
           activeTools: [RAG_TOOL],
-          ...(!hasRagCalled(messages) && {
+          ...(!hasRagToolCalled(messages) && {
             toolChoice: { type: "tool", toolName: RAG_TOOL },
           }),
         };
@@ -75,12 +77,14 @@ export const createRagAgent = async ({
         return urlContextStep();
       }
 
-      return {};
+      return {
+        system: systemPrompt,
+      };
     },
   });
 };
 
-const hasRagCalled = (messages: ChatbotMessage[]) => {
+const hasRagToolCalled = (messages: ChatbotMessage[]) => {
   return messages.some((message) =>
     message.parts?.some((part) => part.type === "tool-rag"),
   );

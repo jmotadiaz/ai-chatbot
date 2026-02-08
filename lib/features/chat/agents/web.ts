@@ -15,6 +15,7 @@ import {
   hasToExecuteUrlContext,
   urlContextStep,
 } from "@/lib/features/chat/agents/url-context-step";
+import { s } from "motion/react-client";
 
 interface CreateWebAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -25,8 +26,8 @@ interface CreateWebAgentParams {
 
 export const createWebAgent = ({
   modelConfiguration,
-  systemPrompt,
   messages,
+  systemPrompt,
   webSearchNumResults,
 }: CreateWebAgentParams) => {
   const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
@@ -41,7 +42,6 @@ export const createWebAgent = ({
   return new ToolLoopAgent({
     ...modelConfiguration,
     tools: toolSet,
-    instructions: systemPrompt,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(4),
@@ -66,7 +66,9 @@ export const createWebAgent = ({
         return urlContextStep();
       }
 
-      return {};
+      return {
+        system: systemPrompt,
+      };
     },
   });
 };

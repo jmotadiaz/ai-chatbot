@@ -5,7 +5,10 @@ export const webSearchSystemPrompt = `
 
     You must formulate a highly optimized search query designed for a semantic search engine. Focus on specific keywords, technical terms, and precise phrasing that maximizes the probability of retrieving high-quality, authoritative sources. Avoid conversational filler; prioritize specific search intent to gather the most accurate external context.
 
-    CRITICAL: The tool inputs MUST be in English language. Translate the user's query to English before using the tool if it is not in English.
+    CRITICAL:
+    - The tool inputs MUST be in English language. Translate the user's query to English before using the tool if it is not in English.
+    - Do not answer to the user's request until the ${WEB_SEARCH_TOOL} tool has been executed.
+    - Do not use execute ${WEB_SEARCH_TOOL} tool more than once.
 `;
 
 export const webSearchDescriptionPrompt = `
