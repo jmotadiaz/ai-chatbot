@@ -145,7 +145,7 @@ export async function processChatResponse({
         });
       } else {
         // Default to RAG agent
-        currentAgent = createRagAgent({
+        currentAgent = await createRagAgent({
           modelConfiguration,
           systemPrompt,
           messages,
