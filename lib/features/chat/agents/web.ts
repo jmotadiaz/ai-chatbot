@@ -6,6 +6,7 @@ import {
   WEB_SEARCH_TOOL,
 } from "@/lib/features/web-search/constants";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import { hasToolCallSteps } from "@/lib/features/chat/agents/utils";
 import {
   urlContextFactory,
   webSearchFactory,
@@ -67,10 +68,4 @@ export const createWebAgent = ({
       };
     },
   });
-};
-
-const hasWebSearchToolCalled = (messages: ChatbotMessage[]) => {
-  return messages.some((message) =>
-    message.parts?.some((part) => part.type === "tool-webSearch"),
-  );
 };
