@@ -30,7 +30,7 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
   onToggle,
   onClose,
 }) => {
-  const { reload, availableModels } = useChatContext();
+  const { reload, availableModels, projectId } = useChatContext();
   const modelDropdown = useDropdown();
   const agentDropdown = useDropdown();
 
@@ -90,44 +90,46 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
       </div>
 
       {/* Agent Dropdown */}
-      <div className="relative">
-        <div
-          {...agentTriggerProps}
-          className="flex items-center gap-1 font-bold text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors capitalize"
-        >
-          <span className="whitespace-nowrap">Agent</span>
-          <ChevronUpIcon
-            size={16}
-            className={cn(
-              "transition-transform duration-300",
-              isAgentShown ? "rotate-0" : "rotate-180",
-            )}
-          />
+      {!projectId && (
+        <div className="relative">
+          <div
+            {...agentTriggerProps}
+            className="flex items-center gap-1 font-bold text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors capitalize"
+          >
+            <span className="whitespace-nowrap">Agent</span>
+            <ChevronUpIcon
+              size={16}
+              className={cn(
+                "transition-transform duration-300",
+                isAgentShown ? "rotate-0" : "rotate-180",
+              )}
+            />
+          </div>
+          <Dropdown.Popup
+            isShown={isAgentShown}
+            close={closeAgent}
+            className="min-w-[150px]"
+            variant="responsive-center"
+          >
+            {AGENTS.map((agentItem) => {
+              const AgentIcon = AGENT_ICONS[agentItem];
+              return (
+                <Dropdown.Item
+                  key={agentItem}
+                  onClick={() => {
+                    reload({ agent: agentItem });
+                    closeAgent();
+                  }}
+                  className="capitalize gap-2"
+                >
+                  <AgentIcon size={16} />
+                  {AGENT_LABELS[agentItem]}
+                </Dropdown.Item>
+              );
+            })}
+          </Dropdown.Popup>
         </div>
-        <Dropdown.Popup
-          isShown={isAgentShown}
-          close={closeAgent}
-          className="min-w-[150px]"
-          variant="responsive-center"
-        >
-          {AGENTS.map((agentItem) => {
-            const AgentIcon = AGENT_ICONS[agentItem];
-            return (
-              <Dropdown.Item
-                key={agentItem}
-                onClick={() => {
-                  reload({ agent: agentItem });
-                  closeAgent();
-                }}
-                className="capitalize gap-2"
-              >
-                <AgentIcon size={16} />
-                {AGENT_LABELS[agentItem]}
-              </Dropdown.Item>
-            );
-          })}
-        </Dropdown.Popup>
-      </div>
+      )}
     </div>
   );
 };

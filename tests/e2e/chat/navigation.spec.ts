@@ -132,10 +132,20 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll to message 5
+      // Scroll message 6 to the TOP of viewport.
+      // This ensures message 5 is strictly above the viewport.
+      // Scroll message 6 to the TOP of viewport.
+      // This ensures message 5 is strictly above the viewport.
       await chatPage.chat.navigation.scrollToMessage(userMessageText(6));
+
+      // Verify message 6 is visible
       await chatPage.chat.navigation.assertUserMessageInViewport(
         userMessageText(6),
+      );
+
+      // Verify message 5 is NOT visible (it should be above)
+      await chatPage.chat.navigation.assertUserMessageNotInViewport(
+        userMessageText(5),
       );
 
       // Wait for prev button to be visible
@@ -144,7 +154,7 @@ test.describe("Chat Navigation", () => {
       // Click prev button
       await chatPage.chat.navigation.clickPrev();
 
-      // After clicking prev, we should have navigated to message 4
+      // After clicking prev, we should have navigated to message 5
       await chatPage.chat.navigation.assertUserMessageInViewport(
         userMessageText(5),
       );

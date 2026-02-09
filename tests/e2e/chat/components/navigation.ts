@@ -46,13 +46,26 @@ export class NavigationComponent {
     });
   }
 
-  async scrollToMessage(text: string) {
+  async scrollToMessage(
+    text: string,
+    options?: { block?: "start" | "center" | "end" | "nearest" },
+  ) {
     const message = this.container
       .locator('[data-role="user"]')
       .filter({ hasText: text });
 
     // Ensure the message is attached and visible before attempting to scroll
     await message.waitFor({ state: "attached", timeout: 5000 });
+
+    // If a specific block alignment is requested, use scrollIntoView with that option
+    if (options?.block) {
+      await message.evaluate(
+        (el, block) =>
+          el.scrollIntoView({ block: block as ScrollLogicalPosition }),
+        options.block,
+      );
+      return;
+    }
 
     // scrollIntoViewIfNeeded is usually reliable, but if the element is detached
     // during the process (e.g. React re-render), we try once more after a small wait

@@ -50,8 +50,8 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
       />
       <Dropdown.Popup
         {...getDropdownPopupProps()}
-        variant="responsive-top-right"
-        className="space-y-4 min-w-[240px] p-4"
+        variant="responsive-top-left"
+        className="space-y-4 min-w-[240px] lg:p-4"
       >
         <div className="space-y-4">
           <div className="text-xs font-medium text-muted-foreground mb-2">
