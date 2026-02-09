@@ -4,7 +4,7 @@ import {
   type chatModelId,
 } from "@/lib/features/foundation-model/config";
 
-export const createAgent = (modelId: chatModelId) => {
+export const createContext7Agent = (modelId: chatModelId) => {
   if (modelId === "Router") {
     throw new Error("Router model is not supported for Context7 Agent");
   }

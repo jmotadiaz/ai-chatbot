@@ -1,29 +1,24 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
-import { toolPrompts } from "@/lib/features/chat/prompts";
-import { URL_CONTEXT_TOOL } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
-import { getProjectById } from "@/lib/features/project/queries";
 import {
   hasToExecuteUrlContext,
   urlContextStep,
 } from "@/lib/features/chat/agents/url-context-step";
-import { hasToolCallSteps } from "@/lib/features/chat/agents/utils";
+import { RAG_AGENT_PROMPT } from "@/lib/features/chat/agents/prompts";
 
 interface CreateRagAgentParams {
   modelConfiguration: ModelConfiguration;
-  systemPrompt: string;
   messages: ChatbotMessage[];
   userId: string;
   projectId?: string;
 }
 
-export const createRagAgent = async ({
+export const createRagAgent = ({
   modelConfiguration,
-  systemPrompt,
   messages,
   userId,
   projectId,
@@ -39,53 +34,23 @@ export const createRagAgent = async ({
     ...urlContextFactory(),
   };
 
-  let isRagEnabled = true;
-  if (projectId) {
-    const project = await getProjectById({ id: projectId, userId });
-    if (project && project.tools) {
-      isRagEnabled = project.tools.includes(RAG_TOOL);
-    }
-  }
-
   return new ToolLoopAgent({
     ...modelConfiguration,
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(4),
-    activeTools: [],
-    prepareStep: async ({ steps }) => {
+    instructions: RAG_AGENT_PROMPT,
+    activeTools: [RAG_TOOL],
+    prepareStep: async ({ stepNumber }) => {
       if (isTestEnv)
         return {
-          system: systemPrompt,
+          activeTools: [],
         };
 
-      if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
-        return {
-          system: toolPrompts[RAG_TOOL],
-          activeTools: [RAG_TOOL],
-          ...(!hasRagToolCalled(messages) && {
-            toolChoice: { type: "tool", toolName: RAG_TOOL },
-          }),
-        };
-      }
-
-      if (
-        !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
-        (await hasToExecuteUrlContext(messages))
-      ) {
+      if (stepNumber === 1 && (await hasToExecuteUrlContext(messages))) {
         return urlContextStep();
       }
-
-      return {
-        system: systemPrompt,
-      };
     },
   });
-};
-
-const hasRagToolCalled = (messages: ChatbotMessage[]) => {
-  return messages.some((message) =>
-    message.parts?.some((part) => part.type === "tool-rag"),
-  );
 };

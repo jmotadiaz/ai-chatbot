@@ -32,9 +32,7 @@ import {
 import { type ChatbotMessage, type Agent } from "@/lib/features/chat/types";
 import { getDb } from "@/lib/infrastructure/db/db";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { createRagAgent } from "@/lib/features/chat/agents/rag";
-import { createWebAgent } from "@/lib/features/chat/agents/web";
-import { createAgent as createContext7Agent } from "@/lib/features/chat/agents/context7";
+import { createAgent } from "@/lib/features/chat/agents/factory";
 
 const processMesaggesToSend = async ({
   messages,
@@ -132,29 +130,18 @@ export async function processChatResponse({
         modelConfiguration,
       });
 
-      let currentAgent;
+      const agentInstance = await createAgent({
+        projectId,
+        agent,
+        modelConfiguration,
+        messages,
+        userId: user.id,
+        systemPrompt,
+        selectedModel,
+        webSearchNumResults: safeWebSearchNumResults,
+      });
 
-      if (agent === "context7") {
-        currentAgent = createContext7Agent(selectedModel);
-      } else if (agent === "web") {
-        currentAgent = createWebAgent({
-          modelConfiguration,
-          systemPrompt,
-          messages,
-          webSearchNumResults: safeWebSearchNumResults,
-        });
-      } else {
-        // Default to RAG agent
-        currentAgent = await createRagAgent({
-          modelConfiguration,
-          systemPrompt,
-          messages,
-          userId: user.id,
-          projectId,
-        });
-      }
-
-      const result = await currentAgent.stream({
+      const result = await agentInstance.stream({
         messages: messagesToSend,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         experimental_transform: smoothStream() as any,
