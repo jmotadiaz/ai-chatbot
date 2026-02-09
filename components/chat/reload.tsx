@@ -48,12 +48,9 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
     <div className="flex items-center gap-2 relative text-zinc-700 dark:text-zinc-200">
       <div
         onClick={() => reload()}
-        className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors mr-1"
+        className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors mr-2"
       >
         <RefreshCcw size={18} />
-      </div>
-      <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium mr-1 whitespace-nowrap">
-        Retry with
       </div>
 
       {/* Model Dropdown */}

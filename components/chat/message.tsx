@@ -271,7 +271,12 @@ const AssistantMessageActions: React.FC<{
     <div className="overflow-x-auto scrollbar-none">
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center gap-3">
-          {showReload && <ChatReload />}
+          {showReload && (
+            <>
+              <ChatReload />
+              <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            </>
+          )}
           {routingMetadata && (
             <RouterDetailsTrigger
               isExpanded={activeSection === "router"}
@@ -341,7 +346,8 @@ const SourceMessagePartTrigger: React.FC<SourceMessagePartProps> = ({
       className="flex text-sm font-bold items-center text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
       onClick={onToggle}
     >
-      Used {count} sources
+      <span className="hidden md:inline">Used {count} sources</span>
+      <span className="md:hidden">Sources</span>
       <ChevronDownIcon
         className={cn("h-4 w-4 ml-1 transition-transform duration-200", {
           "rotate-180": isExpanded,
