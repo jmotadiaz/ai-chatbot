@@ -78,6 +78,7 @@ export const chat = pgTable("Chat", {
   defaultTopP: real("defaultTopP"),
   defaultTopK: real("defaultTopK"),
   ragMaxResources: integer("ragMaxResources"),
+  minRagResourcesScore: real("minRagResourcesScore"),
   webSearchNumResults: integer("webSearchNumResults"),
   tools: varchar("tools", { length: 100 }).array(),
   pinned: boolean("pinned").default(false).notNull(),

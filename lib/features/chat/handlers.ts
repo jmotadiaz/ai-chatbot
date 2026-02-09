@@ -85,6 +85,8 @@ export async function processChatResponse({
   agent = "rag",
 
   webSearchNumResults = defaultWebSearchNumResults,
+  ragMaxResources,
+  minRagResourcesScore,
   user,
 }: {
   messages: ChatbotMessage[];
@@ -100,6 +102,8 @@ export async function processChatResponse({
   agent?: Agent;
 
   webSearchNumResults?: number;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
   user: { id: string };
 }) {
   const safeWebSearchNumResults = Math.min(
@@ -139,6 +143,8 @@ export async function processChatResponse({
         systemPrompt,
         selectedModel,
         webSearchNumResults: safeWebSearchNumResults,
+        ragMaxResources,
+        minRagResourcesScore,
       });
 
       const result = await agentInstance.stream({
@@ -188,6 +194,8 @@ export async function processChatResponse({
                           defaultTemperature: temperature,
                           agent,
                           webSearchNumResults: safeWebSearchNumResults,
+                          ragMaxResources,
+                          minRagResourcesScore,
                         },
                       )(tx)
                     : undefined;
@@ -203,6 +211,8 @@ export async function processChatResponse({
                       defaultTemperature: temperature,
                       agent,
                       webSearchNumResults: safeWebSearchNumResults,
+                      ragMaxResources,
+                      minRagResourcesScore,
                     })(tx));
 
                   const { id } = ensuredChat;

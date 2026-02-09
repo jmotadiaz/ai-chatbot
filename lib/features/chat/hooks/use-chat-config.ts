@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import type { ChatConfig, SetChatConfig } from "./hook-types";
 import {
   defaultModel,
+  defaultRagMaxResources,
+  defaultMinRagScore,
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
@@ -15,6 +17,8 @@ export const useChatConfig = ({
   topK,
 
   webSearchNumResults,
+  ragMaxResources,
+  minRagResourcesScore,
 }: Partial<ChatConfig>): {
   chatConfig: ChatConfig;
   setConfig: SetChatConfig;
@@ -28,6 +32,8 @@ export const useChatConfig = ({
       topK: topK ?? modelConfig.topK,
 
       webSearchNumResults: webSearchNumResults ?? defaultWebSearchNumResults,
+      ragMaxResources: ragMaxResources ?? defaultRagMaxResources,
+      minRagResourcesScore: minRagResourcesScore ?? defaultMinRagScore,
     };
   });
 

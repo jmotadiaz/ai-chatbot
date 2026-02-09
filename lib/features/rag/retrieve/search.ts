@@ -15,6 +15,8 @@ const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 interface RerankInput {
   query: string;
   chunks: SimilarChunks; // Acepta strings u objetos
+  topN?: number;
+  minScore?: number;
 }
 
 const rerank = providers.rerank();
@@ -33,26 +35,32 @@ const getUniqueChunks = (chunks: SimilarChunks) => {
 export async function rerankChunks({
   query,
   chunks,
+  topN = 10,
+  minScore = 0.8,
 }: RerankInput): Promise<SimilarChunks> {
   try {
     const results = await rerank({
       query: query,
       documents: chunks.map(({ content }) => content),
-      topN: 10,
+      topN,
     });
 
-    return chunksByScore(results, chunks);
+    return chunksByScore(results, chunks, minScore);
   } catch (error) {
     console.error("Error al reordenar documentos con Cohere:", error);
     return [];
   }
 }
 
-const chunksByScore = (results: RerankResult[], chunks: SimilarChunks) => {
+const chunksByScore = (
+  results: RerankResult[],
+  chunks: SimilarChunks,
+  minScore: number,
+) => {
   const rerankedChunks: SimilarChunk[] = [];
   for (const result of results) {
     const chunk = chunks[result.originalIndex];
-    if (result.score >= 0.8) {
+    if (result.score >= minScore) {
       rerankedChunks.push(chunk);
     }
   }
@@ -68,6 +76,8 @@ export interface RetrieveResourcesInput {
   userId: string;
   projectId?: string;
   limit?: number;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
 }
 
 export const retrieveResourceChunks = async ({
@@ -76,6 +86,8 @@ export const retrieveResourceChunks = async ({
   previousResources,
   userId,
   projectId,
+  ragMaxResources,
+  minRagResourcesScore,
 }: RetrieveResourcesInput): Promise<RagChunk[]> => {
   if (multiHopQueries.length === 0) return [];
 
@@ -109,6 +121,8 @@ export const retrieveResourceChunks = async ({
   const finalResults = await rerankChunks({
     query: queryRewriting,
     chunks,
+    topN: ragMaxResources,
+    minScore: minRagResourcesScore,
   });
 
   return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {

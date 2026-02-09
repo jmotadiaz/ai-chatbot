@@ -14,9 +14,17 @@ export interface RagFactoryArgs {
   messages: UIMessage[];
   userId: string;
   projectId?: string;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
 }
 
-export const ragFactory = ({ userId, projectId, messages }: RagFactoryArgs) =>
+export const ragFactory = ({
+  userId,
+  projectId,
+  messages,
+  ragMaxResources,
+  minRagResourcesScore,
+}: RagFactoryArgs) =>
   ({
     [RAG_TOOL]: tool({
       description: toolDescriptionPrompt,
@@ -52,6 +60,8 @@ export const ragFactory = ({ userId, projectId, messages }: RagFactoryArgs) =>
           previousResources: [...extractChunkIdsFromMessages(messages)],
           userId,
           projectId,
+          ragMaxResources,
+          minRagResourcesScore,
         });
 
         return chunks;

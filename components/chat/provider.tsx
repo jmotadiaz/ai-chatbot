@@ -4,6 +4,8 @@ import React, { createContext, useContext } from "react";
 import {
   CHAT_MODELS,
   defaultModel,
+  defaultRagMaxResources,
+  defaultMinRagScore,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/config";
 import {
@@ -19,6 +21,8 @@ const chatContext = createContext<UseChatResult>({
   topK: undefined,
 
   webSearchNumResults: defaultWebSearchNumResults,
+  ragMaxResources: defaultRagMaxResources,
+  minRagResourcesScore: defaultMinRagScore, // Fixed from defaultMinRagResourcesScore
   setConfig: () => {},
   input: "",
   files: [],

@@ -23,6 +23,8 @@ export const POST = withAuth(async (user, req) => {
     preventChatPersistence = false,
 
     webSearchNumResults = defaultWebSearchNumResults,
+    ragMaxResources,
+    minRagResourcesScore,
   }: {
     messages: ChatbotMessage[];
     selectedModel: chatModelId;
@@ -37,6 +39,8 @@ export const POST = withAuth(async (user, req) => {
     preventChatPersistence?: boolean;
 
     webSearchNumResults?: number;
+    ragMaxResources?: number;
+    minRagResourcesScore?: number;
   } = await req.json();
 
   const stream = await processChatResponse({
@@ -53,6 +57,8 @@ export const POST = withAuth(async (user, req) => {
     preventChatPersistence,
 
     webSearchNumResults,
+    ragMaxResources,
+    minRagResourcesScore,
     user: { id: user.id },
   });
 

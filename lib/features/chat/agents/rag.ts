@@ -15,6 +15,8 @@ interface CreateRagAgentParams {
   messages: ChatbotMessage[];
   userId: string;
   projectId?: string;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
 }
 
 export const createRagAgent = ({
@@ -22,6 +24,8 @@ export const createRagAgent = ({
   messages,
   userId,
   projectId,
+  ragMaxResources,
+  minRagResourcesScore,
 }: CreateRagAgentParams) => {
   const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
 
@@ -30,6 +34,8 @@ export const createRagAgent = ({
       messages,
       userId,
       projectId,
+      ragMaxResources,
+      minRagResourcesScore,
     }),
     ...urlContextFactory(),
   };

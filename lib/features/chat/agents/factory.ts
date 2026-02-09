@@ -16,6 +16,8 @@ export const createAgent = async ({
   systemPrompt,
   selectedModel,
   webSearchNumResults,
+  ragMaxResources,
+  minRagResourcesScore,
 }: {
   projectId?: string;
   agent: string;
@@ -25,6 +27,8 @@ export const createAgent = async ({
   userId: string;
   selectedModel: chatModelId;
   webSearchNumResults: number;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
 }) => {
   if (projectId) {
     const project = await getProjectById({
@@ -58,6 +62,8 @@ export const createAgent = async ({
       messages,
       userId,
       projectId,
+      ragMaxResources,
+      minRagResourcesScore,
     });
   }
 };

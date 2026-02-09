@@ -26,6 +26,9 @@ export const saveChat =
     defaultTopP,
     defaultTopK,
 
+    ragMaxResources,
+    minRagResourcesScore,
+
     webSearchNumResults,
     tools,
     projectId,
@@ -44,6 +47,9 @@ export const saveChat =
           defaultTemperature,
           defaultTopP,
           defaultTopK,
+
+          ragMaxResources,
+          minRagResourcesScore,
 
           webSearchNumResults,
           tools,
@@ -74,6 +80,8 @@ export const updateChat =
         | "defaultTopP"
         | "defaultTopK"
         | "webSearchNumResults"
+        | "ragMaxResources"
+        | "minRagResourcesScore"
         | "tools"
         | "projectId"
         | "pinned"

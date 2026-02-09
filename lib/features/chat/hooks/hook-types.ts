@@ -12,6 +12,8 @@ export interface ChatConfig {
   // Tool-specific configuration (only used if tool active)
 
   webSearchNumResults: number; // number of web search results
+  ragMaxResources: number;
+  minRagResourcesScore: number;
 }
 
 export interface SetChatConfig {
