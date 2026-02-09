@@ -61,7 +61,7 @@ export interface UseChatResult
   chatId?: string;
   title?: string;
   projectId?: string;
-  reload: (reloadConfig?: Partial<ChatConfig>) => void;
+  reload: (reloadConfig?: Partial<ChatConfig> & { agent?: Agent }) => void;
   sendEnabled: boolean;
   dataPart: DataUIPart<ChatbotDataPart> | undefined;
   setConfig: SetChatConfig;
@@ -160,6 +160,7 @@ export const useChat = ({
     body,
     setInput,
     setConfig,
+    setAgent,
   });
 
   return {
