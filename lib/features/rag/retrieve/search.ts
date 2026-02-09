@@ -38,7 +38,7 @@ export async function rerankChunks({
     const results = await rerank({
       query: query,
       documents: chunks.map(({ content }) => content),
-      topN: 20,
+      topN: 10,
     });
 
     return chunksByScore(results, chunks);
@@ -54,10 +54,6 @@ const chunksByScore = (results: RerankResult[], chunks: SimilarChunks) => {
     const chunk = chunks[result.originalIndex];
     if (result.score >= 0.8) {
       rerankedChunks.push(chunk);
-    } else if (result.score >= 0.4 && rerankedChunks.length < 4) {
-      rerankedChunks.push(chunk);
-    } else {
-      return rerankedChunks;
     }
   }
 

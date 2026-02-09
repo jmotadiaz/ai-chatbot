@@ -39,8 +39,8 @@ export const createRagAgent = ({
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(4),
-    instructions: RAG_AGENT_PROMPT,
+    stopWhen: stepCountIs(5),
+    instructions: RAG_AGENT_PROMPT(),
     activeTools: [RAG_TOOL],
     prepareStep: async ({ stepNumber }) => {
       if (isTestEnv)

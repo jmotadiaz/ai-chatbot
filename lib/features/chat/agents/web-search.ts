@@ -34,11 +34,11 @@ export const createWebSearchAgent = ({
 
   return new ToolLoopAgent({
     ...modelConfiguration,
-    instructions: WEB_SEARCH_AGENT_PROMPT,
+    instructions: WEB_SEARCH_AGENT_PROMPT(),
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(3),
+    stopWhen: stepCountIs(5),
     activeTools: [WEB_SEARCH_TOOL],
     prepareStep: async ({ stepNumber }) => {
       if (isTestEnv)
