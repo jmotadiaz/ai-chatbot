@@ -1,61 +1,52 @@
 import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import {
   chatHistoryPrompt,
-  defaultMetaPrompt,
+  continuationMetaPrompt,
+  initialMetaPrompt,
   metaPromptInputFormat,
   metaPromptOutputFormat,
   originalPrompt,
   systemMetaPrompt,
 } from "./prompts";
-import { RefinePromptInput, RefinePromptMode } from "./types";
+import { RefinePromptInput } from "./types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ragFactory } from "@/lib/features/rag/tool";
-import {
-  languageModelConfigurations,
-  LanguageModelKeys,
-} from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
 
 import { scapeXML } from "@/lib/utils/helpers";
-
-const modeConfig: Record<
-  RefinePromptMode,
-  { prompt: string; model: LanguageModelKeys }
-> = {
-  chat: { prompt: defaultMetaPrompt, model: "GPT OSS" },
-  project: { prompt: systemMetaPrompt, model: "Gemini 3 Flash" },
-};
 
 export async function refinePrompt({
   input,
   messages,
-  mode = "chat",
   projectId,
   userId,
+  mode = "chat",
 }: RefinePromptInput) {
-  const { prompt: metaPrompt, model } = modeConfig[mode];
+  if (mode === "project") {
+    return refineSystemPrompt({ input, projectId, userId });
+  }
 
-  const chatHistory = (await convertToModelMessages(messages || [])).reduce(
-    (acc, message) => {
-      const role = message.role === "user" ? "user" : "assistant";
-      const content =
-        typeof message.content === "string"
-          ? message.content.replace(/<[^>]+>/g, "").trim()
-          : "";
-      return `${acc}
-      <${role}>
-        ${scapeXML(content)}
-      </${role}>
-  `;
-    },
-    "",
-  );
+  return refineChatPrompt({ input, messages });
+}
 
-  const initialPrompt = chatHistory ? chatHistoryPrompt(chatHistory) : "";
+async function refineChatPrompt({
+  input,
+  messages,
+}: Pick<RefinePromptInput, "input" | "messages">) {
+  const modelMessages = await convertToModelMessages(messages || []);
+  const chatHistory = formatChatHistory(modelMessages);
 
-  let ragCalled = false;
+  // If we have history, use continuation prompt. Otherwise use initial prompt.
+  const isContinuation = modelMessages.length > 0;
+
+  const metaPrompt = isContinuation
+    ? continuationMetaPrompt
+    : initialMetaPrompt;
+
+  const initialPrompt = isContinuation ? chatHistoryPrompt(chatHistory) : "";
 
   const { text } = await generateText({
-    ...languageModelConfigurations(model),
+    ...languageModelConfigurations("GPT OSS"),
     system: `
       ${metaPrompt}
       ${metaPromptInputFormat}
@@ -63,6 +54,30 @@ export async function refinePrompt({
     `,
     prompt: `
       ${initialPrompt}
+      ${originalPrompt(input)}
+    `,
+  });
+
+  return text;
+}
+
+async function refineSystemPrompt({
+  input,
+  projectId,
+  userId,
+}: Pick<RefinePromptInput, "input" | "projectId" | "userId">) {
+  const metaPrompt = systemMetaPrompt;
+
+  let ragCalled = false;
+
+  const { text } = await generateText({
+    ...languageModelConfigurations("Gemini 3 Flash"),
+    system: `
+      ${metaPrompt}
+      ${metaPromptInputFormat}
+      ${metaPromptOutputFormat}
+    `,
+    prompt: `
       ${originalPrompt(input)}
     `,
     stopWhen: stepCountIs(3),
@@ -83,4 +98,21 @@ export async function refinePrompt({
   });
 
   return text;
+}
+
+function formatChatHistory(
+  messages: { role: string; content: unknown }[],
+): string {
+  return messages.reduce((acc, message) => {
+    const role = message.role === "user" ? "user" : "assistant";
+    const content =
+      typeof message.content === "string"
+        ? message.content.replace(/<[^>]+>/g, "").trim()
+        : "";
+    return `${acc}
+      <${role}>
+        ${scapeXML(content)}
+      </${role}>
+  `;
+  }, "");
 }
