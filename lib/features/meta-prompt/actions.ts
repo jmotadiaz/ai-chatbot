@@ -2,15 +2,12 @@ import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import {
   continuationMetaPrompt,
   initialMetaPrompt,
-  metaPromptOutputFormat,
   systemMetaPrompt,
 } from "./prompts";
 import { RefinePromptInput } from "./types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ragFactory } from "@/lib/features/rag/tool";
 import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
-
-import { scapeXML } from "@/lib/utils/helpers";
 
 export async function refinePrompt({
   input,
@@ -28,20 +25,30 @@ export async function refinePrompt({
 
 async function refineChatPrompt({
   input,
-  messages,
+  messages = [],
 }: Pick<RefinePromptInput, "input" | "messages">) {
-  const modelMessages = await convertToModelMessages(messages || []);
+  const modelMessages = await convertToModelMessages([
+    ...messages.map((message) => ({
+      ...message,
+      parts: message.parts.filter((part) => part.type === "text"),
+    })),
+    {
+      role: "user",
+      parts: [
+        {
+          type: "text",
+          text: input,
+        },
+      ],
+    },
+  ]);
 
-  const metaPrompt = isContinuation
-    ? continuationMetaPrompt
-    : initialMetaPrompt;
+  const metaPrompt =
+    messages.length > 0 ? continuationMetaPrompt : initialMetaPrompt;
 
   const { text } = await generateText({
     ...languageModelConfigurations("GPT OSS"),
-    system: `
-      ${metaPrompt}
-      ${metaPromptOutputFormat}
-    `,
+    system: metaPrompt,
     messages: modelMessages,
   });
 
@@ -53,16 +60,11 @@ async function refineSystemPrompt({
   projectId,
   userId,
 }: Pick<RefinePromptInput, "input" | "projectId" | "userId">) {
-  const metaPrompt = systemMetaPrompt;
-
   let ragCalled = false;
 
   const { text } = await generateText({
     ...languageModelConfigurations("Gemini 3 Flash"),
-    system: `
-      ${metaPrompt}
-      ${metaPromptOutputFormat}
-    `,
+    system: systemMetaPrompt,
     prompt: input,
     stopWhen: stepCountIs(3),
     tools: ragFactory({
