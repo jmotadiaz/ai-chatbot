@@ -1,11 +1,8 @@
 import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import {
-  chatHistoryPrompt,
   continuationMetaPrompt,
   initialMetaPrompt,
-  metaPromptInputFormat,
   metaPromptOutputFormat,
-  originalPrompt,
   systemMetaPrompt,
 } from "./prompts";
 import { RefinePromptInput } from "./types";
@@ -34,28 +31,18 @@ async function refineChatPrompt({
   messages,
 }: Pick<RefinePromptInput, "input" | "messages">) {
   const modelMessages = await convertToModelMessages(messages || []);
-  const chatHistory = formatChatHistory(modelMessages);
-
-  // If we have history, use continuation prompt. Otherwise use initial prompt.
-  const isContinuation = modelMessages.length > 0;
 
   const metaPrompt = isContinuation
     ? continuationMetaPrompt
     : initialMetaPrompt;
 
-  const initialPrompt = isContinuation ? chatHistoryPrompt(chatHistory) : "";
-
   const { text } = await generateText({
     ...languageModelConfigurations("GPT OSS"),
     system: `
       ${metaPrompt}
-      ${metaPromptInputFormat}
       ${metaPromptOutputFormat}
     `,
-    prompt: `
-      ${initialPrompt}
-      ${originalPrompt(input)}
-    `,
+    messages: modelMessages,
   });
 
   return text;
@@ -74,12 +61,9 @@ async function refineSystemPrompt({
     ...languageModelConfigurations("Gemini 3 Flash"),
     system: `
       ${metaPrompt}
-      ${metaPromptInputFormat}
       ${metaPromptOutputFormat}
     `,
-    prompt: `
-      ${originalPrompt(input)}
-    `,
+    prompt: input,
     stopWhen: stepCountIs(3),
     tools: ragFactory({
       projectId,
@@ -98,21 +82,4 @@ async function refineSystemPrompt({
   });
 
   return text;
-}
-
-function formatChatHistory(
-  messages: { role: string; content: unknown }[],
-): string {
-  return messages.reduce((acc, message) => {
-    const role = message.role === "user" ? "user" : "assistant";
-    const content =
-      typeof message.content === "string"
-        ? message.content.replace(/<[^>]+>/g, "").trim()
-        : "";
-    return `${acc}
-      <${role}>
-        ${scapeXML(content)}
-      </${role}>
-  `;
-  }, "");
 }
