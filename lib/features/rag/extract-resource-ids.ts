@@ -1,85 +1,50 @@
-import { InferUITools, StepResult, ToolSet, ToolUIPart, UIMessage } from "ai";
+import { ModelMessage } from "ai";
 import { RAG_TOOL } from "./constants";
 import type { RagChunk } from "./types";
-import type { RagTool } from "./tool";
-
-/**
- * Union type representing possible sources of RAG resource data
- */
-type RagSource = ToolUIPart<InferUITools<RagTool>> | StepResult<ToolSet>;
-
-function isToolUIPart(
-  source: RagSource,
-): source is ToolUIPart<InferUITools<RagTool>> {
-  return "output" in source && !("toolResults" in source);
-}
-
-function isRagMessagePart(
-  part: UIMessage["parts"][number],
-): part is ToolUIPart<InferUITools<RagTool>> {
-  return part.type === "tool-rag";
-}
 
 /**
  * Extracts resource IDs from a RagSource (unified extraction logic).
- * Handles both ToolUIPart (from messages) and StepResult (from prepareStep).
+ * Handles both ModelMessage (from messages) and StepResult (from prepareStep).
  */
-function extractChunkIdsFromSource(source: RagSource): Set<string> {
-  if (isToolUIPart(source)) {
-    // Handle ToolUIPart from messages
-    return (
-      source.output?.reduce((acc, resource) => {
-        acc.add(resource.id);
-        return acc;
-      }, new Set<string>()) ?? new Set<string>()
-    );
-  }
-
-  // Handle StepResult from prepareStep
-  if (source.toolResults) {
-    const chunkIds = new Set<string>();
-    for (const toolResult of source.toolResults) {
-      if (toolResult.toolName === RAG_TOOL && toolResult.output) {
-        const output = toolResult.output as RagChunk[];
-        for (const chunk of output) {
-          chunkIds.add(chunk.id);
+function extractChunkIdsFromSource(message: ModelMessage): Set<string> {
+  // Handle ModelMessage (ToolMessage)
+  const chunkIds = new Set<string>();
+  if (message.role === "tool" && Array.isArray(message.content)) {
+    for (const part of message.content) {
+      if (part.type === "tool-result" && part.toolName === RAG_TOOL) {
+        const output = part.output;
+        // Handle ToolResultOutput ({ type: 'json', value: ... })
+        if (
+          output &&
+          typeof output === "object" &&
+          "type" in output &&
+          output.type === "json" &&
+          "value" in output
+        ) {
+          const chunks = output.value as RagChunk[];
+          for (const chunk of chunks) {
+            chunkIds.add(chunk.id);
+          }
         }
       }
     }
-    return chunkIds;
   }
 
-  return new Set<string>();
+  return chunkIds;
 }
 
 /**
  * Extracts resource IDs from an array of RagSources.
- * Accepts mixed arrays of ToolUIPart and StepResult.
+ * Accepts mixed arrays of ModelMessage and StepResult.
  */
-export function extractChunkIds(sources: RagSource[]): Set<string> {
-  return sources.reduce((acc, source) => {
-    for (const id of extractChunkIdsFromSource(source)) {
+export function extractChunkIdsFromMessages(
+  messages: ModelMessage[],
+): Set<string> {
+  return messages.reduce((acc, message) => {
+    const ids = extractChunkIdsFromSource(message);
+    for (const id of ids) {
       acc.add(id);
     }
     return acc;
   }, new Set<string>());
-}
-
-/**
- * Extracts resource IDs from UIMessages containing RAG tool parts.
- */
-export function extractChunkIdsFromMessages(
-  messages: UIMessage[],
-): Set<string> {
-  const ragParts: ToolUIPart<InferUITools<RagTool>>[] = [];
-
-  for (const message of messages) {
-    for (const part of message.parts) {
-      if (isRagMessagePart(part)) {
-        ragParts.push(part);
-      }
-    }
-  }
-
-  return extractChunkIds(ragParts);
 }

@@ -157,7 +157,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
                   value={minRagResourcesScore}
                   min={0}
                   max={1}
-                  step={0.05}
+                  step={0.01}
                   onChange={(value) =>
                     setConfig({ minRagResourcesScore: value })
                   }

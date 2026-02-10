@@ -1,4 +1,4 @@
-import { tool, ToolSet, UIMessage } from "ai";
+import { tool, ToolSet } from "ai";
 import { z } from "zod";
 import { RagChunk } from "./types";
 import { retrieveResourceChunks } from "./retrieve/search";
@@ -11,7 +11,6 @@ import {
 } from "@/lib/features/rag/prompts";
 
 export interface RagFactoryArgs {
-  messages: UIMessage[];
   userId: string;
   projectId?: string;
   ragMaxResources?: number;
@@ -21,7 +20,6 @@ export interface RagFactoryArgs {
 export const ragFactory = ({
   userId,
   projectId,
-  messages,
   ragMaxResources,
   minRagResourcesScore,
 }: RagFactoryArgs) =>
@@ -47,10 +45,10 @@ export const ragFactory = ({
             .describe("The URL of the resource."),
         }),
       ),
-      execute: async ({
-        multiHopQueries,
-        queryRewriting,
-      }): Promise<Array<RagChunk>> => {
+      execute: async (
+        { multiHopQueries, queryRewriting },
+        { messages },
+      ): Promise<Array<RagChunk>> => {
         console.log("RAG tool called with multiHopQueries:", multiHopQueries);
         console.log("RAG tool called with queryRewriting:", queryRewriting);
 

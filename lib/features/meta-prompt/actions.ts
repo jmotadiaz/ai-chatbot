@@ -67,7 +67,6 @@ export async function refinePrompt({
     `,
     stopWhen: stepCountIs(3),
     tools: ragFactory({
-      messages: [],
       projectId,
       userId,
     }),

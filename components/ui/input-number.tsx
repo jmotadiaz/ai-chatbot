@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/helpers";
@@ -78,6 +78,10 @@ export function InputNumber({
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = parseFloat(e.target.value);
     if (
@@ -111,6 +115,7 @@ export function InputNumber({
         onMouseDown={decrement}
         onTouchEnd={clearTimers}
         onMouseUp={clearTimers}
+        onMouseLeave={clearTimers}
         disabled={disabled}
         variant="secondary"
         aria-label="Decrease value"
@@ -137,6 +142,7 @@ export function InputNumber({
         onMouseDown={increment}
         onTouchEnd={clearTimers}
         onMouseUp={clearTimers}
+        onMouseLeave={clearTimers}
         disabled={disabled}
         variant="secondary"
         aria-label="Increase value"

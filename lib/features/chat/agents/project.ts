@@ -32,7 +32,6 @@ export const createProjectAgent = ({
 
   const toolSet = {
     ...ragFactory({
-      messages,
       userId,
       projectId: project.id,
     }),

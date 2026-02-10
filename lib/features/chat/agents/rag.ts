@@ -31,7 +31,6 @@ export const createRagAgent = ({
 
   const toolSet = {
     ...ragFactory({
-      messages,
       userId,
       projectId,
       ragMaxResources,
