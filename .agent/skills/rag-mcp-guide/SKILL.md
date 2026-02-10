@@ -1,13 +1,6 @@
 ---
 name: rag-mcp-guide
-description: "Instructions for using the rag mcp, including when to use it and how to formulate effective multi-hop queries."
-version: 1.1.0
-author: AI Chatbot Team
-created: 2026-02-05
-updated: 2026-02-05
-category: documentation
-tags: [rag, retrieval, query-generation]
-risk: safe
+description: Instructions for using the rag mcp, including when to use it and how to formulate the input parameters.
 ---
 
 # RAG Retrieval Tool Guide
@@ -62,5 +55,4 @@ This parameter is used for re-ranking the results to ensure the most semanticall
 ## Best Practices
 
 1.  **Be Exhaustive but Precise**: Generate enough queries (3-5) to cover different angles, but avoid generic queries like "code" or "system" which return too much noise.
-2.  **Follow the Content**: If you know the user has uploaded specific types of documents (e.g., "API Docs", "Meeting Notes"), tailor your queries to match the expected terminology in those documents.
-3.  **Handling "No Results"**: If a search returns no useful information, consider that the information might not exist in the uploaded resources, or try a broader set of queries in a follow-up turn.
+2.  **Handling "No Results"**: If a search returns no useful information, consider that the information might not exist in the uploaded resources.

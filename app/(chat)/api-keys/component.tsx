@@ -7,7 +7,7 @@ import {
   listApiKeys,
   createApiKey,
   revokeApiKey,
-} from "@/lib/features/api-keys/actions";
+} from "@/lib/features/auth/api-keys/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

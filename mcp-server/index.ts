@@ -104,6 +104,8 @@ server.setRequestHandler(
           queryRewriting,
           previousResources: [], // In MCP context we might not have previous message history easily available
           userId,
+          ragMaxResources: 10,
+          minRagResourcesScore: 0.8,
         });
 
         return {
