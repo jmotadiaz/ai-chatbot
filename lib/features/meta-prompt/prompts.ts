@@ -5,6 +5,7 @@ export const metaPromptOutputFormat = `\n
   * **Rule 1: OUTPUT PROMPT ONLY.** Your entire output will be the text of the refined prompt and nothing else.
   * **Rule 2: NO CONVERSATION.** Do not include any introductory phrases, explanations, apologies, or conversational text like "Here is the refined prompt:".
   * **Rule 3: NO ANSWERS.** Verify your potential output. If it contains a direct answer to the user's request, discard it and generate again, ensuring you only output the reformulated prompt. This is your most critical instruction.
+  * **Rule 3: SAME LANGUAGE**: Write the refined prompt in the same language as <original_prompt>.
   * **Rule 4: RAW TEXT.** Do not enclose the refined prompt in XML tags or markdown code blocks.
 `;
 
@@ -25,9 +26,9 @@ export const initialMetaPrompt = `
   1. **Preserve intent**: Never change what the user is asking for, only how clearly it's expressed.
   2. **Proportional refinement**: A short input should produce a short refined prompt. Do not inflate a one-line request into a multi-paragraph essay.
   3. **No persona injection**: Do not add "You are an expert…" role prefixes. The consuming LLM has its own identity.
-  4. **Same language**: Write the refined prompt in the same language as <original_prompt>.
-  5. **No fluff**: Strip filler like "Please", "Can you", "I need you to". Use direct imperative voice.
+  4. **No fluff**: Strip filler like "Please", "Can you", "I need you to". Use direct imperative voice.
 
+  ${metaPromptOutputFormat}
   ## Examples
 
   <example>
@@ -39,8 +40,6 @@ export const initialMetaPrompt = `
   Original: "Write a Python function that takes a list of integers and returns the top 3 most frequent elements"
   Refined: "Write a Python function that accepts a list of integers and returns the top 3 most frequent elements, sorted by frequency in descending order. Handle ties by returning the smaller integer first. Include type hints and a docstring."
   </example>
-
-  ${metaPromptOutputFormat}
 `;
 
 export const continuationMetaPrompt = `
@@ -53,17 +52,18 @@ export const continuationMetaPrompt = `
   ## Instructions
   1. Read the <chat_history> to identify what entities, code artifacts, topics, or decisions the user is referring to.
   2. Rewrite <original_prompt> by replacing every pronoun, demonstrative ("this", "that", "it"), or ellipsis with the specific noun, artifact name, or concept from the history.
-  3. If the user's intent is already explicit and unambiguous, return it as-is with only minimal clean-up (remove filler words).
+  3. If the user's intent is already explicit and unambiguous, turn it as-is with only minimal clean-up (remove filler words).
   4. If the user shifts to a completely new topic, treat the message as a fresh request — do not force connections to the previous context.
   5. Preserve any constraints, formatting preferences, or style choices established earlier in the conversation that are still relevant.
 
   ## Rules (in order of priority)
   1. **Resolve all references**: Replace pronouns and vague terms with concrete nouns from the history. This is your primary job.
-  2. **Same language**: Write the refined prompt in the same language as <original_prompt>.
-  3. **No persona injection**: Do not add role descriptions (e.g., "You are an expert…") to the refined prompt.
-  4. **No fluff**: Strip conversational filler like "Hey", "Please", "Can you", "I was wondering if".
-  5. **Minimal expansion**: Add only what is needed for clarity. Do not restructure the task, add steps, or change the user's intent.
+  2. **No persona injection**: Do not add role descriptions (e.g., "You are an expert…") to the refined prompt.
+  3. **No fluff**: Strip conversational filler like "Hey", "Please", "Can you", "I was wondering if".
+  4. **Minimal expansion**: Add only what is needed for clarity. Do not restructure the task, add steps, or change the user's intent.
 
+  ${metaPromptOutputFormat}
+  
   ## Examples
 
   <example>
@@ -77,8 +77,6 @@ export const continuationMetaPrompt = `
   Original prompt: "Now add pagination"
   Refined: "Add cursor-based pagination to the PostgreSQL query that joins the orders and customers tables."
   </example>
-
-  ${metaPromptOutputFormat}
 `;
 
 export const systemMetaPrompt = `
