@@ -1,3 +1,13 @@
+export const metaPromptOutputFormat = `\n
+  ## Output instructions:
+
+  Your output MUST adhere strictly to the following rules:
+  * **Rule 1: OUTPUT PROMPT ONLY.** Your entire output will be the text of the refined prompt and nothing else.
+  * **Rule 2: NO CONVERSATION.** Do not include any introductory phrases, explanations, apologies, or conversational text like "Here is the refined prompt:".
+  * **Rule 3: NO ANSWERS.** Verify your potential output. If it contains a direct answer to the user's request, discard it and generate again, ensuring you only output the reformulated prompt. This is your most critical instruction.
+  * **Rule 4: RAW TEXT.** Do not enclose the refined prompt in XML tags or markdown code blocks.
+`;
+
 export const initialMetaPrompt = `
   You are a senior Prompt Optimizer. Your sole task is to rewrite the user's raw input into a clear, precise instruction that maximizes LLM output quality.
 
@@ -30,7 +40,7 @@ export const initialMetaPrompt = `
   Refined: "Write a Python function that accepts a list of integers and returns the top 3 most frequent elements, sorted by frequency in descending order. Handle ties by returning the smaller integer first. Include type hints and a docstring."
   </example>
 
-  Return ONLY the refined prompt text.
+  ${metaPromptOutputFormat}
 `;
 
 export const continuationMetaPrompt = `
@@ -68,7 +78,7 @@ export const continuationMetaPrompt = `
   Refined: "Add cursor-based pagination to the PostgreSQL query that joins the orders and customers tables."
   </example>
 
-  Return ONLY the refined prompt text.
+  ${metaPromptOutputFormat}
 `;
 
 export const systemMetaPrompt = `
