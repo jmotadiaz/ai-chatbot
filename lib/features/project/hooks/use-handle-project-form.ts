@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
-import { createProject, updateProject } from "@/lib/features/project/actions";
+import { updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
 import {
   CHAT_MODELS,
@@ -127,22 +127,22 @@ export const useHandleProjectForm = ({
       return;
     }
 
+    if (!project) {
+      toast.error("Project not found");
+      return;
+    }
+
     setIsCreating(true);
     try {
       // Logic to automatically handle RAG tool based on resources
       let finalTools = [...tools];
-      if (project) {
-        const { items } = await getProjectResourcesAction({
-          projectId: project.id,
-          limit: 1,
-        });
-        if (items.length > 0) {
-          if (!finalTools.includes(RAG_TOOL)) finalTools.push(RAG_TOOL);
-        } else {
-          finalTools = finalTools.filter((t) => t !== RAG_TOOL);
-        }
+      const { items } = await getProjectResourcesAction({
+        projectId: project.id,
+        limit: 1,
+      });
+      if (items.length > 0) {
+        if (!finalTools.includes(RAG_TOOL)) finalTools.push(RAG_TOOL);
       } else {
-        // New projects start with no resources, so RAG tool is disabled
         finalTools = finalTools.filter((t) => t !== RAG_TOOL);
       }
 
@@ -160,22 +160,15 @@ export const useHandleProjectForm = ({
         isActive: true, // Always set active on save
       };
 
-      if (project) {
-        // Even in create mode, we update the existing inactive project
-        await updateProject(project.id, projectData);
-        if (mode === "create") {
-          toast.success("Project created successfully!");
-        } else {
-          toast.success("Project updated successfully!");
-        }
-        router.push(`/project/${project.id}/chat`);
-      } else {
-        // Check: this branch might be unreachable now if we always pass a project for 'create'
-        // But keeping it for safety or if logic used without project ID
-        const newProject = await createProject(projectData);
+      // Even in create mode, we update the existing inactive project
+      await updateProject(project.id, projectData);
+      if (mode === "create") {
         toast.success("Project created successfully!");
-        router.push(`/project/${newProject.id}/chat`);
+      } else {
+        toast.success("Project updated successfully!");
       }
+      router.refresh();
+      router.push(`/project/${project.id}/chat`);
     } catch (error) {
       console.error("Error creating project:", error);
       toast.error(

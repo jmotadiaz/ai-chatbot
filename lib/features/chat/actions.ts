@@ -15,11 +15,9 @@ export async function deleteChat(id: string) {
   if (!session?.user) {
     return;
   }
-
   try {
     await transaction(deleteDBChat({ id, userId: session.user.id }));
-    revalidatePath("/");
-    revalidatePath("/chat/history");
+    revalidatePath("/", "layout");
   } catch (error) {
     console.error("Failed to delete chat:", error);
   }
@@ -41,8 +39,7 @@ export async function togglePinChat(id: string) {
         { pinned: !dbChat.pinned, updatedAt: dbChat.updatedAt },
       ),
     );
-    revalidatePath("/");
-    revalidatePath("/chat/history");
+    revalidatePath("/", "layout");
   } catch (error) {
     console.error("Failed to toggle pin chat:", error);
   }

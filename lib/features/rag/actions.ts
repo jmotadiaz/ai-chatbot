@@ -172,11 +172,7 @@ export async function uploadResources(
       }
     }
 
-    revalidatePath("/rag");
-    if (projectId) {
-      revalidatePath(`/project/${projectId}/edit`);
-      revalidatePath(`/project/${projectId}/add`);
-    }
+    revalidatePath("/", "layout");
 
     console.log(`Completed: ${result.resourcesCreated} resources`);
 
@@ -215,7 +211,7 @@ export async function deleteResource(id: string): Promise<ProcessResult> {
     if (result.length === 0) {
       return { success: false, error: "Resource not found" };
     }
-    revalidatePath("/rag");
+    revalidatePath("/", "layout");
 
     return { success: true };
   } catch (error) {
@@ -247,7 +243,7 @@ export async function deleteSelectedResources(
     if (result.length === 0) {
       return { success: false, error: "No resources found to delete" };
     }
-    revalidatePath("/rag");
+    revalidatePath("/", "layout");
 
     return { success: true };
   } catch (error) {
@@ -280,7 +276,7 @@ export async function deleteResourcesByFilter(
       return { success: false, error: "No resources found to delete" };
     }
 
-    revalidatePath("/rag");
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
     console.error("Error in deleteResourcesByFilter:", error);
@@ -309,7 +305,7 @@ export async function deleteAllResources(): Promise<ProcessResult> {
       return { success: false, error: "No resources found to delete" };
     }
 
-    revalidatePath("/rag");
+    revalidatePath("/", "layout");
 
     return { success: true };
   } catch (error) {
@@ -374,8 +370,7 @@ export async function addResourceToProjectAction(
       }),
     );
 
-    revalidatePath(`/project/${projectId}/edit`);
-    revalidatePath(`/project/${projectId}/add`);
+    revalidatePath("/", "layout");
 
     return { success: true };
   } catch (error) {
@@ -420,8 +415,7 @@ export async function removeResourceFromProjectAction(
 
       console.log("Resource deleted successfully");
 
-      revalidatePath(`/project/${validatedProjectId}/edit`);
-      revalidatePath(`/project/${validatedProjectId}/add`);
+      revalidatePath("/", "layout");
 
       return { success: true };
     }
@@ -438,8 +432,7 @@ export async function removeResourceFromProjectAction(
       return { success: false, error: "Resource not found in project" };
     }
 
-    revalidatePath(`/project/${projectId}/edit`);
-    revalidatePath(`/project/${projectId}/add`);
+    revalidatePath("/", "layout");
 
     return { success: true };
   } catch (error) {

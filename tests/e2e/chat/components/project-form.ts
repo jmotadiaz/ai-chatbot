@@ -1,4 +1,4 @@
-import { Locator } from "@playwright/test";
+import { Locator, expect } from "@playwright/test";
 import { NumericSelectorComponent } from "./numeric-selector";
 
 /**
@@ -96,7 +96,8 @@ export class ProjectFormComponent {
   }
 
   async save() {
-    await this.saveButton.scrollIntoViewIfNeeded();
-    await this.saveButton.click({ force: true });
+    await this.saveButton.waitFor({ state: "visible" });
+    await expect(this.saveButton).toBeEnabled();
+    await this.saveButton.evaluate((e) => (e as HTMLElement).click());
   }
 }

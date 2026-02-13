@@ -32,15 +32,15 @@ test.describe("Project Management", () => {
 
     await projectPage.openSidebar();
 
-    // Check for new title first
-    await expect
-      .soft(projectPage.sidebar.getProjectItemByTitle(newTitle))
-      .toBeVisible();
+    // Wait for the sidebar to reflect the updated project name.
+    // After router.push + router.refresh, the layout's server components re-fetch.
+    await expect(
+      projectPage.sidebar.getProjectItemByTitle(newTitle),
+    ).toBeVisible({ timeout: 10_000 });
 
-    // Ensure old title is gone
-    await expect
-      .soft(projectPage.sidebar.getProjectItemByTitle("Alpha Project"))
-      .not.toBeVisible();
+    await expect(
+      projectPage.sidebar.getProjectItemByTitle("Alpha Project"),
+    ).not.toBeVisible();
   });
 
   test("2.2 Delete Project", async ({ db, page }) => {

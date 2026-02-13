@@ -62,9 +62,7 @@ export async function persistHubChatFromTranscript({
     return chat.id;
   });
 
-  revalidatePath("/");
-  revalidatePath("/chat/history");
-  revalidatePath("/chat/hub");
+  revalidatePath("/", "layout");
 
   return { chatId: persistedChatId };
 }
