@@ -1,6 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
+import { revalidatePath } from "next/cache";
 
 import type { ModelMessage } from "ai";
 import {
@@ -234,6 +235,7 @@ export async function processChatResponse({
                     },
                   });
                 }
+                revalidatePath("/", "layout");
               }
             } catch (error) {
               console.error("Error saving message:", error);

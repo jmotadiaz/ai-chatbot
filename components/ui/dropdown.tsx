@@ -40,12 +40,12 @@ export interface DropdownPopupProps extends Omit<
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
   // Static variants
-  "top-right": "absolute w-auto rounded-lg pb-0 bottom-full left-0 mb-2",
-  "top-left": "absolute w-auto rounded-lg pb-0 bottom-full right-0 mb-2",
-  "bottom-right": "absolute w-auto rounded-lg pb-0 top-full right-0 mt-2",
-  "bottom-left": "absolute w-auto rounded-lg pb-0 top-full left-0 mt-2",
+  "top-right": "absolute w-auto rounded-lg bottom-full left-0 mb-2",
+  "top-left": "absolute w-auto rounded-lg bottom-full right-0 mb-2",
+  "bottom-left": "absolute w-auto rounded-lg top-full right-0 mt-2",
+  "bottom-right": "absolute w-auto rounded-lg top-full left-0 mt-2",
   center:
-    "fixed w-auto rounded-lg pb-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+    "fixed w-auto rounded-lg top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
 
   // Responsive variants
   "responsive-top-right":
