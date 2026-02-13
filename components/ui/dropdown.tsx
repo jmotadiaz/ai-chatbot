@@ -57,7 +57,7 @@ const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
   "responsive-bottom-right":
     "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:pb-0 lg:absolute top-auto lg:top-full lg:bottom-auto lg:mt-2",
   "responsive-center":
-    "fixed w-full lg:w-auto left-0 bottom-0 rounded-t-lg lg:rounded-lg pb-4 lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
+    "fixed w-full lg:w-auto left-0 bottom-0 lg:bottom-auto rounded-t-lg lg:rounded-lg pb-4 lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2",
 };
 
 const DropdownPopup: React.FC<DropdownPopupProps> = ({

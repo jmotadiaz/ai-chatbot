@@ -21,6 +21,8 @@ import {
   mergeReasoningParts,
   destructuringMessageParts,
 } from "@/lib/features/chat/utils";
+import { RagSourceMessagePart } from "@/components/chat/rag-source";
+import type { RagChunk } from "@/lib/features/rag/types";
 const Reasoning = dynamic(
   () => import("@/components/chat/reasoning").then((m) => m.Reasoning),
   { ssr: false },
@@ -170,7 +172,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
   message,
   showReload,
 }) => {
-  const { sourceParts, reasoningParts } = useMemo(
+  const { sourceParts, reasoningParts, ragSourceParts } = useMemo(
     () => destructuringMessageParts(message),
     [message],
   );
@@ -246,6 +248,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
           <AssistantMessageActions
             showReload={showReload}
             sourceParts={sourceParts}
+            ragSourceParts={ragSourceParts}
             routingMetadata={message.metadata.autoModel}
           />
         )}
@@ -257,13 +260,14 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
 const AssistantMessageActions: React.FC<{
   showReload?: boolean;
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
+  ragSourceParts: RagChunk[][];
   routingMetadata?: ModelRoutingMetadata;
-}> = ({ showReload, sourceParts, routingMetadata }) => {
+}> = ({ showReload, sourceParts, ragSourceParts, routingMetadata }) => {
   const [activeSection, setActiveSection] = useState<
-    "router" | "sources" | null
+    "router" | "sources" | "rag-sources" | null
   >(null);
 
-  const toggleSection = (section: "router" | "sources") => {
+  const toggleSection = (section: "router" | "sources" | "rag-sources") => {
     setActiveSection((prev) => (prev === section ? null : section));
   };
 
@@ -290,6 +294,22 @@ const AssistantMessageActions: React.FC<{
             />
           </>
         )}
+        {ragSourceParts.length > 0 && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <div
+              className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+              onClick={() => toggleSection("rag-sources")}
+            >
+              References
+              <ChevronDownIcon
+                className={cn("h-4 w-4 transition-transform duration-200", {
+                  "rotate-180": activeSection === "rag-sources",
+                })}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-col">
@@ -304,6 +324,16 @@ const AssistantMessageActions: React.FC<{
             sourceParts={sourceParts}
             isExpanded={activeSection === "sources"}
           />
+        )}
+        {ragSourceParts.length > 0 && (
+          <div
+            className={cn("overflow-hidden transition-all", {
+              "h-0": activeSection !== "rag-sources",
+              "h-auto": activeSection === "rag-sources",
+            })}
+          >
+            <RagSourceMessagePart ragSourceParts={ragSourceParts} />
+          </div>
         )}
       </div>
     </div>

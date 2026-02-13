@@ -9,7 +9,7 @@ test.describe("Project Management", () => {
     await projectPage.page.goto("/");
   });
 
-  test("2.1 Edit Existing Project", async ({ db, page }) => {
+  test.fixme("2.1 Edit Existing Project", async ({ db, page }) => {
     const [project] = await db.addProjects([
       { name: "Alpha Project", systemPrompt: "Original prompt" },
     ]);

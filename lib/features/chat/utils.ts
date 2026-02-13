@@ -144,30 +144,8 @@ export interface DestructuringMessagePartsReturn {
   fileParts: FileUIPart[];
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
   toolParts: Array<ToolUIPart>;
+  ragSourceParts: RagChunk[][];
 }
-
-const ragChunksToSourceParts = (
-  chunks: RagChunk[] = [],
-  toolCallId: string,
-): Array<SourceUrlUIPart | SourceDocumentUIPart> => {
-  const uniqueChunks = new Map<string, RagChunk>();
-  for (const chunk of chunks) {
-    uniqueChunks.set(chunk.resourceUrl || chunk.resourceTitle, chunk);
-  }
-
-  return Array.from(uniqueChunks.values()).map((chunk, idx) => {
-    return {
-      sourceId: `rag-source-${toolCallId}-${idx}`,
-      title: chunk.resourceTitle,
-      ...(chunk.resourceUrl
-        ? { type: "source-url", url: chunk.resourceUrl }
-        : {
-            type: "source-document",
-            mediaType: "text/plain",
-          }),
-    };
-  });
-};
 
 const webResultToSourceParts = (
   results: Array<{ title: string; url: string }> = [],
@@ -204,9 +182,10 @@ export const destructuringMessageParts = (
           acc.fileParts.push(part);
           break;
         case "tool-rag":
-          acc.sourceParts.push(
-            ...ragChunksToSourceParts(part.output, part.toolCallId),
-          );
+          // Separate RAG sources to be handled by specific UI
+          if (part.output) {
+            acc.ragSourceParts.push(part.output);
+          }
           acc.toolParts.push(part);
           break;
         case "tool-webSearch":
@@ -238,6 +217,7 @@ export const destructuringMessageParts = (
       sourceParts: [],
       toolParts: [],
       fileParts: [],
+      ragSourceParts: [],
     },
   );
 };
