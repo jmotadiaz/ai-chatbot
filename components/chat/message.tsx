@@ -268,44 +268,43 @@ const AssistantMessageActions: React.FC<{
   };
 
   return (
-    <div className="overflow-x-auto scrollbar-none">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-row items-center gap-3">
-          {showReload && (
-            <>
-              <ChatReload />
-              <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
-            </>
-          )}
-          {routingMetadata && (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-row items-center gap-3">
+        {showReload && <ChatReload />}
+        {routingMetadata && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
             <RouterDetailsTrigger
               isExpanded={activeSection === "router"}
               onToggle={() => toggleSection("router")}
             />
-          )}
-          {sourceParts.length > 0 && (
+          </>
+        )}
+        {sourceParts.length > 0 && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
             <SourceMessagePartTrigger
               count={sourceParts.length}
               isExpanded={activeSection === "sources"}
               onToggle={() => toggleSection("sources")}
             />
-          )}
-        </div>
+          </>
+        )}
+      </div>
 
-        <div className="flex flex-col">
-          {routingMetadata && (
-            <RouterDetailsContent
-              metadata={routingMetadata}
-              isExpanded={activeSection === "router"}
-            />
-          )}
-          {sourceParts.length > 0 && (
-            <SourceMessagePartContent
-              sourceParts={sourceParts}
-              isExpanded={activeSection === "sources"}
-            />
-          )}
-        </div>
+      <div className="flex flex-col">
+        {routingMetadata && (
+          <RouterDetailsContent
+            metadata={routingMetadata}
+            isExpanded={activeSection === "router"}
+          />
+        )}
+        {sourceParts.length > 0 && (
+          <SourceMessagePartContent
+            sourceParts={sourceParts}
+            isExpanded={activeSection === "sources"}
+          />
+        )}
       </div>
     </div>
   );

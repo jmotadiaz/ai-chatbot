@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  FileSearch,
-  ImageIcon,
-  Plus,
-  Shield,
-  Wrench,
-  Brain,
-} from "lucide-react";
+import { FileSearch, ImageIcon, Plus, Shield, Brain } from "lucide-react";
 import { useChatContext } from "@/components/chat/provider";
 import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
@@ -220,14 +213,6 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
                 <div className="font-mono font-medium mx-2">|</div>
                 <div>
                   <Brain size={16} />
-                </div>
-              </>
-            )}
-            {config.toolCalling && (
-              <>
-                <div className="font-mono font-medium mx-2">|</div>
-                <div>
-                  <Wrench size={16} />
                 </div>
               </>
             )}

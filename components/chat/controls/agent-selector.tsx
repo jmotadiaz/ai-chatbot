@@ -63,34 +63,15 @@ export const AgentSelector = ({
           )}
         />
       </button>
-      <Select.Dropdown
-        {...getSelectContentProps()}
-        variant={variant}
-        className="lg:w-[220px]"
-      >
+      <Select.Dropdown {...getSelectContentProps()} variant={variant}>
         {Object.entries(AGENT_LABELS).map(([key, label]) => {
           const agentKey = key as Agent;
           const Icon = AGENT_ICONS[agentKey];
           return (
             <Select.Item key={agentKey} {...getSelectItemProps(agentKey)}>
-              <div className="flex items-center gap-3 p-2">
-                <Icon
-                  size={16}
-                  className={cn(
-                    "text-muted-foreground",
-                    value === agentKey && "text-foreground",
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-sm",
-                    value === agentKey
-                      ? "font-medium"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {label}
-                </span>
+              <div className="flex flex-nowrap items-center gap-2 p-2">
+                <Icon size={16} />
+                <span className={cn("text-sm whitespace-nowrap")}>{label}</span>
               </div>
             </Select.Item>
           );

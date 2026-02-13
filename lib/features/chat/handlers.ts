@@ -18,7 +18,6 @@ import {
   chatModelKeys,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/config";
-import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import {
   deleteMessageById,
   saveChat,
@@ -78,7 +77,7 @@ export async function processChatResponse({
   topP,
   topK,
   chatId,
-  systemPrompt = defaultSystemPrompt,
+  systemPrompt,
   messageId,
   projectId,
   preventChatPersistence = false,

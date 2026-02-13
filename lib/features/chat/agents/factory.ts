@@ -21,7 +21,7 @@ export const createAgent = async ({
 }: {
   projectId?: string;
   agent: string;
-  systemPrompt: string;
+  systemPrompt?: string;
   modelConfiguration: ModelConfiguration;
   messages: ChatbotMessage[];
   userId: string;

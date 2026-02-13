@@ -180,9 +180,7 @@ function SelectItemComponent<T extends string>({
       }}
       {...props}
     >
-      <span className="flex items-center justify-between w-full">
-        {children}
-      </span>
+      <div className="flex items-center w-full">{children}</div>
     </div>
   );
 }

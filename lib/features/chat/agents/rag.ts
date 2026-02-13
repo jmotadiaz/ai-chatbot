@@ -9,6 +9,7 @@ import {
   urlContextStep,
 } from "@/lib/features/chat/agents/url-context-step";
 import { RAG_AGENT_PROMPT } from "@/lib/features/chat/agents/prompts";
+import { IS_TEST_ENV } from "@/lib/features/chat/agents/utils";
 
 interface CreateRagAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -27,8 +28,6 @@ export const createRagAgent = ({
   ragMaxResources,
   minRagResourcesScore,
 }: CreateRagAgentParams) => {
-  const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
-
   const toolSet = {
     ...ragFactory({
       userId,
@@ -45,10 +44,10 @@ export const createRagAgent = ({
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(5),
-    instructions: RAG_AGENT_PROMPT(),
+    instructions: RAG_AGENT_PROMPT,
     activeTools: [RAG_TOOL],
     prepareStep: async ({ stepNumber }) => {
-      if (isTestEnv)
+      if (IS_TEST_ENV)
         return {
           activeTools: [],
         };

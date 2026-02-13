@@ -12,3 +12,5 @@ export const hasToolCallSteps = <T extends ToolSet>({
     step.toolCalls.some((toolCall) => toolCall.toolName === toolName),
   );
 };
+
+export const IS_TEST_ENV = !!(process.env.NEXT_PUBLIC_ENV === "test");

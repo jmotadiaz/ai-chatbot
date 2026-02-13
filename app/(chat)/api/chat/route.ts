@@ -1,5 +1,4 @@
 import { createUIMessageStreamResponse } from "ai";
-import { defaultSystemPrompt } from "@/lib/features/chat/prompts";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
@@ -16,7 +15,7 @@ export const POST = withAuth(async (user, req) => {
     topP,
     topK,
     chatId,
-    systemPrompt = defaultSystemPrompt,
+    systemPrompt,
     agent,
     messageId,
     projectId,

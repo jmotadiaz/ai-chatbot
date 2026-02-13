@@ -1,6 +1,5 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
-import { toolPrompts } from "@/lib/features/chat/prompts";
 import { URL_CONTEXT_TOOL } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
@@ -10,12 +9,19 @@ import {
   hasToExecuteUrlContext,
   urlContextStep,
 } from "@/lib/features/chat/agents/url-context-step";
-import { hasToolCallSteps } from "@/lib/features/chat/agents/utils";
+import {
+  hasToolCallSteps,
+  IS_TEST_ENV,
+} from "@/lib/features/chat/agents/utils";
 import { Project } from "@/lib/infrastructure/db/schema";
+import {
+  DEFAULT_PROJECT_AGENT_PROMPT,
+  RAG_AGENT_PROMPT,
+} from "@/lib/features/chat/agents/prompts";
 
 interface CreateProjectAgentParams {
   modelConfiguration: ModelConfiguration;
-  systemPrompt: string;
+  systemPrompt?: string;
   messages: ChatbotMessage[];
   userId: string;
   project: Project;
@@ -23,13 +29,11 @@ interface CreateProjectAgentParams {
 
 export const createProjectAgent = ({
   modelConfiguration,
-  systemPrompt,
+  systemPrompt = DEFAULT_PROJECT_AGENT_PROMPT,
   messages,
   userId,
   project,
 }: CreateProjectAgentParams) => {
-  const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
-
   const toolSet = {
     ...ragFactory({
       userId,
@@ -51,14 +55,14 @@ export const createProjectAgent = ({
     stopWhen: stepCountIs(4),
     activeTools: [],
     prepareStep: async ({ steps }) => {
-      if (isTestEnv)
+      if (IS_TEST_ENV)
         return {
           system: systemPrompt,
         };
 
       if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
         return {
-          system: toolPrompts[RAG_TOOL],
+          system: RAG_AGENT_PROMPT,
           activeTools: [RAG_TOOL],
           ...(!hasRagToolCalled(messages) && {
             toolChoice: { type: "tool", toolName: RAG_TOOL },

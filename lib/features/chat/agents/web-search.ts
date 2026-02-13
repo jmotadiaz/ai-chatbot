@@ -11,6 +11,7 @@ import {
   urlContextStep,
 } from "@/lib/features/chat/agents/url-context-step";
 import { WEB_SEARCH_AGENT_PROMPT } from "@/lib/features/chat/agents/prompts";
+import { IS_TEST_ENV } from "@/lib/features/chat/agents/utils";
 
 interface CreateWebSearchAgentParams {
   modelConfiguration: ModelConfiguration;
@@ -23,8 +24,6 @@ export const createWebSearchAgent = ({
   messages,
   webSearchNumResults,
 }: CreateWebSearchAgentParams) => {
-  const isTestEnv = !!(process.env.NEXT_PUBLIC_ENV === "test");
-
   const toolSet = {
     ...webSearchFactory({
       webSearchNumResults,
@@ -34,14 +33,14 @@ export const createWebSearchAgent = ({
 
   return new ToolLoopAgent({
     ...modelConfiguration,
-    instructions: WEB_SEARCH_AGENT_PROMPT(),
+    instructions: WEB_SEARCH_AGENT_PROMPT,
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(5),
     activeTools: [WEB_SEARCH_TOOL],
     prepareStep: async ({ stepNumber }) => {
-      if (isTestEnv)
+      if (IS_TEST_ENV)
         return {
           activeTools: [],
         };

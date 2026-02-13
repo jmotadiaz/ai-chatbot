@@ -108,8 +108,7 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
           <Dropdown.Popup
             isShown={isAgentShown}
             close={closeAgent}
-            className="min-w-[150px]"
-            variant="responsive-center"
+            variant="top-left"
           >
             {AGENTS.map((agentItem) => {
               const AgentIcon = AGENT_ICONS[agentItem];
@@ -120,10 +119,12 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
                     reload({ agent: agentItem });
                     closeAgent();
                   }}
-                  className="capitalize gap-2"
+                  className="flex-nowrap"
                 >
                   <AgentIcon size={16} />
-                  {AGENT_LABELS[agentItem]}
+                  <span className="whitespace-nowrap capitalize">
+                    {AGENT_LABELS[agentItem]}
+                  </span>
                 </Dropdown.Item>
               );
             })}

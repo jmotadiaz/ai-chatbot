@@ -40,10 +40,10 @@ export interface DropdownPopupProps extends Omit<
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
   // Static variants
-  "top-right": "absolute w-auto rounded-lg pb-0 bottom-full right-0 mb-2",
-  "top-left": "absolute w-auto rounded-lg pb-0 bottom-full left-0 mb-2",
-  "bottom-right": "absolute w-auto rounded-lg pb-0 top-full left-0 mt-2",
-  "bottom-left": "absolute w-auto rounded-lg pb-0 top-full right-0 mt-2",
+  "top-right": "absolute w-auto rounded-lg pb-0 bottom-full left-0 mb-2",
+  "top-left": "absolute w-auto rounded-lg pb-0 bottom-full right-0 mb-2",
+  "bottom-right": "absolute w-auto rounded-lg pb-0 top-full right-0 mt-2",
+  "bottom-left": "absolute w-auto rounded-lg pb-0 top-full left-0 mt-2",
   center:
     "fixed w-auto rounded-lg pb-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
 
@@ -127,7 +127,7 @@ export function DropdownItem<T extends React.ElementType = "div">({
   return (
     <Component
       className={cn(
-        "flex items-center space-x-1 px-5 py-3 first:pt-4 last:pb-4 hover:bg-secondary-accent-foreground active:bg-secondary-accent-foreground/70 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
+        "flex items-center gap-2 px-5 py-3 first:pt-4 last:pb-4 hover:bg-secondary-accent-foreground active:bg-secondary-accent-foreground/70 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
         className,
       )}
       {...props}
