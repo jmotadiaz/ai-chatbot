@@ -3,7 +3,6 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   type ChatConfig,
   type ChatAgent,
@@ -99,7 +98,6 @@ export const useChat = ({
   const { agent, setAgent } = useChatAgent(initialAgent);
   const { setQueryParamChatId, validQueryParamChatId } = useChatQueryParamId();
   const { dataPart, setDataPart } = useChatDataPartState();
-  const router = useRouter();
   const effectiveChatId = chatId || validQueryParamChatId;
 
   const chatResult = useChatSession({
@@ -111,7 +109,6 @@ export const useChat = ({
       if (!isNewChat) return;
       if (preventChatPersistence) return;
       if (!effectiveChatId) return;
-      router.refresh();
       await setQueryParamChatId(effectiveChatId);
     },
   });
