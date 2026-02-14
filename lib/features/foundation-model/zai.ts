@@ -21,4 +21,34 @@ export const ZAI_CONFIG = {
     temperature: 1,
     topP: 0.95,
   },
+  "GLM-5": {
+    model: providers.openrouter("z-ai/glm-5"),
+    reasoning: true,
+    company: "zai",
+    temperature: 1,
+    topP: 0.95,
+    providerOptions: {
+      openrouter: {
+        reasoning: {
+          enabled: false,
+          exclude: true,
+          max_tokens: 0,
+        },
+      },
+    },
+  },
+  "GLM-5 Thinking": {
+    model: providers.openrouter("z-ai/glm-5"),
+    reasoning: true,
+    company: "zai",
+    temperature: 1,
+    topP: 0.95,
+    providerOptions: {
+      openrouter: {
+        reasoning: {
+          effort: "high",
+        },
+      },
+    },
+  },
 } as const satisfies Record<string, ModelConfiguration>;
