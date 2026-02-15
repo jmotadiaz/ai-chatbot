@@ -1,6 +1,6 @@
 "use client";
 import { Edit, MessageCircleDashed, LayoutGrid } from "lucide-react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
 import { cn } from "@/lib/utils/helpers";
@@ -22,6 +22,7 @@ export const NewChatLink: React.FC<NewChatProps> = ({
 }) => {
   const { status } = useChatContext();
   const { startNewChat } = useChatLifecycle();
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentChatType = searchParams.get("chatType");
@@ -52,6 +53,9 @@ export const NewChatLink: React.FC<NewChatProps> = ({
           : "cursor-pointer",
       )}
       onClick={handleClick}
+      onNavigate={() => {
+        router.refresh();
+      }}
     >
       {children}
     </ChatLink>
