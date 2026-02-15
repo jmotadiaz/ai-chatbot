@@ -1,4 +1,5 @@
 import type { InferUITools, UIMessage } from "ai";
+import { queryDocs, resolveLibraryId } from "@upstash/context7-tools-ai-sdk";
 import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import { RagTool } from "@/lib/features/rag/tool";
 import { URLContextTool, WebSearchTool } from "@/lib/features/web-search/tools";
@@ -37,10 +38,15 @@ export type ChatbotDataPart = {
   ["chat"]: ChatDataPart;
 };
 
+export const Ctxt7Tools = {
+  resolveLibraryId: resolveLibraryId(),
+  queryDocs: queryDocs(),
+};
+
 export type ChatbotMessage = UIMessage<
   MessageMetadata,
   ChatbotDataPart,
-  InferUITools<RagTool & WebSearchTool & URLContextTool>
+  InferUITools<RagTool & WebSearchTool & URLContextTool & typeof Ctxt7Tools>
 >;
 
 export type Tool =

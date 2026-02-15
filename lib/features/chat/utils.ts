@@ -144,6 +144,7 @@ export interface DestructuringMessagePartsReturn {
   fileParts: FileUIPart[];
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
   toolParts: Array<ToolUIPart>;
+  context7Parts: { libraryId: string; output: string }[];
   ragSourceParts: RagChunk[][];
 }
 
@@ -208,6 +209,21 @@ export const destructuringMessageParts = (
           );
           acc.toolParts.push(part);
           break;
+        case "tool-queryDocs":
+          if (
+            "input" in part &&
+            part.input &&
+            "libraryId" in part.input &&
+            typeof part.input.libraryId === "string" &&
+            part.output
+          ) {
+            acc.context7Parts.push({
+              libraryId: part.input.libraryId,
+              output: part.output,
+            });
+          }
+          acc.toolParts.push(part);
+          break;
       }
       return acc;
     },
@@ -218,6 +234,7 @@ export const destructuringMessageParts = (
       toolParts: [],
       fileParts: [],
       ragSourceParts: [],
+      context7Parts: [],
     },
   );
 };

@@ -22,6 +22,7 @@ import {
   destructuringMessageParts,
 } from "@/lib/features/chat/utils";
 import { RagSourceMessagePart } from "@/components/chat/rag-source";
+import { Context7SourceMessagePart } from "@/components/chat/context7-source";
 import type { RagChunk } from "@/lib/features/rag/types";
 const Reasoning = dynamic(
   () => import("@/components/chat/reasoning").then((m) => m.Reasoning),
@@ -172,10 +173,8 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
   message,
   showReload,
 }) => {
-  const { sourceParts, reasoningParts, ragSourceParts } = useMemo(
-    () => destructuringMessageParts(message),
-    [message],
-  );
+  const { sourceParts, reasoningParts, ragSourceParts, context7Parts } =
+    useMemo(() => destructuringMessageParts(message), [message]);
 
   const mergedReasoning = useMemo(
     () => mergeReasoningParts(reasoningParts),
@@ -249,6 +248,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
             showReload={showReload}
             sourceParts={sourceParts}
             ragSourceParts={ragSourceParts}
+            context7Parts={context7Parts}
             routingMetadata={message.metadata.autoModel}
           />
         )}
@@ -261,13 +261,22 @@ const AssistantMessageActions: React.FC<{
   showReload?: boolean;
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
   ragSourceParts: RagChunk[][];
+  context7Parts: { libraryId: string; output: string }[];
   routingMetadata?: ModelRoutingMetadata;
-}> = ({ showReload, sourceParts, ragSourceParts, routingMetadata }) => {
+}> = ({
+  showReload,
+  sourceParts,
+  ragSourceParts,
+  context7Parts,
+  routingMetadata,
+}) => {
   const [activeSection, setActiveSection] = useState<
-    "router" | "sources" | "rag-sources" | null
+    "router" | "sources" | "rag-sources" | "context7-sources" | null
   >(null);
 
-  const toggleSection = (section: "router" | "sources" | "rag-sources") => {
+  const toggleSection = (
+    section: "router" | "sources" | "rag-sources" | "context7-sources",
+  ) => {
     setActiveSection((prev) => (prev === section ? null : section));
   };
 
@@ -292,6 +301,23 @@ const AssistantMessageActions: React.FC<{
               isExpanded={activeSection === "sources"}
               onToggle={() => toggleSection("sources")}
             />
+          </>
+        )}
+
+        {context7Parts.length > 0 && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <div
+              className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+              onClick={() => toggleSection("context7-sources")}
+            >
+              Documentation
+              <ChevronDownIcon
+                className={cn("h-4 w-4 transition-transform duration-200", {
+                  "rotate-180": activeSection === "context7-sources",
+                })}
+              />
+            </div>
           </>
         )}
         {ragSourceParts.length > 0 && (
@@ -324,6 +350,17 @@ const AssistantMessageActions: React.FC<{
             sourceParts={sourceParts}
             isExpanded={activeSection === "sources"}
           />
+        )}
+
+        {context7Parts.length > 0 && (
+          <div
+            className={cn("overflow-hidden transition-all", {
+              "h-0": activeSection !== "context7-sources",
+              "h-auto": activeSection === "context7-sources",
+            })}
+          >
+            <Context7SourceMessagePart sources={context7Parts} />
+          </div>
         )}
         {ragSourceParts.length > 0 && (
           <div
