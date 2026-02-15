@@ -15,14 +15,7 @@ export const ZAI_CONFIG = {
     },
   },
   "GLM-4.7 Flash": {
-    model: providers.gateway("zai/glm-4.7-flash"),
-    reasoning: true,
-    company: "zai",
-    temperature: 1,
-    topP: 0.95,
-  },
-  "GLM-5": {
-    model: providers.openrouter("z-ai/glm-5"),
+    model: providers.openrouter("z-ai/glm-4.7-flash"),
     reasoning: true,
     company: "zai",
     temperature: 1,
@@ -30,12 +23,12 @@ export const ZAI_CONFIG = {
     providerOptions: {
       openrouter: {
         reasoning: {
-          effort: "high",
+          effort: "low",
         },
       },
     },
   },
-  "GLM-5 Thinking": {
+  "GLM-5": {
     model: providers.openrouter("z-ai/glm-5"),
     reasoning: true,
     company: "zai",
