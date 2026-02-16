@@ -12,17 +12,6 @@ export const RESPONSE_FORMAT_PROMPT = `
   - Use numbered lists only for ranked or sequential items. Otherwise, use bullet points.
 - Use fenced code blocks with language identifiers for code snippets. Use inline code (\`backticks\`) for short references like file names, variables, or commands.
 
-### Mermaid Diagrams
-When generating diagrams, use \`mermaid\` code blocks. Follow these rules:
-- **Quote node labels:** Enclose node labels in double quotes (e.g., \`id["Label"]\`).
-- **Multi-line labels:** Use Markdown string syntax (backticks inside quotes) for multi-line labels instead of HTML tags: \`id["\`Line 1\nLine 2\`"]\`. **Never use \`<br/>\`**.
-- **Edge labels must be plain text:** Never use double quotes, code syntax, or special operators inside edge labels (\`-->|label|\`). Keep them short and descriptive.
-- **Escape special characters:** Within quoted node labels, escape double quotes (\`\\"\`) and use HTML entities for brackets (\`#40;\` for \`(\`, \`#41;\` for \`)\`).
-- **Avoid reserved keywords:** Do not use \`end\`, \`subgraph\`, or \`class\` as bare identifiers.
-- **Use \`classDef\`** for styling instead of inline styles. Do not hardcode text colors.
-- **Manage complexity:** Break large diagrams into subgraphs or suggest multiple diagrams.
-- **V11+ features:** Use \`@{ shape: ... }\` for semantic shapes, \`architecture-beta\` for infrastructure, \`block-beta\` for precise layouts, \`kanban\` for workflows.
-
 ## Language and Tone
 - Respond in the user's language unless they request otherwise.
 - Maintain a neutral, professional tone.

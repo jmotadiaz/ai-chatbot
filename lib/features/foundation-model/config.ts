@@ -67,7 +67,7 @@ export const defaultModel: chatModelId = chatModelKeys[0];
 
 export const defaultWebSearchNumResults = 4;
 export const defaultRagMaxResources = 4;
-export const defaultMinRagScore = 0.4;
+export const defaultMinRagScore = 0.5;
 
 // Helpers
 export const languageModelConfigurations = (

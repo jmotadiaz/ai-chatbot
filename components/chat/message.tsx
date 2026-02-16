@@ -327,7 +327,7 @@ const AssistantMessageActions: React.FC<{
               className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
               onClick={() => toggleSection("rag-sources")}
             >
-              References
+              Documentation
               <ChevronDownIcon
                 className={cn("h-4 w-4 transition-transform duration-200", {
                   "rotate-180": activeSection === "rag-sources",
@@ -353,24 +353,16 @@ const AssistantMessageActions: React.FC<{
         )}
 
         {context7Parts.length > 0 && (
-          <div
-            className={cn("overflow-hidden transition-all", {
-              "h-0": activeSection !== "context7-sources",
-              "h-auto": activeSection === "context7-sources",
-            })}
-          >
-            <Context7SourceMessagePart sources={context7Parts} />
-          </div>
+          <Context7SourceMessagePart
+            sources={context7Parts}
+            isExpanded={activeSection === "context7-sources"}
+          />
         )}
         {ragSourceParts.length > 0 && (
-          <div
-            className={cn("overflow-hidden transition-all", {
-              "h-0": activeSection !== "rag-sources",
-              "h-auto": activeSection === "rag-sources",
-            })}
-          >
-            <RagSourceMessagePart ragSourceParts={ragSourceParts} />
-          </div>
+          <RagSourceMessagePart
+            ragSourceParts={ragSourceParts}
+            isExpanded={activeSection === "rag-sources"}
+          />
         )}
       </div>
     </div>
