@@ -25,7 +25,7 @@ export const saveUrlResource = async ({
   }
 
   // 1. Prepare data (CPU work) - Outside transaction
-  const chunkGroups = await generateChunks(resource.content);
+  const chunkGroups = await generateChunks(resource.content, resource.title);
 
   const chunksToInsert: Omit<InsertChunk, "resourceId">[] = [];
   const contentToEmbed: { chunkId: string; content: string }[] = [];
@@ -96,7 +96,7 @@ export const saveMarkdownResource = async ({
   projectId?: string;
 }): Promise<{ success: boolean }> => {
   // 1. Prepare data (CPU work) - Outside transaction
-  const chunkGroups = await generateChunks(content);
+  const chunkGroups = await generateChunks(content, title);
 
   const chunksToInsert: InsertChunk[] = [];
   const contentToEmbed: { chunkId: string; content: string }[] = [];

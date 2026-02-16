@@ -1,4 +1,6 @@
-import { marked } from "marked";
+import * as fs from "fs";
+import * as path from "path";
+import { marked, type Token, type Tokens, type TokensList } from "marked";
 import {
   RecursiveCharacterTextSplitter,
   SupportedTextSplitterLanguages,
@@ -15,9 +17,9 @@ type SupportedLanguages = (typeof SupportedTextSplitterLanguages)[number];
 
 // Cohere rerank-v3.5 supports up to 4096 tokens (~14-16K chars)
 // Using aggressive limits to maximize context per chunk
-const MIN_PARENT_SIZE = 500; 
-const PARENT_CHUNK_SIZE = 5000;
-const HARD_LIMIT = 8000; 
+const MIN_PARENT_SIZE = 2000;
+const PARENT_CHUNK_SIZE = 10000;
+const HARD_LIMIT = 50000;
 const CHILD_CHUNK_SIZE = 600;
 const CHILD_OVERLAP = 100;
 
@@ -47,26 +49,54 @@ const mapLanguage = (lang: string): SupportedLanguages | undefined => {
   return map[lang.toLowerCase()];
 };
 
-export async function generateChunks(text: string): Promise<ChunkGroup[]> {
-  // 1. Tokenizar con marked para detectar bloques
+interface Section {
+  tokens: Token[];
+  rawLength: number;
+}
+
+// Function to group tokens into sections based on headings (h1, h2, h3)
+function groupTokensIntoSections(tokens: TokensList): Section[] {
+  const sections: Section[] = [];
+  let currentSection: Section = { tokens: [], rawLength: 0 };
+
+  for (const token of tokens) {
+    // If it's a heading of level 1, 2 or 3, start a new section
+    if (token.type === "heading" && (token as Tokens.Heading).depth <= 3) {
+      if (currentSection.tokens.length > 0) {
+        sections.push(currentSection);
+      }
+      currentSection = { tokens: [token], rawLength: token.raw.length };
+    } else {
+      currentSection.tokens.push(token);
+      currentSection.rawLength += token.raw.length;
+    }
+  }
+
+  if (currentSection.tokens.length > 0) {
+    sections.push(currentSection);
+  }
+
+  return sections;
+}
+
+export async function generateChunks(
+  text: string,
+  title?: string,
+): Promise<ChunkGroup[]> {
   const tokens = marked.lexer(text);
+  const sections = groupTokensIntoSections(tokens);
   const chunks: ChunkGroup[] = [];
 
-  // Buffer para acumular contenido hasta llegar a PARENT_CHUNK_SIZE
   let currentBuffer = "";
-  let bufferType: "text" | "code" = "text"; // Predeterminado
+  let bufferType: "text" | "code" = "text";
 
-  // Función para procesar y vaciar el buffer actual
   const flushBuffer = async (force: boolean = false) => {
     if (!currentBuffer.trim()) return;
 
-    // Si el buffer es muy pequeño, intentar fusionarlo con el último chunk
     if (!force && currentBuffer.length < MIN_PARENT_SIZE && chunks.length > 0) {
       const lastChunk = chunks[chunks.length - 1];
-      // Fusionar si el resultado no excede el hard limit
       if (lastChunk.content.length + currentBuffer.length <= HARD_LIMIT) {
         lastChunk.content += currentBuffer;
-        // Regenerar embeddings del chunk fusionado
         const children = await childSplitter.createDocuments([
           lastChunk.content,
         ]);
@@ -77,108 +107,151 @@ export async function generateChunks(text: string): Promise<ChunkGroup[]> {
       }
     }
 
-    // Generamos hijos pequeños para el vector search
     const childrenDocs = await childSplitter.createDocuments([currentBuffer]);
 
     chunks.push({
-      content: currentBuffer, // El padre grande (~8000 chars)
+      content: currentBuffer,
       type: bufferType,
       embeddableContent: childrenDocs.map((c) => c.pageContent),
     });
 
     currentBuffer = "";
-    bufferType = "text"; // Reset
+    bufferType = "text";
   };
 
-  for (const token of tokens) {
-    const tokenText = token.raw;
+  const processTokens = async (tokensToProcess: Token[]) => {
+    for (const token of tokensToProcess) {
+      const tokenText = token.raw;
 
-    // CASO A: El token cabe en el buffer actual (soft limit)
-    if (currentBuffer.length + tokenText.length <= PARENT_CHUNK_SIZE) {
-      currentBuffer += tokenText;
-      // Si entra código, marcamos el buffer como mixto/código si es relevante
-      if (token.type === "code") bufferType = "code";
-    }
-    // CASO B: Excede soft limit pero cabe en hard limit - permitir flexibilidad
-    // EXCEPCIÓN: Si es un code block, lo movemos al siguiente chunk para mantener integridad
-    else if (currentBuffer.length + tokenText.length <= HARD_LIMIT) {
-      if (token.type === "code") {
-        // Flush el buffer actual y empezar nuevo chunk con el code block
-        await flushBuffer(true);
-        currentBuffer = tokenText;
-        bufferType = "code";
-      } else {
-        // Para texto normal, permitimos flexibilidad hasta el hard limit
+      if (currentBuffer.length + tokenText.length <= PARENT_CHUNK_SIZE) {
         currentBuffer += tokenText;
-      }
-    }
-    // CASO C: El token desborda el hard limit
-    else {
-      // 1. Guardamos lo que ya teníamos acumulado (forzar flush)
-      await flushBuffer(true);
-
-      // 2. Analizamos el token nuevo que provocó el desborde
-      // ¿Es este token individual MÁS GRANDE que el límite máximo?
-      if (tokenText.length > PARENT_CHUNK_SIZE) {
-        // Es un bloque gigante (ej: un archivo de código de 500 líneas).
-        // AQUI SÍ debemos dividirlo forzosamente, pero usamos un splitter inteligente.
+        if (token.type === "code") bufferType = "code";
+      } else if (currentBuffer.length + tokenText.length <= HARD_LIMIT) {
         if (token.type === "code") {
-          const lang = mapLanguage(token.lang || "") || "js";
-          const codeSplitter = RecursiveCharacterTextSplitter.fromLanguage(
-            lang,
-            {
-              chunkSize: PARENT_CHUNK_SIZE,
-              chunkOverlap: 200,
-            }
-          );
-
-          const codeDocs = await codeSplitter.createDocuments([token.text]);
-
-          for (const doc of codeDocs) {
-            // Tratamos cada sub-fragmento como un parent independiente
-            // Reconstruimos el bloque de código md para mantener formato si queremos
-            // o guardamos el contenido raw. Para RAG de código, raw suele ser mejor.
-            const content = `\`\`\`${token.lang || ""}\n${
-              doc.pageContent
-            }\n\`\`\``;
-            const children = await childSplitter.createDocuments([content]);
-
-            chunks.push({
-              content: content,
-              type: "code",
-              language: token.lang,
-              embeddableContent: children.map((c) => c.pageContent),
-            });
-          }
+          await flushBuffer(true);
+          currentBuffer = tokenText;
+          bufferType = "code";
         } else {
-          // Es texto plano gigante
-          const textDocs = await new RecursiveCharacterTextSplitter({
-            chunkSize: PARENT_CHUNK_SIZE,
-            chunkOverlap: 200,
-          }).createDocuments([tokenText]);
-
-          for (const doc of textDocs) {
-            const children = await childSplitter.createDocuments([
-              doc.pageContent,
-            ]);
-            chunks.push({
-              content: doc.pageContent,
-              type: "text",
-              embeddableContent: children.map((c) => c.pageContent),
-            });
-          }
+          currentBuffer += tokenText;
         }
       } else {
-        // El token no es gigante, solo no cabía en el anterior.
-        // Iniciamos el buffer nuevo con este token.
-        currentBuffer = tokenText;
+        await flushBuffer(true);
+
+        if (tokenText.length > PARENT_CHUNK_SIZE) {
+          if (token.type === "code") {
+            const lang = mapLanguage((token as Tokens.Code).lang || "") || "js";
+            const codeSplitter = RecursiveCharacterTextSplitter.fromLanguage(
+              lang,
+              {
+                chunkSize: PARENT_CHUNK_SIZE,
+                chunkOverlap: 200,
+              },
+            );
+
+            const codeDocs = await codeSplitter.createDocuments([
+              (token as Tokens.Code).text,
+            ]);
+
+            for (const doc of codeDocs) {
+              const content = `\`\`\`${(token as Tokens.Code).lang || ""}\n${
+                doc.pageContent
+              }\n\`\`\``;
+              const children = await childSplitter.createDocuments([content]);
+
+              chunks.push({
+                content: content,
+                type: "code",
+                language: (token as Tokens.Code).lang,
+                embeddableContent: children.map((c) => c.pageContent),
+              });
+            }
+          } else {
+            const textDocs = await new RecursiveCharacterTextSplitter({
+              chunkSize: PARENT_CHUNK_SIZE,
+              chunkOverlap: 200,
+            }).createDocuments([tokenText]);
+
+            for (const doc of textDocs) {
+              const children = await childSplitter.createDocuments([
+                doc.pageContent,
+              ]);
+              chunks.push({
+                content: doc.pageContent,
+                type: "text",
+                embeddableContent: children.map((c) => c.pageContent),
+              });
+            }
+          }
+        } else {
+          currentBuffer = tokenText;
+          if (token.type === "code") bufferType = "code";
+        }
+      }
+    }
+  };
+
+  for (const section of sections) {
+    // If the entire section fits in the current buffer (soft limit), append it
+    if (currentBuffer.length + section.rawLength <= PARENT_CHUNK_SIZE) {
+      for (const token of section.tokens) {
+        currentBuffer += token.raw;
         if (token.type === "code") bufferType = "code";
       }
     }
+    // If the entire section doesn't fit in current buffer but is NOT oversized,
+    // we flush the current buffer (if large enough) and start a new one with this section.
+    else if (section.rawLength <= PARENT_CHUNK_SIZE) {
+      // Only flush if the buffer is large enough to stand on its own.
+      // If it's too small, carry it forward (prepend it to this section).
+      if (currentBuffer.length >= MIN_PARENT_SIZE) {
+        await flushBuffer(true);
+      }
+      // If the buffer was small, it stays in currentBuffer and gets prepended
+      // to this section's content naturally.
+      for (const token of section.tokens) {
+        currentBuffer += token.raw;
+        if (token.type === "code") bufferType = "code";
+      }
+    }
+    // If the section itself is oversized (> PARENT_CHUNK_SIZE),
+    // we must fall back to token-level processing for this section.
+    else {
+      // If the buffer is large enough, flush it before processing the oversized section.
+      if (currentBuffer.length >= MIN_PARENT_SIZE) {
+        await flushBuffer(true);
+      }
+      // If tiny, carry it forward — processTokens will append to it.
+      await processTokens(section.tokens);
+    }
   }
 
-  // Vaciar cualquier remanente final
   await flushBuffer();
+
+  // Debug functionality: export full resource and chunks to disk
+  if (process.env.DEBUG_CHUNKING === "true" && title) {
+    try {
+      const debugDir = path.join(process.cwd(), "chunks");
+      if (!fs.existsSync(debugDir)) {
+        fs.mkdirSync(debugDir, { recursive: true });
+      }
+
+      // Sanitize title for filename
+      const safeTitle = title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+
+      // Write full resource
+      fs.writeFileSync(path.join(debugDir, `${safeTitle}.md`), text);
+
+      // Write chunks
+      chunks.forEach((chunk, index) => {
+        fs.writeFileSync(
+          path.join(debugDir, `${safeTitle}_chunk_${index}.md`),
+          chunk.content,
+        );
+      });
+    } catch (error) {
+      console.error("Error writing debug chunks:", error);
+    }
+  }
 
   return chunks;
 }
