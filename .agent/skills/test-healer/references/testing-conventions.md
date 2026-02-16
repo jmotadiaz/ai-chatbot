@@ -1,0 +1,1 @@
+../../test-generator/references/testing-conventions.md

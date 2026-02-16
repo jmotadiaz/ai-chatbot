@@ -26,3 +26,5 @@ application behavior.
   - Includes a comment with the step text before each step execution. Do not duplicate comments if step requires
     multiple actions.
   - Always use best practices from the log when generating tests.
+
+Follow project testing conventions. See `references/testing-conventions.md`

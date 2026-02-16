@@ -89,3 +89,5 @@ application features:
 
 **Output Format**: Always save the complete test plan as an **Antigravity Implementation Plan Artifact** with clear headings, numbered steps, and
 professional formatting suitable for sharing with development and QA teams.
+
+Follow project testing conventions. See `references/testing-conventions.md`
