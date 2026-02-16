@@ -23,24 +23,18 @@ Evaluate the user request against EVERY rule below. If ANY rule matches, read th
 | Planning Playwright tests | `.agent/skills/test-planner/SKILL.md` |
 | Writing or optimizing an AI prompt | `.agent/skills/senior-prompt-engineer/SKILL.md` |
 
-> [!CAUTION]
-> If no rule matches, tell the user you don't have the skills to help them. Do NOT proceed.
-
 ### Step 2: Context7 MCP
 
-Consult Context7 for any code generation or configuration task. Use the pre-resolved library IDs in the table below.
-
-## Context7 MCP
-Always use Context7 for code generation and configuration. Pre-resolved library IDs:
+Consult Context7 for any code generation or configuration task. Use the pre-resolved library IDs in the table below:
 
 | Library | ID |
 |---------|------|
 | React | `/websites/react_dev` |
-| Next.js | `/websites/nextjs` |
+| Next.js | `/vercel/next.js` |
 | Postgres | `/websites/postgresql_17` |
-| Drizzle | `/websites/orm_drizzle_team` |
+| Drizzle | `/drizzle-team/drizzle-orm-docs` |
 | Tailwind | `/websites/tailwindcss` |
-| Vercel AI SDK | `/websites/ai-sdk_dev` |
+| Vercel AI SDK | `/vercel/ai` |
 
 ## Package Manager
 Use **pnpm**: `pnpm install`, `pnpm dev`, `pnpm test`, `pnpm lint:fix`, `pnpm db:generate`
