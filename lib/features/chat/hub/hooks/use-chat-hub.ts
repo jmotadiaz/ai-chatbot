@@ -19,6 +19,7 @@ import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-mode
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 import { useToolsEnabled } from "@/lib/features/chat/hooks/use-tools-enabled";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
+import type { ChatConfig } from "@/lib/features/chat/hooks/hook-types";
 
 // Important: keep the runtime exclusion of "Router", but widen the type so
 // downstream code can still accept `chatModelId` without TS `includes(...)` issues.
@@ -127,6 +128,19 @@ export const useChatHub = ({
     );
   }, []);
 
+  const updateInstanceConfig = useCallback(
+    (chatId: string, configuration: Partial<ChatConfig>) => {
+      setInstances((prev) =>
+        prev.map((i) =>
+          i.chatId === chatId
+            ? { ...i, configuration: { ...i.configuration, ...configuration } }
+            : i,
+        ),
+      );
+    },
+    [],
+  );
+
   const addInstance = useCallback(
     (model: chatModelId, agent: Agent = "rag") => {
       if (model === "Router") return;
@@ -136,7 +150,10 @@ export const useChatHub = ({
       // Prevent adding incompatible models based on current tools + files.
       if (!availableModels.includes(model)) return;
 
-      setInstances((prev) => [...prev, { chatId: v4(), model, agent }]);
+      setInstances((prev) => [
+        ...prev,
+        { chatId: v4(), model, agent, configuration: {} },
+      ]);
     },
     [availableModels, instances.length, instancesLocked, isPersisting],
   );
@@ -228,6 +245,7 @@ export const useChatHub = ({
     addInstance,
     removeInstance,
     updateInstanceAgent,
+    updateInstanceConfig,
     persistChat,
 
     input,

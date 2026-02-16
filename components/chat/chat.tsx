@@ -36,6 +36,13 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     projectId,
     agent,
     setAgent,
+    temperature,
+    topP,
+    topK,
+    webSearchNumResults,
+    ragMaxResources,
+    minRagResourcesScore,
+    setConfig,
   } = useChatContext();
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     usePromptRefiner({
@@ -94,7 +101,17 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
-            <SettingsControl />
+            <SettingsControl
+              temperature={temperature}
+              topP={topP}
+              topK={topK}
+              webSearchNumResults={webSearchNumResults}
+              ragMaxResources={ragMaxResources}
+              minRagResourcesScore={minRagResourcesScore}
+              agent={agent}
+              selectedModel={selectedModel}
+              setConfig={setConfig}
+            />
             {hasPreviousMessage && (
               <ChatControl
                 Icon={Undo}

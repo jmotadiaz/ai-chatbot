@@ -2,33 +2,44 @@
 
 import type { ClassValue } from "clsx";
 import { Settings2 } from "lucide-react";
-import { useChatContext } from "@/components/chat/provider";
 import { ChatControl } from "@/components/chat/control";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
+import type { SetChatConfig } from "@/lib/features/chat/hooks/hook-types";
+import type { Agent } from "@/lib/features/chat/types";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export interface SettingsControlProps {
   className?: ClassValue;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  webSearchNumResults?: number;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
+  agent?: Agent;
+  selectedModel: chatModelId;
+  setConfig: SetChatConfig;
 }
 
 const isDefined = <T,>(value: T | undefined | null): value is T => {
   return value !== undefined && value !== null;
 };
 
-export const SettingsControl = ({ className }: SettingsControlProps) => {
+export const SettingsControl = ({
+  className,
+  temperature,
+  topP,
+  topK,
+  webSearchNumResults,
+  ragMaxResources,
+  minRagResourcesScore,
+  agent,
+  selectedModel,
+  setConfig,
+}: SettingsControlProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
-  const {
-    temperature,
-    topP,
-    topK,
-    setConfig,
-    selectedModel,
-    webSearchNumResults,
-    ragMaxResources,
-    minRagResourcesScore,
-    agent,
-  } = useChatContext();
 
   const setTemperature = (value: number) => setConfig({ temperature: value });
   const setTopP = (value: number) => setConfig({ topP: value });
@@ -70,7 +81,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
                 </Label>
                 <InputNumber
                   id="temperature"
-                  value={temperature}
+                  value={temperature as number}
                   min={0}
                   max={2}
                   step={0.1}
@@ -85,7 +96,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
                 </Label>
                 <InputNumber
                   id="topP"
-                  value={topP}
+                  value={topP as number}
                   min={0}
                   max={1}
                   step={0.1}
@@ -100,7 +111,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
                 </Label>
                 <InputNumber
                   id="topK"
-                  value={topK}
+                  value={topK as number}
                   min={0}
                   max={100}
                   step={1}
@@ -122,7 +133,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
               </Label>
               <InputNumber
                 id="webSearchNumResults"
-                value={webSearchNumResults}
+                  value={webSearchNumResults as number}
                 min={1}
                 max={20}
                 step={1}
@@ -138,7 +149,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
                 </Label>
                 <InputNumber
                   id="ragMaxResources"
-                  value={ragMaxResources}
+                  value={ragMaxResources as number}
                   min={1}
                   max={50}
                   step={1}
@@ -154,7 +165,7 @@ export const SettingsControl = ({ className }: SettingsControlProps) => {
                 </Label>
                 <InputNumber
                   id="minRagResourcesScore"
-                  value={minRagResourcesScore}
+                  value={minRagResourcesScore as number}
                   min={0}
                   max={1}
                   step={0.01}

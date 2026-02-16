@@ -5,6 +5,7 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
+import type { ChatConfig } from "@/lib/features/chat/hooks/hook-types";
 
 export type SubmitMessage = Parameters<
   UseChatHelpers<ChatbotMessage>["sendMessage"]
@@ -16,6 +17,7 @@ export interface HubInstance {
   chatId: string;
   model: chatModelId;
   agent: Agent;
+  configuration?: Partial<ChatConfig>;
 }
 
 export interface ChatHub {
@@ -35,6 +37,10 @@ export interface ChatHub {
   addInstance: (model: chatModelId, agent?: Agent) => void;
   removeInstance: (chatId: string) => void;
   updateInstanceAgent: (chatId: string, agent: Agent) => void;
+  updateInstanceConfig: (
+    chatId: string,
+    configuration: Partial<ChatConfig>,
+  ) => void;
   persistChat: (args: {
     chatId: string;
     messages: ChatbotMessage[];
@@ -42,8 +48,11 @@ export interface ChatHub {
     agent?: Agent;
     projectId?: string;
     temperature?: number;
-
+    topP?: number;
+    topK?: number;
     webSearchNumResults?: number;
+    ragMaxResources?: number;
+    minRagResourcesScore?: number;
   }) => Promise<{ chatId: string }>;
 
   input: string;
