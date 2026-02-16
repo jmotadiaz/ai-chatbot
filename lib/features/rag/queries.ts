@@ -87,6 +87,7 @@ export type SimilarChunk = {
   language: string | null;
   boundaryType: string | null;
   boundaryName: string | null;
+  position: number;
 };
 
 export type SimilarChunks = Array<SimilarChunk>;
@@ -154,6 +155,7 @@ export async function findSimilarChunksBySemantic({
             language: chunk.language,
             boundaryType: chunk.boundaryType,
             boundaryName: chunk.boundaryName,
+            position: chunk.position,
           })
           .from(embedding)
           .innerJoin(chunk, eq(embedding.chunkId, chunk.id))
@@ -186,6 +188,7 @@ export async function findSimilarChunksBySemantic({
             language: innerQuery.language,
             boundaryType: innerQuery.boundaryType,
             boundaryName: innerQuery.boundaryName,
+            position: innerQuery.position,
           })
           .from(innerQuery)
           .where(gt(innerQuery.similarity, similarityThreshold))
@@ -278,6 +281,7 @@ export async function findSimilarChunksByKeyword({
             language: chunk.language,
             boundaryType: chunk.boundaryType,
             boundaryName: chunk.boundaryName,
+            position: chunk.position,
           })
           .from(chunk)
           .innerJoin(resource, eq(chunk.resourceId, resource.id));
@@ -340,19 +344,19 @@ export async function getUserResourcesPaginated({
   userId,
   limit,
   offset,
-  filter,
+  filterWords,
 }: {
   userId: string;
   limit: number;
   offset: number;
-  filter?: string;
+  filterWords?: string[];
 }): Promise<{
   items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
     const extendedLimit = limit + 1;
-    const words = (filter ?? "").trim().split(/\s+/).filter(Boolean);
+    const words = filterWords ?? [];
 
     const whereClause = and(
       eq(resource.userId, userId),
@@ -385,14 +389,14 @@ export async function getUserResourcesPaginated({
 export const deleteResourcesByTitleFilter =
   ({
     userId,
-    filter,
+    filterWords,
   }: {
     userId: string;
-    filter: string;
+    filterWords: string[];
   }): Transactional<Resource[]> =>
   async (tx) => {
     try {
-      const words = filter.trim().split(/\s+/).filter(Boolean);
+      const words = filterWords;
 
       const whereClause = and(
         eq(resource.userId, userId),
@@ -547,19 +551,19 @@ export async function getProjectResourcesPaginated({
   projectId,
   limit,
   offset,
-  filter,
+  filterWords,
 }: {
   projectId: string;
   limit: number;
   offset: number;
-  filter?: string;
+  filterWords?: string[];
 }): Promise<{
   items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
     const extendedLimit = limit + 1;
-    const words = (filter ?? "").trim().split(/\s+/).filter(Boolean);
+    const words = filterWords ?? [];
 
     const whereClause = and(
       eq(projectResource.projectId, projectId),
@@ -595,20 +599,20 @@ export async function getUserResourcesNotInProject({
   projectId,
   limit,
   offset,
-  filter,
+  filterWords,
 }: {
   userId: string;
   projectId: string;
   limit: number;
   offset: number;
-  filter?: string;
+  filterWords?: string[];
 }): Promise<{
   items: Array<{ id: string; title: string; url: string | null }>;
   hasMore: boolean;
 }> {
   try {
     const extendedLimit = limit + 1;
-    const words = (filter ?? "").trim().split(/\s+/).filter(Boolean);
+    const words = filterWords ?? [];
 
     // Get resource IDs already in project
     const projectResourceIds = getDb()

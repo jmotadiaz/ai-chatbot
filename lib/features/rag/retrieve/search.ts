@@ -8,6 +8,23 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 import { generateEmbeddings } from "@/lib/features/rag/retrieve/embeddings";
 import { RerankResult } from "@/lib/features/foundation-model/types";
 
+/**
+ * After reranking, reorder chunks so that chunks from the same resource
+ * appear in their original document order (by position), while preserving
+ * the first-appearance order of resource groups from the reranker.
+ */
+const reorderByResourcePosition = (chunks: SimilarChunks): SimilarChunks => {
+  const groups = new Map<string, SimilarChunk[]>();
+  for (const chunk of chunks) {
+    const key = chunk.resourceTitle;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(chunk);
+  }
+  return Array.from(groups.values())
+    .map((group) => group.sort((a, b) => a.position - b.position))
+    .flat();
+};
+
 const K_SEMANTIC_SEARCHES = 100;
 const K_KEYWORD_SEARCHES = 20;
 const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.5;
@@ -62,6 +79,8 @@ const chunksByScore = (
     const chunk = chunks[result.originalIndex];
     if (result.score >= minScore) {
       rerankedChunks.push(chunk);
+    } else {
+      break;
     }
   }
 
@@ -125,7 +144,9 @@ export const retrieveResourceChunks = async ({
     minScore: minRagResourcesScore,
   });
 
-  return finalResults.map(({ id, content, resourceTitle, resourceUrl }) => {
+  const orderedResults = reorderByResourcePosition(finalResults);
+
+  return orderedResults.map(({ id, content, resourceTitle, resourceUrl }) => {
     return {
       id,
       resourceTitle,

@@ -139,6 +139,7 @@ export const chunk = pgTable(
       .references(() => resource.id, { onDelete: "cascade" }),
     content: text("content").notNull(), // Stores the parent content
     type: varchar("type", { length: 50 }).notNull(), // 'text' or 'code'
+    position: integer("position").notNull().default(0),
     language: varchar("language", { length: 50 }),
     boundaryType: varchar("boundaryType", { length: 50 }),
     boundaryName: text("boundaryName"),

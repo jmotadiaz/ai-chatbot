@@ -30,12 +30,16 @@ export const saveUrlResource = async ({
   const chunksToInsert: Omit<InsertChunk, "resourceId">[] = [];
   const contentToEmbed: { chunkId: string; content: string }[] = [];
 
-  for (const { content, type, language, embeddableContent } of chunkGroups) {
+  for (const [
+    index,
+    { content, type, language, embeddableContent },
+  ] of chunkGroups.entries()) {
     const chunkId = randomUUID();
 
     // Prepare Chunk data (we need resourceId later, but we can assign chunkId now)
     chunksToInsert.push({
       id: chunkId,
+      position: index,
       content,
       type,
       language,
@@ -101,11 +105,15 @@ export const saveMarkdownResource = async ({
   const chunksToInsert: InsertChunk[] = [];
   const contentToEmbed: { chunkId: string; content: string }[] = [];
 
-  for (const { content, type, language, embeddableContent } of chunkGroups) {
+  for (const [
+    index,
+    { content, type, language, embeddableContent },
+  ] of chunkGroups.entries()) {
     const chunkId = randomUUID();
 
     chunksToInsert.push({
       id: chunkId,
+      position: index,
       resourceId: "" as string, // Placeholder
       content,
       type,

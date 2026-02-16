@@ -20,6 +20,13 @@ import { getSession } from "@/lib/features/auth/cached-auth";
 // ... (trimmed imports)
 import { transaction } from "@/lib/infrastructure/db/queries";
 
+function parseFilter(filter: string): string[] {
+  return (
+    filter.match(/("[^"]+"|[^\s"]+)/g)?.map((w) => w.replace(/^"|"$/g, "")) ??
+    []
+  );
+}
+
 // Schemas for input validation
 const resourceIdSchema = z.string().uuid();
 const projectIdSchema = z.string().uuid();
@@ -267,7 +274,7 @@ export async function deleteResourcesByFilter(
   try {
     const [result] = await transaction(
       deleteResourcesByTitleFilter({
-        filter,
+        filterWords: parseFilter(filter),
         userId: session.user.id,
       }),
     );
@@ -343,7 +350,7 @@ export async function getRagResourcesAction({
     userId: session.user.id,
     limit: validated.limit,
     offset: validated.offset,
-    filter: validated.filter,
+    filterWords: parseFilter(validated.filter),
   });
 }
 
@@ -473,7 +480,7 @@ export async function getProjectResourcesAction({
     projectId: validatedProjectId,
     limit: validatedPagination.limit,
     offset: validatedPagination.offset,
-    filter: validatedPagination.filter,
+    filterWords: parseFilter(validatedPagination.filter),
   });
 }
 
@@ -508,6 +515,6 @@ export async function getUserResourcesNotInProjectAction({
     projectId: validatedProjectId,
     limit: validatedPagination.limit,
     offset: validatedPagination.offset,
-    filter: validatedPagination.filter,
+    filterWords: parseFilter(validatedPagination.filter),
   });
 }
