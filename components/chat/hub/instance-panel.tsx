@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Save } from "lucide-react";
 import type { Agent } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
@@ -9,12 +9,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/helpers";
 import { ChatConversation } from "@/components/chat/conversation";
 import { AgentSelector } from "@/components/chat/controls/agent-selector";
+import { SettingsControl } from "@/components/chat/controls/settings-control";
 
 export interface HubInstancePanelProps {
   instance: HubInstance;
   submitSubscribe: ChatHub["submitSubscribe"];
   onRemove: (id: string) => void;
   updateInstanceAgent: (chatId: string, agent: Agent) => void;
+  updateInstanceConfig: ChatHub["updateInstanceConfig"];
   persistChat: ChatHub["persistChat"];
   isPersisting: boolean;
   persistingChatId: string | null;
@@ -28,6 +30,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   submitSubscribe,
   onRemove,
   updateInstanceAgent,
+  updateInstanceConfig,
   persistChat,
   isPersisting,
   persistingChatId,
@@ -41,6 +44,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     submitSubscribe,
     agent: instance.agent,
     preventChatPersistence: true,
+    ...instance.configuration,
   });
 
   const onSelectThisChat = useCallback(async () => {
@@ -49,6 +53,12 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       messages: chat.messages,
       model: instance.model,
       agent: instance.agent,
+      temperature: chat.temperature,
+      topP: chat.topP,
+      topK: chat.topK,
+      webSearchNumResults: chat.webSearchNumResults,
+      ragMaxResources: chat.ragMaxResources,
+      minRagResourcesScore: chat.minRagResourcesScore,
     });
     // Removed navigation: router.push(...)
   }, [
@@ -56,10 +66,23 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     instance.chatId,
     instance.model,
     instance.agent,
+    chat.temperature,
+    chat.topP,
+    chat.topK,
+    chat.webSearchNumResults,
+    chat.ragMaxResources,
+    chat.minRagResourcesScore,
     persistChat,
   ]);
 
   const isThisPersisting = isPersisting && persistingChatId === instance.chatId;
+
+  const handleSetConfig = useCallback(
+    (config: Partial<import("@/lib/features/chat/hooks/hook-types").ChatConfig>) => {
+      updateInstanceConfig(instance.chatId, config);
+    },
+    [instance.chatId, updateInstanceConfig],
+  );
 
   return (
     <div
@@ -92,6 +115,20 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
         </div>
 
         <div className="flex items-center gap-2 ml-2">
+          {!isPersisted && (
+            <SettingsControl
+              temperature={chat.temperature}
+              topP={chat.topP}
+              topK={chat.topK}
+              webSearchNumResults={chat.webSearchNumResults}
+              ragMaxResources={chat.ragMaxResources}
+              minRagResourcesScore={chat.minRagResourcesScore}
+              agent={instance.agent}
+              selectedModel={instance.model}
+              setConfig={handleSetConfig}
+            />
+          )}
+
           {isPersisted ? (
             <Button
               variant="destructive"
@@ -102,13 +139,14 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
             </Button>
           ) : (
             <Button
-              variant="secondary"
-              size="sm"
+              variant="icon"
+              size="icon"
               onClick={onSelectThisChat}
               isLoading={isThisPersisting}
               disabled={isPersisting || chat.messages.length === 0}
+              aria-label="Save chat"
             >
-              Select this chat
+              <Save />
             </Button>
           )}
 

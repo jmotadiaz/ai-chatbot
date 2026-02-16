@@ -21,8 +21,11 @@ export async function persistHubChatFromTranscript({
   agent,
   projectId,
   temperature,
-
+  topP,
+  topK,
   webSearchNumResults = defaultWebSearchNumResults,
+  ragMaxResources,
+  minRagResourcesScore,
 }: {
   chatId: string;
   messages: ChatbotMessage[];
@@ -31,8 +34,11 @@ export async function persistHubChatFromTranscript({
   agent?: Agent;
   projectId?: string;
   temperature?: number;
-
+  topP?: number;
+  topK?: number;
   webSearchNumResults?: number;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
 }): Promise<{ chatId: string }> {
   const session = await getSession();
   if (!session?.user) {
@@ -49,6 +55,11 @@ export async function persistHubChatFromTranscript({
       projectId,
       defaultModel: model,
       defaultTemperature: temperature,
+      defaultTopP: topP,
+      defaultTopK: topK,
+
+      ragMaxResources,
+      minRagResourcesScore,
 
       webSearchNumResults,
       tools,

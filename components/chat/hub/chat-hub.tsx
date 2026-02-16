@@ -11,7 +11,6 @@ import { AddModelDropdown } from "@/components/chat/hub/add-model-dropdown";
 import { Textarea } from "@/components/chat/textarea";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 
-import { SettingsControl } from "@/components/chat/controls/settings-control";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 
 export interface ChatHubProps {
@@ -20,6 +19,7 @@ export interface ChatHubProps {
 
 export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
   const hub = useChatHub();
+
   const inputContainerClassName = "w-full max-w-5xl mx-auto px-4";
 
   const panelsContainerClassName = React.useMemo(() => {
@@ -86,6 +86,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 instance={inst}
                 submitSubscribe={hub.submitSubscribe}
                 updateInstanceAgent={hub.updateInstanceAgent}
+                updateInstanceConfig={hub.updateInstanceConfig}
                 onRemove={hub.removeInstance}
                 persistChat={hub.persistChat}
                 isPersisting={hub.isPersisting}
@@ -147,6 +148,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                   instance={inst}
                   submitSubscribe={hub.submitSubscribe}
                   updateInstanceAgent={hub.updateInstanceAgent}
+                  updateInstanceConfig={hub.updateInstanceConfig}
                   onRemove={hub.removeInstance}
                   persistChat={hub.persistChat}
                   isPersisting={hub.isPersisting}
@@ -201,7 +203,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
           </div>
 
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
-            <SettingsControl />
+            {/* Removed Global SettingsControl per user feedback */}
             {hasPreviousMessage && (
               <ChatControl
                 Icon={Undo}
