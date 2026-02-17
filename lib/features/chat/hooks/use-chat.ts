@@ -52,6 +52,8 @@ export interface UseChatArgs {
   preventChatPersistence?: boolean;
 
   webSearchNumResults?: number;
+  ragMaxResources?: number;
+  minRagResourcesScore?: number;
 }
 
 export interface UseChatResult
@@ -86,6 +88,8 @@ export const useChat = ({
   agent: initialAgent = "rag",
 
   webSearchNumResults = defaultWebSearchNumResults,
+  ragMaxResources,
+  minRagResourcesScore,
 }: UseChatArgs): UseChatResult => {
   const { chatConfig, setConfig } = useChatConfig({
     selectedModel,
@@ -94,6 +98,8 @@ export const useChat = ({
     topK,
 
     webSearchNumResults,
+    ragMaxResources,
+    minRagResourcesScore,
   });
   const { agent, setAgent } = useChatAgent(initialAgent);
   const { setQueryParamChatId, validQueryParamChatId } = useChatQueryParamId();
