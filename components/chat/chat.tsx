@@ -109,7 +109,6 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               ragMaxResources={ragMaxResources}
               minRagResourcesScore={minRagResourcesScore}
               agent={agent}
-              selectedModel={selectedModel}
               setConfig={setConfig}
             />
             {hasPreviousMessage && (

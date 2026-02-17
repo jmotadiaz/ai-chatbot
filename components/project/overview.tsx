@@ -1,9 +1,10 @@
 "use client";
 import { useSearchParams } from "next/navigation";
+import { ReactNode } from "react";
 import { LogoIcon } from "@/components/ui/icons";
 
 export interface ProjectOverviewProps {
-  title?: string;
+  title?: ReactNode;
 }
 
 export const ProjectOverview = ({ title }: ProjectOverviewProps) => {

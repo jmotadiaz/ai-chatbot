@@ -1,5 +1,6 @@
 "use client";
 
+import { ReactNode } from "react";
 import { ProjectOverview } from "@/components/project/overview";
 import { Messages, Message } from "@/components/chat/message";
 import { ChatNavigation } from "@/components/chat/navigation";
@@ -11,8 +12,9 @@ import { UseChatResult } from "@/lib/features/chat/hooks/use-chat";
 
 export interface ChatConversationProps extends Pick<
   UseChatResult,
-  "messages" | "status" | "title"
+  "messages" | "status"
 > {
+  title?: ReactNode;
   className?: string;
   reload?: boolean;
 }

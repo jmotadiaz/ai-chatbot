@@ -128,7 +128,6 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
               ragMaxResources={chat.ragMaxResources}
               minRagResourcesScore={chat.minRagResourcesScore}
               agent={instance.agent}
-              selectedModel={instance.model}
               setConfig={handleSetConfig}
               dropdownVariant="responsive-bottom-left"
               className={buttonVariants({
@@ -176,7 +175,14 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       <ChatConversation
         messages={chat.messages}
         status={chat.status}
-        title={instance.model}
+        title={
+          <div className="text-lg font-medium">
+            {instance.model}
+            <p className="text-sm text-muted-foreground mt-1">
+              Agent: <span className="capitalize">{instance.agent}</span>
+            </p>
+          </div>
+        }
         className={cn(
           "flex-1 flex",
           chat.messages.length ? "items-start" : "items-center",
