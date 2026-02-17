@@ -32,7 +32,7 @@ export const toWords = (str: string): string[] => {
 };
 
 export const isEmpty = <T>(
-  value: T | null | undefined
+  value: T | null | undefined,
 ): value is null | undefined =>
   value === null ||
   value === undefined ||
@@ -66,8 +66,8 @@ export const removeExtension = (filename: string = ""): string => {
 export const formatFilename = (filename: string = ""): string => {
   const filenameWithoutExtension = removeExtension(filename);
 
-  return filenameWithoutExtension.length > 30
-    ? `${filenameWithoutExtension.slice(0, 30)}...`
+  return filenameWithoutExtension.length > 20
+    ? `${filenameWithoutExtension.slice(0, 15)}...`
     : filenameWithoutExtension;
 };
 
