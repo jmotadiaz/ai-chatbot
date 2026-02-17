@@ -4,11 +4,10 @@ import type { LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { SpinnerIcon } from "@/components/ui/icons";
 
-export interface ChatControlProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    "className" | "children"
-  > {
+export interface ChatControlProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "className" | "children"
+> {
   Icon: ComponentType<LucideProps>;
   isLoading?: boolean;
   onLoadingClick?: () => void;
@@ -36,7 +35,7 @@ export const ChatControl = ({
           className={cn(
             "rounded-full p-2 bg-black disabled:bg-zinc-300 disabled:cursor-not-allowed transition-colors",
             onLoadingClick ? "cursor-pointer" : "cursor-not-allowed",
-            className
+            className,
           )}
         >
           <div className="animate-spin h-4 w-4">
@@ -48,13 +47,13 @@ export const ChatControl = ({
           type={type}
           disabled={disabled}
           className={cn(
-            "rounded-full p-2 bg-black disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer",
+            "rounded-full p-2 bg-black disabled:bg-zinc-300 disabled:dark:bg-zinc-700 dark:disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-white",
             isActive && "bg-blue-600",
-            className
+            className,
           )}
           {...buttonProps}
         >
-          <Icon strokeWidth={2} size={16} className="text-white" />
+          <Icon strokeWidth={2} size={16} />
         </button>
       )}
     </>

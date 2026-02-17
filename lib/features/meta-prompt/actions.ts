@@ -28,7 +28,7 @@ async function refineChatPrompt({
   messages = [],
 }: Pick<RefinePromptInput, "input" | "messages">) {
   const modelMessages = await convertToModelMessages([
-    ...messages.map((message) => ({
+    ...(messages ?? []).map((message) => ({
       ...message,
       parts: message.parts.filter((part) => part.type === "text"),
     })),

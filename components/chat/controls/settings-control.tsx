@@ -5,13 +5,18 @@ import { Settings2 } from "lucide-react";
 import { ChatControl } from "@/components/chat/control";
 import { Label } from "@/components/ui/label";
 import { InputNumber } from "@/components/ui/input-number";
-import { Dropdown, useDropdown } from "@/components/ui/dropdown";
+import {
+  Dropdown,
+  DropdownPopupProps,
+  useDropdown,
+} from "@/components/ui/dropdown";
 import type { SetChatConfig } from "@/lib/features/chat/hooks/hook-types";
 import type { Agent } from "@/lib/features/chat/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export interface SettingsControlProps {
   className?: ClassValue;
+  dropdownVariant?: DropdownPopupProps["variant"];
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -29,6 +34,7 @@ const isDefined = <T,>(value: T | undefined | null): value is T => {
 
 export const SettingsControl = ({
   className,
+  dropdownVariant = "responsive-top-left",
   temperature,
   topP,
   topK,
@@ -66,7 +72,7 @@ export const SettingsControl = ({
       />
       <Dropdown.Popup
         {...getDropdownPopupProps()}
-        variant="responsive-top-left"
+        variant={dropdownVariant}
         className="space-y-4 min-w-[240px] p-4 lg:p-4"
       >
         {showModelConfig && (
@@ -133,7 +139,7 @@ export const SettingsControl = ({
               </Label>
               <InputNumber
                 id="webSearchNumResults"
-                  value={webSearchNumResults as number}
+                value={webSearchNumResults as number}
                 min={1}
                 max={20}
                 step={1}

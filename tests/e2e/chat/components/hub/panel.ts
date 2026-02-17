@@ -14,7 +14,7 @@ export class HubPanelComponent {
       name: "Remove instance",
     });
     this.selectButton = container.getByRole("button", {
-      name: "Select this chat",
+      name: "Save chat",
     });
     this.deleteButton = container.getByRole("button", {
       name: "Delete chat",

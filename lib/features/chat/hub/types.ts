@@ -35,7 +35,7 @@ export interface ChatHub {
   persistingChatId: string | null;
 
   addInstance: (model: chatModelId, agent?: Agent) => void;
-  removeInstance: (chatId: string) => void;
+  removeInstance: (chatId: string) => Promise<void>;
   updateInstanceAgent: (chatId: string, agent: Agent) => void;
   updateInstanceConfig: (
     chatId: string,

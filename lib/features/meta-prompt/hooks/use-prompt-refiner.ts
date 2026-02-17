@@ -23,7 +23,7 @@ export interface UsePromptRefinerReturn {
 export const usePromptRefiner = ({
   input,
   setInput,
-  messages,
+  messages = [],
   mode,
   status,
   projectId,
@@ -39,7 +39,7 @@ export const usePromptRefiner = ({
     generate({
       prompt: input,
       body: {
-        messages: messages || null,
+        messages,
         mode,
         projectId,
       },

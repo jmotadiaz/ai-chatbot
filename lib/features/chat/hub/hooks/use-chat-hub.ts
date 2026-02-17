@@ -19,6 +19,7 @@ import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-mode
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
 import { useToolsEnabled } from "@/lib/features/chat/hooks/use-tools-enabled";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
+import { deleteChat } from "@/lib/features/chat/actions";
 import type { ChatConfig } from "@/lib/features/chat/hooks/hook-types";
 
 // Important: keep the runtime exclusion of "Router", but widen the type so
@@ -118,9 +119,20 @@ export const useChatHub = ({
     };
   }, []);
 
-  const removeInstance = useCallback((chatId: string) => {
-    setInstances((prev) => prev.filter((i) => i.chatId !== chatId));
-  }, []);
+  const removeInstance = useCallback(
+    async (chatId: string) => {
+      if (persistedChatIds.has(chatId)) {
+        await deleteChat(chatId);
+        setPersistedChatIds((prev) => {
+          const next = new Set(prev);
+          next.delete(chatId);
+          return next;
+        });
+      }
+      setInstances((prev) => prev.filter((i) => i.chatId !== chatId));
+    },
+    [persistedChatIds],
+  );
 
   const updateInstanceAgent = useCallback((chatId: string, agent: Agent) => {
     setInstances((prev) =>

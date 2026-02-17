@@ -5,7 +5,7 @@ import { Trash2, Save } from "lucide-react";
 import type { Agent } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/helpers";
 import { ChatConversation } from "@/components/chat/conversation";
 import { AgentSelector } from "@/components/chat/controls/agent-selector";
@@ -14,7 +14,7 @@ import { SettingsControl } from "@/components/chat/controls/settings-control";
 export interface HubInstancePanelProps {
   instance: HubInstance;
   submitSubscribe: ChatHub["submitSubscribe"];
-  onRemove: (id: string) => void;
+  onRemove: (id: string) => Promise<void>;
   updateInstanceAgent: (chatId: string, agent: Agent) => void;
   updateInstanceConfig: ChatHub["updateInstanceConfig"];
   persistChat: ChatHub["persistChat"];
@@ -78,7 +78,11 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   const isThisPersisting = isPersisting && persistingChatId === instance.chatId;
 
   const handleSetConfig = useCallback(
-    (config: Partial<import("@/lib/features/chat/hooks/hook-types").ChatConfig>) => {
+    (
+      config: Partial<
+        import("@/lib/features/chat/hooks/hook-types").ChatConfig
+      >,
+    ) => {
       updateInstanceConfig(instance.chatId, config);
     },
     [instance.chatId, updateInstanceConfig],
@@ -126,6 +130,11 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
               agent={instance.agent}
               selectedModel={instance.model}
               setConfig={handleSetConfig}
+              dropdownVariant="responsive-bottom-left"
+              className={buttonVariants({
+                variant: "icon",
+                size: "icon",
+              })}
             />
           )}
 
