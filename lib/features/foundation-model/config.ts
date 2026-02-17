@@ -44,6 +44,7 @@ export const chatModelKeys = [
   "Kimi K2",
   "Kimi K2.5",
   "MiniMax M2.1",
+  "MiniMax M2.5",
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Claude Haiku 4.5",

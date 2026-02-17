@@ -19,4 +19,10 @@ export const MINIMAX_CONFIG = {
       },
     },
   },
+  "MiniMax M2.5": {
+    model: providers.gateway("minimax/minimax-m2.5"),
+    reasoning: true,
+    company: "minimax",
+    temperature: 1,
+  },
 } as const satisfies Record<string, ModelConfiguration>;
