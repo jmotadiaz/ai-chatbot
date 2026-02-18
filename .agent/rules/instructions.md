@@ -13,15 +13,19 @@ Before researching files, planning, or writing any code, you MUST complete these
 
 Evaluate the user request against EVERY rule below. If ANY rule matches, read the corresponding SKILL.md file FIRST. Multiple rules can match — load all that apply.
 
-| If the request output touches… | Load this skill |
+| If the request involves | Load this skill |
 |---|---|
-| A React component (create, modify, refactor, extract, delete) | `.agent/skills/vercel-react-best-practices/SKILL.md` |
-| A React hook (create, modify, refactor) | `.agent/skills/vercel-react-best-practices/SKILL.md` |
-| The `ai` npm module | `.agent/skills/ai-sdk/SKILL.md` |
-| Implementing a Playwright test | `.agent/skills/test-generator/SKILL.md` |
-| Fixing a Playwright test | `.agent/skills/test-healer/SKILL.md` |
-| Planning Playwright tests | `.agent/skills/test-planner/SKILL.md` |
-| Writing or optimizing an AI prompt | `.agent/skills/senior-prompt-engineer/SKILL.md` |
+| A React component (create, modify, refactor, extract, delete) | `vercel-react-best-practices` |
+| A React hook (create, modify, refactor) | `vercel-react-best-practices` |
+| The `ai` npm module | `ai-sdk` |
+| Implementing a Playwright test | `test-generator` |
+| Fixing a Playwright test | `test-healer` |
+| Planning Playwright tests | `test-planner` |
+| Writing or optimizing an AI prompt | `senior-prompt-engineer` |
+
+#### Skills Paths
+- Workspace Skills: `.agent/skills/`
+- Global Skills: `~/.gemini/antigravity/skills/`
 
 ### Step 2: Context7 MCP
 

@@ -67,27 +67,11 @@ export class ChatComponent {
   }
 
   async getUserMessages(): Promise<string[]> {
-    const count = await this.userMessages.count();
-    const messages: string[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const text = await this.userMessages.nth(i).textContent();
-      if (text) messages.push(text.trim());
-    }
-
-    return messages;
+    return await this.userMessages.allTextContents();
   }
 
   async getAssistantMessages(): Promise<string[]> {
-    const count = await this.assistantMessages.count();
-    const messages: string[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const text = await this.assistantMessages.nth(i).textContent();
-      if (text) messages.push(text.trim());
-    }
-
-    return messages;
+    return await this.assistantMessages.allTextContents();
   }
 
   async getLastAssistantMessage(): Promise<string | null> {
@@ -95,7 +79,7 @@ export class ChatComponent {
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }
 
-  async waitForLoadingComplete(timeout = 30000) {
+  async waitForLoadingComplete(timeout = 10000) {
     // Simply wait for loading indicator to be gone (or never appear)
     // This avoids race conditions when responses are fast
     await expect(this.loadingIndicator).not.toBeVisible({ timeout });

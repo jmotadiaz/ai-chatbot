@@ -37,6 +37,10 @@ type NewChat = {
   updatedAt?: Date;
 };
 interface TestFixtures {
+  dbClient: {
+    client: postgres.Sql;
+    db: ReturnType<typeof drizzle>;
+  };
   authenticatedUser: User;
   testUser: User;
   db: {
@@ -51,15 +55,23 @@ interface TestFixtures {
  * This allows dependency injection for testing
  */
 export const test = base.extend<TestFixtures>({
+  // Shared Database Client Fixture
+  dbClient: async ({}, use) => {
+    const client = postgres(
+      process.env.POSTGRES_URL ??
+        "postgres://postgres:postgres@localhost:5434/test",
+    );
+    const db = drizzle(client, { schema });
+
+    await use({ client, db });
+
+    await client.end();
+  },
+
   // Main User Fixture: Creates user in DB AND authenticates them in the browser
   authenticatedUser: [
-    async ({ page, baseURL }, use) => {
-      // 1. Create User in DB
-      const client = postgres(
-        process.env.POSTGRES_URL ??
-          "postgres://postgres:postgres@localhost:5434/test",
-      );
-      const db = drizzle(client, { schema });
+    async ({ page, baseURL, dbClient }, use) => {
+      const { db } = dbClient;
 
       // Use salt rounds = 1 for fast hashing in tests
       const hashedPassword = hashSync("test-password", 1);
@@ -107,20 +119,13 @@ export const test = base.extend<TestFixtures>({
 
       // Provide the authenticated user (full object) to the test
       await use(newUser);
-
-      // Cleanup
-      await client.end();
     },
     { auto: true },
   ],
 
   // DB Fixture: Depends on authenticatedUser, so accessing db guarantees an authenticated session
-  db: async ({ authenticatedUser }, use) => {
-    const client = postgres(
-      process.env.POSTGRES_URL ??
-        "postgres://postgres:postgres@localhost:5434/test",
-    );
-    const db = drizzle(client, { schema });
+  db: async ({ authenticatedUser, dbClient }, use) => {
+    const { db } = dbClient;
 
     const addChats = async (newChats: NewChat[]) => {
       const insertedChats: Chat[] = [];
@@ -172,7 +177,6 @@ export const test = base.extend<TestFixtures>({
     };
 
     await use({ testUser: authenticatedUser, addChats, addProjects });
-    await client.end();
   },
 
   // Deprecated/Alias provided for backward compatibility if strict types needed,

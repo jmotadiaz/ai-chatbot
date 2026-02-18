@@ -132,7 +132,7 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(message).toBeInViewport();
     }).toPass({
-      intervals: [500, 1_000, 2_000],
+      intervals: [200, 500, 1000],
       timeout: 10_000,
     });
   }
@@ -166,8 +166,8 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(this.prevButton).toBeVisible();
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -175,8 +175,8 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(this.prevButton).not.toBeVisible();
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -184,8 +184,8 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(this.nextButton).toBeVisible();
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -193,8 +193,8 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(this.nextButton).not.toBeVisible();
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -202,8 +202,8 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(this.bottomButton).toBeVisible();
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -211,8 +211,8 @@ export class NavigationComponent {
     await expect(async () => {
       await expect(this.bottomButton).not.toBeVisible();
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -224,19 +224,19 @@ export class NavigationComponent {
       const isVisible = await this.isUserMessageInViewport(text);
       expect(isVisible).toBe(shouldBeVisible);
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
   async assertScrollTopLessThan(value: number) {
+    await this.scrollToTop();
     await expect(async () => {
-      await this.scrollToTop();
       const scrollTop = await this.getScrollTop();
       expect(scrollTop).toBeLessThan(value);
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
@@ -245,8 +245,8 @@ export class NavigationComponent {
       const scrollTop = await this.getScrollTop();
       expect(scrollTop).toBeGreaterThan(value);
     }).toPass({
-      intervals: [500, 1_000, 2_000, 5_000],
-      timeout: 30_000,
+      intervals: [200, 500, 1000],
+      timeout: 10_000,
     });
   }
 
