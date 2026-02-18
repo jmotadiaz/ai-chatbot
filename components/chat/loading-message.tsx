@@ -13,13 +13,8 @@ interface LoadingMessageProps {
   className?: string;
 }
 
-type StartsWith<
-  T extends string,
-  Prefix extends string,
-> = T extends `${Prefix}${string}` ? T : never;
-
 const LOADING_MESSAGES: Record<
-  StartsWith<ChatbotMessage["parts"][0]["type"], "tool-">,
+  Extract<ChatbotMessage["parts"][0]["type"], `tool-${string}`>,
   string
 > = {
   "tool-rag": "Searching documents",
