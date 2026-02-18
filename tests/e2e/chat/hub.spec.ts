@@ -17,8 +17,8 @@ test.describe("Chat Hub", () => {
     // 1.1 Añadir hasta 3 modelos. Verificar que al llegar a 3, el botón de añadir desaparece.
 
     // Add first model
-    await hubPage.header.addModel("Claude Sonnet 4.5");
-    await expect(page.getByText("Claude Sonnet 4.5").first()).toBeVisible();
+    await hubPage.header.addModel("Claude Sonnet 4.6");
+    await expect(page.getByText("Claude Sonnet 4.6").first()).toBeVisible();
 
     // Add second model
     await hubPage.header.addModel("GPT OSS");
@@ -50,7 +50,7 @@ test.describe("Chat Hub", () => {
 
   test("Messaging Multi-Modelo and Locking", async ({ page }) => {
     // 2.1 Enviar un mensaje y verificar el streaming simultáneo en los paneles activos.
-    await hubPage.header.addModel("Claude Sonnet 4.5");
+    await hubPage.header.addModel("Claude Sonnet 4.6");
     await hubPage.header.addModel("GPT OSS");
 
     const message = "Hello models, give me a short response.";
@@ -62,7 +62,7 @@ test.describe("Chat Hub", () => {
       .toBeDisabled();
 
     // Verify both models respond
-    const claudePanel = hubPage.getPanel("Claude Sonnet 4.5");
+    const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
     const gptPanel = hubPage.getPanel("GPT OSS");
 
     // In desktop view both should be visible.
@@ -73,7 +73,7 @@ test.describe("Chat Hub", () => {
     await expect
       .soft(async () => {
         // We select the tab to ensure it's in the DOM/visible if needed
-        await hubPage.header.selectTab("Claude Sonnet 4.5");
+        await hubPage.header.selectTab("Claude Sonnet 4.6");
         const claudeMsg = await claudePanel.getLastAssistantMessage();
         expect(claudeMsg).not.toBeNull();
         expect(claudeMsg?.length).toBeGreaterThan(0);
@@ -96,12 +96,12 @@ test.describe("Chat Hub", () => {
 
   test("Persistence - Select this chat", async ({ page }) => {
     // 3.1 Pulsar "Select this chat" en uno de los paneles.
-    await hubPage.header.addModel("Claude Sonnet 4.5");
+    await hubPage.header.addModel("Claude Sonnet 4.6");
     await hubPage.hubContent.sendMessage("Hello there");
 
-    const claudePanel = hubPage.getPanel("Claude Sonnet 4.5");
+    const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
     // Ensure we are on the right tab to see the button
-    await hubPage.header.selectTab("Claude Sonnet 4.5");
+    await hubPage.header.selectTab("Claude Sonnet 4.6");
 
     await expect(claudePanel.selectButton).toBeVisible();
     await claudePanel.selectButton.click();
@@ -118,22 +118,22 @@ test.describe("Chat Hub", () => {
 
   test("UI & Responsive Grid", async ({ page }) => {
     // 5.1 Cambiar entre vista grid (desktop) y vista tabs (mobile).
-    await hubPage.header.addModel("Claude Sonnet 4.5");
+    await hubPage.header.addModel("Claude Sonnet 4.6");
     await hubPage.header.addModel("GPT OSS");
 
     // Default desktop grid view - both panels should be visible
-    const claudePanel = hubPage.getPanel("Claude Sonnet 4.5");
+    const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
     const gptPanel = hubPage.getPanel("GPT OSS");
 
     // Desktop can render as grid (multiple panels visible) or as tabs (single panel visible).
     const claudeTab = page.getByRole("button", {
-      name: "Claude Sonnet 4.5",
+      name: "Claude Sonnet 4.6",
       exact: true,
     });
     const gptTab = page.getByRole("button", { name: "GPT OSS", exact: true });
 
     if ((await claudeTab.isVisible()) && (await gptTab.isVisible())) {
-      await hubPage.header.selectTab("Claude Sonnet 4.5");
+      await hubPage.header.selectTab("Claude Sonnet 4.6");
       await expect.soft(claudePanel.container).toBeVisible();
       await hubPage.header.selectTab("GPT OSS");
       await expect.soft(gptPanel.container).toBeVisible();
@@ -146,7 +146,7 @@ test.describe("Chat Hub", () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     // Select Claude tab
-    await hubPage.header.selectTab("Claude Sonnet 4.5");
+    await hubPage.header.selectTab("Claude Sonnet 4.6");
     await expect.soft(claudePanel.container).toBeVisible();
     // In mobile, non-active panel might be hidden or detached
     await expect.soft(gptPanel.container).toBeHidden();

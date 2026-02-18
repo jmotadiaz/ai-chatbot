@@ -13,10 +13,20 @@ interface LoadingMessageProps {
   className?: string;
 }
 
-const LOADING_MESSAGES: Record<string, string> = {
+type StartsWith<
+  T extends string,
+  Prefix extends string,
+> = T extends `${Prefix}${string}` ? T : never;
+
+const LOADING_MESSAGES: Record<
+  StartsWith<ChatbotMessage["parts"][0]["type"], "tool-">,
+  string
+> = {
   "tool-rag": "Searching documents",
   "tool-webSearch": "Searching the web",
   "tool-urlContext": "Fetching URL content",
+  "tool-resolveLibraryId": "Resolving library id",
+  "tool-queryDocs": "Fetching Doc",
 };
 
 export const LoadingMessage: React.FC<LoadingMessageProps> = ({
@@ -52,7 +62,11 @@ export const LoadingMessage: React.FC<LoadingMessageProps> = ({
             return (
               <ToolLoading
                 key={`message-${part.type}`}
-                text={LOADING_MESSAGES[part.type] || "Loading tool"}
+                text={
+                  LOADING_MESSAGES[
+                    part.type as keyof typeof LOADING_MESSAGES
+                  ] || "Loading tool"
+                }
               />
             );
           }

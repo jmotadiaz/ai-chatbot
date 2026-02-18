@@ -18,7 +18,6 @@ export const GOOGLE_CONFIG = {
     company: "google",
     temperature: 0.6,
     supportedFiles: ["img", "pdf"],
-    nativeToolCalling: true,
     reasoning: true,
     providerOptions: {
       google: {
@@ -34,7 +33,6 @@ export const GOOGLE_CONFIG = {
     company: "google",
     temperature: 1,
     supportedFiles: ["img", "pdf"],
-    nativeToolCalling: true,
     reasoning: true,
     providerOptions: {
       gateway: {
@@ -66,8 +64,6 @@ export const GOOGLE_CONFIG = {
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    temperature: 1,
-    nativeToolCalling: true,
     providerOptions: {
       gateway: {
         zeroDataRetention: true,

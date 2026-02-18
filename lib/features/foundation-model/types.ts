@@ -43,8 +43,6 @@ export type ProviderOptions = {
 export interface ModelConfiguration {
   model: LanguageModel;
   providerOptions?: ProviderOptions;
-  toolCalling?: boolean;
-  nativeToolCalling?: boolean;
   reasoning?: boolean;
   supportedFiles?: Array<"pdf" | "img">;
   supportedOutput?: Array<"text" | "img">;

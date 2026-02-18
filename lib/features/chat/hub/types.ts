@@ -24,7 +24,6 @@ export interface ChatHub {
   instances: HubInstance[];
   availableModels: chatModelId[];
   supportedFilesForPicker: Required<ModelConfiguration>["supportedFiles"];
-  toolsEnabled: boolean;
   /** Once the hub has sent the first message, new instances cannot be added. */
   instancesLocked: boolean;
   /** True while all instances are processing a submitted message. */

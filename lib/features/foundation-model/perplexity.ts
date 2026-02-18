@@ -9,14 +9,12 @@ export const PERPLEXITY_CONFIG = {
     company: "perplexity",
     temperature: 0.6,
     supportedFiles: ["img"],
-    toolCalling: false,
   },
   "Sonar Pro": {
     model: providers.perplexity("sonar-pro"),
     company: "perplexity",
     temperature: 0.6,
     supportedFiles: ["img"],
-    toolCalling: false,
   },
   "Sonar Reasoning": {
     model: wrapLanguageModel({
@@ -27,6 +25,5 @@ export const PERPLEXITY_CONFIG = {
     company: "perplexity",
     temperature: 0.6,
     supportedFiles: ["img"],
-    toolCalling: false,
   },
 } as const satisfies Record<string, ModelConfiguration>;

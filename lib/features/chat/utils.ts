@@ -224,6 +224,10 @@ export const destructuringMessageParts = (
           }
           acc.toolParts.push(part);
           break;
+
+        case "tool-resolveLibraryId":
+          acc.toolParts.push(part);
+          break;
       }
       return acc;
     },

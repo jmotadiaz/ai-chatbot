@@ -48,7 +48,7 @@ export const chatModelKeys = [
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Claude Haiku 4.5",
-  "Claude Sonnet 4.5",
+  "Claude Sonnet 4.6",
   "Claude Opus 4.5",
   "Grok 4.1 Fast",
   "Grok 4",
@@ -97,8 +97,6 @@ export interface ChatModelConfiguration {
   topP?: number;
   topK?: number;
   reasoning: boolean;
-  toolCalling: boolean;
-  nativeToolCalling: boolean;
   zeroDataRetention?: boolean;
   supportedFiles: Required<ModelConfiguration>["supportedFiles"];
   supportedOutput: Required<ModelConfiguration>["supportedOutput"];
@@ -108,8 +106,6 @@ export const getChatConfigurationByModelId = (
   modelId: chatModelId,
 ): ChatModelConfiguration => {
   const defaultConfig = {
-    toolCalling: true,
-    nativeToolCalling: false,
     company: "ai chatbot" as const,
     supportedFiles: [] as Required<ModelConfiguration>["supportedFiles"],
     reasoning: false,
@@ -136,8 +132,6 @@ export const getChatConfigurationByModelId = (
     topP: modelConfig.topP,
     topK: modelConfig.topK,
     reasoning: modelConfig.reasoning ?? false,
-    toolCalling: modelConfig.toolCalling ?? true,
-    nativeToolCalling: modelConfig.nativeToolCalling ?? false,
     zeroDataRetention: modelConfig.providerOptions?.gateway?.zeroDataRetention,
     supportedFiles: modelConfig.supportedFiles ?? [],
     supportedOutput: modelConfig.supportedOutput ?? ["text"],

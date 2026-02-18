@@ -6,7 +6,6 @@ export const ANTHROPIC_CONFIG = {
     model: providers.gateway("anthropic/claude-haiku-4.5"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
-    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -14,16 +13,14 @@ export const ANTHROPIC_CONFIG = {
       },
       gateway: {
         zeroDataRetention: true,
-        only: ["anthropic"],
       },
     },
   },
-  "Claude Sonnet 4.5": {
-    model: providers.gateway("anthropic/claude-sonnet-4.5"),
+  "Claude Sonnet 4.6": {
+    model: providers.gateway("anthropic/claude-sonnet-4.6"),
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -31,7 +28,6 @@ export const ANTHROPIC_CONFIG = {
       },
       gateway: {
         zeroDataRetention: true,
-        only: ["anthropic"],
       },
     },
   },
@@ -40,7 +36,6 @@ export const ANTHROPIC_CONFIG = {
     company: "anthropic",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
-    nativeToolCalling: true,
     providerOptions: {
       anthropic: {
         sendReasoning: true,
@@ -48,7 +43,6 @@ export const ANTHROPIC_CONFIG = {
       },
       gateway: {
         zeroDataRetention: true,
-        only: ["anthropic"],
       },
     },
   },

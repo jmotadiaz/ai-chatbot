@@ -12,7 +12,6 @@ export const DEEPSEEK_CONFIG = {
     model: providers.deepseek("deepseek-reasoner"),
     company: "deepseek",
     reasoning: true,
-    nativeToolCalling: true,
     temperature: 1,
     topP: 0.95,
   },

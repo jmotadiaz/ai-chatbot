@@ -17,7 +17,6 @@ import { useChatInputState } from "@/lib/features/chat/hooks/use-chat-input-stat
 import { useChatSendEnabled } from "@/lib/features/chat/hooks/use-chat-send-enabled";
 import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-models";
 import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
-import { useToolsEnabled } from "@/lib/features/chat/hooks/use-tools-enabled";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 import { deleteChat } from "@/lib/features/chat/actions";
 import type { ChatConfig } from "@/lib/features/chat/hooks/hook-types";
@@ -107,8 +106,6 @@ export const useChatHub = ({
     selectedModels: instanceModels,
     availableModels,
   });
-
-  const toolsEnabled = useToolsEnabled(instanceModels);
 
   const submitHandlersRef = useRef<Set<SubmitHandler>>(new Set());
 
@@ -248,7 +245,6 @@ export const useChatHub = ({
     instances,
     availableModels,
     supportedFilesForPicker,
-    toolsEnabled,
     instancesLocked,
     isSubmitting,
     isPersisting,

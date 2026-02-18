@@ -13,16 +13,16 @@ test.describe("Chat Hub - Sidebar Integration", () => {
 
   test("should update sidebar when saving a chat", async ({ page }) => {
     // Add a model
-    await hubPage.header.addModel("Claude Sonnet 4.5");
+    await hubPage.header.addModel("Claude Sonnet 4.6");
 
     // Send a message
     const uniqueMessage = `Hub Sidebar Test ${Date.now()}`;
     await hubPage.hubContent.sendMessage(uniqueMessage);
 
     // Wait for response and panel
-    const panel = hubPage.getPanel("Claude Sonnet 4.5");
+    const panel = hubPage.getPanel("Claude Sonnet 4.6");
     // Ensure tab is active
-    await hubPage.header.selectTab("Claude Sonnet 4.5");
+    await hubPage.header.selectTab("Claude Sonnet 4.6");
     await expect(panel.container).toBeVisible();
 
     // Click "Select this chat"
