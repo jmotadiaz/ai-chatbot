@@ -67,7 +67,7 @@ export const formatFilename = (filename: string = ""): string => {
   const filenameWithoutExtension = removeExtension(filename);
 
   return filenameWithoutExtension.length > 20
-    ? `${filenameWithoutExtension.slice(0, 15)}...`
+    ? `${filenameWithoutExtension.slice(0, 20)}...`
     : filenameWithoutExtension;
 };
 

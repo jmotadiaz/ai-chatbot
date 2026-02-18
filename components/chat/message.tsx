@@ -108,7 +108,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
       >
         <div className="flex flex-col w-full space-y-2">
           {(files.length > 0 || textFiles.length > 0) && (
-            <div className="flex gap-3 max-w-3/4 self-end overflow-x-auto scrollbar-none">
+            <div className="flex gap-3 max-w-full self-end overflow-x-auto scrollbar-none">
               {files.map((part, i) => (
                 <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
               ))}
