@@ -55,7 +55,7 @@ export const chatModelKeys = [
   "GPT OSS",
   "GPT 5.2",
   "Gemini 3 Flash",
-  "Gemini 3 Pro",
+  "Gemini 3.1 Pro",
   "Nano Banana",
 ] satisfies LanguageModelKeys[];
 

@@ -5,7 +5,6 @@ export const GOOGLE_CONFIG = {
   "Gemini 2.5 Flash Lite": {
     model: providers.google("gemini-2.5-flash-lite"),
     company: "google",
-    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     providerOptions: {
       gateway: {
@@ -16,7 +15,6 @@ export const GOOGLE_CONFIG = {
   "Gemini 2.5 Flash": {
     model: providers.google("gemini-2.5-flash"),
     company: "google",
-    temperature: 0.6,
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     providerOptions: {
@@ -59,15 +57,12 @@ export const GOOGLE_CONFIG = {
       },
     },
   },
-  "Gemini 3 Pro": {
-    model: providers.gateway("google/gemini-3-pro-preview"),
+  "Gemini 3.1 Pro": {
+    model: providers.gateway("google/gemini-3.1-pro-preview"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
     providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
       google: {
         thinkingConfig: {
           includeThoughts: true,

@@ -25,13 +25,14 @@
     "lint": "eslint . && npm run type:check",
     "lint:fix": "eslint --fix . && npm run type:check",
     "type:check": "tsc --noEmit",
-    "test": "npm run test:e2e",
+    "test": "concurrently \"npm run test:e2e\" \"npm run test:unit\"",
     "test:e2e": "npm run db:test:start && playwright test $PLAYWRIGHT_ARGS",
     "test:e2e:ui": "npm run db:test:start && playwright test --ui $PLAYWRIGHT_ARGS",
     "test:e2e:headed": "npm run db:test:start && playwright test --headed $PLAYWRIGHT_ARGS",
     "test:e2e:jules": "npm run db:jules:start && playwright test",
     "mcp:start": "npm run mcp-server",
     "mcp-server": "dotenv -e .env.development.local -- tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts",
+    "test:unit": "vitest run",
     "prepare": "husky"
   },
   "dependencies": {
@@ -127,6 +128,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@typescript-eslint/parser": "^8.35.0",
     "@vitest/ui": "^4.0.18",
+    "concurrently": "^9.2.1",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.24.0",
     "eslint-config-next": "15.2.4",

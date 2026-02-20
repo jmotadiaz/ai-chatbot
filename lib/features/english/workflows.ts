@@ -26,7 +26,7 @@ export async function correctGrammar(prompt: string) {
   });
 
   return streamObject({
-    ...languageModelConfigurations("Gemini 2.5 Flash Lite"),
+    ...languageModelConfigurations("Gemini 2.5 Flash"),
     schema: grammarSchema,
     system: `
       You are an expert in **English** grammar, spelling, and style. Your task is to correct the user's text to ensure it is grammatically perfect, free of spelling errors, and stylistically appropriate for the given context. After providing the corrected text, you must provide a list of specific reasons for each significant correction made.
@@ -83,7 +83,7 @@ export async function translate(prompt: string) {
 
   // Translation
   return streamText({
-    ...languageModelConfigurations("Qwen3 Next Instruct"),
+    ...languageModelConfigurations("Gemini 2.5 Flash"),
     system: `
       You are an expert ${sourceLanguage} to ${targetLanguage} translator with native-level proficiency in both languages. Your task is to translate the user's text with the highest fidelity to the original, while adapting it to the specific context provided below.
 
