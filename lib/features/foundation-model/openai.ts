@@ -11,8 +11,6 @@ export const OPENAI_CONFIG = {
       openai: { reasoningEffort: "high", textVerbosity: "low" },
       gateway: {
         zeroDataRetention: true,
-        order: ["cerebras", "baseten"],
-        only: ["cerebras", "baseten"],
       },
     },
   },
