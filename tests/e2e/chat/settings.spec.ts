@@ -10,7 +10,7 @@ test.describe("Chat functionality", () => {
   });
 
   test("should allow modifying chat settings for different models", async () => {
-    await chatPage.header.modelPicker.selectModel("Qwen3 Next Instruct");
+    await chatPage.header.modelPicker.selectModel("Qwen 3 Next Instruct");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();

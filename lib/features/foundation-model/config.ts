@@ -35,7 +35,8 @@ export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const chatModelKeys = [
-  "GPT OSS",
+  "Qwen 3 Next Instruct",
+  "Qwen 3.5",
   "GLM-4.7 Flash",
   "GLM-5",
   "Kimi K2",
@@ -44,8 +45,6 @@ export const chatModelKeys = [
   "MiniMax M2.5",
   "MiMo V2 Flash",
   "MiMo V2 Flash Thinking",
-  "Qwen3 Next Instruct",
-  "Qwen3 Next Thinking",
   "Deepseek Chat",
   "Deepseek Reasoner",
   "Claude Haiku 4.5",
@@ -53,6 +52,7 @@ export const chatModelKeys = [
   "Claude Opus 4.5",
   "Grok 4.1 Fast",
   "Grok 4",
+  "GPT OSS",
   "GPT 5.2",
   "Gemini 3 Flash",
   "Gemini 3.1 Pro",

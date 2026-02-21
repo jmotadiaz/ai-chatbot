@@ -2,23 +2,33 @@ import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const ALIBABA_CONFIG = {
-  "Qwen3 Next Instruct": {
+  "Qwen 3 Next Instruct": {
     model: providers.gateway("alibaba/qwen3-next-80b-a3b-instruct"),
     company: "alibaba",
     temperature: 0.7,
     topP: 0.8,
+    topK: 20,
     providerOptions: {
       gateway: {
         zeroDataRetention: true,
       },
     },
   },
-  "Qwen3 Next Thinking": {
-    model: providers.gateway("alibaba/qwen3-next-80b-a3b-thinking"),
+  "Qwen 3.5": {
+    model: providers.openrouter("qwen/qwen3.5-397b-a17b"),
     reasoning: true,
     company: "alibaba",
     temperature: 0.6,
     topP: 0.95,
+    topK: 20,
+    providerOptions: {
+      openrouter: {
+        reasoning: {
+          enabled: true,
+          effort: "high",
+        },
+      },
+    },
   },
   "Qwen3 30b": {
     model: providers.lmstudio("qwen/qwen3-30b-a3b-2507"),
