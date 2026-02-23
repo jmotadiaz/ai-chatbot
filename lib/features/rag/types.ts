@@ -1,4 +1,17 @@
-import { SimilarChunk } from "./queries";
+export type SimilarChunk = {
+  id: string;
+  similarity: number;
+  resourceTitle: string;
+  resourceUrl: string | null;
+  content: string;
+  type: string;
+  language: string | null;
+  boundaryType: string | null;
+  boundaryName: string | null;
+  position: number;
+};
+
+export type SimilarChunks = Array<SimilarChunk>;
 
 export type RagChunk = Pick<
   SimilarChunk,

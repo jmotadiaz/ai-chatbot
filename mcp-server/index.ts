@@ -10,7 +10,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { getDb } from "../lib/infrastructure/db/db";
 import { userApiKey } from "../lib/infrastructure/db/schema";
-import { retrieveResourceChunks } from "../lib/features/rag/retrieve/search";
+import { retrieveResourceChunks } from "../lib/features/rag/retrieve";
 
 // Initialize MCP Server
 const server = new Server(

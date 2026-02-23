@@ -10,6 +10,7 @@ import {
   notInArray,
   inArray,
 } from "drizzle-orm";
+import type { SimilarChunk, SimilarChunks } from "./types";
 import {
   resource,
   chunk,
@@ -76,21 +77,6 @@ export const createEmbeddings =
       throw error;
     }
   };
-
-export type SimilarChunk = {
-  id: string;
-  similarity: number;
-  resourceTitle: string;
-  resourceUrl: string | null;
-  content: string;
-  type: string;
-  language: string | null;
-  boundaryType: string | null;
-  boundaryName: string | null;
-  position: number;
-};
-
-export type SimilarChunks = Array<SimilarChunk>;
 
 /**
  * Optimized semantic search that executes multiple vector searches in a single db.batch call.

@@ -1,7 +1,7 @@
 import { tool, ToolSet } from "ai";
 import { z } from "zod";
 import { RagChunk } from "./types";
-import { retrieveResourceChunks } from "./retrieve/search";
+import { retrieveResourceChunks } from "./retrieve";
 import { extractChunkIdsFromMessages } from "./extract-resource-ids";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import {
