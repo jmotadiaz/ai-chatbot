@@ -1,10 +1,10 @@
 import { streamObject, streamText } from "ai";
 import {
   audienceInstructions,
+  buildGuardrailPrompt,
   identifyAudience,
   identifyDomain,
   identifyTranslationDirection,
-  STATIC_GUARDRAIL_PROMPT,
 } from "./utils";
 import { grammarSchema } from "./schemas";
 import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
@@ -43,7 +43,8 @@ export async function correctGrammar(prompt: string) {
       - Refine vocabulary for clarity/precision matching the domain and audience.
       - Do not add new information or remove existing factual content.
       - For each significant correction, provide a concise reason explaining *what* was changed and *why*.
-      ${STATIC_GUARDRAIL_PROMPT}
+
+      ${buildGuardrailPrompt("correct the grammar and spelling of the entire user message as-is")}
     `,
     prompt,
   });
@@ -86,7 +87,8 @@ export async function translate(prompt: string) {
       == OUTPUT RULES ==
       - Output ONLY the translated text.
       - No explanations, formatting, or commentary unless present in the original text.
-      ${STATIC_GUARDRAIL_PROMPT}
+
+      ${buildGuardrailPrompt(`translate the entire user message from ${sourceLanguage} to ${targetLanguage} as-is`)}
     `,
     prompt,
   });

@@ -15,7 +15,7 @@ import {
   getResourceById,
   deleteResourceById,
 } from "./queries";
-import { saveUrlResource, saveMarkdownResource } from "./ingestion/pipeline";
+import { saveUrlResource, saveMarkdownResource } from "./ingestion";
 import { getSession } from "@/lib/features/auth/cached-auth";
 // ... (trimmed imports)
 import { transaction } from "@/lib/infrastructure/db/queries";

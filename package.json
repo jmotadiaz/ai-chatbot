@@ -138,6 +138,7 @@
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^16.1.0",
+    "msw": "^2.12.10",
     "next-devtools-mcp": "^0.3.7",
     "node-loader": "^2.1.0",
     "tailwindcss": "^4.1.3",
