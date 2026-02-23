@@ -18,6 +18,7 @@ export const ALIBABA_CONFIG = {
     model: providers.openrouter("qwen/qwen3.5-397b-a17b"),
     reasoning: true,
     company: "alibaba",
+    supportedFiles: ["pdf", "img"],
     temperature: 0.6,
     topP: 0.95,
     topK: 20,

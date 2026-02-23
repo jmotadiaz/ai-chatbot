@@ -56,7 +56,6 @@ export const chatModelKeys = [
   "GPT 5.2",
   "Gemini 3 Flash",
   "Gemini 3.1 Pro",
-  "Nano Banana",
 ] satisfies LanguageModelKeys[];
 
 export type chatModelId = (typeof chatModelKeys)[number] | "Router";

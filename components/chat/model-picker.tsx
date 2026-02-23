@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSearch, ImageIcon, Plus, Shield, Brain } from "lucide-react";
+import { FileText, ImageIcon, Plus, Shield, Brain } from "lucide-react";
 import { useChatContext } from "@/components/chat/provider";
 import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
@@ -183,7 +183,7 @@ export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
                       key={`${name}-supported-input-${supportedFile}`}
                       className="ml-1"
                     >
-                      <FileSearch key={supportedFile} size={16} />
+                      <FileText key={supportedFile} size={16} />
                     </div>
                   );
               }
