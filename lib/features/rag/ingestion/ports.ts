@@ -1,9 +1,7 @@
-import type { UrlResource } from "./fetch";
 import type {
   InsertChunk,
   InsertEmbedding,
 } from "@/lib/infrastructure/db/schema";
-import type { Resource } from "@/lib/features/rag/types";
 
 // The port relies on the actual PG transaction from infrastructure to
 // keep it simple, or we can just abstract it as `any` if we want to be strict,
@@ -24,8 +22,4 @@ export interface RagIngestionAiPort {
   generateEmbeddings(
     inputs: { chunkId: string; content: string }[],
   ): Promise<{ chunkId: string; embedding: number[] }[]>;
-}
-
-export interface RagIngestionFetchPort {
-  fetchAndConvertURL(urlResource: UrlResource): Promise<Resource | null>;
 }

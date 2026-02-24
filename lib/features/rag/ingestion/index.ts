@@ -1,7 +1,6 @@
 import { createEmbeddings, saveResource, saveChunks } from "../queries";
 import { makeIngestUrlResource, makeIngestMarkdownResource } from "./factory";
 import { generateEmbeddings } from "./embeddings";
-import { fetchAndConvertURL } from "./fetch";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
 export type { UrlResource } from "./fetch";
@@ -17,15 +16,7 @@ const aiAdapter = {
   generateEmbeddings,
 } as const;
 
-const fetchAdapter = {
-  fetchAndConvertURL,
-};
-
-export const saveUrlResource = makeIngestUrlResource(
-  dbAdapter,
-  aiAdapter,
-  fetchAdapter,
-);
+export const saveUrlResource = makeIngestUrlResource(dbAdapter, aiAdapter);
 
 export const saveMarkdownResource = makeIngestMarkdownResource(
   dbAdapter,

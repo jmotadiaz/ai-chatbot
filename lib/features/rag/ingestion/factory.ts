@@ -1,11 +1,7 @@
 import { randomUUID } from "crypto";
 import { generateChunks } from "./chunking";
-import type { UrlResource } from "./fetch";
-import type {
-  RagIngestionDbPort,
-  RagIngestionAiPort,
-  RagIngestionFetchPort,
-} from "./ports";
+import { fetchAndConvertURL, type UrlResource } from "./fetch";
+import type { RagIngestionDbPort, RagIngestionAiPort } from "./ports";
 import type {
   InsertChunk,
   InsertEmbedding,
@@ -14,7 +10,6 @@ import type {
 export const makeIngestUrlResource = <Tx = unknown>(
   db: RagIngestionDbPort<Tx>,
   ai: RagIngestionAiPort,
-  fetcher: RagIngestionFetchPort,
 ) => {
   return async ({
     urlResource,
@@ -25,7 +20,7 @@ export const makeIngestUrlResource = <Tx = unknown>(
     userId: string;
     projectId?: string;
   }): Promise<{ success: boolean }> => {
-    const resource = await fetcher.fetchAndConvertURL(urlResource);
+    const resource = await fetchAndConvertURL(urlResource);
 
     if (!resource) {
       return { success: false };

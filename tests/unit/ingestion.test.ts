@@ -5,7 +5,6 @@ import {
   makeIngestUrlResource,
   makeIngestMarkdownResource,
 } from "../../lib/features/rag/ingestion/factory";
-import { fetchAndConvertURL } from "../../lib/features/rag/ingestion/fetch";
 import type {
   RagIngestionDbPort,
   RagIngestionAiPort,
@@ -72,8 +71,6 @@ function createFakeAiPort(): RagIngestionAiPort {
   };
 }
 
-const realFetcher = { fetchAndConvertURL };
-
 const BASE_USER_ID = "user-123";
 const BASE_PROJECT_ID = "project-456";
 const MOCK_URL = "https://example.com/doc";
@@ -102,7 +99,7 @@ describe("makeIngestUrlResource", () => {
 
     const { port: db, store } = createFakeDbPort();
     const ai = createFakeAiPort();
-    const ingest = makeIngestUrlResource(db, ai, realFetcher);
+    const ingest = makeIngestUrlResource(db, ai);
 
     const result = await ingest({
       urlResource: { url: MOCK_URL },
@@ -123,7 +120,7 @@ describe("makeIngestUrlResource", () => {
 
     const { port: db, store } = createFakeDbPort();
     const ai = createFakeAiPort();
-    const ingest = makeIngestUrlResource(db, ai, realFetcher);
+    const ingest = makeIngestUrlResource(db, ai);
 
     const result = await ingest({
       urlResource: { url: MOCK_URL },
@@ -145,7 +142,7 @@ describe("makeIngestUrlResource", () => {
 
     const { port: db, store } = createFakeDbPort();
     const ai = createFakeAiPort();
-    const ingest = makeIngestUrlResource(db, ai, realFetcher);
+    const ingest = makeIngestUrlResource(db, ai);
 
     await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
@@ -162,7 +159,7 @@ describe("makeIngestUrlResource", () => {
     );
 
     const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort(), realFetcher);
+    const ingest = makeIngestUrlResource(db, createFakeAiPort());
 
     await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
@@ -176,7 +173,7 @@ describe("makeIngestUrlResource", () => {
     );
 
     const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort(), realFetcher);
+    const ingest = makeIngestUrlResource(db, createFakeAiPort());
 
     await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
@@ -190,7 +187,7 @@ describe("makeIngestUrlResource", () => {
     );
 
     const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort(), realFetcher);
+    const ingest = makeIngestUrlResource(db, createFakeAiPort());
 
     await ingest({
       urlResource: { url: MOCK_URL },
@@ -210,7 +207,7 @@ describe("makeIngestUrlResource", () => {
     `);
 
     const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort(), realFetcher);
+    const ingest = makeIngestUrlResource(db, createFakeAiPort());
 
     await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
