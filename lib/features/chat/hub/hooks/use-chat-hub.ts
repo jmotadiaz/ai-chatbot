@@ -13,13 +13,13 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
-import { useChatInputState } from "@/lib/features/chat/hooks/use-chat-input-state";
-import { useChatSendEnabled } from "@/lib/features/chat/hooks/use-chat-send-enabled";
-import { useAvailableModels } from "@/lib/features/chat/hooks/use-available-models";
-import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
+import { useChatInputState } from "@/lib/features/chat/conversation/hooks/use-chat-input-state";
+import { useChatSendEnabled } from "@/lib/features/chat/conversation/hooks/use-chat-send-enabled";
+import { useAvailableModels } from "@/lib/features/chat/conversation/hooks/use-available-models";
+import { useSupportedFiles } from "@/lib/features/chat/conversation/hooks/use-supported-files";
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 import { deleteChat } from "@/lib/features/chat/actions";
-import type { ChatConfig } from "@/lib/features/chat/hooks/hook-types";
+import type { ChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
 
 // Important: keep the runtime exclusion of "Router", but widen the type so
 // downstream code can still accept `chatModelId` without TS `includes(...)` issues.

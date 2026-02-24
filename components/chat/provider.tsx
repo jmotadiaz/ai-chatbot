@@ -12,7 +12,7 @@ import {
   UseChatResult,
   UseChatArgs,
   useChat,
-} from "@/lib/features/chat/hooks/use-chat";
+} from "@/lib/features/chat/conversation/hooks/use-chat";
 
 const chatContext = createContext<UseChatResult>({
   selectedModel: defaultModel,

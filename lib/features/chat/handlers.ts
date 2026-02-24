@@ -1,75 +1,13 @@
 "use server";
 
-import { randomUUID } from "crypto";
-import { revalidatePath } from "next/cache";
+import "server-only";
 
-import type { ModelMessage } from "ai";
-import {
-  convertToModelMessages,
-  createUIMessageStream,
-  smoothStream,
-  NoSuchToolError,
-  InvalidArgumentError,
-  pruneMessages,
-} from "ai";
-
-import type { chatModelId } from "@/lib/features/foundation-model/config";
-import {
-  languageModelConfigurations,
-  chatModelKeys,
-  defaultWebSearchNumResults,
-} from "@/lib/features/foundation-model/config";
-import {
-  deleteMessageById,
-  saveChat,
-  saveMessages,
-  updateChat,
-} from "@/lib/features/chat/queries";
-import {
-  chatbotMessageToDbMessage,
-  generateTitle,
-} from "@/lib/features/chat/utils";
+import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { type ChatbotMessage, type Agent } from "@/lib/features/chat/types";
-import { getDb } from "@/lib/infrastructure/db/db";
-import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { createAgent } from "@/lib/features/chat/agents/factory";
-
-const processMesaggesToSend = async ({
-  messages,
-  modelConfiguration,
-}: {
-  messages: ChatbotMessage[];
-  modelConfiguration: ModelConfiguration;
-}): Promise<ModelMessage[]> => {
-  // Convert to model messages and prune reasoning parts if model doesn't support reasoning
-  const modelMessages = await convertToModelMessages(
-    messages.map((msg) => {
-      if (msg.role === "user" && msg.metadata?.textFiles?.length) {
-        const textFileContents = msg.metadata.textFiles
-          .map(
-            (f) => `\n\n---\nAttached File: ${f.filename}\n${f.content}\n---`,
-          )
-          .join("");
-
-        return {
-          ...msg,
-          parts: msg.parts.map((part) =>
-            part.type === "text"
-              ? { ...part, text: part.text + textFileContents }
-              : part,
-          ),
-        };
-      }
-      return msg;
-    }),
-  );
-  return modelConfiguration.reasoning
-    ? modelMessages
-    : pruneMessages({
-        messages: modelMessages,
-        reasoning: "all",
-      });
-};
+import { type chatModelId } from "@/lib/features/foundation-model/config";
+import { chatDbAdapter } from "@/lib/features/chat/conversation/adapters/db-adapter";
+import { chatProjectAdapter } from "@/lib/features/chat/conversation/adapters/project-adapter";
+import { makeProcessChatResponse } from "@/lib/features/chat/conversation";
 
 export async function processChatResponse({
   messages,
@@ -106,152 +44,22 @@ export async function processChatResponse({
   minRagResourcesScore?: number;
   user: { id: string };
 }) {
-  const safeWebSearchNumResults = Math.min(
-    Math.max(webSearchNumResults, 1),
-    10,
-  );
-
-  return createUIMessageStream<ChatbotMessage>({
-    async execute({ writer }) {
-      let modelId = selectedModel;
-      if (modelId === "Router") {
-        modelId = chatModelKeys[0];
-      }
-
-      const modelConfig: ModelConfiguration =
-        languageModelConfigurations(modelId) ||
-        languageModelConfigurations(chatModelKeys[0]);
-
-      const modelConfiguration = {
-        ...modelConfig,
-        temperature: temperature ?? modelConfig.temperature,
-        topP: topP ?? modelConfig.topP,
-        topK: topK ?? modelConfig.topK,
-      };
-
-      const messagesToSend = await processMesaggesToSend({
-        messages,
-        modelConfiguration,
-      });
-
-      const agentInstance = await createAgent({
-        projectId,
-        agent,
-        modelConfiguration,
-        messages,
-        userId: user.id,
-        systemPrompt,
-        selectedModel,
-        webSearchNumResults: safeWebSearchNumResults,
-        ragMaxResources,
-        minRagResourcesScore,
-      });
-
-      const result = await agentInstance.stream({
-        messages: messagesToSend,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        experimental_transform: smoothStream() as any,
-      });
-
-      writer.merge(
-        result.toUIMessageStream({
-          originalMessages: messages,
-          sendReasoning: true,
-          sendSources: true,
-          generateMessageId: randomUUID,
-          messageMetadata: ({ part }) => {
-            switch (part.type) {
-              case "start":
-                return { status: "started" };
-              case "text-start":
-                return { status: "streaming" };
-              case "finish":
-                return {
-                  status: "finished",
-                };
-              default:
-                return undefined;
-            }
-          },
-          onFinish: async ({ responseMessage }) => {
-            if (preventChatPersistence) return;
-
-            try {
-              const assistantMessage = responseMessage;
-              const userMessage = messages.at(-1);
-
-              if (
-                userMessage?.role === "user" &&
-                assistantMessage?.role === "assistant"
-              ) {
-                console.log("Saving chat and messages...", chatId);
-                const dbChatId = await getDb().transaction(async (tx) => {
-                  const updated = chatId
-                    ? await updateChat(
-                        { id: chatId, userId: user.id },
-                        {
-                          defaultModel: selectedModel,
-                          defaultTemperature: temperature,
-                          agent,
-                          webSearchNumResults: safeWebSearchNumResults,
-                          ragMaxResources,
-                          minRagResourcesScore,
-                        },
-                      )(tx)
-                    : undefined;
-
-                  const ensuredChat =
-                    updated ??
-                    (await saveChat({
-                      ...(chatId ? { id: chatId } : {}),
-                      userId: user.id,
-                      title: await generateTitle(messages),
-                      projectId,
-                      defaultModel: selectedModel,
-                      defaultTemperature: temperature,
-                      agent,
-                      webSearchNumResults: safeWebSearchNumResults,
-                      ragMaxResources,
-                      minRagResourcesScore,
-                    })(tx));
-
-                  const { id } = ensuredChat;
-                  await deleteMessageById(messageId)(tx);
-                  await saveMessages(
-                    await Promise.all(
-                      [userMessage, assistantMessage].map(
-                        chatbotMessageToDbMessage(id),
-                      ),
-                    ),
-                  )(tx);
-
-                  return id;
-                });
-                if (!chatId) {
-                  writer.write({
-                    type: "data-chat",
-                    data: {
-                      id: dbChatId,
-                    },
-                  });
-                }
-                revalidatePath("/", "layout");
-              }
-            } catch (error) {
-              console.error("Error saving message:", error);
-            }
-          },
-          onError: (error) => {
-            console.error("Error in AI response:", error);
-            if (NoSuchToolError.isInstance(error)) {
-              return `Tool non available: ${error.toolName}`;
-            } else if (InvalidArgumentError.isInstance(error)) {
-              return `The model called a tool with invalid arguments. ${error.parameter}`;
-            }
-            return `Runtime error: ${error}`;
-          },
-        }),
-      );
-    },
+  const handler = makeProcessChatResponse(chatDbAdapter, chatProjectAdapter);
+  return handler({
+    messages,
+    selectedModel,
+    temperature,
+    topP,
+    topK,
+    chatId,
+    systemPrompt,
+    messageId,
+    projectId,
+    preventChatPersistence,
+    agent,
+    webSearchNumResults,
+    ragMaxResources,
+    minRagResourcesScore,
+    user,
   });
 }

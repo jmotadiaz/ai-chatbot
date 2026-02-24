@@ -32,7 +32,7 @@ import type {
   ChatbotMessage,
   Agent,
 } from "@/lib/features/chat/types";
-import { useSupportedFiles } from "@/lib/features/chat/hooks/use-supported-files";
+import { useSupportedFiles } from "@/lib/features/chat/conversation/hooks/use-supported-files";
 import { FilePart } from "@/lib/features/attachment/types";
 import type { RefinePromptMode } from "@/lib/features/meta-prompt/types";
 

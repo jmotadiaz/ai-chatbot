@@ -10,7 +10,7 @@ import {
   DropdownPopupProps,
   useDropdown,
 } from "@/components/ui/dropdown";
-import type { SetChatConfig } from "@/lib/features/chat/hooks/hook-types";
+import type { SetChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
 import type { Agent } from "@/lib/features/chat/types";
 
 export interface SettingsControlProps {

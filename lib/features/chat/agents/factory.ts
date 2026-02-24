@@ -1,6 +1,6 @@
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { ChatbotMessage } from "@/lib/features/chat/types";
-import { getProjectById } from "@/lib/features/project/queries";
+import { ProjectPort } from "@/lib/features/chat/conversation/ports";
 import { createProjectAgent } from "@/lib/features/chat/agents/project";
 import { createContext7Agent } from "@/lib/features/chat/agents/context7";
 import { createWebSearchAgent } from "@/lib/features/chat/agents/web-search";
@@ -18,6 +18,7 @@ export const createAgent = async ({
   webSearchNumResults,
   ragMaxResources,
   minRagResourcesScore,
+  projectPort,
 }: {
   projectId?: string;
   agent: string;
@@ -29,9 +30,14 @@ export const createAgent = async ({
   webSearchNumResults: number;
   ragMaxResources?: number;
   minRagResourcesScore?: number;
+  projectPort?: ProjectPort;
 }) => {
   if (projectId) {
-    const project = await getProjectById({
+    if (!projectPort) {
+      throw new Error("ProjectPort is required for project agent");
+    }
+
+    const project = await projectPort.getProjectById({
       id: projectId,
       userId,
     });

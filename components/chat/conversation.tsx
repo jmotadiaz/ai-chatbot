@@ -6,9 +6,9 @@ import { Messages, Message } from "@/components/chat/message";
 import { ChatNavigation } from "@/components/chat/navigation";
 import { cn } from "@/lib/utils/helpers";
 import { LoadingMessage } from "@/components/chat/loading-message";
-import { useChatMessagesTurns } from "@/lib/features/chat/hooks/use-chat-messages-turns";
-import { useChatNavigation } from "@/lib/features/chat/hooks/use-chat-navigation";
-import { UseChatResult } from "@/lib/features/chat/hooks/use-chat";
+import { useChatMessagesTurns } from "@/lib/features/chat/conversation/hooks/use-chat-messages-turns";
+import { useChatNavigation } from "@/lib/features/chat/conversation/hooks/use-chat-navigation";
+import { UseChatResult } from "@/lib/features/chat/conversation/hooks/use-chat";
 
 export interface ChatConversationProps extends Pick<
   UseChatResult,

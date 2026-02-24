@@ -80,7 +80,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   const handleSetConfig = useCallback(
     (
       config: Partial<
-        import("@/lib/features/chat/hooks/hook-types").ChatConfig
+        import("@/lib/features/chat/conversation/hooks/hook-types").ChatConfig
       >,
     ) => {
       updateInstanceConfig(instance.chatId, config);

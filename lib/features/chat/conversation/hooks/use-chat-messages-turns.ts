@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { UseChatResult } from "@/lib/features/chat/hooks/use-chat";
+import { UseChatResult } from "@/lib/features/chat/conversation/hooks/use-chat";
 
 interface ChatMessagesTurns {
   previousMessages: ChatbotMessage[];

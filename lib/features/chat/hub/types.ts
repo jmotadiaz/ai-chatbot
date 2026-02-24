@@ -5,7 +5,7 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
-import type { ChatConfig } from "@/lib/features/chat/hooks/hook-types";
+import type { ChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
 
 export type SubmitMessage = Parameters<
   UseChatHelpers<ChatbotMessage>["sendMessage"]

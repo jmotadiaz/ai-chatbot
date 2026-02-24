@@ -16,16 +16,16 @@ import {
   defaultRagMaxResources,
   defaultMinRagScore,
 } from "@/lib/features/foundation-model/config";
-import { useChatRequestBody } from "@/lib/features/chat/hooks/use-chat-request-body";
+import { useChatRequestBody } from "@/lib/features/chat/conversation/hooks/use-chat-request-body";
 import {
   useChatSession,
   UseChatSessionResult,
-} from "@/lib/features/chat/hooks/use-chat-session";
-import { useChatDataPartState } from "@/lib/features/chat/hooks/use-chat-data-part-state";
+} from "@/lib/features/chat/conversation/hooks/use-chat-session";
+import { useChatDataPartState } from "@/lib/features/chat/conversation/hooks/use-chat-data-part-state";
 import type {
   ChatConfig,
   SetChatConfig,
-} from "@/lib/features/chat/hooks/hook-types";
+} from "@/lib/features/chat/conversation/hooks/hook-types";
 
 export interface UseChatHubInstanceConfig extends UseChatHubInstanceArgs {
   initialMessages?: ChatbotMessage[];
@@ -44,8 +44,7 @@ export interface UseChatHubInstanceConfig extends UseChatHubInstanceArgs {
 }
 
 export interface UseChatHubInstanceResult
-  extends UseChatSessionResult,
-    ChatConfig {
+  extends UseChatSessionResult, ChatConfig {
   chatId: string;
   model: chatModelId;
   dataPart: DataUIPart<ChatbotDataPart> | undefined;
