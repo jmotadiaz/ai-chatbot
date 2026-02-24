@@ -11,8 +11,8 @@ import type {
   InsertEmbedding,
 } from "@/lib/infrastructure/db/schema";
 
-export const makeIngestUrlResource = (
-  db: RagIngestionDbPort,
+export const makeIngestUrlResource = <Tx = unknown>(
+  db: RagIngestionDbPort<Tx>,
   ai: RagIngestionAiPort,
   fetcher: RagIngestionFetchPort,
 ) => {
@@ -98,8 +98,8 @@ export const makeIngestUrlResource = (
   };
 };
 
-export const makeIngestMarkdownResource = (
-  db: RagIngestionDbPort,
+export const makeIngestMarkdownResource = <Tx = unknown>(
+  db: RagIngestionDbPort<Tx>,
   ai: RagIngestionAiPort,
 ) => {
   return async ({
