@@ -3,11 +3,11 @@ import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
 import {
   makeCorrectGrammar,
   makeTranslate,
-} from "../../../lib/features/english/factory";
+} from "../../../lib/features/english/workflows/factory";
 import type {
   CorrectGrammarAiPort,
   TranslateAiPort,
-} from "../../../lib/features/english/ports";
+} from "../../../lib/features/english/workflows/ports";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

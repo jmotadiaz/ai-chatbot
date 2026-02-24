@@ -10,6 +10,7 @@ import {
 } from "ai";
 import {
   ChatDbPort,
+  ChatAgentAiPort,
   ProjectPort,
 } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -62,6 +63,31 @@ const processMessagesToSend = async ({
       });
 };
 
+/** Builds a ChatAgentAiPort where all agents use the same user-selected model + overrides */
+const buildAgentAdapter = (
+  selectedModel: chatModelId,
+  overrides: { temperature?: number; topP?: number; topK?: number },
+): ChatAgentAiPort => {
+  const getConfig = (): ModelConfiguration => {
+    const base =
+      languageModelConfigurations(selectedModel) ||
+      languageModelConfigurations(chatModelKeys[0]);
+    return {
+      ...base,
+      temperature: overrides.temperature ?? base.temperature,
+      topP: overrides.topP ?? base.topP,
+      topK: overrides.topK ?? base.topK,
+    };
+  };
+
+  return {
+    getRagModelConfiguration: getConfig,
+    getWebSearchModelConfiguration: getConfig,
+    getContext7ModelConfiguration: getConfig,
+    getProjectModelConfiguration: getConfig,
+  };
+};
+
 export const makeProcessChatResponse = <Tx = unknown>(
   db: ChatDbPort<Tx>,
   projectPort: ProjectPort,
@@ -104,17 +130,10 @@ export const makeProcessChatResponse = <Tx = unknown>(
       throw new Error("Unauthorized");
     }
 
-    const modelConfig: ModelConfiguration =
-      languageModelConfigurations(
-        selectedModel as Exclude<chatModelId, "Router">,
-      ) || languageModelConfigurations(chatModelKeys[0]);
+    const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
 
-    const modelConfiguration = {
-      ...modelConfig,
-      temperature: temperature ?? modelConfig.temperature,
-      topP: topP ?? modelConfig.topP,
-      topK: topK ?? modelConfig.topK,
-    };
+    // Use the RAG config for message processing (reasoning check)
+    const modelConfiguration = ai.getRagModelConfiguration();
 
     const messagesToSend = await processMessagesToSend({
       messages,
@@ -124,13 +143,12 @@ export const makeProcessChatResponse = <Tx = unknown>(
     return createUIMessageStream({
       async execute({ writer }) {
         const agentInstance = await createAgent({
+          ai,
           projectId,
           agent,
-          modelConfiguration,
           messages,
           userId: user.id,
           systemPrompt,
-          selectedModel,
           webSearchNumResults,
           ragMaxResources,
           minRagResourcesScore,

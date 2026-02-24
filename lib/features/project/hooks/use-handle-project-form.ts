@@ -16,7 +16,7 @@ import type { Tool, Tools } from "@/lib/features/chat/types";
 import { getProjectResourcesAction } from "@/lib/features/rag/actions";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 
-const models = CHAT_MODELS.filter((model) => model !== "Router");
+const models = CHAT_MODELS;
 
 // Check if an existing project has custom advanced settings configured
 const hasAdvancedConfig = (project?: Project): boolean => {

@@ -6,7 +6,6 @@ import type {
 } from "@/lib/infrastructure/db/schema";
 import type { Project } from "@/lib/features/project/types";
 import { Transactional } from "@/lib/infrastructure/db/queries";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 export interface ChatDbPort<Tx = unknown> {
@@ -57,8 +56,11 @@ export interface ChatDbPort<Tx = unknown> {
   getMessagesByChatId(id: string): Promise<Message[]>;
 }
 
-export interface ChatAiPort {
-  getModelConfiguration(modelId: chatModelId): ModelConfiguration;
+export interface ChatAgentAiPort {
+  getRagModelConfiguration(): ModelConfiguration;
+  getWebSearchModelConfiguration(): ModelConfiguration;
+  getContext7ModelConfiguration(): ModelConfiguration;
+  getProjectModelConfiguration(): ModelConfiguration;
 }
 
 export interface ProjectPort {

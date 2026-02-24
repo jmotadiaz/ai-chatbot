@@ -12,7 +12,7 @@ import {
 import { Textarea } from "@/components/chat/textarea";
 import { CopyBlock } from "@/components/ui/copy-block";
 import { cn } from "@/lib/utils/helpers";
-import { grammarSchema } from "@/lib/features/english/schemas";
+import { grammarSchema } from "@/lib/features/english/workflows/schemas";
 import type { UseObjectReturn } from "@/lib/utils/hooks/use-object";
 import { useObject } from "@/lib/utils/hooks/use-object";
 import { useSpeech } from "@/lib/features/english/hooks/use-speech";
@@ -99,7 +99,7 @@ export const EnglishTranslateChat: React.FC<TranslateChatProps> = ({
       </div>
       <div
         className={cn(
-          "w-full overflow-hidden relative text-lg overflow-y-auto"
+          "w-full overflow-hidden relative text-lg overflow-y-auto",
         )}
       >
         <>
@@ -155,7 +155,7 @@ const EnglishGrammarChat: React.FC<GrammarChatProps> = ({
       </div>
       <div
         className={cn(
-          "w-full overflow-hidden relative text-lg overflow-y-auto"
+          "w-full overflow-hidden relative text-lg overflow-y-auto",
         )}
       >
         {object && (

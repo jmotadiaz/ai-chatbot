@@ -21,11 +21,7 @@ import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 import { deleteChat } from "@/lib/features/chat/actions";
 import type { ChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
 
-// Important: keep the runtime exclusion of "Router", but widen the type so
-// downstream code can still accept `chatModelId` without TS `includes(...)` issues.
-const HUB_MODELS: chatModelId[] = CHAT_MODELS.filter(
-  (m) => m !== "Router",
-) as chatModelId[];
+const HUB_MODELS: chatModelId[] = CHAT_MODELS;
 
 const HUB_MAX_INSTANCES = 3;
 
@@ -152,7 +148,6 @@ export const useChatHub = ({
 
   const addInstance = useCallback(
     (model: chatModelId, agent: Agent = "rag") => {
-      if (model === "Router") return;
       if (isPersisting) return;
       if (instancesLocked) return;
       if (instances.length >= HUB_MAX_INSTANCES) return;

@@ -58,7 +58,7 @@ export const chatModelKeys = [
   "Gemini 3.1 Pro",
 ] satisfies LanguageModelKeys[];
 
-export type chatModelId = (typeof chatModelKeys)[number] | "Router";
+export type chatModelId = (typeof chatModelKeys)[number];
 
 export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 
@@ -104,25 +104,6 @@ export interface ChatModelConfiguration {
 export const getChatConfigurationByModelId = (
   modelId: chatModelId,
 ): ChatModelConfiguration => {
-  const defaultConfig = {
-    company: "ai chatbot" as const,
-    supportedFiles: [] as Required<ModelConfiguration>["supportedFiles"],
-    reasoning: false,
-    zeroDataRetention: false,
-    supportedOutput: [
-      "text",
-    ] as Required<ModelConfiguration>["supportedOutput"],
-  };
-
-  if (modelId === "Router") {
-    return {
-      ...defaultConfig,
-      reasoning: true,
-      supportedFiles: ["img", "pdf"],
-      supportedOutput: ["text", "img"],
-    };
-  }
-
   const modelConfig = languageModelConfigurations(modelId);
 
   return {

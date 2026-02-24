@@ -12,19 +12,15 @@ export interface ChatSettingsButtonProps {
 
 export const ChatSettingsButton = ({ className }: ChatSettingsButtonProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
-  const { temperature, topP, topK, setConfig, selectedModel } =
-    useChatContext();
+  const { temperature, topP, topK, setConfig } = useChatContext();
 
   const setTemperature = (value: number) => setConfig({ temperature: value });
   const setTopP = (value: number) => setConfig({ topP: value });
   const setTopK = (value: number) => setConfig({ topK: value });
 
-  const isRouter = selectedModel === "Router";
-
-  // Model config fields only shown for non-Router models and only if the model has them defined
-  const showTemperatureSetting = !isRouter && isDefined(temperature);
-  const showTopPSetting = !isRouter && isDefined(topP);
-  const showTopKSetting = !isRouter && isDefined(topK);
+  const showTemperatureSetting = isDefined(temperature);
+  const showTopPSetting = isDefined(topP);
+  const showTopKSetting = isDefined(topK);
 
   const showModelConfig =
     showTemperatureSetting || showTopPSetting || showTopKSetting;

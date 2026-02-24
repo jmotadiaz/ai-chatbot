@@ -44,10 +44,6 @@ export const calculateModelConfiguration = async ({
   autoModelMetadata?: ModelRoutingMetadata;
   tools: Tools;
 }> => {
-  if (selectedModel === "Router") {
-    // Falback or error, since router is deprecated
-    throw new Error("Router model is deprecated.");
-  }
   const modelConfig: ModelConfiguration =
     languageModelConfigurations(selectedModel) ||
     languageModelConfigurations(chatModelKeys[0]);
