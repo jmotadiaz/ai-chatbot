@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { makeRetrieveResourceChunks } from "../../lib/features/rag/retrieve/factory";
+import { makeRetrieveResourceChunks } from "../../../lib/features/rag/retrieve/factory";
 import {
   RagRetrieveDbPort,
   RagRetrieveAiPort,
-} from "../../lib/features/rag/retrieve/ports";
-import { SimilarChunk, SimilarChunks } from "../../lib/features/rag/types";
-import { RerankResult } from "../../lib/features/foundation-model/types";
+} from "../../../lib/features/rag/retrieve/ports";
+import { SimilarChunk, SimilarChunks } from "../../../lib/features/rag/types";
+import { RerankResult } from "../../../lib/features/foundation-model/types";
 
 const createMockDbPort = (options?: {
   keywordResults?: SimilarChunks;

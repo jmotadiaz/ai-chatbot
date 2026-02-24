@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateChunks,
   type ChunkGroup,
-} from "../../lib/features/rag/ingestion/chunking";
+} from "../../../lib/features/rag/ingestion/chunking";
 
 // ─── Constants (mirror of chunking.ts internals) ─────────────────────────────
 const MIN_PARENT_SIZE = 2000;

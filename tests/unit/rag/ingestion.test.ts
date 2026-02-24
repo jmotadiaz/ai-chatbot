@@ -4,15 +4,15 @@ import { setupServer } from "msw/node";
 import {
   makeIngestUrlResource,
   makeIngestMarkdownResource,
-} from "../../lib/features/rag/ingestion/factory";
+} from "../../../lib/features/rag/ingestion/factory";
 import type {
   RagIngestionDbPort,
   RagIngestionAiPort,
-} from "../../lib/features/rag/ingestion/ports";
+} from "../../../lib/features/rag/ingestion/ports";
 import type {
   InsertChunk,
   InsertEmbedding,
-} from "../../lib/infrastructure/db/schema";
+} from "../../../lib/infrastructure/db/schema";
 
 // ─── MSW Server ───────────────────────────────────────────────────────────────
 
