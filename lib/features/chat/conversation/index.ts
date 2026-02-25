@@ -3,11 +3,10 @@ import {
   createUIMessageStream,
   smoothStream,
   convertToModelMessages,
-  pruneMessages,
   NoSuchToolError,
   InvalidArgumentError,
-  type ModelMessage,
 } from "ai";
+import type { ModelMessage } from "ai";
 import {
   ChatDbPort,
   ChatAgentAiPort,
@@ -29,12 +28,10 @@ import { createAgent } from "@/lib/features/chat/agents/factory";
 
 const processMessagesToSend = async ({
   messages,
-  modelConfiguration,
 }: {
   messages: ChatbotMessage[];
-  modelConfiguration: ModelConfiguration;
 }): Promise<ModelMessage[]> => {
-  const modelMessages = await convertToModelMessages(
+  return convertToModelMessages(
     messages.map((msg) => {
       if (msg.role === "user" && msg.metadata?.textFiles?.length) {
         const textFileContents = msg.metadata.textFiles
@@ -55,12 +52,6 @@ const processMessagesToSend = async ({
       return msg;
     }),
   );
-  return modelConfiguration.reasoning
-    ? modelMessages
-    : pruneMessages({
-        messages: modelMessages,
-        reasoning: "all",
-      });
 };
 
 /** Builds a ChatAgentAiPort where all agents use the same user-selected model + overrides */
@@ -132,13 +123,7 @@ export const makeProcessChatResponse = <Tx = unknown>(
 
     const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
 
-    // Use the RAG config for message processing (reasoning check)
-    const modelConfiguration = ai.getRagModelConfiguration();
-
-    const messagesToSend = await processMessagesToSend({
-      messages,
-      modelConfiguration,
-    });
+    const messagesToSend = await processMessagesToSend({ messages });
 
     return createUIMessageStream({
       async execute({ writer }) {

@@ -11,7 +11,7 @@ import {
 } from "@/lib/features/chat/agents/url-context-step";
 import {
   hasToolCallSteps,
-  IS_TEST_ENV,
+  withMessageProcessing,
 } from "@/lib/features/chat/agents/utils";
 import { Project } from "@/lib/infrastructure/db/schema";
 import {
@@ -54,33 +54,31 @@ export const createProjectAgent = ({
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(4),
     activeTools: [],
-    prepareStep: async ({ steps }) => {
-      if (IS_TEST_ENV)
+    prepareStep: withMessageProcessing(
+      modelConfiguration,
+      async ({ steps }) => {
+        if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
+          return {
+            system: RAG_AGENT_PROMPT,
+            activeTools: [RAG_TOOL],
+            ...(!hasRagToolCalled(messages) && {
+              toolChoice: { type: "tool", toolName: RAG_TOOL },
+            }),
+          };
+        }
+
+        if (
+          !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
+          (await hasToExecuteUrlContext(messages))
+        ) {
+          return urlContextStep();
+        }
+
         return {
           system: systemPrompt,
         };
-
-      if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
-        return {
-          system: RAG_AGENT_PROMPT,
-          activeTools: [RAG_TOOL],
-          ...(!hasRagToolCalled(messages) && {
-            toolChoice: { type: "tool", toolName: RAG_TOOL },
-          }),
-        };
-      }
-
-      if (
-        !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
-        (await hasToExecuteUrlContext(messages))
-      ) {
-        return urlContextStep();
-      }
-
-      return {
-        system: systemPrompt,
-      };
-    },
+      },
+    ),
   });
 };
 
