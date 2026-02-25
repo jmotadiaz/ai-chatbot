@@ -5,9 +5,7 @@ import "server-only";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { type ChatbotMessage, type Agent } from "@/lib/features/chat/types";
 import { type chatModelId } from "@/lib/features/foundation-model/config";
-import { chatDbAdapter } from "@/lib/features/chat/conversation/adapters/db-adapter";
-import { chatProjectAdapter } from "@/lib/features/chat/conversation/adapters/project-adapter";
-import { makeProcessChatResponse } from "@/lib/features/chat/conversation";
+import { processChatResponse as processChatResponseFn } from "@/lib/features/chat/conversation";
 
 export async function processChatResponse({
   messages,
@@ -44,8 +42,7 @@ export async function processChatResponse({
   minRagResourcesScore?: number;
   user: { id: string };
 }) {
-  const handler = makeProcessChatResponse(chatDbAdapter, chatProjectAdapter);
-  return handler({
+  return processChatResponseFn({
     messages,
     selectedModel,
     temperature,
