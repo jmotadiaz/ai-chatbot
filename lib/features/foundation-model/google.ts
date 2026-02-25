@@ -3,7 +3,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const GOOGLE_CONFIG = {
   "Gemini 2.5 Flash Lite": {
-    model: providers.google("gemini-2.5-flash-lite"),
+    model: providers.gateway("google/gemini-2.5-flash-lite"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     providerOptions: {
@@ -13,7 +13,7 @@ export const GOOGLE_CONFIG = {
     },
   },
   "Gemini 2.5 Flash": {
-    model: providers.google("gemini-2.5-flash"),
+    model: providers.gateway("google/gemini-2.5-flash"),
     company: "google",
     supportedFiles: ["img", "pdf"],
     reasoning: true,
@@ -39,20 +39,6 @@ export const GOOGLE_CONFIG = {
       google: {
         thinkingConfig: {
           includeThoughts: true,
-        },
-      },
-    },
-  },
-  "Gemini 3 Flash Tools": {
-    model: providers.google("gemini-3-flash-preview"),
-    company: "google",
-    temperature: 1,
-    reasoning: true,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingLevel: "low",
-          includeThoughts: false,
         },
       },
     },
