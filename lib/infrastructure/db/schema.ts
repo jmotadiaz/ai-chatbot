@@ -24,7 +24,7 @@ const vectorSearch = customType<{ data: string }>({
 });
 
 export const themeEnum = pgEnum("theme", ["system", "light", "dark"]);
-export const agentEnum = pgEnum("agent", ["rag", "web", "context7"]);
+export const agentEnum = pgEnum("agent", ["context7", "rag", "web"]);
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -72,7 +72,7 @@ export const chat = pgTable("Chat", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title"),
-  agent: agentEnum("agent").default("rag").notNull(),
+  agent: agentEnum("agent").default("context7").notNull(),
   defaultModel: varchar("defaultModel", { length: 100 }),
   defaultTemperature: real("defaultTemperature"),
   defaultTopP: real("defaultTopP"),

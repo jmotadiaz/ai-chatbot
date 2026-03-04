@@ -9,7 +9,7 @@ export interface UseChatAgentResult {
 }
 
 export const useChatAgent = (
-  initialAgent: Agent = "rag",
+  initialAgent: Agent = "context7",
 ): UseChatAgentResult => {
   const [agent, setAgent] = useState<Agent>(initialAgent);
 

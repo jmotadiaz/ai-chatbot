@@ -48,7 +48,7 @@ const chatContext = createContext<UseChatResult>({
   addToolResult: async () => {},
   addToolOutput: async () => {},
   addToolApprovalResponse: async () => {},
-  agent: "rag",
+  agent: "context7",
   setAgent: () => {},
   availableModels: CHAT_MODELS,
   dataPart: undefined,

@@ -52,9 +52,14 @@ export const createAgent = async ({
       userId,
       project,
     });
-  } else if (agent === "context7") {
-    return createContext7Agent({
-      modelConfiguration: ai.getContext7ModelConfiguration(),
+  } else if (agent === "rag") {
+    return createRagAgent({
+      modelConfiguration: ai.getRagModelConfiguration(),
+      messages,
+      userId,
+      projectId,
+      ragMaxResources,
+      minRagResourcesScore,
     });
   } else if (agent === "web") {
     return createWebSearchAgent({
@@ -63,14 +68,9 @@ export const createAgent = async ({
       webSearchNumResults,
     });
   } else {
-    // Default to RAG agent
-    return createRagAgent({
-      modelConfiguration: ai.getRagModelConfiguration(),
-      messages,
-      userId,
-      projectId,
-      ragMaxResources,
-      minRagResourcesScore,
+    // Default to Context7 agent
+    return createContext7Agent({
+      modelConfiguration: ai.getContext7ModelConfiguration(),
     });
   }
 };

@@ -18,7 +18,7 @@ export async function processChatResponse({
   messageId,
   projectId,
   preventChatPersistence = false,
-  agent = "rag",
+  agent = "context7",
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,

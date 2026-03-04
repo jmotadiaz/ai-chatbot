@@ -18,15 +18,15 @@ export interface AgentSelectorProps {
 }
 
 const AGENT_LABELS: Record<Agent, string> = {
-  rag: "RAG Agent",
   context7: "Ctx7 Agent",
+  rag: "RAG Agent",
   web: "Web Agent",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AGENT_ICONS: Record<Agent, React.ComponentType<any>> = {
-  rag: FileSearch,
   context7: MCPIcon,
+  rag: FileSearch,
   web: Globe,
 };
 

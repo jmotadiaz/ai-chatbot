@@ -63,7 +63,7 @@ export const useChatHub = ({
   initialInstances = [],
 }: UseChatHubArgs = {}): ChatHub => {
   const [instances, setInstances] = useState<HubInstance[]>(
-    initialInstances.map((i) => ({ ...i, agent: i.agent || "rag" })),
+    initialInstances.map((i) => ({ ...i, agent: i.agent || "context7" })),
   );
   const [instancesLocked, setInstancesLocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,7 +147,7 @@ export const useChatHub = ({
   );
 
   const addInstance = useCallback(
-    (model: chatModelId, agent: Agent = "rag") => {
+    (model: chatModelId, agent: Agent = "context7") => {
       if (isPersisting) return;
       if (instancesLocked) return;
       if (instances.length >= HUB_MAX_INSTANCES) return;
@@ -212,7 +212,7 @@ export const useChatHub = ({
           chatId,
           messages: messages as ChatbotMessage[],
           model,
-          agent: agent || "rag",
+          agent: agent || "context7",
           ...rest,
         });
 

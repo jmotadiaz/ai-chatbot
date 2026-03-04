@@ -85,7 +85,7 @@ export const useChat = ({
   projectId,
   title,
   preventChatPersistence = false,
-  agent: initialAgent = "rag",
+  agent: initialAgent = "context7",
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,

@@ -61,7 +61,7 @@ export const useChatHubInstance = ({
   topP,
   topK,
   systemPrompt,
-  agent = "rag",
+  agent = "context7",
   preventChatPersistence = false,
 
   webSearchNumResults = defaultWebSearchNumResults,
