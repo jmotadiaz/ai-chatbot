@@ -66,6 +66,12 @@ export class ChatComponent {
     this.navigation = new NavigationComponent(container);
   }
 
+  async waitForTitleVisible(title: string, timeout = 5000) {
+    await expect(
+      this.container.page().getByRole("heading", { name: title }),
+    ).toBeVisible({ timeout });
+  }
+
   async getUserMessages(): Promise<string[]> {
     return await this.userMessages.allTextContents();
   }

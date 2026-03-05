@@ -5,10 +5,10 @@
   },
   "mcpServers": {
     "playwright-test": {
-      "command": "sh",
+      "command": "npx",
       "args": [
-        "-c",
-        "cd /Users/javier/projects/ai-chatbot && npx --registry https://registry.npmjs.org/ playwright run-test-mcp-server"
+        "playwright",
+        "run-test-mcp-server"
       ]
     }
   }

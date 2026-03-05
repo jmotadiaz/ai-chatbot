@@ -29,7 +29,7 @@ test.describe("Project Chat", () => {
     await projectPage.sidebar.navigateProjectAction(title, "chat");
 
     // Wait for project chat to load
-    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+    await chatPage.chat.waitForTitleVisible(title);
     await projectPage.ensureSidebarClosed();
 
     await chatPage.chat.sendMessage("Hi");
@@ -48,7 +48,7 @@ test.describe("Project Chat", () => {
     await projectPage.sidebar.navigateProjectAction(title, "temporary-chat");
 
     // Wait for project chat to load
-    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+    await chatPage.chat.waitForTitleVisible(title);
     await projectPage.ensureSidebarClosed();
     await expect.soft(page).toHaveURL(/chatType=temporary/);
 
