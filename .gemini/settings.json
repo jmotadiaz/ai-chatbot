@@ -1,0 +1,14 @@
+{
+  "mcp": {
+    "allowed": ["playwright-test"],
+    "excluded": []
+  },
+  "mcpServers": {
+    "playwright-test": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
