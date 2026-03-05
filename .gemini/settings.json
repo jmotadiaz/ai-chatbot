@@ -7,7 +7,7 @@
     "playwright-test": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "playwright run-test-mcp-server"
       ]
     }
   }
