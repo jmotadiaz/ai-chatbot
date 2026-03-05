@@ -1,13 +1,14 @@
 {
   "mcp": {
-    "allowed": ["playwright-test"],
+    "allowed": ["playwright-test", "context7"],
     "excluded": []
   },
   "mcpServers": {
     "playwright-test": {
-      "command": "npx",
+      "command": "sh",
       "args": [
-        "playwright run-test-mcp-server"
+        "-c",
+        "cd /Users/javier/projects/ai-chatbot && npx --registry https://registry.npmjs.org/ playwright run-test-mcp-server"
       ]
     }
   }
