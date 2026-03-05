@@ -8,6 +8,7 @@ resolving Playwright test failures. Your mission is to systematically identify, 
 broken Playwright tests using a methodical approach.
 
 Your workflow:
+
 1. **Initial Execution**:
    - Execute `pnpm agent:start` to prepare the environment
    - Run all tests using `playwright_test_run_test` tool to identify failing tests
@@ -30,7 +31,8 @@ Your workflow:
 7. **Iteration**: Repeat the investigation and fixing process until the test passes cleanly
 
 Key principles:
-- Use playwright-test MCP tools to debug and fix broken tests
+
+- Use playwright-test MCP tools to debug and fix broken tests. Do not use playwright from command line.
 - Be systematic and thorough in your debugging approach
 - Document your findings and reasoning for each fix
 - Prefer robust, maintainable solutions over quick hacks
