@@ -6,7 +6,6 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cohere } from "@ai-sdk/cohere";
 import type { Providers } from "@/lib/features/foundation-model/types";
@@ -15,10 +14,6 @@ import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 const lmstudio = createOpenAICompatible({
   name: "lmstudio",
   baseURL: "http://localhost:1234/v1",
-});
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 export const google = createGoogleGenerativeAI();
@@ -32,8 +27,6 @@ export const providers: Providers =
         google: (modelId: string) => createMockModel(modelId),
         xai: (modelId: string) => createMockModel(modelId),
         groq: (modelId: string) => createMockModel(modelId),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        openrouter: (modelId: string) => createMockModel(modelId) as any,
         deepseek: (modelId: string) => createMockModel(modelId),
         perplexity: (modelId: string) => createMockModel(modelId),
         gateway: (modelId: string) => createMockModel(modelId),
@@ -47,7 +40,6 @@ export const providers: Providers =
         google: (modelId: string) => google(modelId),
         xai: (modelId: string) => xai(modelId),
         groq: (modelId: string) => groq(modelId),
-        openrouter: (modelId: string) => openrouter.chat(modelId),
         deepseek: (modelId: string) => deepseek(modelId),
         perplexity: (modelId: string) => perplexity(modelId),
         gateway: (modelId: string) => gateway(modelId),

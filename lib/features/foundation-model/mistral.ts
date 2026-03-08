@@ -3,15 +3,12 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MISTRAL_CONFIG = {
   "Magistral Medium": {
-    model: providers.openrouter("mistralai/magistral-medium-2506:thinking"),
+    model: providers.gateway("mistral/magistral-medium"),
     company: "mistral",
     temperature: 0.6,
-    providerOptions: {
-      openrouter: { reasoning: { enabled: true, effort: "high" } },
-    },
   },
   "Magistral Small": {
-    model: providers.openrouter("mistralai/magistral-small-2506"),
+    model: providers.gateway("mistral/magistral-small"),
     company: "mistral",
     temperature: 0.6,
   },

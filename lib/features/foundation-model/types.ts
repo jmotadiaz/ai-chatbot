@@ -5,7 +5,6 @@ import type { XaiProviderOptions } from "@ai-sdk/xai";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
-import type { OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 // Types definitions for the models feature
@@ -33,7 +32,6 @@ export type ProviderOptions = {
   groq?: GroqProviderOptions;
   google?: GoogleGenerativeAIProviderOptions;
   openai?: OpenAIResponsesProviderOptions;
-  openrouter?: OpenRouterProviderOptions;
   xai?: XaiProviderOptions;
   gateway?: Omit<GatewayProviderOptions, "byok"> & {
     zeroDataRetention?: boolean;
@@ -73,7 +71,6 @@ export interface Providers {
   google: (modelId: string) => LanguageModelV3;
   xai: (modelId: string) => LanguageModelV3;
   groq: (modelId: string) => LanguageModelV3;
-  openrouter: (modelId: string) => LanguageModelV3;
   deepseek: (modelId: string) => LanguageModelV3;
   perplexity: (modelId: string) => LanguageModelV3;
   gateway: (modelId: string) => LanguageModelV3;

@@ -15,21 +15,13 @@ export const ALIBABA_CONFIG = {
     },
   },
   "Qwen 3.5": {
-    model: providers.openrouter("qwen/qwen3.5-397b-a17b"),
+    model: providers.gateway("alibaba/qwen3.5-plus"),
     reasoning: true,
     company: "alibaba",
     supportedFiles: ["pdf", "img"],
     temperature: 0.6,
     topP: 0.95,
     topK: 20,
-    providerOptions: {
-      openrouter: {
-        reasoning: {
-          enabled: true,
-          effort: "high",
-        },
-      },
-    },
   },
   "Qwen3 30b": {
     model: providers.lmstudio("qwen/qwen3-30b-a3b-2507"),
@@ -37,7 +29,7 @@ export const ALIBABA_CONFIG = {
     temperature: 0.6,
   },
   "Qwen3 Coder": {
-    model: providers.openrouter("qwen/qwen3-coder"),
+    model: providers.gateway("alibaba/qwen3-coder"),
     company: "alibaba",
     temperature: 0.6,
   },
