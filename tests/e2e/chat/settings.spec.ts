@@ -10,13 +10,11 @@ test.describe("Chat functionality", () => {
   });
 
   test("should allow modifying chat settings for different models", async () => {
-    await chatPage.header.modelPicker.selectModel("Qwen 3 Next Instruct");
+    await chatPage.header.modelPicker.selectModel("GLM-4.7 Flash");
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
-    await expect
-      .soft(chatPage.chat.settings.temperatureInput)
-      .toHaveValue("0.7");
+    await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
 
     // Modify temperature and verify it persists for this model
     await chatPage.chat.settings.setTemperature(0.5);

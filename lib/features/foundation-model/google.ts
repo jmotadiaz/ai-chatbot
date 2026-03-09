@@ -43,6 +43,18 @@ export const GOOGLE_CONFIG = {
       },
     },
   },
+  "Gemini 3. Flash Lite": {
+    model: providers.gateway("google/gemini-3.1-flash-lite-preview"),
+    company: "google",
+    temperature: 1,
+    supportedFiles: ["img", "pdf"],
+    reasoning: true,
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
+    },
+  },
   "Gemini 3.1 Pro": {
     model: providers.gateway("google/gemini-3.1-pro-preview"),
     company: "google",

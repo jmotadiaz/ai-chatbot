@@ -8,11 +8,6 @@ export const ZAI_CONFIG = {
     company: "zai",
     temperature: 1,
     topP: 0.95,
-    providerOptions: {
-      gateway: {
-        order: ["deepinfra", "cerebras"],
-      },
-    },
   },
   "GLM-4.7 Flash": {
     model: providers.gateway("zai/glm-4.7-flash"),
