@@ -8,6 +8,8 @@ import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cohere } from "@ai-sdk/cohere";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createDeepInfra } from "@ai-sdk/deepinfra";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 
@@ -15,6 +17,9 @@ const lmstudio = createOpenAICompatible({
   name: "lmstudio",
   baseURL: "http://localhost:1234/v1",
 });
+
+const openrouter = createOpenRouter();
+const deepinfra = createDeepInfra();
 
 export const google = createGoogleGenerativeAI();
 export const xai = createXai();
@@ -30,6 +35,8 @@ export const providers: Providers =
         deepseek: (modelId: string) => createMockModel(modelId),
         perplexity: (modelId: string) => createMockModel(modelId),
         gateway: (modelId: string) => createMockModel(modelId),
+        openrouter: (modelId: string) => createMockModel(modelId),
+        deepinfra: (modelId: string) => createMockModel(modelId),
         lmstudio: (modelId: string) => createMockModel(modelId),
         embedding: () => createMockEmbeddingModel(),
         rerank: () => () => Promise.resolve([]),
@@ -43,6 +50,8 @@ export const providers: Providers =
         deepseek: (modelId: string) => deepseek(modelId),
         perplexity: (modelId: string) => perplexity(modelId),
         gateway: (modelId: string) => gateway(modelId),
+        openrouter: (modelId: string) => openrouter(modelId),
+        deepinfra: (modelId: string) => deepinfra(modelId),
         lmstudio: (modelId: string) => lmstudio(modelId),
         embedding: () => google.embeddingModel("gemini-embedding-001"),
         rerank: () => async (args) => {

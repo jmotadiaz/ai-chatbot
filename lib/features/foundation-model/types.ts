@@ -74,6 +74,8 @@ export interface Providers {
   deepseek: (modelId: string) => LanguageModelV3;
   perplexity: (modelId: string) => LanguageModelV3;
   gateway: (modelId: string) => LanguageModelV3;
+  openrouter: (modelId: string) => LanguageModelV3;
+  deepinfra: (modelId: string) => LanguageModelV3;
   lmstudio: (modelId: string) => LanguageModelV3;
   embedding: () => EmbeddingModelV3;
   rerank: () => (

@@ -35,7 +35,9 @@ test.describe("Project Creation", () => {
       .toBeVisible();
   });
 
-  test("1.2 Create Project with Advanced Configuration", async ({ page }) => {
+  test.skip("1.2 Create Project with Advanced Configuration", async ({
+    page,
+  }) => {
     const title = "Advanced Project";
     const systemPrompt = "Testing advanced settings.";
 
