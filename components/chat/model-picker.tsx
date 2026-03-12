@@ -143,6 +143,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   minimax: MiniMaxIcon,
   zai: ZaiIcon,
   xiaomi: XiaomiIcon,
+  stepfun: LogoIcon,
   "ai chatbot": LogoIcon,
 };
 
