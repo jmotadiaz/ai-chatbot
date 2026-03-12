@@ -3,19 +3,15 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const GOOGLE_CONFIG = {
   "Gemini 2.5 Flash Lite": {
-    model: providers.gateway("google/gemini-2.5-flash-lite"),
+    model: providers.openrouter("google/gemini-2.5-flash-lite"),
     company: "google",
-    supportedFiles: ["img", "pdf"],
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
-    },
+    temperature: 0.6,
+    reasoning: true,
   },
   "Gemini 2.5 Flash": {
-    model: providers.gateway("google/gemini-2.5-flash"),
+    model: providers.openrouter("google/gemini-2.5-flash"),
     company: "google",
-    supportedFiles: ["img", "pdf"],
+    temperature: 0.6,
     reasoning: true,
     providerOptions: {
       google: {
@@ -27,15 +23,11 @@ export const GOOGLE_CONFIG = {
     },
   },
   "Gemini 3 Flash": {
-    model: providers.gateway("google/gemini-3-flash"),
+    model: providers.openrouter("google/gemini-3-flash"),
     company: "google",
-    temperature: 1,
-    supportedFiles: ["img", "pdf"],
+    temperature: 0.6,
     reasoning: true,
     providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
       google: {
         thinkingConfig: {
           includeThoughts: true,
@@ -44,43 +36,19 @@ export const GOOGLE_CONFIG = {
     },
   },
   "Gemini 3. Flash Lite": {
-    model: providers.gateway("google/gemini-3.1-flash-lite-preview"),
-    company: "google",
-    temperature: 1,
-    supportedFiles: ["img", "pdf"],
-    reasoning: true,
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
-    },
-  },
-  "Gemini 3.1 Pro": {
-    model: providers.gateway("google/gemini-3.1-pro-preview"),
-    company: "google",
-    supportedFiles: ["img", "pdf"],
-    reasoning: true,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          includeThoughts: true,
-        },
-      },
-    },
-  },
-  "Nano Banana": {
-    model: providers.gateway("google/gemini-2.5-flash-image"),
+    model: providers.openrouter("google/gemini-3.1-flash-lite-preview"),
     company: "google",
     temperature: 0.6,
-    supportedFiles: ["img", "pdf"],
-    supportedOutput: ["text", "img"],
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
-      google: {
-        responseModalities: ["TEXT", "IMAGE"],
-      },
-    },
+  },
+  "Gemini 3.1 Pro": {
+    model: providers.openrouter("google/gemini-3.1-pro-preview"),
+    company: "google",
+    temperature: 0.6,
+  },
+  "Nano Banana": {
+    model: providers.openrouter("google/gemini-2.5-flash-image"),
+    company: "google",
+    temperature: 0.6,
+    supportedOutput: ["img"],
   },
 } as const satisfies Record<string, ModelConfiguration>;

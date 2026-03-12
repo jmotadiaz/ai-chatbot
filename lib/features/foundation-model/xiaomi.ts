@@ -3,16 +3,16 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const XIAOMI_CONFIG = {
   "MiMo V2 Flash": {
-    model: providers.gateway("xiaomi/mimo-v2-flash"),
+    model: providers.openrouter("xiaomi/mimo-v2-flash"),
     company: "xiaomi",
-    temperature: 0.8,
+    temperature: 0.6,
     topP: 0.95,
   },
   "MiMo V2 Flash Thinking": {
-    model: providers.gateway("xiaomi/mimo-v2-flash"),
+    model: providers.openrouter("xiaomi/mimo-v2-flash"),
     reasoning: true,
     company: "xiaomi",
-    temperature: 0.8,
+    temperature: 0.6,
     topP: 0.95,
   },
 } as const satisfies Record<string, ModelConfiguration>;

@@ -3,27 +3,16 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const OPENAI_CONFIG = {
   "GPT OSS": {
-    model: providers.gateway("openai/gpt-oss-120b"),
+    model: providers.openrouter("openai/gpt-oss-120b"),
     company: "openai",
     temperature: 0.6,
     reasoning: true,
-    providerOptions: {
-      openai: { reasoningEffort: "high", textVerbosity: "low" },
-      gateway: {
-        zeroDataRetention: true,
-      },
-    },
   },
   "GPT OSS Mini": {
-    model: providers.gateway("openai/gpt-oss-20b"),
+    model: providers.openrouter("openai/gpt-oss-20b"),
     reasoning: true,
     company: "openai",
     temperature: 0.6,
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-      },
-    },
   },
   "o4 Mini": {
     model: providers.openai("o4-mini"),

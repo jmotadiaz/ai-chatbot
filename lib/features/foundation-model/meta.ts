@@ -3,15 +3,9 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const META_CONFIG = {
   "Llama 3.1 Instant": {
-    model: providers.gateway("meta/llama-3.1-8b"),
+    model: providers.openrouter("meta-llama/llama-3.1-8b-instruct"),
     company: "meta",
     temperature: 0.6,
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-        order: ["cerebras", "deepinfra"],
-      },
-    },
   },
   "Llama 3.3": {
     model: providers.groq("llama-3.3-70b-versatile"),
@@ -19,27 +13,15 @@ export const META_CONFIG = {
     temperature: 0.6,
   },
   "Llama 4 Scout": {
-    model: providers.gateway("meta/llama-4-scout"),
+    model: providers.openrouter("meta-llama/llama-4-scout"),
     company: "meta",
     temperature: 0.6,
     supportedFiles: ["img"],
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-        only: ["deepinfra"],
-      },
-    },
   },
   "Llama 4 Maverick": {
-    model: providers.gateway("meta/llama-4-maverick"),
+    model: providers.openrouter("meta-llama/llama-4-maverick"),
     company: "meta",
     temperature: 0.6,
     supportedFiles: ["img"],
-    providerOptions: {
-      gateway: {
-        zeroDataRetention: true,
-        only: ["deepinfra", "vertex"],
-      },
-    },
   },
 } as const satisfies Record<string, ModelConfiguration>;
