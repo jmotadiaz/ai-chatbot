@@ -25,6 +25,7 @@ export type Company =
   | "minimax"
   | "xiaomi"
   | "zai"
+  | "stepfun"
   | "ai chatbot";
 
 export type ProviderOptions = {

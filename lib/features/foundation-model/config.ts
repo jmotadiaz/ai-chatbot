@@ -14,8 +14,10 @@ import { PERPLEXITY_CONFIG } from "./perplexity";
 import { XAI_CONFIG } from "./xai";
 import { XIAOMI_CONFIG } from "./xiaomi";
 import { ZAI_CONFIG } from "./zai";
+import { STEPFUN_CONFIG } from "./stepfun";
 
 export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
+  ...STEPFUN_CONFIG,
   ...META_CONFIG,
   ...MOONSHOTAI_CONFIG,
   ...MISTRAL_CONFIG,
@@ -35,6 +37,7 @@ export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const chatModelKeys = [
+  "StepFun 3.5",
   "Qwen 3.5 Flash",
   "Qwen 3.5 Plus",
   "GLM-4.7 Flash",
