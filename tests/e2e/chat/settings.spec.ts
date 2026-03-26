@@ -14,7 +14,9 @@ test.describe("Chat functionality", () => {
     await expect.soft(chatPage.chat.settingsButton).toBeVisible();
 
     await chatPage.chat.openSettings();
-    await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
+    await expect
+      .soft(chatPage.chat.settings.temperatureInput)
+      .toHaveValue("0.6");
 
     // Modify temperature and verify it persists for this model
     await chatPage.chat.settings.setTemperature(0.5);

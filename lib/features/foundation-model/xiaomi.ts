@@ -8,8 +8,8 @@ export const XIAOMI_CONFIG = {
     temperature: 0.6,
     topP: 0.95,
   },
-  "MiMo V2 Flash Thinking": {
-    model: providers.openrouter("xiaomi/mimo-v2-flash"),
+  "MiMo V2 Pro": {
+    model: providers.openrouter("xiaomi/mimo-v2-pro"),
     reasoning: true,
     company: "xiaomi",
     temperature: 0.6,

@@ -4,9 +4,9 @@ import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MINIMAX_CONFIG = {
-  "MiniMax M2.1": {
+  "MiniMax M2.7": {
     model: wrapLanguageModel({
-      model: providers.openrouter("minimax/minimax-m2.1"),
+      model: providers.openrouter("minimax/minimax-m2.7"),
       middleware: [reasoningMw],
     }),
     reasoning: true,

@@ -27,6 +27,7 @@ export const GOOGLE_CONFIG = {
     company: "google",
     temperature: 0.6,
     reasoning: true,
+    supportedFiles: ["img", "pdf"],
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -43,12 +44,14 @@ export const GOOGLE_CONFIG = {
   "Gemini 3.1 Pro": {
     model: providers.openrouter("google/gemini-3.1-pro-preview"),
     company: "google",
+    supportedFiles: ["img", "pdf"],
     temperature: 0.6,
   },
   "Nano Banana": {
     model: providers.openrouter("google/gemini-2.5-flash-image"),
     company: "google",
     temperature: 0.6,
+    supportedFiles: ["img"],
     supportedOutput: ["img"],
   },
 } as const satisfies Record<string, ModelConfiguration>;

@@ -14,7 +14,7 @@ test.describe("Project Chat", () => {
 
   test("3.1 Standard Project Chat", async ({ db, page }) => {
     const title = "Research Assistant";
-    const expectedResponse = "Hello, I'm meta/llama-4-scout";
+    const expectedResponse = "Hello, I'm meta-llama/llama-4-scout";
 
     await db.addProjects([
       {
