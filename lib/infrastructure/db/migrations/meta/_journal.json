@@ -176,6 +176,13 @@
       "when": 1772665979483,
       "tag": "0024_lame_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1775575265526,
+      "tag": "0025_chubby_lockjaw",
+      "breakpoints": true
     }
   ]
 }

@@ -25,6 +25,7 @@ import {
   chatbotMessageToDbMessage,
 } from "@/lib/features/chat/utils";
 import { createAgent } from "@/lib/features/chat/agents/factory";
+import { extractMemoryFacts } from "@/lib/features/memory/extraction";
 
 const processMessagesToSend = async ({
   messages,
@@ -165,12 +166,24 @@ export const makeProcessChatResponse = <Tx = unknown>(
               }
             },
             onFinish: async ({ responseMessage }) => {
+              const assistantMessage = responseMessage;
+              const userMessage = messages.at(-1);
+
+              if (
+                userMessage?.role === "user" &&
+                assistantMessage?.role === "assistant"
+              ) {
+                extractMemoryFacts({
+                  messages: [userMessage, assistantMessage],
+                  userId: user.id,
+                }).catch((err) =>
+                  console.error("Memory extraction failed:", err),
+                );
+              }
+
               if (preventChatPersistence) return;
 
               try {
-                const assistantMessage = responseMessage;
-                const userMessage = messages.at(-1);
-
                 if (
                   userMessage?.role === "user" &&
                   assistantMessage?.role === "assistant"

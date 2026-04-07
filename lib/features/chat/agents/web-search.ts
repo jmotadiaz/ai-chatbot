@@ -17,12 +17,14 @@ interface CreateWebSearchAgentParams {
   modelConfiguration: ModelConfiguration;
   messages: ChatbotMessage[];
   webSearchNumResults: number;
+  memoryContext?: string;
 }
 
 export const createWebSearchAgent = ({
   modelConfiguration,
   messages,
   webSearchNumResults,
+  memoryContext,
 }: CreateWebSearchAgentParams) => {
   const toolSet = {
     ...webSearchFactory({
@@ -31,9 +33,13 @@ export const createWebSearchAgent = ({
     ...urlContextFactory(),
   };
 
+  const instructions = memoryContext
+    ? `${WEB_SEARCH_AGENT_PROMPT}\n\n${memoryContext}`
+    : WEB_SEARCH_AGENT_PROMPT;
+
   return new ToolLoopAgent({
     ...modelConfiguration,
-    instructions: WEB_SEARCH_AGENT_PROMPT,
+    instructions,
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },

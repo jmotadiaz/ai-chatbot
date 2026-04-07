@@ -25,6 +25,15 @@ const vectorSearch = customType<{ data: string }>({
 
 export const themeEnum = pgEnum("theme", ["system", "light", "dark"]);
 export const agentEnum = pgEnum("agent", ["context7", "rag", "web"]);
+export const memoryCategoryEnum = pgEnum("memory_category", [
+  "personal",
+  "professional",
+  "preferences",
+]);
+export const memorySourceEnum = pgEnum("memory_source", [
+  "extracted",
+  "explicit",
+]);
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -163,6 +172,36 @@ export const chunk = pgTable(
   }),
 );
 
+export const userMemory = pgTable(
+  "UserMemory",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    category: memoryCategoryEnum("category").notNull(),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 768 }).notNull(),
+    source: memorySourceEnum("source").notNull().default("extracted"),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userMemoryEmbeddingIndex: index("userMemoryEmbeddingIndex").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops"),
+    ),
+    userMemoryCategoryIndex: index("userMemoryCategoryIndex").on(
+      table.userId,
+      table.category,
+    ),
+  }),
+);
+
 export const userApiKey = pgTable("UserApiKey", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   userId: uuid("userId")
@@ -203,6 +242,14 @@ export const projectRelations = relations(project, ({ many }) => ({
 export const userRelations = relations(user, ({ many }) => ({
   resources: many(resource),
   apiKeys: many(userApiKey),
+  memories: many(userMemory),
+}));
+
+export const userMemoryRelations = relations(userMemory, ({ one }) => ({
+  user: one(user, {
+    fields: [userMemory.userId],
+    references: [user.id],
+  }),
 }));
 
 export const chatRelations = relations(chat, ({ one, many }) => ({
@@ -311,4 +358,10 @@ export type UserApiKey = InferSelectModel<typeof userApiKey>;
 export type InsertUserApiKey = Omit<
   InferInsertModel<typeof userApiKey>,
   "createdAt" | "id"
+>;
+
+export type UserMemory = InferSelectModel<typeof userMemory>;
+export type InsertUserMemory = Omit<
+  InferInsertModel<typeof userMemory>,
+  "createdAt" | "updatedAt" | "id"
 >;

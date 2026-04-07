@@ -36,7 +36,7 @@ export const GOOGLE_CONFIG = {
       },
     },
   },
-  "Gemini 3. Flash Lite": {
+  "Gemini 3.1 Flash Lite": {
     model: providers.openrouter("google/gemini-3.1-flash-lite-preview"),
     company: "google",
     temperature: 0.6,

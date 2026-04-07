@@ -80,20 +80,22 @@ UserMemory
 - Pure text without embeddings — Rejected: needed for contextual filtering (not all facts are relevant to every conversation)
 - Reuse the existing `Resource/Chunk/Embedding` tables — Rejected: overengineered for atomic facts, semantic mismatch with document chunks
 
-### 3. Hybrid retrieval: preferences always-on + semantic search for the rest
+### 3. Hybrid retrieval: preferences always-on + multi-hop semantic search for the rest
 
 **Decision**: On every request:
 
 1. Load ALL facts where `category = 'preferences'` (always relevant — tone, language, response style)
-2. Embed the user's current message, then cosine-search against facts where `category IN ('personal', 'professional')`, returning top-N above a similarity threshold
+2. Use a fast LLM (e.g., `Gemini 3.1 Flash Lite`) to decompose the user's current message into 1–3 **memory-oriented** search queries via `generateText` with the `output` option using a Zod schema
+3. Generate embeddings for each query in batch (`embedMany`), then cosine-search against facts where `category IN ('personal', 'professional')`, returning deduplicated top-N above a similarity threshold
 
-**Rationale**: Preference facts (tone, language, response length) are universally relevant regardless of topic. Personal/professional facts are contextual — "lives in Madrid" is relevant for travel questions but not for coding questions. Semantic filtering avoids prompt pollution.
+**Rationale**: Embedding the raw user message directly often misses relevant facts because the message intent and the stored fact phrasing occupy different semantic spaces. For example, "Where should I travel this weekend?" doesn't directly match "The user lives in Madrid" — but a decomposed query like "user location or city of residence" does. This is the same pattern proven in the RAG pipeline (`lib/features/rag/tool.ts`), where the LLM generates `multiHopQueries` as orthogonal search terms. The fast/cheap model keeps the added latency minimal (~100-200ms).
 
 **Alternatives considered**:
 
 - Always inject all facts — Rejected by user: wastes tokens and introduces noise
-- LLM-based filtering — Rejected: adds latency (~200-500ms per request) and cost
+- Single embedding of raw message — Rejected: poor recall for indirect relevance (e.g., travel question vs. location fact). The semantic gap between conversational messages and stored atomic facts reduces retrieval quality
 - Tool-based retrieval — Rejected: memory should be pre-injected context, not something the LLM decides to look up
+- Full LLM-based filtering (post-retrieval) — Rejected: adds too much latency and cost for a pre-response step
 
 ### 4. Fire-and-forget extraction in onFinish
 
@@ -111,9 +113,9 @@ extractMemoryFacts({ messages: [userMessage, assistantMessage], userId }).catch(
 
 ### 5. LLM-based extraction with structured output
 
-**Decision**: Use `generateObject` (from AI SDK) with a small/fast model to analyze messages and produce structured facts. The prompt instructs the LLM to extract facts in three categories, outputting an array of `{ category, content }` objects.
+**Decision**: Use `generateText` (from AI SDK) with the `output` option and a small/fast model to analyze messages and produce structured facts. The prompt instructs the LLM to extract facts in three categories, outputting an array of `{ category, content }` objects validated via a Zod schema.
 
-**Rationale**: Structured output (Zod schema) ensures predictable format. A small model (e.g., `gemini-3.1-flash-lite`) keeps cost and latency minimal since this runs async.
+**Rationale**: Structured output with `generateText` and `Output.object` ensures predictable results and type safety while leveraging the non-deprecated API. A small model (e.g., `gemini-3.1-flash-lite`) keeps cost and latency minimal since this runs async.
 
 ### 6. Deduplication via embedding similarity
 
@@ -156,3 +158,11 @@ extractMemoryFacts({ messages: [userMessage, assistantMessage], userId }).catch(
 **[Embedding model alignment]** → Using `RETRIEVAL_QUERY` task type for short facts (designed for documents) may not be optimal.
 
 - _Mitigation_: Test with `SEMANTIC_SIMILARITY` task type if available. The 768-dim space should handle short texts well enough for MVP.
+
+**[Multi-hop query latency]** → The additional LLM call for query decomposition adds ~100-200ms to every retrieval.
+
+- _Mitigation_: Use the fastest/cheapest model available (`Gemini 3.1 Flash Lite`). The quality improvement in recall justifies the added latency, especially since retrieval runs in parallel with preferences loading. If latency becomes problematic, consider caching decomposed queries for similar messages.
+
+**[Multi-hop query quality]** → The LLM may generate queries that are too generic or miss the conversational nuance.
+
+- _Mitigation_: Prompt engineering with clear examples. The prompt should instruct the model to think about what user-specific facts would help answer the message, not just rephrase it. Monitor and iterate on the prompt based on retrieval quality.

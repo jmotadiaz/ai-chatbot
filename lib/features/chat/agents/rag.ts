@@ -18,6 +18,7 @@ interface CreateRagAgentParams {
   projectId?: string;
   ragMaxResources?: number;
   minRagResourcesScore?: number;
+  memoryContext?: string;
 }
 
 export const createRagAgent = ({
@@ -27,6 +28,7 @@ export const createRagAgent = ({
   projectId,
   ragMaxResources,
   minRagResourcesScore,
+  memoryContext,
 }: CreateRagAgentParams) => {
   const toolSet = {
     ...ragFactory({
@@ -38,13 +40,17 @@ export const createRagAgent = ({
     ...urlContextFactory(),
   };
 
+  const instructions = memoryContext
+    ? `${RAG_AGENT_PROMPT}\n\n${memoryContext}`
+    : RAG_AGENT_PROMPT;
+
   return new ToolLoopAgent({
     ...modelConfiguration,
     tools: toolSet,
     maxRetries: 3,
     experimental_telemetry: { isEnabled: true },
     stopWhen: stepCountIs(5),
-    instructions: RAG_AGENT_PROMPT,
+    instructions,
     activeTools: [RAG_TOOL],
     prepareStep: withMessageProcessing(
       modelConfiguration,
