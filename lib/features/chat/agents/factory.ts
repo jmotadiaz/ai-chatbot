@@ -33,8 +33,13 @@ export const createAgent = async ({
   minRagResourcesScore?: number;
   projectPort?: ProjectPort;
 }) => {
-  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
-  const currentMessage = lastUserMessage ? messagePartsToText(lastUserMessage) : "";
+  const lastUserMessage = [...messages]
+    .reverse()
+    .find((m) => m.role === "user");
+  const currentMessage = lastUserMessage
+    ? messagePartsToText(lastUserMessage)
+    : "";
+  const memoryContext = await getRelevantMemory({ userId, currentMessage });
 
   if (projectId) {
     if (!projectPort) {
@@ -50,7 +55,6 @@ export const createAgent = async ({
       throw new Error("Project not found");
     }
 
-    const memoryContext = await getRelevantMemory({ userId, currentMessage });
     const augmentedSystemPrompt = memoryContext
       ? `${systemPrompt ?? ""}\n\n${memoryContext}`.trim()
       : systemPrompt;
@@ -63,8 +67,6 @@ export const createAgent = async ({
       project,
     });
   } else if (agent === "rag") {
-    const memoryContext = await getRelevantMemory({ userId, currentMessage });
-
     return createRagAgent({
       modelConfiguration: ai.getRagModelConfiguration(),
       messages,
@@ -72,21 +74,20 @@ export const createAgent = async ({
       projectId,
       ragMaxResources,
       minRagResourcesScore,
-      memoryContext: memoryContext ?? undefined,
+      memoryContext: memoryContext,
     });
   } else if (agent === "web") {
-    const memoryContext = await getRelevantMemory({ userId, currentMessage });
-
     return createWebSearchAgent({
       modelConfiguration: ai.getWebSearchModelConfiguration(),
       messages,
       webSearchNumResults,
-      memoryContext: memoryContext ?? undefined,
+      memoryContext: memoryContext,
     });
   } else {
     // Default to Context7 agent — memory injection excluded
     return createContext7Agent({
       modelConfiguration: ai.getContext7ModelConfiguration(),
+      memoryContext: memoryContext,
     });
   }
 };

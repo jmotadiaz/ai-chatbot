@@ -18,7 +18,7 @@ interface CreateRagAgentParams {
   projectId?: string;
   ragMaxResources?: number;
   minRagResourcesScore?: number;
-  memoryContext?: string;
+  memoryContext?: string | null;
 }
 
 export const createRagAgent = ({

@@ -17,7 +17,7 @@ interface CreateWebSearchAgentParams {
   modelConfiguration: ModelConfiguration;
   messages: ChatbotMessage[];
   webSearchNumResults: number;
-  memoryContext?: string;
+  memoryContext?: string | null;
 }
 
 export const createWebSearchAgent = ({
