@@ -24,6 +24,7 @@ import {
   MiniMaxIcon,
   ZaiIcon,
   XiaomiIcon,
+  NvidiaIcon,
 } from "@/components/ui/icons";
 
 interface ModelPickerProps {
@@ -141,6 +142,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   moonshotai: MoonshotIcon,
   mistral: MistralIcon,
   minimax: MiniMaxIcon,
+  nvidia: NvidiaIcon,
   zai: ZaiIcon,
   xiaomi: XiaomiIcon,
   stepfun: LogoIcon,

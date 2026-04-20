@@ -23,6 +23,7 @@ export type Company =
   | "alibaba"
   | "moonshotai"
   | "minimax"
+  | "nvidia"
   | "xiaomi"
   | "zai"
   | "stepfun"

@@ -15,6 +15,7 @@ import { XAI_CONFIG } from "./xai";
 import { XIAOMI_CONFIG } from "./xiaomi";
 import { ZAI_CONFIG } from "./zai";
 import { STEPFUN_CONFIG } from "./stepfun";
+import { NVIDIA_CONFIG } from "@/lib/features/foundation-model/nvidia";
 
 export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   ...STEPFUN_CONFIG,
@@ -31,12 +32,15 @@ export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
   ...OPENAI_CONFIG,
   ...GOOGLE_CONFIG,
   ...XAI_CONFIG,
+  ...NVIDIA_CONFIG,
 } as const satisfies Record<string, ModelConfiguration>;
 
 export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const chatModelKeys = [
+  "Nemotron 3 Nano",
+  "Nemotron 3 Super",
   "Qwen 3.5 Flash",
   "Qwen 3.5 Plus",
   "GLM-4.7 Flash",
