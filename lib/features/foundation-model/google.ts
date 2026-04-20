@@ -23,7 +23,7 @@ export const GOOGLE_CONFIG = {
     },
   },
   "Gemini 3 Flash": {
-    model: providers.openrouter("google/gemini-3-flash"),
+    model: providers.openrouter("google/gemini-3-flash-preview"),
     company: "google",
     temperature: 0.6,
     reasoning: true,
@@ -32,6 +32,7 @@ export const GOOGLE_CONFIG = {
       google: {
         thinkingConfig: {
           includeThoughts: true,
+          thinkingLevel: "high",
         },
       },
     },
@@ -46,6 +47,13 @@ export const GOOGLE_CONFIG = {
     company: "google",
     supportedFiles: ["img", "pdf"],
     temperature: 0.6,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingLevel: "high",
+        },
+      },
+    },
   },
   "Nano Banana": {
     model: providers.openrouter("google/gemini-2.5-flash-image"),

@@ -32,7 +32,7 @@ export async function extractMemoryFacts({
   if (!conversation.trim()) return;
 
   const { output } = await generateText({
-    ...languageModelConfigurations("Gemini 3.1 Flash Lite"),
+    ...languageModelConfigurations("GPT OSS Mini"),
     system: MEMORY_EXTRACTION_SYSTEM_PROMPT,
     prompt: conversation,
     output: Output.object({ schema: factSchema }),

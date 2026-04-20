@@ -37,7 +37,6 @@ export type LanguageModelKeys =
   keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
 
 export const chatModelKeys = [
-  "StepFun 3.5",
   "Qwen 3.5 Flash",
   "Qwen 3.5 Plus",
   "GLM-4.7 Flash",
@@ -54,10 +53,11 @@ export const chatModelKeys = [
   "Claude Sonnet 4.6",
   "Claude Opus 4.5",
   "Grok 4.1 Fast",
-  "Grok 4",
+  "Grok 4.20",
   "GPT OSS",
   "GPT 5.4 Mini",
   "GPT 5.4",
+  "Gemini 3.1 Flash Lite",
   "Gemini 3 Flash",
   "Gemini 3.1 Pro",
 ] satisfies LanguageModelKeys[];

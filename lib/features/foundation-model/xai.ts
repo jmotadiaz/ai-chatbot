@@ -14,8 +14,8 @@ export const XAI_CONFIG = {
     supportedFiles: ["img"],
     reasoning: true,
   },
-  "Grok 4": {
-    model: providers.xai("grok-4-0709"),
+  "Grok 4.20": {
+    model: providers.xai("grok-4.20-0309-reasoning"),
     company: "xai",
     temperature: 0.6,
     supportedFiles: ["img"],

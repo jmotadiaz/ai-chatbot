@@ -26,7 +26,7 @@ export async function decomposeForMemorySearch({
 
   try {
     const { output } = await generateText({
-      ...languageModelConfigurations("Gemini 3.1 Flash Lite"),
+      ...languageModelConfigurations("GPT OSS Mini"),
       system: MEMORY_DECOMPOSITION_SYSTEM_PROMPT,
       prompt: `User Message: "${message}"`,
       output: Output.object({ schema: queryDecompositionSchema }),

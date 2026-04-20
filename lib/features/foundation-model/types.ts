@@ -34,9 +34,7 @@ export type ProviderOptions = {
   google?: GoogleGenerativeAIProviderOptions;
   openai?: OpenAIResponsesProviderOptions;
   xai?: XaiProviderOptions;
-  gateway?: Omit<GatewayProviderOptions, "byok"> & {
-    zeroDataRetention?: boolean;
-  };
+  gateway?: Omit<GatewayProviderOptions, "byok">;
 };
 
 export interface ModelConfiguration {

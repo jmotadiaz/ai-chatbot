@@ -3,11 +3,11 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const ALIBABA_CONFIG = {
   "Qwen 3.5 Flash": {
-    model: providers.openrouter("qwen/qwen3.5-flash-02-23"),
+    model: providers.gateway("alibaba/qwen3.5-flash"),
     company: "alibaba",
   },
   "Qwen 3.5 Plus": {
-    model: providers.openrouter("qwen/qwen3.5-plus-02-15"),
+    model: providers.gateway("alibaba/qwen3.5-plus"),
     company: "alibaba",
     reasoning: true,
     supportedFiles: ["pdf", "img"],

@@ -9,13 +9,13 @@ export const ZAI_CONFIG = {
     topP: 0.95,
   },
   "GLM-4.7 Flash": {
-    model: providers.openrouter("z-ai/glm-4.7-flash"),
+    model: providers.gateway("zai/glm-4.7-flash"),
     company: "zai",
     temperature: 0.6,
     topP: 0.95,
   },
   "GLM-5": {
-    model: providers.openrouter("z-ai/glm-5"),
+    model: providers.gateway("zai/glm-5"),
     company: "zai",
     temperature: 0.6,
     topP: 0.95,

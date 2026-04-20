@@ -3,7 +3,7 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const OPENAI_CONFIG = {
   "GPT OSS": {
-    model: providers.groq("openai/gpt-oss-120b"),
+    model: providers.gateway("openai/gpt-oss-120b"),
     company: "openai",
     temperature: 0.6,
     reasoning: true,

@@ -3,12 +3,12 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MOONSHOTAI_CONFIG = {
   "Kimi K2": {
-    model: providers.groq("moonshotai/kimi-k2-instruct-0905"),
+    model: providers.gateway("moonshotai/kimi-k2"),
     company: "moonshotai",
     temperature: 0.6,
   },
   "Kimi K2.5": {
-    model: providers.openrouter("moonshotai/kimi-k2.5"),
+    model: providers.gateway("moonshotai/kimi-k2.5"),
     company: "moonshotai",
     reasoning: true,
     supportedFiles: ["img", "pdf"],
