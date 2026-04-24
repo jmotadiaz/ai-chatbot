@@ -2,13 +2,13 @@ import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const DEEPSEEK_CONFIG = {
-  "Deepseek Chat": {
+  "Deepseek v4 Flash": {
     model: providers.gateway("deepseek/deepseek-v4-flash"),
     company: "deepseek",
     temperature: 1,
     topP: 0.95,
   },
-  "Deepseek Reasoner": {
+  "Deepseek v4 Pro": {
     model: providers.gateway("deepseek/deepseek-v4-pro"),
     company: "deepseek",
     reasoning: true,
