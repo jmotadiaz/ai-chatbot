@@ -14,5 +14,12 @@ export const DEEPSEEK_CONFIG = {
     reasoning: true,
     temperature: 1,
     topP: 0.95,
+    providerOptions: {
+      gateway: {
+        reasoningConfig: {
+          type: "enabled",
+        },
+      },
+    },
   },
 } as const satisfies Record<string, ModelConfiguration>;
