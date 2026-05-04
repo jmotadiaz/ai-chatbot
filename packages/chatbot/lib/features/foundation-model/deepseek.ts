@@ -8,6 +8,11 @@ export const DEEPSEEK_CONFIG = {
     reasoning: true,
     temperature: 1,
     topP: 0.95,
+    providerOptions: {
+      gateway: {
+        zeroDataRetention: true,
+      },
+    },
   },
   "Deepseek v4 Pro": {
     model: providers.opencodeGo("deepseek-v4-pro"),
