@@ -44,7 +44,7 @@
     "@ai-sdk/google": "3.0.10",
     "@ai-sdk/groq": "3.0.10",
     "@ai-sdk/openai": "3.0.12",
-    "@ai-sdk/openai-compatible": "^2.0.13",
+    "@ai-sdk/openai-compatible": "^2.0.47",
     "@ai-sdk/perplexity": "3.0.8",
     "@ai-sdk/provider": "^3.0.4",
     "@ai-sdk/provider-utils": "^4.0.8",

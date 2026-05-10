@@ -14,8 +14,8 @@ export const ZAI_CONFIG = {
     temperature: 0.6,
     topP: 0.95,
   },
-  "GLM-5": {
-    model: providers.gateway("zai/glm-5"),
+  "GLM-5.1": {
+    model: providers.gateway("zai/glm-5.1"),
     company: "zai",
     temperature: 0.6,
     topP: 0.95,

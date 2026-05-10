@@ -6,8 +6,8 @@ export const ALIBABA_CONFIG = {
     model: providers.gateway("alibaba/qwen3.5-flash"),
     company: "alibaba",
   },
-  "Qwen 3.5 Plus": {
-    model: providers.gateway("alibaba/qwen3.5-plus"),
+  "Qwen 3.6 Plus": {
+    model: providers.gateway("alibaba/qwen3.6-plus"),
     company: "alibaba",
     reasoning: true,
     supportedFiles: ["pdf", "img"],

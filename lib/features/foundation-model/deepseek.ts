@@ -3,13 +3,14 @@ import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const DEEPSEEK_CONFIG = {
   "Deepseek v4 Flash": {
-    model: providers.gateway("deepseek/deepseek-v4-flash"),
+    model: providers.opencodeGo("deepseek-v4-flash"),
     company: "deepseek",
+    reasoning: true,
     temperature: 1,
     topP: 0.95,
   },
   "Deepseek v4 Pro": {
-    model: providers.gateway("deepseek/deepseek-v4-pro"),
+    model: providers.opencodeGo("deepseek-v4-pro"),
     company: "deepseek",
     reasoning: true,
     temperature: 1,

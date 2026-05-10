@@ -24,7 +24,7 @@ test.describe("Chat functionality", () => {
     await chatPage.closeDropdown();
 
     // Switch back to Kimi
-    await chatPage.header.modelPicker.selectModel("Kimi K2.5");
+    await chatPage.header.modelPicker.selectModel("Kimi K2.6");
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");
   });

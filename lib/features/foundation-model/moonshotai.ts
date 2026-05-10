@@ -2,13 +2,8 @@ import type { ModelConfiguration } from "./types";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 export const MOONSHOTAI_CONFIG = {
-  "Kimi K2": {
-    model: providers.gateway("moonshotai/kimi-k2"),
-    company: "moonshotai",
-    temperature: 0.6,
-  },
-  "Kimi K2.5": {
-    model: providers.gateway("moonshotai/kimi-k2.5"),
+  "Kimi K2.6": {
+    model: providers.opencodeGo("kimi-k2.6"),
     company: "moonshotai",
     reasoning: true,
     supportedFiles: ["img", "pdf"],
