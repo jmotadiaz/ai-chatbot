@@ -1,0 +1,1 @@
+ALTER TABLE "Project" ADD COLUMN "disableCompaction" boolean DEFAULT false;

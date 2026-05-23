@@ -47,6 +47,7 @@ export interface ModelConfiguration {
   temperature?: number;
   topP?: number;
   topK?: number;
+  contextWindow?: number;
   company: Company;
 }
 

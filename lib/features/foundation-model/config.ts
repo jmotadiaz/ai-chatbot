@@ -101,6 +101,7 @@ export interface ChatModelConfiguration {
   temperature?: number;
   topP?: number;
   topK?: number;
+  contextWindow?: number;
   reasoning: boolean;
   zeroDataRetention?: boolean;
   supportedFiles: Required<ModelConfiguration>["supportedFiles"];
@@ -117,6 +118,7 @@ export const getChatConfigurationByModelId = (
     temperature: modelConfig.temperature,
     topP: modelConfig.topP,
     topK: modelConfig.topK,
+    contextWindow: modelConfig.contextWindow,
     reasoning: modelConfig.reasoning ?? false,
     zeroDataRetention: modelConfig.providerOptions?.gateway?.zeroDataRetention,
     supportedFiles: modelConfig.supportedFiles ?? [],

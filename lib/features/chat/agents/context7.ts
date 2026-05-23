@@ -17,7 +17,7 @@ export const createContext7Agent = ({
   return new Context7Agent({
     ...modelConfiguration,
     prepareStep: withMessageProcessing(modelConfiguration),
-    stopWhen: stepCountIs(10),
+    stopWhen: stepCountIs(20),
     instructions,
   });
 };

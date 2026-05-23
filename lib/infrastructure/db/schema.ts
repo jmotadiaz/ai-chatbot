@@ -64,6 +64,7 @@ export const project = pgTable("Project", {
   hasPromptRefiner: boolean("hasMetaPrompt").default(false).notNull(),
   tools: varchar("tools", { length: 100 }).array(),
   isActive: boolean("isActive").default(true).notNull(),
+  disableCompaction: boolean("disableCompaction").default(false),
   createdAt: timestamp("createdAt", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -214,6 +215,22 @@ export const userApiKey = pgTable("UserApiKey", {
     .notNull(),
 });
 
+export const chatSummary = pgTable("ChatSummary", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id, { onDelete: "cascade" }),
+  messageId: uuid("messageId")
+    .notNull()
+    .references(() => message.id, { onDelete: "cascade" }),
+  summary: text("summary").notNull(),
+  tokensBefore: integer("tokensBefore").notNull(),
+  modelUsed: varchar("modelUsed", { length: 100 }).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const embedding = pgTable(
   "Embedding",
   {
@@ -258,12 +275,25 @@ export const chatRelations = relations(chat, ({ one, many }) => ({
     references: [project.id],
   }),
   messages: many(message),
+  summaries: many(chatSummary),
 }));
 
-export const messageRelations = relations(message, ({ one }) => ({
+export const messageRelations = relations(message, ({ one, many }) => ({
   chat: one(chat, {
     fields: [message.chatId],
     references: [chat.id],
+  }),
+  summaries: many(chatSummary),
+}));
+
+export const chatSummaryRelations = relations(chatSummary, ({ one }) => ({
+  chat: one(chat, {
+    fields: [chatSummary.chatId],
+    references: [chat.id],
+  }),
+  message: one(message, {
+    fields: [chatSummary.messageId],
+    references: [message.id],
   }),
 }));
 
@@ -364,4 +394,10 @@ export type UserMemory = InferSelectModel<typeof userMemory>;
 export type InsertUserMemory = Omit<
   InferInsertModel<typeof userMemory>,
   "createdAt" | "updatedAt" | "id"
+>;
+
+export type ChatSummary = InferSelectModel<typeof chatSummary>;
+export type InsertChatSummary = Omit<
+  InferInsertModel<typeof chatSummary>,
+  "createdAt" | "id"
 >;

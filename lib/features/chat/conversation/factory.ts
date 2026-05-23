@@ -3,10 +3,12 @@ import {
   createUIMessageStream,
   smoothStream,
   convertToModelMessages,
+  pruneMessages,
   NoSuchToolError,
   InvalidArgumentError,
 } from "ai";
 import type { ModelMessage } from "ai";
+import { eq } from "drizzle-orm";
 import {
   ChatDbPort,
   ChatAgentAiPort,
@@ -18,6 +20,7 @@ import {
   languageModelConfigurations,
   chatModelKeys,
   defaultWebSearchNumResults,
+  getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import {
@@ -26,6 +29,14 @@ import {
 } from "@/lib/features/chat/utils";
 import { createAgent } from "@/lib/features/chat/agents/factory";
 import { extractMemoryFacts } from "@/lib/features/memory/extraction";
+import { compact } from "@/lib/features/compaction/orchestration";
+import { getLatestSummary } from "@/lib/features/compaction/repository";
+import {
+  DEFAULT_KEEP_RECENT_TOKENS,
+  DEFAULT_RESERVE_TOKENS,
+} from "@/lib/features/compaction/types";
+import { getDb } from "@/lib/infrastructure/db/db";
+import { message as messageTable } from "@/lib/infrastructure/db/schema";
 
 const processMessagesToSend = async ({
   messages,
@@ -124,7 +135,53 @@ export const makeProcessChatResponse = <Tx = unknown>(
 
     const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
 
-    const messagesToSend = await processMessagesToSend({ messages });
+    let filteredMessages = messages;
+    let augmentedSystemPrompt = systemPrompt;
+
+    if (chatId) {
+      try {
+        const summary = await getLatestSummary(chatId);
+        if (summary) {
+          const db = getDb();
+          const summaryMessage = await db
+            .select()
+            .from(messageTable)
+            .where(eq(messageTable.id, summary.messageId))
+            .limit(1);
+
+          if (summaryMessage[0]?.serial) {
+            const allDbMessages = await db
+              .select({ id: messageTable.id, serial: messageTable.serial })
+              .from(messageTable)
+              .where(eq(messageTable.chatId, chatId));
+
+            const summarySerial = summaryMessage[0].serial;
+            const serialMap = new Map(
+              allDbMessages.map((m) => [m.id, m.serial]),
+            );
+
+            filteredMessages = messages.filter((msg) => {
+              const serial = serialMap.get(msg.id);
+              return serial ? serial > summarySerial : true;
+            });
+
+            augmentedSystemPrompt = `## Previous Context\n${summary.summary}\n\n${systemPrompt ?? ""}`;
+          }
+        }
+      } catch (err) {
+        console.error("Context rebuild failed:", err);
+      }
+    }
+
+    const messagesToSend = await processMessagesToSend({
+      messages: filteredMessages,
+    });
+
+    const prunedMessagesToSend = pruneMessages({
+      messages: messagesToSend,
+      reasoning: "before-last-message",
+      emptyMessages: "remove",
+    });
 
     return createUIMessageStream({
       async execute({ writer }) {
@@ -132,9 +189,9 @@ export const makeProcessChatResponse = <Tx = unknown>(
           ai,
           projectId,
           agent,
-          messages,
+          messages: filteredMessages,
           userId: user.id,
-          systemPrompt,
+          systemPrompt: augmentedSystemPrompt,
           webSearchNumResults,
           ragMaxResources,
           minRagResourcesScore,
@@ -142,7 +199,7 @@ export const makeProcessChatResponse = <Tx = unknown>(
         });
 
         const result = await agentInstance.stream({
-          messages: messagesToSend,
+          messages: prunedMessagesToSend,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           experimental_transform: smoothStream() as any,
         });
@@ -230,6 +287,23 @@ export const makeProcessChatResponse = <Tx = unknown>(
 
                     return id;
                   });
+
+                  const resolvedChatId = chatId ?? (String(dbChatId) || "");
+                  if (resolvedChatId) {
+                    const modelConfig = getChatConfigurationByModelId(
+                      selectedModel,
+                    );
+                    compact(resolvedChatId, {
+                      keepRecentTokens: DEFAULT_KEEP_RECENT_TOKENS,
+                      reserveTokens: DEFAULT_RESERVE_TOKENS,
+                      contextWindow:
+                        modelConfig.contextWindow ?? undefined,
+                      enabled: true,
+                    }).catch((err) =>
+                      console.error("Compaction failed:", err),
+                    );
+                  }
+
                   if (!chatId) {
                     writer.write({
                       type: "data-chat",
