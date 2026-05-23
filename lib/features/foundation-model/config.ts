@@ -50,7 +50,6 @@ export const chatModelKeys = [
   "Kimi K2.6",
   "MiMo V2.5",
   "MiMo V2.5 Pro",
-  "MiniMax M2.5",
   "MiniMax M2.7",
   "Claude Haiku 4.5",
   "Claude Sonnet 4.6",

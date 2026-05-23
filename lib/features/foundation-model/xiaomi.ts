@@ -5,6 +5,7 @@ export const XIAOMI_CONFIG = {
   "MiMo V2.5": {
     model: providers.opencodeGo("mimo-v2.5"),
     company: "xiaomi",
+    reasoning: true,
     temperature: 0.6,
     topP: 0.95,
   },

@@ -11,12 +11,14 @@ export const ZAI_CONFIG = {
   "GLM-4.7 Flash": {
     model: providers.gateway("zai/glm-4.7-flash"),
     company: "zai",
+    reasoning: true,
     temperature: 0.6,
     topP: 0.95,
   },
   "GLM-5.1": {
     model: providers.gateway("zai/glm-5.1"),
     company: "zai",
+    reasoning: true,
     temperature: 0.6,
     topP: 0.95,
   },

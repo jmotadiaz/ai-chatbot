@@ -5,9 +5,10 @@ export const ALIBABA_CONFIG = {
   "Qwen 3.5 Flash": {
     model: providers.gateway("alibaba/qwen3.5-flash"),
     company: "alibaba",
+    reasoning: true,
   },
   "Qwen 3.6 Plus": {
-    model: providers.gateway("alibaba/qwen3.6-plus"),
+    model: providers.opencodeGo("qwen3.6-plus"),
     company: "alibaba",
     reasoning: true,
     supportedFiles: ["pdf", "img"],
