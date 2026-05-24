@@ -1,0 +1,9 @@
+# pnpm v11 Workspace Configuration
+# Allow build/postinstall scripts execution for the following dependencies:
+allowBuilds:
+  bcrypt: true
+  bufferutil: true
+  esbuild: true
+  msw: true
+  sharp: true
+  unrs-resolver: true
