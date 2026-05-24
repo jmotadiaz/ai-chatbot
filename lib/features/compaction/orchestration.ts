@@ -1,20 +1,17 @@
-import { eq } from "drizzle-orm";
 import { pruneMessages, convertToModelMessages } from "ai";
 import { estimateModelMessagesTokens } from "./token-estimation";
 import { shouldCompact } from "./should-compact";
 import { findCutPoint } from "./cut-point";
 import { generateSummary, generateTurnPrefixSummary } from "./summary-generation";
-import { saveSummary, getLatestSummary } from "./repository";
 import type { CompactionSettings, CutPointResult } from "./types";
 import { DEFAULT_CONTEXT_WINDOW } from "./types";
+import type { CompactionDbPort, CompactionAiPort } from "./ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { InsertChatSummary } from "@/lib/infrastructure/db/schema";
-import { getDb } from "@/lib/infrastructure/db/db";
-import { message } from "@/lib/infrastructure/db/schema";
 import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
-import { transaction } from "@/lib/infrastructure/db/queries";
 
 export async function prepareCompaction(
+  db: CompactionDbPort,
   chatId: string,
   keepRecentTokens: number,
 ): Promise<{
@@ -22,12 +19,7 @@ export async function prepareCompaction(
   previousSummaryText: string | null;
   tokensBefore: number;
 }> {
-  const db = getDb();
-  const dbMessages = await db
-    .select()
-    .from(message)
-    .where(eq(message.chatId, chatId))
-    .orderBy(message.serial);
+  const dbMessages = await db.getMessagesByChatId(chatId);
 
   const messages: ChatbotMessage[] = dbMessageToChatbotMessage(dbMessages);
 
@@ -37,7 +29,7 @@ export async function prepareCompaction(
     emptyMessages: "remove",
   });
 
-  const previousSummary = await getLatestSummary(chatId);
+  const previousSummary = await db.getLatestSummary(chatId);
   const tokensBefore = estimateModelMessagesTokens(prunedMessages);
 
   let messagesToConsider = messages;
@@ -60,6 +52,8 @@ export async function prepareCompaction(
 }
 
 export async function compact(
+  db: CompactionDbPort,
+  ai: CompactionAiPort,
   chatId: string,
   settings: CompactionSettings,
   signal?: AbortSignal,
@@ -68,7 +62,7 @@ export async function compact(
   if (!settings.enabled) return;
 
   const { cutPoint, previousSummaryText, tokensBefore } =
-    await prepareCompaction(chatId, settings.keepRecentTokens);
+    await prepareCompaction(db, chatId, settings.keepRecentTokens);
 
   if (cutPoint.messagesToSummarize.length === 0) return;
   if (signal?.aborted) return;
@@ -91,11 +85,12 @@ export async function compact(
   let modelUsed: string;
 
   if (isSplitTurn) {
-    const result = await generateTurnPrefixSummary(cutPoint.messagesToSummarize);
+    const result = await generateTurnPrefixSummary(ai, cutPoint.messagesToSummarize);
     summary = result.summary;
     modelUsed = result.modelUsed;
   } else {
     const result = await generateSummary(
+      ai,
       cutPoint.messagesToSummarize,
       previousSummaryText ?? undefined,
     );
@@ -113,5 +108,5 @@ export async function compact(
     modelUsed,
   };
 
-  await transaction(saveSummary(insertData));
+  await db.transaction(db.saveSummary(insertData));
 }

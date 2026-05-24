@@ -2,7 +2,10 @@ export { estimateTokens, estimateContextTokens, estimateModelMessagesTokens, ext
 export { findCutPoint } from "./cut-point";
 export { serializeMessages } from "./serialize";
 export { generateSummary, generateTurnPrefixSummary } from "./summary-generation";
-export { saveSummary, getLatestSummary, getSummaryById } from "./repository";
 export { shouldCompact } from "./should-compact";
 export { prepareCompaction, compact } from "./orchestration";
+export { rebuildContext } from "./context-rebuild";
 export type { CompactionSettings, CompactionSummary, CutPointResult } from "./types";
+export type { CompactionDbPort, CompactionAiPort } from "./ports";
+export { compactionDbAdapter } from "./adapters/db-adapter";
+export { compactionAiAdapter } from "./adapters/ai-adapter";

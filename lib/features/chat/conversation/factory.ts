@@ -8,7 +8,6 @@ import {
   InvalidArgumentError,
 } from "ai";
 import type { ModelMessage } from "ai";
-import { eq } from "drizzle-orm";
 import {
   ChatDbPort,
   ChatAgentAiPort,
@@ -30,13 +29,12 @@ import {
 import { createAgent } from "@/lib/features/chat/agents/factory";
 import { extractMemoryFacts } from "@/lib/features/memory/extraction";
 import { compact } from "@/lib/features/compaction/orchestration";
-import { getLatestSummary } from "@/lib/features/compaction/repository";
+import { rebuildContext } from "@/lib/features/compaction/context-rebuild";
 import {
   DEFAULT_KEEP_RECENT_TOKENS,
   DEFAULT_RESERVE_TOKENS,
 } from "@/lib/features/compaction/types";
-import { getDb } from "@/lib/infrastructure/db/db";
-import { message as messageTable } from "@/lib/infrastructure/db/schema";
+import type { CompactionDbPort, CompactionAiPort } from "@/lib/features/compaction/ports";
 
 const processMessagesToSend = async ({
   messages,
@@ -94,6 +92,8 @@ const buildAgentAdapter = (
 export const makeProcessChatResponse = <Tx = unknown>(
   db: ChatDbPort<Tx>,
   projectPort: ProjectPort,
+  compactionDb: CompactionDbPort,
+  compactionAi: CompactionAiPort,
 ) => {
   return async ({
     messages,
@@ -135,43 +135,9 @@ export const makeProcessChatResponse = <Tx = unknown>(
 
     const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
 
-    let filteredMessages = messages;
-    let augmentedSystemPrompt = systemPrompt;
-
-    if (chatId) {
-      try {
-        const summary = await getLatestSummary(chatId);
-        if (summary) {
-          const db = getDb();
-          const summaryMessage = await db
-            .select()
-            .from(messageTable)
-            .where(eq(messageTable.id, summary.messageId))
-            .limit(1);
-
-          if (summaryMessage[0]?.serial) {
-            const allDbMessages = await db
-              .select({ id: messageTable.id, serial: messageTable.serial })
-              .from(messageTable)
-              .where(eq(messageTable.chatId, chatId));
-
-            const summarySerial = summaryMessage[0].serial;
-            const serialMap = new Map(
-              allDbMessages.map((m) => [m.id, m.serial]),
-            );
-
-            filteredMessages = messages.filter((msg) => {
-              const serial = serialMap.get(msg.id);
-              return serial ? serial > summarySerial : true;
-            });
-
-            augmentedSystemPrompt = `## Previous Context\n${summary.summary}\n\n${systemPrompt ?? ""}`;
-          }
-        }
-      } catch (err) {
-        console.error("Context rebuild failed:", err);
-      }
-    }
+    const { filteredMessages, augmentedSystemPrompt } = chatId
+      ? await rebuildContext(compactionDb, chatId, messages, systemPrompt)
+      : { filteredMessages: messages, augmentedSystemPrompt: systemPrompt ?? "" };
 
     const messagesToSend = await processMessagesToSend({
       messages: filteredMessages,
@@ -293,7 +259,7 @@ export const makeProcessChatResponse = <Tx = unknown>(
                     const modelConfig = getChatConfigurationByModelId(
                       selectedModel,
                     );
-                    compact(resolvedChatId, {
+                    compact(compactionDb, compactionAi, resolvedChatId, {
                       keepRecentTokens: DEFAULT_KEEP_RECENT_TOKENS,
                       reserveTokens: DEFAULT_RESERVE_TOKENS,
                       contextWindow:

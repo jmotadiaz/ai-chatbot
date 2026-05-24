@@ -1,179 +1,130 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { InsertChatSummary } from "@/lib/infrastructure/db/schema";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { CompactionDbPort, CompactionAiPort } from "@/lib/features/compaction/ports";
+import type { ChatSummary, Message } from "@/lib/infrastructure/db/schema";
 
 const MOCK_CHAT_ID = "test-chat-id";
+const mockSummaryRecord: ChatSummary = {
+  id: "summary-1",
+  chatId: MOCK_CHAT_ID,
+  messageId: "msg-15",
+  summary: "test",
+  tokensBefore: 100,
+  modelUsed: "test-model",
+  createdAt: new Date(),
+};
 
-interface InsertChatSnapshot {
-  chatId: string;
-  messageId: string;
-  summary: string;
-  tokensBefore: number;
-  modelUsed: string;
+const defaultSaveSummary: CompactionDbPort["saveSummary"] = () => async () => mockSummaryRecord;
+
+function buildDbPort(overrides: Partial<CompactionDbPort> = {}): CompactionDbPort {
+  return {
+    getLatestSummary: vi.fn().mockResolvedValue(undefined),
+    getMessagesByChatId: vi.fn().mockResolvedValue([] as Message[]),
+    getMessageById: vi.fn().mockResolvedValue(undefined),
+    saveSummary: defaultSaveSummary,
+    transaction: vi.fn((fn) => fn({} as never)),
+    ...overrides,
+  };
 }
 
-const testState = vi.hoisted(() => {
-  let capturedInsertData: InsertChatSnapshot | null = null;
+function buildAiPort(overrides: Partial<CompactionAiPort> = {}): CompactionAiPort {
+  return {
+    generateText: vi.fn().mockResolvedValue("## Goal\nTest conversation\n## Key Facts\nIntegration test\n"),
+    ...overrides,
+  };
+}
 
-  const messages = Array.from({ length: 30 }, (_, i) => ({
+function buildMessages(count: number): Message[] {
+  return Array.from({ length: count }, (_, i) => ({
     id: `msg-${i + 1}`,
-    chatId: "test-chat-id",
+    chatId: MOCK_CHAT_ID,
     role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
     parts: [{ type: "text" as const, text: `Message ${i + 1} `.repeat(400) }],
     serial: i + 1,
     createdAt: new Date(),
     metadata: null,
   }));
-
-  const orderByMock = vi.fn().mockResolvedValue(messages);
-
-  return {
-    messages,
-    orderByMock,
-    get capturedInsertData() {
-      return capturedInsertData;
-    },
-    set capturedInsertData(v: InsertChatSnapshot | null) {
-      capturedInsertData = v;
-    },
-  };
-});
-
-vi.mock("@/lib/infrastructure/db/db", () => {
-  const orderByMock = testState.orderByMock;
-  const messages = testState.messages;
-
-  const summaryRecord = {
-    id: "summary-1",
-    chatId: "test-chat-id",
-    messageId: messages[14].id,
-    summary: "## Goal\nTest conversation\n## Key Facts\nIntegration test\n",
-    tokensBefore: 15000,
-    modelUsed: "Deepseek v4 Flash",
-    createdAt: new Date(),
-  };
-
-  const mockTx = {
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue([summaryRecord]),
-  };
-
-  const whereResult = { orderBy: orderByMock };
-  const whereFn = vi.fn().mockReturnValue(whereResult);
-  const fromResult = { where: whereFn };
-  const fromFn = vi.fn().mockReturnValue(fromResult);
-
-  return {
-    getDb: vi.fn(() => ({
-      select: vi.fn(() => ({ from: fromFn })),
-      transaction: vi.fn((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx)),
-    })),
-  };
-});
-
-vi.mock("@/lib/features/compaction/repository", () => {
-  const summaryRecord = {
-    id: "summary-1",
-    chatId: "test-chat-id",
-    messageId: "msg-15",
-    summary: "## Goal\nTest conversation\n## Key Facts\nIntegration test\n",
-    tokensBefore: 15000,
-    modelUsed: "Deepseek v4 Flash",
-    createdAt: new Date(),
-  };
-
-  return {
-    getLatestSummary: vi.fn().mockResolvedValue(undefined),
-    saveSummary: (data: InsertChatSummary) => {
-      testState.capturedInsertData = {
-        chatId: data.chatId,
-        messageId: data.messageId,
-        summary: data.summary,
-        tokensBefore: data.tokensBefore,
-        modelUsed: data.modelUsed,
-      };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      return async (_tx: unknown) => summaryRecord;
-    },
-    getSummaryById: vi.fn(),
-  };
-});
+}
 
 vi.mock("server-only", () => ({}));
-
-vi.mock("ai", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("ai")>();
-  return {
-    ...actual,
-    generateText: vi
-      .fn()
-      .mockResolvedValue({
-        text: "## Goal\nTest conversation\n## Key Facts\nIntegration test\n",
-      }),
-    pruneMessages: vi.fn(({ messages }: { messages: unknown[] }) => messages),
-    convertToModelMessages: vi.fn((messages: ChatbotMessage[]) =>
-      Promise.resolve(
-        messages.map((m) => ({
-          role: m.role,
-          content: [
-            {
-              type: "text" as const,
-              text: m.parts
-                .filter((p) => p.type === "text")
-                .map((p) => (p as { text: string }).text)
-                .join(" "),
-            },
-          ],
-        })),
-      ),
-    ),
-  };
-});
 
 import { compact } from "@/lib/features/compaction/orchestration";
 
 describe("compaction integration flow", () => {
   beforeEach(() => {
-    testState.capturedInsertData = null;
     vi.clearAllMocks();
   });
 
   it("compact saves a summary when messages exceed threshold", async () => {
-    await compact(MOCK_CHAT_ID, {
+    const messages = buildMessages(30);
+    const saveSummaryFn = vi.fn<CompactionDbPort["saveSummary"]>(
+      () => async () => mockSummaryRecord,
+    );
+    const generateTextFn = vi.fn<CompactionAiPort["generateText"]>().mockResolvedValue(
+      "## Goal\nTest conversation\n## Key Facts\nIntegration test\n",
+    );
+
+    const db = buildDbPort({
+      getMessagesByChatId: vi.fn().mockResolvedValue(messages),
+      saveSummary: saveSummaryFn,
+    });
+    const ai = buildAiPort({ generateText: generateTextFn });
+
+    await compact(db, ai, MOCK_CHAT_ID, {
       keepRecentTokens: 20000,
       reserveTokens: 16384,
       contextWindow: 40000,
       enabled: true,
     });
 
-    expect(testState.capturedInsertData).not.toBeNull();
-    expect(testState.capturedInsertData!.chatId).toBe(MOCK_CHAT_ID);
-    expect(testState.capturedInsertData!.summary).toBe(
+    expect(generateTextFn).toHaveBeenCalled();
+    expect(saveSummaryFn).toHaveBeenCalled();
+    const insertData = saveSummaryFn.mock.calls[0]![0];
+    expect(insertData.chatId).toBe(MOCK_CHAT_ID);
+    expect(insertData.summary).toBe(
       "## Goal\nTest conversation\n## Key Facts\nIntegration test\n",
     );
-    expect(testState.capturedInsertData!.tokensBefore).toBeGreaterThan(0);
-    expect(testState.capturedInsertData!.modelUsed).toBeTruthy();
-    expect(testState.capturedInsertData!.messageId).toBeTruthy();
+    expect(insertData.tokensBefore).toBeGreaterThan(0);
+    expect(insertData.modelUsed).toBeTruthy();
+    expect(insertData.messageId).toBeTruthy();
   });
 
   it("compact does nothing for empty chat", async () => {
-    testState.orderByMock.mockResolvedValueOnce([]);
+    const saveSummaryFn = vi.fn<CompactionDbPort["saveSummary"]>(
+      () => async () => mockSummaryRecord,
+    );
 
-    await compact(MOCK_CHAT_ID, {
+    const db = buildDbPort({
+      getMessagesByChatId: vi.fn().mockResolvedValue([] as Message[]),
+      saveSummary: saveSummaryFn,
+    });
+    const ai = buildAiPort();
+
+    await compact(db, ai, MOCK_CHAT_ID, {
       keepRecentTokens: 20000,
       reserveTokens: 16384,
       enabled: true,
     });
 
-    expect(testState.capturedInsertData).toBeNull();
+    expect(saveSummaryFn).not.toHaveBeenCalled();
   });
 
   it("compact respects abort signal", async () => {
     const controller = new AbortController();
     controller.abort();
 
+    const saveSummaryFn = vi.fn<CompactionDbPort["saveSummary"]>(
+      () => async () => mockSummaryRecord,
+    );
+
+    const db = buildDbPort({
+      getMessagesByChatId: vi.fn().mockResolvedValue(buildMessages(30)),
+      saveSummary: saveSummaryFn,
+    });
+    const ai = buildAiPort();
+
     await compact(
+      db,
+      ai,
       MOCK_CHAT_ID,
       {
         keepRecentTokens: 20000,
@@ -183,6 +134,6 @@ describe("compaction integration flow", () => {
       controller.signal,
     );
 
-    expect(testState.capturedInsertData).toBeNull();
+    expect(saveSummaryFn).not.toHaveBeenCalled();
   });
 });
