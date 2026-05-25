@@ -8,11 +8,7 @@ import {
   InvalidArgumentError,
 } from "ai";
 import type { ModelMessage } from "ai";
-import {
-  ChatDbPort,
-  ChatAgentAiPort,
-  ProjectPort,
-} from "@/lib/features/chat/conversation/ports";
+import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import {
@@ -34,7 +30,14 @@ import {
   DEFAULT_KEEP_RECENT_TOKENS,
   DEFAULT_RESERVE_TOKENS,
 } from "@/lib/features/compaction/types";
-import type { CompactionDbPort, CompactionAiPort } from "@/lib/features/compaction/ports";
+import type { CompactionAiPort } from "@/lib/features/compaction/ports";
+import {
+  saveChat,
+  updateChat,
+  saveMessages,
+  deleteMessageById,
+} from "@/lib/features/chat/queries";
+import { transaction } from "@/lib/infrastructure/db/queries";
 
 const processMessagesToSend = async ({
   messages,
@@ -89,10 +92,7 @@ const buildAgentAdapter = (
   };
 };
 
-export const makeProcessChatResponse = <Tx = unknown>(
-  db: ChatDbPort<Tx>,
-  projectPort: ProjectPort,
-  compactionDb: CompactionDbPort,
+export const makeProcessChatResponse = (
   compactionAi: CompactionAiPort,
 ) => {
   return async ({
@@ -136,7 +136,7 @@ export const makeProcessChatResponse = <Tx = unknown>(
     const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
 
     const { filteredMessages, augmentedSystemPrompt } = chatId
-      ? await rebuildContext(compactionDb, chatId, messages, systemPrompt)
+      ? await rebuildContext(chatId, messages, systemPrompt)
       : { filteredMessages: messages, augmentedSystemPrompt: systemPrompt ?? "" };
 
     const messagesToSend = await processMessagesToSend({
@@ -161,7 +161,6 @@ export const makeProcessChatResponse = <Tx = unknown>(
           webSearchNumResults,
           ragMaxResources,
           minRagResourcesScore,
-          projectPort,
         });
 
         const result = await agentInstance.stream({
@@ -211,9 +210,9 @@ export const makeProcessChatResponse = <Tx = unknown>(
                   userMessage?.role === "user" &&
                   assistantMessage?.role === "assistant"
                 ) {
-                  const dbChatId = await db.transaction(async (tx) => {
+                  const dbChatId = await transaction(async (tx) => {
                     const updated = chatId
-                      ? await db.updateChat(
+                      ? await updateChat(
                           { id: chatId, userId: user.id },
                           {
                             defaultModel: selectedModel,
@@ -223,12 +222,12 @@ export const makeProcessChatResponse = <Tx = unknown>(
                             ragMaxResources,
                             minRagResourcesScore,
                           },
-                        )(tx as Tx)
+                        )(tx)
                       : undefined;
 
                     const ensuredChat =
                       updated ??
-                      (await db.saveChat({
+                      (await saveChat({
                         ...(chatId ? { id: chatId } : {}),
                         userId: user.id,
                         title: await generateTitle(messages),
@@ -239,17 +238,17 @@ export const makeProcessChatResponse = <Tx = unknown>(
                         webSearchNumResults,
                         ragMaxResources,
                         minRagResourcesScore,
-                      })(tx as Tx));
+                      })(tx));
 
                     const { id } = ensuredChat;
-                    await db.deleteMessageById(messageId)(tx as Tx);
-                    await db.saveMessages(
+                    await deleteMessageById(messageId)(tx);
+                    await saveMessages(
                       await Promise.all(
                         [userMessage, assistantMessage].map(
                           chatbotMessageToDbMessage(id),
                         ),
                       ),
-                    )(tx as Tx);
+                    )(tx);
 
                     return id;
                   });
@@ -259,7 +258,7 @@ export const makeProcessChatResponse = <Tx = unknown>(
                     const modelConfig = getChatConfigurationByModelId(
                       selectedModel,
                     );
-                    compact(compactionDb, compactionAi, resolvedChatId, {
+                    compact(compactionAi, resolvedChatId, {
                       keepRecentTokens: DEFAULT_KEEP_RECENT_TOKENS,
                       reserveTokens: DEFAULT_RESERVE_TOKENS,
                       contextWindow:

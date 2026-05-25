@@ -1,8 +1,7 @@
-import type { CompactionDbPort } from "./ports";
+import { getLatestSummary, getMessageById, getMessagesByChatId } from "./queries";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 export async function rebuildContext(
-  db: CompactionDbPort,
   chatId: string,
   messages: ChatbotMessage[],
   systemPrompt?: string,
@@ -14,12 +13,12 @@ export async function rebuildContext(
   let augmentedSystemPrompt = systemPrompt ?? "";
 
   try {
-    const summary = await db.getLatestSummary(chatId);
+    const summary = await getLatestSummary(chatId);
     if (summary) {
-      const summaryMessage = await db.getMessageById(summary.messageId);
+      const summaryMessage = await getMessageById(summary.messageId);
 
       if (summaryMessage?.serial) {
-        const allDbMessages = await db.getMessagesByChatId(chatId);
+        const allDbMessages = await getMessagesByChatId(chatId);
 
         const summarySerial = summaryMessage.serial;
         const serialMap = new Map(

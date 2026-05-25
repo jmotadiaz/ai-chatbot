@@ -6,6 +6,5 @@ export { shouldCompact } from "./should-compact";
 export { prepareCompaction, compact } from "./orchestration";
 export { rebuildContext } from "./context-rebuild";
 export type { CompactionSettings, CompactionSummary, CutPointResult } from "./types";
-export type { CompactionDbPort, CompactionAiPort } from "./ports";
-export { compactionDbAdapter } from "./adapters/db-adapter";
+export type { CompactionAiPort } from "./ports";
 export { compactionAiAdapter } from "./adapters/ai-adapter";

@@ -1,17 +1,7 @@
-import {
-  findSimilarChunksBySemantic,
-  findSimilarChunksByKeyword,
-} from "../queries";
 import { makeRetrieveResourceChunks } from "./factory";
 import { generateEmbeddings } from "./embeddings";
 import { providers } from "@/lib/infrastructure/ai/providers";
 export type { RetrieveResourcesInput } from "./search";
-
-// Concrete Adapters
-const dbAdapter = {
-  findSimilarChunksBySemantic,
-  findSimilarChunksByKeyword,
-};
 
 const aiAdapter = {
   generateEmbeddings,
@@ -27,6 +17,5 @@ const aiAdapter = {
 
 // Singleton export to be used by the app / tools
 export const retrieveResourceChunks = makeRetrieveResourceChunks(
-  dbAdapter,
   aiAdapter,
 );

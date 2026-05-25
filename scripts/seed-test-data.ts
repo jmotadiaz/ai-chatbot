@@ -1,12 +1,14 @@
 import { randomUUID } from "crypto";
 import { config } from "dotenv";
 import { and, asc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase, type PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { faker } from "@faker-js/faker";
 
+import type { ExtractTablesWithRelations } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import { generateHashedPassword } from "../lib/features/auth/utils";
-import { schema, type DB } from "../lib/infrastructure/db/db";
+import { schema } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
 
 const TEST_USER_EMAIL = "test@test.com";
@@ -15,11 +17,12 @@ const TEST_USER_ID = "f47ac10b-58cc-4372-a567-0e02b2c3d479";
 const SEED_PROJECT_NAME = "Seed Project";
 const SEED_PROJECT_SYSTEM_PROMPT = "Test project";
 
-type Tx = Parameters<DB["transaction"]>[0] extends (
-  tx: infer T,
-) => Promise<unknown>
-  ? T
-  : never;
+
+type Tx = PgTransaction<
+  PostgresJsQueryResultHKT,
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>;
 
 function parseArgs(argv: string[]) {
   const has = (flag: string) => argv.includes(flag);
@@ -129,9 +132,9 @@ async function main() {
 
   const client = postgres(process.env.POSTGRES_URL, { max: 1 });
   try {
-    const db = drizzle(client, { schema }) as DB;
+    const db = drizzle(client, { schema }) as PostgresJsDatabase<typeof schema>;
 
-    const result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx: Tx) => {
       const userId = await upsertTestUser(tx);
 
       if (args.reset) {

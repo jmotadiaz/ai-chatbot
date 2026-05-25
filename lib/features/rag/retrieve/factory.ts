@@ -1,5 +1,9 @@
 import { RagChunk, SimilarChunks  } from "../types";
-import { RagRetrieveDbPort, RagRetrieveAiPort } from "./ports";
+import {
+  findSimilarChunksBySemantic,
+  findSimilarChunksByKeyword,
+} from "../queries";
+import { RagRetrieveAiPort } from "./ports";
 import {
   RetrieveResourcesInput,
   reorderByResourcePosition,
@@ -12,7 +16,6 @@ const K_KEYWORD_SEARCHES = 20;
 const SEMANTIC_SEARCH_SIMILARITY_THRESHOLD = 0.5;
 
 export const makeRetrieveResourceChunks = (
-  db: RagRetrieveDbPort,
   ai: RagRetrieveAiPort,
 ) => {
   return async ({
@@ -34,7 +37,7 @@ export const makeRetrieveResourceChunks = (
 
     // 2. Execute optimized batch searches in parallel
     const [vectorResults, keywordResults] = await Promise.all([
-      db.findSimilarChunksBySemantic({
+      findSimilarChunksBySemantic({
         embeddings,
         userId,
         projectId,
@@ -42,7 +45,7 @@ export const makeRetrieveResourceChunks = (
         similarityThreshold: SEMANTIC_SEARCH_SIMILARITY_THRESHOLD,
         previousChunkIds: previousResources,
       }),
-      db.findSimilarChunksByKeyword({
+      findSimilarChunksByKeyword({
         queries: multiHopQueries,
         userId,
         projectId,

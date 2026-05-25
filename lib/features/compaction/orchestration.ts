@@ -5,13 +5,14 @@ import { findCutPoint } from "./cut-point";
 import { generateSummary, generateTurnPrefixSummary } from "./summary-generation";
 import type { CompactionSettings, CutPointResult } from "./types";
 import { DEFAULT_CONTEXT_WINDOW } from "./types";
-import type { CompactionDbPort, CompactionAiPort } from "./ports";
+import type { CompactionAiPort } from "./ports";
+import { getLatestSummary, getMessagesByChatId, saveSummary } from "./queries";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { InsertChatSummary } from "@/lib/infrastructure/db/schema";
 import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
+import { transaction } from "@/lib/infrastructure/db/queries";
 
 export async function prepareCompaction(
-  db: CompactionDbPort,
   chatId: string,
   keepRecentTokens: number,
 ): Promise<{
@@ -19,7 +20,7 @@ export async function prepareCompaction(
   previousSummaryText: string | null;
   tokensBefore: number;
 }> {
-  const dbMessages = await db.getMessagesByChatId(chatId);
+  const dbMessages = await getMessagesByChatId(chatId);
 
   const messages: ChatbotMessage[] = dbMessageToChatbotMessage(dbMessages);
 
@@ -29,7 +30,7 @@ export async function prepareCompaction(
     emptyMessages: "remove",
   });
 
-  const previousSummary = await db.getLatestSummary(chatId);
+  const previousSummary = await getLatestSummary(chatId);
   const tokensBefore = estimateModelMessagesTokens(prunedMessages);
 
   let messagesToConsider = messages;
@@ -52,7 +53,6 @@ export async function prepareCompaction(
 }
 
 export async function compact(
-  db: CompactionDbPort,
   ai: CompactionAiPort,
   chatId: string,
   settings: CompactionSettings,
@@ -62,7 +62,7 @@ export async function compact(
   if (!settings.enabled) return;
 
   const { cutPoint, previousSummaryText, tokensBefore } =
-    await prepareCompaction(db, chatId, settings.keepRecentTokens);
+    await prepareCompaction(chatId, settings.keepRecentTokens);
 
   if (cutPoint.messagesToSummarize.length === 0) return;
   if (signal?.aborted) return;
@@ -108,5 +108,5 @@ export async function compact(
     modelUsed,
   };
 
-  await db.transaction(db.saveSummary(insertData));
+  await transaction(saveSummary(insertData));
 }

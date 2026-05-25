@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeAll, afterEach, afterAll } from "vitest";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
@@ -5,14 +6,9 @@ import {
   makeIngestUrlResource,
   makeIngestMarkdownResource,
 } from "../../../lib/features/rag/ingestion/factory";
-import type {
-  RagIngestionDbPort,
-  RagIngestionAiPort,
-} from "../../../lib/features/rag/ingestion/ports";
-import type {
-  InsertChunk,
-  InsertEmbedding,
-} from "../../../lib/infrastructure/db/schema";
+import type { RagIngestionAiPort } from "../../../lib/features/rag/ingestion/ports";
+import { setupTestDb } from "../db-setup";
+import { resource as resourceTable, chunk as chunkTable, embedding as embeddingTable, user as userTable, project as projectTable, projectResource as projectResourceTable } from "@/lib/infrastructure/db/schema";
 
 // ─── MSW Server ───────────────────────────────────────────────────────────────
 
@@ -24,55 +20,18 @@ afterAll(() => server.close());
 
 // ─── Test Infrastructure ─────────────────────────────────────────────────────
 
-interface FakeStore {
-  resource: {
-    id: string;
-    title: string;
-    url?: string | null;
-    userId?: string | null;
-    projectId?: string;
-  } | null;
-  chunks: InsertChunk[];
-  embeddings: InsertEmbedding[];
-}
-
-const FAKE_RESOURCE_ID = "fake-resource-id";
-
-function createFakeDbPort(): { port: RagIngestionDbPort; store: FakeStore } {
-  const store: FakeStore = { resource: null, chunks: [], embeddings: [] };
-
-  const port: RagIngestionDbPort = {
-    transaction: async (fn) => {
-      const result = await fn({} as unknown);
-      return [result];
-    },
-    saveResource: (data) => async () => {
-      store.resource = { id: FAKE_RESOURCE_ID, ...data };
-      return { id: FAKE_RESOURCE_ID };
-    },
-    saveChunks: (data) => async () => {
-      store.chunks.push(...data);
-    },
-    createEmbeddings: (data) => async () => {
-      store.embeddings.push(...data);
-    },
-  };
-
-  return { port, store };
-}
-
 function createFakeAiPort(): RagIngestionAiPort {
   return {
     generateEmbeddings: async (inputs) =>
       inputs.map((input) => ({
         chunkId: input.chunkId,
-        embedding: [0.1, 0.2, 0.3],
+        embedding: Array(768).fill(0.1),
       })),
   };
 }
 
-const BASE_USER_ID = "user-123";
-const BASE_PROJECT_ID = "project-456";
+const BASE_USER_ID = "11111111-1111-1111-1111-111111111111";
+const BASE_PROJECT_ID = "22222222-2222-2222-2222-222222222222";
 const MOCK_URL = "https://example.com/doc";
 
 function servePage(html: string) {
@@ -85,245 +44,329 @@ function servePage(html: string) {
   );
 }
 
-// ─── Suite 1: makeIngestUrlResource ──────────────────────────────────────────
+describe("RAG Ingestion - Sociable Unit Tests", () => {
+  let db: any;
 
-describe("makeIngestUrlResource", () => {
-  it("extracts content from the HTML and stores at least one chunk", async () => {
-    servePage(`
-      <html><head><title>My Test Page</title></head>
-      <body>
-        <h1>Introduction</h1>
-        <p>This is a paragraph that should be captured as chunk content.</p>
-      </body></html>
-    `);
+  beforeAll(async () => {
+    // Spin up PGlite and set it globally
+    db = await setupTestDb();
+  });
 
-    const { port: db, store } = createFakeDbPort();
-    const ai = createFakeAiPort();
-    const ingest = makeIngestUrlResource(db, ai);
+  afterEach(async () => {
+    // Clear tables between tests to keep them isolated
+    await db.delete(embeddingTable);
+    await db.delete(chunkTable);
+    await db.delete(resourceTable);
+    await db.delete(projectTable);
+    await db.delete(userTable);
+  });
 
-    const result = await ingest({
-      urlResource: { url: MOCK_URL },
+  async function seedUserAndProject() {
+    await db.insert(userTable).values({
+      id: BASE_USER_ID,
+      email: "ingestion-tester@example.com",
+    });
+
+    await db.insert(projectTable).values({
+      id: BASE_PROJECT_ID,
       userId: BASE_USER_ID,
+      name: "Test Project",
+      systemPrompt: "System prompt",
+    });
+  }
+
+  describe("makeIngestUrlResource", () => {
+    it("extracts content from the HTML and stores at least one chunk", async () => {
+      servePage(`
+        <html><head><title>My Test Page</title></head>
+        <body>
+          <h1>Introduction</h1>
+          <p>This is a paragraph that should be captured as chunk content.</p>
+        </body></html>
+      `);
+
+      await seedUserAndProject();
+
+      const ai = createFakeAiPort();
+      const ingest = makeIngestUrlResource(ai);
+
+      const result = await ingest({
+        urlResource: { url: MOCK_URL },
+        userId: BASE_USER_ID,
+      });
+
+      expect(result).toEqual({ success: true });
+
+      // Fetch saved chunks from the real database!
+      const savedChunks = await db.select().from(chunkTable);
+      expect(savedChunks.length).toBeGreaterThan(0);
+
+      const allContent = savedChunks.map((c: any) => c.content).join("\n");
+      expect(allContent).toContain("paragraph that should be captured");
     });
 
-    expect(result).toEqual({ success: true });
-    expect(store.chunks.length).toBeGreaterThan(0);
+    it("returns { success: false } and stores nothing when server returns 404", async () => {
+      server.use(
+        http.get(MOCK_URL, () => new HttpResponse(null, { status: 404 })),
+      );
 
-    const allContent = store.chunks.map((c) => c.content).join("\n");
-    expect(allContent).toContain("paragraph that should be captured");
-  });
+      await seedUserAndProject();
 
-  it("returns { success: false } and stores nothing when server returns 404", async () => {
-    server.use(
-      http.get(MOCK_URL, () => new HttpResponse(null, { status: 404 })),
-    );
+      const ai = createFakeAiPort();
+      const ingest = makeIngestUrlResource(ai);
 
-    const { port: db, store } = createFakeDbPort();
-    const ai = createFakeAiPort();
-    const ingest = makeIngestUrlResource(db, ai);
+      const result = await ingest({
+        urlResource: { url: MOCK_URL },
+        userId: BASE_USER_ID,
+      });
 
-    const result = await ingest({
-      urlResource: { url: MOCK_URL },
-      userId: BASE_USER_ID,
+      expect(result).toEqual({ success: false });
+
+      const savedResources = await db.select().from(resourceTable);
+      const savedChunks = await db.select().from(chunkTable);
+      const savedEmbeddings = await db.select().from(embeddingTable);
+
+      expect(savedResources).toHaveLength(0);
+      expect(savedChunks).toHaveLength(0);
+      expect(savedEmbeddings).toHaveLength(0);
     });
 
-    expect(result).toEqual({ success: false });
-    expect(store.resource).toBeNull();
-    expect(store.chunks).toHaveLength(0);
-    expect(store.embeddings).toHaveLength(0);
-  });
+    it("generates one embedding per child chunk and stores them all", async () => {
+      servePage(`
+        <html><head><title>Doc</title></head><body>
+          <h1>Section A</h1><p>Content for section A with enough text to embed.</p>
+        </body></html>
+      `);
 
-  it("generates one embedding per child chunk and stores them all", async () => {
-    servePage(`
-      <html><head><title>Doc</title></head><body>
-        <h1>Section A</h1><p>Content for section A with enough text to embed.</p>
-      </body></html>
-    `);
+      await seedUserAndProject();
 
-    const { port: db, store } = createFakeDbPort();
-    const ai = createFakeAiPort();
-    const ingest = makeIngestUrlResource(db, ai);
+      const ai = createFakeAiPort();
+      const ingest = makeIngestUrlResource(ai);
 
-    await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
+      await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
-    expect(store.embeddings.length).toBeGreaterThan(0);
-    // Each embedding must have a valid 3-element vector (our fake)
-    store.embeddings.forEach((emb) => {
-      expect(emb.embedding).toEqual([0.1, 0.2, 0.3]);
-    });
-  });
-
-  it("saves the resource with the page <title> and original URL", async () => {
-    servePage(
-      `<html><head><title>My Article</title></head><body><p>Content.</p></body></html>`,
-    );
-
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort());
-
-    await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
-
-    expect(store.resource?.title).toBe("My Article");
-    expect(store.resource?.url).toBe(MOCK_URL);
-  });
-
-  it("assigns userId to resource when no projectId provided", async () => {
-    servePage(
-      `<html><head><title>T</title></head><body><p>Content.</p></body></html>`,
-    );
-
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort());
-
-    await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
-
-    expect(store.resource?.userId).toBe(BASE_USER_ID);
-    expect(store.resource?.projectId).toBeUndefined();
-  });
-
-  it("assigns projectId (not userId) to resource when projectId is provided", async () => {
-    servePage(
-      `<html><head><title>T</title></head><body><p>Content.</p></body></html>`,
-    );
-
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort());
-
-    await ingest({
-      urlResource: { url: MOCK_URL },
-      userId: BASE_USER_ID,
-      projectId: BASE_PROJECT_ID,
+      const savedEmbeddings = await db.select().from(embeddingTable);
+      expect(savedEmbeddings.length).toBeGreaterThan(0);
+      // Each embedding must have a valid 3-element vector (our fake)
+      savedEmbeddings.forEach((emb: any) => {
+        expect(emb.embedding).toEqual(Array(768).fill(0.1));
+      });
     });
 
-    expect(store.resource?.projectId).toBe(BASE_PROJECT_ID);
-    expect(store.resource?.userId).toBeUndefined();
-  });
+    it("saves the resource with the page <title> and original URL", async () => {
+      servePage(
+        `<html><head><title>My Article</title></head><body><p>Content.</p></body></html>`,
+      );
 
-  it("all saved chunks reference the resource id returned by saveResource", async () => {
-    servePage(`
-      <html><head><title>T</title></head>
-      <body><h1>A</h1><p>Enough content to produce at least one chunk here.</p></body>
-      </html>
-    `);
+      await seedUserAndProject();
 
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestUrlResource(db, createFakeAiPort());
+      const ingest = makeIngestUrlResource(createFakeAiPort());
 
-    await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
+      await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
-    expect(store.chunks.length).toBeGreaterThan(0);
-    store.chunks.forEach((chunk) => {
-      expect(chunk.resourceId).toBe(FAKE_RESOURCE_ID);
-    });
-  });
-});
-
-// ─── Suite 2: makeIngestMarkdownResource ─────────────────────────────────────
-
-describe("makeIngestMarkdownResource", () => {
-  it("produces chunks from markdown content", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
-
-    const result = await ingest({
-      title: "My Guide",
-      content:
-        "# Introduction\n\nThis is the introductory paragraph with enough content to chunk.",
-      userId: BASE_USER_ID,
+      const savedResources = await db.select().from(resourceTable);
+      expect(savedResources).toHaveLength(1);
+      expect(savedResources[0].title).toBe("My Article");
+      expect(savedResources[0].url).toBe(MOCK_URL);
     });
 
-    expect(result).toEqual({ success: true });
-    expect(store.chunks.length).toBeGreaterThan(0);
-    const allContent = store.chunks.map((c) => c.content).join("\n");
-    expect(allContent).toContain("introductory paragraph");
-  });
+    it("assigns userId to resource when no projectId provided", async () => {
+      servePage(
+        `<html><head><title>T</title></head><body><p>Content.</p></body></html>`,
+      );
 
-  it("returns { success: false } and stores nothing when content is empty", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
+      await seedUserAndProject();
 
-    const result = await ingest({
-      title: "Empty",
-      content: "",
-      userId: BASE_USER_ID,
+      const ingest = makeIngestUrlResource(createFakeAiPort());
+
+      await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
+
+      const savedResources = await db.select().from(resourceTable);
+      expect(savedResources).toHaveLength(1);
+      expect(savedResources[0].userId).toBe(BASE_USER_ID);
+      const savedProjectResources = await db.select().from(projectResourceTable);
+      expect(savedProjectResources).toHaveLength(0);
     });
 
-    expect(result).toEqual({ success: false });
-    expect(store.chunks).toHaveLength(0);
-    expect(store.embeddings).toHaveLength(0);
-  });
+    it("assigns projectId (not userId) to resource when projectId is provided", async () => {
+      servePage(
+        `<html><head><title>T</title></head><body><p>Content.</p></body></html>`,
+      );
 
-  it("saves resource with url: null", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
+      await seedUserAndProject();
 
-    await ingest({
-      title: "My Doc",
-      content: "# Section\n\nSome content here.",
-      userId: BASE_USER_ID,
+      const ingest = makeIngestUrlResource(createFakeAiPort());
+
+      await ingest({
+        urlResource: { url: MOCK_URL },
+        userId: BASE_USER_ID,
+        projectId: BASE_PROJECT_ID,
+      });
+
+      const savedResources = await db.select().from(resourceTable);
+      expect(savedResources).toHaveLength(1);
+      const savedProjectResources = await db.select().from(projectResourceTable);
+      expect(savedProjectResources).toHaveLength(1);
+      expect(savedProjectResources[0].projectId).toBe(BASE_PROJECT_ID);
+      expect(savedProjectResources[0].resourceId).toBe(savedResources[0].id);
     });
 
-    expect(store.resource?.url).toBeNull();
-  });
+    it("all saved chunks reference the resource id returned by saveResource", async () => {
+      servePage(`
+        <html><head><title>T</title></head>
+        <body><h1>A</h1><p>Enough content to produce at least one chunk here.</p></body>
+        </html>
+      `);
 
-  it("assigns userId to resource when no projectId provided", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
+      await seedUserAndProject();
 
-    await ingest({
-      title: "Doc",
-      content: "# Section\n\nSome content here.",
-      userId: BASE_USER_ID,
-    });
+      const ingest = makeIngestUrlResource(createFakeAiPort());
 
-    expect(store.resource?.userId).toBe(BASE_USER_ID);
-    expect(store.resource?.projectId).toBeUndefined();
-  });
+      await ingest({ urlResource: { url: MOCK_URL }, userId: BASE_USER_ID });
 
-  it("assigns projectId (not userId) when projectId is provided", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
+      const savedResources = await db.select().from(resourceTable);
+      const savedChunks = await db.select().from(chunkTable);
 
-    await ingest({
-      title: "Doc",
-      content: "# Section\n\nSome content here.",
-      userId: BASE_USER_ID,
-      projectId: BASE_PROJECT_ID,
-    });
-
-    expect(store.resource?.projectId).toBe(BASE_PROJECT_ID);
-    expect(store.resource?.userId).toBeUndefined();
-  });
-
-  it("all chunks carry the real resourceId after the transaction", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
-
-    await ingest({
-      title: "Doc",
-      content: "# Section\n\nSome content here.",
-      userId: BASE_USER_ID,
-    });
-
-    expect(store.chunks.length).toBeGreaterThan(0);
-    store.chunks.forEach((chunk) => {
-      expect(chunk.resourceId).toBe(FAKE_RESOURCE_ID);
+      expect(savedResources).toHaveLength(1);
+      expect(savedChunks.length).toBeGreaterThan(0);
+      savedChunks.forEach((chunk: any) => {
+        expect(chunk.resourceId).toBe(savedResources[0].id);
+      });
     });
   });
 
-  it("generates an embedding for every child chunk", async () => {
-    const { port: db, store } = createFakeDbPort();
-    const ingest = makeIngestMarkdownResource(db, createFakeAiPort());
+  describe("makeIngestMarkdownResource", () => {
+    it("produces chunks from markdown content", async () => {
+      await seedUserAndProject();
 
-    await ingest({
-      title: "Doc",
-      content: "# Section\n\nSome content here to generate embeddings from.",
-      userId: BASE_USER_ID,
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      const result = await ingest({
+        title: "My Guide",
+        content:
+          "# Introduction\n\nThis is the introductory paragraph with enough content to chunk.",
+        userId: BASE_USER_ID,
+      });
+
+      expect(result).toEqual({ success: true });
+
+      const savedChunks = await db.select().from(chunkTable);
+      expect(savedChunks.length).toBeGreaterThan(0);
+      const allContent = savedChunks.map((c: any) => c.content).join("\n");
+      expect(allContent).toContain("introductory paragraph");
     });
 
-    expect(store.embeddings.length).toBeGreaterThan(0);
-    store.embeddings.forEach((emb) => {
-      expect(emb.embedding).toEqual([0.1, 0.2, 0.3]);
+    it("returns { success: false } and stores nothing when content is empty", async () => {
+      await seedUserAndProject();
+
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      const result = await ingest({
+        title: "Empty",
+        content: "",
+        userId: BASE_USER_ID,
+      });
+
+      expect(result).toEqual({ success: false });
+
+      const savedChunks = await db.select().from(chunkTable);
+      const savedEmbeddings = await db.select().from(embeddingTable);
+
+      expect(savedChunks).toHaveLength(0);
+      expect(savedEmbeddings).toHaveLength(0);
+    });
+
+    it("saves resource with url: null", async () => {
+      await seedUserAndProject();
+
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      await ingest({
+        title: "My Doc",
+        content: "# Section\n\nSome content here.",
+        userId: BASE_USER_ID,
+      });
+
+      const savedResources = await db.select().from(resourceTable);
+      expect(savedResources).toHaveLength(1);
+      expect(savedResources[0].url).toBeNull();
+    });
+
+    it("assigns userId to resource when no projectId provided", async () => {
+      await seedUserAndProject();
+
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      await ingest({
+        title: "Doc",
+        content: "# Section\n\nSome content here.",
+        userId: BASE_USER_ID,
+      });
+
+      const savedResources = await db.select().from(resourceTable);
+      expect(savedResources).toHaveLength(1);
+      expect(savedResources[0].userId).toBe(BASE_USER_ID);
+      const savedProjectResources = await db.select().from(projectResourceTable);
+      expect(savedProjectResources).toHaveLength(0);
+    });
+
+    it("assigns projectId (not userId) when projectId is provided", async () => {
+      await seedUserAndProject();
+
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      await ingest({
+        title: "Doc",
+        content: "# Section\n\nSome content here.",
+        userId: BASE_USER_ID,
+        projectId: BASE_PROJECT_ID,
+      });
+
+      const savedResources = await db.select().from(resourceTable);
+      expect(savedResources).toHaveLength(1);
+      const savedProjectResources = await db.select().from(projectResourceTable);
+      expect(savedProjectResources).toHaveLength(1);
+      expect(savedProjectResources[0].projectId).toBe(BASE_PROJECT_ID);
+      expect(savedProjectResources[0].resourceId).toBe(savedResources[0].id);
+    });
+
+    it("all chunks carry the real resourceId after the transaction", async () => {
+      await seedUserAndProject();
+
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      await ingest({
+        title: "Doc",
+        content: "# Section\n\nSome content here.",
+        userId: BASE_USER_ID,
+      });
+
+      const savedResources = await db.select().from(resourceTable);
+      const savedChunks = await db.select().from(chunkTable);
+
+      expect(savedResources).toHaveLength(1);
+      expect(savedChunks.length).toBeGreaterThan(0);
+      savedChunks.forEach((chunk: any) => {
+        expect(chunk.resourceId).toBe(savedResources[0].id);
+      });
+    });
+
+    it("generates an embedding for every child chunk", async () => {
+      await seedUserAndProject();
+
+      const ingest = makeIngestMarkdownResource(createFakeAiPort());
+
+      await ingest({
+        title: "Doc",
+        content: "# Section\n\nSome content here to generate embeddings from.",
+        userId: BASE_USER_ID,
+      });
+
+      const savedEmbeddings = await db.select().from(embeddingTable);
+      expect(savedEmbeddings.length).toBeGreaterThan(0);
+      savedEmbeddings.forEach((emb: any) => {
+        expect(emb.embedding).toEqual(Array(768).fill(0.1));
+      });
     });
   });
 });

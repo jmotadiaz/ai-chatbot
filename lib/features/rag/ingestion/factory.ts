@@ -1,14 +1,15 @@
 import { randomUUID } from "crypto";
+import { saveResource, saveChunks, createEmbeddings } from "../queries";
 import { generateChunks } from "./chunking";
 import { fetchAndConvertURL, type UrlResource } from "./fetch";
-import type { RagIngestionDbPort, RagIngestionAiPort } from "./ports";
+import type { RagIngestionAiPort } from "./ports";
 import type {
   InsertChunk,
   InsertEmbedding,
 } from "@/lib/infrastructure/db/schema";
+import { transaction } from "@/lib/infrastructure/db/queries";
 
-export const makeIngestUrlResource = <Tx = unknown>(
-  db: RagIngestionDbPort<Tx>,
+export const makeIngestUrlResource = (
   ai: RagIngestionAiPort,
 ) => {
   return async ({
@@ -28,6 +29,10 @@ export const makeIngestUrlResource = <Tx = unknown>(
 
     // 1. Prepare data (CPU work) - Outside transaction
     const chunkGroups = await generateChunks(resource.content, resource.title);
+
+    if (chunkGroups.length === 0) {
+      return { success: false };
+    }
 
     const chunksToInsert: Omit<InsertChunk, "resourceId">[] = [];
     const contentToEmbed: { chunkId: string; content: string }[] = [];
@@ -63,9 +68,9 @@ export const makeIngestUrlResource = <Tx = unknown>(
     }
 
     // 3. Database Write - Inside Transaction (Fast)
-    const [result] = await db.transaction(async (tx) => {
+    const [result] = await transaction(async (tx) => {
       // A. Create Resource
-      const newResource = await db.saveResource({
+      const newResource = await saveResource({
         title: resource.title,
         url: resource.url,
         userId: !!projectId ? undefined : userId,
@@ -73,7 +78,7 @@ export const makeIngestUrlResource = <Tx = unknown>(
       })(tx);
 
       // B. Insert Chunks
-      await db.saveChunks(
+      await saveChunks(
         chunksToInsert.map((chunk) => ({
           ...chunk,
           resourceId: newResource.id,
@@ -82,7 +87,7 @@ export const makeIngestUrlResource = <Tx = unknown>(
 
       // C. Insert Embeddings
       if (embeddingsToInsert.length > 0) {
-        await db.createEmbeddings(embeddingsToInsert)(tx);
+        await createEmbeddings(embeddingsToInsert)(tx);
         return { success: true };
       }
 
@@ -93,8 +98,7 @@ export const makeIngestUrlResource = <Tx = unknown>(
   };
 };
 
-export const makeIngestMarkdownResource = <Tx = unknown>(
-  db: RagIngestionDbPort<Tx>,
+export const makeIngestMarkdownResource = (
   ai: RagIngestionAiPort,
 ) => {
   return async ({
@@ -110,6 +114,10 @@ export const makeIngestMarkdownResource = <Tx = unknown>(
   }): Promise<{ success: boolean }> => {
     // 1. Prepare data (CPU work) - Outside transaction
     const chunkGroups = await generateChunks(content, title);
+
+    if (chunkGroups.length === 0) {
+      return { success: false };
+    }
 
     const chunksToInsert: InsertChunk[] = [];
     const contentToEmbed: { chunkId: string; content: string }[] = [];
@@ -144,9 +152,9 @@ export const makeIngestMarkdownResource = <Tx = unknown>(
     }
 
     // 3. Database Write - Inside Transaction (Fast)
-    const [result] = await db.transaction(async (tx) => {
+    const [result] = await transaction(async (tx) => {
       // A. Create Resource
-      const newResource = await db.saveResource({
+      const newResource = await saveResource({
         title,
         url: null,
         userId: !!projectId ? undefined : userId,
@@ -159,11 +167,11 @@ export const makeIngestMarkdownResource = <Tx = unknown>(
       });
 
       // C. Insert Chunks
-      await db.saveChunks(chunksToInsert)(tx);
+      await saveChunks(chunksToInsert)(tx);
 
       // D. Insert Embeddings
       if (embeddingsToInsert.length > 0) {
-        await db.createEmbeddings(embeddingsToInsert)(tx);
+        await createEmbeddings(embeddingsToInsert)(tx);
         return { success: true };
       }
 

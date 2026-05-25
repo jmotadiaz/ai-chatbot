@@ -3,6 +3,7 @@ import "server-only";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
+import type { PgliteQueryResultHKT } from "drizzle-orm/pglite";
 
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { schema } from "@/lib/infrastructure/db/db";
@@ -15,7 +16,7 @@ export interface SafeTransaction {
 
 export type Transactional<T = unknown> = (
   tx: PgTransaction<
-    PostgresJsQueryResultHKT,
+    PostgresJsQueryResultHKT | PgliteQueryResultHKT,
     typeof schema,
     ExtractTablesWithRelations<typeof schema>
   >

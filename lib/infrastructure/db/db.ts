@@ -1,5 +1,8 @@
 import postgres from "postgres";
-import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { drizzle as postgresDrizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { drizzle as pgliteDrizzle, PgliteDatabase } from "drizzle-orm/pglite";
+import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite/vector";
 import {
   chat,
   user,
@@ -33,8 +36,7 @@ export const schema = {
   embeddingRelations,
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type DB = PostgresJsDatabase<typeof schema> & { $client: any };
+export type DB = PostgresJsDatabase<typeof schema> | PgliteDatabase<typeof schema>;
 
 let db: DB;
 
@@ -44,8 +46,22 @@ export const setDb = (newDb: DB) => {
 
 export const getDb = (): DB => {
   if (!db) {
-    const client = postgres(process.env.POSTGRES_URL!);
-    db = drizzle({ client, schema }) as unknown as DB;
+    const usePglite =
+      process.env.DB_PROVIDER === "pglite" ||
+      process.env.DB_DIALECT === "pglite";
+
+    if (usePglite) {
+      const client = new PGlite({
+        extensions: {
+          vector,
+        },
+      });
+      db = pgliteDrizzle({ client, schema }) as unknown as DB;
+    } else {
+      const client = postgres(process.env.POSTGRES_URL!);
+      db = postgresDrizzle({ client, schema }) as unknown as DB;
+    }
   }
   return db;
 };
+

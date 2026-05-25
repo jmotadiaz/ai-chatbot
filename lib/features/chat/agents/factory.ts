@@ -1,14 +1,12 @@
 import { ChatbotMessage } from "@/lib/features/chat/types";
-import {
-  ProjectPort,
-  ChatAgentAiPort,
-} from "@/lib/features/chat/conversation/ports";
+import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import { createProjectAgent } from "@/lib/features/chat/agents/project";
 import { createContext7Agent } from "@/lib/features/chat/agents/context7";
 import { createWebSearchAgent } from "@/lib/features/chat/agents/web-search";
 import { createRagAgent } from "@/lib/features/chat/agents/rag";
 import { getRelevantMemory } from "@/lib/features/memory/retrieval";
 import { messagePartsToText } from "@/lib/features/chat/utils";
+import { getProjectById } from "@/lib/features/project/queries";
 
 export const createAgent = async ({
   ai,
@@ -20,7 +18,6 @@ export const createAgent = async ({
   webSearchNumResults,
   ragMaxResources,
   minRagResourcesScore,
-  projectPort,
 }: {
   ai: ChatAgentAiPort;
   projectId?: string;
@@ -31,7 +28,6 @@ export const createAgent = async ({
   webSearchNumResults: number;
   ragMaxResources?: number;
   minRagResourcesScore?: number;
-  projectPort?: ProjectPort;
 }) => {
   const lastUserMessage = [...messages]
     .reverse()
@@ -42,11 +38,7 @@ export const createAgent = async ({
   const memoryContext = await getRelevantMemory({ userId, currentMessage });
 
   if (projectId) {
-    if (!projectPort) {
-      throw new Error("ProjectPort is required for project agent");
-    }
-
-    const project = await projectPort.getProjectById({
+    const project = await getProjectById({
       id: projectId,
       userId,
     });
