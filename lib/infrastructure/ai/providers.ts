@@ -18,11 +18,18 @@ const lmstudio = createOpenAICompatible({
   baseURL: "http://localhost:1234/v1",
 });
 
-const opencodeGo = createOpenAICompatible({
-  name: "opencode-zen-go",
-  apiKey: process.env.OPENCODE_ZEN_API_KEY,
-  baseURL: "https://opencode.ai/zen/go/v1",
-});
+let _opencodeGo: ReturnType<typeof createOpenAICompatible> | null = null;
+
+function getOpenCodeGo() {
+  if (!_opencodeGo) {
+    _opencodeGo = createOpenAICompatible({
+      name: "opencode-zen-go",
+      apiKey: process.env.OPENCODE_ZEN_API_KEY,
+      baseURL: "https://opencode.ai/zen/go/v1",
+    });
+  }
+  return _opencodeGo;
+}
 
 const openrouter = createOpenRouter();
 const deepinfra = createDeepInfra();
@@ -60,7 +67,7 @@ export const providers: Providers =
         openrouter: (modelId: string) => openrouter(modelId),
         deepinfra: (modelId: string) => deepinfra(modelId),
         lmstudio: (modelId: string) => lmstudio(modelId),
-        opencodeGo: (modelId: string) => opencodeGo(modelId),
+        opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
         embedding: () => google.embeddingModel("gemini-embedding-001"),
         rerank: () => async (args) => {
           const { ranking } = await rerank({

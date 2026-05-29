@@ -26,6 +26,7 @@
     "lint:fix": "eslint --fix . && npm run type:check",
     "type:check": "tsc --noEmit",
     "test": "concurrently \"npm run test:e2e\" \"npm run test:unit\"",
+    "eval:simulate": "npx tsx scripts/evaluation/run-simulation.ts",
     "test:e2e": "npm run db:test:start && playwright test $PLAYWRIGHT_ARGS",
     "test:e2e:ui": "npm run db:test:start && playwright test --ui $PLAYWRIGHT_ARGS",
     "test:e2e:headed": "npm run db:test:start && playwright test --headed $PLAYWRIGHT_ARGS",

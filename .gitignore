@@ -53,6 +53,9 @@ next-env.d.ts
 postgres-data/
 postgres-test-data/
 
+# Evaluation transcripts
+scripts/evaluation/transcripts/*.json
+
 # Playwright
 node_modules/
 /test-results/

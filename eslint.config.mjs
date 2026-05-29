@@ -30,6 +30,7 @@ const eslintConfig = [
       sourceType: "module",
     },
     rules: {
+      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
       "import-x/no-unresolved": [2, {ignore: ["^server-only$"]}],
       "import-x/order": "error",
     },
