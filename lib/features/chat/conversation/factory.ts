@@ -8,6 +8,7 @@ import {
   InvalidArgumentError,
 } from "ai";
 import type { ModelMessage } from "ai";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
 import {
   ChatDbPort,
   ChatAgentAiPort,
@@ -36,6 +37,8 @@ import {
   DEFAULT_CONTEXT_WINDOW,
 } from "@/lib/features/compaction/types";
 import type { CompactionDbPort, CompactionAiPort } from "@/lib/features/compaction/ports";
+import { isTracingEnabled } from "@/lib/infrastructure/ai/tracing/trace-sink";
+import { wrapWithTracing } from "@/lib/infrastructure/ai/tracing/wrap-with-tracing";
 
 const processMessagesToSend = async ({
   messages,
@@ -74,8 +77,15 @@ const buildAgentAdapter = (
     const base =
       languageModelConfigurations(selectedModel) ||
       languageModelConfigurations(chatModelKeys[0]);
+    const tracedModel = isTracingEnabled()
+      ? wrapWithTracing(
+          base.model as LanguageModelV3,
+          process.env.TRACE_RUN_ID ?? "default",
+        )
+      : base.model;
     return {
       ...base,
+      model: tracedModel,
       temperature: overrides.temperature ?? base.temperature,
       topP: overrides.topP ?? base.topP,
       topK: overrides.topK ?? base.topK,

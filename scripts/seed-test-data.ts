@@ -8,6 +8,7 @@ import { faker } from "@faker-js/faker";
 import { generateHashedPassword } from "../lib/features/auth/utils";
 import { schema, type DB } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
+import { resolveEnvFile } from "../lib/infrastructure/env";
 
 const TEST_USER_EMAIL = "test@test.com";
 const TEST_USER_PASSWORD = "123456";
@@ -113,12 +114,7 @@ async function upsertSeedProject(tx: Tx, userId: string) {
 }
 
 async function main() {
-  config({
-    path:
-      process.env.NEXT_PUBLIC_ENV === "test"
-        ? ".env.test"
-        : ".env.development.local",
-  });
+  config({ path: resolveEnvFile() });
 
   const args = parseArgs(process.argv.slice(2));
   faker.seed(args.seed);

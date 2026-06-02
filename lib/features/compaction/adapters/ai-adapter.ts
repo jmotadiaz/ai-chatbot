@@ -11,6 +11,7 @@ export const compactionAiAdapter: CompactionAiPort = {
       ...languageModelConfigurations(modelKey as chatModelId),
       system,
       prompt,
+      temperature: 0.1,
     });
     return text;
   },

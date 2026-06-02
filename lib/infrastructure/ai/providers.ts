@@ -12,6 +12,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createDeepInfra } from "@ai-sdk/deepinfra";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
+import { isTestMode } from "@/lib/infrastructure/env";
 
 const lmstudio = createOpenAICompatible({
   name: "lmstudio",
@@ -38,7 +39,7 @@ export const google = createGoogleGenerativeAI();
 export const xai = createXai();
 
 export const providers: Providers =
-  process.env.NEXT_PUBLIC_ENV === "test"
+  isTestMode()
     ? {
         anthropic: (modelId: string) => createMockModel(modelId),
         openai: (modelId: string) => createMockModel(modelId),
