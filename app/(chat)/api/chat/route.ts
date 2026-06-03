@@ -4,6 +4,7 @@ import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/conf
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { processChatResponse } from "@/lib/features/chat/handlers";
+import { newRequestId, runWithTraceContext } from "@/lib/infrastructure/ai/tracing";
 
 export const maxDuration = 240;
 
@@ -42,24 +43,45 @@ export const POST = withAuth(async (user, req) => {
     minRagResourcesScore?: number;
   } = await req.json();
 
-  const stream = await processChatResponse({
-    messages,
-    selectedModel,
-    temperature,
-    topP,
-    topK,
-    chatId,
-    systemPrompt,
-    agent,
-    messageId,
-    projectId,
-    preventChatPersistence,
+  const runId = process.env.TRACE_RUN_ID ?? "default";
+  const requestId = newRequestId();
 
-    webSearchNumResults,
-    ragMaxResources,
-    minRagResourcesScore,
-    user: { id: user.id },
+  const stream = await runWithTraceContext(
+    {
+      runId,
+      requestId,
+      stepIndex: 0,
+      chatId,
+      userId: user.id,
+      agent,
+      modelKey: selectedModel,
+    },
+    () =>
+      processChatResponse({
+        messages,
+        selectedModel,
+        temperature,
+        topP,
+        topK,
+        chatId,
+        systemPrompt,
+        agent,
+        messageId,
+        projectId,
+        preventChatPersistence,
+
+        webSearchNumResults,
+        ragMaxResources,
+        minRagResourcesScore,
+        user: { id: user.id },
+      }),
+  );
+
+  return createUIMessageStreamResponse({
+    stream,
+    headers: {
+      "X-Trace-Run-Id": runId,
+      "X-Trace-Request-Id": requestId,
+    },
   });
-
-  return createUIMessageStreamResponse({ stream });
 });

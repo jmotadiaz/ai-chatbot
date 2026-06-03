@@ -53,6 +53,11 @@ next-env.d.ts
 postgres-data/
 postgres-test-data/
 
+# Evaluation traces (keep directory, ignore generated artifacts)
+tests/evals/traces/*.json
+tests/evals/traces/*.ndjson
+tests/evals/.runner.lock
+
 # Playwright
 node_modules/
 /test-results/

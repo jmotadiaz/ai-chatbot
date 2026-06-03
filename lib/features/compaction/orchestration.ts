@@ -1,5 +1,4 @@
-import { pruneMessages, convertToModelMessages } from "ai";
-import { estimateModelMessagesTokens } from "./token-estimation";
+import { estimateContextTokens, pruneChatMessages } from "./token-estimation";
 import { shouldCompact } from "./should-compact";
 import { findCutPoint } from "./cut-point";
 import { generateSummary, generateTurnPrefixSummary } from "./summary-generation";
@@ -23,15 +22,10 @@ export async function prepareCompaction(
   const dbMessages = await getMessagesByChatId(chatId);
 
   const messages: ChatbotMessage[] = dbMessageToChatbotMessage(dbMessages);
-
-  const prunedMessages = pruneMessages({
-    messages: await convertToModelMessages(messages),
-    reasoning: "before-last-message",
-    emptyMessages: "remove",
-  });
+  const prunedMessages = pruneChatMessages(messages);
 
   const previousSummary = await getLatestSummary(chatId);
-  const tokensBefore = estimateModelMessagesTokens(prunedMessages);
+  const tokensBefore = estimateContextTokens(prunedMessages);
 
   let messagesToConsider = messages;
   if (previousSummary) {
@@ -43,7 +37,8 @@ export async function prepareCompaction(
     }
   }
 
-  const cutPoint = findCutPoint(messagesToConsider, keepRecentTokens);
+  const prunedMessagesToConsider = pruneChatMessages(messagesToConsider);
+  const cutPoint = findCutPoint(prunedMessagesToConsider, keepRecentTokens);
 
   return {
     cutPoint,

@@ -2,6 +2,7 @@
 # Allow build/postinstall scripts execution for the following dependencies:
 allowBuilds:
   bcrypt: true
+  better-sqlite3: true
   bufferutil: true
   esbuild: true
   msw: true

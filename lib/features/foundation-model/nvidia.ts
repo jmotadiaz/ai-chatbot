@@ -8,6 +8,7 @@ export const NVIDIA_CONFIG = {
     temperature: 0.6,
     topP: 0.95,
     reasoning: true,
+    contextWindow: 64_000,
   },
   "Nemotron 3 Super": {
     model: providers.openrouter("nvidia/nemotron-3-super-120b-a12b:free"),

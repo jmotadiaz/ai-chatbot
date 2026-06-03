@@ -22,11 +22,12 @@ Evaluate the user request against EVERY rule below. If ANY rule matches, read th
 | Fixing a Playwright test                                      | `test-healer`                 |
 | Planning Playwright tests                                     | `test-planner`                |
 | Writing or optimizing an AI prompt                            | `senior-prompt-engineer`      |
+| Analyzing eval results or debugging eval failures             | `trace-analyzer`              |
 
 #### Skills Paths
 
-- Workspace Skills: `.agent/skills/`
-- Global Skills: `~/.gemini/antigravity/skills/`
+- Workspace Skills: `.agents/skills/`
+- Global Skills: `~/.agents/skills/`
 
 ### Step 2: MCP Servers
 

@@ -17,7 +17,7 @@ import type { Tools, ChatbotMessage } from "@/lib/features/chat/types";
 // IT IS KEPT FOR REFERENCE ONLY AS PER INSTRUCTIONS.
 
 export async function modelRouting(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _args: ModelRoutingArguments,
 ): Promise<ModelRoutingResult> {
   // Deprecated implementation that throws error if called

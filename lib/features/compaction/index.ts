@@ -1,4 +1,4 @@
-export { estimateTokens, estimateContextTokens, estimateModelMessagesTokens, extractTextContent } from "./token-estimation";
+export { estimateTokens, estimateContextTokens, estimateModelMessagesTokens, extractTextContent, pruneChatMessages } from "./token-estimation";
 export { findCutPoint } from "./cut-point";
 export { serializeMessages } from "./serialize";
 export { generateSummary, generateTurnPrefixSummary } from "./summary-generation";

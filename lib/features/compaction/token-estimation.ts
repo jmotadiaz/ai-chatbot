@@ -77,6 +77,27 @@ export function estimateContextTokens(
   return messages.reduce((sum, msg) => sum + estimateTokens(msg), 0);
 }
 
+export function pruneChatMessages(messages: ChatbotMessage[]): ChatbotMessage[] {
+  const result: ChatbotMessage[] = [];
+  const lastIndex = messages.length - 1;
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    const parts = msg.parts ?? [];
+    const isLast = i === lastIndex;
+
+    const filteredParts = isLast
+      ? parts
+      : parts.filter((p) => p.type !== "reasoning");
+
+    if (filteredParts.length === 0) continue;
+
+    result.push({ ...msg, parts: filteredParts });
+  }
+
+  return result;
+}
+
 export function estimateModelMessagesTokens(messages: ModelMessage[]): number {
   let totalChars = 0;
   for (const msg of messages) {
