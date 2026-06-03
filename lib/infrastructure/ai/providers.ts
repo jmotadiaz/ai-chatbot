@@ -12,17 +12,25 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createDeepInfra } from "@ai-sdk/deepinfra";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
+import { isTestMode } from "@/lib/infrastructure/env";
 
 const lmstudio = createOpenAICompatible({
   name: "lmstudio",
   baseURL: "http://localhost:1234/v1",
 });
 
-const opencodeGo = createOpenAICompatible({
-  name: "opencode-zen-go",
-  apiKey: process.env.OPENCODE_ZEN_API_KEY,
-  baseURL: "https://opencode.ai/zen/go/v1",
-});
+let _opencodeGo: ReturnType<typeof createOpenAICompatible> | null = null;
+
+function getOpenCodeGo() {
+  if (!_opencodeGo) {
+    _opencodeGo = createOpenAICompatible({
+      name: "opencode-zen-go",
+      apiKey: process.env.OPENCODE_ZEN_API_KEY,
+      baseURL: "https://opencode.ai/zen/go/v1",
+    });
+  }
+  return _opencodeGo;
+}
 
 const openrouter = createOpenRouter();
 const deepinfra = createDeepInfra();
@@ -31,7 +39,7 @@ export const google = createGoogleGenerativeAI();
 export const xai = createXai();
 
 export const providers: Providers =
-  process.env.NEXT_PUBLIC_ENV === "test"
+  isTestMode()
     ? {
         anthropic: (modelId: string) => createMockModel(modelId),
         openai: (modelId: string) => createMockModel(modelId),
@@ -60,7 +68,7 @@ export const providers: Providers =
         openrouter: (modelId: string) => openrouter(modelId),
         deepinfra: (modelId: string) => deepinfra(modelId),
         lmstudio: (modelId: string) => lmstudio(modelId),
-        opencodeGo: (modelId: string) => opencodeGo(modelId),
+        opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
         embedding: () => google.embeddingModel("gemini-embedding-001"),
         rerank: () => async (args) => {
           const { ranking } = await rerank({

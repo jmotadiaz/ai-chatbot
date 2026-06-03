@@ -8,6 +8,7 @@ import {
   InvalidArgumentError,
 } from "ai";
 import type { ModelMessage } from "ai";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
 import {
   ChatDbPort,
   ChatAgentAiPort,
@@ -31,10 +32,13 @@ import { extractMemoryFacts } from "@/lib/features/memory/extraction";
 import { compact } from "@/lib/features/compaction/orchestration";
 import { rebuildContext } from "@/lib/features/compaction/context-rebuild";
 import {
-  DEFAULT_KEEP_RECENT_TOKENS,
-  DEFAULT_RESERVE_TOKENS,
+  getEffectiveKeepRecentTokens,
+  getEffectiveReserveTokens,
+  DEFAULT_CONTEXT_WINDOW,
 } from "@/lib/features/compaction/types";
 import type { CompactionDbPort, CompactionAiPort } from "@/lib/features/compaction/ports";
+import { isTracingEnabled } from "@/lib/infrastructure/ai/tracing/trace-sink";
+import { wrapWithTracing } from "@/lib/infrastructure/ai/tracing/wrap-with-tracing";
 
 const processMessagesToSend = async ({
   messages,
@@ -73,8 +77,15 @@ const buildAgentAdapter = (
     const base =
       languageModelConfigurations(selectedModel) ||
       languageModelConfigurations(chatModelKeys[0]);
+    const tracedModel = isTracingEnabled()
+      ? wrapWithTracing(
+          base.model as LanguageModelV3,
+          process.env.TRACE_RUN_ID ?? "default",
+        )
+      : base.model;
     return {
       ...base,
+      model: tracedModel,
       temperature: overrides.temperature ?? base.temperature,
       topP: overrides.topP ?? base.topP,
       topK: overrides.topK ?? base.topK,
@@ -189,6 +200,17 @@ export const makeProcessChatResponse = <Tx = unknown>(
               }
             },
             onFinish: async ({ responseMessage }) => {
+              try {
+                const u = await result.totalUsage;
+                writer.write({
+                  type: "data-usage",
+                  data: {
+                    inputTokens: u.inputTokens ?? 0,
+                    outputTokens: u.outputTokens ?? 0,
+                  },
+                });
+              } catch {}
+
               const assistantMessage = responseMessage;
               const userMessage = messages.at(-1);
 
@@ -259,11 +281,12 @@ export const makeProcessChatResponse = <Tx = unknown>(
                     const modelConfig = getChatConfigurationByModelId(
                       selectedModel,
                     );
+                    const contextWindow =
+                      modelConfig.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
                     compact(compactionDb, compactionAi, resolvedChatId, {
-                      keepRecentTokens: DEFAULT_KEEP_RECENT_TOKENS,
-                      reserveTokens: DEFAULT_RESERVE_TOKENS,
-                      contextWindow:
-                        modelConfig.contextWindow ?? undefined,
+                      keepRecentTokens: getEffectiveKeepRecentTokens(contextWindow),
+                      reserveTokens: getEffectiveReserveTokens(contextWindow),
+                      contextWindow,
                       enabled: true,
                     }).catch((err) =>
                       console.error("Compaction failed:", err),

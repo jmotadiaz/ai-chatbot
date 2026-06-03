@@ -2,13 +2,9 @@ import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import { resolveEnvFile } from "@/lib/infrastructure/env";
 
-config({
-  path:
-    process.env.NEXT_PUBLIC_ENV === "test"
-      ? ".env.test"
-      : ".env.development.local",
-});
+config({ path: resolveEnvFile() });
 
 const runMigrate = async () => {
   if (!process.env.POSTGRES_URL) {
