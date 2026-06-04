@@ -6,7 +6,6 @@ import {
 } from "ai";
 import { Tool } from "@/lib/features/chat/types";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { isTestMode } from "@/lib/infrastructure/env";
 
 export const hasToolCallSteps = <T extends ToolSet>({
   steps,
@@ -20,12 +19,9 @@ export const hasToolCallSteps = <T extends ToolSet>({
   );
 };
 
-export const IS_TEST_ENV = isTestMode();
-
 /**
  * Wraps a prepareStep function to:
- * 1. Short-circuit with `{ activeTools: [] }` in test environments
- * 2. Prune reasoning from messages when the model doesn't support it
+ * 1. Prune reasoning from messages when the model doesn't support it
  *
  * The inner prepareStep's result always takes priority via spread order.
  */
@@ -34,10 +30,6 @@ export const withMessageProcessing = <T extends ToolSet>(
   innerPrepareStep?: PrepareStepFunction<T>,
 ): PrepareStepFunction<T> => {
   return async (context) => {
-    if (IS_TEST_ENV) {
-      return { activeTools: [] };
-    }
-
     const innerResult = await innerPrepareStep?.(context);
 
     const processedMessages = modelConfiguration.reasoning
