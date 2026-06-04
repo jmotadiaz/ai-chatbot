@@ -3,10 +3,10 @@ import { textStream } from "../streams";
 import type { MockModelEntry } from "../../types";
 
 const model = new MockLanguageModelV3({
-  modelId: "claudeSonnet",
-  doStream: async () => textStream("Hello from Claude Sonnet (mock)"),
+  modelId: "Claude Sonnet 4.6",
+  doStream: async () => textStream("Hello from Claude Sonnet 4.6 (mock)"),
   doGenerate: async () => ({
-    content: [{ type: "text", text: "Hello from Claude Sonnet (mock)" }],
+    content: [{ type: "text", text: "Hello from Claude Sonnet 4.6 (mock)" }],
     finishReason: { unified: "stop", raw: "stop" },
     usage: {
       inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
@@ -17,8 +17,8 @@ const model = new MockLanguageModelV3({
 });
 
 export const MOCK_CLAUDE_SONNET: MockModelEntry = {
-  id: "claudeSonnet",
-  displayName: "Claude Sonnet",
+  id: "Claude Sonnet 4.6",
+  displayName: "Claude Sonnet 4.6",
   capabilities: {},
   languageModel: model,
 };
