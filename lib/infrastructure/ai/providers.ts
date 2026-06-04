@@ -12,6 +12,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createDeepInfra } from "@ai-sdk/deepinfra";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
+import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
 import { isTestMode } from "@/lib/infrastructure/env";
 
 const lmstudio = createOpenAICompatible({
@@ -38,44 +39,58 @@ const deepinfra = createDeepInfra();
 export const google = createGoogleGenerativeAI();
 export const xai = createXai();
 
-export const providers: Providers =
-  isTestMode()
-    ? {
-        anthropic: (modelId: string) => createMockModel(modelId),
-        openai: (modelId: string) => createMockModel(modelId),
-        google: (modelId: string) => createMockModel(modelId),
-        xai: (modelId: string) => createMockModel(modelId),
-        groq: (modelId: string) => createMockModel(modelId),
-        deepseek: (modelId: string) => createMockModel(modelId),
-        perplexity: (modelId: string) => createMockModel(modelId),
-        gateway: (modelId: string) => createMockModel(modelId),
-        openrouter: (modelId: string) => createMockModel(modelId),
-        deepinfra: (modelId: string) => createMockModel(modelId),
-        lmstudio: (modelId: string) => createMockModel(modelId),
-        opencodeGo: (modelId: string) => createMockModel(modelId),
-        embedding: () => createMockEmbeddingModel(),
-        rerank: () => () => Promise.resolve([]),
-      }
-    : {
-        anthropic: (modelId: string) => anthropic(modelId),
-        openai: (modelId: string) => openai(modelId),
-        google: (modelId: string) => google(modelId),
-        xai: (modelId: string) => xai(modelId),
-        groq: (modelId: string) => groq(modelId),
-        deepseek: (modelId: string) => deepseek(modelId),
-        perplexity: (modelId: string) => perplexity(modelId),
-        gateway: (modelId: string) => gateway(modelId),
-        openrouter: (modelId: string) => openrouter(modelId),
-        deepinfra: (modelId: string) => deepinfra(modelId),
-        lmstudio: (modelId: string) => lmstudio(modelId),
-        opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
-        embedding: () => google.embeddingModel("gemini-embedding-001"),
-        rerank: () => async (args) => {
-          const { ranking } = await rerank({
-            ...args,
-            model: cohere.rerankingModel("rerank-v4.0-pro"),
-          });
+export const providers: Providers = (() => {
+  if (!isTestMode()) {
+    return {
+      anthropic: (modelId: string) => anthropic(modelId),
+      openai: (modelId: string) => openai(modelId),
+      google: (modelId: string) => google(modelId),
+      xai: (modelId: string) => xai(modelId),
+      groq: (modelId: string) => groq(modelId),
+      deepseek: (modelId: string) => deepseek(modelId),
+      perplexity: (modelId: string) => perplexity(modelId),
+      gateway: (modelId: string) => gateway(modelId),
+      openrouter: (modelId: string) => openrouter(modelId),
+      deepinfra: (modelId: string) => deepinfra(modelId),
+      lmstudio: (modelId: string) => lmstudio(modelId),
+      opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
+      embedding: () => google.embeddingModel("gemini-embedding-001"),
+      rerank: () => async (args) => {
+        const { ranking } = await rerank({
+          ...args,
+          model: cohere.rerankingModel("rerank-v4.0-pro"),
+        });
 
-          return ranking;
-        },
-      };
+        return ranking;
+      },
+    };
+  }
+
+  // Test mode: look up the model in the MOCK_MODELS registry. The registry
+  // contains entries for models with specialized behavior (e.g. Claude
+  // Sonnet 4.6). Models without specialized entries fall back to the
+  // content-driven createMockModel mock.
+  const lookupMock = (modelId: string) => {
+    if (modelId in MOCK_MODELS) {
+      return MOCK_MODELS[modelId].languageModel;
+    }
+    return createMockModel(modelId);
+  };
+
+  return {
+    anthropic: lookupMock,
+    openai: lookupMock,
+    google: lookupMock,
+    xai: lookupMock,
+    groq: lookupMock,
+    deepseek: lookupMock,
+    perplexity: lookupMock,
+    gateway: lookupMock,
+    openrouter: lookupMock,
+    deepinfra: lookupMock,
+    lmstudio: lookupMock,
+    opencodeGo: lookupMock,
+    embedding: () => createMockEmbeddingModel(),
+    rerank: () => async () => [],
+  };
+})();
