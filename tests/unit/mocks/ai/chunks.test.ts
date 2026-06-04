@@ -41,8 +41,8 @@ describe("toolCallChunks", () => {
 
 describe("fileChunks", () => {
   it("emits a file chunk with the given mediaType and data", () => {
-    expect(fileChunks("f-1", "image/png", "BASE64DATA")).toEqual([
-      { type: "file", file: { mediaType: "image/png", data: "BASE64DATA" } },
+    expect(fileChunks("image/png", "BASE64DATA")).toEqual([
+      { type: "file", mediaType: "image/png", data: "BASE64DATA" },
     ]);
   });
 });

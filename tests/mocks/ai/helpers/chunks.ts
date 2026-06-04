@@ -32,11 +32,10 @@ export const toolCallChunks = (
 };
 
 export const fileChunks = (
-  id: string,
   mediaType: string,
   data: string,
 ): LanguageModelV3StreamPart[] => [
-  { type: "file", file: { mediaType, data } },
+  { type: "file", mediaType, data },
 ];
 
 export const errorChunk = (error: unknown): LanguageModelV3StreamPart => ({
@@ -49,5 +48,8 @@ export const finishChunk = (
 ): LanguageModelV3StreamPart => ({
   type: "finish",
   finishReason: { unified: reason, raw: reason },
-  usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+  usage: {
+    inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
+    outputTokens: { total: 0, text: 0, reasoning: 0 },
+  },
 });
