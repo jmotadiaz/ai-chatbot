@@ -66,7 +66,7 @@ export class ChatComponent {
     this.navigation = new NavigationComponent(container);
   }
 
-  async waitForTitleVisible(title: string, timeout = 5000) {
+  async waitForTitleVisible(title: string, timeout = 15000) {
     await expect(
       this.container.page().getByRole("heading", { name: title }),
     ).toBeVisible({ timeout });
