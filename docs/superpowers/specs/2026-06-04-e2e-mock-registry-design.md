@@ -55,7 +55,9 @@ This design proposes replacing the single content-driven mock with a **registry 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Test                                                           │
-│  chatPage.header.modelPicker.selectModel("Claude Sonnet (Vision)") │
+│  chatPage.header.modelPicker.selectModel("canExecuteTools")     │
+│    → CAPABILITY_ALIASES["canExecuteTools"]                      │
+│    → "Claude Sonnet 4.6" (resolved in model-picker.ts)         │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -98,6 +100,7 @@ tests/mocks/ai/
 ├── types.ts                      # MockModelId, MockCapabilities, MockModelEntry
 ├── registry.ts                   # MOCK_MODELS, MockModelId (auto-derived)
 ├── augmentation.d.ts             # type augmentation
+├── capabilities.ts               # CAPABILITY_ALIASES map + CapabilityAlias type
 ├── helpers/
 │   ├── chunks.ts                 # LanguageModelV3StreamPart builders
 │   ├── streams.ts                # LanguageModelV3StreamResult builders
@@ -165,6 +168,66 @@ Type augmentation in `tests/mocks/ai/augmentation.d.ts` extends `LanguageModelKe
 | `errorModel` | Error Model | errorScenarios: ['mid_stream_error'] | Emits error chunk mid-stream |
 
 Additional mocks can be added to the catalog as needed.
+
+## Capability Aliases
+
+To decouple test specs from specific model names, tests select models via **semantic capability aliases** (e.g., `"canExecuteTools"`) rather than hard-coded model display names. A central map in the mock infrastructure translates aliases to the underlying model display name.
+
+### Rationale
+
+- **Specs express intent**: `selectModel("canExecuteTools")` says *what* behavior the test needs, not *which* model provides it
+- **Changes are centralized**: when a real AI model is deprecated or replaced, only the alias map changes — not N test specs
+- **Type-safe**: `CapabilityAlias` is a union type derived from the map, so IDEs autocomplete
+
+### Alias Map
+
+```ts
+// tests/mocks/ai/capabilities.ts
+export const CAPABILITY_ALIASES = {
+  basicChat: "Deepseek v4 Flash",      // Plain text, fast response
+  canExecuteTools: "Claude Sonnet 4.6", // Tool execution (webSearch)
+  canSeeImages: "Gemini 3 Flash",      // Multimodal (image + text)
+  canProduceReasoning: "Deepseek v4 Pro", // Thinking blocks
+  alwaysRefuses: "Kimi K2.6",          // Refusal responses
+  failsMidStream: "GPT OSS",           // Mid-stream error
+} as const satisfies Record<string, string>;
+
+export type CapabilityAlias = keyof typeof CAPABILITY_ALIASES;
+```
+
+### Resolution Mechanism
+
+The `ModelPickerComponent.selectModel()` method accepts `chatModelId | CapabilityAlias`. Internally, it checks the alias map first; if the input is a known alias, it resolves to the corresponding display name. Display names pass through unchanged.
+
+```ts
+// tests/e2e/chat/components/model-picker.ts
+async selectModel(modelNameOrCapability: chatModelId | CapabilityAlias) {
+  const resolved = CAPABILITY_ALIASES[modelNameOrCapability] ?? modelNameOrCapability;
+  // ... existing picker interaction using `resolved`
+}
+```
+
+This is a **test-side-only** resolution. The alias never reaches the application. The model picker UI, `providers.ts`, and the rest of the pipeline only see display names — exactly as they do today.
+
+### Adding New Aliases
+
+When a test needs a new capability:
+1. Add the alias to `CAPABILITY_ALIASES`, pointing to a model already in `MOCK_MODELS`
+2. If no existing mock satisfies the capability, create the mock first, add it to `MOCK_MODELS`, then map the alias
+3. Use the new alias in the test spec
+
+The process is documented in `tests/AGENTS.md`.
+
+### Coexistence with Direct Model Names
+
+Direct model name selection (e.g., `selectModel("Claude Sonnet 4.6")`) continues to work. This is useful for:
+- Tests that specifically exercise a model's integration point
+- Debugging individual mock behavior
+- Edge cases where no alias captures the intent precisely
+
+The convention is: **prefer aliases for normal tests, use direct names only when an alias doesn't apply.**
+
+---
 
 ## Migration Plan
 
