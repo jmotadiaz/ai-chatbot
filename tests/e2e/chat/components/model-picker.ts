@@ -1,5 +1,7 @@
 import { Locator } from "@playwright/test";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
+import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
+import type { CapabilityAlias } from "@/tests/mocks/ai/capabilities";
 
 /**
  * Component Object Model for Header functionality
@@ -16,7 +18,7 @@ export class ModelPickerComponent {
     this.modelDropdown = container.locator(`#dropdown-${id}`);
   }
 
-  getModelOption(modelName: chatModelId): Locator {
+  getModelOption(modelName: string): Locator {
     return this.modelDropdown.getByRole("option", {
       name: modelName,
     });
@@ -26,7 +28,10 @@ export class ModelPickerComponent {
     await this.modelPicker.click();
   }
 
-  async selectModel(modelName: chatModelId) {
+  async selectModel(modelNameOrCapability: chatModelId | CapabilityAlias) {
+    const modelName =
+      CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias] ??
+      modelNameOrCapability;
     await this.openSelectModelDropdown();
     await this.getModelOption(modelName).click();
     await this.modelDropdown.waitFor({ state: "detached" });

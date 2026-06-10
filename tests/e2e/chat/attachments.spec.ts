@@ -10,7 +10,7 @@ test.describe("Chat attachments", () => {
   });
 
   test("should show correct attachment options for image-only models", async () => {
-    await chatPage.header.modelPicker.selectModel("Gemini 3 Flash");
+    await chatPage.header.modelPicker.selectModel("canSeeImages");
 
     await chatPage.chat.openAttachmentMenu();
     // Wait for menu content to be visible

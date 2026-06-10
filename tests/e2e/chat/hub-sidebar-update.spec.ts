@@ -13,7 +13,7 @@ test.describe("Chat Hub - Sidebar Integration", () => {
 
   test("should update sidebar when saving a chat", async ({ page }) => {
     // Add a model
-    await hubPage.header.addModel("Claude Sonnet 4.6");
+    await hubPage.header.addModel("canExecuteTools");
 
     // Send a message
     const uniqueMessage = `Hub Sidebar Test ${Date.now()}`;

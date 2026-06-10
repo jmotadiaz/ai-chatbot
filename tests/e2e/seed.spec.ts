@@ -12,7 +12,7 @@ test.describe("Chat functionality", () => {
   test("user sends a message and assistant responds correctly", async () => {
     const userQuery = "What is the capital of France?";
 
-    await chatPage.header.modelPicker.selectModel("Gemini 3 Flash");
+    await chatPage.header.modelPicker.selectModel("canSeeImages");
 
     await chatPage.chat.sendMessage(userQuery);
 

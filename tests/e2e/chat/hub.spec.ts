@@ -17,15 +17,15 @@ test.describe("Chat Hub", () => {
     // 1.1 Añadir hasta 3 modelos. Verificar que al llegar a 3, el botón de añadir desaparece.
 
     // Add first model
-    await hubPage.header.addModel("Claude Sonnet 4.6");
+    await hubPage.header.addModel("canExecuteTools");
     await expect(page.getByText("Claude Sonnet 4.6").first()).toBeVisible();
 
     // Add second model
-    await hubPage.header.addModel("GPT OSS");
+    await hubPage.header.addModel("failsMidStream");
     await expect(page.getByText("GPT OSS").first()).toBeVisible();
 
     // Add third model
-    await hubPage.header.addModel("Gemini 3 Flash");
+    await hubPage.header.addModel("canSeeImages");
     await expect(page.getByText("Gemini 3 Flash").first()).toBeVisible();
 
     // Verify add-model UI is gone after 3 models.
@@ -50,8 +50,8 @@ test.describe("Chat Hub", () => {
 
   test("Messaging Multi-Modelo and Locking", async ({ page }) => {
     // 2.1 Enviar un mensaje y verificar el streaming simultáneo en los paneles activos.
-    await hubPage.header.addModel("Claude Sonnet 4.6");
-    await hubPage.header.addModel("GPT OSS");
+    await hubPage.header.addModel("canExecuteTools");
+    await hubPage.header.addModel("failsMidStream");
 
     const message = "Hello models, give me a short response.";
     await hubPage.hubContent.sendMessage(message);
@@ -96,7 +96,7 @@ test.describe("Chat Hub", () => {
 
   test("Persistence - Select this chat", async ({ page }) => {
     // 3.1 Pulsar "Select this chat" en uno de los paneles.
-    await hubPage.header.addModel("Claude Sonnet 4.6");
+    await hubPage.header.addModel("canExecuteTools");
     await hubPage.hubContent.sendMessage("Hello there");
 
     const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
@@ -118,8 +118,8 @@ test.describe("Chat Hub", () => {
 
   test("UI & Responsive Grid", async ({ page }) => {
     // 5.1 Cambiar entre vista grid (desktop) y vista tabs (mobile).
-    await hubPage.header.addModel("Claude Sonnet 4.6");
-    await hubPage.header.addModel("GPT OSS");
+    await hubPage.header.addModel("canExecuteTools");
+    await hubPage.header.addModel("failsMidStream");
 
     // Default desktop grid view - both panels should be visible
     const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
@@ -157,7 +157,7 @@ test.describe("Chat Hub", () => {
   });
 
   test("Error States - Offline simulation", async ({ page }) => {
-    await hubPage.header.addModel("GPT OSS");
+    await hubPage.header.addModel("failsMidStream");
     await page.context().setOffline(true);
     await hubPage.hubContent.sendMessage("Should fail");
     // Wait for any error message to appear

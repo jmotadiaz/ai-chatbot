@@ -1,4 +1,6 @@
 import { Locator } from "@playwright/test";
+import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
+import type { CapabilityAlias } from "@/tests/mocks/ai/capabilities";
 
 export class HubHeaderComponent {
   readonly container: Locator;
@@ -9,8 +11,10 @@ export class HubHeaderComponent {
     this.modelPicker = container.getByRole("combobox");
   }
 
-  async addModel(modelName: string) {
-    // The "New Model" can be a button or part of the combobox
+  async addModel(modelNameOrCapability: string | CapabilityAlias) {
+    const modelName =
+      CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias] ??
+      modelNameOrCapability;
     const newModelButton = this.container.getByRole("button", {
       name: "New Model",
     });
