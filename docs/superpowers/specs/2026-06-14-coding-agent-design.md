@@ -271,10 +271,29 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 
 ## 12. Testing
 
-- **Unit tests:** `pi-to-agui-translator.ts` with representative Pi event streams.
-- **Integration tests:** worker client against a minimal worker that emits synthetic Pi events.
-- **E2E tests (Playwright):** a stub worker is used so tests do not require Pi credentials or execute real commands.
-- **Security tests:** verify that env vars are filtered and the worker cannot escape `CODING_AGENT_PROJECTS_ROOT`.
+The project uses three test layers: **E2E** (UI), **Unit** (domain logic in features), and **Evals** (AI model behavior). For the coding agent MVP we focus on the first two layers only.
+
+### E2E (Playwright) — UI flows
+
+- Navigate from `/agent/code` to `/agent/code/[project]/[sessionId]`.
+- Create a new session from the session list.
+- Select a model and send a message.
+- Verify the execution indicator appears while the agent is busy.
+- Verify the final assistant message is rendered.
+- Verify error states are surfaced in the UI.
+- These tests use a stub worker so they do not require Pi credentials or execute real commands.
+
+### Unit — Domain logic in `lib/features/agent-code`
+
+- `pi-to-agui-translator.ts`: map representative Pi event streams to AG-UI events.
+- `model-mapping.ts`: convert `chatModelId` to Pi `opencodeGo/<modelId>` and vice versa.
+- `project-resolver.ts`: list first-level folders and validate project names.
+- `session-store.ts`: create, resume, list, and rename sessions.
+- `worker-client.ts`: serialize JSON-RPC requests and parse streaming responses.
+
+### Evals
+
+- Not included in the MVP. Evaluating the coding agent's AI behavior (code quality, correctness, safety) is out of scope for this implementation phase.
 
 ## 13. Risks and Mitigations
 
