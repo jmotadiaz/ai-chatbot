@@ -97,6 +97,12 @@ export default defineConfig({
     env: {
       DISABLE_DEV_INDICATOR: "1",
       NEXT_PUBLIC_ENV: "test",
+      CODING_AGENT_ENABLED: process.env.CODING_AGENT_ENABLED ?? "true",
+      CODING_AGENT_PROJECTS_ROOT: process.env.CODING_AGENT_PROJECTS_ROOT ?? "",
+      CODING_AGENT_SESSIONS_DIR: process.env.CODING_AGENT_SESSIONS_DIR ?? "",
+      CODING_AGENT_WORKER_URL: process.env.CODING_AGENT_WORKER_URL ?? "",
+      CODING_AGENT_WORKER_PORT: process.env.CODING_AGENT_WORKER_PORT ?? "",
+      CODING_AGENT_AUTH_JSON: process.env.CODING_AGENT_AUTH_JSON ?? "",
     },
   },
 });
