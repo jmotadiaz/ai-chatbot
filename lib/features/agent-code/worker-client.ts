@@ -1,3 +1,5 @@
+import { getTraceLogger } from "@/lib/features/tracing";
+
 export interface WorkerModel {
   providerId: string;
   modelId: string;
@@ -27,7 +29,10 @@ export class WorkerClient {
   }
 
   private async call<T>(method: string, params: unknown): Promise<T> {
+    const log = getTraceLogger("bridge");
     const id = ++this.id;
+    const stop = log.startTimer("rpc.call", { method, params });
+
     const body: JsonRpcRequest = { jsonrpc: "2.0", method, params, id };
     const res = await fetch(`${this.baseUrl}/rpc`, {
       method: "POST",
@@ -36,13 +41,17 @@ export class WorkerClient {
     });
 
     if (!res.ok) {
+      log.error("rpc.http_error", { method, status: res.status, statusText: res.statusText });
       throw new Error(`Worker request failed: ${res.status} ${res.statusText}`);
     }
 
     const data = (await res.json()) as JsonRpcResponse<T>;
     if (data.error) {
+      log.error("rpc.error", { method, code: data.error.code, message: data.error.message });
       throw new Error(`Worker RPC error: ${data.error.message}`);
     }
+
+    stop();
     return data.result as T;
   }
 
@@ -61,7 +70,10 @@ export class WorkerClient {
     prompt: string;
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
+    const log = getTraceLogger("bridge");
     const id = ++this.id;
+    const stop = log.startTimer("rpc.call", { method: "sendPrompt", sessionId: params.sessionId });
+
     const body: JsonRpcRequest = {
       jsonrpc: "2.0",
       method: "sendPrompt",
@@ -75,13 +87,16 @@ export class WorkerClient {
     });
 
     if (!res.ok) {
+      log.error("rpc.http_error", { method: "sendPrompt", status: res.status, statusText: res.statusText });
       throw new Error(`Worker request failed: ${res.status} ${res.statusText}`);
     }
 
     if (!res.body) {
+      log.error("rpc.no_body", { method: "sendPrompt" });
       throw new Error("Worker response has no body");
     }
 
+    stop();
     return res.body;
   }
 
