@@ -14,6 +14,7 @@ import {
 } from "@/components/layout/sidebar/chat-list";
 import { UserMenu } from "@/components/layout/sidebar/user-menu";
 import { RAGNav } from "@/components/layout/sidebar/rag-nav";
+import { AgentCodeNav } from "@/components/layout/sidebar/agent-code-nav";
 import { getChats } from "@/lib/features/chat/queries";
 import { NewChatSidebar } from "@/components/chat/new";
 import { Authenticated } from "@/lib/features/auth/with-auth/hoc";
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex flex-col gap-1">
           <NewChatSidebar />
           <RAGNav />
+          <AgentCodeNav />
           <Suspense fallback={<ProjectListLoading className="my-0 mt-4" />}>
             <ProjectList
               className="my-0 mt-4"
