@@ -1,3 +1,4 @@
+import { getTraceLogger } from "@/lib/features/tracing";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -6,16 +7,22 @@ import {
 } from "./session-manager";
 
 export async function handleRpc(requestBody: string): Promise<Response> {
+  const log = getTraceLogger("worker");
   const { method, params, id } = JSON.parse(requestBody) as {
     method: string;
     params: unknown;
     id: number;
   };
 
+  log.info("rpc.request", { method, params });
+  const stop = log.startTimer("rpc.duration", { method });
+
   try {
+    let result: unknown;
+
     switch (method) {
       case "initializeSession": {
-        const result = await getOrCreateSession(
+        result = await getOrCreateSession(
           params as {
             userId: string;
             sessionId?: string;
@@ -23,7 +30,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             modelId?: string;
           },
         );
-        return jsonResponse(result, id);
+        break;
       }
       case "sendPrompt": {
         const { sessionId, prompt } = params as {
@@ -31,27 +38,38 @@ export async function handleRpc(requestBody: string): Promise<Response> {
           prompt: string;
         };
         const stream = await sendPrompt(sessionId, prompt);
+        stop();
         return new Response(stream, {
           headers: { "Content-Type": "application/x-ndjson" },
         });
       }
       case "getAvailableModels": {
-        const result = await getAvailableModels();
-        return jsonResponse({ models: result }, id);
+        result = { models: await getAvailableModels() };
+        break;
       }
       case "disposeSession": {
         const { sessionId } = params as { sessionId: string };
         await disposeSession(sessionId);
-        return jsonResponse(null, id);
+        result = null;
+        break;
       }
-      default:
+      default: {
+        log.warn("rpc.unknown_method", { method });
+        stop();
         return jsonResponse(null, id, {
           code: -32601,
           message: `Method not found: ${method}`,
         });
+      }
     }
+
+    stop();
+    log.info("rpc.response", { method, result });
+    return jsonResponse(result, id);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    log.error("rpc.error", { method, message, stack: err instanceof Error ? err.stack : undefined });
+    stop();
     return jsonResponse(null, id, { code: -32603, message });
   }
 }

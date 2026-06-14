@@ -1,7 +1,8 @@
 import { createServer } from "node:http";
+import { FileTraceSink, isTracingEnabled, runWithTraceContext } from "@/lib/features/tracing";
 import { handleRpc } from "./rpc-server";
 
-const port = parseInt(process.env.CODING_AGENT_WORKER_PORT ?? "9000", 10);
+const port = parseInt(process.env.CODING_AGENT_WORKER_PORT ?? "3015", 10);
 
 const server = createServer(async (req, res) => {
   if (req.method !== "POST" || req.url !== "/rpc") {
@@ -15,24 +16,40 @@ const server = createServer(async (req, res) => {
   }
   const body = Buffer.concat(chunks).toString("utf-8");
 
-  const response = await handleRpc(body);
-  res.writeHead(
-    response.status,
-    Object.fromEntries(response.headers.entries()),
-  );
-  if (response.body) {
-    const reader = response.body.getReader();
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-      }
-    } finally {
-      reader.releaseLock();
-    }
+  let runId: string;
+  try {
+    const parsed = JSON.parse(body) as { params?: { _traceRunId?: string } };
+    runId = parsed.params?._traceRunId ?? crypto.randomUUID();
+  } catch {
+    runId = crypto.randomUUID();
   }
-  res.end();
+
+  const sink = isTracingEnabled() ? new FileTraceSink({ runId, truncate: false }) : null;
+  await sink?.open();
+  try {
+    const response = await runWithTraceContext({ runId, sink }, () =>
+      handleRpc(body),
+    );
+    res.writeHead(
+      response.status,
+      Object.fromEntries(response.headers.entries()),
+    );
+    if (response.body) {
+      const reader = response.body.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    }
+    res.end();
+  } finally {
+    await sink?.close();
+  }
 });
 
 server.listen(port, () => {
