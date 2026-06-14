@@ -1,8 +1,8 @@
 import "server-only";
 import { getTraceContext } from "./context";
-import { isTracingEnabled } from "./index";
 import type { FileTraceSink } from "./sink";
 import type { TraceLayer, LogLevel } from "./types";
+import { isTracingEnabled } from "./types";
 
 export class TraceLogger {
   private layer: TraceLayer;

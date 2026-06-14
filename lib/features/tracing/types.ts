@@ -12,3 +12,7 @@ export interface TraceRecord {
   durationMs?: number;
   payload: unknown;
 }
+
+export function isTracingEnabled(): boolean {
+  return process.env.TRACE_ENABLED === "1";
+}

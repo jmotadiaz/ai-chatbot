@@ -7,9 +7,7 @@ export { FileTraceSink, type FileTraceSinkOptions } from "./sink";
 export { TraceLogger } from "./logger";
 export { runWithTraceContext, getTraceContext, type TraceContext } from "./context";
 
-export function isTracingEnabled(): boolean {
-  return process.env.TRACE_ENABLED === "1";
-}
+export { isTracingEnabled } from "./types";
 
 /** Get a TraceLogger scoped to the current AsyncLocalStorage context. */
 export function getTraceLogger(layer: TraceLayer): TraceLogger {
