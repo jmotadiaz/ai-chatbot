@@ -282,3 +282,69 @@ The compaction summary focused on technical discussion and omitted personal fact
 - Model traces: `tests/evals/traces/<runId>.ndjson`
 - Tracing middleware: `lib/infrastructure/ai/tracing/middleware.ts`
 - Runner: `scripts/eval-runner.ts`
+
+## Coding Agent Trace Analysis
+
+When analyzing coding agent issues, use the trace inspector to examine the full request lifecycle across all 3 layers (worker, bridge, client).
+
+### Inspector Commands
+
+```bash
+# List recent trace files
+npx tsx lib/features/tracing/inspector.ts list
+
+# Show full trace for a runId (all layers, chronological)
+npx tsx lib/features/tracing/inspector.ts show <runId>
+
+# Show only errors/warnings for a run
+npx tsx lib/features/tracing/inspector.ts errors <runId>
+
+# Show layer-specific events
+npx tsx lib/features/tracing/inspector.ts layer worker <runId>
+npx tsx lib/features/tracing/inspector.ts layer bridge <runId>
+npx tsx lib/features/tracing/inspector.ts layer client <runId>
+
+# Show aggregate stats
+npx tsx lib/features/tracing/inspector.ts stats <runId>
+```
+
+### Trace Event Schema
+
+```typescript
+interface TraceRecord {
+  timestamp: string;     // ISO 8601 timestamp
+  runId: string;         // UUID correlating all layers
+  layer: "worker" | "bridge" | "client";
+  sessionId?: string;
+  level: "debug" | "info" | "warn" | "error";
+  eventName: string;     // e.g. "rpc.request", "stream.event", "run.failed"
+  durationMs?: number;   // for paired start/end events
+  payload: unknown;
+}
+```
+
+### Analysis Workflow for Coding Agent
+
+1. **List traces**: `npx tsx lib/features/tracing/inspector.ts list` — find the relevant runId
+2. **Check errors first**: `npx tsx lib/features/tracing/inspector.ts errors <runId>` — any failures?
+3. **Review bridge layer**: `npx tsx lib/features/tracing/inspector.ts layer bridge <runId>` — was the request received? DB lookup ok? Model mapping ok? Any malformed NDJSON lines?
+4. **Review worker layer**: `npx tsx lib/features/tracing/inspector.ts layer worker <runId>` — did the session create? Did Pi SDK emit events? Were there prompt errors?
+5. **Review client layer**: `npx tsx lib/features/tracing/inspector.ts layer client <runId>` — did the action call succeed? Did the run finalize?
+
+### Common Coding Agent Failures
+
+| Symptom | Trace Check |
+|---------|-------------|
+| "Session not found" | `bridge` → `db.lookup` with `found: false` |
+| Worker unreachable | `bridge` → `rpc.http_error` events |
+| Malformed Pi event | `bridge` → `stream.malformed` events (warn level) |
+| Pi SDK crash | `worker` → `session.prompt_error` events |
+| Model mapping error | `bridge` → `rpc.error` with `Unsupported coding agent model` |
+| Run timeout | `bridge` → `stream.error` or `worker` → long duration without `session.prompt_complete` |
+| Stub fallback active | `bridge` → `rpc.call` with URL pointing to `/worker-stub` |
+
+### Trace Correlation
+
+The API route includes `X-Trace-Run-Id` in the response headers. The client hook's `runId` is generated browser-side. The bridge API route also generates its own `runId` for the stream. For full correlation, check which `runId` appears in most events.
+
+Traces are stored in `traces/{runId}.ndjson`. Enable with `TRACE_ENABLED=1`.
