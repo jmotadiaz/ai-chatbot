@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { FileTraceSink, isTracingEnabled, runWithTraceContext } from "@/lib/features/tracing";
+import { FileTraceSink, isTracingEnabled, runWithTraceContext } from "../features/tracing";
 import { handleRpc } from "./rpc-server";
 
 const port = parseInt(process.env.CODING_AGENT_WORKER_PORT ?? "3015", 10);
