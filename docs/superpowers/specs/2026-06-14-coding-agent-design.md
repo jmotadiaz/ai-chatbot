@@ -37,12 +37,12 @@ Three-layer architecture connected through narrow interfaces:
 │  /api/agent/code                            │
 │  Auth, session lifecycle, event translation │
 └──────────────────┬──────────────────────────┘
-                   │ JSON-RPC over Unix socket / TCP
+                   │ JSON-RPC over HTTP
 ┌──────────────────▼──────────────────────────┐
-│  Agent Worker (Node.js process)             │
+│  Agent Worker (Node.js HTTP server)         │
 │  Pi SDK createAgentSessionRuntime           │
 │  cwd = CODING_AGENT_PROJECTS_ROOT/<project> │
-│  runRpcMode()                               │
+│  Endpoint: POST /rpc                        │
 └─────────────────────────────────────────────┘
 ```
 
@@ -61,15 +61,17 @@ Three-layer architecture connected through narrow interfaces:
 - Lists first-level folders under `CODING_AGENT_PROJECTS_ROOT` so the UI can show available projects.
 - Manages the Pi session lifecycle per user and project: create, resume, or dispose.
 - Receives the selected project and model from the frontend and forwards them to the worker during session initialization.
-- Sends prompts to the worker via JSON-RPC.
+- Sends JSON-RPC requests to the worker over HTTP using `CODING_AGENT_WORKER_URL`.
 - Receives Pi events from the worker, maps them to AG-UI events, and forwards them over SSE.
 - Converts worker errors into AG-UI `ErrorEvent` / `RunErrorEvent`.
+- In E2E tests, `CODING_AGENT_WORKER_URL` points to `/api/agent/code/worker-stub`, which returns synthetic events without invoking Pi.
 
 **Agent Worker**
-- A standalone Node.js process that listens on a Unix socket (development) or TCP port (Docker).
+- A standalone Node.js HTTP server (one process) that exposes a JSON-RPC endpoint at `POST /rpc`.
 - Initializes a Pi `AgentSessionRuntime` with `cwd` set to `<CODING_AGENT_PROJECTS_ROOT>/<project>`.
-- Exposes JSON-RPC methods for session management and prompting.
-- Streams Pi events back to the middleware.
+- Handles JSON-RPC methods for session management and prompting.
+- Streams Pi events back to the middleware over HTTP.
+- In production/Docker it binds to a TCP port; in local development it binds to `localhost:CODING_AGENT_WORKER_PORT`.
 
 ## 4. Components and Modules
 
@@ -92,7 +94,8 @@ Three-layer architecture connected through narrow interfaces:
 | Module | Purpose |
 |---|---|
 | `app/(chat)/api/agent/code/route.ts` | SSE endpoint that handles AG-UI runs. |
-| `lib/features/agent-code/worker-client.ts` | JSON-RPC client over socket for talking to the worker. |
+| `app/(chat)/api/agent/code/worker-stub/route.ts` | E2E-only stub that mimics the worker JSON-RPC endpoint. |
+| `lib/features/agent-code/worker-client.ts` | JSON-RPC HTTP client for talking to the worker. |
 | `lib/features/agent-code/pi-to-agui-translator.ts` | Maps Pi SDK events to AG-UI events. |
 | `lib/features/agent-code/session-store.ts` | Persists the mapping `userId -> sessionId` in Postgres. |
 | `lib/features/agent-code/model-mapping.ts` | Maps between app `chatModelId` and Pi `providerId/modelId` pairs. |
@@ -102,8 +105,8 @@ Three-layer architecture connected through narrow interfaces:
 
 | Module | Purpose |
 |---|---|
-| `lib/agent-code/worker.ts` | Entry point of the standalone worker process. |
-| `lib/agent-code/rpc-server.ts` | JSON-RPC server over socket. |
+| `lib/agent-code/worker.ts` | Entry point of the standalone worker HTTP server. |
+| `lib/agent-code/rpc-server.ts` | JSON-RPC HTTP request handler. |
 | `lib/agent-code/session-manager.ts` | Creates, resumes, and disposes Pi sessions. |
 
 ## 5. Data Flow
@@ -218,7 +221,7 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 - Pi credentials (`auth.json`) are readable only by the worker's OS user.
 - The middleware never forwards Pi credentials to the frontend.
 - The workspace directory is outside the application source tree by default.
-- Future migration to Docker only requires changing the socket to a TCP port and mounting the workspace as a volume.
+- Future migration to Docker only requires binding the worker to a TCP port and mounting the workspace as a volume.
 
 ## 8. Persistence
 
@@ -281,7 +284,7 @@ The project uses three test layers: **E2E** (UI), **Unit** (domain logic in feat
 - Verify the execution indicator appears while the agent is busy.
 - Verify the final assistant message is rendered.
 - Verify error states are surfaced in the UI.
-- These tests use a stub worker so they do not require Pi credentials or execute real commands.
+- These tests set `CODING_AGENT_WORKER_URL` to `/api/agent/code/worker-stub`, so they do not require Pi credentials or execute real commands.
 
 ### Unit — Domain logic in `lib/features/agent-code`
 
@@ -312,9 +315,9 @@ The project uses three test layers: **E2E** (UI), **Unit** (domain logic in feat
 Two processes must run:
 
 1. **Next.js app:** `pnpm dev` (existing command).
-2. **Agent worker:** `pnpm worker:dev` (new command), which starts `lib/agent-code/worker.ts` listening on a Unix socket.
+2. **Agent worker:** `pnpm worker:dev` (new command), which starts `lib/agent-code/worker.ts` as an HTTP server on `CODING_AGENT_WORKER_PORT`.
 
-The middleware reads the socket path from `CODING_AGENT_SOCKET_PATH` (default: `/tmp/coding-agent.sock`).
+The middleware reads the worker address from `CODING_AGENT_WORKER_URL` (default: `http://localhost:9000`).
 
 ### Environment variables
 
@@ -322,15 +325,15 @@ The middleware reads the socket path from `CODING_AGENT_SOCKET_PATH` (default: `
 |---|---|---|
 | `CODING_AGENT_PROJECTS_ROOT` | Root directory containing project folders | `/home/agent/projects` |
 | `CODING_AGENT_SESSIONS_DIR` | Directory for Pi session files | `/home/agent/sessions` |
-| `CODING_AGENT_SOCKET_PATH` | Unix socket path (dev) | `/tmp/coding-agent.sock` |
-| `CODING_AGENT_PORT` | TCP port (Docker/prod) | `9000` |
+| `CODING_AGENT_WORKER_URL` | Base URL of the worker JSON-RPC endpoint | `http://localhost:9000` |
+| `CODING_AGENT_WORKER_PORT` | Port the worker HTTP server binds to (dev) | `9000` |
 | `CODING_AGENT_AUTH_JSON` | Path to Pi `auth.json` | `/home/agent/.pi/agent/auth.json` |
 
 ### Production deployment
 
 - Run the worker under a dedicated, unprivileged OS user.
 - Set `CODING_AGENT_PROJECTS_ROOT` and `CODING_AGENT_SESSIONS_DIR` to directories owned by that user.
-- Ensure the Next.js process can connect to the worker socket/port but cannot read `auth.json`.
+- Ensure the Next.js process can connect to the worker URL but cannot read `auth.json`.
 - Use a process manager (systemd, pm2, etc.) to keep the worker alive.
 
 ## 15. Future Work
