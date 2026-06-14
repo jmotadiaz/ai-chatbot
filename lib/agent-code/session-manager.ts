@@ -9,7 +9,7 @@ import {
   ModelRegistry,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
-import { getTraceLogger } from "../features/tracing";
+import { getTraceLogger } from "./tracing";
 
 interface SessionEntry {
   sessionId: string;

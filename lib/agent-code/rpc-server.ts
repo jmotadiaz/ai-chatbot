@@ -1,4 +1,4 @@
-import { getTraceLogger } from "../features/tracing";
+import { getTraceLogger } from "./tracing";
 import {
   getOrCreateSession,
   sendPrompt,
