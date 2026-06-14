@@ -215,6 +215,20 @@ export const userApiKey = pgTable("UserApiKey", {
     .notNull(),
 });
 
+export const codingAgentSessions = pgTable("coding_agent_sessions", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  project: text("project").notNull(),
+  sessionId: text("session_id").notNull().unique(),
+  label: text("label"),
+  modelId: text("model_id"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const chatSummary = pgTable("ChatSummary", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   chatId: uuid("chatId")
@@ -400,4 +414,10 @@ export type ChatSummary = InferSelectModel<typeof chatSummary>;
 export type InsertChatSummary = Omit<
   InferInsertModel<typeof chatSummary>,
   "createdAt" | "id"
+>;
+
+export type CodingAgentSession = InferSelectModel<typeof codingAgentSessions>;
+export type NewCodingAgentSession = Omit<
+  InferInsertModel<typeof codingAgentSessions>,
+  "id" | "updatedAt"
 >;
