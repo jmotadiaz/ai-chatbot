@@ -2,13 +2,13 @@ export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export type TraceLayer = "worker" | "bridge" | "client";
 
-export interface TraceEvent {
-  ts: string;
+export interface TraceRecord {
+  timestamp: string;
   runId: string;
   layer: TraceLayer;
   sessionId?: string;
   level: LogLevel;
-  event: string;
+  eventName: string;
   durationMs?: number;
   payload: unknown;
 }
