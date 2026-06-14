@@ -20,6 +20,7 @@ The agent must be able to read, modify, and execute code in a local workspace sa
 | Tool approval | Automatic execution for the MVP |
 | UI fidelity | Minimal: final assistant message + execution indicator |
 | Tool set | `read`, `bash`, `edit`, `write`, `grep`, `find`, `ls` |
+| Feature flag | `CODING_AGENT_ENABLED` must be `true`; otherwise routes and API are disabled |
 
 ## 3. Architecture
 
@@ -45,6 +46,17 @@ Three-layer architecture connected through narrow interfaces:
 │  Endpoint: POST /rpc                        │
 └─────────────────────────────────────────────┘
 ```
+
+### Feature Flag
+
+The entire coding agent feature is guarded by the environment variable `CODING_AGENT_ENABLED`.
+
+- When `CODING_AGENT_ENABLED` is not `true`:
+  - The sidebar entry is hidden.
+  - The routes `/agent/code/**` return 404.
+  - The API routes `/api/agent/code/**` return 404.
+  - The worker is not required and its env vars are not read.
+- When `CODING_AGENT_ENABLED=true`, all routes, API endpoints, and the worker are active.
 
 ### Layer Responsibilities
 
@@ -312,6 +324,8 @@ The project uses three test layers: **E2E** (UI), **Unit** (domain logic in feat
 
 ### Local development
 
+Enable the feature by setting `CODING_AGENT_ENABLED=true` in `.env.development.local`.
+
 Two processes must run:
 
 1. **Next.js app:** `pnpm dev` (existing command).
@@ -323,6 +337,7 @@ The middleware reads the worker address from `CODING_AGENT_WORKER_URL` (default:
 
 | Variable | Purpose | Example |
 |---|---|---|
+| `CODING_AGENT_ENABLED` | Enables the coding agent feature | `true` |
 | `CODING_AGENT_PROJECTS_ROOT` | Root directory containing project folders | `/home/agent/projects` |
 | `CODING_AGENT_SESSIONS_DIR` | Directory for Pi session files | `/home/agent/sessions` |
 | `CODING_AGENT_WORKER_URL` | Base URL of the worker JSON-RPC endpoint | `http://localhost:9000` |
