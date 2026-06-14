@@ -42,12 +42,14 @@ export class WorkerClient {
 
     if (!res.ok) {
       log.error("rpc.http_error", { method, status: res.status, statusText: res.statusText });
+      stop();
       throw new Error(`Worker request failed: ${res.status} ${res.statusText}`);
     }
 
     const data = (await res.json()) as JsonRpcResponse<T>;
     if (data.error) {
       log.error("rpc.error", { method, code: data.error.code, message: data.error.message });
+      stop();
       throw new Error(`Worker RPC error: ${data.error.message}`);
     }
 
@@ -88,11 +90,13 @@ export class WorkerClient {
 
     if (!res.ok) {
       log.error("rpc.http_error", { method: "sendPrompt", status: res.status, statusText: res.statusText });
+      stop();
       throw new Error(`Worker request failed: ${res.status} ${res.statusText}`);
     }
 
     if (!res.body) {
       log.error("rpc.no_body", { method: "sendPrompt" });
+      stop();
       throw new Error("Worker response has no body");
     }
 
