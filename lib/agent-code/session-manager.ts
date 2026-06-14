@@ -9,7 +9,6 @@ import {
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import path from "node:path";
-import { resolveProjectPath } from "@/lib/features/agent-code/project-resolver";
 
 interface SessionEntry {
   sessionId: string;
@@ -18,6 +17,26 @@ interface SessionEntry {
 }
 
 const sessions = new Map<string, SessionEntry>();
+
+function isValidProjectName(name: string): boolean {
+  if (
+    !name ||
+    name.includes("/") ||
+    name.includes("\\") ||
+    name === "." ||
+    name === ".."
+  ) {
+    return false;
+  }
+  return /^[a-zA-Z0-9_.-]+$/.test(name);
+}
+
+function resolveProjectPath(root: string, project: string): string {
+  if (!isValidProjectName(project)) {
+    throw new Error("Invalid project name");
+  }
+  return path.resolve(root, project);
+}
 
 export async function getOrCreateSession(options: {
   userId: string;
