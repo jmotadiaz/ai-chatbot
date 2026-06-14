@@ -23,7 +23,7 @@ export class WorkerClient {
   private id = 0;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl ?? process.env.CODING_AGENT_WORKER_URL ?? "http://localhost:9000";
+    this.baseUrl = baseUrl ?? process.env.CODING_AGENT_WORKER_URL ?? "http://localhost:3015";
   }
 
   private async call<T>(method: string, params: unknown): Promise<T> {
@@ -51,6 +51,7 @@ export class WorkerClient {
     sessionId?: string;
     project: string;
     modelId?: string;
+    _traceRunId?: string;
   }): Promise<{ sessionId: string }> {
     return this.call("initializeSession", params);
   }
@@ -58,6 +59,7 @@ export class WorkerClient {
   async sendPrompt(params: {
     sessionId: string;
     prompt: string;
+    _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const id = ++this.id;
     const body: JsonRpcRequest = {
