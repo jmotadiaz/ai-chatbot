@@ -140,7 +140,7 @@ Three-layer architecture connected through narrow interfaces:
 | `setModel` | `{ sessionId, modelId }` | `void` |
 | `disposeSession` | `{ sessionId }` | `void` |
 
-The worker's `modelId` is a composite identifier such as `anthropic/claude-opus-4-5` (`providerId/modelId`). The worker parses it and calls `modelRegistry.find(providerId, modelId)`.
+The worker's `modelId` is a composite identifier such as `opencodeGo/deepseek-v4-pro` (`providerId/modelId`). The worker parses it and calls `modelRegistry.find(providerId, modelId)`.
 
 ### App-facing model endpoint
 
@@ -151,17 +151,22 @@ This endpoint returns only the `chatModelId` values that are **both** supported 
 
 ### Model mapping
 
-The middleware keeps a bidirectional map between app `chatModelId` values and Pi `(providerId, modelId)` pairs:
+The coding agent operates exclusively with models served by the `opencodeGo` provider. The worker's `getAvailableModels()` returns all `opencodeGo` models that have valid credentials configured in Pi.
+
+The middleware keeps a bidirectional map between app `chatModelId` values and Pi `opencodeGo/<modelId>` pairs:
 
 | App `chatModelId` | Pi provider | Pi model |
 |---|---|---|
-| `Claude Opus 4.5` | `anthropic` | `claude-opus-4-5` |
-| `Claude Sonnet 4.6` | `anthropic` | `claude-sonnet-4-6` |
-| `GPT 5.4` | `openai` | `gpt-5.4` |
+| `Deepseek v4 Flash` | `opencodeGo` | `deepseek-v4-flash` |
+| `Deepseek v4 Pro` | `opencodeGo` | `deepseek-v4-pro` |
+| `Kimi K2.6` | `opencodeGo` | `kimi-k2.6` |
+| `Qwen 3.6 Plus` | `opencodeGo` | `qwen3.6-plus` |
+| `MiMo V2.5` | `opencodeGo` | `mimo-v2.5` |
+| `MiMo V2.5 Pro` | `opencodeGo` | `mimo-v2.5-pro` |
 
 This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
-1. Filter Pi's available models down to the app's `chatModelId` set.
-2. Convert the user's selected `chatModelId` into the Pi identifier sent to the worker.
+1. Filter Pi's available `opencodeGo` models down to the app's `chatModelId` set.
+2. Convert the user's selected `chatModelId` into the Pi `opencodeGo/<modelId>` identifier sent to the worker.
 
 ### Pi to AG-UI Event Mapping
 
@@ -205,11 +210,12 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 ## 9. Models and Credentials
 
 - The worker creates a `ModelRegistry` backed by Pi's `AuthStorage`.
-- The worker's `getAvailableModels()` returns Pi models with valid credentials configured.
-- The middleware maps Pi models to the app's `chatModelId` values using `lib/features/agent-code/model-mapping.ts`.
-- `GET /api/agent/code/models` returns the intersection of Pi-available models and app-supported `chatModelId` values.
+- The coding agent uses only models from the `opencodeGo` provider.
+- The worker's `getAvailableModels()` returns all `opencodeGo` models with valid credentials configured.
+- The middleware maps Pi `opencodeGo/<modelId>` values to the app's `chatModelId` values using `lib/features/agent-code/model-mapping.ts`.
+- `GET /api/agent/code/models` returns the intersection of available `opencodeGo` models and app-supported `chatModelId` values.
 - The frontend reuses the existing `ModelPicker` component, which already works with `chatModelId`.
-- When the user selects a model, the middleware converts the `chatModelId` back to the Pi `providerId/modelId` pair before sending it to the worker.
+- When the user selects a model, the middleware converts the `chatModelId` back to the Pi `opencodeGo/<modelId>` identifier before sending it to the worker.
 - No API keys are stored in the app's database; Pi uses its own `auth.json` or environment variables.
 
 ## 10. UI/UX
