@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import {
   getCodingAgentSessions,
@@ -11,13 +11,13 @@ function getProjectFromUrl(url: URL): string {
   return decodeURIComponent(parts[parts.length - 2] ?? "");
 }
 
-export const GET = withAuth(async (user, req: NextRequest) => {
+export const GET = withAuth(async (user, req: Request) => {
   const project = getProjectFromUrl(new URL(req.url));
   const sessions = await getCodingAgentSessions(project);
   return NextResponse.json({ sessions });
 });
 
-export const POST = withAuth(async (user, req: NextRequest) => {
+export const POST = withAuth(async (user, req: Request) => {
   const project = getProjectFromUrl(new URL(req.url));
   const { modelId } = await req.json();
   const session = await createCodingAgentSession(project, modelId);

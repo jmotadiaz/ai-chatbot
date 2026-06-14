@@ -24,8 +24,9 @@ export function useCodingAgent({
     () =>
       new HttpAgent({
         url: "/api/agent/code",
+        threadId: sessionId,
       }),
-    [],
+    [sessionId],
   );
 
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
@@ -38,19 +39,21 @@ export function useCodingAgent({
 
       let assistantContent = "";
 
+      agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
+
       await agent.runAgent(
         {
-          threadId: sessionId,
           runId: crypto.randomUUID(),
-          project,
-          sessionId,
-          modelId,
-          messages: [{ id: crypto.randomUUID(), role: "user", content }],
+          forwardedProps: {
+            project,
+            sessionId,
+            modelId,
+          },
         },
         {
           onEvent: ({ event }: { event: BaseEvent }) => {
             if (event.type === EventType.TEXT_MESSAGE_CONTENT) {
-              assistantContent += (event as { delta: string }).delta;
+              assistantContent += (event as unknown as { delta: string }).delta;
             }
           },
           onRunFailed: () => setIsRunning(false),

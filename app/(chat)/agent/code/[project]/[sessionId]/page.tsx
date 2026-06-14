@@ -5,15 +5,16 @@ import { getCodingAgentModels } from "@/lib/features/agent-code/actions";
 export default async function CodingAgentChatPage({
   params,
 }: {
-  params: { project: string; sessionId: string };
+  params: Promise<{ project: string; sessionId: string }>;
 }) {
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
+  const { project, sessionId } = await params;
   const models = await getCodingAgentModels();
   return (
     <div className="h-full">
       <AgentCodeChat
-        project={params.project}
-        sessionId={params.sessionId}
+        project={project}
+        sessionId={sessionId}
         availableModels={models}
       />
     </div>

@@ -1,3 +1,4 @@
+import path from "node:path";
 import {
   createAgentSessionRuntime,
   createAgentSessionFromServices,
@@ -8,7 +9,6 @@ import {
   ModelRegistry,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
-import path from "node:path";
 
 interface SessionEntry {
   sessionId: string;

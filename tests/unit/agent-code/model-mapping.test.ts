@@ -4,7 +4,6 @@ import {
   toChatModelId,
   filterAvailableChatModels,
 } from "@/lib/features/agent-code/model-mapping";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 describe("model-mapping", () => {
   it("maps chatModelId to Pi opencodeGo modelId", () => {

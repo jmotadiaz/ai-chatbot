@@ -1,12 +1,12 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "@/lib/infrastructure/db/db";
 import {
   codingAgentSessions,
   type NewCodingAgentSession,
 } from "@/lib/infrastructure/db/schema";
-import { randomUUID } from "node:crypto";
 
 export async function createSession(input: {
   userId: string;

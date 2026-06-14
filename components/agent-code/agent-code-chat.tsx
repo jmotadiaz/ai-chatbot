@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCodingAgent } from "@/lib/features/agent-code/hooks/use-coding-agent";
 import { ExecutionIndicator } from "./execution-indicator";
+import { useCodingAgent } from "@/lib/features/agent-code/hooks/use-coding-agent";
 import { ModelPickerSelector } from "@/components/chat/model-picker";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 

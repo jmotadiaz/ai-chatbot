@@ -1,5 +1,3 @@
-"use server";
-
 export interface WorkerModel {
   providerId: string;
   modelId: string;

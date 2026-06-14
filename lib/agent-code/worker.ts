@@ -21,8 +21,15 @@ const server = createServer(async (req, res) => {
     Object.fromEntries(response.headers.entries()),
   );
   if (response.body) {
-    for await (const chunk of response.body as ReadableStream<Uint8Array>) {
-      res.write(chunk);
+    const reader = response.body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+    } finally {
+      reader.releaseLock();
     }
   }
   res.end();

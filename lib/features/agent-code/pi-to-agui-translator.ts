@@ -21,13 +21,24 @@ type PiEvent =
     }
   | { type: "error"; message: string };
 
-export function translatePiEvent(piEvent: PiEvent): BaseEvent {
+export function translatePiEvent(
+  piEvent: PiEvent,
+  context: { threadId: string; runId: string },
+): BaseEvent {
+  const { threadId, runId } = context;
   switch (piEvent.type) {
     case "agent_start":
-      return { type: EventType.RUN_STARTED, timestamp: Date.now() } as BaseEvent;
+      return {
+        type: EventType.RUN_STARTED,
+        threadId,
+        runId,
+        timestamp: Date.now(),
+      } as BaseEvent;
     case "agent_end":
       return {
         type: EventType.RUN_FINISHED,
+        threadId,
+        runId,
         timestamp: Date.now(),
       } as BaseEvent;
     case "message_start":
@@ -69,15 +80,18 @@ export function translatePiEvent(piEvent: PiEvent): BaseEvent {
       } as BaseEvent;
     case "tool_execution_end":
       return {
-        type: EventType.TOOL_RESULT,
+        type: EventType.TOOL_CALL_RESULT,
+        messageId: "msg-1",
         toolCallId: piEvent.toolCallId ?? "tool-1",
-        result: piEvent.result ?? "",
+        content: piEvent.result ?? "",
         timestamp: Date.now(),
       } as BaseEvent;
     case "error":
       return {
         type: EventType.RUN_ERROR,
-        error: piEvent.message,
+        threadId,
+        runId,
+        message: piEvent.message,
         timestamp: Date.now(),
       } as BaseEvent;
     default:

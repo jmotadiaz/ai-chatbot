@@ -8,22 +8,23 @@ import {
 export default async function CodingAgentSessionsPage({
   params,
 }: {
-  params: { project: string };
+  params: Promise<{ project: string }>;
 }) {
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
-  const sessions = await getCodingAgentSessions(params.project);
+  const { project } = await params;
+  const sessions = await getCodingAgentSessions(project);
 
   async function createSession() {
     "use server";
-    const session = await createCodingAgentSession(params.project);
+    const session = await createCodingAgentSession(project);
     return session.sessionId;
   }
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">{params.project}</h1>
+      <h1 className="text-2xl font-bold mb-4">{project}</h1>
       <SessionList
-        project={params.project}
+        project={project}
         sessions={sessions}
         onCreateSession={createSession}
       />
