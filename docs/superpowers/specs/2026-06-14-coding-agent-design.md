@@ -11,7 +11,8 @@ The agent must be able to read, modify, and execute code in a local workspace sa
 | Topic | MVP Decision |
 |---|---|
 | Isolation | Restricted host process (preparation for future Docker) |
-| Entry point | Dedicated view at `/agent/code`, reachable from the sidebar |
+| Entry point | Dedicated views under `/agent/code`, reachable from the sidebar |
+| Routes | `/agent/code` → projects, `/agent/code/[project]` → sessions, `/agent/code/[project]/[sessionId]` → chat |
 | Credentials | Managed by Pi (`AuthStorage` / `ModelRegistry`); the app never exposes them |
 | Model selection | Worker exposes available models; the UI lets the user choose |
 | Session persistence | Pi `session.jsonl` files persisted on disk, mapped to app users in the database |
@@ -26,7 +27,7 @@ Three-layer architecture connected through narrow interfaces:
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Frontend: /agent/code                      │
+│  Frontend: /agent/code/[project]/[sessionId]│
 │  React + @ag-ui/client (HttpAgent)          │
 │  SSE to /api/agent/code                     │
 └──────────────────┬──────────────────────────┘
@@ -48,9 +49,11 @@ Three-layer architecture connected through narrow interfaces:
 ### Layer Responsibilities
 
 **Frontend**
-- Renders the dedicated coding agent view.
+- `/agent/code` lists first-level project folders.
+- `/agent/code/[project]` lists existing sessions for that project and offers a "New session" button.
+- `/agent/code/[project]/[sessionId]` renders the chat for a specific session.
 - Creates an `HttpAgent` pointing to `/api/agent/code`.
-- Sends `runAgent({ threadId, runId, messages })` requests.
+- Sends `runAgent({ threadId, runId, project, sessionId, messages })` requests.
 - Subscribes to AG-UI events and updates the minimal UI.
 
 **Middleware (Next.js)**
@@ -74,12 +77,15 @@ Three-layer architecture connected through narrow interfaces:
 
 | Module | Purpose |
 |---|---|
-| `app/(chat)/agent/code/page.tsx` | Route shell for the coding agent view. |
+| `app/(chat)/agent/code/page.tsx` | Lists first-level project folders. |
+| `app/(chat)/agent/code/[project]/page.tsx` | Lists sessions for a project + "New session". |
+| `app/(chat)/agent/code/[project]/[sessionId]/page.tsx` | Active chat session view. |
+| `components/agent-code/project-list.tsx` | Grid of project folders. |
+| `components/agent-code/session-list.tsx` | Grid of sessions + new session button. |
 | `components/agent-code/agent-code-chat.tsx` | Main chat component. |
-| `components/agent-code/project-selector.tsx` | Lists first-level folders under the projects root. |
 | `components/agent-code/execution-indicator.tsx` | Shows when the agent is running tools. |
 | `lib/features/agent-code/hooks/use-coding-agent.ts` | Wraps `@ag-ui/client` HttpAgent and event handling. |
-| `lib/features/agent-code/actions.ts` | Server actions for listing projects, available models, and resuming sessions. |
+| `lib/features/agent-code/actions.ts` | Server actions for listing projects, sessions, available models, and creating/resuming sessions. |
 
 ### Middleware
 
@@ -102,18 +108,19 @@ Three-layer architecture connected through narrow interfaces:
 
 ## 5. Data Flow
 
-1. The user opens `/agent/code`.
-2. The frontend calls `GET /api/agent/code/projects` and receives a list of first-level folder names under `CODING_AGENT_PROJECTS_ROOT`.
-3. The frontend calls `GET /api/agent/code/models` and receives a list of `chatModelId` values.
-4. The frontend renders the project selector and the existing `ModelPicker`. The user selects a project and a model, then sends a message.
-5. The frontend calls `agent.runAgent({ threadId, runId, messages })`, which opens an SSE stream to `/api/agent/code`.
-6. Next.js looks up the user's Pi session for the selected project from the database, or creates a new one.
-7. Next.js calls the worker JSON-RPC method `initializeSession({ userId, sessionId, project, modelId })` if needed.
-8. Next.js calls `sendPrompt({ sessionId, prompt })` on the worker.
-9. The worker runs the Pi agent with `cwd` set to `<CODING_AGENT_PROJECTS_ROOT>/<project>`, emitting events (`message_update`, `tool_execution_start`, etc.).
-10. Next.js translates Pi events into AG-UI events and writes them to the SSE stream.
-11. The frontend renders messages and the execution indicator.
-12. When the run finishes, the worker emits `agent_end`; Next.js emits `RUN_FINISHED` and closes the SSE stream cleanly.
+1. The user opens `/agent/code` and sees a list of first-level project folders under `CODING_AGENT_PROJECTS_ROOT`.
+2. The user selects a project and navigates to `/agent/code/[project]`, which lists existing sessions and a "New session" button.
+3. The user creates a new session or selects an existing one, navigating to `/agent/code/[project]/[sessionId]`.
+4. The chat view calls `GET /api/agent/code/models` and renders the existing `ModelPicker` with available `chatModelId` values.
+5. The user selects a model and sends a message.
+6. The frontend calls `agent.runAgent({ threadId, runId, project, sessionId, messages })`, opening an SSE stream to `/api/agent/code`.
+7. Next.js looks up the Pi `sessionId` from the database or creates a new one.
+8. Next.js calls the worker JSON-RPC method `initializeSession({ userId, sessionId, project, modelId })` if needed.
+9. Next.js calls `sendPrompt({ sessionId, prompt })` on the worker.
+10. The worker runs the Pi agent with `cwd` set to `<CODING_AGENT_PROJECTS_ROOT>/<project>`, emitting events (`message_update`, `tool_execution_start`, etc.).
+11. Next.js translates Pi events into AG-UI events and writes them to the SSE stream.
+12. The frontend renders messages and the execution indicator.
+13. When the run finishes, the worker emits `agent_end`; Next.js emits `RUN_FINISHED` and closes the SSE stream cleanly.
 
 ## 6. Interfaces and Contracts
 
@@ -127,6 +134,7 @@ Three-layer architecture connected through narrow interfaces:
     "threadId": "user-thread-uuid",
     "runId": "run-uuid",
     "project": "my-project",
+    "sessionId": "session-uuid",
     "messages": [
       { "role": "user", "content": "Refactor the chat hook" }
     ],
@@ -141,6 +149,13 @@ Three-layer architecture connected through narrow interfaces:
 - **Response:** `{ projects: string[] }`
 
 Returns the names of first-level folders under `CODING_AGENT_PROJECTS_ROOT`.
+
+### Session list endpoint
+
+- **URL:** `GET /api/agent/code/[project]/sessions`
+- **Response:** `{ sessions: [{ id, label, updatedAt }] }`
+
+Returns the existing coding agent sessions for the given project and the authenticated user.
 
 ### JSON-RPC Worker Methods
 
@@ -209,18 +224,20 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 
 - Pi stores its session tree in `session.jsonl` files.
 - Worker session directory: `CODING_AGENT_SESSIONS_DIR/<userId>/<project>/<sessionId>/session.jsonl`.
-- The app stores the mapping `(userId, project) -> sessionId` in a new table:
+- The app stores one row per coding agent session in a new table:
   ```sql
   CREATE TABLE coding_agent_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id),
     project TEXT NOT NULL,
-    session_id TEXT NOT NULL,
+    session_id TEXT NOT NULL UNIQUE,
+    label TEXT,
     model_id TEXT,
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, project)
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
   );
   ```
 - On resume, Next.js sends the existing `sessionId` and `project` to the worker so Pi can continue the conversation in the correct `cwd`.
+- A session can be renamed by the user via a server action to set `label`.
 
 ## 9. Models and Credentials
 
@@ -236,10 +253,9 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 ## 10. UI/UX
 
 - Minimal MVP UI:
-  - Header with project selector (first-level folders under `CODING_AGENT_PROJECTS_ROOT`) and model selector.
-  - Scrollable message list.
-  - Input box at the bottom.
-  - Execution indicator (spinner + "Running...") shown while the agent is busy.
+  - `/agent/code`: grid of project folders (first-level under `CODING_AGENT_PROJECTS_ROOT`).
+  - `/agent/code/[project]`: grid of existing sessions + "New session" button.
+  - `/agent/code/[project]/[sessionId]`: chat header with project name, session label, model selector; scrollable message list; input box; execution indicator (spinner + "Running...") shown while the agent is busy.
 - No per-tool consoles or diff viewers in the MVP.
 - Future iterations can expand collapsed tool cards and diff viewers without changing the architecture.
 
