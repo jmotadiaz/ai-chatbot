@@ -87,6 +87,7 @@ Three-layer architecture connected through narrow interfaces:
 | `lib/features/agent-code/worker-client.ts` | JSON-RPC client over socket for talking to the worker. |
 | `lib/features/agent-code/pi-to-agui-translator.ts` | Maps Pi SDK events to AG-UI events. |
 | `lib/features/agent-code/session-store.ts` | Persists the mapping `userId -> sessionId` in Postgres. |
+| `lib/features/agent-code/model-mapping.ts` | Maps between app `chatModelId` and Pi `providerId/modelId` pairs. |
 
 ### Worker
 
@@ -99,8 +100,8 @@ Three-layer architecture connected through narrow interfaces:
 ## 5. Data Flow
 
 1. The user opens `/agent/code`.
-2. The frontend calls a server action to list available models (`getAvailableModels`).
-3. The user selects a model and sends a message.
+2. The frontend calls `GET /api/agent/code/models` and receives a list of `chatModelId` values.
+3. The frontend renders the existing `ModelPicker` with those models. The user selects one and sends a message.
 4. The frontend calls `agent.runAgent({ threadId, runId, messages })`, which opens an SSE stream to `/api/agent/code`.
 5. Next.js looks up the user's Pi session from the database or creates a new one.
 6. Next.js calls the worker JSON-RPC method `initializeSession({ userId, sessionId, modelId })` if needed.
@@ -139,7 +140,28 @@ Three-layer architecture connected through narrow interfaces:
 | `setModel` | `{ sessionId, modelId }` | `void` |
 | `disposeSession` | `{ sessionId }` | `void` |
 
-The `modelId` is a composite identifier such as `anthropic/claude-opus-4-5` (`providerId/modelId`). The worker parses it and calls `modelRegistry.find(providerId, modelId)`.
+The worker's `modelId` is a composite identifier such as `anthropic/claude-opus-4-5` (`providerId/modelId`). The worker parses it and calls `modelRegistry.find(providerId, modelId)`.
+
+### App-facing model endpoint
+
+- **URL:** `GET /api/agent/code/models`
+- **Response:** `{ models: chatModelId[] }`
+
+This endpoint returns only the `chatModelId` values that are **both** supported by the app's UI and available in Pi (i.e., have valid credentials). This lets the frontend reuse the existing `ModelPicker` component without changes.
+
+### Model mapping
+
+The middleware keeps a bidirectional map between app `chatModelId` values and Pi `(providerId, modelId)` pairs:
+
+| App `chatModelId` | Pi provider | Pi model |
+|---|---|---|
+| `Claude Opus 4.5` | `anthropic` | `claude-opus-4-5` |
+| `Claude Sonnet 4.6` | `anthropic` | `claude-sonnet-4-6` |
+| `GPT 5.4` | `openai` | `gpt-5.4` |
+
+This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
+1. Filter Pi's available models down to the app's `chatModelId` set.
+2. Convert the user's selected `chatModelId` into the Pi identifier sent to the worker.
 
 ### Pi to AG-UI Event Mapping
 
@@ -183,9 +205,11 @@ The `modelId` is a composite identifier such as `anthropic/claude-opus-4-5` (`pr
 ## 9. Models and Credentials
 
 - The worker creates a `ModelRegistry` backed by Pi's `AuthStorage`.
-- `getAvailableModels()` returns only models with valid credentials configured.
-- The frontend shows the model list and lets the user pick one.
-- The selected `modelId` is sent during session initialization.
+- The worker's `getAvailableModels()` returns Pi models with valid credentials configured.
+- The middleware maps Pi models to the app's `chatModelId` values using `lib/features/agent-code/model-mapping.ts`.
+- `GET /api/agent/code/models` returns the intersection of Pi-available models and app-supported `chatModelId` values.
+- The frontend reuses the existing `ModelPicker` component, which already works with `chatModelId`.
+- When the user selects a model, the middleware converts the `chatModelId` back to the Pi `providerId/modelId` pair before sending it to the worker.
 - No API keys are stored in the app's database; Pi uses its own `auth.json` or environment variables.
 
 ## 10. UI/UX
