@@ -35,6 +35,7 @@ export const POST = withAuth(async (user, req) => {
       const dbSession = await getSession({ userId: user.id, sessionId });
       log.info("db.lookup", { found: !!dbSession, sessionId });
       if (!dbSession) {
+        await sink?.close();
         return new Response("Session not found", { status: 404 });
       }
 
@@ -118,7 +119,8 @@ export const POST = withAuth(async (user, req) => {
         },
       });
     });
-  } finally {
+  } catch (err) {
     await sink?.close();
+    throw err;
   }
 });
