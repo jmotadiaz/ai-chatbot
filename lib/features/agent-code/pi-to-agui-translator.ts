@@ -1,4 +1,5 @@
 import { EventType, type BaseEvent } from "@ag-ui/client";
+import { getTraceLogger } from "@/lib/features/tracing";
 
 type PiEvent =
   | { type: "agent_start" }
@@ -25,76 +26,94 @@ export function translatePiEvent(
   piEvent: PiEvent,
   context: { threadId: string; runId: string },
 ): BaseEvent {
+  const log = getTraceLogger("bridge");
   const { threadId, runId } = context;
+
+  let result: BaseEvent;
+
   switch (piEvent.type) {
     case "agent_start":
-      return {
+      result = {
         type: EventType.RUN_STARTED,
         threadId,
         runId,
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "agent_end":
-      return {
+      result = {
         type: EventType.RUN_FINISHED,
         threadId,
         runId,
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "message_start":
-      return {
+      result = {
         type: EventType.TEXT_MESSAGE_START,
         messageId: piEvent.messageId ?? "msg-1",
         role: "assistant",
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "message_update":
       if (piEvent.assistantMessageEvent.type === "text_delta") {
-        return {
+        result = {
           type: EventType.TEXT_MESSAGE_CONTENT,
           messageId: "msg-1",
           delta: piEvent.assistantMessageEvent.delta,
           timestamp: Date.now(),
         } as BaseEvent;
+      } else {
+        result = { type: EventType.RAW, payload: piEvent } as BaseEvent;
       }
-      return { type: EventType.RAW, payload: piEvent } as BaseEvent;
+      break;
     case "message_end":
-      return {
+      result = {
         type: EventType.TEXT_MESSAGE_END,
         messageId: piEvent.messageId ?? "msg-1",
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "tool_execution_start":
-      return {
+      result = {
         type: EventType.TOOL_CALL_START,
         toolCallId: piEvent.toolCallId ?? "tool-1",
         toolCallName: piEvent.toolName,
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "tool_execution_update":
-      return {
+      result = {
         type: EventType.TOOL_CALL_ARGS,
         toolCallId: piEvent.toolCallId ?? "tool-1",
         args: piEvent.output ?? "",
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "tool_execution_end":
-      return {
+      result = {
         type: EventType.TOOL_CALL_RESULT,
         messageId: "msg-1",
         toolCallId: piEvent.toolCallId ?? "tool-1",
         content: piEvent.result ?? "",
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     case "error":
-      return {
+      result = {
         type: EventType.RUN_ERROR,
         threadId,
         runId,
         message: piEvent.message,
         timestamp: Date.now(),
       } as BaseEvent;
+      break;
     default:
-      return { type: EventType.RAW, payload: piEvent } as BaseEvent;
+      log.debug("translate.unknown_type", { piType: (piEvent as { type: string }).type });
+      result = { type: EventType.RAW, payload: piEvent } as BaseEvent;
   }
+
+  log.debug("translate", { piType: piEvent.type, aguiType: result.type });
+  return result;
 }
