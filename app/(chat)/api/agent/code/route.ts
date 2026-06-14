@@ -104,6 +104,7 @@ export const POST = withAuth(async (user, req) => {
           } finally {
             log.info("stream.close");
             controller.close();
+            await sink?.close();
           }
         },
       });
