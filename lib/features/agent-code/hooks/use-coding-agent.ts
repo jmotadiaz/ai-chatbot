@@ -15,6 +15,24 @@ export interface UseCodingAgentResult {
   sendMessage: (content: string) => Promise<void>;
 }
 
+async function postTraceEvent(
+  runId: string,
+  sessionId: string,
+  eventName: string,
+  level: string,
+  payload?: unknown,
+) {
+  try {
+    await fetch("/api/agent/code/trace", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ runId, sessionId, eventName, level, payload }),
+    });
+  } catch {
+    // trace failure is non-fatal
+  }
+}
+
 export function useCodingAgent({
   project,
   sessionId,
@@ -34,6 +52,9 @@ export function useCodingAgent({
 
   const sendMessage = useCallback(
     async (content: string) => {
+      const runId = crypto.randomUUID();
+      postTraceEvent(runId, sessionId, "sendMessage", "info", { contentLength: content.length });
+
       setMessages((prev) => [...prev, { role: "user", content }]);
       setIsRunning(true);
 
@@ -43,7 +64,7 @@ export function useCodingAgent({
 
       await agent.runAgent(
         {
-          runId: crypto.randomUUID(),
+          runId,
           forwardedProps: {
             project,
             sessionId,
@@ -52,12 +73,21 @@ export function useCodingAgent({
         },
         {
           onEvent: ({ event }: { event: BaseEvent }) => {
+            postTraceEvent(runId, sessionId, "event.received", "debug", {
+              type: event.type,
+            });
             if (event.type === EventType.TEXT_MESSAGE_CONTENT) {
               assistantContent += (event as unknown as { delta: string }).delta;
             }
           },
-          onRunFailed: () => setIsRunning(false),
+          onRunFailed: () => {
+            postTraceEvent(runId, sessionId, "run.failed", "error");
+            setIsRunning(false);
+          },
           onRunFinalized: () => {
+            postTraceEvent(runId, sessionId, "run.finalized", "info", {
+              contentLength: assistantContent.length,
+            });
             setMessages((prev) => [
               ...prev,
               { role: "assistant", content: assistantContent },

@@ -89,7 +89,7 @@ export async function createCodingAgentSession(project: string, modelId?: string
 }
 
 export async function getCodingAgentSession(project: string, sessionId: string) {
-  return withActionTrace("getCodingAgentSession", async (log) => {
+  return withActionTrace("getCodingAgentSession", async (_log) => {
     assertEnabled();
     const userId = await getUserId();
     return await getSession({ userId, sessionId });
