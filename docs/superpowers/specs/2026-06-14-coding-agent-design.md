@@ -15,7 +15,7 @@ The agent must be able to read, modify, and execute code in a local workspace sa
 | Credentials | Managed by Pi (`AuthStorage` / `ModelRegistry`); the app never exposes them |
 | Model selection | Worker exposes available models; the UI lets the user choose |
 | Session persistence | Pi `session.jsonl` files persisted on disk, mapped to app users in the database |
-| Working directory | Fixed global workspace configured via `CODING_AGENT_WORKSPACE` |
+| Working directory | Fixed projects root (`CODING_AGENT_PROJECTS_ROOT`); UI selects a first-level folder as the session `cwd` |
 | Tool approval | Automatic execution for the MVP |
 | UI fidelity | Minimal: final assistant message + execution indicator |
 | Tool set | `read`, `bash`, `edit`, `write`, `grep`, `find`, `ls` |
@@ -40,7 +40,7 @@ Three-layer architecture connected through narrow interfaces:
 ┌──────────────────▼──────────────────────────┐
 │  Agent Worker (Node.js process)             │
 │  Pi SDK createAgentSessionRuntime           │
-│  cwd = CODING_AGENT_WORKSPACE               │
+│  cwd = CODING_AGENT_PROJECTS_ROOT/<project> │
 │  runRpcMode()                               │
 └─────────────────────────────────────────────┘
 ```
@@ -55,15 +55,16 @@ Three-layer architecture connected through narrow interfaces:
 
 **Middleware (Next.js)**
 - Validates the user session with `withAuth`.
-- Manages the Pi session lifecycle per user: create, resume, or dispose.
-- Receives the selected model from the frontend and forwards it to the worker during session initialization.
+- Lists first-level folders under `CODING_AGENT_PROJECTS_ROOT` so the UI can show available projects.
+- Manages the Pi session lifecycle per user and project: create, resume, or dispose.
+- Receives the selected project and model from the frontend and forwards them to the worker during session initialization.
 - Sends prompts to the worker via JSON-RPC.
 - Receives Pi events from the worker, maps them to AG-UI events, and forwards them over SSE.
 - Converts worker errors into AG-UI `ErrorEvent` / `RunErrorEvent`.
 
 **Agent Worker**
 - A standalone Node.js process that listens on a Unix socket (development) or TCP port (Docker).
-- Initializes a Pi `AgentSessionRuntime` with `cwd` set to `CODING_AGENT_WORKSPACE`.
+- Initializes a Pi `AgentSessionRuntime` with `cwd` set to `<CODING_AGENT_PROJECTS_ROOT>/<project>`.
 - Exposes JSON-RPC methods for session management and prompting.
 - Streams Pi events back to the middleware.
 
@@ -75,9 +76,10 @@ Three-layer architecture connected through narrow interfaces:
 |---|---|
 | `app/(chat)/agent/code/page.tsx` | Route shell for the coding agent view. |
 | `components/agent-code/agent-code-chat.tsx` | Main chat component. |
+| `components/agent-code/project-selector.tsx` | Lists first-level folders under the projects root. |
 | `components/agent-code/execution-indicator.tsx` | Shows when the agent is running tools. |
 | `lib/features/agent-code/hooks/use-coding-agent.ts` | Wraps `@ag-ui/client` HttpAgent and event handling. |
-| `lib/features/agent-code/actions.ts` | Server actions for listing available models and resuming sessions. |
+| `lib/features/agent-code/actions.ts` | Server actions for listing projects, available models, and resuming sessions. |
 
 ### Middleware
 
@@ -88,6 +90,7 @@ Three-layer architecture connected through narrow interfaces:
 | `lib/features/agent-code/pi-to-agui-translator.ts` | Maps Pi SDK events to AG-UI events. |
 | `lib/features/agent-code/session-store.ts` | Persists the mapping `userId -> sessionId` in Postgres. |
 | `lib/features/agent-code/model-mapping.ts` | Maps between app `chatModelId` and Pi `providerId/modelId` pairs. |
+| `lib/features/agent-code/project-resolver.ts` | Lists first-level folders under `CODING_AGENT_PROJECTS_ROOT`. |
 
 ### Worker
 
@@ -100,16 +103,17 @@ Three-layer architecture connected through narrow interfaces:
 ## 5. Data Flow
 
 1. The user opens `/agent/code`.
-2. The frontend calls `GET /api/agent/code/models` and receives a list of `chatModelId` values.
-3. The frontend renders the existing `ModelPicker` with those models. The user selects one and sends a message.
-4. The frontend calls `agent.runAgent({ threadId, runId, messages })`, which opens an SSE stream to `/api/agent/code`.
-5. Next.js looks up the user's Pi session from the database or creates a new one.
-6. Next.js calls the worker JSON-RPC method `initializeSession({ userId, sessionId, modelId })` if needed.
-7. Next.js calls `sendPrompt({ sessionId, prompt })` on the worker.
-8. The worker runs the Pi agent, emitting events (`message_update`, `tool_execution_start`, etc.).
-9. Next.js translates Pi events into AG-UI events and writes them to the SSE stream.
-10. The frontend renders messages and the execution indicator.
-11. When the run finishes, the worker emits `agent_end`; Next.js emits `RUN_FINISHED` and closes the SSE stream cleanly.
+2. The frontend calls `GET /api/agent/code/projects` and receives a list of first-level folder names under `CODING_AGENT_PROJECTS_ROOT`.
+3. The frontend calls `GET /api/agent/code/models` and receives a list of `chatModelId` values.
+4. The frontend renders the project selector and the existing `ModelPicker`. The user selects a project and a model, then sends a message.
+5. The frontend calls `agent.runAgent({ threadId, runId, messages })`, which opens an SSE stream to `/api/agent/code`.
+6. Next.js looks up the user's Pi session for the selected project from the database, or creates a new one.
+7. Next.js calls the worker JSON-RPC method `initializeSession({ userId, sessionId, project, modelId })` if needed.
+8. Next.js calls `sendPrompt({ sessionId, prompt })` on the worker.
+9. The worker runs the Pi agent with `cwd` set to `<CODING_AGENT_PROJECTS_ROOT>/<project>`, emitting events (`message_update`, `tool_execution_start`, etc.).
+10. Next.js translates Pi events into AG-UI events and writes them to the SSE stream.
+11. The frontend renders messages and the execution indicator.
+12. When the run finishes, the worker emits `agent_end`; Next.js emits `RUN_FINISHED` and closes the SSE stream cleanly.
 
 ## 6. Interfaces and Contracts
 
@@ -122,19 +126,27 @@ Three-layer architecture connected through narrow interfaces:
   {
     "threadId": "user-thread-uuid",
     "runId": "run-uuid",
+    "project": "my-project",
     "messages": [
       { "role": "user", "content": "Refactor the chat hook" }
     ],
-    "modelId": "anthropic/claude-opus-4-5"
+    "modelId": "opencodeGo/deepseek-v4-pro"
   }
   ```
 - **Response:** `text/event-stream` with AG-UI events.
+
+### Project list endpoint
+
+- **URL:** `GET /api/agent/code/projects`
+- **Response:** `{ projects: string[] }`
+
+Returns the names of first-level folders under `CODING_AGENT_PROJECTS_ROOT`.
 
 ### JSON-RPC Worker Methods
 
 | Method | Params | Returns |
 |---|---|---|
-| `initializeSession` | `{ userId, sessionId?, modelId? }` | `{ sessionId }` |
+| `initializeSession` | `{ userId, sessionId?, project, modelId? }` | `{ sessionId }` |
 | `sendPrompt` | `{ sessionId, prompt }` | stream of Pi events |
 | `getAvailableModels` | `{}` | `{ models: [{ providerId, modelId, label }] }` |
 | `setModel` | `{ sessionId, modelId }` | `void` |
@@ -185,7 +197,8 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 ## 7. Security and Isolation
 
 - The worker runs as a restricted OS user in production.
-- The worker's `cwd` is strictly `CODING_AGENT_WORKSPACE`.
+- The worker's `cwd` is strictly `<CODING_AGENT_PROJECTS_ROOT>/<project>`.
+- The worker validates that `project` is a first-level folder under `CODING_AGENT_PROJECTS_ROOT` before changing directory.
 - The worker is started as a separate process by the deployment tooling (not spawned by Next.js), with an explicit, minimal environment variable whitelist.
 - Pi credentials (`auth.json`) are readable only by the worker's OS user.
 - The middleware never forwards Pi credentials to the frontend.
@@ -195,17 +208,19 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 ## 8. Persistence
 
 - Pi stores its session tree in `session.jsonl` files.
-- Worker session directory: `CODING_AGENT_SESSIONS_DIR/<userId>/<sessionId>/session.jsonl`.
-- The app stores the mapping `userId -> sessionId` in a new table:
+- Worker session directory: `CODING_AGENT_SESSIONS_DIR/<userId>/<project>/<sessionId>/session.jsonl`.
+- The app stores the mapping `(userId, project) -> sessionId` in a new table:
   ```sql
   CREATE TABLE coding_agent_sessions (
-    user_id UUID NOT NULL PRIMARY KEY REFERENCES users(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    project TEXT NOT NULL,
     session_id TEXT NOT NULL,
     model_id TEXT,
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, project)
   );
   ```
-- On resume, Next.js sends the existing `sessionId` to the worker so Pi can continue the conversation.
+- On resume, Next.js sends the existing `sessionId` and `project` to the worker so Pi can continue the conversation in the correct `cwd`.
 
 ## 9. Models and Credentials
 
@@ -221,7 +236,7 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 ## 10. UI/UX
 
 - Minimal MVP UI:
-  - Header with model selector.
+  - Header with project selector (first-level folders under `CODING_AGENT_PROJECTS_ROOT`) and model selector.
   - Scrollable message list.
   - Input box at the bottom.
   - Execution indicator (spinner + "Running...") shown while the agent is busy.
@@ -243,7 +258,7 @@ This mapping lives in `lib/features/agent-code/model-mapping.ts`. It is used to:
 - **Unit tests:** `pi-to-agui-translator.ts` with representative Pi event streams.
 - **Integration tests:** worker client against a minimal worker that emits synthetic Pi events.
 - **E2E tests (Playwright):** a stub worker is used so tests do not require Pi credentials or execute real commands.
-- **Security tests:** verify that env vars are filtered and the worker cannot escape `CODING_AGENT_WORKSPACE`.
+- **Security tests:** verify that env vars are filtered and the worker cannot escape `CODING_AGENT_PROJECTS_ROOT`.
 
 ## 13. Risks and Mitigations
 
@@ -270,7 +285,7 @@ The middleware reads the socket path from `CODING_AGENT_SOCKET_PATH` (default: `
 
 | Variable | Purpose | Example |
 |---|---|---|
-| `CODING_AGENT_WORKSPACE` | Root directory the agent can read/write | `/home/agent/workspace` |
+| `CODING_AGENT_PROJECTS_ROOT` | Root directory containing project folders | `/home/agent/projects` |
 | `CODING_AGENT_SESSIONS_DIR` | Directory for Pi session files | `/home/agent/sessions` |
 | `CODING_AGENT_SOCKET_PATH` | Unix socket path (dev) | `/tmp/coding-agent.sock` |
 | `CODING_AGENT_PORT` | TCP port (Docker/prod) | `9000` |
@@ -279,7 +294,7 @@ The middleware reads the socket path from `CODING_AGENT_SOCKET_PATH` (default: `
 ### Production deployment
 
 - Run the worker under a dedicated, unprivileged OS user.
-- Set `CODING_AGENT_WORKSPACE` and `CODING_AGENT_SESSIONS_DIR` to directories owned by that user.
+- Set `CODING_AGENT_PROJECTS_ROOT` and `CODING_AGENT_SESSIONS_DIR` to directories owned by that user.
 - Ensure the Next.js process can connect to the worker socket/port but cannot read `auth.json`.
 - Use a process manager (systemd, pm2, etc.) to keep the worker alive.
 
