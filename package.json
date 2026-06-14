@@ -33,10 +33,12 @@
     "test:e2e:jules": "npm run db:jules:start && playwright test",
     "mcp:start": "npm run mcp-server",
     "mcp-server": "dotenv -e .env.development.local -- tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts",
+    "worker:dev": "dotenv -e .env.development.local -- tsx lib/agent-code/worker.ts",
     "test:unit": "vitest run",
     "prepare": "husky"
   },
   "dependencies": {
+    "@ag-ui/client": "^0.0.57",
     "@ai-sdk/anthropic": "3.0.15",
     "@ai-sdk/cohere": "^3.0.18",
     "@ai-sdk/deepinfra": "^2.0.39",
@@ -51,6 +53,7 @@
     "@ai-sdk/provider-utils": "^4.0.8",
     "@ai-sdk/react": "3.0.41",
     "@ai-sdk/xai": "3.0.26",
+    "@earendil-works/pi-coding-agent": "^0.79.3",
     "@faker-js/faker": "^8.4.1",
     "@langchain/core": "^1.1.0",
     "@langchain/textsplitters": "^1.0.1",
