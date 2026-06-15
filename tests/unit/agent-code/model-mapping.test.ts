@@ -6,23 +6,23 @@ import {
 } from "@/lib/features/agent-code/model-mapping";
 
 describe("model-mapping", () => {
-  it("maps chatModelId to Pi opencodeGo modelId", () => {
+  it("maps chatModelId to Pi opencode-go modelId", () => {
     expect(toPiModelId("Deepseek v4 Pro")).toEqual({
-      providerId: "opencodeGo",
+      providerId: "opencode-go",
       modelId: "deepseek-v4-pro",
     });
   });
 
   it("maps Pi model to chatModelId", () => {
-    expect(toChatModelId("opencodeGo", "deepseek-v4-pro")).toBe(
+    expect(toChatModelId("opencode-go", "deepseek-v4-pro")).toBe(
       "Deepseek v4 Pro",
     );
   });
 
   it("filters Pi models to chatModelId intersection", () => {
     const piModels = [
-      { providerId: "opencodeGo", modelId: "deepseek-v4-pro" },
-      { providerId: "opencodeGo", modelId: "unknown-model" },
+      { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
+      { providerId: "opencode-go", modelId: "unknown-model" },
     ];
     const result = filterAvailableChatModels(piModels);
     expect(result).toEqual(["Deepseek v4 Pro"]);

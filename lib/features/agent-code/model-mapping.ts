@@ -1,6 +1,6 @@
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
-const PI_PROVIDER = "opencodeGo";
+const PI_PROVIDER = "opencode-go";
 
 const CHAT_TO_PI: Partial<Record<chatModelId, string>> = {
   "Deepseek v4 Flash": "deepseek-v4-flash",

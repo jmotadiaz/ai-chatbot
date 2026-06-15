@@ -224,6 +224,7 @@ export const codingAgentSessions = pgTable("coding_agent_sessions", {
   sessionId: text("session_id").notNull().unique(),
   label: text("label"),
   modelId: text("model_id"),
+  piSessionId: text("pi_session_id"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -419,5 +420,5 @@ export type InsertChatSummary = Omit<
 export type CodingAgentSession = InferSelectModel<typeof codingAgentSessions>;
 export type NewCodingAgentSession = Omit<
   InferInsertModel<typeof codingAgentSessions>,
-  "id" | "updatedAt"
+  "id" | "updatedAt" | "piSessionId"
 >;

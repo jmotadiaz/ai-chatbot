@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { HttpAgent, EventType, type BaseEvent } from "@ag-ui/client";
 
 export interface UseCodingAgentArgs {
@@ -50,8 +50,48 @@ export function useCodingAgent({
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isRunning, setIsRunning] = useState(false);
 
+  // Load existing messages from the server on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMessages() {
+      try {
+        const res = await fetch(
+          `/api/agent/code/${encodeURIComponent(project)}/sessions/${encodeURIComponent(sessionId)}/messages`,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+
+        const msgs: Array<{ role: string; content: string }> = data.messages ?? [];
+        if (msgs.length > 0) {
+          setMessages(msgs);
+          // Also populate the agent's internal message buffer so subsequent runs
+          // include the full conversation history when calling the API.
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          agent.addMessages(
+            msgs.map((m) => ({ id: crypto.randomUUID(), role: m.role, content: m.content })) as any,
+          );
+          /* eslint-enable @typescript-eslint/no-explicit-any */
+        }
+      } catch {
+        // fetch failure is non-fatal; user can start fresh
+      }
+    }
+
+    loadMessages();
+    return () => {
+      cancelled = true;
+    };
+  }, [project, sessionId, agent]);
+
   const sendMessage = useCallback(
     async (content: string) => {
+      if (!modelId) {
+        console.error("[CodingAgent] Cannot send message: no model selected");
+        return;
+      }
+
       const runId = crypto.randomUUID();
       postTraceEvent(runId, sessionId, "sendMessage", "info", { contentLength: content.length });
 
@@ -65,11 +105,11 @@ export function useCodingAgent({
       await agent.runAgent(
         {
           runId,
-          forwardedProps: {
-            project,
-            sessionId,
-            modelId,
-          },
+          context: [
+            { description: "project", value: project },
+            { description: "sessionId", value: sessionId },
+            { description: "modelId", value: modelId },
+          ],
         },
         {
           onEvent: ({ event }: { event: BaseEvent }) => {

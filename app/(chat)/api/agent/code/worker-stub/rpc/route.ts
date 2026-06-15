@@ -29,7 +29,10 @@ export async function POST(req: NextRequest) {
   if (method === "initializeSession") {
     return NextResponse.json({
       jsonrpc: "2.0",
-      result: { sessionId: params.sessionId ?? "stub-session" },
+      result: {
+        sessionId: params.sessionId ?? "stub-session",
+        piSessionId: "stub-pi-session",
+      },
       id: 1,
     });
   }

@@ -62,8 +62,9 @@ export class WorkerClient {
     sessionId?: string;
     project: string;
     modelId?: string;
+    piSessionId?: string;
     _traceRunId?: string;
-  }): Promise<{ sessionId: string }> {
+  }): Promise<{ sessionId: string; piSessionId: string }> {
     return this.call("initializeSession", params);
   }
 
@@ -110,6 +111,14 @@ export class WorkerClient {
 
   async setModel(params: { sessionId: string; modelId: string }): Promise<void> {
     await this.call("setModel", params);
+  }
+
+  async getSessionMessages(params: {
+    sessionId: string;
+    piSessionId?: string;
+    project?: string;
+  }): Promise<{ messages: Array<{ role: string; content: string }> }> {
+    return this.call("getSessionMessages", params);
   }
 
   async disposeSession(params: { sessionId: string }): Promise<void> {

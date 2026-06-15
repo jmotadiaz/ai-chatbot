@@ -4,6 +4,7 @@ import {
   sendPrompt,
   getAvailableModels,
   disposeSession,
+  getSessionMessages,
 } from "./session-manager";
 
 export async function handleRpc(requestBody: string): Promise<Response> {
@@ -28,6 +29,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             sessionId?: string;
             project: string;
             modelId?: string;
+            piSessionId?: string;
           },
         );
         break;
@@ -45,6 +47,17 @@ export async function handleRpc(requestBody: string): Promise<Response> {
       }
       case "getAvailableModels": {
         result = { models: await getAvailableModels() };
+        break;
+      }
+      case "getSessionMessages": {
+        const { sessionId, piSessionId, project } = params as {
+          sessionId: string;
+          piSessionId?: string;
+          project?: string;
+        };
+        result = {
+          messages: await getSessionMessages(sessionId, piSessionId, project),
+        };
         break;
       }
       case "disposeSession": {

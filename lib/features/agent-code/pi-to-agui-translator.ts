@@ -87,7 +87,7 @@ export function translatePiEvent(
       result = {
         type: EventType.TOOL_CALL_ARGS,
         toolCallId: piEvent.toolCallId ?? "tool-1",
-        args: piEvent.output ?? "",
+        delta: piEvent.output ?? "",
         timestamp: Date.now(),
       } as BaseEvent;
       break;
@@ -96,7 +96,9 @@ export function translatePiEvent(
         type: EventType.TOOL_CALL_RESULT,
         messageId: "msg-1",
         toolCallId: piEvent.toolCallId ?? "tool-1",
-        content: piEvent.result ?? "",
+        content: typeof piEvent.result === "string"
+          ? piEvent.result
+          : JSON.stringify(piEvent.result ?? ""),
         timestamp: Date.now(),
       } as BaseEvent;
       break;

@@ -1,0 +1,3 @@
+{"timestamp":"2026-06-15T09:10:08.555Z","runId":"1b7dacc7-c8fd-4c3c-a1e0-968fd7db6fd4","layer":"client","level":"info","eventName":"action.call","payload":{"action":"getCodingAgentProjects"}}
+{"timestamp":"2026-06-15T09:10:08.556Z","runId":"1b7dacc7-c8fd-4c3c-a1e0-968fd7db6fd4","layer":"client","level":"info","eventName":"action.result","payload":{"count":1}}
+{"timestamp":"2026-06-15T09:10:08.556Z","runId":"1b7dacc7-c8fd-4c3c-a1e0-968fd7db6fd4","layer":"client","level":"info","eventName":"action.duration_end","durationMs":1}

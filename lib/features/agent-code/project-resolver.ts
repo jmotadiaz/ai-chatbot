@@ -2,11 +2,18 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 export async function listProjects(root: string): Promise<string[]> {
-  const entries = await fs.readdir(root, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+  try {
+    const entries = await fs.readdir(root, { withFileTypes: true });
+    return entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw err;
+  }
 }
 
 export function isValidProjectName(name: string): boolean {

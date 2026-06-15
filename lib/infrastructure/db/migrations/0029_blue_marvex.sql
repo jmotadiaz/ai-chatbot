@@ -1,0 +1,1 @@
+ALTER TABLE "coding_agent_sessions" ADD COLUMN "pi_session_id" text;
