@@ -1,7 +1,18 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
-import { HttpAgent, EventType, type BaseEvent } from "@ag-ui/client";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  HttpAgent,
+  EventType,
+  type BaseEvent,
+  type Message,
+} from "@ag-ui/client";
+
+export type AgentStatus =
+  | { kind: "idle" }
+  | { kind: "thinking" }
+  | { kind: "writing" }
+  | { kind: "tool_calling"; toolName: string };
 
 export interface UseCodingAgentArgs {
   project: string;
@@ -10,26 +21,30 @@ export interface UseCodingAgentArgs {
 }
 
 export interface UseCodingAgentResult {
-  messages: Array<{ role: string; content: string }>;
+  messages: Message[];
   isRunning: boolean;
   sendMessage: (content: string) => Promise<void>;
+  status: AgentStatus;
+  error: string | null;
 }
 
-async function postTraceEvent(
-  runId: string,
-  sessionId: string,
-  eventName: string,
-  level: string,
-  payload?: unknown,
-) {
-  try {
-    await fetch("/api/agent/code/trace", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ runId, sessionId, eventName, level, payload }),
-    });
-  } catch {
-    // trace failure is non-fatal
+export function statusFromEvent(event: BaseEvent, current: AgentStatus): AgentStatus {
+  switch (event.type) {
+    case EventType.REASONING_START:
+    case EventType.REASONING_MESSAGE_START:
+      return { kind: "thinking" };
+    case EventType.TEXT_MESSAGE_START:
+    case EventType.TEXT_MESSAGE_CONTENT:
+      return { kind: "writing" };
+    case EventType.TOOL_CALL_START: {
+      const name = (event as { toolCallName?: string }).toolCallName ?? "tool";
+      return { kind: "tool_calling", toolName: name };
+    }
+    case EventType.RUN_FINISHED:
+    case EventType.RUN_ERROR:
+      return { kind: "idle" };
+    default:
+      return current;
   }
 }
 
@@ -39,106 +54,123 @@ export function useCodingAgent({
   modelId,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agent = useMemo(
-    () =>
-      new HttpAgent({
-        url: "/api/agent/code",
-        threadId: sessionId,
-      }),
+    () => new HttpAgent({ url: "/api/agent/code", threadId: sessionId }),
     [sessionId],
   );
 
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [status, setStatus] = useState<AgentStatus>({ kind: "idle" });
+  const [error, setError] = useState<string | null>(null);
 
-  // Load existing messages from the server on mount
+  // Load existing messages on mount and seed the agent's internal buffer.
   useEffect(() => {
     let cancelled = false;
-
-    async function loadMessages() {
+    (async () => {
       try {
         const res = await fetch(
           `/api/agent/code/${encodeURIComponent(project)}/sessions/${encodeURIComponent(sessionId)}/messages`,
         );
         if (!res.ok) return;
-        const data = await res.json();
+        const data = (await res.json()) as {
+          messages?: Array<{ role: string; content: string }>;
+        };
         if (cancelled) return;
-
-        const msgs: Array<{ role: string; content: string }> = data.messages ?? [];
-        if (msgs.length > 0) {
-          setMessages(msgs);
-          // Also populate the agent's internal message buffer so subsequent runs
-          // include the full conversation history when calling the API.
-          /* eslint-disable @typescript-eslint/no-explicit-any */
-          agent.addMessages(
-            msgs.map((m) => ({ id: crypto.randomUUID(), role: m.role, content: m.content })) as any,
-          );
-          /* eslint-enable @typescript-eslint/no-explicit-any */
-        }
+        const loaded: Message[] = (data.messages ?? []).map((m, i) => ({
+          id: `loaded-${i}`,
+          role: m.role as Message["role"],
+          content: m.content,
+        })) as Message[];
+        // Server returns only { role, content }; toolCalls and IDs are not preserved across reloads.
+        // Trust boundary: server's session-store filter (session-manager.ts:293-298).
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        agent.addMessages(
+          loaded.map((m) => ({ id: m.id, role: m.role, content: m.content })) as any,
+        );
+        /* eslint-enable @typescript-eslint/no-explicit-any */
       } catch {
-        // fetch failure is non-fatal; user can start fresh
+        // non-fatal; user can start fresh
       }
-    }
-
-    loadMessages();
+    })();
     return () => {
       cancelled = true;
     };
   }, [project, sessionId, agent]);
 
+  // Subscribe to the agent so we mirror its messages[] into local state.
+  useEffect(() => {
+    const subscription = agent.subscribe({
+      onRunStartedEvent: () => {
+        setIsRunning(true);
+        setError(null);
+      },
+      onEvent: ({ event }) => {
+        setStatus((s) => statusFromEvent(event, s));
+      },
+      onRunFinishedEvent: () => {
+        setIsRunning(false);
+        setStatus({ kind: "idle" });
+      },
+      onRunFinalized: () => {
+        setMessages([...agent.messages]);
+      },
+      onRunFailed: ({ error: err }) => {
+        setIsRunning(false);
+        setStatus({ kind: "idle" });
+        setError(err.message);
+        setMessages([...agent.messages]);
+      },
+      onMessagesChanged: () => {
+        setMessages([...agent.messages]);
+      },
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [agent]);
+
   const sendMessage = useCallback(
     async (content: string) => {
       if (!modelId) {
-        console.error("[CodingAgent] Cannot send message: no model selected");
+        setError("No model selected");
         return;
       }
-
       const runId = crypto.randomUUID();
-      postTraceEvent(runId, sessionId, "sendMessage", "info", { contentLength: content.length });
-
-      setMessages((prev) => [...prev, { role: "user", content }]);
+      setError(null);
       setIsRunning(true);
-
-      let assistantContent = "";
-
+      setStatus({ kind: "thinking" });
       agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
 
-      await agent.runAgent(
-        {
-          runId,
-          context: [
-            { description: "project", value: project },
-            { description: "sessionId", value: sessionId },
-            { description: "modelId", value: modelId },
-          ],
-        },
-        {
-          onEvent: ({ event }: { event: BaseEvent }) => {
-            postTraceEvent(runId, sessionId, "event.received", "debug", {
-              type: event.type,
-            });
-            if (event.type === EventType.TEXT_MESSAGE_CONTENT) {
-              assistantContent += (event as unknown as { delta: string }).delta;
-            }
+      try {
+        await agent.runAgent(
+          {
+            runId,
+            context: [
+              { description: "project", value: project },
+              { description: "sessionId", value: sessionId },
+              { description: "modelId", value: modelId },
+            ],
           },
-          onRunFailed: () => {
-            postTraceEvent(runId, sessionId, "run.failed", "error");
-            setIsRunning(false);
+          {
+            onRunFailed: ({ error: err }) => {
+              setIsRunning(false);
+              setStatus({ kind: "idle" });
+              setError(err.message);
+            },
+            onRunFinalized: () => {
+              setIsRunning(false);
+              setStatus({ kind: "idle" });
+            },
           },
-          onRunFinalized: () => {
-            postTraceEvent(runId, sessionId, "run.finalized", "info", {
-              contentLength: assistantContent.length,
-            });
-            setMessages((prev) => [
-              ...prev,
-              { role: "assistant", content: assistantContent },
-            ]);
-            setIsRunning(false);
-          },
-        },
-      );
+        );
+      } catch (err) {
+        setIsRunning(false);
+        setStatus({ kind: "idle" });
+        setError((err as Error).message);
+      }
     },
     [agent, project, sessionId, modelId],
   );
 
-  return { messages, isRunning, sendMessage };
+  return { messages, isRunning, sendMessage, status, error };
 }
