@@ -10,7 +10,7 @@ import {
   ModelRegistry,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
-import { getTraceLogger } from "./tracing";
+import { getTraceLogger } from "@chatbot/tracing";
 
 interface SessionEntry {
   sessionId: string;
@@ -52,8 +52,8 @@ function makeCreateRuntime(
     const [piProvider, piModelId] = modelId?.split("/") ?? [];
     const model =
       piProvider && piModelId
-        ? services.modelRegistry.find(piProvider, piModelId)
-        : undefined;
+          ? services.modelRegistry.find(piProvider, piModelId)
+          : undefined;
     return {
       ...(await createAgentSessionFromServices({
         services,
@@ -139,8 +139,8 @@ export async function getOrCreateSession(options: {
         const [piProvider, piModelId] = options.modelId.split("/");
         const model =
           piProvider && piModelId
-            ? existing.runtime.services.modelRegistry.find(piProvider, piModelId)
-            : undefined;
+              ? existing.runtime.services.modelRegistry.find(piProvider, piModelId)
+              : undefined;
         if (model) {
           await existing.runtime.session.setModel(model);
           log.info("session.model_changed", {

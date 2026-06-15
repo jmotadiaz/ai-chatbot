@@ -1,5 +1,5 @@
-import { FileTraceSink, isTracingEnabled } from "@/lib/features/tracing";
-import type { LogLevel } from "@/lib/features/tracing";
+import { FileTraceSink, isTracingEnabled } from "@chatbot/tracing";
+import type { LogLevel } from "@chatbot/tracing";
 
 export async function POST(req: Request) {
   if (!isTracingEnabled()) {

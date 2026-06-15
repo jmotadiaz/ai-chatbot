@@ -1,4 +1,10 @@
 import { EventType } from "@ag-ui/client";
+import {
+  FileTraceSink,
+  isTracingEnabled,
+  runWithTraceContext,
+  getTraceLogger,
+} from "@chatbot/tracing";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/agent-code/worker-client";
 import { translatePiEvent } from "@/lib/features/agent-code/pi-to-agui-translator";
@@ -9,12 +15,6 @@ import {
 } from "@/lib/features/agent-code/session-store";
 import { toPiModelId } from "@/lib/features/agent-code/model-mapping";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import {
-  FileTraceSink,
-  isTracingEnabled,
-  runWithTraceContext,
-  getTraceLogger,
-} from "@/lib/features/tracing";
 
 export const maxDuration = 240;
 

@@ -1,4 +1,4 @@
-import { getTraceLogger } from "./tracing";
+import { getTraceLogger } from "@chatbot/tracing";
 import {
   getOrCreateSession,
   sendPrompt,

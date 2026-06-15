@@ -1,5 +1,5 @@
 import { EventType, type BaseEvent } from "@ag-ui/client";
-import { getTraceLogger } from "@/lib/features/tracing";
+import { getTraceLogger } from "@chatbot/tracing";
 
 type PiEvent =
   | { type: "agent_start" }

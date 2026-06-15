@@ -1,4 +1,3 @@
-import "server-only";
 import { getTraceContext } from "./context";
 import type { FileTraceSink } from "./sink";
 import type { TraceLayer, LogLevel } from "./types";

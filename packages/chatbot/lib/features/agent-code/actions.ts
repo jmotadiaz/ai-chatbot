@@ -1,5 +1,11 @@
 "use server";
 
+import {
+  FileTraceSink,
+  isTracingEnabled,
+  runWithTraceContext,
+  getTraceLogger,
+} from "@chatbot/tracing";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
@@ -9,12 +15,6 @@ import {
 import { filterAvailableChatModels } from "./model-mapping";
 import { WorkerClient } from "./worker-client";
 import { auth } from "@/lib/features/auth/auth-config";
-import {
-  FileTraceSink,
-  isTracingEnabled,
-  runWithTraceContext,
-  getTraceLogger,
-} from "@/lib/features/tracing";
 
 function assertEnabled() {
   if (process.env.CODING_AGENT_ENABLED !== "true") {

@@ -1,4 +1,4 @@
-import { getTraceLogger } from "@/lib/features/tracing";
+import { getTraceLogger } from "@chatbot/tracing";
 
 export interface WorkerModel {
   providerId: string;

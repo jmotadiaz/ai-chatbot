@@ -1,0 +1,13 @@
+{
+  "name": "coding-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@chatbot/tracing": "workspace:*",
+    "@earendil-works/pi-coding-agent": "^0.79.3"
+  },
+  "scripts": {
+    "dev": "tsx worker.ts"
+  }
+}

@@ -16,9 +16,8 @@ const nextConfig: NextConfig = {
       "use-debounce",
     ],
   },
-  // Ensure Turbopack resolves modules from this project root (avoid picking an incorrect parent workspace root).
   turbopack: {
-    root: path.join(__dirname),
+    root: path.join(__dirname, "../.."),
   },
   images: {
     remotePatterns: [
