@@ -1,8 +1,11 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, type FC } from "react";
+import type { Message } from "@ag-ui/client";
 import { AgentMessage } from "./agent-message";
 import { ChatNavigation } from "@/components/chat/navigation";
+import type { AgentStatus } from "@/lib/features/agent-code/hooks/use-coding-agent";
+import { DotsLoadingIcon } from "@/components/ui/icons";
 
 const SCROLL_NEAR_BOTTOM_THRESHOLD = 100;
 
@@ -13,14 +16,29 @@ function isNearBottom(container: HTMLElement) {
   );
 }
 
-export interface AgentConversationProps {
-  messages: Array<{ role: string; content: string }>;
-  isRunning: boolean;
+function statusLabel(status: AgentStatus): string {
+  switch (status.kind) {
+    case "idle":
+      return "";
+    case "thinking":
+      return "Reasoning...";
+    case "writing":
+      return "Writing response...";
+    case "tool_calling":
+      return `Calling: ${status.toolName}...`;
+  }
 }
 
-export const AgentConversation: React.FC<AgentConversationProps> = ({
+export interface AgentConversationProps {
+  messages: Message[];
+  isRunning: boolean;
+  status: AgentStatus;
+}
+
+export const AgentConversation: FC<AgentConversationProps> = ({
   messages,
   isRunning,
+  status,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledAway = useRef(false);
@@ -62,7 +80,6 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     checkVisibility();
   }, [messages, checkVisibility]);
 
-  // Auto-scroll to bottom on new messages (only if user is near bottom)
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -82,6 +99,8 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     });
   };
 
+  const label = statusLabel(status);
+
   return (
     <div className="w-full relative overflow-y-hidden flex-1">
       <div
@@ -94,17 +113,16 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
           </div>
         )}
         <div className="max-w-5xl mx-auto px-8 pb-15">
-          {messages.map((msg, idx) => (
-            <AgentMessage
-              key={idx}
-              role={msg.role as "user" | "assistant"}
-              content={msg.content}
-            />
+          {messages.map((msg) => (
+            <AgentMessage key={msg.id} message={msg} />
           ))}
-          {isRunning && (
-            <div className="flex items-center gap-2 text-muted-foreground py-4">
-              <div className="animate-spin h-5 w-5 rounded-full border-2 border-primary border-t-transparent" />
-              <span className="text-sm">Running...</span>
+          {isRunning && label && (
+            <div
+              data-testid="agent-status"
+              className="flex items-center gap-2 text-muted-foreground text-sm py-3"
+            >
+              <DotsLoadingIcon />
+              <span>{label}</span>
             </div>
           )}
         </div>
