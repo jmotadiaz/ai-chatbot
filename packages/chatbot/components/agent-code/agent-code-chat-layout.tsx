@@ -42,9 +42,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
         <AgentCodeChat
           project={project}
           sessionId={sessionId}
-          availableModels={availableModels}
           modelId={modelId}
-          setModelId={setModelId}
         />
       </Main>
     </>

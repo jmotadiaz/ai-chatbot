@@ -1,25 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { ExecutionIndicator } from "./execution-indicator";
+import { ArrowUp } from "lucide-react";
+import { AgentConversation } from "./agent-conversation";
+import { Textarea } from "@/components/chat/textarea";
+import { ChatControl } from "@/components/chat/control";
 import { useCodingAgent } from "@/lib/features/agent-code/hooks/use-coding-agent";
-import { ModelPickerSelector } from "@/components/chat/model-picker";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
-  availableModels: string[];
   modelId: string;
-  setModelId: (model: string) => void;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
-  availableModels,
   modelId,
-  setModelId,
 }) => {
   const [input, setInput] = useState("");
   const { messages, isRunning, sendMessage } = useCodingAgent({
@@ -35,48 +32,35 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     setInput("");
   };
 
+  const isLoading = isRunning;
+
   return (
-    <div className="flex flex-col h-full" data-testid="chat-container">
-      <div className="flex items-center justify-between p-4 border-b">
-        <div>
-          <strong>{project}</strong> / {sessionId}
-        </div>
-        <ModelPickerSelector
-          id="coding-agent-model"
-          selectedModel={modelId as chatModelId}
-          setSelectedModel={setModelId as (m: chatModelId) => void}
-          models={availableModels as chatModelId[]}
-        />
-      </div>
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`p-3 rounded-lg ${
-              msg.role === "user"
-                ? "bg-muted ml-auto max-w-[80%]"
-                : "bg-accent max-w-[80%]"
-            }`}
-          >
-            {msg.content}
+    <div
+      data-testid="chat-container"
+      className="flex flex-col relative h-full pt-16"
+    >
+      <AgentConversation messages={messages} isRunning={isRunning} />
+      <form
+        onSubmit={handleSubmit}
+        className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
+      >
+        <div className="relative w-full">
+          <Textarea
+            onChangeInput={setInput}
+            input={input}
+            isLoading={isLoading}
+            placeholder="Ask the coding agent..."
+          />
+          <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            <ChatControl
+              Icon={ArrowUp}
+              type="submit"
+              aria-label="Send message"
+              disabled={!input.trim() || isLoading}
+              isLoading={isLoading}
+            />
           </div>
-        ))}
-        {isRunning && <ExecutionIndicator />}
-      </div>
-      <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-md"
-          placeholder="Ask the agent..."
-        />
-        <button
-          type="submit"
-          disabled={isRunning}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-        >
-          Send
-        </button>
+        </div>
       </form>
     </div>
   );
