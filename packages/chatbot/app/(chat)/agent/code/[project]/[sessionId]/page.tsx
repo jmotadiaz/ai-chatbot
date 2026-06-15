@@ -1,20 +1,28 @@
 import { notFound } from "next/navigation";
 import { AgentCodeChatLayout } from "@/components/agent-code/agent-code-chat-layout";
 import { getCodingAgentModels } from "@/lib/features/agent-code/actions";
+import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth/hoc";
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 
-export default async function CodingAgentChatPage({
+async function CodingAgentChatPage({
   params,
+  user,
 }: {
   params: Promise<{ project: string; sessionId: string }>;
-}) {
+} & Authenticated) {
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
   const { project, sessionId } = await params;
   const models = await getCodingAgentModels();
   return (
-    <AgentCodeChatLayout
-      project={project}
-      sessionId={sessionId}
-      availableModels={models}
-    />
+    <>
+      <Sidebar user={user} />
+      <AgentCodeChatLayout
+        project={project}
+        sessionId={sessionId}
+        availableModels={models}
+      />
+    </>
   );
 }
+
+export default withAuth(CodingAgentChatPage);
