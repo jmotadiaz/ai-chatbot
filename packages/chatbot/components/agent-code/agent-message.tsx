@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, type FC } from "react";
+import * as React from "react";
+import { memo } from "react";
 import { Streamdown } from "streamdown";
 import { ChevronDownIcon } from "lucide-react";
 import type { Message, ToolCall } from "@ag-ui/client";
@@ -10,7 +11,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils/helpers";
 
 export interface AgentMessageProps {
   message: Message;
@@ -21,7 +21,7 @@ function toolCallLabel(tc: ToolCall): string {
   return name;
 }
 
-const ToolCallBadge: FC<{ tc: ToolCall }> = ({ tc }) => (
+const ToolCallBadge: React.FC<{ tc: ToolCall }> = ({ tc }) => (
   <div className="my-2 text-sm text-muted-foreground">
     <span className="font-mono bg-secondary px-2 py-1 rounded">
       {toolCallLabel(tc)}
@@ -29,7 +29,7 @@ const ToolCallBadge: FC<{ tc: ToolCall }> = ({ tc }) => (
   </div>
 );
 
-const ToolResultBlock: FC<{ content: string }> = ({ content }) => (
+const ToolResultBlock: React.FC<{ content: string }> = ({ content }) => (
   <details className="my-2 text-xs">
     <summary className="cursor-pointer text-muted-foreground select-none">
       Tool result
@@ -40,7 +40,7 @@ const ToolResultBlock: FC<{ content: string }> = ({ content }) => (
   </details>
 );
 
-const ReasoningBlock: FC<{ content: string }> = ({ content }) => (
+const ReasoningBlock: React.FC<{ content: string }> = ({ content }) => (
   <Collapsible className="mb-4 not-prose" defaultOpen={false}>
     <CollapsibleTrigger className="flex w-full items-center space-x-2 text-muted-foreground text-sm cursor-pointer user-select-none">
       <span className="font-semibold">Reasoning</span>
@@ -52,7 +52,7 @@ const ReasoningBlock: FC<{ content: string }> = ({ content }) => (
   </Collapsible>
 );
 
-export const AgentMessage: FC<AgentMessageProps> = memo(({ message }) => {
+export const AgentMessage: React.FC<AgentMessageProps> = memo(({ message }) => {
   if (message.role === "user") {
     const text = typeof message.content === "string" ? message.content : "";
     return (
@@ -96,7 +96,7 @@ export const AgentMessage: FC<AgentMessageProps> = memo(({ message }) => {
             <ToolCallBadge key={tc.id} tc={tc} />
           ))}
           {text && (
-            <div className={cn("max-w-full")}>
+            <div className="max-w-full">
               <Response>{text}</Response>
             </div>
           )}

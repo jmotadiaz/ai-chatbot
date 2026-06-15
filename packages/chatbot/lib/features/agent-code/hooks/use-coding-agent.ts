@@ -88,6 +88,7 @@ export function useCodingAgent({
           loaded.map((m) => ({ id: m.id, role: m.role, content: m.content })) as any,
         );
         /* eslint-enable @typescript-eslint/no-explicit-any */
+        setMessages(loaded);
       } catch {
         // non-fatal; user can start fresh
       }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback, type FC } from "react";
+import * as React from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import type { Message } from "@ag-ui/client";
 import { AgentMessage } from "./agent-message";
 import { ChatNavigation } from "@/components/chat/navigation";
@@ -35,7 +36,7 @@ export interface AgentConversationProps {
   status: AgentStatus;
 }
 
-export const AgentConversation: FC<AgentConversationProps> = ({
+export const AgentConversation: React.FC<AgentConversationProps> = ({
   messages,
   isRunning,
   status,
