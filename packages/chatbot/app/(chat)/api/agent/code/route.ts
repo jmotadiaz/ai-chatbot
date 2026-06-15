@@ -7,7 +7,7 @@ import {
 } from "tracing";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/agent-code/worker-client";
-import { translatePiEvent } from "@/lib/features/agent-code/pi-to-agui-translator";
+import { PiToAguiTranslator } from "@/lib/features/agent-code/pi-to-agui-translator";
 import {
   getSession,
   touchSession,
@@ -103,6 +103,7 @@ export const POST = withAuth(async (user, req) => {
           const reader = workerStream.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
+          const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
 
           try {
             while (true) {
@@ -117,12 +118,11 @@ export const POST = withAuth(async (user, req) => {
                 if (!line.trim()) continue;
                 try {
                   const piEvent = JSON.parse(line);
-                  const aguiEvent = translatePiEvent(piEvent, {
-                    threadId: sessionId,
-                    runId,
-                  });
-                  log.debug("stream.event", { piType: piEvent.type, aguiType: aguiEvent.type });
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`));
+                  const aguiEvents = translator.translate(piEvent);
+                  for (const aguiEvent of aguiEvents) {
+                    log.debug("stream.event", { piType: piEvent.type, aguiType: aguiEvent.type });
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`));
+                  }
                 } catch {
                   log.warn("stream.malformed", { line: line.slice(0, 500) });
                 }
