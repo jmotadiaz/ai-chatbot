@@ -291,21 +291,21 @@ When analyzing coding agent issues, use the trace inspector to examine the full 
 
 ```bash
 # List recent trace files
-npx tsx lib/features/tracing/inspector.ts list
+npx tsx packages/tracing/src/inspector.ts list
 
 # Show full trace for a runId (all layers, chronological)
-npx tsx lib/features/tracing/inspector.ts show <runId>
+npx tsx packages/tracing/src/inspector.ts show <runId>
 
 # Show only errors/warnings for a run
-npx tsx lib/features/tracing/inspector.ts errors <runId>
+npx tsx packages/tracing/src/inspector.ts errors <runId>
 
 # Show layer-specific events
-npx tsx lib/features/tracing/inspector.ts layer worker <runId>
-npx tsx lib/features/tracing/inspector.ts layer bridge <runId>
-npx tsx lib/features/tracing/inspector.ts layer client <runId>
+npx tsx packages/tracing/src/inspector.ts layer worker <runId>
+npx tsx packages/tracing/src/inspector.ts layer bridge <runId>
+npx tsx packages/tracing/src/inspector.ts layer client <runId>
 
 # Show aggregate stats
-npx tsx lib/features/tracing/inspector.ts stats <runId>
+npx tsx packages/tracing/src/inspector.ts stats <runId>
 ```
 
 ### Trace Event Schema
@@ -325,11 +325,11 @@ interface TraceRecord {
 
 ### Analysis Workflow for Coding Agent
 
-1. **List traces**: `npx tsx lib/features/tracing/inspector.ts list` — find the relevant runId
-2. **Check errors first**: `npx tsx lib/features/tracing/inspector.ts errors <runId>` — any failures?
-3. **Review bridge layer**: `npx tsx lib/features/tracing/inspector.ts layer bridge <runId>` — was the request received? DB lookup ok? Model mapping ok? Any malformed NDJSON lines?
-4. **Review worker layer**: `npx tsx lib/features/tracing/inspector.ts layer worker <runId>` — did the session create? Did Pi SDK emit events? Were there prompt errors?
-5. **Review client layer**: `npx tsx lib/features/tracing/inspector.ts layer client <runId>` — did the action call succeed? Did the run finalize?
+1. **List traces**: `npx tsx packages/tracing/src/inspector.ts list` — find the relevant runId
+2. **Check errors first**: `npx tsx packages/tracing/src/inspector.ts errors <runId>` — any failures?
+3. **Review bridge layer**: `npx tsx packages/tracing/src/inspector.ts layer bridge <runId>` — was the request received? DB lookup ok? Model mapping ok? Any malformed NDJSON lines?
+4. **Review worker layer**: `npx tsx packages/tracing/src/inspector.ts layer worker <runId>` — did the session create? Did Pi SDK emit events? Were there prompt errors?
+5. **Review client layer**: `npx tsx packages/tracing/src/inspector.ts layer client <runId>` — did the action call succeed? Did the run finalize?
 
 ### Common Coding Agent Failures
 

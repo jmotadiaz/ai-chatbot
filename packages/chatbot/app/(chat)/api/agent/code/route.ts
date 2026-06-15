@@ -4,7 +4,7 @@ import {
   isTracingEnabled,
   runWithTraceContext,
   getTraceLogger,
-} from "@chatbot/tracing";
+} from "tracing";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/agent-code/worker-client";
 import { translatePiEvent } from "@/lib/features/agent-code/pi-to-agui-translator";

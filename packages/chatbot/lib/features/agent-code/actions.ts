@@ -5,7 +5,7 @@ import {
   isTracingEnabled,
   runWithTraceContext,
   getTraceLogger,
-} from "@chatbot/tracing";
+} from "tracing";
 import { listProjects } from "./project-resolver";
 import {
   createSession,

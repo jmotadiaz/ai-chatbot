@@ -1,3 +1,0 @@
-{"timestamp":"2026-06-15T09:14:39.731Z","runId":"e4771528-8de4-430d-a79f-7789921a6394","layer":"client","level":"info","eventName":"action.call","payload":{"action":"getCodingAgentSessions"}}
-{"timestamp":"2026-06-15T09:14:39.762Z","runId":"e4771528-8de4-430d-a79f-7789921a6394","layer":"client","level":"info","eventName":"action.result","payload":{"count":9}}
-{"timestamp":"2026-06-15T09:14:39.762Z","runId":"e4771528-8de4-430d-a79f-7789921a6394","layer":"client","level":"info","eventName":"action.duration_end","durationMs":31}

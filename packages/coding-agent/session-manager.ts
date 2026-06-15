@@ -10,7 +10,7 @@ import {
   ModelRegistry,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
-import { getTraceLogger } from "@chatbot/tracing";
+import { getTraceLogger } from "tracing";
 
 interface SessionEntry {
   sessionId: string;

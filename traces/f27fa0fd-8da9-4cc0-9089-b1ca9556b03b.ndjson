@@ -1,4 +1,0 @@
-{"timestamp":"2026-06-15T08:17:10.927Z","runId":"f27fa0fd-8da9-4cc0-9089-b1ca9556b03b","layer":"client","level":"info","eventName":"action.call","payload":{"action":"getCodingAgentModels"}}
-{"timestamp":"2026-06-15T08:17:10.941Z","runId":"f27fa0fd-8da9-4cc0-9089-b1ca9556b03b","layer":"bridge","level":"info","eventName":"rpc.call_end","durationMs":14,"payload":{"method":"getAvailableModels","params":{}}}
-{"timestamp":"2026-06-15T08:17:10.941Z","runId":"f27fa0fd-8da9-4cc0-9089-b1ca9556b03b","layer":"client","level":"info","eventName":"action.result","payload":{"count":6}}
-{"timestamp":"2026-06-15T08:17:10.941Z","runId":"f27fa0fd-8da9-4cc0-9089-b1ca9556b03b","layer":"client","level":"info","eventName":"action.duration_end","durationMs":14}

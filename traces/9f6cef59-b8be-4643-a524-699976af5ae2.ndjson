@@ -1,4 +1,0 @@
-{"timestamp":"2026-06-15T09:14:41.056Z","runId":"9f6cef59-b8be-4643-a524-699976af5ae2","layer":"worker","level":"info","eventName":"rpc.request","payload":{"method":"getSessionMessages","params":{"sessionId":"56d444b2-b2c9-477c-838a-9bc2e8d6afb6","project":"sitemap-to-llm"}}}
-{"timestamp":"2026-06-15T09:14:41.056Z","runId":"9f6cef59-b8be-4643-a524-699976af5ae2","layer":"worker","level":"info","eventName":"session.messages_not_found","payload":{"sessionId":"56d444b2-b2c9-477c-838a-9bc2e8d6afb6"}}
-{"timestamp":"2026-06-15T09:14:41.056Z","runId":"9f6cef59-b8be-4643-a524-699976af5ae2","layer":"worker","level":"info","eventName":"rpc.duration_end","durationMs":0,"payload":{"method":"getSessionMessages"}}
-{"timestamp":"2026-06-15T09:14:41.056Z","runId":"9f6cef59-b8be-4643-a524-699976af5ae2","layer":"worker","level":"info","eventName":"rpc.response","payload":{"method":"getSessionMessages","result":{"messages":[]}}}

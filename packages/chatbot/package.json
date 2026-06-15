@@ -55,7 +55,7 @@
     "@ai-sdk/provider-utils": "^4.0.8",
     "@ai-sdk/react": "3.0.41",
     "@ai-sdk/xai": "3.0.26",
-    "@chatbot/tracing": "workspace:*",
+    "tracing": "workspace:*",
     "@faker-js/faker": "^8.4.1",
     "@langchain/core": "^1.1.0",
     "@langchain/textsplitters": "^1.0.1",

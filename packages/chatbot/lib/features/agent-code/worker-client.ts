@@ -1,4 +1,4 @@
-import { getTraceLogger } from "@chatbot/tracing";
+import { getTraceLogger } from "tracing";
 
 export interface WorkerModel {
   providerId: string;
