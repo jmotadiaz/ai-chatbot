@@ -1,9 +1,17 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { cn } from "@/lib/utils/helpers";
 import { AgentMessage } from "./agent-message";
 import { ChatNavigation } from "@/components/chat/navigation";
+
+const SCROLL_NEAR_BOTTOM_THRESHOLD = 100;
+
+function isNearBottom(container: HTMLElement) {
+  return (
+    container.scrollTop + container.clientHeight >=
+    container.scrollHeight - SCROLL_NEAR_BOTTOM_THRESHOLD
+  );
+}
 
 export interface AgentConversationProps {
   messages: Array<{ role: string; content: string }>;
@@ -15,8 +23,8 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
   isRunning,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const topSentinelRef = useRef<HTMLDivElement>(null);
-  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const userScrolledAway = useRef(false);
+  const rafId = useRef(0);
   const [showTop, setShowTop] = useState(false);
   const [showBottom, setShowBottom] = useState(false);
 
@@ -24,29 +32,43 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     const container = scrollContainerRef.current;
     if (!container) return;
     setShowTop(container.scrollTop > 100);
-    setShowBottom(
-      container.scrollTop + container.clientHeight <
-        container.scrollHeight - 100,
-    );
+    setShowBottom(!isNearBottom(container));
   }, []);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    userScrolledAway.current = !isNearBottom(container);
+    if (!rafId.current) {
+      rafId.current = requestAnimationFrame(() => {
+        rafId.current = 0;
+        checkVisibility();
+      });
+    }
+  }, [checkVisibility]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
-    container.addEventListener("scroll", checkVisibility);
+    container.addEventListener("scroll", handleScroll);
     checkVisibility();
-    return () => container.removeEventListener("scroll", checkVisibility);
-  }, [checkVisibility]);
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      cancelAnimationFrame(rafId.current);
+    };
+  }, [handleScroll, checkVisibility]);
 
   useEffect(() => {
     checkVisibility();
   }, [messages, checkVisibility]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages (only if user is near bottom)
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
-    container.scrollTop = container.scrollHeight;
+    if (!userScrolledAway.current) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages.length]);
 
   const scrollToTop = () => {
@@ -71,8 +93,7 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
             Ask the coding agent a question to get started.
           </div>
         )}
-        <div ref={topSentinelRef} className="h-[1px] w-full" />
-        <div className="min-h-[calc(100%-2px)] max-w-5xl mx-auto px-8 pb-15">
+        <div className="max-w-5xl mx-auto px-8 pb-15">
           {messages.map((msg, idx) => (
             <AgentMessage
               key={idx}
@@ -87,7 +108,6 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
             </div>
           )}
         </div>
-        <div ref={bottomSentinelRef} className="h-[1px] w-full" />
       </div>
       <ChatNavigation
         showPrev={false}
