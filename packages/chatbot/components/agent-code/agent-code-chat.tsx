@@ -10,14 +10,17 @@ export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
   availableModels: string[];
+  modelId: string;
+  setModelId: (model: string) => void;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
   availableModels,
+  modelId,
+  setModelId,
 }) => {
-  const [modelId, setModelId] = useState<string>(availableModels[0]);
   const [input, setInput] = useState("");
   const { messages, isRunning, sendMessage } = useCodingAgent({
     project,

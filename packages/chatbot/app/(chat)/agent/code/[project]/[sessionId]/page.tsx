@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AgentCodeChat } from "@/components/agent-code/agent-code-chat";
+import { AgentCodeChatLayout } from "@/components/agent-code/agent-code-chat-layout";
 import { getCodingAgentModels } from "@/lib/features/agent-code/actions";
 
 export default async function CodingAgentChatPage({
@@ -11,12 +11,10 @@ export default async function CodingAgentChatPage({
   const { project, sessionId } = await params;
   const models = await getCodingAgentModels();
   return (
-    <div className="h-full">
-      <AgentCodeChat
-        project={project}
-        sessionId={sessionId}
-        availableModels={models}
-      />
-    </div>
+    <AgentCodeChatLayout
+      project={project}
+      sessionId={sessionId}
+      availableModels={models}
+    />
   );
 }
