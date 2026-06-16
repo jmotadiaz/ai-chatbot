@@ -24,7 +24,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       className="relative"
       height={400}
       value={value}
-      onChange={(value) => onChange(value ?? "")}
+      onChange={(val?: string) => onChange(val ?? "")}
       components={{
         textarea: isLoading ? LoadingComponent : undefined,
         preview: isLoading ? LoadingComponent : undefined,

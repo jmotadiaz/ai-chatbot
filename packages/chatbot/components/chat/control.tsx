@@ -53,7 +53,7 @@ export const ChatControl = ({
           )}
           {...buttonProps}
         >
-          <Icon strokeWidth={2} size={16} />
+          <Icon {...({ strokeWidth: 2, size: 16 } as Record<string, unknown>)} />
         </button>
       )}
     </>

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/helpers";
 import { useSidebarContext } from "@/app/providers";
 
-type LinkProps = ComponentProps<typeof NextLink>;
+type LinkProps = ComponentProps<typeof NextLink> & { onNavigate?: (e: any) => void };
 
 const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
   const { setShowSidebar } = useSidebarContext();

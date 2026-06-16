@@ -277,7 +277,7 @@ export async function getSessionMessages(
   sessionId: string,
   piSessionId?: string,
   project?: string,
-): Promise<Array<{ role: string; content: string }>> {
+): Promise<Array<any>> {
   const log = getTraceLogger("worker");
   let entry = sessions.get(sessionId);
 
@@ -295,12 +295,75 @@ export async function getSessionMessages(
     return [];
   }
 
-  return entry.runtime.session.messages
-    .filter((msg) => msg.role === "user" || msg.role === "assistant")
-    .map((msg) => ({
-      role: msg.role,
-      content: extractMessageText(msg.content),
-    }));
+  const result: Array<any> = [];
+  entry.runtime.session.messages.forEach((msg, index) => {
+    const id = `loaded-${index}`;
+    if (msg.role === "user") {
+      result.push({
+        id,
+        role: "user",
+        content: typeof msg.content === "string" ? msg.content : extractMessageText(msg.content),
+      });
+    } else if (msg.role === "assistant") {
+      // Extract thinking parts as separate "reasoning" messages if any exist
+      if (Array.isArray(msg.content)) {
+        const thinking = msg.content
+          .filter((c: any) => c.type === "thinking")
+          .map((c: any) => c.thinking)
+          .join("\n");
+        if (thinking) {
+          result.push({
+            id: `${id}-reason`,
+            role: "reasoning",
+            content: thinking,
+          });
+        }
+      }
+
+      // Map tool calls
+      const toolCalls = Array.isArray(msg.content)
+        ? msg.content
+            .filter((c: any) => c.type === "toolCall")
+            .map((tc: any) => ({
+              id: tc.id,
+              type: "function",
+              function: {
+                name: tc.name,
+                arguments: typeof tc.arguments === "string" ? tc.arguments : JSON.stringify(tc.arguments),
+              },
+            }))
+        : undefined;
+
+      // Text content
+      const text = Array.isArray(msg.content)
+        ? msg.content
+            .filter((c: any) => c.type === "text")
+            .map((c: any) => c.text)
+            .join("\n")
+        : (typeof msg.content === "string" ? msg.content : "");
+
+      result.push({
+        id,
+        role: "assistant",
+        content: text,
+        ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
+      });
+    } else if (msg.role === "toolResult") {
+      result.push({
+        id,
+        role: "tool",
+        toolCallId: msg.toolCallId,
+        content: Array.isArray(msg.content)
+          ? msg.content
+              .filter((c: any) => c.type === "text")
+              .map((c: any) => c.text)
+              .join("\n")
+          : (typeof msg.content === "string" ? msg.content : ""),
+      });
+    }
+  });
+
+  return result;
 }
 
 export async function getAvailableModels(): Promise<

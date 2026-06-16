@@ -16,11 +16,12 @@ interface State {
   showDetails: boolean;
 }
 
-async function sendErrorTrace(sessionId: string | undefined, eventName: string, error: any) {
+async function sendErrorTrace(sessionId: string | undefined, eventName: string, error: unknown) {
   try {
+    const errObj = error as Record<string, unknown> | null | undefined;
     const payload = {
-      message: error?.message || String(error),
-      stack: error?.stack || null,
+      message: typeof errObj?.message === "string" ? errObj.message : String(error ?? ""),
+      stack: typeof errObj?.stack === "string" ? errObj.stack : null,
       timestamp: new Date().toISOString(),
     };
 

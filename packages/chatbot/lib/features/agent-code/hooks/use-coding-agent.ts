@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useCallback, useSyncExternalStore } from "react";
 import {
   HttpAgent,
   EventType,
@@ -18,6 +18,7 @@ export interface UseCodingAgentArgs {
   project: string;
   sessionId: string;
   modelId: string;
+  initialMessages: Message[];
 }
 
 export interface UseCodingAgentResult {
@@ -61,94 +62,94 @@ export function useCodingAgent({
   project,
   sessionId,
   modelId,
+  initialMessages,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agent = useMemo(
-    () => new HttpAgent({ url: "/api/agent/code", threadId: sessionId }),
-    [sessionId],
+    () => new HttpAgent({ url: "/api/agent/code", threadId: sessionId, initialMessages }),
+    [sessionId, initialMessages],
   );
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const [status, setStatus] = useState<AgentStatus>({ kind: "idle" });
-  const [error, setError] = useState<string | null>(null);
-
-  // Load existing messages on mount and seed the agent's internal buffer.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/agent/code/${encodeURIComponent(project)}/sessions/${encodeURIComponent(sessionId)}/messages`,
-        );
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          messages?: Array<{ role: string; content: string }>;
-        };
-        if (cancelled) return;
-        const loaded: Message[] = (data.messages ?? []).map((m, i) => ({
-          id: `loaded-${i}`,
-          role: m.role as Message["role"],
-          content: m.content,
-        })) as Message[];
-        // Server returns only { role, content }; toolCalls and IDs are not preserved across reloads.
-        // Trust boundary: server's session-store filter (session-manager.ts:293-298).
-        /* eslint-disable @typescript-eslint/no-explicit-any */
-        agent.addMessages(
-          loaded.map((m) => ({ id: m.id, role: m.role, content: m.content })) as any,
-        );
-        /* eslint-enable @typescript-eslint/no-explicit-any */
-        setMessages(loaded);
-      } catch {
-        // non-fatal; user can start fresh
-      }
-    })();
-    return () => {
-      cancelled = true;
+  // Create a stable store wrapper for useSyncExternalStore.
+  const store = useMemo(() => {
+    let snapshot = {
+      messages: agent.messages,
+      isRunning: agent.isRunning,
+      status: { kind: "idle" } as AgentStatus,
+      error: null as string | null,
     };
-  }, [project, sessionId, agent]);
 
-  // Subscribe to the agent so we mirror its messages[] into local state.
-  useEffect(() => {
-    const subscription = agent.subscribe({
-      onRunStartedEvent: () => {
-        setIsRunning(true);
-        setError(null);
+    const listeners = new Set<() => void>();
+
+    const emit = () => {
+      listeners.forEach((l) => l());
+    };
+
+    const updateSnapshot = (updater: (prev: typeof snapshot) => Partial<typeof snapshot>) => {
+      snapshot = { ...snapshot, ...updater(snapshot) };
+      emit();
+    };
+
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    return {
+      subscribe(listener: () => void) {
+        listeners.add(listener);
+        if (listeners.size === 1) {
+          subscription = agent.subscribe({
+            onRunStartedEvent: () => {
+              updateSnapshot(() => ({ isRunning: true, error: null }));
+            },
+            onEvent: ({ event }) => {
+              updateSnapshot((prev) => ({ status: statusFromEvent(event, prev.status) }));
+            },
+            onRunFinishedEvent: () => {
+              updateSnapshot(() => ({ isRunning: false, status: { kind: "idle" } }));
+            },
+            onRunFinalized: () => {
+              updateSnapshot(() => ({ messages: [...agent.messages] }));
+            },
+            onRunFailed: ({ error: err }) => {
+              updateSnapshot(() => ({
+                isRunning: false,
+                status: { kind: "idle" },
+                error: err.message,
+                messages: [...agent.messages],
+              }));
+            },
+            onMessagesChanged: () => {
+              updateSnapshot(() => ({ messages: [...agent.messages] }));
+            },
+          });
+        }
+        return () => {
+          listeners.delete(listener);
+          if (listeners.size === 0 && subscription) {
+            subscription.unsubscribe();
+            subscription = null;
+          }
+        };
       },
-      onEvent: ({ event }) => {
-        setStatus((s) => statusFromEvent(event, s));
+      getSnapshot() {
+        return snapshot;
       },
-      onRunFinishedEvent: () => {
-        setIsRunning(false);
-        setStatus({ kind: "idle" });
-      },
-      onRunFinalized: () => {
-        setMessages([...agent.messages]);
-      },
-      onRunFailed: ({ error: err }) => {
-        setIsRunning(false);
-        setStatus({ kind: "idle" });
-        setError(err.message);
-        setMessages([...agent.messages]);
-      },
-      onMessagesChanged: () => {
-        setMessages([...agent.messages]);
-      },
-    });
-    return () => {
-      subscription.unsubscribe();
+      update: updateSnapshot,
     };
   }, [agent]);
+
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
 
   const sendMessage = useCallback(
     async (content: string) => {
       if (!modelId) {
-        setError("No model selected");
+        store.update(() => ({ error: "No model selected" }));
         return;
       }
       const runId = crypto.randomUUID();
-      setError(null);
-      setIsRunning(true);
-      setStatus({ kind: "thinking" });
+      store.update(() => ({
+        error: null,
+        isRunning: true,
+        status: { kind: "thinking" },
+      }));
       agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
 
       try {
@@ -163,24 +164,36 @@ export function useCodingAgent({
           },
           {
             onRunFailed: ({ error: err }) => {
-              setIsRunning(false);
-              setStatus({ kind: "idle" });
-              setError(err.message);
+              store.update(() => ({
+                isRunning: false,
+                status: { kind: "idle" },
+                error: err.message,
+              }));
             },
             onRunFinalized: () => {
-              setIsRunning(false);
-              setStatus({ kind: "idle" });
+              store.update(() => ({
+                isRunning: false,
+                status: { kind: "idle" },
+              }));
             },
           },
         );
       } catch (err) {
-        setIsRunning(false);
-        setStatus({ kind: "idle" });
-        setError((err as Error).message);
+        store.update(() => ({
+          isRunning: false,
+          status: { kind: "idle" },
+          error: (err as Error).message,
+        }));
       }
     },
-    [agent, project, sessionId, modelId],
+    [agent, project, sessionId, modelId, store],
   );
 
-  return { messages, isRunning, sendMessage, status, error };
+  return {
+    messages: state.messages,
+    isRunning: state.isRunning,
+    sendMessage,
+    status: state.status,
+    error: state.error,
+  };
 }

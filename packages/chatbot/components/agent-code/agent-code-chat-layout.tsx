@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Message } from "@ag-ui/client";
 import { AgentCodeChat } from "./agent-code-chat";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
@@ -13,12 +14,14 @@ export interface AgentCodeChatLayoutProps {
   project: string;
   sessionId: string;
   availableModels: string[];
+  initialMessages: Message[];
 }
 
 export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   project,
   sessionId,
   availableModels,
+  initialMessages,
 }) => {
   const [modelId, setModelId] = useState<string>(availableModels[0] ?? "");
 
@@ -43,6 +46,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           project={project}
           sessionId={sessionId}
           modelId={modelId}
+          initialMessages={initialMessages}
         />
       </Main>
     </>

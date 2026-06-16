@@ -23,9 +23,9 @@ type AssistantEvent =
       content: string;
       partial?: unknown;
     }
-  | { type: "toolcall_start"; contentIndex: number; toolCall?: { id: string; name: string } }
+  | { type: "toolcall_start"; contentIndex: number; toolCall?: { id: string; name: string }; partial?: unknown }
   | { type: "toolcall_delta"; contentIndex: number; delta: string }
-  | { type: "toolcall_end"; contentIndex: number; toolCall?: { id: string; name: string } }
+  | { type: "toolcall_end"; contentIndex: number; toolCall?: { id: string; name: string }; partial?: unknown }
   | { type: "done"; message?: unknown }
   | { type: "error"; error?: unknown };
 
@@ -308,12 +308,17 @@ export class PiToAguiTranslator {
           case "thinking_end":
             break;
           case "toolcall_start": {
-            const toolCallId = ame.toolCall?.id ?? this.id("tc");
+            /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+            const eventAny = ame as any;
+            const partial = eventAny.partial;
+            const toolCall = partial?.content?.[ame.contentIndex];
+            const toolCallId = toolCall?.id ?? eventAny.toolCall?.id ?? this.id("tc");
+            const toolCallName = toolCall?.name ?? eventAny.toolCall?.name ?? "unknown";
             this.openToolCallIds.add(toolCallId);
             out.push({
               type: EventType.TOOL_CALL_START,
               toolCallId,
-              toolCallName: ame.toolCall?.name ?? "unknown",
+              toolCallName,
               parentMessageId: this.currentMessageId ?? undefined,
               timestamp: this.now(),
             } as BaseEvent);

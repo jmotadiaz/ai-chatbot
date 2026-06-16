@@ -9,7 +9,9 @@ import React, {
   useEffect,
 } from "react";
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider as NextThemeProvider } from "next-themes";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ThemeProvider = NextThemeProvider as any;
 import { usePathname } from "next/navigation";
 import { ThemeColorManager } from "@/components/theme-color-manager";
 

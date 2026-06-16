@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowUp } from "lucide-react";
+import type { Message } from "@ag-ui/client";
 import { AgentConversation } from "./agent-conversation";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
@@ -11,18 +12,21 @@ export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
   modelId: string;
+  initialMessages: Message[];
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
   modelId,
+  initialMessages,
 }) => {
   const [input, setInput] = useState("");
   const { messages, isRunning, sendMessage, status } = useCodingAgent({
     project,
     sessionId,
     modelId,
+    initialMessages,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
