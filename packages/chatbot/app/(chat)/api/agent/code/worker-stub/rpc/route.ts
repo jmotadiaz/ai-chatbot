@@ -11,12 +11,12 @@ export async function POST(req: NextRequest) {
       result: {
         models: [
           {
-            providerId: "opencodeGo",
+            providerId: "opencode-go",
             modelId: "deepseek-v4-pro",
             label: "Deepseek v4 Pro",
           },
           {
-            providerId: "opencodeGo",
+            providerId: "opencode-go",
             modelId: "kimi-k2.6",
             label: "Kimi K2.6",
           },

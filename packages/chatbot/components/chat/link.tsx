@@ -6,14 +6,14 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/helpers";
 import { useSidebarContext } from "@/app/providers";
 
-type LinkProps = ComponentProps<typeof NextLink> & { onNavigate?: (e: any) => void };
+type LinkProps = ComponentProps<typeof NextLink> & { onNavigate?: (e: React.MouseEvent<HTMLAnchorElement>) => void };
 
 const ChatLink: React.FC<LinkProps> = ({ onNavigate, className, ...props }) => {
   const { setShowSidebar } = useSidebarContext();
   const pathname = usePathname();
   const toPath =
     typeof props.href === "string" ? props.href : props.href?.pathname;
-  const handleNavigate: LinkProps["onNavigate"] = (e) => {
+  const handleNavigate: LinkProps["onNavigate"] = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (toPath === pathname) {
       setShowSidebar(false);
     }

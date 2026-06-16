@@ -10,8 +10,12 @@ import React, {
 } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider as NextThemeProvider } from "next-themes";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ThemeProvider = NextThemeProvider as any;
+const ThemeProvider = NextThemeProvider as React.ComponentType<{
+  attribute?: string;
+  enableSystem?: boolean;
+  defaultTheme?: string;
+  children?: React.ReactNode;
+}>;
 import { usePathname } from "next/navigation";
 import { ThemeColorManager } from "@/components/theme-color-manager";
 

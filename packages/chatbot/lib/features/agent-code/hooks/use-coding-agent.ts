@@ -66,7 +66,7 @@ export function useCodingAgent({
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agent = useMemo(
     () => new HttpAgent({ url: "/api/agent/code", threadId: sessionId, initialMessages }),
-    [sessionId, initialMessages],
+    [sessionId],
   );
 
   // Create a stable store wrapper for useSyncExternalStore.

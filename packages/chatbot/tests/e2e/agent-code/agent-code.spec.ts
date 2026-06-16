@@ -11,9 +11,16 @@ test.describe("Coding Agent", () => {
     await page.click("text=+ New session");
     await page.waitForURL(/\/agent\/code\/ai-chatbot\/.+/, { timeout: 10000 });
     await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
+    await page.waitForTimeout(1500);
 
-    await page.fill("input[placeholder='Ask the coding agent...']", "Hello agent");
-    await page.click("button:text('Send')");
+    const chatInput = page.locator("[data-testid='chat-input']");
+    await chatInput.click();
+    await chatInput.fill("Hello agent");
+
+    const sendButton = page.locator("button[aria-label='Send message']");
+    await expect(sendButton).not.toBeDisabled();
+    await sendButton.click();
+
     await expect(page.getByText("Hello from stub")).toBeVisible();
   });
 });
