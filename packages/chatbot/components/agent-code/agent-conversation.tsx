@@ -28,7 +28,7 @@ function statusLabel(status: AgentStatus): string {
     case "tool_calling":
       return `Calling: ${status.toolName}...`;
     case "step_running":
-      return `Running: \`${status.stepName}\``;
+      return `Running: ${status.stepName}`;
   }
 }
 

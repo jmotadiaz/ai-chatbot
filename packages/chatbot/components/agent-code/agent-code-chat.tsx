@@ -22,7 +22,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   initialMessages,
 }) => {
   const [input, setInput] = useState("");
-  const { items, isRunning, sendMessage, status } = useCodingAgent({
+  const { items, isRunning, sendMessage, status, error } = useCodingAgent({
     project,
     sessionId,
     modelId,
@@ -44,6 +44,11 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       className="flex flex-col relative h-full pt-16"
     >
       <AgentConversation items={items} isRunning={isRunning} status={status} />
+      {error && (
+        <div role="alert" className="text-xs text-red-600 px-4 py-1">
+          {error}
+        </div>
+      )}
       <form
         onSubmit={handleSubmit}
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"

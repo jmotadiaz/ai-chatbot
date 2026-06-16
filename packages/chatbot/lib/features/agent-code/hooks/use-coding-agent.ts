@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useSyncExternalStore } from "react";
+import { useMemo, useCallback, useSyncExternalStore, useRef, useEffect } from "react";
 import {
   HttpAgent,
   EventType,
@@ -71,15 +71,38 @@ export function useCodingAgent({
   modelId,
   initialMessages,
 }: UseCodingAgentArgs): UseCodingAgentResult {
-  const agent = useMemo(
-    () => new HttpAgent({ url: "/api/agent/code", threadId: sessionId, initialMessages }),
-    [sessionId, initialMessages],
-  );
+  const agentRef = useRef<HttpAgent | null>(null);
+  if (agentRef.current === null) {
+    agentRef.current = new HttpAgent({
+      url: "/api/agent/code",
+      threadId: sessionId,
+      initialMessages,
+    });
+  }
+  useEffect(() => {
+    agentRef.current = new HttpAgent({
+      url: "/api/agent/code",
+      threadId: sessionId,
+      initialMessages,
+    });
+    return () => {
+      agentRef.current = null;
+    };
+    // initialMessages is intentionally omitted: agent creation is a
+    // once-per-session operation, and re-running on a fresh array reference
+    // would tear down in-flight subscriptions on parent re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+  const agent = agentRef.current;
 
   const store = useMemo(() => {
+    const currentAgent = agentRef.current;
+    if (!currentAgent) {
+      throw new Error("HttpAgent not initialized");
+    }
     let snapshot = {
-      messages: agent.messages,
-      isRunning: agent.isRunning,
+      messages: currentAgent.messages,
+      isRunning: currentAgent.isRunning,
       status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
@@ -102,7 +125,7 @@ export function useCodingAgent({
         subscribe(listener: () => void) {
           listeners.add(listener);
           if (listeners.size === 1) {
-            subscription = agent.subscribe({
+            subscription = currentAgent.subscribe({
               onRunStartedEvent: () => {
                 update(() => ({
                   isRunning: true,
@@ -166,18 +189,18 @@ export function useCodingAgent({
                 update(() => ({ isRunning: false, status: { kind: "idle" } }));
               },
               onRunFinalized: () => {
-                update(() => ({ messages: [...agent.messages] }));
+                update(() => ({ messages: [...currentAgent.messages] }));
               },
               onRunFailed: ({ error: err }) => {
                 update(() => ({
                   isRunning: false,
                   status: { kind: "idle" },
                   error: err.message,
-                  messages: [...agent.messages],
+                  messages: [...currentAgent.messages],
                 }));
               },
               onMessagesChanged: () => {
-                update(() => ({ messages: [...agent.messages] }));
+                update(() => ({ messages: [...currentAgent.messages] }));
               },
             });
           }
@@ -194,7 +217,10 @@ export function useCodingAgent({
         },
         update,
       };
-    }, [agent]);
+      // sessionId is intentional: the store must be recreated when the
+      // session changes so the captured HttpAgent matches the new one.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionId]);
 
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
 
@@ -210,6 +236,11 @@ export function useCodingAgent({
         return;
       }
       const runId = crypto.randomUUID();
+      store.update(() => ({
+        error: null,
+        isRunning: true,
+        status: { kind: "thinking" } as AgentStatus,
+      }));
       agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
       try {
         await agent.runAgent(
