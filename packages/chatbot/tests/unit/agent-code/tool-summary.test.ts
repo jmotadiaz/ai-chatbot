@@ -30,6 +30,10 @@ describe("summarizeToolCall", () => {
     expect(summarizeToolCall("ls", { path: "/" })).toBe("/");
   });
 
+  it("prefers pattern over path for find", () => {
+    expect(summarizeToolCall("find", { pattern: "*.ts", path: "/src" })).toBe("*.ts");
+  });
+
   it("truncates long strings with ellipsis", () => {
     const long = "x".repeat(200);
     expect(summarizeToolCall("bash", { command: long })).toBe(`${"x".repeat(80)}…`);

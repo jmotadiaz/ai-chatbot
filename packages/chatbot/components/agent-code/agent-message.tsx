@@ -68,6 +68,9 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
       );
     }
 
+    // Defensive fallback: orphans are dropped by groupItems, but tool
+    // messages may still arrive via historical load or replay. Render
+    // them inline so nothing is silently lost.
     if (message.role === "tool") {
       const text = typeof message.content === "string" ? message.content : "";
       return (

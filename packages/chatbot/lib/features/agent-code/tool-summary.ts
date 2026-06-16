@@ -1,15 +1,9 @@
+import { safeStringify } from "./json";
+
 const MAX_SUMMARY = 80;
 
 function truncate(s: string, max = MAX_SUMMARY): string {
   return s.length > max ? `${s.slice(0, max)}…` : s;
-}
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
 }
 
 export function summarizeToolCall(name: string, args: unknown): string {

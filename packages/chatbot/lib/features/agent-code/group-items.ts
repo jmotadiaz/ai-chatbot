@@ -1,14 +1,7 @@
 import type { Message } from "@ag-ui/client";
 import { summarizeToolCall } from "./tool-summary";
 import type { AgentItem, ToolCallGroup } from "./types";
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
+import { safeStringify } from "./json";
 
 function tryParse(s: string): unknown | undefined {
   try {
@@ -94,7 +87,7 @@ export function groupItems(
       }
       // Orphan tool message: drop.
       if (typeof console !== "undefined") {
-          
+         
         console.debug("groupItems.orphan_tool", { id });
       }
       continue;
