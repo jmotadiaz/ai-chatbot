@@ -112,7 +112,7 @@ export function useCodingAgent({
                   };
                   if (event.type === EventType.STEP_FINISHED) {
                     const raw = (event as { rawEvent?: { toolCallId?: string; isError?: boolean } }).rawEvent;
-                    if (raw?.toolCallId && raw.isError) {
+                    if (raw?.toolCallId && raw.isError === true) {
                       const m = new Map(prev.toolErrors);
                       m.set(raw.toolCallId, true);
                       next.toolErrors = m;
