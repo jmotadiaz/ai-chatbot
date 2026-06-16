@@ -22,7 +22,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   initialMessages,
 }) => {
   const [input, setInput] = useState("");
-  const { messages, isRunning, sendMessage, status } = useCodingAgent({
+  const { items, isRunning, sendMessage, status } = useCodingAgent({
     project,
     sessionId,
     modelId,
@@ -43,7 +43,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       data-testid="chat-container"
       className="flex flex-col relative h-full pt-16"
     >
-      <AgentConversation messages={messages} isRunning={isRunning} status={status} />
+      <AgentConversation items={items} isRunning={isRunning} status={status} />
       <form
         onSubmit={handleSubmit}
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"

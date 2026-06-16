@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { useRef, useState, useEffect, useCallback } from "react";
-import type { Message } from "@ag-ui/client";
 import { AgentMessage } from "./agent-message";
 import { ChatNavigation } from "@/components/chat/navigation";
 import type { AgentStatus } from "@/lib/features/agent-code/hooks/use-coding-agent";
 import { DotsLoadingIcon } from "@/components/ui/icons";
+import type { AgentItem } from "@/lib/features/agent-code/types";
 
 const SCROLL_NEAR_BOTTOM_THRESHOLD = 100;
 
@@ -28,18 +28,18 @@ function statusLabel(status: AgentStatus): string {
     case "tool_calling":
       return `Calling: ${status.toolName}...`;
     case "step_running":
-      return "";
+      return `Running: \`${status.stepName}\``;
   }
 }
 
 export interface AgentConversationProps {
-  messages: Message[];
+  items: AgentItem[];
   isRunning: boolean;
   status: AgentStatus;
 }
 
 export const AgentConversation: React.FC<AgentConversationProps> = ({
-  messages,
+  items,
   isRunning,
   status,
 }) => {
@@ -81,7 +81,7 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
 
   useEffect(() => {
     checkVisibility();
-  }, [messages, checkVisibility]);
+  }, [items, checkVisibility]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -89,7 +89,7 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     if (!userScrolledAway.current) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [messages.length]);
+  }, [items.length]);
 
   const scrollToTop = () => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -107,15 +107,24 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
   return (
     <div className="w-full relative overflow-y-hidden flex-1">
       <div className="w-full h-full overflow-y-auto" ref={scrollContainerRef}>
-        {messages.length === 0 && !isRunning && (
+        {items.length === 0 && !isRunning && (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Ask the coding agent a question to get started.
           </div>
         )}
         <div className="max-w-5xl mx-auto px-8 pb-15">
-          {messages.map((msg: Message) => (
-            <AgentMessage key={msg.id} message={msg} />
-          ))}
+          {items.map((item) => {
+            if (item.kind === "assistant") {
+              return (
+                <AgentMessage
+                  key={item.message.id}
+                  message={item.message}
+                  toolGroups={item.toolGroups}
+                />
+              );
+            }
+            return <AgentMessage key={item.message.id} message={item.message} />;
+          })}
           {isRunning && label && (
             <div
               data-testid="agent-status"
