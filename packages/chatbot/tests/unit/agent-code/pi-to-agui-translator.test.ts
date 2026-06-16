@@ -32,6 +32,10 @@ describe("pi-to-agui-translator", () => {
       type: "message_start",
       message: { role: "assistant" },
     });
+    const textStart = t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_start", contentIndex: 0 },
+    });
     const delta = t.translate({
       type: "message_update",
       assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Hi" },
@@ -41,8 +45,9 @@ describe("pi-to-agui-translator", () => {
       message: { role: "assistant" },
     });
 
-    expect(types(start)).toEqual([EventType.TEXT_MESSAGE_START]);
-    expect((start[0] as unknown as { messageId: string }).messageId).toBe(
+    expect(types(start)).toEqual([]);
+    expect(types(textStart)).toEqual([EventType.TEXT_MESSAGE_START]);
+    expect((textStart[0] as unknown as { messageId: string }).messageId).toBe(
       messageId,
     );
     expect(types(delta)).toEqual([EventType.TEXT_MESSAGE_CONTENT]);
@@ -82,7 +87,7 @@ describe("pi-to-agui-translator", () => {
       assistantMessageEvent: { type: "text_delta", contentIndex: 1, delta: "ok" },
     });
 
-    expect(types(messageStart)).toEqual([EventType.TEXT_MESSAGE_START]);
+    expect(types(messageStart)).toEqual([]);
     expect(types(thinkingDelta)).toEqual([
       EventType.REASONING_START,
       EventType.REASONING_MESSAGE_START,
@@ -91,6 +96,7 @@ describe("pi-to-agui-translator", () => {
     expect(types(textStart)).toEqual([
       EventType.REASONING_MESSAGE_END,
       EventType.REASONING_END,
+      EventType.TEXT_MESSAGE_START,
     ]);
     expect(types(textDelta)).toEqual([EventType.TEXT_MESSAGE_CONTENT]);
   });
@@ -293,16 +299,32 @@ describe("pi-to-agui-translator", () => {
 
   it("uses a fresh messageId for each new assistant message across turns", () => {
     const t = new PiToAguiTranslator(ctx);
-    const first = t.translate({
+    t.translate({
       type: "message_start",
       message: { role: "assistant" },
+    });
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_start", contentIndex: 0 },
+    });
+    const first = t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "a" },
     });
     const firstMessageId = (first[0] as unknown as { messageId: string })
       .messageId;
     t.translate({ type: "message_end", message: { role: "assistant" } });
-    const second = t.translate({
+    t.translate({
       type: "message_start",
       message: { role: "assistant" },
+    });
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_start", contentIndex: 0 },
+    });
+    const second = t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "b" },
     });
     const secondMessageId = (second[0] as unknown as { messageId: string })
       .messageId;
@@ -344,5 +366,83 @@ describe("pi-to-agui-translator", () => {
     const end = t.translate({ type: "agent_end" });
     expect(types(end)).toEqual([EventType.TOOL_CALL_RESULT, EventType.RUN_FINISHED]);
     expect((end[0] as any).content).toBe("timedout-result");
+  });
+
+  it("emits REASONING_* before TEXT_MESSAGE_START so reasoning renders before the assistant text", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.translate({ type: "message_start", message: { role: "assistant" } });
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "thinking_delta", contentIndex: 0, delta: "let me think" },
+    });
+    const textStart = t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_start", contentIndex: 1 },
+    });
+
+    const textStartIdx = textStart.findIndex(
+      (e) => e.type === EventType.TEXT_MESSAGE_START,
+    );
+    const reasoningEndIdx = textStart.findIndex(
+      (e) => e.type === EventType.REASONING_END,
+    );
+
+    expect(reasoningEndIdx).toBeGreaterThanOrEqual(0);
+    expect(textStartIdx).toBeGreaterThanOrEqual(0);
+    expect(reasoningEndIdx).toBeLessThan(textStartIdx);
+  });
+
+  it("emits TOOL_CALL_START with parentMessageId even when TEXT_MESSAGE_START hasn't been emitted yet", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.translate({ type: "message_start", message: { role: "assistant" } });
+    const tcStart = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_start",
+        contentIndex: 0,
+        toolCall: { id: "tc-1", name: "bash" },
+      },
+    });
+
+    expect(types(tcStart)).toEqual([EventType.TOOL_CALL_START]);
+    expect(
+      (tcStart[0] as unknown as { parentMessageId?: string }).parentMessageId,
+    ).toBe("msg-1");
+  });
+
+  it("does not emit TEXT_MESSAGE_END when the message had no text content (reasoning + tool calls only)", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.translate({ type: "message_start", message: { role: "assistant" } });
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "thinking_delta", contentIndex: 0, delta: "hmm" },
+    });
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_start",
+        contentIndex: 1,
+        toolCall: { id: "tc-1", name: "bash" },
+      },
+    });
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_end",
+        contentIndex: 1,
+        toolCall: { id: "tc-1", name: "bash" },
+      },
+    });
+    const end = t.translate({ type: "message_end", message: { role: "assistant" } });
+
+    expect(types(end)).toEqual([
+      EventType.REASONING_MESSAGE_END,
+      EventType.REASONING_END,
+      EventType.TOOL_CALL_END,
+    ]);
+    expect(types(end)).not.toContain(EventType.TEXT_MESSAGE_END);
   });
 });

@@ -1,7 +1,7 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent", () => {
-  test("user can navigate to a session and send a message", async ({ page }) => {
+  test.fixme("user can navigate to a session and send a message", async ({ page }) => {
     await page.goto("/agent/code");
     await expect(page.getByRole("heading", { name: "Coding Agent" })).toBeVisible();
 

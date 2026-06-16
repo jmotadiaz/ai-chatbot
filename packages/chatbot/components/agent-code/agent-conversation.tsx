@@ -114,7 +114,7 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
           </div>
         )}
         <div className="max-w-5xl mx-auto px-8 pb-15">
-          {messages.map((msg) => (
+          {messages.map((msg: Message) => (
             <AgentMessage key={msg.id} message={msg} />
           ))}
           {isRunning && label && (

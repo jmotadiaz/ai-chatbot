@@ -77,6 +77,7 @@ export interface TranslatorContext {
 export class PiToAguiTranslator {
   private currentMessageId: string | null = null;
   private currentReasoningId: string | null = null;
+  private textStarted = false;
   private openToolCallIds = new Set<string>();
   private emittedToolCallIds = new Set<string>();
   private toolResultBuffer = new Map<string, { content: string; timestamp: number }>();
@@ -170,12 +171,7 @@ export class PiToAguiTranslator {
           break;
         }
         this.currentMessageId = this.id("msg");
-        out.push({
-          type: EventType.TEXT_MESSAGE_START,
-          messageId: this.currentMessageId,
-          role: "assistant",
-          timestamp: this.now(),
-        } as BaseEvent);
+        this.textStarted = false;
         break;
       }
 
@@ -221,12 +217,15 @@ export class PiToAguiTranslator {
             } as BaseEvent);
           }
           this.openToolCallIds.clear();
-          out.push({
-            type: EventType.TEXT_MESSAGE_END,
-            messageId: this.currentMessageId,
-            timestamp: this.now(),
-          } as BaseEvent);
+          if (this.textStarted) {
+            out.push({
+              type: EventType.TEXT_MESSAGE_END,
+              messageId: this.currentMessageId,
+              timestamp: this.now(),
+            } as BaseEvent);
+          }
           this.currentMessageId = null;
+          this.textStarted = false;
         }
         break;
       }
@@ -247,6 +246,15 @@ export class PiToAguiTranslator {
                 timestamp: this.now(),
               } as BaseEvent);
               this.currentReasoningId = null;
+            }
+            if (this.currentMessageId && !this.textStarted) {
+              out.push({
+                type: EventType.TEXT_MESSAGE_START,
+                messageId: this.currentMessageId,
+                role: "assistant",
+                timestamp: this.now(),
+              } as BaseEvent);
+              this.textStarted = true;
             }
             break;
           }
