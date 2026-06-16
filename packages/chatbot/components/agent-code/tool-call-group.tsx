@@ -53,7 +53,7 @@ export interface ToolCallGroupProps {
   group: Group;
 }
 
-export const ToolCallGroup: React.FC<ToolCallGroupProps> = ({ group }) => {
+export const ToolCallGroup = React.memo<ToolCallGroupProps>(({ group }) => {
   const [expanded, setExpanded] = useState(false);
   const Icon = TOOL_ICONS[group.name.toLowerCase()] ?? Wrench;
   const displayName = TOOL_DISPLAY_NAMES[group.name.toLowerCase()] ?? group.name;
@@ -122,6 +122,6 @@ export const ToolCallGroup: React.FC<ToolCallGroupProps> = ({ group }) => {
       )}
     </div>
   );
-};
+});
 
 ToolCallGroup.displayName = "ToolCallGroup";

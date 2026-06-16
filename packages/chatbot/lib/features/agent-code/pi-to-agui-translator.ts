@@ -79,6 +79,7 @@ export class PiToAguiTranslator {
   private currentReasoningId: string | null = null;
   private textStarted = false;
   private openToolCallIds = new Set<string>();
+  private openStepIds = new Set<string>();
   private emittedToolCallIds = new Set<string>();
   private toolResultBuffer = new Map<string, { content: string; timestamp: number }>();
   private counter = 0;
@@ -358,7 +359,10 @@ export class PiToAguiTranslator {
         break;
       }
 
-      case "tool_execution_start":
+      case "tool_execution_start": {
+        if (event.toolCallId) {
+          this.openStepIds.add(event.toolCallId);
+        }
         out.push({
           type: EventType.STEP_STARTED,
           stepName: `tool:${event.toolName}`,
@@ -366,6 +370,7 @@ export class PiToAguiTranslator {
           timestamp: this.now(),
         } as BaseEvent);
         break;
+      }
 
       case "tool_execution_update":
         break;
@@ -376,6 +381,9 @@ export class PiToAguiTranslator {
 
         if (this.emittedToolCallIds.has(finalId)) {
           log.debug("translate.tool_result_dedup", { toolCallId: finalId });
+          if (toolCallId) {
+            this.openStepIds.delete(toolCallId);
+          }
           break;
         }
         if (!this.currentMessageId && !toolCallId) {
@@ -402,12 +410,23 @@ export class PiToAguiTranslator {
           content,
           timestamp: this.now(),
         } as BaseEvent);
-        out.push({
-          type: EventType.STEP_FINISHED,
-          stepName: `tool:${event.toolName}`,
-          rawEvent: { toolCallId: finalId, isError: !!event.isError },
-          timestamp: this.now(),
-        } as BaseEvent);
+
+        const hadStart = toolCallId
+          ? this.openStepIds.has(toolCallId)
+          : false;
+        if (toolCallId) {
+          this.openStepIds.delete(toolCallId);
+        }
+        if (hadStart) {
+          out.push({
+            type: EventType.STEP_FINISHED,
+            stepName: `tool:${event.toolName}`,
+            rawEvent: { toolCallId: finalId, isError: !!event.isError },
+            timestamp: this.now(),
+          } as BaseEvent);
+        } else {
+          log.debug("translate.step_finish_skipped", { toolCallId: finalId });
+        }
         break;
       }
 

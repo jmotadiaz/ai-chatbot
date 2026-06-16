@@ -83,6 +83,7 @@ export function useCodingAgent({
       status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
+      toolTimings: new Map<string, { startedAt: number; finishedAt?: number }>(),
     };
 
     const listeners = new Set<() => void>();
@@ -103,19 +104,59 @@ export function useCodingAgent({
           if (listeners.size === 1) {
             subscription = agent.subscribe({
               onRunStartedEvent: () => {
-                update(() => ({ isRunning: true, error: null, toolErrors: new Map() }));
+                update(() => ({
+                  isRunning: true,
+                  error: null,
+                  toolErrors: new Map(),
+                  toolTimings: new Map(),
+                }));
               },
               onEvent: ({ event }) => {
                 update((prev) => {
                   const next: Partial<typeof snapshot> = {
                     status: statusFromEvent(event, prev.status),
                   };
-                  if (event.type === EventType.STEP_FINISHED) {
-                    const raw = (event as { rawEvent?: { toolCallId?: string; isError?: boolean } }).rawEvent;
-                    if (raw?.toolCallId && raw.isError === true) {
-                      const m = new Map(prev.toolErrors);
-                      m.set(raw.toolCallId, true);
-                      next.toolErrors = m;
+                  if (
+                    event.type === EventType.STEP_STARTED ||
+                    event.type === EventType.STEP_FINISHED
+                  ) {
+                    const raw = (event as {
+                      rawEvent?: { toolCallId?: string; isError?: boolean };
+                      timestamp?: number;
+                    }).rawEvent;
+                    const ts = (event as { timestamp?: number }).timestamp;
+                    const id = raw?.toolCallId;
+                    if (id) {
+                      const m = new Map(prev.toolTimings);
+                      const existing = m.get(id);
+                      if (event.type === EventType.STEP_STARTED) {
+                        m.set(id, {
+                          startedAt: ts ?? Date.now(),
+                          finishedAt: existing?.finishedAt,
+                        });
+                      } else {
+                        if (existing) {
+                          m.set(id, {
+                            startedAt: existing.startedAt,
+                            finishedAt: ts ?? Date.now(),
+                          });
+                        } else {
+                          m.set(id, {
+                            startedAt: ts ?? Date.now(),
+                            finishedAt: ts ?? Date.now(),
+                          });
+                        }
+                      }
+                      next.toolTimings = m;
+                    }
+                    if (
+                      event.type === EventType.STEP_FINISHED &&
+                      raw?.toolCallId &&
+                      raw.isError === true
+                    ) {
+                      const errs = new Map(prev.toolErrors);
+                      errs.set(raw.toolCallId, true);
+                      next.toolErrors = errs;
                     }
                   }
                   return next;
@@ -158,8 +199,8 @@ export function useCodingAgent({
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
 
   const items = useMemo(
-    () => groupItems(state.messages, state.toolErrors),
-    [state.messages, state.toolErrors],
+    () => groupItems(state.messages, state.toolErrors, state.toolTimings),
+    [state.messages, state.toolErrors, state.toolTimings],
   );
 
   const sendMessage = useCallback(

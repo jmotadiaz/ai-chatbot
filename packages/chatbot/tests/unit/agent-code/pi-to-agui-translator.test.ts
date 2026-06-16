@@ -134,6 +134,7 @@ describe("pi-to-agui-translator", () => {
       },
     });
     const messageEnd = t.translate({ type: "message_end", message: { role: "assistant" } });
+    t.translate({ type: "tool_execution_start", toolCallId: "tc-1", toolName: "bash" });
     const result = t.translate({
       type: "tool_execution_end",
       toolCallId: "tc-1",
@@ -231,10 +232,7 @@ describe("pi-to-agui-translator", () => {
       result: "from-exec",
       isError: false,
     });
-    expect(types(execEnd)).toEqual([
-      EventType.TOOL_CALL_RESULT,
-      EventType.STEP_FINISHED,
-    ]);
+    expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
     expect((execEnd[0] as any).content).toBe("from-exec");
 
     t.translate({
@@ -269,10 +267,7 @@ describe("pi-to-agui-translator", () => {
       result: "exec-2",
       isError: false,
     });
-    expect(types(execEnd2)).toEqual([
-      EventType.TOOL_CALL_RESULT,
-      EventType.STEP_FINISHED,
-    ]);
+    expect(types(execEnd2)).toEqual([EventType.TOOL_CALL_RESULT]);
     expect((execEnd2[0] as any).toolCallId).toBe("tc-2");
     expect((execEnd2[0] as any).content).toBe("res-2"); // uses richer message content
 
@@ -284,10 +279,7 @@ describe("pi-to-agui-translator", () => {
       result: "exec-1",
       isError: false,
     });
-    expect(types(execEnd1)).toEqual([
-      EventType.TOOL_CALL_RESULT,
-      EventType.STEP_FINISHED,
-    ]);
+    expect(types(execEnd1)).toEqual([EventType.TOOL_CALL_RESULT]);
     expect((execEnd1[0] as any).toolCallId).toBe("tc-1");
     expect((execEnd1[0] as any).content).toBe("res-1"); // uses richer message content
   });
@@ -303,10 +295,7 @@ describe("pi-to-agui-translator", () => {
       isError: false,
     });
 
-    expect(types(execEnd)).toEqual([
-      EventType.TOOL_CALL_RESULT,
-      EventType.STEP_FINISHED,
-    ]);
+    expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
     expect(
       (execEnd[0] as unknown as { toolCallId: string; content: string }).content,
     ).toBe("ok");
@@ -483,6 +472,7 @@ describe("tool_execution step events", () => {
 
   it("emits StepFinished after ToolCallResult on tool_execution_end", () => {
     const t = new PiToAguiTranslator(ctx);
+    t.translate({ type: "tool_execution_start", toolCallId: "t1", toolName: "bash" });
     const events = t.translate({
       type: "tool_execution_end",
       toolCallId: "t1",
@@ -502,6 +492,7 @@ describe("tool_execution step events", () => {
 
   it("marks isError: true on StepFinished for errored tool calls", () => {
     const t = new PiToAguiTranslator(ctx);
+    t.translate({ type: "tool_execution_start", toolCallId: "t1", toolName: "bash" });
     const events = t.translate({
       type: "tool_execution_end",
       toolCallId: "t1",
@@ -514,5 +505,18 @@ describe("tool_execution step events", () => {
       (stepFinished as unknown as { rawEvent: { isError: boolean } }).rawEvent
         .isError,
     ).toBe(true);
+  });
+
+  it("skips StepFinished when tool_execution_start was not seen for this toolCallId", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const events = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "fresh",
+      toolName: "bash",
+      result: "x",
+      isError: false,
+    });
+    expect(types(events)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(events.find((e) => e.type === EventType.STEP_FINISHED)).toBeUndefined();
   });
 });

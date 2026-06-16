@@ -42,10 +42,10 @@ function extractArgs(tc: { function?: { arguments?: string }; args?: unknown }):
 export function groupItems(
   messages: Message[],
   toolErrors?: ReadonlyMap<string, true>,
+  toolTimings?: ReadonlyMap<string, { startedAt: number; finishedAt?: number }>,
 ): AgentItem[] {
   const out: AgentItem[] = [];
   let current: Extract<AgentItem, { kind: "assistant" }> | null = null;
-  const now = () => Date.now();
 
   const flush = () => {
     if (current) {
@@ -59,13 +59,17 @@ export function groupItems(
       flush();
       const toolGroups: ToolCallGroup[] = (m.toolCalls ?? []).map((tc) => {
         const { raw, parsed } = extractArgs(tc as never);
+        const timing = toolTimings?.get(tc.id);
+        const startedAt = timing?.startedAt ?? Date.now();
+        const finishedAt = timing?.finishedAt;
         return {
           id: tc.id,
           name: tc.function?.name ?? tc.type ?? "tool",
           args: raw,
           argsParsed: parsed,
           status: "running",
-          startedAt: now(),
+          startedAt,
+          finishedAt,
           summary: summarizeToolCall(
             (tc.function?.name ?? tc.type ?? "tool") as string,
             parsed,
@@ -83,13 +87,14 @@ export function groupItems(
         if (group) {
           group.result = stringContent(m.content);
           group.status = toolErrors?.has(id) ? "error" : "ok";
-          group.finishedAt = now();
+          const timing = toolTimings?.get(id);
+          group.finishedAt = timing?.finishedAt ?? Date.now();
           continue;
         }
       }
       // Orphan tool message: drop.
       if (typeof console !== "undefined") {
-         
+          
         console.debug("groupItems.orphan_tool", { id });
       }
       continue;
