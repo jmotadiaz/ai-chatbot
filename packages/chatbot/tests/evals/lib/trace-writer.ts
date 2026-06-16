@@ -79,7 +79,7 @@ export function createTraceWriter(evalName: string) {
       writeFileSync(tracePath, JSON.stringify(trace, null, 2))
       console.log(`\nTrace saved: ${tracePath}`)
       if (traceRunId) {
-        console.log(`Model traces (NDJSON): tests/evals/traces/${traceRunId}.ndjson`)
+        console.log(`Model traces (Segmented): tests/evals/traces/chatbot/*_${traceRunId.slice(0, 8)}/`)
       }
       return tracePath
     },

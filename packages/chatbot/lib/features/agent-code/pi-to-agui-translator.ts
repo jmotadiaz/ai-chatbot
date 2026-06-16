@@ -34,8 +34,19 @@ type PiEvent =
   | { type: "agent_end" }
   | { type: "turn_start" }
   | { type: "turn_end" }
-  | { type: "message_start"; message?: { id?: string; role?: string } }
-  | { type: "message_end"; message?: { id?: string; role?: string } }
+  | {
+      type: "message_start";
+      message?: {
+        id?: string;
+        role?: string;
+        toolCallId?: string;
+        content?: unknown;
+      };
+    }
+  | {
+      type: "message_end";
+      message?: { id?: string; role?: string; toolCallId?: string };
+    }
   | {
       type: "message_update";
       assistantMessageEvent: AssistantEvent;
@@ -67,6 +78,7 @@ export class PiToAguiTranslator {
   private currentMessageId: string | null = null;
   private currentReasoningId: string | null = null;
   private openToolCallIds = new Set<string>();
+  private toolResultsEmitted = new Set<string>();
   private counter = 0;
 
   constructor(private readonly context: TranslatorContext) {}
@@ -105,8 +117,24 @@ export class PiToAguiTranslator {
         break;
 
       case "message_start": {
-        if (event.message?.role && event.message.role !== "assistant") {
-          log.debug("translate.skip_non_assistant_message_start", { role: event.message.role });
+        const role = event.message?.role;
+        if (role === "toolResult") {
+          const toolCallId = event.message?.toolCallId ?? this.id("tc");
+          const raw = event.message?.content;
+          const content = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
+          this.toolResultsEmitted.add(toolCallId);
+          out.push({
+            type: EventType.TOOL_CALL_RESULT,
+            messageId: this.id("tool-msg"),
+            toolCallId,
+            role: "tool",
+            content,
+            timestamp: this.now(),
+          } as BaseEvent);
+          break;
+        }
+        if (role && role !== "assistant") {
+          log.debug("translate.skip_non_assistant_message_start", { role });
           break;
         }
         this.currentMessageId = this.id("msg");
@@ -271,10 +299,16 @@ export class PiToAguiTranslator {
         break;
 
       case "tool_execution_end": {
-        if (!this.currentMessageId) {
-          log.warn("translate.tool_result_orphan", { toolCallId: event.toolCallId });
+        const toolCallId = event.toolCallId;
+        if (toolCallId && this.toolResultsEmitted.has(toolCallId)) {
+          this.toolResultsEmitted.delete(toolCallId);
+          log.debug("translate.tool_result_dedup", { toolCallId });
+          break;
         }
-        const toolCallId = event.toolCallId ?? this.id("tc");
+        if (!this.currentMessageId && !toolCallId) {
+          log.debug("translate.tool_result_orphan", { toolCallId });
+        }
+        const finalId = toolCallId ?? this.id("tc");
         const content =
           typeof event.result === "string"
             ? event.result
@@ -282,7 +316,7 @@ export class PiToAguiTranslator {
         out.push({
           type: EventType.TOOL_CALL_RESULT,
           messageId: this.currentMessageId ?? this.id("tool-msg"),
-          toolCallId,
+          toolCallId: finalId,
           role: "tool",
           content,
           timestamp: this.now(),

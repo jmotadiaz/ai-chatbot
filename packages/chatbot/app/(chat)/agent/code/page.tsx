@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ProjectList } from "@/components/agent-code/project-list";
+import { CodingAgentExplorer } from "@/components/agent-code/coding-agent-explorer";
 import { getCodingAgentProjects } from "@/lib/features/agent-code/actions";
 import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
@@ -22,10 +22,10 @@ async function CodingAgentProjectsPage({ user }: Authenticated) {
           <ThemeToggle />
         </Header.Right>
       </Header.Container>
-      <Main>
-        <div className="p-6 pt-16">
-          <h1 className="text-2xl font-bold mb-4">Coding Agent</h1>
-          <ProjectList projects={projects} />
+      <Main className="justify-start">
+        <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-6 px-4 pt-28">
+          <h1 className="text-2xl font-bold mb-6">Coding Agent</h1>
+          <CodingAgentExplorer projects={projects} />
         </div>
       </Main>
     </>

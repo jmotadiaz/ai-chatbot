@@ -62,34 +62,119 @@ function loadEvalTraces(): EvalTrace[] {
   }
 }
 
-function loadModelTraces(runId: string): TraceEvent[] {
-  const ndjsonPath = resolve(tracesDir, `${runId}.ndjson`)
-  if (!existsSync(ndjsonPath)) return []
+interface ResolvedChatbotRun {
+  isLegacy: boolean;
+  dirPath?: string;
+  lifecycle: string;
+  stream: string;
+  errors: string;
+  summary?: string;
+}
+
+function resolveChatbotRunFiles(runId: string): ResolvedChatbotRun | null {
+  const runIdShort = runId.length > 8 ? runId.slice(0, 8) : runId;
+  const chatbotDir = resolve(tracesDir, "chatbot");
+
+  // 1. New segmented format
   try {
-    const content = readFileSync(ndjsonPath, "utf8")
-    return content
-      .split("\n")
-      .filter((line) => line.trim())
-      .map((line) => JSON.parse(line) as TraceEvent)
-  } catch {
-    return []
+    if (existsSync(chatbotDir)) {
+      const entries = readdirSync(chatbotDir, { withFileTypes: true });
+      const dirEntry = entries.find((e) => e.isDirectory() && e.name.endsWith(`_${runIdShort}`));
+      if (dirEntry) {
+        const dirPath = resolve(chatbotDir, dirEntry.name);
+        return {
+          isLegacy: false,
+          dirPath,
+          lifecycle: resolve(dirPath, "lifecycle.ndjson"),
+          stream: resolve(dirPath, "stream.ndjson"),
+          errors: resolve(dirPath, "errors.ndjson"),
+          summary: resolve(dirPath, "summary.json"),
+        };
+      }
+    }
+  } catch {}
+
+  // 2. Legacy format
+  const legacyPath = resolve(tracesDir, `${runId}.ndjson`);
+  if (existsSync(legacyPath)) {
+    return {
+      isLegacy: true,
+      lifecycle: legacyPath,
+      stream: legacyPath,
+      errors: legacyPath,
+    };
   }
+
+  // 3. Legacy format under chatbot
+  const legacyPathCB = resolve(chatbotDir, `${runId}.ndjson`);
+  if (existsSync(legacyPathCB)) {
+    return {
+      isLegacy: true,
+      lifecycle: legacyPathCB,
+      stream: legacyPathCB,
+      errors: legacyPathCB,
+    };
+  }
+
+  return null;
+}
+
+function loadModelTraces(runId: string): TraceEvent[] {
+  const resolved = resolveChatbotRunFiles(runId);
+  if (!resolved) return [];
+
+  const loadFile = (path: string): TraceEvent[] => {
+    if (!existsSync(path)) return [];
+    try {
+      const content = readFileSync(path, "utf8");
+      return content
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => JSON.parse(line) as TraceEvent);
+    } catch {
+      return [];
+    }
+  };
+
+  if (resolved.isLegacy) {
+    return loadFile(resolved.lifecycle);
+  }
+
+  const lifecycleEvents = loadFile(resolved.lifecycle);
+  const streamEvents = loadFile(resolved.stream);
+  const merged = [...lifecycleEvents, ...streamEvents];
+
+  return merged.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 }
 
 function findNdjsonForRun(runId: string): string | null {
-  const p = resolve(tracesDir, `${runId}.ndjson`)
-  return existsSync(p) ? p : null
+  const resolved = resolveChatbotRunFiles(runId);
+  return resolved ? resolved.lifecycle : null;
 }
 
 function listNdjsonFiles(): string[] {
+  const list: string[] = [];
+  const chatbotDir = resolve(tracesDir, "chatbot");
+  
   try {
-    return readdirSync(tracesDir)
-      .filter((f) => f.endsWith(".ndjson"))
-      .sort()
-      .reverse()
-  } catch {
-    return []
-  }
+    if (existsSync(chatbotDir)) {
+      const entries = readdirSync(chatbotDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const runIdShort = entry.name.split("_")[1] || entry.name;
+          list.push(`${entry.name} (runId: ${runIdShort})`);
+        }
+      }
+    }
+  } catch {}
+
+  try {
+    const legacyFiles = readdirSync(tracesDir)
+      .filter((f) => f.endsWith(".ndjson"));
+    list.push(...legacyFiles);
+  } catch {}
+
+  return list.sort().reverse();
 }
 
 function formatTokens(t: unknown): string {
@@ -450,7 +535,11 @@ switch (command) {
       }
       console.log("\nRuns de modelo disponibles:\n")
       ndjsonFiles.slice(0, 10).forEach((f, i) => {
-        const events = loadModelTraces(f.replace(".ndjson", ""))
+        let cleanRunId = f.replace(".ndjson", "");
+        if (f.includes("(runId: ")) {
+          cleanRunId = f.split("(runId: ")[1].replace(")", "");
+        }
+        const events = loadModelTraces(cleanRunId)
         const s = summarizeModelEvents(events)
         console.log(`${i + 1}. ${f}`)
         console.log(`   Steps: ${s.steps}, Tools: ${s.toolCalls.length}, Tokens: ${formatTokens(s.tokens)}`)
@@ -508,7 +597,6 @@ switch (command) {
           if (p.text === "" || p.text === undefined) {
             if (reasoningBuffer) console.log(`[reasoning] ${reasoningBuffer}`)
             reasoningBuffer = ""
-            inReasoning = false
           } else {
             reasoningBuffer += p.text
           }

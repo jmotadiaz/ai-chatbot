@@ -157,6 +157,73 @@ describe("pi-to-agui-translator", () => {
     ).toBe("ok");
   });
 
+  it("emits TOOL_CALL_RESULT when a toolResult message_start arrives (with toolCallId and content)", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    const resultStart = t.translate({
+      type: "message_start",
+      message: {
+        role: "toolResult",
+        toolCallId: "tc-1",
+        content: "file content here",
+      },
+    });
+    const resultEnd = t.translate({
+      type: "message_end",
+      message: { role: "toolResult", toolCallId: "tc-1" },
+    });
+
+    expect(types(resultStart)).toEqual([EventType.TOOL_CALL_RESULT]);
+    const ev = resultStart[0] as unknown as {
+      toolCallId: string;
+      content: string;
+      role: string;
+    };
+    expect(ev.toolCallId).toBe("tc-1");
+    expect(ev.content).toBe("file content here");
+    expect(ev.role).toBe("tool");
+    expect(types(resultEnd)).toEqual([]);
+  });
+
+  it("emits TOOL_CALL_RESULT once when both toolResult message and tool_execution_end arrive", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.translate({
+      type: "message_start",
+      message: { role: "toolResult", toolCallId: "tc-1", content: "from-message" },
+    });
+    t.translate({
+      type: "message_end",
+      message: { role: "toolResult", toolCallId: "tc-1" },
+    });
+    const execEnd = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "tc-1",
+      toolName: "read",
+      result: "from-exec",
+      isError: false,
+    });
+
+    expect(types(execEnd)).toEqual([]);
+  });
+
+  it("emits TOOL_CALL_RESULT from tool_execution_end when no toolResult message arrived (fallback)", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    const execEnd = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "tc-orphan",
+      toolName: "bash",
+      result: "ok",
+      isError: false,
+    });
+
+    expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(
+      (execEnd[0] as unknown as { toolCallId: string; content: string }).content,
+    ).toBe("ok");
+  });
+
   it("uses a fresh messageId for each new assistant message across turns", () => {
     const t = new PiToAguiTranslator(ctx);
     const first = t.translate({
