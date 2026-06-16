@@ -359,6 +359,14 @@ export class PiToAguiTranslator {
       }
 
       case "tool_execution_start":
+        out.push({
+          type: EventType.STEP_STARTED,
+          stepName: `tool:${event.toolName}`,
+          rawEvent: { toolCallId: event.toolCallId },
+          timestamp: this.now(),
+        } as BaseEvent);
+        break;
+
       case "tool_execution_update":
         break;
 
@@ -392,6 +400,12 @@ export class PiToAguiTranslator {
           toolCallId: finalId,
           role: "tool",
           content,
+          timestamp: this.now(),
+        } as BaseEvent);
+        out.push({
+          type: EventType.STEP_FINISHED,
+          stepName: `tool:${event.toolName}`,
+          rawEvent: { toolCallId: finalId, isError: !!event.isError },
           timestamp: this.now(),
         } as BaseEvent);
         break;

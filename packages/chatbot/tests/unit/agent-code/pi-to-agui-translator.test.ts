@@ -158,7 +158,10 @@ describe("pi-to-agui-translator", () => {
       EventType.TOOL_CALL_END,
       EventType.TEXT_MESSAGE_END,
     ]);
-    expect(types(result)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(types(result)).toEqual([
+      EventType.TOOL_CALL_RESULT,
+      EventType.STEP_FINISHED,
+    ]);
     expect(
       (result[0] as unknown as { toolCallId: string; content: string }).content,
     ).toBe("ok");
@@ -228,7 +231,10 @@ describe("pi-to-agui-translator", () => {
       result: "from-exec",
       isError: false,
     });
-    expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(types(execEnd)).toEqual([
+      EventType.TOOL_CALL_RESULT,
+      EventType.STEP_FINISHED,
+    ]);
     expect((execEnd[0] as any).content).toBe("from-exec");
 
     t.translate({
@@ -263,7 +269,10 @@ describe("pi-to-agui-translator", () => {
       result: "exec-2",
       isError: false,
     });
-    expect(types(execEnd2)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(types(execEnd2)).toEqual([
+      EventType.TOOL_CALL_RESULT,
+      EventType.STEP_FINISHED,
+    ]);
     expect((execEnd2[0] as any).toolCallId).toBe("tc-2");
     expect((execEnd2[0] as any).content).toBe("res-2"); // uses richer message content
 
@@ -275,7 +284,10 @@ describe("pi-to-agui-translator", () => {
       result: "exec-1",
       isError: false,
     });
-    expect(types(execEnd1)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(types(execEnd1)).toEqual([
+      EventType.TOOL_CALL_RESULT,
+      EventType.STEP_FINISHED,
+    ]);
     expect((execEnd1[0] as any).toolCallId).toBe("tc-1");
     expect((execEnd1[0] as any).content).toBe("res-1"); // uses richer message content
   });
@@ -291,7 +303,10 @@ describe("pi-to-agui-translator", () => {
       isError: false,
     });
 
-    expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect(types(execEnd)).toEqual([
+      EventType.TOOL_CALL_RESULT,
+      EventType.STEP_FINISHED,
+    ]);
     expect(
       (execEnd[0] as unknown as { toolCallId: string; content: string }).content,
     ).toBe("ok");
@@ -444,5 +459,60 @@ describe("pi-to-agui-translator", () => {
       EventType.TOOL_CALL_END,
     ]);
     expect(types(end)).not.toContain(EventType.TEXT_MESSAGE_END);
+  });
+});
+
+describe("tool_execution step events", () => {
+  it("emits StepStarted on tool_execution_start", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const events = t.translate({
+      type: "tool_execution_start",
+      toolCallId: "t1",
+      toolName: "bash",
+    });
+    const stepStarted = events.find((e) => e.type === EventType.STEP_STARTED);
+    expect(stepStarted).toBeDefined();
+    expect((stepStarted as unknown as { stepName: string }).stepName).toBe(
+      "tool:bash",
+    );
+    expect(
+      (stepStarted as unknown as { rawEvent: { toolCallId: string } }).rawEvent
+        .toolCallId,
+    ).toBe("t1");
+  });
+
+  it("emits StepFinished after ToolCallResult on tool_execution_end", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const events = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "t1",
+      toolName: "bash",
+      result: "ok",
+      isError: false,
+    });
+    const types = events.map((e) => e.type);
+    expect(types).toContain(EventType.TOOL_CALL_RESULT);
+    expect(types[types.length - 1]).toBe(EventType.STEP_FINISHED);
+    const stepFinished = events.find((e) => e.type === EventType.STEP_FINISHED);
+    expect(
+      (stepFinished as unknown as { rawEvent: { isError: boolean } }).rawEvent
+        .isError,
+    ).toBe(false);
+  });
+
+  it("marks isError: true on StepFinished for errored tool calls", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const events = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "t1",
+      toolName: "bash",
+      result: "exit 1",
+      isError: true,
+    });
+    const stepFinished = events.find((e) => e.type === EventType.STEP_FINISHED);
+    expect(
+      (stepFinished as unknown as { rawEvent: { isError: boolean } }).rawEvent
+        .isError,
+    ).toBe(true);
   });
 });
