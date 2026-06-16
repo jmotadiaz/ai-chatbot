@@ -24,7 +24,7 @@
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",
     "type:check": "pnpm --filter chatbot type:check",
-    "test": "concurrently \"npm run test:e2e\" \"npm run test:unit\"",
+    "test": "pnpm test:unit",
     "eval": "pnpm --filter chatbot eval",
     "test:e2e": "pnpm --filter chatbot test:e2e",
     "test:e2e:ui": "pnpm --filter chatbot test:e2e:ui",
