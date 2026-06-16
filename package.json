@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter chatbot dev",
-    "build": "pnpm --filter chatbot build",
+    "dev": "dotenv -e .env.development.local -- pnpm --filter chatbot --filter coding-agent --parallel dev",
+    "build": "dotenv -e .env.development.local -- pnpm --filter chatbot build",
     "build:worker": "tsc --noEmit packages/coding-agent/*.ts",
-    "start": "pnpm --filter chatbot start",
+    "start": "dotenv -e .env.development.local -- pnpm --filter chatbot --filter coding-agent --parallel start",
     "preview": "dotenv -e .env.development.local -- sh -c 'pnpm --filter chatbot db:start && pnpm --filter chatbot build && concurrently \"pnpm --filter chatbot start\" \"pnpm worker:dev\"'",
     "agent:start": "export NEXT_PUBLIC_ENV=test && pnpm --filter chatbot db:test:start && pnpm --filter chatbot db:migrate && pnpm --filter chatbot db:seed && NODE_ENV=test pnpm --filter chatbot dev",
     "jules:start": "export NEXT_PUBLIC_ENV=test && pnpm --filter chatbot db:jules:start && pnpm --filter chatbot db:migrate && pnpm --filter chatbot db:seed && NODE_ENV=test pnpm --filter chatbot dev",
@@ -21,8 +21,8 @@
     "db:jules:start": "pnpm --filter chatbot db:jules:start",
     "db:jules:stop": "pnpm --filter chatbot db:jules:stop",
     "db:logs": "pnpm --filter chatbot db:logs",
-    "lint": "pnpm --filter chatbot lint",
-    "lint:fix": "pnpm --filter chatbot lint:fix",
+    "lint": "pnpm -r run lint",
+    "lint:fix": "pnpm -r run lint:fix",
     "type:check": "pnpm --filter chatbot type:check",
     "test": "concurrently \"npm run test:e2e\" \"npm run test:unit\"",
     "eval": "pnpm --filter chatbot eval",
@@ -37,10 +37,15 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@types/node": "^22.19.7",
     "concurrently": "^9.2.1",
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
-    "typescript": "^5.8.3",
-    "tsx": "^4.19.4"
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@ag-ui/client": "^0.0.57",
+    "chatbot": "^1.2.3"
   }
 }

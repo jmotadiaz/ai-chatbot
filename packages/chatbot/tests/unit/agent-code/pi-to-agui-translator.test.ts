@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, vi } from "vitest";
 import { EventType } from "@ag-ui/client";
 import { PiToAguiTranslator } from "@/lib/features/agent-code/pi-to-agui-translator";
 
@@ -157,7 +158,7 @@ describe("pi-to-agui-translator", () => {
     ).toBe("ok");
   });
 
-  it("emits TOOL_CALL_RESULT when a toolResult message_start arrives (with toolCallId and content)", () => {
+  it("buffers toolResult content on message_start and emits TOOL_CALL_RESULT on message_end", () => {
     const t = new PiToAguiTranslator(ctx);
 
     const resultStart = t.translate({
@@ -168,13 +169,15 @@ describe("pi-to-agui-translator", () => {
         content: "file content here",
       },
     });
+    expect(types(resultStart)).toEqual([]);
+
     const resultEnd = t.translate({
       type: "message_end",
       message: { role: "toolResult", toolCallId: "tc-1" },
     });
 
-    expect(types(resultStart)).toEqual([EventType.TOOL_CALL_RESULT]);
-    const ev = resultStart[0] as unknown as {
+    expect(types(resultEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
+    const ev = resultEnd[0] as unknown as {
       toolCallId: string;
       content: string;
       role: string;
@@ -182,20 +185,22 @@ describe("pi-to-agui-translator", () => {
     expect(ev.toolCallId).toBe("tc-1");
     expect(ev.content).toBe("file content here");
     expect(ev.role).toBe("tool");
-    expect(types(resultEnd)).toEqual([]);
   });
 
-  it("emits TOOL_CALL_RESULT once when both toolResult message and tool_execution_end arrive", () => {
+  it("emits TOOL_CALL_RESULT once when message events arrive before tool_execution_end", () => {
     const t = new PiToAguiTranslator(ctx);
 
     t.translate({
       type: "message_start",
       message: { role: "toolResult", toolCallId: "tc-1", content: "from-message" },
     });
-    t.translate({
+    const resultEnd = t.translate({
       type: "message_end",
       message: { role: "toolResult", toolCallId: "tc-1" },
     });
+    expect(types(resultEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect((resultEnd[0] as any).content).toBe("from-message");
+
     const execEnd = t.translate({
       type: "tool_execution_end",
       toolCallId: "tc-1",
@@ -205,6 +210,68 @@ describe("pi-to-agui-translator", () => {
     });
 
     expect(types(execEnd)).toEqual([]);
+  });
+
+  it("emits TOOL_CALL_RESULT once when tool_execution_end arrives before message events", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    const execEnd = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "tc-1",
+      toolName: "read",
+      result: "from-exec",
+      isError: false,
+    });
+    expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect((execEnd[0] as any).content).toBe("from-exec");
+
+    t.translate({
+      type: "message_start",
+      message: { role: "toolResult", toolCallId: "tc-1", content: "from-message" },
+    });
+    const resultEnd = t.translate({
+      type: "message_end",
+      message: { role: "toolResult", toolCallId: "tc-1" },
+    });
+    expect(types(resultEnd)).toEqual([]);
+  });
+
+  it("supports concurrent tool calls correctly", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    // Start both
+    t.translate({
+      type: "message_start",
+      message: { role: "toolResult", toolCallId: "tc-1", content: "res-1" },
+    });
+    t.translate({
+      type: "message_start",
+      message: { role: "toolResult", toolCallId: "tc-2", content: "res-2" },
+    });
+
+    // End tc-2 first
+    const execEnd2 = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "tc-2",
+      toolName: "read",
+      result: "exec-2",
+      isError: false,
+    });
+    expect(types(execEnd2)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect((execEnd2[0] as any).toolCallId).toBe("tc-2");
+    expect((execEnd2[0] as any).content).toBe("res-2"); // uses richer message content
+
+    // End tc-1 next
+    const execEnd1 = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "tc-1",
+      toolName: "read",
+      result: "exec-1",
+      isError: false,
+    });
+    expect(types(execEnd1)).toEqual([EventType.TOOL_CALL_RESULT]);
+    expect((execEnd1[0] as any).toolCallId).toBe("tc-1");
+    expect((execEnd1[0] as any).content).toBe("res-1"); // uses richer message content
   });
 
   it("emits TOOL_CALL_RESULT from tool_execution_end when no toolResult message arrived (fallback)", () => {
@@ -240,5 +307,42 @@ describe("pi-to-agui-translator", () => {
     const secondMessageId = (second[0] as unknown as { messageId: string })
       .messageId;
     expect(secondMessageId).not.toBe(firstMessageId);
+  });
+
+  it("flushes orphaned tool results after 30-second timeout", () => {
+    vi.useFakeTimers();
+    try {
+      const t = new PiToAguiTranslator(ctx);
+      t.translate({
+        type: "message_start",
+        message: { role: "toolResult", toolCallId: "tc-1", content: "timedout-result" },
+      });
+
+      // No emission immediately
+      const out1 = t.translate({ type: "tool_execution_update", toolCallId: "tc-1" });
+      expect(types(out1)).toEqual([]);
+
+      // Advance time by 31 seconds
+      vi.advanceTimersByTime(31000);
+
+      // Next event triggers the flush
+      const out2 = t.translate({ type: "tool_execution_update", toolCallId: "tc-1" });
+      expect(types(out2)).toEqual([EventType.TOOL_CALL_RESULT]);
+      expect((out2[0] as any).content).toBe("timedout-result");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("flushes all buffered results on agent_end", () => {
+    const t = new PiToAguiTranslator(ctx);
+    t.translate({
+      type: "message_start",
+      message: { role: "toolResult", toolCallId: "tc-1", content: "timedout-result" },
+    });
+
+    const end = t.translate({ type: "agent_end" });
+    expect(types(end)).toEqual([EventType.TOOL_CALL_RESULT, EventType.RUN_FINISHED]);
+    expect((end[0] as any).content).toBe("timedout-result");
   });
 });

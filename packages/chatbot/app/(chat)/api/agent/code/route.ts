@@ -91,7 +91,12 @@ export const POST = withAuth(async (user, req) => {
 
       const prompt = messages[messages.length - 1]?.content ?? "";
       const sendStop = log.startTimer("worker.sendPrompt", { promptLength: prompt.length });
-      const workerStream = await client.sendPrompt({ sessionId, prompt, _traceRunId: runId });
+      const workerStream = await client.sendPrompt({
+        sessionId,
+        prompt,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        _traceRunId: runId,
+      });
       sendStop();
 
       await touchSession({ userId: user.id, sessionId });

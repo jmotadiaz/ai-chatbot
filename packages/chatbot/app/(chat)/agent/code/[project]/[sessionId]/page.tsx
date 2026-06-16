@@ -3,6 +3,7 @@ import { AgentCodeChatLayout } from "@/components/agent-code/agent-code-chat-lay
 import { getCodingAgentModels } from "@/lib/features/agent-code/actions";
 import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { ClientErrorWrapper } from "@/components/agent-code/client-error-wrapper";
 
 async function CodingAgentChatPage({
   params,
@@ -16,11 +17,13 @@ async function CodingAgentChatPage({
   return (
     <>
       <Sidebar user={user} />
-      <AgentCodeChatLayout
-        project={project}
-        sessionId={sessionId}
-        availableModels={models}
-      />
+      <ClientErrorWrapper sessionId={sessionId}>
+        <AgentCodeChatLayout
+          project={project}
+          sessionId={sessionId}
+          availableModels={models}
+        />
+      </ClientErrorWrapper>
     </>
   );
 }

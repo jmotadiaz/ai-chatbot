@@ -40,6 +40,15 @@ export function statusFromEvent(event: BaseEvent, current: AgentStatus): AgentSt
       const name = (event as { toolCallName?: string }).toolCallName ?? "tool";
       return { kind: "tool_calling", toolName: name };
     }
+    case EventType.TOOL_CALL_END:
+    case EventType.TOOL_CALL_RESULT:
+      // Tool finished — revert to "thinking" since the agent will
+      // process the result and decide what to do next. If the run
+      // ends immediately after, RUN_FINISHED will set idle.
+      return { kind: "thinking" };
+    case EventType.TEXT_MESSAGE_END:
+      // Message complete — agent may continue with tools or finish
+      return current;
     case EventType.RUN_FINISHED:
     case EventType.RUN_ERROR:
       return { kind: "idle" };

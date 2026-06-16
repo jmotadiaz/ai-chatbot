@@ -35,11 +35,12 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "sendPrompt": {
-        const { sessionId, prompt } = params as {
+        const { sessionId, prompt, messages } = params as {
           sessionId: string;
           prompt: string;
+          messages?: Array<{ role: string; content: string }>;
         };
-        const stream = await sendPrompt(sessionId, prompt);
+        const stream = await sendPrompt(sessionId, prompt, messages);
         stop();
         return new Response(stream, {
           headers: { "Content-Type": "application/x-ndjson" },

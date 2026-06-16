@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { Main } from "@/components/ui/main";
+import { ClientErrorWrapper } from "@/components/agent-code/client-error-wrapper";
 
 async function CodingAgentProjectsPage({ user }: Authenticated) {
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
@@ -25,7 +26,9 @@ async function CodingAgentProjectsPage({ user }: Authenticated) {
       <Main className="justify-start">
         <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-6 px-4 pt-28">
           <h1 className="text-2xl font-bold mb-6">Coding Agent</h1>
-          <CodingAgentExplorer projects={projects} />
+          <ClientErrorWrapper>
+            <CodingAgentExplorer projects={projects} />
+          </ClientErrorWrapper>
         </div>
       </Main>
     </>

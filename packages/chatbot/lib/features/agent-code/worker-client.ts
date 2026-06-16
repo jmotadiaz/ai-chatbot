@@ -71,6 +71,7 @@ export class WorkerClient {
   async sendPrompt(params: {
     sessionId: string;
     prompt: string;
+    messages?: Array<{ role: string; content: string }>;
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");

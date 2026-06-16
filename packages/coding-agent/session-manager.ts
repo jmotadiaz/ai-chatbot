@@ -206,6 +206,7 @@ export async function getOrCreateSession(options: {
 export async function sendPrompt(
   sessionId: string,
   prompt: string,
+  messages?: Array<{ role: string; content: string }>,
 ): Promise<ReadableStream<Uint8Array>> {
   const log = getTraceLogger("worker");
   const entry = sessions.get(sessionId);
@@ -214,7 +215,11 @@ export async function sendPrompt(
     throw new Error("Session not found");
   }
 
-  log.info("session.prompt", { sessionId, promptLength: prompt.length });
+  log.info("session.prompt", {
+    sessionId,
+    promptLength: prompt.length,
+    historyMessageCount: messages?.length ?? 0,
+  });
   const { runtime } = entry;
   const encoder = new TextEncoder();
 

@@ -78,7 +78,8 @@ export class PiToAguiTranslator {
   private currentMessageId: string | null = null;
   private currentReasoningId: string | null = null;
   private openToolCallIds = new Set<string>();
-  private toolResultsEmitted = new Set<string>();
+  private emittedToolCallIds = new Set<string>();
+  private toolResultBuffer = new Map<string, { content: string; timestamp: number }>();
   private counter = 0;
 
   constructor(private readonly context: TranslatorContext) {}
@@ -92,10 +93,46 @@ export class PiToAguiTranslator {
     return Date.now();
   }
 
+  private flushExpiredToolResults(out: BaseEvent[]): void {
+    const now = this.now();
+    for (const [toolCallId, entry] of this.toolResultBuffer.entries()) {
+      if (now - entry.timestamp > 30000) {
+        this.toolResultBuffer.delete(toolCallId);
+        this.emittedToolCallIds.add(toolCallId);
+        out.push({
+          type: EventType.TOOL_CALL_RESULT,
+          messageId: this.id("tool-msg"),
+          toolCallId,
+          role: "tool",
+          content: entry.content,
+          timestamp: now,
+        } as BaseEvent);
+      }
+    }
+  }
+
+  private flushAllToolResults(out: BaseEvent[]): void {
+    const now = this.now();
+    for (const [toolCallId, entry] of this.toolResultBuffer.entries()) {
+      this.toolResultBuffer.delete(toolCallId);
+      this.emittedToolCallIds.add(toolCallId);
+      out.push({
+        type: EventType.TOOL_CALL_RESULT,
+        messageId: this.id("tool-msg"),
+        toolCallId,
+        role: "tool",
+        content: entry.content,
+        timestamp: now,
+      } as BaseEvent);
+    }
+  }
+
   translate(event: PiEvent): BaseEvent[] {
     const log = getTraceLogger("bridge");
     const { threadId, runId } = this.context;
     const out: BaseEvent[] = [];
+
+    this.flushExpiredToolResults(out);
 
     switch (event.type) {
       case "agent_start":
@@ -108,6 +145,7 @@ export class PiToAguiTranslator {
         break;
 
       case "agent_end":
+        this.flushAllToolResults(out);
         out.push({
           type: EventType.RUN_FINISHED,
           threadId,
@@ -122,15 +160,9 @@ export class PiToAguiTranslator {
           const toolCallId = event.message?.toolCallId ?? this.id("tc");
           const raw = event.message?.content;
           const content = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
-          this.toolResultsEmitted.add(toolCallId);
-          out.push({
-            type: EventType.TOOL_CALL_RESULT,
-            messageId: this.id("tool-msg"),
-            toolCallId,
-            role: "tool",
-            content,
-            timestamp: this.now(),
-          } as BaseEvent);
+          if (!this.emittedToolCallIds.has(toolCallId)) {
+            this.toolResultBuffer.set(toolCallId, { content, timestamp: this.now() });
+          }
           break;
         }
         if (role && role !== "assistant") {
@@ -148,6 +180,25 @@ export class PiToAguiTranslator {
       }
 
       case "message_end": {
+        const role = event.message?.role;
+        if (role === "toolResult") {
+          const toolCallId = event.message?.toolCallId;
+          if (toolCallId && this.toolResultBuffer.has(toolCallId)) {
+            const entry = this.toolResultBuffer.get(toolCallId)!;
+            this.toolResultBuffer.delete(toolCallId);
+            this.emittedToolCallIds.add(toolCallId);
+            out.push({
+              type: EventType.TOOL_CALL_RESULT,
+              messageId: this.id("tool-msg"),
+              toolCallId,
+              role: "tool",
+              content: entry.content,
+              timestamp: this.now(),
+            } as BaseEvent);
+          }
+          break;
+        }
+
         if (this.currentMessageId) {
           if (this.currentReasoningId) {
             out.push({
@@ -225,7 +276,7 @@ export class PiToAguiTranslator {
               out.push({
                 type: EventType.REASONING_MESSAGE_START,
                 messageId: this.currentReasoningId,
-                role: "assistant",
+                role: "reasoning",
                 timestamp: this.now(),
               } as BaseEvent);
             }
@@ -242,7 +293,7 @@ export class PiToAguiTranslator {
               out.push({
                 type: EventType.REASONING_MESSAGE_START,
                 messageId: this.currentReasoningId,
-                role: "assistant",
+                role: "reasoning",
                 timestamp: this.now(),
               } as BaseEvent);
             }
@@ -300,19 +351,28 @@ export class PiToAguiTranslator {
 
       case "tool_execution_end": {
         const toolCallId = event.toolCallId;
-        if (toolCallId && this.toolResultsEmitted.has(toolCallId)) {
-          this.toolResultsEmitted.delete(toolCallId);
-          log.debug("translate.tool_result_dedup", { toolCallId });
+        const finalId = toolCallId ?? this.id("tc");
+
+        if (this.emittedToolCallIds.has(finalId)) {
+          log.debug("translate.tool_result_dedup", { toolCallId: finalId });
           break;
         }
         if (!this.currentMessageId && !toolCallId) {
           log.debug("translate.tool_result_orphan", { toolCallId });
         }
-        const finalId = toolCallId ?? this.id("tc");
-        const content =
-          typeof event.result === "string"
+
+        let content = "";
+        const entry = this.toolResultBuffer.get(finalId);
+        if (entry) {
+          this.toolResultBuffer.delete(finalId);
+          content = entry.content;
+        } else {
+          content = typeof event.result === "string"
             ? event.result
             : JSON.stringify(event.result ?? "");
+        }
+
+        this.emittedToolCallIds.add(finalId);
         out.push({
           type: EventType.TOOL_CALL_RESULT,
           messageId: this.currentMessageId ?? this.id("tool-msg"),
@@ -325,7 +385,10 @@ export class PiToAguiTranslator {
       }
 
       case "turn_start":
+        break;
+
       case "turn_end":
+        this.flushAllToolResults(out);
         break;
 
       case "error":

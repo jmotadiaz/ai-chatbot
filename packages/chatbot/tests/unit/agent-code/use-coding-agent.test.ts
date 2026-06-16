@@ -55,6 +55,34 @@ describe("statusFromEvent", () => {
     ).toEqual({ kind: "tool_calling", toolName: "tool" });
   });
 
+  it("returns thinking on TOOL_CALL_END", () => {
+    expect(
+      statusFromEvent(
+        { type: EventType.TOOL_CALL_END, toolCallId: "t1" } as never,
+        { kind: "tool_calling", toolName: "bash" },
+      ),
+    ).toEqual({ kind: "thinking" });
+  });
+
+  it("returns thinking on TOOL_CALL_RESULT", () => {
+    expect(
+      statusFromEvent(
+        { type: EventType.TOOL_CALL_RESULT, toolCallId: "t1" } as never,
+        { kind: "tool_calling", toolName: "bash" },
+      ),
+    ).toEqual({ kind: "thinking" });
+  });
+
+  it("preserves current status on TEXT_MESSAGE_END", () => {
+    const writing: AgentStatus = { kind: "writing" };
+    expect(
+      statusFromEvent(
+        { type: EventType.TEXT_MESSAGE_END, messageId: "m1" } as never,
+        writing,
+      ),
+    ).toEqual({ kind: "writing" });
+  });
+
   it("preserves current status for unrelated events", () => {
     const writing: AgentStatus = { kind: "writing" };
     expect(
