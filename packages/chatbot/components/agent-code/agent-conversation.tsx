@@ -27,6 +27,8 @@ function statusLabel(status: AgentStatus): string {
       return "Writing response...";
     case "tool_calling":
       return `Calling: ${status.toolName}...`;
+    case "step_running":
+      return "";
   }
 }
 
@@ -104,10 +106,7 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
 
   return (
     <div className="w-full relative overflow-y-hidden flex-1">
-      <div
-        className="w-full h-full overflow-y-auto"
-        ref={scrollContainerRef}
-      >
+      <div className="w-full h-full overflow-y-auto" ref={scrollContainerRef}>
         {messages.length === 0 && !isRunning && (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Ask the coding agent a question to get started.
