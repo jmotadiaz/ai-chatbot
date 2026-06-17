@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useSyncExternalStore, useRef, useEffect } from "react";
+import { useMemo, useCallback, useSyncExternalStore, useRef } from "react";
 import {
   HttpAgent,
   EventType,
@@ -71,38 +71,39 @@ export function useCodingAgent({
   modelId,
   initialMessages,
 }: UseCodingAgentArgs): UseCodingAgentResult {
-  const agentRef = useRef<HttpAgent | null>(null);
-  if (agentRef.current === null) {
-    agentRef.current = new HttpAgent({
-      url: "/api/agent/code",
-      threadId: sessionId,
-      initialMessages,
-    });
-  }
-  useEffect(() => {
-    agentRef.current = new HttpAgent({
-      url: "/api/agent/code",
-      threadId: sessionId,
-      initialMessages,
-    });
-    return () => {
-      agentRef.current = null;
+  const agentRef = useRef<{ sessionId: string; agent: HttpAgent } | null>(null);
+  if (
+    agentRef.current === null ||
+    agentRef.current.sessionId !== sessionId
+  ) {
+    agentRef.current = {
+      sessionId,
+      agent: new HttpAgent({
+        url: "/api/agent/code",
+        threadId: sessionId,
+        initialMessages,
+      }),
     };
-    // initialMessages is intentionally omitted: agent creation is a
-    // once-per-session operation, and re-running on a fresh array reference
-    // would tear down in-flight subscriptions on parent re-renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
-  const agent = agentRef.current;
+  }
+  const agent = agentRef.current.agent;
 
   const store = useMemo(() => {
-    const currentAgent = agentRef.current;
+    const currentAgent = agentRef.current?.agent;
     if (!currentAgent) {
       throw new Error("HttpAgent not initialized");
     }
     let snapshot = {
       messages: currentAgent.messages,
       isRunning: currentAgent.isRunning,
+      status: { kind: "idle" } as AgentStatus,
+      error: null as string | null,
+      toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
+      toolTimings: new Map<string, { startedAt: number; finishedAt?: number }>(),
+    };
+
+    const serverSnapshot = {
+      messages: initialMessages,
+      isRunning: false,
       status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
@@ -215,6 +216,9 @@ export function useCodingAgent({
       getSnapshot() {
         return snapshot;
       },
+      getServerSnapshot() {
+        return serverSnapshot;
+      },
       update,
     };
     // sessionId is intentional: the store must be recreated when the
@@ -222,7 +226,11 @@ export function useCodingAgent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const state = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
+  );
 
   const items = useMemo(
     () => groupItems(state.messages, state.toolErrors, state.toolTimings),
