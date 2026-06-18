@@ -47,6 +47,12 @@ export const POST = withAuth(async (user, req) => {
   const runId = crypto.randomUUID();
   const sink = isTracingEnabled() ? new FileTraceSink({ runId }) : null;
   await sink?.open();
+  let sinkClosed = false;
+  const closeSink = async () => {
+    if (sinkClosed) return;
+    sinkClosed = true;
+    await sink?.close();
+  };
 
   try {
     return await runWithTraceContext({ runId, sessionId, sink }, async () => {
@@ -56,7 +62,7 @@ export const POST = withAuth(async (user, req) => {
       const dbSession = await getSession({ userId: user.id, sessionId });
       log.info("db.lookup", { found: !!dbSession, sessionId });
       if (!dbSession) {
-        await sink?.close();
+        await closeSink();
         return new Response("Session not found", { status: 404 });
       }
 
@@ -103,9 +109,10 @@ export const POST = withAuth(async (user, req) => {
 
       log.info("stream.start");
       const encoder = new TextEncoder();
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          const reader = workerStream.getReader();
+          reader = workerStream.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
           const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
@@ -125,7 +132,16 @@ export const POST = withAuth(async (user, req) => {
                   const piEvent = JSON.parse(line);
                   const aguiEvents = translator.translate(piEvent);
                   for (const aguiEvent of aguiEvents) {
-                    log.debug("stream.event", { piType: piEvent.type, aguiType: aguiEvent.type });
+                    const stepName = (aguiEvent as { stepName?: string }).stepName;
+                    const toolCallId = (aguiEvent as {
+                      rawEvent?: { toolCallId?: string };
+                    }).rawEvent?.toolCallId;
+                    log.debug("stream.event", {
+                      piType: piEvent.type,
+                      aguiType: aguiEvent.type,
+                      stepName,
+                      toolCallId,
+                    });
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`));
                   }
                 } catch {
@@ -145,9 +161,28 @@ export const POST = withAuth(async (user, req) => {
           } finally {
             log.info("stream.close");
             controller.close();
-            await sink?.close();
+            await closeSink();
           }
         },
+        async cancel() {
+          if (reader) {
+            try {
+              await reader.cancel();
+            } catch (err) {
+              log.warn("stream.reader_cancel_failed", { message: String(err) });
+            }
+          }
+          await closeSink();
+        },
+      });
+
+      req.signal.addEventListener("abort", () => {
+        log.info("client.aborted");
+        if (reader) {
+          reader.cancel().catch((err) => {
+            log.warn("stream.reader_cancel_failed", { message: String(err) });
+          });
+        }
       });
 
       return new Response(stream, {
@@ -160,7 +195,7 @@ export const POST = withAuth(async (user, req) => {
       });
     });
   } catch (err) {
-    await sink?.close();
+    await closeSink();
     throw err;
   }
 });

@@ -363,9 +363,10 @@ export class PiToAguiTranslator {
         if (event.toolCallId) {
           this.openStepIds.add(event.toolCallId);
         }
+        const stepId = event.toolCallId ?? this.id("step");
         out.push({
           type: EventType.STEP_STARTED,
-          stepName: `tool:${event.toolName}`,
+          stepName: `tool:${event.toolName}:${stepId}`,
           rawEvent: { toolCallId: event.toolCallId },
           timestamp: this.now(),
         } as BaseEvent);
@@ -420,7 +421,7 @@ export class PiToAguiTranslator {
         if (hadStart) {
           out.push({
             type: EventType.STEP_FINISHED,
-            stepName: `tool:${event.toolName}`,
+            stepName: `tool:${event.toolName}:${finalId}`,
             rawEvent: { toolCallId: finalId, isError: !!event.isError },
             timestamp: this.now(),
           } as BaseEvent);

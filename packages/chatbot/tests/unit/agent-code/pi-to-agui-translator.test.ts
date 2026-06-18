@@ -452,7 +452,7 @@ describe("pi-to-agui-translator", () => {
 });
 
 describe("tool_execution step events", () => {
-  it("emits StepStarted on tool_execution_start", () => {
+  it("emits StepStarted on tool_execution_start with a unique stepName per tool call", () => {
     const t = new PiToAguiTranslator(ctx);
     const events = t.translate({
       type: "tool_execution_start",
@@ -462,12 +462,47 @@ describe("tool_execution step events", () => {
     const stepStarted = events.find((e) => e.type === EventType.STEP_STARTED);
     expect(stepStarted).toBeDefined();
     expect((stepStarted as unknown as { stepName: string }).stepName).toBe(
-      "tool:bash",
+      "tool:bash:t1",
     );
     expect(
       (stepStarted as unknown as { rawEvent: { toolCallId: string } }).rawEvent
         .toolCallId,
     ).toBe("t1");
+  });
+
+  it("emits distinct stepName values for consecutive calls to the same tool (regression: 'Step already active')", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    const first = t.translate({
+      type: "tool_execution_start",
+      toolCallId: "call-1",
+      toolName: "bash",
+    });
+    const firstStep = first.find((e) => e.type === EventType.STEP_STARTED) as
+      | { stepName: string }
+      | undefined;
+    expect(firstStep).toBeDefined();
+
+    // End the first call before starting the second one, to mirror the
+    // observed server-side ordering and the AG-UI validation contract.
+    t.translate({
+      type: "tool_execution_end",
+      toolCallId: "call-1",
+      toolName: "bash",
+      result: "ok",
+      isError: false,
+    });
+
+    const second = t.translate({
+      type: "tool_execution_start",
+      toolCallId: "call-2",
+      toolName: "bash",
+    });
+    const secondStep = second.find((e) => e.type === EventType.STEP_STARTED) as
+      | { stepName: string }
+      | undefined;
+    expect(secondStep).toBeDefined();
+    expect(secondStep!.stepName).not.toBe(firstStep!.stepName);
   });
 
   it("emits StepFinished after ToolCallResult on tool_execution_end", () => {
@@ -488,6 +523,31 @@ describe("tool_execution step events", () => {
       (stepFinished as unknown as { rawEvent: { isError: boolean } }).rawEvent
         .isError,
     ).toBe(false);
+  });
+
+  it("emits StepFinished with the same stepName as the matching StepStarted (regression: ag-ui step index)", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const startEvents = t.translate({
+      type: "tool_execution_start",
+      toolCallId: "call-42",
+      toolName: "bash",
+    });
+    const startName = (startEvents.find((e) => e.type === EventType.STEP_STARTED) as
+      | { stepName: string }
+      | undefined)?.stepName;
+    expect(startName).toBeDefined();
+
+    const endEvents = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "call-42",
+      toolName: "bash",
+      result: "ok",
+      isError: false,
+    });
+    const finishName = (endEvents.find((e) => e.type === EventType.STEP_FINISHED) as
+      | { stepName: string }
+      | undefined)?.stepName;
+    expect(finishName).toBe(startName);
   });
 
   it("marks isError: true on StepFinished for errored tool calls", () => {

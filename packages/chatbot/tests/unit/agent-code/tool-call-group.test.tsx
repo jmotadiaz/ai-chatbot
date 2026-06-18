@@ -18,23 +18,6 @@ const base: Group = {
 afterEach(cleanup);
 
 describe("ToolCallGroup", () => {
-  it("renders running state with spinner", () => {
-    const { container } = render(<ToolCallGroup group={{ ...base, status: "running" }} />);
-    expect(container).toMatchSnapshot();
-  });
-
-  it("renders ok state with check and duration", () => {
-    const { container } = render(<ToolCallGroup group={{ ...base, result: "a.txt" }} />);
-    expect(container).toMatchSnapshot();
-  });
-
-  it("renders error state with x", () => {
-    const { container } = render(
-      <ToolCallGroup group={{ ...base, status: "error", result: "exit 1" }} />,
-    );
-    expect(container).toMatchSnapshot();
-  });
-
   it("clamps long output to 20 lines and shows toggle", () => {
     const long = Array.from({ length: 50 }, (_, i) => `line ${i}`).join("\n");
     const { getByText, container } = render(

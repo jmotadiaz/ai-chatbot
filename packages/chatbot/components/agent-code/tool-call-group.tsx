@@ -13,6 +13,7 @@ import {
   Check,
   X,
   Loader2,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import type { ToolCallGroup as Group } from "@/lib/features/agent-code/types";
@@ -41,14 +42,6 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
 
 const MAX_LINES = 20;
 
-function fmtDuration(start: number, end?: number): string {
-  if (!end) return "";
-  const ms = end - start;
-  if (ms < 1000) return `${ms}ms`;
-  const s = Math.floor(ms / 1000);
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m${s % 60}s`;
-}
-
 export interface ToolCallGroupProps {
   group: Group;
 }
@@ -62,13 +55,13 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(({ group }) => {
   const visibleResult = clamped ? lines.slice(0, MAX_LINES).join("\n") : group.result ?? "";
 
   return (
-    <div
+    <details
       data-testid="tool-call-group"
       data-tool={group.name}
       data-status={group.status}
-      className="my-2 rounded-md border border-border bg-card overflow-hidden"
+      className="my-2 rounded-md border border-border bg-card overflow-hidden group"
     >
-      <div className="flex items-center gap-2 px-3 py-2 text-sm">
+      <summary className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
         <Icon className="size-4 text-muted-foreground" />
         <span className="font-medium">{displayName}</span>
         <span className="text-muted-foreground truncate flex-1">
@@ -83,44 +76,42 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(({ group }) => {
         {group.status === "error" && (
           <X className="size-4 text-red-600" data-testid="status-error" />
         )}
-        {group.finishedAt && (
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {fmtDuration(group.startedAt, group.finishedAt)}
-          </span>
+        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div>
+        <div className="border-t border-border">
+          <div className="px-3 pt-2 pb-1 text-xs text-muted-foreground">
+            Args
+          </div>
+          <pre className="px-3 pb-2 text-xs bg-secondary overflow-x-auto whitespace-pre-wrap">
+            {group.args}
+          </pre>
+        </div>
+        {group.result !== undefined && (
+          <div className="border-t border-border">
+            <div className="px-3 pt-2 pb-1 text-xs text-muted-foreground">
+              Output
+            </div>
+            <pre
+              className={`px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap ${
+                group.status === "error" ? "bg-red-50 dark:bg-red-950/30" : "bg-secondary"
+              }`}
+            >
+              {visibleResult}
+            </pre>
+            {clamped && (
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="block w-full px-3 py-1 text-xs text-muted-foreground hover:bg-secondary"
+              >
+                Show more
+              </button>
+            )}
+          </div>
         )}
       </div>
-      <details className="border-t border-border">
-        <summary className="px-3 py-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-          Args
-        </summary>
-        <pre className="px-3 py-2 text-xs bg-secondary overflow-x-auto whitespace-pre-wrap">
-          {group.args}
-        </pre>
-      </details>
-      {group.result !== undefined && (
-        <details className="border-t border-border">
-          <summary className="px-3 py-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-            Output
-          </summary>
-          <pre
-            className={`px-3 py-2 text-xs overflow-x-auto whitespace-pre-wrap ${
-              group.status === "error" ? "bg-red-50 dark:bg-red-950/30" : "bg-secondary"
-            }`}
-          >
-            {visibleResult}
-          </pre>
-          {clamped && (
-            <button
-              type="button"
-              onClick={() => setExpanded(true)}
-              className="block w-full px-3 py-1 text-xs text-muted-foreground hover:bg-secondary"
-            >
-              Show more
-            </button>
-          )}
-        </details>
-      )}
-    </div>
+    </details>
   );
 });
 
