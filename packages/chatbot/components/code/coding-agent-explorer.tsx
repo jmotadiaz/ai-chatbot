@@ -9,6 +9,7 @@ import {
   getCodingAgentSessions,
   createCodingAgentSession,
 } from "@/lib/features/code/actions";
+import { Button } from "@/components/ui/button";
 
 interface Session {
   id: string;
@@ -64,21 +65,22 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
             title={project}
             isOpen={isExpanded}
             onToggle={() => handleToggle(project)}
-            className="bg-secondary rounded-lg overflow-hidden border-none px-4"
+            className="bg-secondary dark:bg-secondary/50 rounded-lg overflow-hidden border-none px-4"
           >
-            <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 pb-2">
+            <div className="p-2">
               {isLoading ? (
                 <div className="text-sm text-muted-foreground py-2">
                   Loading sessions...
                 </div>
               ) : sessions ? (
                 <div>
-                  <button
+                  <Button
                     onClick={() => handleCreateSession(project)}
-                    className="mb-4 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-sm transition-colors font-medium"
+                    className="mb-4"
+                    variant="outline"
                   >
                     + New session
-                  </button>
+                  </Button>
                   {sessions.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2">
                       No sessions yet
@@ -92,7 +94,7 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
                           className="block p-3 bg-background border border-border hover:border-zinc-300 dark:hover:border-zinc-600 rounded-lg transition-colors"
                         >
                           <h4
-                            className="font-semibold text-sm hover:underline truncate"
+                            className="font-semibold text-sm truncate"
                             title={session.label ?? session.sessionId}
                           >
                             {session.label ?? session.sessionId}
@@ -113,4 +115,3 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
     </div>
   );
 };
-
