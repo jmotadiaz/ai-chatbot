@@ -17,21 +17,6 @@ function isNearBottom(container: HTMLElement) {
   );
 }
 
-function statusLabel(status: AgentStatus): string {
-  switch (status.kind) {
-    case "idle":
-      return "";
-    case "thinking":
-      return "Reasoning...";
-    case "writing":
-      return "Writing response...";
-    case "tool_calling":
-      return `Calling: ${status.toolName}...`;
-    case "step_running":
-      return `Running: ${status.stepName}`;
-  }
-}
-
 export interface AgentConversationProps {
   items: AgentItem[];
   isRunning: boolean;
@@ -41,7 +26,6 @@ export interface AgentConversationProps {
 export const AgentConversation: React.FC<AgentConversationProps> = ({
   items,
   isRunning,
-  status,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledAway = useRef(false);
@@ -102,8 +86,6 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     });
   };
 
-  const label = statusLabel(status);
-
   return (
     <div className="w-full relative overflow-y-hidden flex-1">
       <div className="w-full h-full overflow-y-auto" ref={scrollContainerRef}>
@@ -123,15 +105,16 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
                 />
               );
             }
-            return <AgentMessage key={item.message.id} message={item.message} />;
+            return (
+              <AgentMessage key={item.message.id} message={item.message} />
+            );
           })}
-          {isRunning && label && (
+          {isRunning && (
             <div
               data-testid="agent-status"
               className="flex items-center gap-2 text-muted-foreground text-sm py-3"
             >
               <DotsLoadingIcon />
-              <span>{label}</span>
             </div>
           )}
         </div>
