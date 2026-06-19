@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import {
   getCodingAgentSessions,
-  getCodingAgentMessages,
   createCodingAgentSession,
 } from "@/lib/features/agent-code/actions";
 
@@ -22,33 +21,11 @@ interface CodingAgentExplorerProps {
   projects: string[];
 }
 
-function extractText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => {
-        if (part && typeof part === "object" && "type" in part && (part as { type: string }).type === "text" && "text" in part) {
-          return String((part as { text: unknown }).text ?? "");
-        }
-        return "";
-      })
-      .join("");
-  }
-  return "";
-}
-
-function truncateOnFirstLine(text: string, max = 80): string {
-  const firstLine = text.replace(/\s+/g, " ").trim().split("\n")[0] ?? "";
-  if (firstLine.length <= max) return firstLine;
-  return `${firstLine.slice(0, max).trimEnd()}…`;
-}
-
 export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
   projects,
 }) => {
   const [expandedProject, setExpandedProject] = useQueryState("project");
   const [sessionsMap, setSessionsMap] = useState<Record<string, Session[]>>({});
-  const [promptsBySession, setPromptsBySession] = useState<Record<string, string>>({});
   const [loadingProject, setLoadingProject] = useState<string | null>(null);
   const router = useRouter();
 
@@ -66,34 +43,6 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
       setLoadingProject(null);
     }
   };
-
-  useEffect(() => {
-    if (!expandedProject) return;
-    const sessions = sessionsMap[expandedProject];
-    if (!sessions) return;
-    const unlabeled = sessions.filter((s) => !s.label && !promptsBySession[s.sessionId]);
-    if (unlabeled.length === 0) return;
-    let cancelled = false;
-    (async () => {
-      const updates: Record<string, string> = {};
-      for (const s of unlabeled) {
-        try {
-          const messages = await getCodingAgentMessages(expandedProject, s.sessionId);
-          const firstUser = messages.find((m) => m.role === "user");
-          const text = extractText(firstUser?.content);
-          if (text) {
-            updates[s.sessionId] = truncateOnFirstLine(text);
-          }
-        } catch {}
-      }
-      if (!cancelled && Object.keys(updates).length > 0) {
-        setPromptsBySession((prev) => ({ ...prev, ...updates }));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [expandedProject, sessionsMap, promptsBySession]);
 
   const handleCreateSession = async (project: string) => {
     const session = await createCodingAgentSession(project);
@@ -143,23 +92,23 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
                       </p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {sessions.map((session) => {
-                          const display = session.label ?? promptsBySession[session.sessionId] ?? session.sessionId;
-                          return (
-                            <Link
-                              key={session.id}
-                              href={`/agent/code/${encodeURIComponent(project)}/${session.sessionId}`}
-                              className="block p-3 bg-secondary rounded-lg transition-colors"
+                        {sessions.map((session) => (
+                          <Link
+                            key={session.id}
+                            href={`/agent/code/${encodeURIComponent(project)}/${session.sessionId}`}
+                            className="block p-3 bg-secondary rounded-lg transition-colors"
+                          >
+                            <h4
+                              className="font-semibold text-sm hover:underline truncate"
+                              title={session.label ?? session.sessionId}
                             >
-                              <h4 className="font-semibold text-sm hover:underline truncate" title={display}>
-                                {display}
-                              </h4>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {session.updatedAt.toLocaleString()}
-                              </p>
-                            </Link>
-                          );
-                        })}
+                              {session.label ?? session.sessionId}
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {session.updatedAt.toLocaleString()}
+                            </p>
+                          </Link>
+                        ))}
                       </div>
                     )}
                   </div>

@@ -43,9 +43,16 @@ describe("session-store", () => {
 
   it("lists sessions by project", async () => {
     await seedUser();
-    await createSession({ userId, project, modelId: "Deepseek v4 Pro" });
+    await createSession({ userId, project, modelId: "Deepseek v4 Pro", label: "Fix login bug" });
     const sessions = await listSessions({ userId, project });
     expect(sessions).toHaveLength(1);
+  });
+
+  it("excludes sessions without label", async () => {
+    await seedUser();
+    await createSession({ userId, project, modelId: "Deepseek v4 Pro" });
+    const sessions = await listSessions({ userId, project });
+    expect(sessions).toHaveLength(0);
   });
 
   it("updates session label", async () => {

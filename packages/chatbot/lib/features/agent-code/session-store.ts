@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNotNull } from "drizzle-orm";
 import { getDb } from "@/lib/infrastructure/db/db";
 import {
   codingAgentSessions,
@@ -50,6 +50,7 @@ export async function listSessions(input: { userId: string; project: string }) {
       and(
         eq(codingAgentSessions.userId, input.userId),
         eq(codingAgentSessions.project, input.project),
+        isNotNull(codingAgentSessions.label),
       ),
     )
     .orderBy(desc(codingAgentSessions.updatedAt));

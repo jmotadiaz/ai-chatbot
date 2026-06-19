@@ -12,6 +12,7 @@ import {
   getSession,
   touchSession,
   updatePiSessionId,
+  updateSessionLabel,
 } from "@/lib/features/agent-code/session-store";
 import { toPiModelId } from "@/lib/features/agent-code/model-mapping";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -106,6 +107,20 @@ export const POST = withAuth(async (user, req) => {
       sendStop();
 
       await touchSession({ userId: user.id, sessionId });
+
+      // Save first user message as session label (if not already set)
+      if (!dbSession.label) {
+        const firstUserMsg = messages.find((m) => m.role === "user");
+        if (firstUserMsg?.content?.trim()) {
+          const label = firstUserMsg.content.trim().split("\n")[0]!.slice(0, 80);
+          await updateSessionLabel({
+            userId: user.id,
+            sessionId,
+            label,
+          });
+          log.info("db.label_saved", { sessionId, label });
+        }
+      }
 
       log.info("stream.start");
       const encoder = new TextEncoder();
