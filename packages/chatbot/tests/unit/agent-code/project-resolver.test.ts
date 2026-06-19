@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   listProjects,
   isValidProjectName,
-} from "@/lib/features/agent-code/project-resolver";
+} from "@/lib/features/code/project-resolver";
 
 describe("project-resolver", () => {
   let root: string;

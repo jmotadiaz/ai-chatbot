@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Message, ToolCall } from "@ag-ui/client";
-import { groupItems } from "@/lib/features/agent-code/group-items";
+import { groupItems } from "@/lib/features/code/group-items";
 
 function userMsg(id: string, content = "hi"): Message {
   return { id, role: "user", content } as Message;
@@ -12,7 +12,11 @@ function toolMsg(id: string, toolCallId: string, content: string): Message {
   return { id, role: "tool", toolCallId, content } as Message;
 }
 function bashCall(id: string, cmd: string): ToolCall {
-  return { id, type: "function", function: { name: "bash", arguments: JSON.stringify({ command: cmd }) } } as ToolCall;
+  return {
+    id,
+    type: "function",
+    function: { name: "bash", arguments: JSON.stringify({ command: cmd }) },
+  } as ToolCall;
 }
 
 describe("groupItems", () => {
@@ -78,13 +82,24 @@ describe("groupItems", () => {
   });
 
   it("flushes a trailing assistant at the end of the stream", () => {
-    const items = groupItems([userMsg("u1"), assistantMsg("a1", [bashCall("t1", "ls")])]);
+    const items = groupItems([
+      userMsg("u1"),
+      assistantMsg("a1", [bashCall("t1", "ls")]),
+    ]);
     expect(items.map((i) => i.kind)).toEqual(["user", "assistant"]);
   });
 
   it("passes reasoning messages through without touching tool groups", () => {
-    const reasoning = { id: "r0", role: "reasoning", content: "thinking..." } as Message;
+    const reasoning = {
+      id: "r0",
+      role: "reasoning",
+      content: "thinking...",
+    } as Message;
     const items = groupItems([userMsg("u1"), reasoning, assistantMsg("a1")]);
-    expect(items.map((i) => i.kind)).toEqual(["user", "reasoning", "assistant"]);
+    expect(items.map((i) => i.kind)).toEqual([
+      "user",
+      "reasoning",
+      "assistant",
+    ]);
   });
 });

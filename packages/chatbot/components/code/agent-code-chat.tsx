@@ -6,7 +6,7 @@ import type { Message } from "@ag-ui/client";
 import { AgentConversation } from "./agent-conversation";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
-import { useCodingAgent } from "@/lib/features/agent-code/hooks/use-coding-agent";
+import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 
 export interface AgentCodeChatProps {
   project: string;

@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { cleanup, fireEvent, render, screen, act } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  act,
+} from "@testing-library/react";
 import { useState } from "react";
 import type { Message } from "@ag-ui/client";
-import { useCodingAgent } from "@/lib/features/agent-code/hooks/use-coding-agent";
+import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 
 function makeSseResponse(events: object[]): Response {
   const encoder = new TextEncoder();

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
-import { WorkerClient } from "@/lib/features/agent-code/worker-client";
-import { getSession } from "@/lib/features/agent-code/session-store";
+import { WorkerClient } from "@/lib/features/code/worker-client";
+import { getSession } from "@/lib/features/code/session-store";
 
 function getParamsFromUrl(url: URL): { project: string; sessionId: string } {
   const parts = url.pathname.split("/");

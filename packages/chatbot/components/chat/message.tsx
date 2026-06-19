@@ -5,12 +5,10 @@ import React, { useMemo, useState } from "react";
 import { useCollapse } from "react-collapsed";
 import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
 import type {
-  ReasoningUIPart,
   SourceDocumentUIPart,
   SourceUrlUIPart,
 } from "ai";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
@@ -24,19 +22,8 @@ import {
 import { RagSourceMessagePart } from "@/components/chat/rag-source";
 import { Context7SourceMessagePart } from "@/components/chat/context7-source";
 import type { RagChunk } from "@/lib/features/rag/types";
-const Reasoning = dynamic(
-  () => import("@/components/chat/reasoning").then((m) => m.Reasoning),
-  { ssr: false },
-);
-const ReasoningContent = dynamic(
-  () => import("@/components/chat/reasoning").then((m) => m.ReasoningContent),
-  { ssr: false },
-);
-const ReasoningTrigger = dynamic(
-  () => import("@/components/chat/reasoning").then((m) => m.ReasoningTrigger),
-  { ssr: false },
-);
 import { ChatReload } from "@/components/chat/reload";
+import { ReasoningBlock } from "@/components/chat/reasoning";
 
 export interface MessagesProps {
   messages: ChatbotMessage[];
@@ -190,9 +177,9 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
     <div className={cn("flex w-full")}>
       <div className="flex flex-col w-full space-y-4">
         {mergedReasoning && (
-          <ReasoningPart
+          <ReasoningBlock
             key={`message-${message.id}-reasoning`}
-            part={mergedReasoning}
+            text={mergedReasoning.text}
             isStreaming={
               mergedReasoning.state === "streaming" && !hasTextTokens
             }
@@ -366,25 +353,6 @@ const AssistantMessageActions: React.FC<{
         )}
       </div>
     </div>
-  );
-};
-
-interface ReasoningPartProps {
-  part: ReasoningUIPart;
-  isStreaming: boolean;
-  hasTextTokens: boolean;
-}
-
-const ReasoningPart: React.FC<ReasoningPartProps> = ({
-  part,
-  isStreaming,
-  hasTextTokens,
-}) => {
-  return (
-    <Reasoning isStreaming={isStreaming} hasTextTokens={hasTextTokens}>
-      <ReasoningTrigger />
-      <ReasoningContent>{part.text}</ReasoningContent>
-    </Reasoning>
   );
 };
 

@@ -7,8 +7,8 @@ import {
   type BaseEvent,
   type Message,
 } from "@ag-ui/client";
-import { groupItems } from "@/lib/features/agent-code/group-items";
-import type { AgentItem } from "@/lib/features/agent-code/types";
+import { groupItems } from "@/lib/features/code/group-items";
+import type { AgentItem } from "@/lib/features/code/types";
 
 export type AgentStatus =
   | { kind: "idle" }
@@ -34,7 +34,10 @@ export interface UseCodingAgentResult {
   error: string | null;
 }
 
-export function statusFromEvent(event: BaseEvent, current: AgentStatus): AgentStatus {
+export function statusFromEvent(
+  event: BaseEvent,
+  current: AgentStatus,
+): AgentStatus {
   switch (event.type) {
     case EventType.STEP_STARTED: {
       const name = (event as { stepName?: string }).stepName ?? "step";
@@ -50,7 +53,11 @@ export function statusFromEvent(event: BaseEvent, current: AgentStatus): AgentSt
       return { kind: "writing" };
     case EventType.TOOL_CALL_START: {
       const e = event as { toolCallName?: string; toolCallId?: string };
-      return { kind: "tool_calling", toolName: e.toolCallName ?? "tool", toolCallId: e.toolCallId };
+      return {
+        kind: "tool_calling",
+        toolName: e.toolCallName ?? "tool",
+        toolCallId: e.toolCallId,
+      };
     }
     case EventType.TOOL_CALL_END:
     case EventType.TOOL_CALL_RESULT:
@@ -72,10 +79,7 @@ export function useCodingAgent({
   initialMessages,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agentRef = useRef<{ sessionId: string; agent: HttpAgent } | null>(null);
-  if (
-    agentRef.current === null ||
-    agentRef.current.sessionId !== sessionId
-  ) {
+  if (agentRef.current === null || agentRef.current.sessionId !== sessionId) {
     agentRef.current = {
       sessionId,
       agent: new HttpAgent({
@@ -98,7 +102,10 @@ export function useCodingAgent({
       status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
-      toolTimings: new Map<string, { startedAt: number; finishedAt?: number }>(),
+      toolTimings: new Map<
+        string,
+        { startedAt: number; finishedAt?: number }
+      >(),
     };
 
     const serverSnapshot = {
@@ -107,15 +114,16 @@ export function useCodingAgent({
       status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
-      toolTimings: new Map<string, { startedAt: number; finishedAt?: number }>(),
+      toolTimings: new Map<
+        string,
+        { startedAt: number; finishedAt?: number }
+      >(),
     };
 
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach((l) => l());
 
-    const update = (
-      u: (prev: typeof snapshot) => Partial<typeof snapshot>,
-    ) => {
+    const update = (u: (prev: typeof snapshot) => Partial<typeof snapshot>) => {
       snapshot = { ...snapshot, ...u(snapshot) };
       emit();
     };
@@ -144,10 +152,12 @@ export function useCodingAgent({
                   event.type === EventType.STEP_STARTED ||
                   event.type === EventType.STEP_FINISHED
                 ) {
-                  const raw = (event as {
-                    rawEvent?: { toolCallId?: string; isError?: boolean };
-                    timestamp?: number;
-                  }).rawEvent;
+                  const raw = (
+                    event as {
+                      rawEvent?: { toolCallId?: string; isError?: boolean };
+                      timestamp?: number;
+                    }
+                  ).rawEvent;
                   const ts = (event as { timestamp?: number }).timestamp;
                   const id = raw?.toolCallId;
                   if (id) {

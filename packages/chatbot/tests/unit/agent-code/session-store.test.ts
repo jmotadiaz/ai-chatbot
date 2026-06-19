@@ -6,7 +6,7 @@ import {
   listSessions,
   getSession,
   updateSessionLabel,
-} from "@/lib/features/agent-code/session-store";
+} from "@/lib/features/code/session-store";
 import {
   codingAgentSessions,
   user as userTable,
@@ -22,17 +22,25 @@ describe("session-store", () => {
   });
 
   afterEach(async () => {
-    await db.delete(codingAgentSessions).where(eq(codingAgentSessions.userId, userId));
+    await db
+      .delete(codingAgentSessions)
+      .where(eq(codingAgentSessions.userId, userId));
     await db.delete(userTable).where(eq(userTable.id, userId));
   });
 
   async function seedUser() {
-    await db.insert(userTable).values({ id: userId, email: "agent-tester@example.com" });
+    await db
+      .insert(userTable)
+      .values({ id: userId, email: "agent-tester@example.com" });
   }
 
   it("creates and retrieves a session", async () => {
     await seedUser();
-    const session = await createSession({ userId, project, modelId: "Deepseek v4 Pro" });
+    const session = await createSession({
+      userId,
+      project,
+      modelId: "Deepseek v4 Pro",
+    });
     expect(session.project).toBe(project);
     expect(session.sessionId).toBeDefined();
 
@@ -43,7 +51,12 @@ describe("session-store", () => {
 
   it("lists sessions by project", async () => {
     await seedUser();
-    await createSession({ userId, project, modelId: "Deepseek v4 Pro", label: "Fix login bug" });
+    await createSession({
+      userId,
+      project,
+      modelId: "Deepseek v4 Pro",
+      label: "Fix login bug",
+    });
     const sessions = await listSessions({ userId, project });
     expect(sessions).toHaveLength(1);
   });
@@ -58,7 +71,11 @@ describe("session-store", () => {
   it("updates session label", async () => {
     await seedUser();
     const session = await createSession({ userId, project });
-    await updateSessionLabel({ userId, sessionId: session.sessionId, label: "Refactor" });
+    await updateSessionLabel({
+      userId,
+      sessionId: session.sessionId,
+      label: "Refactor",
+    });
     const found = await getSession({ userId, sessionId: session.sessionId });
     expect(found?.label).toBe("Refactor");
   });

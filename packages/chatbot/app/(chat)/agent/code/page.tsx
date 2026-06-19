@@ -1,13 +1,16 @@
 import { notFound } from "next/navigation";
-import { CodingAgentExplorer } from "@/components/agent-code/coding-agent-explorer";
-import { getCodingAgentProjects } from "@/lib/features/agent-code/actions";
-import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth/hoc";
+import { CodingAgentExplorer } from "@/components/code/coding-agent-explorer";
+import { getCodingAgentProjects } from "@/lib/features/code/actions";
+import {
+  withAuth,
+  type Authenticated,
+} from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { Main } from "@/components/ui/main";
-import { ClientErrorWrapper } from "@/components/agent-code/client-error-wrapper";
+import { ClientErrorWrapper } from "@/components/code/client-error-wrapper";
 
 async function CodingAgentProjectsPage({ user }: Authenticated) {
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();

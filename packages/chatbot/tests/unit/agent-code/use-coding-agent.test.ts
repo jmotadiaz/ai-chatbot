@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { EventType } from "@ag-ui/client";
 import type { Message } from "@ag-ui/client";
-import { statusFromEvent, type AgentStatus } from "@/lib/features/agent-code/hooks/use-coding-agent";
-import { groupItems } from "@/lib/features/agent-code/group-items";
+import {
+  statusFromEvent,
+  type AgentStatus,
+} from "@/lib/features/code/hooks/use-coding-agent";
+import { groupItems } from "@/lib/features/code/group-items";
 
 describe("statusFromEvent", () => {
   const idle: AgentStatus = { kind: "idle" };
@@ -88,10 +91,7 @@ describe("statusFromEvent", () => {
   it("preserves current status for unrelated events", () => {
     const writing: AgentStatus = { kind: "writing" };
     expect(
-      statusFromEvent(
-        { type: "CUSTOM", name: "ping" } as never,
-        writing,
-      ),
+      statusFromEvent({ type: "CUSTOM", name: "ping" } as never, writing),
     ).toEqual({ kind: "writing" });
   });
 });
@@ -131,7 +131,11 @@ describe("groupItems integration (smoke)", () => {
         role: "assistant",
         content: "",
         toolCalls: [
-          { id: "t1", type: "function", function: { name: "bash", arguments: '{"command":"ls"}' } } as never,
+          {
+            id: "t1",
+            type: "function",
+            function: { name: "bash", arguments: '{"command":"ls"}' },
+          } as never,
         ],
       } as Message,
       { id: "r1", role: "tool", toolCallId: "t1", content: "a.txt" } as Message,

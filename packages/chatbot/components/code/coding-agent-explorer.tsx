@@ -8,7 +8,7 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import {
   getCodingAgentSessions,
   createCodingAgentSession,
-} from "@/lib/features/agent-code/actions";
+} from "@/lib/features/code/actions";
 
 interface Session {
   id: string;
@@ -59,7 +59,10 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
         const isLoading = loadingProject === project;
 
         return (
-          <div key={project} className="bg-secondary rounded-lg overflow-hidden">
+          <div
+            key={project}
+            className="bg-secondary rounded-lg overflow-hidden"
+          >
             <button
               onClick={() => handleToggle(project)}
               className="w-full flex items-center gap-3 p-3 text-left hover:bg-accent transition-colors"

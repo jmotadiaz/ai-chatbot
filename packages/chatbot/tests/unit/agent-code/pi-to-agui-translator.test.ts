@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from "vitest";
 import { EventType } from "@ag-ui/client";
-import { PiToAguiTranslator } from "@/lib/features/agent-code/pi-to-agui-translator";
+import { PiToAguiTranslator } from "@/lib/features/code/pi-to-agui-translator";
 
 const ctx = { threadId: "thread-1", runId: "run-1" };
 
@@ -38,7 +38,11 @@ describe("pi-to-agui-translator", () => {
     });
     const delta = t.translate({
       type: "message_update",
-      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Hi" },
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "Hi",
+      },
     });
     const end = t.translate({
       type: "message_end",
@@ -54,9 +58,9 @@ describe("pi-to-agui-translator", () => {
     expect(
       (delta[0] as unknown as { messageId: string; delta: string }).messageId,
     ).toBe(messageId);
-    expect((delta[0] as unknown as { messageId: string; delta: string }).delta).toBe(
-      "Hi",
-    );
+    expect(
+      (delta[0] as unknown as { messageId: string; delta: string }).delta,
+    ).toBe("Hi");
     expect(types(end)).toEqual([EventType.TEXT_MESSAGE_END]);
     expect((end[0] as unknown as { messageId: string }).messageId).toBe(
       messageId,
@@ -84,7 +88,11 @@ describe("pi-to-agui-translator", () => {
     });
     const textDelta = t.translate({
       type: "message_update",
-      assistantMessageEvent: { type: "text_delta", contentIndex: 1, delta: "ok" },
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 1,
+        delta: "ok",
+      },
     });
 
     expect(types(messageStart)).toEqual([]);
@@ -133,8 +141,15 @@ describe("pi-to-agui-translator", () => {
         toolCall: { id: "tc-1", name: "bash" },
       },
     });
-    const messageEnd = t.translate({ type: "message_end", message: { role: "assistant" } });
-    t.translate({ type: "tool_execution_start", toolCallId: "tc-1", toolName: "bash" });
+    const messageEnd = t.translate({
+      type: "message_end",
+      message: { role: "assistant" },
+    });
+    t.translate({
+      type: "tool_execution_start",
+      toolCallId: "tc-1",
+      toolName: "bash",
+    });
     const result = t.translate({
       type: "tool_execution_end",
       toolCallId: "tc-1",
@@ -202,7 +217,11 @@ describe("pi-to-agui-translator", () => {
 
     t.translate({
       type: "message_start",
-      message: { role: "toolResult", toolCallId: "tc-1", content: "from-message" },
+      message: {
+        role: "toolResult",
+        toolCallId: "tc-1",
+        content: "from-message",
+      },
     });
     const resultEnd = t.translate({
       type: "message_end",
@@ -237,7 +256,11 @@ describe("pi-to-agui-translator", () => {
 
     t.translate({
       type: "message_start",
-      message: { role: "toolResult", toolCallId: "tc-1", content: "from-message" },
+      message: {
+        role: "toolResult",
+        toolCallId: "tc-1",
+        content: "from-message",
+      },
     });
     const resultEnd = t.translate({
       type: "message_end",
@@ -297,7 +320,8 @@ describe("pi-to-agui-translator", () => {
 
     expect(types(execEnd)).toEqual([EventType.TOOL_CALL_RESULT]);
     expect(
-      (execEnd[0] as unknown as { toolCallId: string; content: string }).content,
+      (execEnd[0] as unknown as { toolCallId: string; content: string })
+        .content,
     ).toBe("ok");
   });
 
@@ -313,7 +337,11 @@ describe("pi-to-agui-translator", () => {
     });
     const first = t.translate({
       type: "message_update",
-      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "a" },
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "a",
+      },
     });
     const firstMessageId = (first[0] as unknown as { messageId: string })
       .messageId;
@@ -328,7 +356,11 @@ describe("pi-to-agui-translator", () => {
     });
     const second = t.translate({
       type: "message_update",
-      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "b" },
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "b",
+      },
     });
     const secondMessageId = (second[0] as unknown as { messageId: string })
       .messageId;
@@ -341,18 +373,28 @@ describe("pi-to-agui-translator", () => {
       const t = new PiToAguiTranslator(ctx);
       t.translate({
         type: "message_start",
-        message: { role: "toolResult", toolCallId: "tc-1", content: "timedout-result" },
+        message: {
+          role: "toolResult",
+          toolCallId: "tc-1",
+          content: "timedout-result",
+        },
       });
 
       // No emission immediately
-      const out1 = t.translate({ type: "tool_execution_update", toolCallId: "tc-1" });
+      const out1 = t.translate({
+        type: "tool_execution_update",
+        toolCallId: "tc-1",
+      });
       expect(types(out1)).toEqual([]);
 
       // Advance time by 31 seconds
       vi.advanceTimersByTime(31000);
 
       // Next event triggers the flush
-      const out2 = t.translate({ type: "tool_execution_update", toolCallId: "tc-1" });
+      const out2 = t.translate({
+        type: "tool_execution_update",
+        toolCallId: "tc-1",
+      });
       expect(types(out2)).toEqual([EventType.TOOL_CALL_RESULT]);
       expect((out2[0] as any).content).toBe("timedout-result");
     } finally {
@@ -364,11 +406,18 @@ describe("pi-to-agui-translator", () => {
     const t = new PiToAguiTranslator(ctx);
     t.translate({
       type: "message_start",
-      message: { role: "toolResult", toolCallId: "tc-1", content: "timedout-result" },
+      message: {
+        role: "toolResult",
+        toolCallId: "tc-1",
+        content: "timedout-result",
+      },
     });
 
     const end = t.translate({ type: "agent_end" });
-    expect(types(end)).toEqual([EventType.TOOL_CALL_RESULT, EventType.RUN_FINISHED]);
+    expect(types(end)).toEqual([
+      EventType.TOOL_CALL_RESULT,
+      EventType.RUN_FINISHED,
+    ]);
     expect((end[0] as any).content).toBe("timedout-result");
   });
 
@@ -378,7 +427,11 @@ describe("pi-to-agui-translator", () => {
     t.translate({ type: "message_start", message: { role: "assistant" } });
     t.translate({
       type: "message_update",
-      assistantMessageEvent: { type: "thinking_delta", contentIndex: 0, delta: "let me think" },
+      assistantMessageEvent: {
+        type: "thinking_delta",
+        contentIndex: 0,
+        delta: "let me think",
+      },
     });
     const textStart = t.translate({
       type: "message_update",
@@ -422,7 +475,11 @@ describe("pi-to-agui-translator", () => {
     t.translate({ type: "message_start", message: { role: "assistant" } });
     t.translate({
       type: "message_update",
-      assistantMessageEvent: { type: "thinking_delta", contentIndex: 0, delta: "hmm" },
+      assistantMessageEvent: {
+        type: "thinking_delta",
+        contentIndex: 0,
+        delta: "hmm",
+      },
     });
     t.translate({
       type: "message_update",
@@ -440,7 +497,10 @@ describe("pi-to-agui-translator", () => {
         toolCall: { id: "tc-1", name: "bash" },
       },
     });
-    const end = t.translate({ type: "message_end", message: { role: "assistant" } });
+    const end = t.translate({
+      type: "message_end",
+      message: { role: "assistant" },
+    });
 
     expect(types(end)).toEqual([
       EventType.REASONING_MESSAGE_END,
@@ -507,7 +567,11 @@ describe("tool_execution step events", () => {
 
   it("emits StepFinished after ToolCallResult on tool_execution_end", () => {
     const t = new PiToAguiTranslator(ctx);
-    t.translate({ type: "tool_execution_start", toolCallId: "t1", toolName: "bash" });
+    t.translate({
+      type: "tool_execution_start",
+      toolCallId: "t1",
+      toolName: "bash",
+    });
     const events = t.translate({
       type: "tool_execution_end",
       toolCallId: "t1",
@@ -532,9 +596,11 @@ describe("tool_execution step events", () => {
       toolCallId: "call-42",
       toolName: "bash",
     });
-    const startName = (startEvents.find((e) => e.type === EventType.STEP_STARTED) as
-      | { stepName: string }
-      | undefined)?.stepName;
+    const startName = (
+      startEvents.find((e) => e.type === EventType.STEP_STARTED) as
+        | { stepName: string }
+        | undefined
+    )?.stepName;
     expect(startName).toBeDefined();
 
     const endEvents = t.translate({
@@ -544,15 +610,21 @@ describe("tool_execution step events", () => {
       result: "ok",
       isError: false,
     });
-    const finishName = (endEvents.find((e) => e.type === EventType.STEP_FINISHED) as
-      | { stepName: string }
-      | undefined)?.stepName;
+    const finishName = (
+      endEvents.find((e) => e.type === EventType.STEP_FINISHED) as
+        | { stepName: string }
+        | undefined
+    )?.stepName;
     expect(finishName).toBe(startName);
   });
 
   it("marks isError: true on StepFinished for errored tool calls", () => {
     const t = new PiToAguiTranslator(ctx);
-    t.translate({ type: "tool_execution_start", toolCallId: "t1", toolName: "bash" });
+    t.translate({
+      type: "tool_execution_start",
+      toolCallId: "t1",
+      toolName: "bash",
+    });
     const events = t.translate({
       type: "tool_execution_end",
       toolCallId: "t1",
@@ -577,6 +649,8 @@ describe("tool_execution step events", () => {
       isError: false,
     });
     expect(types(events)).toEqual([EventType.TOOL_CALL_RESULT]);
-    expect(events.find((e) => e.type === EventType.STEP_FINISHED)).toBeUndefined();
+    expect(
+      events.find((e) => e.type === EventType.STEP_FINISHED),
+    ).toBeUndefined();
   });
 });

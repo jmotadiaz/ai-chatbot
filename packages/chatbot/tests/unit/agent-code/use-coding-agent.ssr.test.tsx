@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
 import type { Message } from "@ag-ui/client";
-import { useCodingAgent } from "@/lib/features/agent-code/hooks/use-coding-agent";
+import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 
 function Harness({ initialMessages }: { initialMessages: Message[] }) {
   const { messages } = useCodingAgent({

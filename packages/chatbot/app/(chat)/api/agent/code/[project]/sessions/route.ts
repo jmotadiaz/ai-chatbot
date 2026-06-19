@@ -3,7 +3,7 @@ import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import {
   getCodingAgentSessions,
   createCodingAgentSession,
-} from "@/lib/features/agent-code/actions";
+} from "@/lib/features/code/actions";
 
 function getProjectFromUrl(url: URL): string {
   const parts = url.pathname.split("/");

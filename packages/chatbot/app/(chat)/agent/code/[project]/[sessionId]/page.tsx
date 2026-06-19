@@ -1,9 +1,15 @@
 import { notFound } from "next/navigation";
-import { AgentCodeChatLayout } from "@/components/agent-code/agent-code-chat-layout";
-import { getCodingAgentModels, getCodingAgentMessages } from "@/lib/features/agent-code/actions";
-import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth/hoc";
+import { AgentCodeChatLayout } from "@/components/code/agent-code-chat-layout";
+import {
+  getCodingAgentModels,
+  getCodingAgentMessages,
+} from "@/lib/features/code/actions";
+import {
+  withAuth,
+  type Authenticated,
+} from "@/lib/features/auth/with-auth/hoc";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { ClientErrorWrapper } from "@/components/agent-code/client-error-wrapper";
+import { ClientErrorWrapper } from "@/components/code/client-error-wrapper";
 
 async function CodingAgentChatPage({
   params,

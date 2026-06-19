@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
   "dependencies": {
     "tracing": "workspace:*",
     "@earendil-works/pi-coding-agent": "^0.79.3"

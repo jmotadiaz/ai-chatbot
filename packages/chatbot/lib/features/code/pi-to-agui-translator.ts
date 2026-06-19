@@ -1,66 +1,10 @@
 import { EventType, type BaseEvent } from "@ag-ui/client";
 import { getTraceLogger } from "tracing";
+import type { CodingAgentEvent, RelaxedToolCall, ContentBlock } from "coding-agent";
 
-type AssistantEvent =
-  | { type: "start"; partial?: unknown }
-  | { type: "text_start"; contentIndex: number; partial?: unknown }
-  | { type: "text_delta"; contentIndex: number; delta: string; partial?: unknown }
-  | { type: "text_end"; contentIndex: number; content: string; partial?: unknown }
-  | {
-      type: "thinking_start";
-      contentIndex: number;
-      partial?: unknown;
-    }
-  | {
-      type: "thinking_delta";
-      contentIndex: number;
-      delta: string;
-      partial?: unknown;
-    }
-  | {
-      type: "thinking_end";
-      contentIndex: number;
-      content: string;
-      partial?: unknown;
-    }
-  | { type: "toolcall_start"; contentIndex: number; toolCall?: { id: string; name: string }; partial?: unknown }
-  | { type: "toolcall_delta"; contentIndex: number; delta: string }
-  | { type: "toolcall_end"; contentIndex: number; toolCall?: { id: string; name: string }; partial?: unknown }
-  | { type: "done"; message?: unknown }
-  | { type: "error"; error?: unknown };
-
-type PiEvent =
-  | { type: "agent_start" }
-  | { type: "agent_end" }
-  | { type: "turn_start" }
-  | { type: "turn_end" }
-  | {
-      type: "message_start";
-      message?: {
-        id?: string;
-        role?: string;
-        toolCallId?: string;
-        content?: unknown;
-      };
-    }
-  | {
-      type: "message_end";
-      message?: { id?: string; role?: string; toolCallId?: string };
-    }
-  | {
-      type: "message_update";
-      assistantMessageEvent: AssistantEvent;
-    }
-  | { type: "tool_execution_start"; toolCallId?: string; toolName: string }
-  | { type: "tool_execution_update"; toolCallId?: string }
-  | {
-      type: "tool_execution_end";
-      toolCallId?: string;
-      toolName: string;
-      result: unknown;
-      isError: boolean;
-    }
-  | { type: "error"; message: string };
+function isToolCall(block: ContentBlock | undefined): block is RelaxedToolCall {
+  return block !== undefined && (block.type === "toolCall" || "id" in block);
+}
 
 export interface TranslatorContext {
   threadId: string;
@@ -129,10 +73,11 @@ export class PiToAguiTranslator {
     }
   }
 
-  translate(event: PiEvent): BaseEvent[] {
+  translate(event: CodingAgentEvent): BaseEvent[] {
     const log = getTraceLogger("bridge");
     const { threadId, runId } = this.context;
     const out: BaseEvent[] = [];
+    const eventType = event.type;
 
     this.flushExpiredToolResults(out);
 
@@ -233,6 +178,9 @@ export class PiToAguiTranslator {
 
       case "message_update": {
         const ame = event.assistantMessageEvent;
+        if (!ame) {
+          break;
+        }
         switch (ame.type) {
           case "text_start": {
             if (this.currentReasoningId) {
@@ -317,12 +265,15 @@ export class PiToAguiTranslator {
           case "thinking_end":
             break;
           case "toolcall_start": {
-            /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-            const eventAny = ame as any;
-            const partial = eventAny.partial;
-            const toolCall = partial?.content?.[ame.contentIndex];
-            const toolCallId = toolCall?.id ?? eventAny.toolCall?.id ?? this.id("tc");
-            const toolCallName = toolCall?.name ?? eventAny.toolCall?.name ?? "unknown";
+            const partial = ame.partial;
+            const block = ame.contentIndex !== undefined && partial && Array.isArray(partial.content)
+              ? partial.content[ame.contentIndex]
+              : undefined;
+            const toolCall = isToolCall(block)
+              ? block
+              : (isToolCall(ame.toolCall) ? ame.toolCall : undefined);
+            const toolCallId = toolCall?.id ?? this.id("tc");
+            const toolCallName = toolCall?.name ?? "unknown";
             this.openToolCallIds.add(toolCallId);
             out.push({
               type: EventType.TOOL_CALL_START,
@@ -450,7 +401,7 @@ export class PiToAguiTranslator {
 
       default:
         log.debug("translate.unknown_type", {
-          piType: (event as { type: string }).type,
+          piType: eventType,
         });
     }
 

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
-import { ToolCallGroup } from "@/components/agent-code/tool-call-group";
-import type { ToolCallGroup as Group } from "@/lib/features/agent-code/types";
+import { ToolCallGroup } from "@/components/code/tool-call-group";
+import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 
 const base: Group = {
   id: "t1",

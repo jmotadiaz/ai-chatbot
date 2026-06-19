@@ -2,20 +2,16 @@
 
 import * as React from "react";
 import { memo } from "react";
-import { ChevronDownIcon } from "lucide-react";
 import type { Message } from "@ag-ui/client";
 import { ToolCallGroup } from "./tool-call-group";
 import { Response } from "@/components/chat/response";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import type { ToolCallGroup as Group } from "@/lib/features/agent-code/types";
+import { ReasoningBlock } from "@/components/chat/reasoning";
+import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 
 export interface AgentMessageProps {
   message: Message;
   toolGroups?: Group[];
+  isStreaming?: boolean;
 }
 
 const ToolResultBlock: React.FC<{ content: string }> = ({ content }) => (
@@ -29,20 +25,59 @@ const ToolResultBlock: React.FC<{ content: string }> = ({ content }) => (
   </details>
 );
 
-const ReasoningBlock: React.FC<{ content: string }> = ({ content }) => (
-  <Collapsible className="mb-4 not-prose" defaultOpen={false}>
-    <CollapsibleTrigger className="flex w-full items-center space-x-2 text-muted-foreground text-sm cursor-pointer user-select-none">
-      <span className="font-semibold">Reasoning</span>
-      <ChevronDownIcon className="size-4 transition-transform [[data-state=open]_&]:rotate-180" />
-    </CollapsibleTrigger>
-    <CollapsibleContent className="mt-2 text-sm text-muted-foreground">
-      <Response>{content}</Response>
-    </CollapsibleContent>
-  </Collapsible>
-);
+const areEqual = (prevProps: AgentMessageProps, nextProps: AgentMessageProps) => {
+  if (prevProps.isStreaming !== nextProps.isStreaming) {
+    return false;
+  }
+
+  const prevMsg = prevProps.message;
+  const nextMsg = nextProps.message;
+
+  if (
+    prevMsg.id !== nextMsg.id ||
+    prevMsg.role !== nextMsg.role ||
+    prevMsg.content !== nextMsg.content
+  ) {
+    return false;
+  }
+
+  const prevGroups = prevProps.toolGroups;
+  const nextGroups = nextProps.toolGroups;
+
+  if (prevGroups === nextGroups) {
+    return true;
+  }
+
+  if (!prevGroups || !nextGroups) {
+    return false;
+  }
+
+  if (prevGroups.length !== nextGroups.length) {
+    return false;
+  }
+
+  for (let i = 0; i < prevGroups.length; i++) {
+    const p = prevGroups[i];
+    const n = nextGroups[i];
+    if (
+      p.id !== n.id ||
+      p.name !== n.name ||
+      p.status !== n.status ||
+      p.result !== n.result ||
+      p.startedAt !== n.startedAt ||
+      p.finishedAt !== n.finishedAt ||
+      p.summary !== n.summary ||
+      p.args !== n.args
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const AgentMessage: React.FC<AgentMessageProps> = memo(
-  ({ message, toolGroups }) => {
+  ({ message, toolGroups, isStreaming }) => {
     if (message.role === "user") {
       const text = typeof message.content === "string" ? message.content : "";
       return (
@@ -63,7 +98,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
       if (!text) return null;
       return (
         <div className="mb-4 pt-2">
-          <ReasoningBlock content={text} />
+          <ReasoningBlock text={text} isStreaming={isStreaming} />
         </div>
       );
     }
@@ -100,6 +135,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
 
     return null;
   },
+  areEqual,
 );
 
 AgentMessage.displayName = "AgentMessage";

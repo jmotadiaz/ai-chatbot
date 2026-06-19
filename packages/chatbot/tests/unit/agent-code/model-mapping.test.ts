@@ -3,7 +3,7 @@ import {
   toPiModelId,
   toChatModelId,
   filterAvailableChatModels,
-} from "@/lib/features/agent-code/model-mapping";
+} from "@/lib/features/code/model-mapping";
 
 describe("model-mapping", () => {
   it("maps chatModelId to Pi opencode-go modelId", () => {

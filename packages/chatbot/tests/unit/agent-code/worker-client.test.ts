@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { WorkerClient } from "@/lib/features/agent-code/worker-client";
+import { WorkerClient } from "@/lib/features/code/worker-client";
 
 describe("WorkerClient", () => {
   it("sends initializeSession request", async () => {

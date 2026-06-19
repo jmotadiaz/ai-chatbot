@@ -6,15 +6,15 @@ import {
   getTraceLogger,
 } from "tracing";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
-import { WorkerClient } from "@/lib/features/agent-code/worker-client";
-import { PiToAguiTranslator } from "@/lib/features/agent-code/pi-to-agui-translator";
+import { WorkerClient } from "@/lib/features/code/worker-client";
+import { PiToAguiTranslator } from "@/lib/features/code/pi-to-agui-translator";
 import {
   getSession,
   touchSession,
   updatePiSessionId,
   updateSessionLabel,
-} from "@/lib/features/agent-code/session-store";
-import { toPiModelId } from "@/lib/features/agent-code/model-mapping";
+} from "@/lib/features/code/session-store";
+import { toPiModelId } from "@/lib/features/code/model-mapping";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export const maxDuration = 240;
@@ -22,24 +22,36 @@ export const maxDuration = 240;
 export const POST = withAuth(async (user, req) => {
   const body = await req.json();
   const threadId = body.threadId as string;
-  const context = (body.context as Array<{ description: string; value: string }>) ?? [];
+  const context =
+    (body.context as Array<{ description: string; value: string }>) ?? [];
   const forwardedProps = (body.forwardedProps as Record<string, string>) ?? {};
 
-  const project = context.find((c) => c.description === "project")?.value ?? forwardedProps.project;
-  const sessionId = context.find((c) => c.description === "sessionId")?.value ?? forwardedProps.sessionId ?? threadId;
-  const modelId = context.find((c) => c.description === "modelId")?.value ?? forwardedProps.modelId;
+  const project =
+    context.find((c) => c.description === "project")?.value ??
+    forwardedProps.project;
+  const sessionId =
+    context.find((c) => c.description === "sessionId")?.value ??
+    forwardedProps.sessionId ??
+    threadId;
+  const modelId =
+    context.find((c) => c.description === "modelId")?.value ??
+    forwardedProps.modelId;
 
   if (!modelId) {
     return new Response(
-      JSON.stringify({ error: "modelId is required in context or forwardedProps" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "modelId is required in context or forwardedProps",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
   if (!project) {
     return new Response(
-      JSON.stringify({ error: "project is required in context or forwardedProps" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "project is required in context or forwardedProps",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -58,7 +70,13 @@ export const POST = withAuth(async (user, req) => {
   try {
     return await runWithTraceContext({ runId, sessionId, sink }, async () => {
       const log = getTraceLogger("bridge");
-      log.info("request.start", { threadId, sessionId, project, modelId, messageCount: messages.length });
+      log.info("request.start", {
+        threadId,
+        sessionId,
+        project,
+        modelId,
+        messageCount: messages.length,
+      });
 
       const dbSession = await getSession({ userId: user.id, sessionId });
       log.info("db.lookup", { found: !!dbSession, sessionId });
@@ -69,7 +87,9 @@ export const POST = withAuth(async (user, req) => {
 
       const client = new WorkerClient();
 
-      const piModelId = modelId ? toPiModelId(modelId as chatModelId) : undefined;
+      const piModelId = modelId
+        ? toPiModelId(modelId as chatModelId)
+        : undefined;
       log.info("model.mapping", { from: modelId, to: piModelId });
 
       const initStop = log.startTimer("worker.initialize");
@@ -77,14 +97,19 @@ export const POST = withAuth(async (user, req) => {
         userId: user.id,
         sessionId,
         project,
-        modelId: piModelId ? `${piModelId.providerId}/${piModelId.modelId}` : undefined,
+        modelId: piModelId
+          ? `${piModelId.providerId}/${piModelId.modelId}`
+          : undefined,
         piSessionId: dbSession.piSessionId ?? undefined,
         _traceRunId: runId,
       });
       initStop();
 
       // Persist the piSessionId mapping if it's new or changed
-      if (initResult.piSessionId && initResult.piSessionId !== dbSession.piSessionId) {
+      if (
+        initResult.piSessionId &&
+        initResult.piSessionId !== dbSession.piSessionId
+      ) {
         log.info("db.update_pi_session_id", {
           sessionId,
           piSessionId: initResult.piSessionId,
@@ -97,7 +122,9 @@ export const POST = withAuth(async (user, req) => {
       }
 
       const prompt = messages[messages.length - 1]?.content ?? "";
-      const sendStop = log.startTimer("worker.sendPrompt", { promptLength: prompt.length });
+      const sendStop = log.startTimer("worker.sendPrompt", {
+        promptLength: prompt.length,
+      });
       const workerStream = await client.sendPrompt({
         sessionId,
         prompt,
@@ -112,7 +139,10 @@ export const POST = withAuth(async (user, req) => {
       if (!dbSession.label) {
         const firstUserMsg = messages.find((m) => m.role === "user");
         if (firstUserMsg?.content?.trim()) {
-          const label = firstUserMsg.content.trim().split("\n")[0]!.slice(0, 80);
+          const label = firstUserMsg.content
+            .trim()
+            .split("\n")[0]!
+            .slice(0, 80);
           await updateSessionLabel({
             userId: user.id,
             sessionId,
@@ -130,7 +160,10 @@ export const POST = withAuth(async (user, req) => {
           reader = workerStream.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
-          const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
+          const translator = new PiToAguiTranslator({
+            threadId: sessionId,
+            runId,
+          });
 
           try {
             while (true) {
@@ -147,17 +180,22 @@ export const POST = withAuth(async (user, req) => {
                   const piEvent = JSON.parse(line);
                   const aguiEvents = translator.translate(piEvent);
                   for (const aguiEvent of aguiEvents) {
-                    const stepName = (aguiEvent as { stepName?: string }).stepName;
-                    const toolCallId = (aguiEvent as {
-                      rawEvent?: { toolCallId?: string };
-                    }).rawEvent?.toolCallId;
+                    const stepName = (aguiEvent as { stepName?: string })
+                      .stepName;
+                    const toolCallId = (
+                      aguiEvent as {
+                        rawEvent?: { toolCallId?: string };
+                      }
+                    ).rawEvent?.toolCallId;
                     log.debug("stream.event", {
                       piType: piEvent.type,
                       aguiType: aguiEvent.type,
                       stepName,
                       toolCallId,
                     });
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`));
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`),
+                    );
                   }
                 } catch {
                   log.warn("stream.malformed", { line: line.slice(0, 500) });
@@ -172,7 +210,9 @@ export const POST = withAuth(async (user, req) => {
               runId,
               message: String(err),
             };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`));
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`),
+            );
           } finally {
             log.info("stream.close");
             controller.close();

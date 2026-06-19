@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { summarizeToolCall } from "@/lib/features/agent-code/tool-summary";
+import { summarizeToolCall } from "@/lib/features/code/tool-summary";
 
 describe("summarizeToolCall", () => {
   it("returns the command for bash", () => {
@@ -11,7 +11,9 @@ describe("summarizeToolCall", () => {
   });
 
   it("returns the path for read", () => {
-    expect(summarizeToolCall("read", { path: "/foo/bar.ts" })).toBe("/foo/bar.ts");
+    expect(summarizeToolCall("read", { path: "/foo/bar.ts" })).toBe(
+      "/foo/bar.ts",
+    );
   });
 
   it("returns the path for write and edit", () => {
@@ -31,12 +33,16 @@ describe("summarizeToolCall", () => {
   });
 
   it("prefers pattern over path for find", () => {
-    expect(summarizeToolCall("find", { pattern: "*.ts", path: "/src" })).toBe("*.ts");
+    expect(summarizeToolCall("find", { pattern: "*.ts", path: "/src" })).toBe(
+      "*.ts",
+    );
   });
 
   it("truncates long strings with ellipsis", () => {
     const long = "x".repeat(200);
-    expect(summarizeToolCall("bash", { command: long })).toBe(`${"x".repeat(80)}…`);
+    expect(summarizeToolCall("bash", { command: long })).toBe(
+      `${"x".repeat(80)}…`,
+    );
   });
 
   it("falls back to JSON.stringify for unknown tools", () => {
