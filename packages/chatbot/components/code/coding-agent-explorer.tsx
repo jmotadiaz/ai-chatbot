@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { Collapsible } from "@/components/ui/internal-collapsible";
 import {
   getCodingAgentSessions,
   createCodingAgentSession,
@@ -52,75 +52,65 @@ export const CodingAgentExplorer: React.FC<CodingAgentExplorerProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {projects.map((project) => {
         const isExpanded = expandedProject === project;
         const sessions = sessionsMap[project];
         const isLoading = loadingProject === project;
 
         return (
-          <div
+          <Collapsible
             key={project}
-            className="bg-secondary rounded-lg overflow-hidden"
+            title={project}
+            isOpen={isExpanded}
+            onToggle={() => handleToggle(project)}
+            className="bg-secondary rounded-lg overflow-hidden border-none px-4"
           >
-            <button
-              onClick={() => handleToggle(project)}
-              className="w-full flex items-center gap-3 p-3 text-left hover:bg-accent transition-colors"
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-              )}
-              <span className="font-semibold">{project}</span>
-            </button>
-
-            {isExpanded && (
-              <div className="border-t border-border">
-                {isLoading ? (
-                  <div className="p-4 text-sm text-muted-foreground">
-                    Loading sessions...
-                  </div>
-                ) : sessions ? (
-                  <div className="p-3">
-                    <button
-                      onClick={() => handleCreateSession(project)}
-                      className="mb-3 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
-                    >
-                      + New session
-                    </button>
-                    {sessions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No sessions yet
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {sessions.map((session) => (
-                          <Link
-                            key={session.id}
-                            href={`/agent/code/${encodeURIComponent(project)}/${session.sessionId}`}
-                            className="block p-3 bg-secondary rounded-lg transition-colors"
+            <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 pb-2">
+              {isLoading ? (
+                <div className="text-sm text-muted-foreground py-2">
+                  Loading sessions...
+                </div>
+              ) : sessions ? (
+                <div>
+                  <button
+                    onClick={() => handleCreateSession(project)}
+                    className="mb-4 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-sm transition-colors font-medium"
+                  >
+                    + New session
+                  </button>
+                  {sessions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">
+                      No sessions yet
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {sessions.map((session) => (
+                        <Link
+                          key={session.id}
+                          href={`/agent/code/${encodeURIComponent(project)}/${session.sessionId}`}
+                          className="block p-3 bg-background border border-border hover:border-zinc-300 dark:hover:border-zinc-600 rounded-lg transition-colors"
+                        >
+                          <h4
+                            className="font-semibold text-sm hover:underline truncate"
+                            title={session.label ?? session.sessionId}
                           >
-                            <h4
-                              className="font-semibold text-sm hover:underline truncate"
-                              title={session.label ?? session.sessionId}
-                            >
-                              {session.label ?? session.sessionId}
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {session.updatedAt.toLocaleString()}
-                            </p>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
+                            {session.label ?? session.sessionId}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {session.updatedAt.toLocaleString()}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </Collapsible>
         );
       })}
     </div>
   );
 };
+
