@@ -1,6 +1,10 @@
 import { EventType, type BaseEvent } from "@ag-ui/client";
 import { getTraceLogger } from "tracing";
-import type { CodingAgentEvent, RelaxedToolCall, ContentBlock } from "coding-agent";
+import type {
+  CodingAgentEvent,
+  ContentBlock,
+  RelaxedToolCall,
+} from "coding-agent";
 
 function isToolCall(block: ContentBlock | undefined): block is RelaxedToolCall {
   return block !== undefined && (block.type === "toolCall" || "id" in block);
@@ -11,66 +15,67 @@ export interface TranslatorContext {
   runId: string;
 }
 
+interface BufferedToolResult {
+  content: string;
+}
+
 /**
- * Stateful translator from Pi SDK events to AG-UI events.
+ * Near-stateless translator from Pi SDK events to AG-UI events.
  *
- * One instance per run. Tracks the current assistant `messageId` and any open
- * reasoning/tool-call IDs so a stream of `message_update` sub-events can be
- * expanded into the matching AG-UI START / CONTENT / END triplets.
+ * The translator relies on the AG-UI client's "convenience chunk events"
+ * (`TEXT_MESSAGE_CHUNK`, `REASONING_MESSAGE_CHUNK`, `TOOL_CALL_CHUNK`) which
+ * the client auto-expands into the full START / CONTENT / END triads. The
+ * translator therefore only needs a small amount of state to:
+ *
+ *   1. Bind Pi's per-message deltas to a stable `messageId` for the duration
+ *      of the message (set on `message_start`, cleared on `message_end`).
+ *   2. Carry a single in-flight `toolCallId`/`toolCallName` from
+ *      `toolcall_start` to subsequent `toolcall_delta` events.
+ *   3. Buffer a tool result's content if Pi delivers it as a message
+ *      (`message_start`/`message_end` with `role: "toolResult"`).
+ *   4. Remember the `stepName` used on `STEP_STARTED` so the matching
+ *      `STEP_FINISHED` can reuse it (the AG-UI client pairs them by name).
+ *
+ * The 30-second timeout and all the manual "flush" logic from the previous
+ * stateful version are gone: tool results are emitted as soon as Pi notifies
+ * that the tool execution has finished (`tool_execution_end`) or as soon as
+ * the `toolResult` message closes (`message_end`).
  */
 export class PiToAguiTranslator {
   private currentMessageId: string | null = null;
-  private currentReasoningId: string | null = null;
-  private textStarted = false;
-  private openToolCallIds = new Set<string>();
-  private openStepIds = new Set<string>();
-  private emittedToolCallIds = new Set<string>();
-  private toolResultBuffer = new Map<string, { content: string; timestamp: number }>();
-  private counter = 0;
+  private openToolCallIds: string[] = [];
+  private toolResultBuffer = new Map<string, BufferedToolResult>();
+  private emittedToolResults = new Set<string>();
+  private stepNames = new Map<string, string>();
+  private messageCounter = 0;
 
   constructor(private readonly context: TranslatorContext) {}
 
-  private id(prefix: string): string {
-    this.counter += 1;
-    return `${prefix}-${this.counter}`;
+  private nextMessageId(): string {
+    this.messageCounter += 1;
+    return `msg-${this.messageCounter}`;
+  }
+
+  private nextToolMessageId(): string {
+    this.messageCounter += 1;
+    return `tool-msg-${this.messageCounter}`;
   }
 
   private now(): number {
     return Date.now();
   }
 
-  private flushExpiredToolResults(out: BaseEvent[]): void {
-    const now = this.now();
-    for (const [toolCallId, entry] of this.toolResultBuffer.entries()) {
-      if (now - entry.timestamp > 30000) {
-        this.toolResultBuffer.delete(toolCallId);
-        this.emittedToolCallIds.add(toolCallId);
-        out.push({
-          type: EventType.TOOL_CALL_RESULT,
-          messageId: this.id("tool-msg"),
-          toolCallId,
-          role: "tool",
-          content: entry.content,
-          timestamp: now,
-        } as BaseEvent);
-      }
+  private extractToolResult(
+    raw: string | unknown[] | undefined,
+    fallback: unknown,
+  ): string {
+    if (typeof raw === "string") return raw;
+    if (raw === undefined || raw === null) {
+      return typeof fallback === "string"
+        ? fallback
+        : JSON.stringify(fallback ?? "");
     }
-  }
-
-  private flushAllToolResults(out: BaseEvent[]): void {
-    const now = this.now();
-    for (const [toolCallId, entry] of this.toolResultBuffer.entries()) {
-      this.toolResultBuffer.delete(toolCallId);
-      this.emittedToolCallIds.add(toolCallId);
-      out.push({
-        type: EventType.TOOL_CALL_RESULT,
-        messageId: this.id("tool-msg"),
-        toolCallId,
-        role: "tool",
-        content: entry.content,
-        timestamp: now,
-      } as BaseEvent);
-    }
+    return JSON.stringify(raw);
   }
 
   translate(event: CodingAgentEvent): BaseEvent[] {
@@ -78,8 +83,6 @@ export class PiToAguiTranslator {
     const { threadId, runId } = this.context;
     const out: BaseEvent[] = [];
     const eventType = event.type;
-
-    this.flushExpiredToolResults(out);
 
     switch (event.type) {
       case "agent_start":
@@ -92,7 +95,6 @@ export class PiToAguiTranslator {
         break;
 
       case "agent_end":
-        this.flushAllToolResults(out);
         out.push({
           type: EventType.RUN_FINISHED,
           threadId,
@@ -104,11 +106,11 @@ export class PiToAguiTranslator {
       case "message_start": {
         const role = event.message?.role;
         if (role === "toolResult") {
-          const toolCallId = event.message?.toolCallId ?? this.id("tc");
-          const raw = event.message?.content;
-          const content = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
-          if (!this.emittedToolCallIds.has(toolCallId)) {
-            this.toolResultBuffer.set(toolCallId, { content, timestamp: this.now() });
+          const toolCallId = event.message?.toolCallId;
+          if (toolCallId) {
+            this.toolResultBuffer.set(toolCallId, {
+              content: this.extractToolResult(event.message?.content, ""),
+            });
           }
           break;
         }
@@ -116,8 +118,7 @@ export class PiToAguiTranslator {
           log.debug("translate.skip_non_assistant_message_start", { role });
           break;
         }
-        this.currentMessageId = this.id("msg");
-        this.textStarted = false;
+        this.currentMessageId = this.nextMessageId();
         break;
       }
 
@@ -125,36 +126,26 @@ export class PiToAguiTranslator {
         const role = event.message?.role;
         if (role === "toolResult") {
           const toolCallId = event.message?.toolCallId;
-          if (toolCallId && this.toolResultBuffer.has(toolCallId)) {
-            const entry = this.toolResultBuffer.get(toolCallId)!;
+          if (toolCallId && !this.emittedToolResults.has(toolCallId)) {
+            const buffered = this.toolResultBuffer.get(toolCallId);
+            const content =
+              buffered?.content ??
+              this.extractToolResult(event.message?.content, "");
             this.toolResultBuffer.delete(toolCallId);
-            this.emittedToolCallIds.add(toolCallId);
+            this.emittedToolResults.add(toolCallId);
             out.push({
               type: EventType.TOOL_CALL_RESULT,
-              messageId: this.id("tool-msg"),
+              messageId: this.nextToolMessageId(),
               toolCallId,
               role: "tool",
-              content: entry.content,
+              content,
               timestamp: this.now(),
             } as BaseEvent);
           }
           break;
         }
-
         if (this.currentMessageId) {
-          if (this.currentReasoningId) {
-            out.push({
-              type: EventType.REASONING_MESSAGE_END,
-              messageId: this.currentReasoningId,
-              timestamp: this.now(),
-            } as BaseEvent);
-            out.push({
-              type: EventType.REASONING_END,
-              messageId: this.currentReasoningId,
-              timestamp: this.now(),
-            } as BaseEvent);
-            this.currentReasoningId = null;
-          }
+          this.currentMessageId = null;
           for (const toolCallId of this.openToolCallIds) {
             out.push({
               type: EventType.TOOL_CALL_END,
@@ -162,119 +153,58 @@ export class PiToAguiTranslator {
               timestamp: this.now(),
             } as BaseEvent);
           }
-          this.openToolCallIds.clear();
-          if (this.textStarted) {
-            out.push({
-              type: EventType.TEXT_MESSAGE_END,
-              messageId: this.currentMessageId,
-              timestamp: this.now(),
-            } as BaseEvent);
-          }
-          this.currentMessageId = null;
-          this.textStarted = false;
+          this.openToolCallIds = [];
         }
         break;
       }
 
       case "message_update": {
         const ame = event.assistantMessageEvent;
-        if (!ame) {
-          break;
-        }
+        if (!ame) break;
         switch (ame.type) {
-          case "text_start": {
-            if (this.currentReasoningId) {
-              out.push({
-                type: EventType.REASONING_MESSAGE_END,
-                messageId: this.currentReasoningId,
-                timestamp: this.now(),
-              } as BaseEvent);
-              out.push({
-                type: EventType.REASONING_END,
-                messageId: this.currentReasoningId,
-                timestamp: this.now(),
-              } as BaseEvent);
-              this.currentReasoningId = null;
-            }
-            if (this.currentMessageId && !this.textStarted) {
-              out.push({
-                type: EventType.TEXT_MESSAGE_START,
-                messageId: this.currentMessageId,
-                role: "assistant",
-                timestamp: this.now(),
-              } as BaseEvent);
-              this.textStarted = true;
-            }
-            break;
-          }
           case "text_delta": {
             if (!this.currentMessageId) {
               log.debug("translate.dropped", { reason: "text_delta before message_start" });
               break;
             }
             out.push({
-              type: EventType.TEXT_MESSAGE_CONTENT,
+              type: EventType.TEXT_MESSAGE_CHUNK,
               messageId: this.currentMessageId,
+              role: "assistant",
               delta: ame.delta,
               timestamp: this.now(),
             } as BaseEvent);
-            break;
-          }
-          case "text_end":
-            break;
-          case "thinking_start": {
-            if (!this.currentReasoningId) {
-              this.currentReasoningId = this.id("reason");
-              out.push({
-                type: EventType.REASONING_START,
-                messageId: this.currentReasoningId,
-                timestamp: this.now(),
-              } as BaseEvent);
-              out.push({
-                type: EventType.REASONING_MESSAGE_START,
-                messageId: this.currentReasoningId,
-                role: "reasoning",
-                timestamp: this.now(),
-              } as BaseEvent);
-            }
             break;
           }
           case "thinking_delta": {
-            if (!this.currentReasoningId) {
-              this.currentReasoningId = this.id("reason");
-              out.push({
-                type: EventType.REASONING_START,
-                messageId: this.currentReasoningId,
-                timestamp: this.now(),
-              } as BaseEvent);
-              out.push({
-                type: EventType.REASONING_MESSAGE_START,
-                messageId: this.currentReasoningId,
-                role: "reasoning",
-                timestamp: this.now(),
-              } as BaseEvent);
+            if (!this.currentMessageId) {
+              log.debug("translate.dropped", { reason: "thinking_delta before message_start" });
+              break;
             }
             out.push({
-              type: EventType.REASONING_MESSAGE_CONTENT,
-              messageId: this.currentReasoningId,
+              type: EventType.REASONING_MESSAGE_CHUNK,
+              messageId: `${this.currentMessageId}-reason`,
               delta: ame.delta,
               timestamp: this.now(),
             } as BaseEvent);
             break;
           }
-          case "thinking_end":
-            break;
           case "toolcall_start": {
             const partial = ame.partial;
-            const block = ame.contentIndex !== undefined && partial && Array.isArray(partial.content)
-              ? partial.content[ame.contentIndex]
-              : undefined;
+            const block =
+              ame.contentIndex !== undefined &&
+              partial &&
+              Array.isArray(partial.content)
+                ? partial.content[ame.contentIndex]
+                : undefined;
             const toolCall = isToolCall(block)
               ? block
-              : (isToolCall(ame.toolCall) ? ame.toolCall : undefined);
-            const toolCallId = toolCall?.id ?? this.id("tc");
+              : isToolCall(ame.toolCall)
+                ? ame.toolCall
+                : undefined;
+            const toolCallId = toolCall?.id ?? this.nextMessageId();
             const toolCallName = toolCall?.name ?? "unknown";
-            this.openToolCallIds.add(toolCallId);
+            this.openToolCallIds.push(toolCallId);
             out.push({
               type: EventType.TOOL_CALL_START,
               toolCallId,
@@ -285,40 +215,56 @@ export class PiToAguiTranslator {
             break;
           }
           case "toolcall_delta": {
-            // Find the most recent open tool call (Pi keeps one in flight per call).
-            const last = [...this.openToolCallIds].at(-1);
+            const last = this.openToolCallIds[this.openToolCallIds.length - 1];
+            if (!last) {
+              log.debug("translate.dropped", {
+                reason: "toolcall_delta before toolcall_start",
+              });
+              break;
+            }
+            out.push({
+              type: EventType.TOOL_CALL_ARGS,
+              toolCallId: last,
+              delta: ame.delta,
+              timestamp: this.now(),
+            } as BaseEvent);
+            break;
+          }
+          case "toolcall_end": {
+            const last = this.openToolCallIds.pop();
             if (last) {
               out.push({
-                type: EventType.TOOL_CALL_ARGS,
+                type: EventType.TOOL_CALL_END,
                 toolCallId: last,
-                delta: ame.delta,
                 timestamp: this.now(),
               } as BaseEvent);
             }
             break;
           }
-          case "toolcall_end": {
-            // TOOL_CALL_END is emitted on message_end to keep the lifecycle
-            // symmetric with the rest of the protocol; nothing to do here.
-            break;
-          }
+          case "text_start":
+          case "text_end":
+          case "thinking_start":
+          case "thinking_end":
+          case "start":
           case "done":
           case "error":
-          case "start":
+            break;
+          default:
             break;
         }
         break;
       }
 
       case "tool_execution_start": {
-        if (event.toolCallId) {
-          this.openStepIds.add(event.toolCallId);
+        const toolCallId = event.toolCallId;
+        const stepName = `tool:${event.toolName}:${toolCallId ?? this.nextMessageId()}`;
+        if (toolCallId) {
+          this.stepNames.set(toolCallId, stepName);
         }
-        const stepId = event.toolCallId ?? this.id("step");
         out.push({
           type: EventType.STEP_STARTED,
-          stepName: `tool:${event.toolName}:${stepId}`,
-          rawEvent: { toolCallId: event.toolCallId },
+          stepName,
+          rawEvent: { toolCallId },
           timestamp: this.now(),
         } as BaseEvent);
         break;
@@ -329,50 +275,39 @@ export class PiToAguiTranslator {
 
       case "tool_execution_end": {
         const toolCallId = event.toolCallId;
-        const finalId = toolCallId ?? this.id("tc");
+        const finalId = toolCallId ?? this.nextMessageId();
 
-        if (this.emittedToolCallIds.has(finalId)) {
-          log.debug("translate.tool_result_dedup", { toolCallId: finalId });
-          if (toolCallId) {
-            this.openStepIds.delete(toolCallId);
-          }
-          break;
-        }
-        if (!this.currentMessageId && !toolCallId) {
-          log.debug("translate.tool_result_orphan", { toolCallId });
-        }
-
-        let content = "";
-        const entry = this.toolResultBuffer.get(finalId);
-        if (entry) {
+        if (!this.emittedToolResults.has(finalId)) {
+          const buffered = this.toolResultBuffer.get(finalId);
+          const content =
+            buffered?.content ??
+            (typeof event.result === "string"
+              ? event.result
+              : JSON.stringify(event.result ?? ""));
           this.toolResultBuffer.delete(finalId);
-          content = entry.content;
+          this.emittedToolResults.add(finalId);
+          out.push({
+            type: EventType.TOOL_CALL_RESULT,
+            messageId: this.nextToolMessageId(),
+            toolCallId: finalId,
+            role: "tool",
+            content,
+            timestamp: this.now(),
+          } as BaseEvent);
         } else {
-          content = typeof event.result === "string"
-            ? event.result
-            : JSON.stringify(event.result ?? "");
+          log.debug("translate.tool_result_already_emitted", { toolCallId: finalId });
         }
 
-        this.emittedToolCallIds.add(finalId);
-        out.push({
-          type: EventType.TOOL_CALL_RESULT,
-          messageId: this.currentMessageId ?? this.id("tool-msg"),
-          toolCallId: finalId,
-          role: "tool",
-          content,
-          timestamp: this.now(),
-        } as BaseEvent);
-
-        const hadStart = toolCallId
-          ? this.openStepIds.has(toolCallId)
-          : false;
+        const stepName = toolCallId
+          ? this.stepNames.get(toolCallId)
+          : undefined;
         if (toolCallId) {
-          this.openStepIds.delete(toolCallId);
+          this.stepNames.delete(toolCallId);
         }
-        if (hadStart) {
+        if (stepName) {
           out.push({
             type: EventType.STEP_FINISHED,
-            stepName: `tool:${event.toolName}:${finalId}`,
+            stepName,
             rawEvent: { toolCallId: finalId, isError: !!event.isError },
             timestamp: this.now(),
           } as BaseEvent);
@@ -386,7 +321,6 @@ export class PiToAguiTranslator {
         break;
 
       case "turn_end":
-        this.flushAllToolResults(out);
         break;
 
       case "error":
@@ -400,9 +334,7 @@ export class PiToAguiTranslator {
         break;
 
       default:
-        log.debug("translate.unknown_type", {
-          piType: eventType,
-        });
+        log.debug("translate.unknown_type", { piType: eventType });
     }
 
     log.debug("translate", {
