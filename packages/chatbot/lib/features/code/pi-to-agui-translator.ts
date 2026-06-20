@@ -19,31 +19,52 @@ interface BufferedToolResult {
   content: string;
 }
 
+interface ActiveToolCall {
+  id: string;
+  name: string;
+}
+
 /**
  * Near-stateless translator from Pi SDK events to AG-UI events.
  *
- * The translator relies on the AG-UI client's "convenience chunk events"
- * (`TEXT_MESSAGE_CHUNK`, `REASONING_MESSAGE_CHUNK`, `TOOL_CALL_CHUNK`) which
- * the client auto-expands into the full START / CONTENT / END triads. The
- * translator therefore only needs a small amount of state to:
+ * The translator emits the AG-UI tool-call triad explicitly
+ * (`TOOL_CALL_START` → `TOOL_CALL_ARGS` → `TOOL_CALL_END`) plus
+ * `TOOL_CALL_RESULT` so client state machines never get stuck in
+ * "loading". Text and reasoning still go through the AG-UI client's
+ * "convenience chunk" events (`TEXT_MESSAGE_CHUNK`,
+ * `REASONING_MESSAGE_CHUNK`) since the AG-UI client auto-expands them
+ * into the full START / CONTENT / END sequence.
  *
- *   1. Bind Pi's per-message deltas to a stable `messageId` for the duration
- *      of the message (set on `message_start`, cleared on `message_end`).
- *   2. Carry a single in-flight `toolCallId`/`toolCallName` from
- *      `toolcall_start` to subsequent `toolcall_delta` events.
- *   3. Buffer a tool result's content if Pi delivers it as a message
- *      (`message_start`/`message_end` with `role: "toolResult"`).
- *   4. Remember the `stepName` used on `STEP_STARTED` so the matching
- *      `STEP_FINISHED` can reuse it (the AG-UI client pairs them by name).
+ * State held between calls (intentionally minimal):
  *
- * The 30-second timeout and all the manual "flush" logic from the previous
- * stateful version are gone: tool results are emitted as soon as Pi notifies
- * that the tool execution has finished (`tool_execution_end`) or as soon as
- * the `toolResult` message closes (`message_end`).
+ *   1. `currentMessageId` — bound to Pi's `message_start`, cleared on
+ *      `message_end`, gives text/reasoning a stable id for the duration
+ *      of the assistant message.
+ *
+ *   2. `activeToolCalls` — Map keyed by the `contentIndex` that the Pi
+ *      SDK attaches to every `toolcall_start`/`delta`/`end` event. The
+ *      SDK emits assistant-message events as an interleaved stream, so
+ *      multiple tool calls can be in flight at once; keying on
+ *      `contentIndex` keeps each call's `id`/`name` bound to its own
+ *      JSON-args stream and prevents cross-talk between parallel tools.
+ *      Entries are inserted on `toolcall_start`, read on `toolcall_delta`,
+ *      and removed on `toolcall_end`. Any entries still present on
+ *      `message_end` are closed explicitly (Pi sometimes omits
+ *      `toolcall_end`).
+ *
+ *   3. `toolResultBuffer` / `emittedToolResults` — coalesce the two
+ *      sources Pi can deliver a tool result from: a `toolResult`
+ *      message (`message_start`/`message_end`) and `tool_execution_end`.
+ *      Whichever arrives first emits `TOOL_CALL_RESULT`; the other is a
+ *      no-op.
+ *
+ *   4. `stepNames` — remember the `stepName` used on `STEP_STARTED` so
+ *      the matching `STEP_FINISHED` can reuse it (the AG-UI client pairs
+ *      them by name).
  */
 export class PiToAguiTranslator {
   private currentMessageId: string | null = null;
-  private openToolCallIds: string[] = [];
+  private activeToolCalls = new Map<number, ActiveToolCall>();
   private toolResultBuffer = new Map<string, BufferedToolResult>();
   private emittedToolResults = new Set<string>();
   private stepNames = new Map<string, string>();
@@ -146,14 +167,14 @@ export class PiToAguiTranslator {
         }
         if (this.currentMessageId) {
           this.currentMessageId = null;
-          for (const toolCallId of this.openToolCallIds) {
+          for (const { id: toolCallId } of this.activeToolCalls.values()) {
             out.push({
               type: EventType.TOOL_CALL_END,
               toolCallId,
               timestamp: this.now(),
             } as BaseEvent);
           }
-          this.openToolCallIds = [];
+          this.activeToolCalls.clear();
         }
         break;
       }
@@ -190,12 +211,17 @@ export class PiToAguiTranslator {
             break;
           }
           case "toolcall_start": {
+            const contentIndex = ame.contentIndex;
+            if (typeof contentIndex !== "number") {
+              log.debug("translate.dropped", {
+                reason: "toolcall_start missing contentIndex",
+              });
+              break;
+            }
             const partial = ame.partial;
             const block =
-              ame.contentIndex !== undefined &&
-              partial &&
-              Array.isArray(partial.content)
-                ? partial.content[ame.contentIndex]
+              partial && Array.isArray(partial.content)
+                ? partial.content[contentIndex]
                 : undefined;
             const toolCall = isToolCall(block)
               ? block
@@ -204,7 +230,10 @@ export class PiToAguiTranslator {
                 : undefined;
             const toolCallId = toolCall?.id ?? this.nextMessageId();
             const toolCallName = toolCall?.name ?? "unknown";
-            this.openToolCallIds.push(toolCallId);
+            this.activeToolCalls.set(contentIndex, {
+              id: toolCallId,
+              name: toolCallName,
+            });
             out.push({
               type: EventType.TOOL_CALL_START,
               toolCallId,
@@ -215,30 +244,51 @@ export class PiToAguiTranslator {
             break;
           }
           case "toolcall_delta": {
-            const last = this.openToolCallIds[this.openToolCallIds.length - 1];
-            if (!last) {
+            const contentIndex = ame.contentIndex;
+            if (typeof contentIndex !== "number") {
+              log.debug("translate.dropped", {
+                reason: "toolcall_delta missing contentIndex",
+              });
+              break;
+            }
+            const active = this.activeToolCalls.get(contentIndex);
+            if (!active) {
               log.debug("translate.dropped", {
                 reason: "toolcall_delta before toolcall_start",
+                contentIndex,
               });
               break;
             }
             out.push({
               type: EventType.TOOL_CALL_ARGS,
-              toolCallId: last,
+              toolCallId: active.id,
               delta: ame.delta,
               timestamp: this.now(),
             } as BaseEvent);
             break;
           }
           case "toolcall_end": {
-            const last = this.openToolCallIds.pop();
-            if (last) {
-              out.push({
-                type: EventType.TOOL_CALL_END,
-                toolCallId: last,
-                timestamp: this.now(),
-              } as BaseEvent);
+            const contentIndex = ame.contentIndex;
+            if (typeof contentIndex !== "number") {
+              log.debug("translate.dropped", {
+                reason: "toolcall_end missing contentIndex",
+              });
+              break;
             }
+            const active = this.activeToolCalls.get(contentIndex);
+            if (!active) {
+              log.debug("translate.dropped", {
+                reason: "toolcall_end without matching toolcall_start",
+                contentIndex,
+              });
+              break;
+            }
+            this.activeToolCalls.delete(contentIndex);
+            out.push({
+              type: EventType.TOOL_CALL_END,
+              toolCallId: active.id,
+              timestamp: this.now(),
+            } as BaseEvent);
             break;
           }
           case "text_start":
