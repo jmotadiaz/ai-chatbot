@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useCallback, useSyncExternalStore, useRef } from "react";
+import { useEffect, useMemo, useCallback, useSyncExternalStore, useRef } from "react";
 import {
-  HttpAgent,
   EventType,
   type BaseEvent,
   type Message,
 } from "@ag-ui/client";
+import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { groupItems } from "@/lib/features/code/group-items";
 import type { AgentItem } from "@/lib/features/code/types";
 
@@ -32,6 +32,7 @@ export interface UseCodingAgentResult {
   sendMessage: (content: string) => Promise<void>;
   status: AgentStatus;
   error: string | null;
+  cancel: () => Promise<void>;
 }
 
 export function statusFromEvent(
@@ -78,18 +79,47 @@ export function useCodingAgent({
   modelId,
   initialMessages,
 }: UseCodingAgentArgs): UseCodingAgentResult {
-  const agentRef = useRef<{ sessionId: string; agent: HttpAgent } | null>(null);
+  const agentRef = useRef<{ sessionId: string; agent: ConnectableHttpAgent } | null>(null);
   if (agentRef.current === null || agentRef.current.sessionId !== sessionId) {
     agentRef.current = {
       sessionId,
-      agent: new HttpAgent({
-        url: "/api/agent/code",
+      agent: new ConnectableHttpAgent({
+        runUrl: "/api/agent/code",
+        connectUrl: "/api/agent/code/connect",
         threadId: sessionId,
         initialMessages,
       }),
     };
   }
   const agent = agentRef.current.agent;
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`/api/agent/code/sessions/${sessionId}/status`);
+        if (!res.ok) return;
+        const status = (await res.json()) as { running: boolean; piSessionId?: string };
+        if (cancelled) return;
+        if (status.running) {
+          await agent.connectAgent({
+            runId: crypto.randomUUID(),
+            context: [
+              { description: "project", value: project },
+              { description: "sessionId", value: sessionId },
+              { description: "modelId", value: modelId },
+            ],
+          });
+        }
+      } catch {
+        // status endpoint failure is non-fatal
+      }
+    };
+    void checkStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, project, sessionId, modelId]);
 
   const store = useMemo(() => {
     const currentAgent = agentRef.current?.agent;
@@ -213,6 +243,12 @@ export function useCodingAgent({
             onMessagesChanged: () => {
               update(() => ({ messages: [...currentAgent.messages] }));
             },
+            onMessagesSnapshotEvent: ({ event }) => {
+              update(() => ({
+                messages: event.messages,
+                error: null,
+              }));
+            },
           });
         }
         return () => {
@@ -295,5 +331,12 @@ export function useCodingAgent({
     sendMessage,
     status: state.status,
     error: state.error,
+    cancel: async () => {
+      await fetch("/api/agent/code/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+    },
   };
 }
