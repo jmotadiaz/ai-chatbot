@@ -12,11 +12,20 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
 
+interface InFlightTool {
+  toolCallId: string;
+  name: string;
+  argsSoFar: string;
+  parentMessageId?: string;
+}
+
 interface SessionEntry {
   sessionId: string;
   piSessionId: string;
   project: string;
   runtime: Awaited<ReturnType<typeof createAgentSessionRuntime>>;
+  inFlightTools: Map<number, InFlightTool>;
+  inFlightSteps: Map<string, string>;
 }
 
 const sessions = new Map<string, SessionEntry>();
@@ -111,6 +120,8 @@ async function loadSessionFromDisk(
     piSessionId,
     project,
     runtime,
+    inFlightTools: new Map(),
+    inFlightSteps: new Map(),
   };
   sessions.set(appSessionId, entry);
   log.info("session.load_disk_done", { appSessionId, piSessionId });
@@ -199,6 +210,8 @@ export async function getOrCreateSession(options: {
     piSessionId,
     project: options.project,
     runtime,
+    inFlightTools: new Map(),
+    inFlightSteps: new Map(),
   });
   return { sessionId, piSessionId };
 }
@@ -227,6 +240,36 @@ export async function sendPrompt(
     start(controller) {
       const unsubscribe = runtime.session.subscribe((event) => {
         log.debug("pi.event", { type: event.type });
+
+        if (event.type === "message_update") {
+          const ame = event.assistantMessageEvent as
+            | { type: string; contentIndex?: number; toolCall?: { id?: string; name?: string }; delta?: string }
+            | undefined;
+          if (ame?.type === "toolcall_start" && typeof ame.contentIndex === "number") {
+            const toolCallId = ame.toolCall?.id ?? `tool-${crypto.randomUUID()}`;
+            const name = ame.toolCall?.name ?? "unknown";
+            entry.inFlightTools.set(ame.contentIndex, {
+              toolCallId,
+              name,
+              argsSoFar: "",
+            });
+          } else if (ame?.type === "toolcall_delta" && typeof ame.contentIndex === "number") {
+            const t = entry.inFlightTools.get(ame.contentIndex);
+            if (t) t.argsSoFar += ame.delta ?? "";
+          } else if (ame?.type === "toolcall_end" && typeof ame.contentIndex === "number") {
+          }
+        } else if (event.type === "message_end") {
+          entry.inFlightTools.clear();
+          entry.inFlightSteps.clear();
+        } else if (event.type === "tool_execution_start") {
+          const id = (event as { toolCallId?: string }).toolCallId;
+          const name = (event as { toolName?: string }).toolName;
+          if (id && name) entry.inFlightSteps.set(id, `tool:${name}:${id}`);
+        } else if (event.type === "tool_execution_end") {
+          const id = (event as { toolCallId?: string }).toolCallId;
+          if (id) entry.inFlightSteps.delete(id);
+        }
+
         const line = JSON.stringify(event) + "\n";
         controller.enqueue(encoder.encode(line));
       });
