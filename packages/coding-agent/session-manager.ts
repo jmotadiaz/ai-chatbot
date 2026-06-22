@@ -25,7 +25,6 @@ interface SessionEntry {
   project: string;
   runtime: Awaited<ReturnType<typeof createAgentSessionRuntime>>;
   inFlightTools: Map<number, InFlightTool>;
-  inFlightSteps: Map<string, string>;
 }
 
 const sessions = new Map<string, SessionEntry>();
@@ -121,7 +120,6 @@ async function loadSessionFromDisk(
     project,
     runtime,
     inFlightTools: new Map(),
-    inFlightSteps: new Map(),
   };
   sessions.set(appSessionId, entry);
   log.info("session.load_disk_done", { appSessionId, piSessionId });
@@ -211,7 +209,6 @@ export async function getOrCreateSession(options: {
     project: options.project,
     runtime,
     inFlightTools: new Map(),
-    inFlightSteps: new Map(),
   });
   return { sessionId, piSessionId };
 }
@@ -260,14 +257,6 @@ export async function sendPrompt(
           }
         } else if (event.type === "message_end") {
           entry.inFlightTools.clear();
-          entry.inFlightSteps.clear();
-        } else if (event.type === "tool_execution_start") {
-          const id = (event as { toolCallId?: string }).toolCallId;
-          const name = (event as { toolName?: string }).toolName;
-          if (id && name) entry.inFlightSteps.set(id, `tool:${name}:${id}`);
-        } else if (event.type === "tool_execution_end") {
-          const id = (event as { toolCallId?: string }).toolCallId;
-          if (id) entry.inFlightSteps.delete(id);
         }
 
         const line = JSON.stringify(event) + "\n";
