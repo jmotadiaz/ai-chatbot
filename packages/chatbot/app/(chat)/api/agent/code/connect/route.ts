@@ -85,6 +85,7 @@ export const POST = withAuth(async (user, req) => {
           const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
           let buffer = "";
           let snapshotEmitted = false;
+          let runStartedEmitted = false;
 
           const emit = (aguiEvent: object) => {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`));
@@ -106,6 +107,16 @@ export const POST = withAuth(async (user, req) => {
                 } catch {
                   log.warn("connect.malformed", { line: line.slice(0, 500) });
                   continue;
+                }
+
+                if (!runStartedEmitted) {
+                  runStartedEmitted = true;
+                  emit({
+                    type: EventType.RUN_STARTED,
+                    threadId: sessionId,
+                    runId,
+                    timestamp: Date.now(),
+                  } as object);
                 }
 
                 if (piEvent.type === "snapshot" && !snapshotEmitted) {
@@ -145,7 +156,16 @@ export const POST = withAuth(async (user, req) => {
                 if (piEvent.type === "snapshot") continue;
 
                 const aguiEvents = translator.translate(piEvent as never);
-                for (const e of aguiEvents) emit(e);
+                for (const e of aguiEvents) {
+                  // We already emitted a synthetic RUN_STARTED above. Skip
+                  // any translated RUN_STARTED that the worker would emit
+                  // via its own `agent_start` event — sending it twice
+                  // violates the AG-UI verifyEvents invariant.
+                  if (e.type === EventType.RUN_STARTED && runStartedEmitted) {
+                    continue;
+                  }
+                  emit(e);
+                }
               }
             }
           } catch (err) {

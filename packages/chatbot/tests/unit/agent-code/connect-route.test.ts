@@ -100,17 +100,22 @@ describe("POST /api/agent/code/connect", () => {
 
     const events = parseSseEvents(await res.text());
 
-    expect(events[0].type).toBe("MESSAGES_SNAPSHOT");
-    expect(events[0].messages).toEqual([
+    // RUN_STARTED is emitted first to satisfy the AG-UI verifyEvents invariant
+    // (the first event of any run must be RUN_STARTED or RUN_ERROR).
+    // The translated `agent_start` from the worker would also become
+    // RUN_STARTED; the route suppresses it to avoid a duplicate.
+    expect(events[0].type).toBe("RUN_STARTED");
+    expect(events[0].threadId).toBe("s");
+    expect(events[1].type).toBe("MESSAGES_SNAPSHOT");
+    expect(events[1].messages).toEqual([
       { id: "m1", role: "user", content: "hello" },
     ]);
-    expect(events[1].type).toBe("TOOL_CALL_START");
-    expect(events[1].toolCallId).toBe("t1");
-    expect(events[1].toolCallName).toBe("bash");
-    expect(events[2].type).toBe("TOOL_CALL_ARGS");
+    expect(events[2].type).toBe("TOOL_CALL_START");
     expect(events[2].toolCallId).toBe("t1");
-    expect(events[2].delta).toBe('{"c');
-    expect(events[3].type).toBe("RUN_STARTED");
+    expect(events[2].toolCallName).toBe("bash");
+    expect(events[3].type).toBe("TOOL_CALL_ARGS");
+    expect(events[3].toolCallId).toBe("t1");
+    expect(events[3].delta).toBe('{"c');
     expect(events[4].type).toBe("RUN_FINISHED");
   });
 });
