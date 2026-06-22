@@ -62,6 +62,57 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  if (method === "connectToSession") {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const messages = [
+          { id: "m-1", role: "user", content: "Stub user message" },
+          { id: "m-2", role: "assistant", content: "Stub assistant reply" },
+        ];
+        const inFlight: Array<{ toolCallId: string; name: string; argsSoFar: string }> = [];
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ type: "snapshot", messages, inFlight }) + "\n"),
+        );
+        controller.enqueue(encoder.encode(JSON.stringify({ type: "agent_start" }) + "\n"));
+        controller.enqueue(
+          encoder.encode(
+            JSON.stringify({
+              type: "message_update",
+              assistantMessageEvent: { type: "text_delta", delta: "Reconnected to stub" },
+            }) + "\n",
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            JSON.stringify({ type: "message_end", message: { role: "assistant" } }) + "\n",
+          ),
+        );
+        controller.enqueue(encoder.encode(JSON.stringify({ type: "agent_end" }) + "\n"));
+        controller.close();
+      },
+    });
+    return new Response(stream, {
+      headers: { "Content-Type": "application/x-ndjson" },
+    });
+  }
+
+  if (method === "cancelRun") {
+    return NextResponse.json({
+      jsonrpc: "2.0",
+      result: { cancelled: true },
+      id: 1,
+    });
+  }
+
+  if (method === "getSessionStatus") {
+    return NextResponse.json({
+      jsonrpc: "2.0",
+      result: { running: false },
+      id: 1,
+    });
+  }
+
   return NextResponse.json(
     { jsonrpc: "2.0", error: { code: -32601, message: "Method not found" }, id: 1 },
     { status: 404 },
