@@ -38,19 +38,99 @@ export async function POST(req: NextRequest) {
   }
 
   if (method === "sendPrompt") {
+    const prompt = params?.prompt ?? "";
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        const events = [
-          { type: "agent_start" },
-          { type: "message_start", messageId: "msg-1" },
-          {
-            type: "message_update",
-            assistantMessageEvent: { type: "text_delta", delta: "Hello from stub" },
-          },
-          { type: "message_end", messageId: "msg-1" },
-          { type: "agent_end" },
-        ];
+        let events = [];
+        if (prompt.includes("list files")) {
+          events = [
+            { type: "agent_start" },
+            { type: "message_start", message: { role: "assistant" } },
+            // Tool 1: list files
+            {
+              type: "message_update",
+              assistantMessageEvent: {
+                type: "toolcall_start",
+                contentIndex: 0,
+                toolCall: { id: "tc-1", name: "bash" },
+              },
+            },
+            {
+              type: "message_update",
+              assistantMessageEvent: {
+                type: "toolcall_delta",
+                contentIndex: 0,
+                delta: '{"command":"ls"}',
+              },
+            },
+            {
+              type: "message_update",
+              assistantMessageEvent: {
+                type: "toolcall_end",
+                contentIndex: 0,
+              },
+            },
+            {
+              type: "tool_execution_start",
+              toolCallId: "tc-1",
+              toolName: "bash",
+            },
+            {
+              type: "tool_execution_end",
+              toolCallId: "tc-1",
+              result: "README.md\nsrc/",
+            },
+            // Tool 2: read README
+            {
+              type: "message_update",
+              assistantMessageEvent: {
+                type: "toolcall_start",
+                contentIndex: 1,
+                toolCall: { id: "tc-2", name: "view_file" },
+              },
+            },
+            {
+              type: "message_update",
+              assistantMessageEvent: {
+                type: "toolcall_delta",
+                contentIndex: 1,
+                delta: '{"path":"README.md"}',
+              },
+            },
+            {
+              type: "message_update",
+              assistantMessageEvent: {
+                type: "toolcall_end",
+                contentIndex: 1,
+              },
+            },
+            {
+              type: "tool_execution_start",
+              toolCallId: "tc-2",
+              toolName: "view_file",
+            },
+            {
+              type: "tool_execution_end",
+              toolCallId: "tc-2",
+              result: "# AI Chatbot\nThis is a Next.js app.",
+            },
+            // Message end
+            { type: "message_end", message: { role: "assistant" } },
+            { type: "agent_end" },
+          ];
+        } else {
+          events = [
+            { type: "agent_start" },
+            { type: "message_start", message: { role: "assistant" } },
+            {
+              type: "message_update",
+              assistantMessageEvent: { type: "text_delta", delta: "Hello from stub" },
+            },
+            { type: "message_end", message: { role: "assistant" } },
+            { type: "agent_end" },
+          ];
+        }
         for (const event of events) {
           controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
         }
@@ -67,19 +147,30 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         const messages = [
-          { id: "m-1", role: "user", content: "Stub user message" },
-          { id: "m-2", role: "assistant", content: "Stub assistant reply" },
+          { id: "loaded-0", role: "user", content: "Stub user message" },
+          { id: "loaded-1", role: "assistant", content: "Stub assistant reply" },
         ];
-        const inFlight: Array<{ toolCallId: string; name: string; argsSoFar: string }> = [];
+        const inFlight: Array<{
+          contentIndex: number;
+          toolCallId: string;
+          name: string;
+          argsSoFar: string;
+          parentMessageId?: string;
+        }> = [];
         controller.enqueue(
-          encoder.encode(JSON.stringify({ type: "snapshot", messages, inFlight }) + "\n"),
+          encoder.encode(JSON.stringify({ type: "snapshot", messages, inFlight, isStreaming: false }) + "\n"),
         );
         controller.enqueue(encoder.encode(JSON.stringify({ type: "agent_start" }) + "\n"));
         controller.enqueue(
           encoder.encode(
+            JSON.stringify({ type: "message_start", message: { role: "assistant" } }) + "\n",
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
             JSON.stringify({
               type: "message_update",
-              assistantMessageEvent: { type: "text_delta", delta: "Reconnected to stub" },
+              assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Reconnected to stub" },
             }) + "\n",
           ),
         );

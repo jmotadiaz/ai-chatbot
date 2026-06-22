@@ -1,6 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import {
   FileTraceSink,
   isTracingEnabled,
@@ -77,10 +76,6 @@ export async function getCodingAgentProjects() {
 export async function getCodingAgentSessions(project: string) {
   return withActionTrace("getCodingAgentSessions", async (log) => {
     assertEnabled();
-    if (process.env.NEXT_PUBLIC_ENV === "test" || process.env.NODE_ENV === "test") {
-      log.info("action.result", { count: 0, mocked: true });
-      return [];
-    }
     const userId = await getUserId();
     const result = await listSessions({ userId, project });
     log.info("action.result", { count: result.length });
@@ -91,11 +86,6 @@ export async function getCodingAgentSessions(project: string) {
 export async function createCodingAgentSession(project: string, modelId?: string) {
   return withActionTrace("createCodingAgentSession", async (log) => {
     assertEnabled();
-    if (process.env.NEXT_PUBLIC_ENV === "test" || process.env.NODE_ENV === "test") {
-      const sessionId = randomUUID();
-      log.info("action.result", { sessionId, mocked: true });
-      return { id: sessionId, sessionId, project, userId: "test-user", label: null, modelId: modelId ?? null, piSessionId: null, updatedAt: new Date() };
-    }
     const userId = await getUserId();
     const result = await createSession({ userId, project, modelId });
     log.info("action.result", { sessionId: result.sessionId });
@@ -122,6 +112,21 @@ export async function getCodingAgentModels() {
   });
 }
 
+
+export async function getCodingAgentStatus(sessionId: string): Promise<{ running: boolean; piSessionId?: string }> {
+  return withActionTrace("getCodingAgentStatus", async (log) => {
+    assertEnabled();
+    try {
+      const client = new WorkerClient();
+      const status = await client.getSessionStatus({ sessionId });
+      log.info("action.result", { running: status.running });
+      return status;
+    } catch {
+      log.warn("action.failed_fetching_status");
+      return { running: false };
+    }
+  });
+}
 
 export async function getCodingAgentMessages(project: string, sessionId: string): Promise<Message[]> {
   return withActionTrace("getCodingAgentMessages", async (log) => {

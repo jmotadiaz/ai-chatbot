@@ -36,6 +36,10 @@ const server = createServer(async (req, res) => {
     );
     if (response.body) {
       const reader = response.body.getReader();
+      const onClose = () => {
+        reader.cancel().catch(() => {});
+      };
+      res.on("close", onClose);
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -43,6 +47,7 @@ const server = createServer(async (req, res) => {
           res.write(value);
         }
       } finally {
+        res.off("close", onClose);
         reader.releaseLock();
       }
     }

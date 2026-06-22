@@ -13,6 +13,7 @@ export interface AgentCodeChatProps {
   sessionId: string;
   modelId: string;
   initialMessages: Message[];
+  isInitiallyRunning: boolean;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
@@ -20,6 +21,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   sessionId,
   modelId,
   initialMessages,
+  isInitiallyRunning,
 }) => {
   const [input, setInput] = useState("");
   const { items, isRunning, sendMessage, status, error } = useCodingAgent({
@@ -27,6 +29,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     sessionId,
     modelId,
     initialMessages,
+    isInitiallyRunning,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

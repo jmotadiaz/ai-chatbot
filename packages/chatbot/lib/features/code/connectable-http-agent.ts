@@ -22,6 +22,7 @@ export class ConnectableHttpAgent extends AbstractAgent {
   private connectUrl: string;
   private headers: Record<string, string>;
   private fetchImpl: typeof fetch;
+  private abortController = new AbortController();
 
   constructor(config: ConnectableHttpAgentConfig) {
     super({
@@ -42,14 +43,25 @@ export class ConnectableHttpAgent extends AbstractAgent {
     return this.httpStream(this.connectUrl, input);
   }
 
+  abortRun(): void {
+    this.abortController.abort();
+  }
+
+  private requestInit(input: RunAgentInput): RequestInit {
+    return {
+      method: "POST",
+      headers: {
+        ...this.headers,
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify(input),
+      signal: this.abortController.signal,
+    };
+  }
+
   private httpStream(url: string, input: RunAgentInput): Observable<BaseEvent> {
-    const http$ = runHttpRequest(() =>
-      this.fetchImpl(url, {
-        method: "POST",
-        headers: { ...this.headers, "Content-Type": "application/json", Accept: "text/event-stream" },
-        body: JSON.stringify(input),
-      }),
-    );
+    const http$ = runHttpRequest(() => this.fetchImpl(url, this.requestInit(input)));
     return transformHttpEventStream(http$, this.debugLogger);
   }
 }

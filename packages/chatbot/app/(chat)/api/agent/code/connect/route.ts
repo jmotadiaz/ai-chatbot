@@ -9,6 +9,18 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export const maxDuration = 240;
 
+interface AguiMessage {
+  id: string;
+  role: string;
+  content?: string;
+  toolCallId?: string;
+  toolCalls?: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
+}
+
 export const POST = withAuth(async (user, req) => {
   const body = await req.json();
   const threadId = body.threadId as string;
@@ -109,6 +121,11 @@ export const POST = withAuth(async (user, req) => {
                   continue;
                 }
 
+                log.info("connect.worker_event", {
+                  type: piEvent.type,
+                  payloadKeys: Object.keys(piEvent),
+                });
+
                 if (!runStartedEmitted) {
                   runStartedEmitted = true;
                   emit({
@@ -121,24 +138,115 @@ export const POST = withAuth(async (user, req) => {
 
                 if (piEvent.type === "snapshot" && !snapshotEmitted) {
                   snapshotEmitted = true;
+                  const aguiMessages = ((piEvent.messages as Array<AguiMessage>) ?? []);
                   const inFlight = (piEvent.inFlight as Array<{
+                    contentIndex: number;
                     toolCallId: string;
                     name: string;
                     argsSoFar: string;
                     parentMessageId?: string;
+                    callEnded?: boolean;
                   }>) ?? [];
-                  const messages = (piEvent.messages as Array<{ id?: string; role: string; content: string }>) ?? [];
+                  const isStreaming = (piEvent.isStreaming as boolean) ?? false;
+
+                  log.info("connect.snapshot_received", {
+                    sessionId,
+                    messageCount: aguiMessages.length,
+                    messagesOverview: aguiMessages.map(m => ({ id: m.id, role: m.role, hasToolCalls: !!m.toolCalls })),
+                    inFlightCount: inFlight.length,
+                    isStreaming,
+                    inFlight: inFlight.map((t) => ({
+                      contentIndex: t.contentIndex,
+                      toolCallId: t.toolCallId,
+                      name: t.name,
+                      parentMessageId: t.parentMessageId,
+                      callEnded: t.callEnded,
+                    })),
+                  });
+
+                  const lastAssistantMsg = [...aguiMessages]
+                    .reverse()
+                    .find((m) => m.role === "assistant");
+
+                  const inFlightWithParent = inFlight.find(
+                    (t) => t.parentMessageId,
+                  );
+                  const liveMessageId =
+                    inFlightWithParent?.parentMessageId ??
+                    (isStreaming ? lastAssistantMsg?.id : undefined);
+
+                  // Build the set of tool-call IDs whose result messages are
+                  // already present in the snapshot. The translator must not
+                  // re-emit TOOL_CALL_RESULT for them when the live stream
+                  // replays tool_execution_end.
+                  const emittedToolResultIds = new Set<string>();
+                  for (const m of aguiMessages) {
+                    if (m.role === "tool" && m.toolCallId) {
+                      emittedToolResultIds.add(m.toolCallId);
+                    }
+                  }
+
+                  // Build the stepNames map for in-flight tools whose
+                  // tool_execution_start already happened before the
+                  // snapshot. The matching STEP_FINISHED will be emitted
+                  // by the translator when tool_execution_end arrives.
+                  const stepNames = new Map<string, string>();
+                  for (const t of inFlight) {
+                    stepNames.set(
+                      t.toolCallId,
+                      `tool:${t.name}:${t.toolCallId}`,
+                    );
+                  }
+
+                  const inFlightTools = new Map<
+                    number,
+                    { id: string; name: string }
+                  >();
+                  const unmappedToolCalls: Array<{ generatedId: string; name: string }> = [];
+                  for (const t of inFlight) {
+                    inFlightTools.set(t.contentIndex, {
+                      id: t.toolCallId,
+                      name: t.name,
+                    });
+                    if (t.toolCallId.startsWith("tool-") || t.toolCallId.startsWith("msg-")) {
+                      unmappedToolCalls.push({
+                        generatedId: t.toolCallId,
+                        name: t.name,
+                      });
+                    }
+                  }
+                  translator.hydrateState({
+                    currentMessageId: liveMessageId ?? null,
+                    activeToolCalls: inFlightTools,
+                    messageCounter:
+                      aguiMessages.length + inFlight.length,
+                    emittedToolResultIds,
+                    stepNames,
+                    unmappedToolCalls,
+                  });
+                  log.info("connect.translator_hydrated", {
+                    sessionId,
+                    currentMessageId: liveMessageId ?? null,
+                    activeToolCallCount: inFlightTools.size,
+                    messageCounter: aguiMessages.length + inFlight.length,
+                    emittedToolResultCount: emittedToolResultIds.size,
+                    stepNameCount: stepNames.size,
+                  });
+
+                  const parentMessageId = liveMessageId;
+
                   emit({
                     type: EventType.MESSAGES_SNAPSHOT,
-                    messages,
+                    messages: aguiMessages,
                     timestamp: Date.now(),
                   });
+
                   for (const t of inFlight) {
                     emit({
                       type: EventType.TOOL_CALL_START,
                       toolCallId: t.toolCallId,
                       toolCallName: t.name,
-                      parentMessageId: t.parentMessageId,
+                      parentMessageId,
                       timestamp: Date.now(),
                     });
                     if (t.argsSoFar) {
@@ -149,7 +257,25 @@ export const POST = withAuth(async (user, req) => {
                         timestamp: Date.now(),
                       });
                     }
+                    if (t.callEnded) {
+                      emit({
+                        type: EventType.TOOL_CALL_END,
+                        toolCallId: t.toolCallId,
+                        timestamp: Date.now(),
+                      });
+                      emit({
+                        type: EventType.STEP_STARTED,
+                        stepName: `tool:${t.name}:${t.toolCallId}`,
+                        rawEvent: { toolCallId: t.toolCallId },
+                        timestamp: Date.now(),
+                      });
+                    }
                   }
+                  log.info("connect.inflight_events_emitted", {
+                    sessionId,
+                    toolCallCount: inFlight.length,
+                    parentMessageId,
+                  });
                   continue;
                 }
 

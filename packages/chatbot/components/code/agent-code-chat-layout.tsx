@@ -15,6 +15,7 @@ export interface AgentCodeChatLayoutProps {
   sessionId: string;
   availableModels: string[];
   initialMessages: Message[];
+  isInitiallyRunning: boolean;
 }
 
 export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
@@ -22,6 +23,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   sessionId,
   availableModels,
   initialMessages,
+  isInitiallyRunning,
 }) => {
   const [modelId, setModelId] = useState<string>(availableModels[0] ?? "");
 
@@ -47,6 +49,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           sessionId={sessionId}
           modelId={modelId}
           initialMessages={initialMessages}
+          isInitiallyRunning={isInitiallyRunning}
         />
       </Main>
     </>

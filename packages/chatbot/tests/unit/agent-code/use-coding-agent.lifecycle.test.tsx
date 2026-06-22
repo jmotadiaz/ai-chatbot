@@ -33,6 +33,7 @@ function Harness({ initialMessages }: { initialMessages: Message[] }) {
     sessionId: "s",
     modelId: "m",
     initialMessages,
+    isInitiallyRunning: false,
   });
   return (
     <div>

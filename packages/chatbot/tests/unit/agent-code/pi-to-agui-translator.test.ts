@@ -499,6 +499,150 @@ describe("pi-to-agui-translator (chunk-based)", () => {
   });
 });
 
+describe("hydrateState (reconnect)", () => {
+  it("preserves hydrated currentMessageId so text_delta is not dropped", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const inFlightTools = new Map<number, { id: string; name: string }>();
+    inFlightTools.set(0, { id: "tc-1", name: "bash" });
+
+    t.hydrateState({
+      currentMessageId: "hydrated-msg-1",
+      activeToolCalls: inFlightTools,
+      messageCounter: 10,
+    });
+
+    const events = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "hello reconnected",
+      },
+    });
+
+    expect(types(events)).toEqual([EventType.TEXT_MESSAGE_CHUNK]);
+    expect((events[0] as any).messageId).toBe("hydrated-msg-1");
+    expect((events[0] as any).delta).toBe("hello reconnected");
+  });
+
+  it("preserves hydrated activeToolCalls so toolcall_delta is not dropped", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const inFlightTools = new Map<number, { id: string; name: string }>();
+    inFlightTools.set(0, { id: "tc-1", name: "bash" });
+
+    t.hydrateState({
+      currentMessageId: "hydrated-msg-1",
+      activeToolCalls: inFlightTools,
+      messageCounter: 10,
+    });
+
+    const events = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_delta",
+        contentIndex: 0,
+        delta: '"command":"ls"}',
+      },
+    });
+
+    expect(types(events)).toEqual([EventType.TOOL_CALL_ARGS]);
+    expect((events[0] as any).toolCallId).toBe("tc-1");
+    expect((events[0] as any).delta).toBe('"command":"ls"}');
+  });
+
+  it("suppresses duplicate TOOL_CALL_START when the call was hydrated (reconnect)", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const inFlightTools = new Map<number, { id: string; name: string }>();
+    inFlightTools.set(0, { id: "tc-1", name: "bash" });
+
+    t.hydrateState({
+      currentMessageId: "hydrated-msg-1",
+      activeToolCalls: inFlightTools,
+      messageCounter: 10,
+    });
+
+    const events = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_start",
+        contentIndex: 0,
+        toolCall: { id: "tc-1", name: "bash" },
+      },
+    });
+
+    expect(types(events)).toEqual([]);
+  });
+
+  it("still emits TOOL_CALL_ARGS deltas after suppressing a duplicate TOOL_CALL_START", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const inFlightTools = new Map<number, { id: string; name: string }>();
+    inFlightTools.set(0, { id: "tc-1", name: "bash" });
+
+    t.hydrateState({
+      currentMessageId: "hydrated-msg-1",
+      activeToolCalls: inFlightTools,
+      messageCounter: 10,
+    });
+
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_start",
+        contentIndex: 0,
+        toolCall: { id: "tc-1", name: "bash" },
+      },
+    });
+
+    const delta = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_delta",
+        contentIndex: 0,
+        delta: '"command":"ls"}',
+      },
+    });
+
+    expect(types(delta)).toEqual([EventType.TOOL_CALL_ARGS]);
+    expect((delta[0] as any).toolCallId).toBe("tc-1");
+  });
+
+  it("uses the hydrated messageCounter so new IDs do not collide", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.hydrateState({ messageCounter: 50 });
+    t.translate({ type: "message_start", message: { role: "assistant" } });
+    const events = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "x",
+      },
+    });
+
+    expect((events[0] as any).messageId).toBe("msg-51");
+  });
+
+  it("does not overwrite higher messageCounter with a lower one", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.hydrateState({ messageCounter: 50 });
+    t.hydrateState({ messageCounter: 10 });
+
+    t.translate({ type: "message_start", message: { role: "assistant" } });
+    const events = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "x",
+      },
+    });
+
+    expect((events[0] as any).messageId).toBe("msg-51");
+  });
+});
+
 describe("tool_execution step events", () => {
   it("emits STEP_STARTED on tool_execution_start with a unique stepName per tool call", () => {
     const t = new PiToAguiTranslator(ctx);
@@ -639,4 +783,141 @@ describe("tool_execution step events", () => {
       events.find((e) => e.type === EventType.STEP_FINISHED),
     ).toBeUndefined();
   });
+
+  it("emits STEP_FINISHED for all active steps and clears them when agent_end is received", () => {
+    const t = new PiToAguiTranslator(ctx);
+    t.translate({
+      type: "tool_execution_start",
+      toolCallId: "t1",
+      toolName: "bash",
+    });
+    t.translate({
+      type: "tool_execution_start",
+      toolCallId: "t2",
+      toolName: "read",
+    });
+
+    const events = t.translate({ type: "agent_end" });
+    const evTypes = events.map((e) => e.type);
+
+    expect(evTypes).toEqual([
+      EventType.STEP_FINISHED,
+      EventType.STEP_FINISHED,
+      EventType.RUN_FINISHED,
+    ]);
+
+    const stepFinishedEvents = events.filter((e) => e.type === EventType.STEP_FINISHED) as any[];
+    expect(stepFinishedEvents).toHaveLength(2);
+    expect(stepFinishedEvents[0].stepName).toBe("tool:bash:t1");
+    expect(stepFinishedEvents[0].rawEvent.toolCallId).toBe("t1");
+    expect(stepFinishedEvents[0].rawEvent.isError).toBe(true);
+
+    expect(stepFinishedEvents[1].stepName).toBe("tool:read:t2");
+    expect(stepFinishedEvents[1].rawEvent.toolCallId).toBe("t2");
+    expect(stepFinishedEvents[1].rawEvent.isError).toBe(true);
+
+    // Subsequent tool_execution_end should not emit duplicate STEP_FINISHED since it was cleared
+    const postEvents = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "t1",
+      toolName: "bash",
+      result: "ok",
+      isError: false,
+    });
+    expect(types(postEvents)).toEqual([EventType.TOOL_CALL_RESULT]);
+  });
+
+  it("emits STEP_FINISHED for all active steps and clears them when error is received", () => {
+    const t = new PiToAguiTranslator(ctx);
+    t.translate({
+      type: "tool_execution_start",
+      toolCallId: "t1",
+      toolName: "bash",
+    });
+
+    const events = t.translate({ type: "error", message: "fatal" });
+    const evTypes = events.map((e) => e.type);
+
+    expect(evTypes).toEqual([
+      EventType.STEP_FINISHED,
+      EventType.RUN_ERROR,
+    ]);
+
+    const stepFinished = events.find((e) => e.type === EventType.STEP_FINISHED) as any;
+    expect(stepFinished).toBeDefined();
+    expect(stepFinished.stepName).toBe("tool:bash:t1");
+    expect(stepFinished.rawEvent.isError).toBe(true);
+  });
+
+  it("correctly maps generated/fallback toolCallId to the real toolCallId on tool_execution_start and end", () => {
+    const t = new PiToAguiTranslator(ctx);
+
+    t.translate({ type: "message_start", message: { role: "assistant" } });
+    
+    // 1. Stream starts a tool call without a pre-defined ID (so we generate one, e.g. msg-1)
+    const startEvents = t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_start",
+        contentIndex: 0,
+        toolCall: { name: "bash" }, // NO ID
+      },
+    });
+
+    const generatedId = (startEvents[0] as any).toolCallId;
+    expect(generatedId).toBeDefined();
+    expect(generatedId).toContain("msg-");
+
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_delta",
+        contentIndex: 0,
+        delta: '{"command":"ls"}',
+      },
+    });
+
+    t.translate({
+      type: "message_update",
+      assistantMessageEvent: {
+        type: "toolcall_end",
+        contentIndex: 0,
+      },
+    });
+
+    t.translate({ type: "message_end", message: { role: "assistant" } });
+
+    // 2. tool_execution_start arrives with the real ID
+    const startExecEvents = t.translate({
+      type: "tool_execution_start",
+      toolCallId: "call_abc123",
+      toolName: "bash",
+    });
+
+    const stepStarted = startExecEvents.find((e) => e.type === EventType.STEP_STARTED);
+    expect(stepStarted).toBeDefined();
+    expect((stepStarted as any).stepName).toBe(`tool:bash:${generatedId}`);
+    expect((stepStarted as any).rawEvent.toolCallId).toBe(generatedId);
+
+    // 3. tool_execution_end arrives with the real ID
+    const endExecEvents = t.translate({
+      type: "tool_execution_end",
+      toolCallId: "call_abc123",
+      toolName: "bash",
+      result: "ok",
+      isError: false,
+    });
+
+    const toolResult = endExecEvents.find((e) => e.type === EventType.TOOL_CALL_RESULT);
+    const stepFinished = endExecEvents.find((e) => e.type === EventType.STEP_FINISHED);
+
+    expect(toolResult).toBeDefined();
+    expect((toolResult as any).toolCallId).toBe(generatedId);
+    expect((toolResult as any).content).toBe("ok");
+
+    expect(stepFinished).toBeDefined();
+    expect((stepFinished as any).stepName).toBe(`tool:bash:${generatedId}`);
+    expect((stepFinished as any).rawEvent.toolCallId).toBe(generatedId);
+  });
 });
+

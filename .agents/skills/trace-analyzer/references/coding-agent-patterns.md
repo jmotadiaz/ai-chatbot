@@ -52,3 +52,27 @@ Follow this progressive disclosure flow:
 * **Symptoms**: UI displays raw or incomplete text blocks.
 * **Error check**: Check `stream.ndjson` or `errors.ndjson` for `translate.unknown_type` or stream parsing warnings.
 * **Resolution**: Review the translator logic in `pi-to-agui-translator.ts` to support the new event type emitted by the SDK.
+
+### Pattern: Reconnection STEP_FINISHED Error
+* **Symptoms**: UI/client connection crashes immediately after receiving a reconnect snapshot or shortly after catch-up, throwing `Cannot send 'STEP_FINISHED' for step "tool:<name>:<id>" that was not started`.
+* **Error check**: Check `errors.ndjson` (or `lifecycle.ndjson`) for `client.unhandled_rejection` containing `Cannot send 'STEP_FINISHED'`.
+  - Look for `translate.step_finish_skipped` (warn level) to see if a tool execution ended but no start event was recorded/emitted.
+  - Inspect `connect.snapshot_received` for `inFlight` tools and check if any had `callEnded: false`.
+  - Review the sequence of `connect.worker_event` logs to see if a `tool_execution_start` was skipped or arrived out of order.
+* **Resolution**: Ensure `/api/agent/code/connect` only adds tools to `stepNames` if `callEnded` is `true` (since `STEP_STARTED` is only emitted when `callEnded` is `true` or upon receiving `tool_execution_start`). Also check that `pi-to-agui-translator.ts` suppresses duplicate `STEP_STARTED` events if `tool_execution_start` arrives via live stream for a tool already in `stepNames`.
+
+---
+
+## 3. Reconnection Diagnostics
+
+Use the following elevated trace events in `lifecycle.ndjson` (info/warn level) to diagnose worker-to-bridge sync issues during reconnection:
+
+* `connect.worker_event` (info): Logs every event type and its payload keys received by Next.js from the worker stream during catch-up.
+* `connect.snapshot_received` (info): Logs the snapshot contents, including a `messagesOverview` (ids and roles of loaded messages) and the list of active `inFlight` tools.
+* `inflight.toolcall_start` (info): Logs when a new tool call begins streaming arguments.
+* `inflight.toolcall_end` (info): Logs when argument streaming ends for a tool call.
+* `inflight.tool_execution_start` (info): Logs when a tool actually starts executing on the worker.
+* `inflight.tool_execution_end_removed` (info): Logs when a tool finishes execution and is removed from the tracking list.
+* `inflight.tool_execution_end_not_found` (warn): Logs when the worker finishes a tool execution but it wasn't tracked in the active list (indicates a state mismatch!).
+* `translate.step_finish_skipped` (warn): Logs when the translator processes `tool_execution_end` but cannot find the matching step name to emit `STEP_FINISHED`.
+

@@ -74,10 +74,11 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         const { sessionId } = params as { sessionId: string };
         const encoder = new TextEncoder();
         let cleanup: () => void = () => {};
+        let completed = false;
         const stream = new ReadableStream<Uint8Array>({
-          start(controller) {
+          async start(controller) {
             try {
-              cleanup = connectToSession(
+              cleanup = await connectToSession(
                 sessionId,
                 (line) => controller.enqueue(encoder.encode(line)),
                 (err) => {
@@ -85,6 +86,15 @@ export async function handleRpc(requestBody: string): Promise<Response> {
                   try {
                     controller.error(err);
                   } catch {
+                  }
+                },
+                () => {
+                  if (completed) return;
+                  completed = true;
+                  try {
+                    controller.close();
+                  } catch {
+                    // already closed; ignore
                   }
                 },
               );

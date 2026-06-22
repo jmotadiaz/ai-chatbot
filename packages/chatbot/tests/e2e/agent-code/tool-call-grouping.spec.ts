@@ -1,7 +1,7 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent — tool call grouping", () => {
-  test.fixme("renders one group per tool call with a non-empty summary", async ({ page }) => {
+  test("renders one group per tool call with a non-empty summary", async ({ page }) => {
     await page.goto("/agent/code");
     await page.click("text=ai-chatbot");
     await page.click("text=+ New session");

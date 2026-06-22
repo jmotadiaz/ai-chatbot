@@ -7,7 +7,7 @@ import type {
 } from "coding-agent";
 
 function isToolCall(block: ContentBlock | undefined): block is RelaxedToolCall {
-  return block !== undefined && (block.type === "toolCall" || "id" in block);
+  return block !== undefined && (block.type === "toolCall" || "id" in block || "name" in block);
 }
 
 export interface TranslatorContext {
@@ -19,7 +19,7 @@ interface BufferedToolResult {
   content: string;
 }
 
-interface ActiveToolCall {
+export interface ActiveToolCall {
   id: string;
   name: string;
 }
@@ -69,8 +69,48 @@ export class PiToAguiTranslator {
   private emittedToolResults = new Set<string>();
   private stepNames = new Map<string, string>();
   private messageCounter = 0;
+  private toolIdMap = new Map<string, string>();
+  private unmappedToolCalls: Array<{ generatedId: string; name: string }> = [];
 
   constructor(private readonly context: TranslatorContext) {}
+
+  hydrateState(state: {
+    currentMessageId?: string | null;
+    activeToolCalls?: ReadonlyMap<number, ActiveToolCall>;
+    messageCounter?: number;
+    emittedToolResultIds?: ReadonlySet<string>;
+    stepNames?: ReadonlyMap<string, string>;
+    unmappedToolCalls?: Array<{ generatedId: string; name: string }>;
+  }): void {
+    if (state.currentMessageId) {
+      this.currentMessageId = state.currentMessageId;
+    }
+    if (state.activeToolCalls && state.activeToolCalls.size > 0) {
+      for (const [idx, tool] of state.activeToolCalls) {
+        this.activeToolCalls.set(idx, { ...tool });
+      }
+    }
+    if (
+      state.messageCounter !== undefined &&
+      state.messageCounter > this.messageCounter
+    ) {
+      this.messageCounter = state.messageCounter;
+    }
+    if (state.emittedToolResultIds) {
+      for (const id of state.emittedToolResultIds) {
+        this.emittedToolResults.add(id);
+        this.toolResultBuffer.delete(id);
+      }
+    }
+    if (state.stepNames) {
+      for (const [id, name] of state.stepNames) {
+        this.stepNames.set(id, name);
+      }
+    }
+    if (state.unmappedToolCalls) {
+      this.unmappedToolCalls = [...state.unmappedToolCalls];
+    }
+  }
 
   private nextMessageId(): string {
     this.messageCounter += 1;
@@ -116,6 +156,16 @@ export class PiToAguiTranslator {
         break;
 
       case "agent_end":
+        for (const [toolCallId, stepName] of this.stepNames.entries()) {
+          out.push({
+            type: EventType.STEP_FINISHED,
+            stepName,
+            rawEvent: { toolCallId, isError: true },
+            timestamp: this.now(),
+          } as BaseEvent);
+        }
+        this.stepNames.clear();
+
         out.push({
           type: EventType.RUN_FINISHED,
           threadId,
@@ -127,7 +177,10 @@ export class PiToAguiTranslator {
       case "message_start": {
         const role = event.message?.role;
         if (role === "toolResult") {
-          const toolCallId = event.message?.toolCallId;
+          let toolCallId = event.message?.toolCallId;
+          if (toolCallId && this.toolIdMap.has(toolCallId)) {
+            toolCallId = this.toolIdMap.get(toolCallId)!;
+          }
           if (toolCallId) {
             this.toolResultBuffer.set(toolCallId, {
               content: this.extractToolResult(event.message?.content, ""),
@@ -146,7 +199,10 @@ export class PiToAguiTranslator {
       case "message_end": {
         const role = event.message?.role;
         if (role === "toolResult") {
-          const toolCallId = event.message?.toolCallId;
+          let toolCallId = event.message?.toolCallId;
+          if (toolCallId && this.toolIdMap.has(toolCallId)) {
+            toolCallId = this.toolIdMap.get(toolCallId)!;
+          }
           if (toolCallId && !this.emittedToolResults.has(toolCallId)) {
             const buffered = this.toolResultBuffer.get(toolCallId);
             const content =
@@ -218,6 +274,7 @@ export class PiToAguiTranslator {
               });
               break;
             }
+            const existing = this.activeToolCalls.get(contentIndex);
             const partial = ame.partial;
             const block =
               partial && Array.isArray(partial.content)
@@ -230,10 +287,35 @@ export class PiToAguiTranslator {
                 : undefined;
             const toolCallId = toolCall?.id ?? this.nextMessageId();
             const toolCallName = toolCall?.name ?? "unknown";
+
+            // During reconnect we hydrate activeToolCalls and emit the
+            // in-flight tool calls manually so the UI shows them immediately.
+            // When the live stream catches up it will send toolcall_start for
+            // the same call; suppress the duplicate AG-UI event.
+            if (
+              existing &&
+              existing.id === toolCallId &&
+              existing.name === toolCallName
+            ) {
+              log.info("translate.suppressed_duplicate_toolcall_start", {
+                contentIndex,
+                toolCallId,
+              });
+              break;
+            }
+
             this.activeToolCalls.set(contentIndex, {
               id: toolCallId,
               name: toolCallName,
             });
+
+            if (!toolCall?.id) {
+              this.unmappedToolCalls.push({
+                generatedId: toolCallId,
+                name: toolCallName,
+              });
+            }
+
             out.push({
               type: EventType.TOOL_CALL_START,
               toolCallId,
@@ -253,7 +335,7 @@ export class PiToAguiTranslator {
             }
             const active = this.activeToolCalls.get(contentIndex);
             if (!active) {
-              log.debug("translate.dropped", {
+              log.warn("translate.dropped", {
                 reason: "toolcall_delta before toolcall_start",
                 contentIndex,
               });
@@ -277,7 +359,7 @@ export class PiToAguiTranslator {
             }
             const active = this.activeToolCalls.get(contentIndex);
             if (!active) {
-              log.debug("translate.dropped", {
+              log.warn("translate.dropped", {
                 reason: "toolcall_end without matching toolcall_start",
                 contentIndex,
               });
@@ -306,15 +388,33 @@ export class PiToAguiTranslator {
       }
 
       case "tool_execution_start": {
-        const toolCallId = event.toolCallId;
-        const stepName = `tool:${event.toolName}:${toolCallId ?? this.nextMessageId()}`;
+        let toolCallId = event.toolCallId;
         if (toolCallId) {
-          this.stepNames.set(toolCallId, stepName);
+          const idx = this.unmappedToolCalls.findIndex(
+            (t) => t.name === event.toolName,
+          );
+          if (idx !== -1) {
+            const mapped = this.unmappedToolCalls[idx];
+            this.unmappedToolCalls.splice(idx, 1);
+            this.toolIdMap.set(toolCallId, mapped.generatedId);
+            log.info("translate.mapped_tool_id", {
+              realId: toolCallId,
+              generatedId: mapped.generatedId,
+              toolName: event.toolName,
+            });
+            toolCallId = mapped.generatedId;
+          }
+        }
+
+        const finalId = toolCallId ?? this.nextMessageId();
+        const stepName = `tool:${event.toolName}:${finalId}`;
+        if (finalId) {
+          this.stepNames.set(finalId, stepName);
         }
         out.push({
           type: EventType.STEP_STARTED,
           stepName,
-          rawEvent: { toolCallId },
+          rawEvent: { toolCallId: finalId },
           timestamp: this.now(),
         } as BaseEvent);
         break;
@@ -324,7 +424,10 @@ export class PiToAguiTranslator {
         break;
 
       case "tool_execution_end": {
-        const toolCallId = event.toolCallId;
+        let toolCallId = event.toolCallId;
+        if (toolCallId && this.toolIdMap.has(toolCallId)) {
+          toolCallId = this.toolIdMap.get(toolCallId)!;
+        }
         const finalId = toolCallId ?? this.nextMessageId();
 
         if (!this.emittedToolResults.has(finalId)) {
@@ -348,11 +451,9 @@ export class PiToAguiTranslator {
           log.debug("translate.tool_result_already_emitted", { toolCallId: finalId });
         }
 
-        const stepName = toolCallId
-          ? this.stepNames.get(toolCallId)
-          : undefined;
-        if (toolCallId) {
-          this.stepNames.delete(toolCallId);
+        const stepName = finalId ? this.stepNames.get(finalId) : undefined;
+        if (finalId) {
+          this.stepNames.delete(finalId);
         }
         if (stepName) {
           out.push({
@@ -362,7 +463,7 @@ export class PiToAguiTranslator {
             timestamp: this.now(),
           } as BaseEvent);
         } else {
-          log.debug("translate.step_finish_skipped", { toolCallId: finalId });
+          log.warn("translate.step_finish_skipped", { toolCallId: finalId });
         }
         break;
       }
@@ -374,6 +475,16 @@ export class PiToAguiTranslator {
         break;
 
       case "error":
+        for (const [toolCallId, stepName] of this.stepNames.entries()) {
+          out.push({
+            type: EventType.STEP_FINISHED,
+            stepName,
+            rawEvent: { toolCallId, isError: true },
+            timestamp: this.now(),
+          } as BaseEvent);
+        }
+        this.stepNames.clear();
+
         out.push({
           type: EventType.RUN_ERROR,
           threadId,

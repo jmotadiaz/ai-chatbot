@@ -5,6 +5,12 @@ import { dirname, resolve, basename } from "node:path";
 import { existsSync } from "node:fs";
 import type { TraceRecord, TraceLayer } from "./types";
 
+process.stdout.on("error", (err: any) => {
+  if (err.code === "EPIPE") {
+    process.exit(0);
+  }
+});
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TRACE_DIR = process.env.TRACE_DIR ?? resolve(__dirname, "../traces");
 

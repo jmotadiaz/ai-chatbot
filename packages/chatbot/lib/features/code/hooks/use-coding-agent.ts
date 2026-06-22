@@ -22,6 +22,7 @@ export interface UseCodingAgentArgs {
   sessionId: string;
   modelId: string;
   initialMessages: Message[];
+  isInitiallyRunning: boolean;
 }
 
 export interface UseCodingAgentResult {
@@ -78,6 +79,7 @@ export function useCodingAgent({
   sessionId,
   modelId,
   initialMessages,
+  isInitiallyRunning,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agentRef = useRef<{ sessionId: string; agent: ConnectableHttpAgent } | null>(null);
   if (agentRef.current === null || agentRef.current.sessionId !== sessionId) {
@@ -94,32 +96,19 @@ export function useCodingAgent({
   const agent = agentRef.current.agent;
 
   useEffect(() => {
-    let cancelled = false;
-    const checkStatus = async () => {
-      try {
-        const res = await fetch(`/api/agent/code/sessions/${sessionId}/status`);
-        if (!res.ok) return;
-        const status = (await res.json()) as { running: boolean; piSessionId?: string };
-        if (cancelled) return;
-        if (status.running) {
-          await agent.connectAgent({
-            runId: crypto.randomUUID(),
-            context: [
-              { description: "project", value: project },
-              { description: "sessionId", value: sessionId },
-              { description: "modelId", value: modelId },
-            ],
-          });
-        }
-      } catch {
-        // status endpoint failure is non-fatal
-      }
-    };
-    void checkStatus();
+    if (!isInitiallyRunning) return;
+    void agent.connectAgent({
+      runId: crypto.randomUUID(),
+      context: [
+        { description: "project", value: project },
+        { description: "sessionId", value: sessionId },
+        { description: "modelId", value: modelId },
+      ],
+    });
     return () => {
-      cancelled = true;
+      void agent.detachActiveRun();
     };
-  }, [agent, project, sessionId, modelId]);
+  }, [agent, project, sessionId, modelId, isInitiallyRunning]);
 
   const store = useMemo(() => {
     const currentAgent = agentRef.current?.agent;
@@ -128,8 +117,10 @@ export function useCodingAgent({
     }
     let snapshot = {
       messages: currentAgent.messages,
-      isRunning: currentAgent.isRunning,
-      status: { kind: "idle" } as AgentStatus,
+      isRunning: isInitiallyRunning ? true : currentAgent.isRunning,
+      status: (isInitiallyRunning
+        ? { kind: "thinking" }
+        : { kind: "idle" }) as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
       toolTimings: new Map<
@@ -140,8 +131,10 @@ export function useCodingAgent({
 
     const serverSnapshot = {
       messages: initialMessages,
-      isRunning: false,
-      status: { kind: "idle" } as AgentStatus,
+      isRunning: isInitiallyRunning,
+      status: (isInitiallyRunning
+        ? { kind: "thinking" }
+        : { kind: "idle" }) as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
       toolTimings: new Map<
@@ -270,7 +263,7 @@ export function useCodingAgent({
     // sessionId is intentional: the store must be recreated when the
     // session changes so the captured HttpAgent matches the new one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+  }, [sessionId, isInitiallyRunning]);
 
   const state = useSyncExternalStore(
     store.subscribe,

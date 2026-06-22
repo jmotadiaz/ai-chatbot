@@ -65,6 +65,17 @@ graph TD
 ### Step 3: Deep Stream Debug (Only for delta/token-level issues)
 - Read `stream.ndjson` or use reconstruction scripts to inspect text and reasoning deltas.
 
+### Step 4: Reconnection Mismatch Debugging (For Client Reconnect Crashes)
+- Check `errors.ndjson` for client unhandled rejections or error events like `Cannot send 'STEP_FINISHED' for step... that was not started`.
+- Find the `sessionId` from the failed run in `summary.json` or `errors.ndjson`.
+- Run `grep -rn "<sessionId>" packages/tracing/traces/coding-agent/` to locate all related runs (both the preceding run that disconnected, and the reconnect run).
+- Read the preceding run's `lifecycle.ndjson` to see what events actually completed before the disconnect (e.g. `tool_execution_start`, `tool_execution_end`, `message_end`).
+- Read the reconnect run's `lifecycle.ndjson` starting at `connect.start` to inspect `connect.snapshot_received` and `connect.translator_hydrated` payloads.
+- Compare the list of `inFlight` tools and `messages` in the snapshot with the events that actually arrived:
+  - If a tool had `callEnded: false` in the snapshot, did the client receive `STEP_STARTED` later when `tool_execution_start` was processed?
+  - If a tool had `callEnded: true` in the snapshot, did the client receive `STEP_STARTED` and `TOOL_CALL_END` manually during snapshot processing?
+  - Look for logs/warnings like `translate.step_finish_skipped` or `translate.dropped` in the reconnect run logs to pinpoint translation mismatches.
+
 ---
 
 ## Inspection Tools Reference

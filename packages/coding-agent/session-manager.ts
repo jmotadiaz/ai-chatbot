@@ -17,6 +17,7 @@ interface InFlightTool {
   name: string;
   argsSoFar: string;
   parentMessageId?: string;
+  callEnded: boolean;
 }
 
 interface SessionEntry {
@@ -28,6 +29,23 @@ interface SessionEntry {
 }
 
 const sessions = new Map<string, SessionEntry>();
+
+/**
+ * @internal Test-only helpers. Not part of the public API.
+ * The Map above is module-private, so we expose these narrowly-scoped
+ * hooks for unit tests to seed and reset session state without
+ * touching the real session-runtime / disk-load codepath.
+ */
+export function __seedSessionForTests(
+  sessionId: string,
+  entry: SessionEntry,
+): void {
+  sessions.set(sessionId, entry);
+}
+
+export function __resetSessionsForTests(): void {
+  sessions.clear();
+}
 
 function isValidProjectName(name: string): boolean {
   if (
@@ -233,9 +251,11 @@ export async function sendPrompt(
   const { runtime } = entry;
   const encoder = new TextEncoder();
 
+  let unsubscribe: (() => void) | undefined;
+
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      const unsubscribe = runtime.session.subscribe((event) => {
+      unsubscribe = runtime.session.subscribe((event) => {
         log.debug("pi.event", { type: event.type });
 
         if (event.type === "message_update") {
@@ -244,23 +264,99 @@ export async function sendPrompt(
             | undefined;
           if (ame?.type === "toolcall_start" && typeof ame.contentIndex === "number") {
             const toolCallId = ame.toolCall?.id ?? `tool-${crypto.randomUUID()}`;
-            const name = ame.toolCall?.name ?? "unknown";
+            const partial = (ame as { partial?: { content?: unknown[] } }).partial;
+            const block =
+              partial && Array.isArray(partial.content)
+                ? partial.content[ame.contentIndex]
+                : undefined;
+            const blockName =
+              block && typeof block === "object" && block !== null && "name" in block
+                ? (block as { name?: unknown }).name
+                : undefined;
+            const name =
+              (typeof blockName === "string" ? blockName : undefined) ??
+              ame.toolCall?.name ??
+              "unknown";
             entry.inFlightTools.set(ame.contentIndex, {
               toolCallId,
               name,
               argsSoFar: "",
+              callEnded: false,
             });
+            log.info("inflight.toolcall_start", { sessionId, contentIndex: ame.contentIndex, toolCallId, name });
           } else if (ame?.type === "toolcall_delta" && typeof ame.contentIndex === "number") {
             const t = entry.inFlightTools.get(ame.contentIndex);
             if (t) t.argsSoFar += ame.delta ?? "";
           } else if (ame?.type === "toolcall_end" && typeof ame.contentIndex === "number") {
+            const t = entry.inFlightTools.get(ame.contentIndex);
+            if (t) {
+              t.callEnded = true;
+              log.info("inflight.toolcall_end", { sessionId, contentIndex: ame.contentIndex, toolCallId: t.toolCallId });
+            }
           }
-        } else if (event.type === "message_end") {
-          entry.inFlightTools.clear();
+        } else if (event.type === "tool_execution_start") {
+          const toolCallId = (event as { toolCallId?: string }).toolCallId;
+          const toolName = (event as { toolName?: string }).toolName;
+          log.info("inflight.tool_execution_start", { sessionId, toolCallId, toolName });
+          if (toolCallId && toolName) {
+            let matchedKey: number | undefined;
+            for (const [contentIndex, tool] of entry.inFlightTools) {
+              if (tool.name === toolName && tool.toolCallId.startsWith("tool-")) {
+                matchedKey = contentIndex;
+                break;
+              }
+            }
+            if (matchedKey !== undefined) {
+              const tool = entry.inFlightTools.get(matchedKey)!;
+              const oldId = tool.toolCallId;
+              tool.toolCallId = toolCallId;
+              log.info("inflight.tool_execution_start_mapped", {
+                sessionId,
+                contentIndex: matchedKey,
+                oldId,
+                newId: toolCallId,
+                toolName,
+              });
+            } else {
+              log.warn("inflight.tool_execution_start_no_match", {
+                sessionId,
+                toolCallId,
+                toolName,
+                inFlight: Array.from(entry.inFlightTools.values()).map((t) => ({
+                  id: t.toolCallId,
+                  name: t.name,
+                })),
+              });
+            }
+          }
+        } else if (event.type === "tool_execution_end") {
+          const toolCallId = (event as { toolCallId?: string }).toolCallId;
+          if (toolCallId) {
+            let found = false;
+            for (const [contentIndex, tool] of entry.inFlightTools) {
+              if (tool.toolCallId === toolCallId) {
+                entry.inFlightTools.delete(contentIndex);
+                log.info("inflight.tool_execution_end_removed", {
+                  sessionId,
+                  contentIndex,
+                  toolCallId,
+                });
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
+              log.warn("inflight.tool_execution_end_not_found", { sessionId, toolCallId });
+            }
+          }
         }
 
         const line = JSON.stringify(event) + "\n";
-        controller.enqueue(encoder.encode(line));
+        try {
+          controller.enqueue(encoder.encode(line));
+        } catch (err) {
+          log.warn("session.prompt_stream_enqueue_error", { sessionId, error: String(err) });
+        }
       });
 
       const promptStop = log.startTimer("session.prompt_execution");
@@ -270,14 +366,18 @@ export async function sendPrompt(
           promptStop();
           log.info("session.prompt_complete", { sessionId });
           controller.close();
-          unsubscribe();
+          unsubscribe?.();
         })
         .catch((err) => {
           promptStop();
           log.error("session.prompt_error", { sessionId, message: String(err) });
           controller.error(err);
-          unsubscribe();
+          unsubscribe?.();
         });
+    },
+    cancel() {
+      log.info("session.prompt_stream_cancelled", { sessionId });
+      unsubscribe?.();
     },
   });
 
@@ -453,51 +553,155 @@ export interface ConnectSnapshot {
   type: "snapshot";
   messages: Array<unknown>;
   inFlight: Array<{
+    contentIndex: number;
     toolCallId: string;
     name: string;
     argsSoFar: string;
     parentMessageId?: string;
+    callEnded: boolean;
   }>;
+  isStreaming: boolean;
 }
 
-export function connectToSession(
+export async function connectToSession(
   sessionId: string,
   onEvent: (line: string) => void,
   onError: (err: Error) => void,
-): () => void {
+  onComplete?: () => void,
+): Promise<() => void> {
   const log = getTraceLogger("worker");
+
+  const emitAgentEnd = () => {
+    onEvent(JSON.stringify({ type: "agent_end" }) + "\n");
+  };
+
+  const finishImmediately = () => {
+    emitAgentEnd();
+    onComplete?.();
+    return () => {};
+  };
+
   const entry = sessions.get(sessionId);
   if (!entry) {
     log.info("connect.session_not_found", { sessionId });
-    onEvent(JSON.stringify({ type: "snapshot", messages: [], inFlight: [] }) + "\n");
-    onEvent(JSON.stringify({ type: "agent_end" }) + "\n");
-    return () => {};
+    onEvent(JSON.stringify({ type: "snapshot", messages: [], inFlight: [], isStreaming: false }) + "\n");
+    return finishImmediately();
   }
 
-  const messages = entry.runtime.session.messages;
-  const inFlight: ConnectSnapshot["inFlight"] = [];
+  const messages = await getSessionMessages(sessionId);
+
+  // Tool calls that are still in-flight will be replayed as live AG-UI events
+  // (TOOL_CALL_START + TOOL_CALL_ARGS). If we left them in the snapshot's
+  // assistant message, AG-UI would create duplicate toolCalls when the live
+  // TOOL_CALL_START arrives. We remove them from the snapshot and carry their
+  // parent message id in the inFlight metadata so the BFF can seed the
+  // translator and emit TOOL_CALL_START with the correct parentMessageId.
+  const inFlightToolIds = new Set<string>();
   for (const [, tool] of entry.inFlightTools) {
+    inFlightToolIds.add(tool.toolCallId);
+  }
+
+  const toolParentMap = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && Array.isArray(m.toolCalls)) {
+      const remaining = m.toolCalls.filter((tc: { id?: string }) => {
+        if (tc.id && inFlightToolIds.has(tc.id)) {
+          toolParentMap.set(tc.id, m.id);
+          return false;
+        }
+        return true;
+      });
+      if (remaining.length === 0) {
+        delete m.toolCalls;
+      } else {
+        m.toolCalls = remaining;
+      }
+    }
+  }
+
+  const inFlight: ConnectSnapshot["inFlight"] = [];
+  for (const [contentIndex, tool] of entry.inFlightTools) {
     inFlight.push({
+      contentIndex,
       toolCallId: tool.toolCallId,
       name: tool.name,
       argsSoFar: tool.argsSoFar,
-      parentMessageId: tool.parentMessageId,
+      parentMessageId: toolParentMap.get(tool.toolCallId) ?? tool.parentMessageId,
+      callEnded: tool.callEnded,
     });
   }
 
-  onEvent(
-    JSON.stringify({ type: "snapshot", messages, inFlight }) + "\n",
-  );
+  log.info("connect.snapshot_built", {
+    sessionId,
+    messageCount: messages.length,
+    inFlightCount: inFlight.length,
+    inFlight: inFlight.map((t) => ({
+      contentIndex: t.contentIndex,
+      toolCallId: t.toolCallId,
+      name: t.name,
+      parentMessageId: t.parentMessageId,
+      argsSoFarLength: t.argsSoFar.length,
+    })),
+    removedToolCallIds: Array.from(inFlightToolIds),
+  });
+
+  const isStreaming = entry.runtime.session.isStreaming;
 
   let closed = false;
+  const eventBuffer: string[] = [];
+  let buffering = true;
+  let hadAgentEnd = false;
+
   const unsubscribe = entry.runtime.session.subscribe((event) => {
     if (closed) return;
     try {
-      onEvent(JSON.stringify(event) + "\n");
+      const line = JSON.stringify(event) + "\n";
+      if (event.type === "agent_end") {
+        hadAgentEnd = true;
+      }
+      if (buffering) {
+        eventBuffer.push(line);
+      } else {
+        onEvent(line);
+      }
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)));
     }
   });
+
+  onEvent(
+    JSON.stringify({ type: "snapshot", messages, inFlight, isStreaming }) + "\n",
+  );
+
+  const hasNoLiveActivity =
+    !isStreaming && inFlight.length === 0 && eventBuffer.length === 0;
+
+  if (hasNoLiveActivity) {
+    log.info("connect.idle_completed", { sessionId });
+    buffering = false;
+    unsubscribe();
+    return finishImmediately();
+  }
+
+  buffering = false;
+  log.info("connect.draining_buffer", {
+    sessionId,
+    bufferedEventCount: eventBuffer.length,
+  });
+  for (const line of eventBuffer) {
+    if (closed) break;
+    onEvent(line);
+  }
+  eventBuffer.length = 0;
+
+  if (closed) return () => {};
+  if (!entry.runtime.session.isStreaming && entry.inFlightTools.size === 0) {
+    log.info("connect.idle_after_drain", { sessionId });
+    if (!hadAgentEnd) emitAgentEnd();
+    onComplete?.();
+    unsubscribe();
+    return () => {};
+  }
 
   return () => {
     if (closed) return;
