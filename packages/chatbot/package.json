@@ -109,6 +109,7 @@
     "react-syntax-highlighter": "^15.6.1",
     "rehype-class-names": "^2.0.0",
     "remark-gfm": "^4.0.1",
+    "rxjs": "7.8.1",
     "sonner": "^2.0.3",
     "streamdown": "^2.1.0",
     "tailwind-merge": "^3.2.0",
