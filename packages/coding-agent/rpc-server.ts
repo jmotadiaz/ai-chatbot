@@ -5,6 +5,9 @@ import {
   getAvailableModels,
   disposeSession,
   getSessionMessages,
+  connectToSession,
+  cancelRun,
+  getSessionStatus,
 } from "./session-manager";
 
 export async function handleRpc(requestBody: string): Promise<Response> {
@@ -65,6 +68,44 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         const { sessionId } = params as { sessionId: string };
         await disposeSession(sessionId);
         result = null;
+        break;
+      }
+      case "connectToSession": {
+        const { sessionId } = params as { sessionId: string };
+        const encoder = new TextEncoder();
+        let cleanupFn: (() => void) | undefined;
+        const stream = new ReadableStream<Uint8Array>({
+          start(controller) {
+            connectToSession(
+              sessionId,
+              (line) => controller.enqueue(encoder.encode(line)),
+              (cleanup) => {
+                cleanupFn = cleanup;
+              },
+            ).then(() => {
+              controller.close();
+            }).catch((err) => {
+              log.error("connect.error", { message: String(err) });
+              controller.error(err);
+            });
+          },
+          cancel() {
+            cleanupFn?.();
+          },
+        });
+        stop();
+        return new Response(stream, {
+          headers: { "Content-Type": "application/x-ndjson" },
+        });
+      }
+      case "cancelRun": {
+        const { sessionId } = params as { sessionId: string };
+        result = await cancelRun(sessionId);
+        break;
+      }
+      case "getSessionStatus": {
+        const { sessionId } = params as { sessionId: string };
+        result = await getSessionStatus(sessionId);
         break;
       }
       default: {

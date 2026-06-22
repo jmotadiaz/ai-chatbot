@@ -441,3 +441,82 @@ export async function disposeSession(sessionId: string): Promise<void> {
     log.warn("session.dispose_not_found", { sessionId });
   }
 }
+
+export interface SessionStatus {
+  running: boolean;
+  runId?: string;
+}
+
+export async function getSessionStatus(sessionId: string): Promise<SessionStatus> {
+  const log = getTraceLogger("worker");
+  const entry = sessions.get(sessionId);
+  if (!entry) {
+    log.info("session.status_not_found", { sessionId });
+    return { running: false };
+  }
+  if (entry.runtime.session.isStreaming) {
+    return { running: true, runId: entry.runtime.session.sessionId };
+  }
+  return { running: false };
+}
+
+export interface ConnectSnapshot {
+  type: "snapshot";
+  messages: Array<unknown>;
+  inFlight: Array<{
+    toolCallId: string;
+    name: string;
+    argsSoFar: string;
+    parentMessageId?: string;
+  }>;
+}
+
+export async function connectToSession(
+  sessionId: string,
+  onEvent: (line: string) => void,
+  registerCleanup: (cleanup: () => void) => void,
+): Promise<void> {
+  const log = getTraceLogger("worker");
+  const entry = sessions.get(sessionId);
+  if (!entry) {
+    log.info("connect.session_not_found", { sessionId });
+    onEvent(JSON.stringify({ type: "snapshot", messages: [], inFlight: [] }) + "\n");
+    onEvent(JSON.stringify({ type: "agent_end" }) + "\n");
+    return;
+  }
+
+  const messages = await getSessionMessages(sessionId);
+  const inFlight: ConnectSnapshot["inFlight"] = [];
+  for (const [, tool] of Array.from(entry.inFlightTools.entries())) {
+    inFlight.push({
+      toolCallId: tool.toolCallId,
+      name: tool.name,
+      argsSoFar: tool.argsSoFar,
+      parentMessageId: tool.parentMessageId,
+    });
+  }
+
+  onEvent(
+    JSON.stringify({ type: "snapshot", messages, inFlight }) + "\n",
+  );
+
+  const unsubscribe = entry.runtime.session.subscribe((event) => {
+    onEvent(JSON.stringify(event) + "\n");
+  });
+  registerCleanup(() => {
+    log.info("connect.client_disconnected", { sessionId });
+    unsubscribe();
+  });
+}
+
+export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {
+  const log = getTraceLogger("worker");
+  const entry = sessions.get(sessionId);
+  if (!entry) {
+    log.info("cancel.session_not_found", { sessionId });
+    return { cancelled: false };
+  }
+  log.info("cancel.requested", { sessionId });
+  await entry.runtime.session.abort();
+  return { cancelled: true };
+}
