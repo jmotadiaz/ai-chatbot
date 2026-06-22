@@ -125,4 +125,43 @@ export class WorkerClient {
   async disposeSession(params: { sessionId: string }): Promise<void> {
     await this.call("disposeSession", params);
   }
+
+  async connectToSession(params: { sessionId: string; _traceRunId?: string }): Promise<ReadableStream<Uint8Array>> {
+    const log = getTraceLogger("bridge");
+    const id = ++this.id;
+    const stop = log.startTimer("rpc.call", { method: "connectToSession", sessionId: params.sessionId });
+
+    const body: JsonRpcRequest = {
+      jsonrpc: "2.0",
+      method: "connectToSession",
+      params,
+      id,
+    };
+    const res = await fetch(`${this.baseUrl}/rpc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      log.error("rpc.http_error", { method: "connectToSession", status: res.status });
+      stop();
+      throw new Error(`Worker request failed: ${res.status}`);
+    }
+    if (!res.body) {
+      log.error("rpc.no_body", { method: "connectToSession" });
+      stop();
+      throw new Error("Worker response has no body");
+    }
+    stop();
+    return res.body;
+  }
+
+  async cancelRun(params: { sessionId: string; _traceRunId?: string }): Promise<{ cancelled: boolean }> {
+    return this.call<{ cancelled: boolean }>("cancelRun", params);
+  }
+
+  async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean; piSessionId?: string }> {
+    return this.call<{ running: boolean; piSessionId?: string }>("getSessionStatus", params);
+  }
 }
