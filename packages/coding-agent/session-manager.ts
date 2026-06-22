@@ -444,7 +444,7 @@ export async function disposeSession(sessionId: string): Promise<void> {
 
 export interface SessionStatus {
   running: boolean;
-  runId?: string;
+  piSessionId?: string;
 }
 
 export async function getSessionStatus(sessionId: string): Promise<SessionStatus> {
@@ -455,7 +455,7 @@ export async function getSessionStatus(sessionId: string): Promise<SessionStatus
     return { running: false };
   }
   if (entry.runtime.session.isStreaming) {
-    return { running: true, runId: entry.runtime.session.sessionId };
+    return { running: true, piSessionId: entry.runtime.session.sessionId };
   }
   return { running: false };
 }
