@@ -46,6 +46,11 @@ const server = createServer(async (req, res) => {
         reader.releaseLock();
       }
     }
+    res.on("close", () => {
+      if (!res.writableEnded) {
+        res.end();
+      }
+    });
     res.end();
   } finally {
     await sink?.close();
