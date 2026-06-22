@@ -77,9 +77,10 @@ export const POST = withAuth(async (user, req) => {
       });
 
       const encoder = new TextEncoder();
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          const reader = workerStream.getReader();
+          reader = workerStream.getReader();
           const decoder = new TextDecoder();
           const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
           let buffer = "";
@@ -163,8 +164,24 @@ export const POST = withAuth(async (user, req) => {
           }
         },
         async cancel() {
+          if (reader) {
+            try {
+              await reader.cancel();
+            } catch (err) {
+              log.warn("connect.reader_cancel_failed", { message: String(err) });
+            }
+          }
           await closeSink();
         },
+      });
+
+      req.signal.addEventListener("abort", () => {
+        log.info("connect.client_aborted");
+        if (reader) {
+          reader.cancel().catch((err) => {
+            log.warn("connect.reader_cancel_failed", { message: String(err) });
+          });
+        }
       });
 
       return new Response(stream, {
