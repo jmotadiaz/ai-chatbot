@@ -471,23 +471,23 @@ export interface ConnectSnapshot {
   }>;
 }
 
-export async function connectToSession(
+export function connectToSession(
   sessionId: string,
   onEvent: (line: string) => void,
-  registerCleanup: (cleanup: () => void) => void,
-): Promise<void> {
+  onError: (err: Error) => void,
+): () => void {
   const log = getTraceLogger("worker");
   const entry = sessions.get(sessionId);
   if (!entry) {
     log.info("connect.session_not_found", { sessionId });
     onEvent(JSON.stringify({ type: "snapshot", messages: [], inFlight: [] }) + "\n");
     onEvent(JSON.stringify({ type: "agent_end" }) + "\n");
-    return;
+    return () => {};
   }
 
-  const messages = await getSessionMessages(sessionId);
+  const messages = entry.runtime.session.messages;
   const inFlight: ConnectSnapshot["inFlight"] = [];
-  for (const [, tool] of Array.from(entry.inFlightTools.entries())) {
+  for (const [, tool] of entry.inFlightTools) {
     inFlight.push({
       toolCallId: tool.toolCallId,
       name: tool.name,
@@ -500,13 +500,22 @@ export async function connectToSession(
     JSON.stringify({ type: "snapshot", messages, inFlight }) + "\n",
   );
 
+  let closed = false;
   const unsubscribe = entry.runtime.session.subscribe((event) => {
-    onEvent(JSON.stringify(event) + "\n");
+    if (closed) return;
+    try {
+      onEvent(JSON.stringify(event) + "\n");
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)));
+    }
   });
-  registerCleanup(() => {
+
+  return () => {
+    if (closed) return;
+    closed = true;
     log.info("connect.client_disconnected", { sessionId });
     unsubscribe();
-  });
+  };
 }
 
 export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

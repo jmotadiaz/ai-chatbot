@@ -73,24 +73,28 @@ export async function handleRpc(requestBody: string): Promise<Response> {
       case "connectToSession": {
         const { sessionId } = params as { sessionId: string };
         const encoder = new TextEncoder();
-        let cleanupFn: (() => void) | undefined;
+        let cleanup: () => void = () => {};
         const stream = new ReadableStream<Uint8Array>({
           start(controller) {
-            connectToSession(
-              sessionId,
-              (line) => controller.enqueue(encoder.encode(line)),
-              (cleanup) => {
-                cleanupFn = cleanup;
-              },
-            ).then(() => {
-              controller.close();
-            }).catch((err) => {
-              log.error("connect.error", { message: String(err) });
+            try {
+              cleanup = connectToSession(
+                sessionId,
+                (line) => controller.enqueue(encoder.encode(line)),
+                (err) => {
+                  log.error("connect.error", { message: String(err) });
+                  try {
+                    controller.error(err);
+                  } catch {
+                  }
+                },
+              );
+            } catch (err) {
+              log.error("connect.setup_error", { message: String(err) });
               controller.error(err);
-            });
+            }
           },
           cancel() {
-            cleanupFn?.();
+            cleanup();
           },
         });
         stop();
