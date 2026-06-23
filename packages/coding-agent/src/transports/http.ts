@@ -1,4 +1,13 @@
-import { getTraceLogger, setTraceSessionId } from "tracing";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  FileTraceSink,
+  getTraceLogger,
+  isTracingEnabled,
+  runWithTraceContext,
+  setTraceSessionId,
+} from "tracing";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -8,7 +17,144 @@ import {
   connectToSession,
   cancelRun,
   getSessionStatus,
-} from "./session-manager";
+} from "../session-manager";
+
+export interface HttpTransportOptions {
+  port: number;
+  host?: string;
+}
+
+interface RequestTraceMetadata {
+  runId: string;
+  sessionId?: string;
+  method?: string;
+}
+
+export function startHttpTransport(options: HttpTransportOptions) {
+  const server = createServer(handleHttpRequest);
+  const onListening = () => {
+    const host = options.host ?? "localhost";
+    console.log(`Coding agent worker listening on http://${host}:${options.port}`);
+  };
+
+  if (options.host) {
+    server.listen(options.port, options.host, onListening);
+  } else {
+    server.listen(options.port, onListening);
+  }
+
+  return server;
+}
+
+async function handleHttpRequest(req: IncomingMessage, res: ServerResponse) {
+  if (req.method !== "POST" || req.url !== "/rpc") {
+    res.writeHead(404).end("Not found");
+    return;
+  }
+
+  const body = await readRequestBody(req);
+  const { runId, sessionId, method } = parseTraceMetadata(body);
+  const sink = isTracingEnabled()
+    ? new FileTraceSink({ runId, truncate: false })
+    : null;
+
+  await sink?.open();
+  try {
+    await runWithTraceContext({ runId, sessionId, sink }, async () => {
+      const response = await handleRpc(body);
+      await writeFetchResponseToNode(response, res, { method, sessionId });
+    });
+  } finally {
+    await sink?.close();
+  }
+}
+
+async function readRequestBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+function parseTraceMetadata(body: string): RequestTraceMetadata {
+  try {
+    const parsed = JSON.parse(body) as {
+      method?: string;
+      params?: { _traceRunId?: string; sessionId?: string };
+    };
+    return {
+      runId: parsed.params?._traceRunId ?? crypto.randomUUID(),
+      sessionId: parsed.params?.sessionId,
+      method: parsed.method,
+    };
+  } catch {
+    return { runId: crypto.randomUUID() };
+  }
+}
+
+async function writeFetchResponseToNode(
+  response: Response,
+  res: ServerResponse,
+  metadata: { method?: string; sessionId?: string },
+): Promise<void> {
+  const log = getTraceLogger("worker");
+  res.writeHead(
+    response.status,
+    Object.fromEntries(response.headers.entries()),
+  );
+
+  if (!response.body) {
+    res.end();
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const stopStream = log.startTimer("worker.response_stream", {
+    method: metadata.method,
+    sessionId: metadata.sessionId,
+    status: response.status,
+  });
+  let chunkCount = 0;
+  let byteCount = 0;
+  let closedByClient = false;
+  const onClose = () => {
+    if (!res.writableEnded) {
+      closedByClient = true;
+      log.warn("worker.response_client_closed", {
+        method: metadata.method,
+        sessionId: metadata.sessionId,
+        chunkCount,
+        byteCount,
+      });
+    }
+    reader.cancel().catch(() => {});
+  };
+
+  res.on("close", onClose);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunkCount += 1;
+      byteCount += value.byteLength;
+      res.write(value);
+    }
+  } finally {
+    res.off("close", onClose);
+    reader.releaseLock();
+    stopStream();
+    log.info("worker.response_stream_summary", {
+      method: metadata.method,
+      sessionId: metadata.sessionId,
+      status: response.status,
+      chunkCount,
+      byteCount,
+      closedByClient,
+    });
+    res.end();
+  }
+}
 
 export async function handleRpc(requestBody: string): Promise<Response> {
   const log = getTraceLogger("worker");
@@ -254,4 +400,19 @@ function jsonResponse(
   return new Response(JSON.stringify(body), {
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function parsePort(): number {
+  return parseInt(process.env.CODING_AGENT_WORKER_PORT ?? "3015", 10);
+}
+
+function isMainModule(): boolean {
+  const entrypoint = process.argv[1];
+  return entrypoint
+    ? resolve(entrypoint) === fileURLToPath(import.meta.url)
+    : false;
+}
+
+if (isMainModule()) {
+  startHttpTransport({ port: parsePort() });
 }

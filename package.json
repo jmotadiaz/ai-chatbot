@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "dotenv -e .env.development.local -- pnpm --filter chatbot --filter coding-agent --parallel dev",
     "build": "dotenv -e .env.development.local -- pnpm --filter chatbot build",
-    "build:worker": "tsc --noEmit packages/coding-agent/*.ts",
+    "build:worker": "tsc -p packages/coding-agent/tsconfig.json --noEmit",
     "start": "dotenv -e .env.development.local -- pnpm --filter chatbot --filter coding-agent --parallel start",
     "preview": "dotenv -e .env.development.local -- sh -c 'pnpm --filter chatbot db:start && pnpm --filter chatbot build && concurrently \"pnpm --filter chatbot start\" \"pnpm worker:dev\"'",
     "agent:start": "export NEXT_PUBLIC_ENV=test && pnpm --filter chatbot db:test:start && pnpm --filter chatbot db:migrate && pnpm --filter chatbot db:seed && NODE_ENV=test pnpm --filter chatbot dev",
@@ -32,7 +32,8 @@
     "test:e2e:jules": "pnpm --filter chatbot test:e2e:jules",
     "mcp:start": "pnpm --filter chatbot mcp:start",
     "mcp-server": "pnpm --filter chatbot mcp-server",
-    "worker:dev": "dotenv -e .env.development.local -- tsx packages/coding-agent/worker.ts",
+    "transport:http": "dotenv -e .env.development.local -- pnpm --filter coding-agent transport:http",
+    "worker:dev": "pnpm transport:http",
     "test:unit": "pnpm --filter chatbot test:unit",
     "prepare": "husky"
   },

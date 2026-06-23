@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "npm run db:start && next dev",
     "build": "npx tsx lib/infrastructure/db/migrate.ts && next build",
-    "build:worker": "tsc --noEmit lib/agent-code/*.ts",
+    "build:worker": "pnpm --filter coding-agent exec tsc --noEmit --pretty false",
     "start": "next start -p 8085",
     "preview": "dotenv -e .env.development.local -- sh -c 'npm run db:start && npm run build && concurrently \"npm run start\" \"npm run worker:dev\"'",
     "agent:start": "export NEXT_PUBLIC_ENV=test && npm run db:test:start && npm run db:migrate && npm run db:seed && NODE_ENV=test npx next dev",
@@ -35,7 +35,7 @@
     "test:e2e:jules": "npm run db:jules:start && playwright test",
     "mcp:start": "npm run mcp-server",
     "mcp-server": "dotenv -e .env.development.local -- tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts",
-    "worker:dev": "dotenv -e .env.development.local -- tsx lib/agent-code/worker.ts",
+    "worker:dev": "pnpm --filter coding-agent transport:http",
     "test:unit": "vitest run",
     "prepare": "husky"
   },
