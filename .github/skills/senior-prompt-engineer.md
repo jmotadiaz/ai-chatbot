@@ -1,1 +1,0 @@
-../../.agent/skills/senior-prompt-engineer/SKILL.md
