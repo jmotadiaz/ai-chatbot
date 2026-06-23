@@ -1,7 +1,13 @@
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawn, execSync, type ChildProcess } from "child_process";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  readdirSync,
+} from "fs";
 import { randomUUID } from "crypto";
 import { config as dotenv } from "dotenv";
 
@@ -36,7 +42,10 @@ function parseArgs(): {
 }
 
 function loadEnv(runId: string, port: number): void {
-  dotenv({ path: resolve(PROJECT_ROOT, ".env.development.local"), override: false });
+  dotenv({
+    path: resolve(PROJECT_ROOT, ".env.development.local"),
+    override: false,
+  });
   Object.assign(process.env, {
     POSTGRES_URL: TEST_DB_URL,
     POSTGRES_PRISMA_URL: TEST_DB_URL,
@@ -49,7 +58,7 @@ function loadEnv(runId: string, port: number): void {
     DISABLE_DEV_INDICATOR: "1",
     DEFAULT_CONTEXT_WINDOW: "20000",
 
-    TRACE_RECORDS: "1",
+    TRACE_ENABLED: "1",
     TRACE_RUN_ID: runId,
     TRACE_DIR: TRACES_DIR,
 
@@ -70,14 +79,22 @@ function acquireLock(): boolean {
     } catch {
       // stale lock
     }
-    try { unlinkSync(LOCK_PATH); } catch { /* ignore */ }
+    try {
+      unlinkSync(LOCK_PATH);
+    } catch {
+      /* ignore */
+    }
   }
   writeFileSync(LOCK_PATH, String(process.pid));
   return true;
 }
 
 function releaseLock(): void {
-  try { unlinkSync(LOCK_PATH); } catch { /* ignore */ }
+  try {
+    unlinkSync(LOCK_PATH);
+  } catch {
+    /* ignore */
+  }
 }
 
 function checkPortAvailable(port: number): boolean {
@@ -110,7 +127,9 @@ async function waitForHttp(
     }
     await new Promise((r) => setTimeout(r, intervalMs));
   }
-  throw new Error(`Timeout waiting for ${url} after ${timeoutMs}ms (last: ${lastErr})`);
+  throw new Error(
+    `Timeout waiting for ${url} after ${timeoutMs}ms (last: ${lastErr})`,
+  );
 }
 
 function spawnNextDev(port: number): ChildProcess {
@@ -144,27 +163,45 @@ function spawnEvalite(targetPath: string): ChildProcess {
   return child;
 }
 
-function killChild(child: ChildProcess | undefined, signal: NodeJS.Signals = "SIGTERM"): Promise<void> {
+function killChild(
+  child: ChildProcess | undefined,
+  signal: NodeJS.Signals = "SIGTERM",
+): Promise<void> {
   if (!child || child.killed) return Promise.resolve();
   return new Promise((resolve) => {
-    if (!child.pid) { resolve(); return; }
+    if (!child.pid) {
+      resolve();
+      return;
+    }
     const pid = child.pid;
-    const onExit = () => { child.off("exit", onExit); resolve(); };
+    const onExit = () => {
+      child.off("exit", onExit);
+      resolve();
+    };
     child.once("exit", onExit);
     try {
       // Kill the whole process group so npx + next both die
       child.kill(signal);
       process.kill(-pid, signal);
-    } catch { resolve(); }
+    } catch {
+      resolve();
+    }
     setTimeout(() => {
       if (!child.killed) {
-        try { process.kill(-pid, "SIGKILL"); } catch { /* ignore */ }
+        try {
+          process.kill(-pid, "SIGKILL");
+        } catch {
+          /* ignore */
+        }
       }
     }, 5_000).unref();
   });
 }
 
-async function ensurePortFreed(port: number, timeoutMs = 10_000): Promise<void> {
+async function ensurePortFreed(
+  port: number,
+  timeoutMs = 10_000,
+): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
@@ -175,8 +212,13 @@ async function ensurePortFreed(port: number, timeoutMs = 10_000): Promise<void> 
       if (!pids) return;
       // Port still occupied — force-kill remaining processes
       try {
-        execSync(`kill -9 ${pids.split("\n").join(" ")}`, { cwd: PROJECT_ROOT, encoding: "utf8" });
-      } catch { /* ignore */ }
+        execSync(`kill -9 ${pids.split("\n").join(" ")}`, {
+          cwd: PROJECT_ROOT,
+          encoding: "utf8",
+        });
+      } catch {
+        /* ignore */
+      }
     } catch {
       return;
     }
@@ -194,7 +236,9 @@ function runDbCmd(args: string[]): void {
 function resolveCasePath(caseName: string | undefined): string {
   const evalsDir = resolve(PROJECT_ROOT, "tests/evals/cases");
   if (!caseName) return evalsDir;
-  const fileName = caseName.endsWith(".eval.ts") ? caseName : `${caseName}.eval.ts`;
+  const fileName = caseName.endsWith(".eval.ts")
+    ? caseName
+    : `${caseName}.eval.ts`;
   const targetPath = resolve(evalsDir, fileName);
   if (!existsSync(targetPath)) {
     console.error(`Eval case not found: ${targetPath}`);
@@ -222,8 +266,14 @@ async function main(): Promise<void> {
   const cleanup = () => {
     killChild(next); // fire-and-forget; will force-kill after 5s if needed
   };
-  process.on("SIGINT", () => { cleanup(); process.exit(130); });
-  process.on("SIGTERM", () => { cleanup(); process.exit(143); });
+  process.on("SIGINT", () => {
+    cleanup();
+    process.exit(130);
+  });
+  process.on("SIGTERM", () => {
+    cleanup();
+    process.exit(143);
+  });
 
   console.log(`\n=== eval-runner ===`);
   console.log(`runId:       ${runId}`);
@@ -241,12 +291,17 @@ async function main(): Promise<void> {
     }
     if (!opts.noMigrate) {
       console.log("[db] running migrations...");
-      execSync("npx tsx lib/infrastructure/db/migrate.ts", { cwd: PROJECT_ROOT, stdio: "inherit" });
+      execSync("npx tsx lib/infrastructure/db/migrate.ts", {
+        cwd: PROJECT_ROOT,
+        stdio: "inherit",
+      });
     }
 
     if (!opts.noServer) {
       next = spawnNextDev(opts.port);
-      await waitForHttp(`http://localhost:${opts.port}`, { timeoutMs: 120_000 });
+      await waitForHttp(`http://localhost:${opts.port}`, {
+        timeoutMs: 120_000,
+      });
       console.log(`[next] ready at http://localhost:${opts.port}`);
     }
 
@@ -254,7 +309,13 @@ async function main(): Promise<void> {
     const evalite = spawnEvalite(targetPath);
 
     const forward = (signal: NodeJS.Signals) => {
-      if (!evalite.killed) { try { evalite.kill(signal); } catch { /* ignore */ } }
+      if (!evalite.killed) {
+        try {
+          evalite.kill(signal);
+        } catch {
+          /* ignore */
+        }
+      }
     };
     process.on("SIGINT", () => forward("SIGINT"));
     process.on("SIGTERM", () => forward("SIGTERM"));

@@ -1,4 +1,4 @@
-import { EventType } from "@ag-ui/client";
+import { EventType, type BaseEvent } from "@ag-ui/client";
 import {
   FileTraceSink,
   isTracingEnabled,
@@ -7,7 +7,11 @@ import {
 } from "tracing";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
-import { PiToAguiTranslator } from "@/lib/features/code/pi-to-agui-translator";
+import {
+  emitAguiSseEvent,
+  relayLoggedAguiNdjsonToSse,
+  type RelaySummary,
+} from "@/lib/features/code/agui-stream-relay";
 import {
   getSession,
   touchSession,
@@ -18,6 +22,20 @@ import { toPiModelId } from "@/lib/features/code/model-mapping";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export const maxDuration = 240;
+
+interface RequestMessage {
+  id?: string;
+  role: string;
+  content?: unknown;
+  toolCalls?: unknown;
+  toolCallId?: string;
+  name?: string;
+}
+
+function promptFromMessage(message: RequestMessage | undefined): string {
+  if (!message) return "";
+  return typeof message.content === "string" ? message.content : "";
+}
 
 export const POST = withAuth(async (user, req) => {
   const body = await req.json();
@@ -55,9 +73,11 @@ export const POST = withAuth(async (user, req) => {
     );
   }
 
-  const messages = body.messages as Array<{ role: string; content: string }>;
+  const messages = (Array.isArray(body.messages)
+    ? body.messages
+    : []) as RequestMessage[];
 
-  const runId = crypto.randomUUID();
+  const runId = (body.runId as string | undefined) ?? crypto.randomUUID();
   const sink = isTracingEnabled() ? new FileTraceSink({ runId }) : null;
   await sink?.open();
   let sinkClosed = false;
@@ -121,14 +141,14 @@ export const POST = withAuth(async (user, req) => {
         });
       }
 
-      const prompt = messages[messages.length - 1]?.content ?? "";
+      const prompt = promptFromMessage(messages[messages.length - 1]);
       const sendStop = log.startTimer("worker.sendPrompt", {
         promptLength: prompt.length,
       });
       const workerStream = await client.sendPrompt({
         sessionId,
         prompt,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        messages,
         _traceRunId: runId,
       });
       sendStop();
@@ -137,8 +157,10 @@ export const POST = withAuth(async (user, req) => {
 
       // Save first user message as session label (if not already set)
       if (!dbSession.label) {
-        const firstUserMsg = messages.find((m) => m.role === "user");
-        if (firstUserMsg?.content?.trim()) {
+        const firstUserMsg = messages.find(
+          (m) => m.role === "user" && typeof m.content === "string",
+        );
+        if (typeof firstUserMsg?.content === "string" && firstUserMsg.content.trim()) {
           const label = firstUserMsg.content
             .trim()
             .split("\n")[0]!
@@ -157,69 +179,44 @@ export const POST = withAuth(async (user, req) => {
       let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          reader = workerStream.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-          const translator = new PiToAguiTranslator({
-            threadId: sessionId,
-            runId,
-          });
+          const streamStop = log.startTimer("stream.duration", { sessionId });
+          let relaySummary: RelaySummary | null = null;
+          let closeReason = "reader_done";
 
           try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() ?? "";
-
-              for (const line of lines) {
-                if (!line.trim()) continue;
-                try {
-                  const piEvent = JSON.parse(line);
-                  const aguiEvents = translator.translate(piEvent);
-                  for (const aguiEvent of aguiEvents) {
-                    const stepName = (aguiEvent as { stepName?: string })
-                      .stepName;
-                    const toolCallId = (
-                      aguiEvent as {
-                        rawEvent?: { toolCallId?: string };
-                      }
-                    ).rawEvent?.toolCallId;
-                    log.debug("stream.event", {
-                      piType: piEvent.type,
-                      aguiType: aguiEvent.type,
-                      stepName,
-                      toolCallId,
-                    });
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify(aguiEvent)}\n\n`),
-                    );
-                  }
-                } catch {
-                  log.warn("stream.malformed", { line: line.slice(0, 500) });
-                }
-              }
-            }
+            relaySummary = await relayLoggedAguiNdjsonToSse({
+              workerStream,
+              controller,
+              encoder,
+              log,
+              onReader: (r) => {
+                reader = r;
+              },
+            });
           } catch (err) {
+            closeReason = "error";
             log.error("stream.error", { message: String(err) });
             const errorEvent = {
               type: EventType.RUN_ERROR,
               threadId: sessionId,
               runId,
               message: String(err),
-            };
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`),
-            );
+            } as BaseEvent;
+            emitAguiSseEvent(controller, encoder, errorEvent);
           } finally {
-            log.info("stream.close");
+            streamStop();
+            log.info("stream.summary", {
+              sessionId,
+              closeReason,
+              relaySummary,
+            });
+            log.info("stream.close", { sessionId, closeReason });
             controller.close();
             await closeSink();
           }
         },
         async cancel() {
+          log.info("stream.cancel", { sessionId });
           if (reader) {
             try {
               await reader.cancel();

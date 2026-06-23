@@ -106,6 +106,7 @@ async function readEvents(runId: string, segment: "lifecycle" | "stream" | "erro
 
 interface RunListEntry {
   runId: string;
+  sessionId?: string;
   timestamp: string;
   sizeKB: number;
   isLegacy: boolean;
@@ -126,6 +127,7 @@ async function listAllRuns(): Promise<RunListEntry[]> {
           const lifecyclePath = resolve(codingAgentDir, entry.name, "lifecycle.ndjson");
           const runIdShort = entry.name.split("_")[1] || entry.name;
           let runId = runIdShort;
+          let sessionId: string | undefined;
           let status = "ok";
           let timestamp = entry.name.split("_")[0] || "";
           
@@ -133,6 +135,7 @@ async function listAllRuns(): Promise<RunListEntry[]> {
             try {
               const sumData = JSON.parse(await readFile(summaryPath, "utf8"));
               runId = sumData.runId || runId;
+              sessionId = sumData.sessionId;
               status = sumData.status || status;
               if (sumData.startTime) {
                 timestamp = sumData.startTime.slice(0, 19).replace("T", " ");
@@ -147,6 +150,7 @@ async function listAllRuns(): Promise<RunListEntry[]> {
           
           list.push({
             runId,
+            sessionId,
             timestamp,
             sizeKB: size / 1024,
             isLegacy: false,
@@ -185,6 +189,136 @@ function formatEvent(e: TraceRecord): string {
   return `${ts} [${layer}] ${level} ${e.eventName}${dur}`;
 }
 
+async function readRunEvents(
+  runId: string,
+  opts: { includeStream?: boolean } = {},
+): Promise<TraceRecord[]> {
+  const lifecycle = await readEvents(runId, "lifecycle");
+  const errors = await readEvents(runId, "errors");
+  const stream = opts.includeStream ? await readEvents(runId, "stream") : [];
+  const byKey = new Map<string, TraceRecord>();
+  for (const event of [...lifecycle, ...errors, ...stream]) {
+    byKey.set(
+      `${event.timestamp}:${event.layer}:${event.level}:${event.eventName}:${JSON.stringify(event.payload)}`,
+      event,
+    );
+  }
+  return [...byKey.values()].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+const SESSION_ID_KEYS = new Set([
+  "sessionId",
+  "appSessionId",
+  "threadId",
+]);
+
+function payloadHasSessionId(value: unknown, sessionId: string, depth = 0): boolean {
+  if (depth > 5 || value === null || value === undefined) return false;
+  if (typeof value !== "object") return false;
+  if (Array.isArray(value)) {
+    return value.some((item) => payloadHasSessionId(item, sessionId, depth + 1));
+  }
+
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    if (SESSION_ID_KEYS.has(key) && child === sessionId) return true;
+    if (payloadHasSessionId(child, sessionId, depth + 1)) return true;
+  }
+  return false;
+}
+
+function eventMatchesSessionId(event: TraceRecord, sessionId: string): boolean {
+  return event.sessionId === sessionId || payloadHasSessionId(event.payload, sessionId);
+}
+
+interface SessionRunEntry extends RunListEntry {
+  firstTime?: string;
+  lastTime?: string;
+  eventCount: number;
+  matchingEventCount: number;
+  hasConnect: boolean;
+  hasRunRequest: boolean;
+  hasWarningsOrErrors: boolean;
+}
+
+async function findRunsBySessionId(sessionId: string): Promise<SessionRunEntry[]> {
+  const runs = await listAllRuns();
+  const matches: SessionRunEntry[] = [];
+
+  for (const run of runs) {
+    let events: TraceRecord[] = [];
+    try {
+      events = await readRunEvents(run.runId);
+    } catch {
+      continue;
+    }
+    const matching = events.filter((event) => eventMatchesSessionId(event, sessionId));
+    if (run.sessionId !== sessionId && matching.length === 0) continue;
+
+    const relevant = matching.length > 0 ? matching : events;
+    matches.push({
+      ...run,
+      firstTime: relevant[0]?.timestamp,
+      lastTime: relevant[relevant.length - 1]?.timestamp,
+      eventCount: events.length,
+      matchingEventCount: matching.length,
+      hasConnect: events.some((event) => event.eventName.startsWith("connect.")),
+      hasRunRequest: events.some((event) => event.eventName === "request.start"),
+      hasWarningsOrErrors: events.some((event) => event.level === "warn" || event.level === "error"),
+    });
+  }
+
+  return matches.sort((a, b) => (a.firstTime ?? a.timestamp).localeCompare(b.firstTime ?? b.timestamp));
+}
+
+function formatPayload(payload: unknown, maxLength = 500): string {
+  if (payload === undefined) return "";
+  const text = JSON.stringify(payload);
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function isTimelineEvent(event: TraceRecord): boolean {
+  if (event.level === "warn" || event.level === "error") return true;
+  return [
+    "request.start",
+    "stream.start",
+    "stream.summary",
+    "stream.close",
+    "connect.start",
+    "connect.snapshot_received",
+    "connect.translator_hydrated",
+    "connect.inflight_events_emitted",
+    "connect.stream_summary",
+    "connect.close",
+    "session.prompt",
+    "session.prompt_complete",
+    "session.prompt_stream_summary",
+    "connect.snapshot_built",
+    "connect.stream_summary",
+    "worker.response_stream_summary",
+    "client.connect.start",
+    "client.connect.complete",
+    "client.connect.failed",
+    "client.connect.detach",
+    "client.run.start",
+    "client.run.finalized",
+    "client.run.complete",
+    "client.run_failed",
+    "client.messages_snapshot_applied",
+  ].includes(event.eventName);
+}
+
+function isReconnectEvent(event: TraceRecord): boolean {
+  if (event.level === "warn" || event.level === "error") return true;
+  return (
+    event.eventName.startsWith("connect.") ||
+    event.eventName.startsWith("client.connect.") ||
+    event.eventName === "client.messages_snapshot_applied" ||
+    event.eventName === "worker.response_stream_summary" ||
+    event.eventName === "rpc.stream_opened" ||
+    event.eventName === "translate.step_finish_skipped"
+  );
+}
+
 const command = process.argv[2];
 const argId = process.argv[3];
 
@@ -199,7 +333,64 @@ async function main() {
       console.log(`Runs in ${resolve(TRACE_DIR)}:\n`);
       for (const r of runs) {
         const typeStr = r.isLegacy ? "LEGACY" : `SEGMENTED [${r.status?.toUpperCase()}]`;
-        console.log(`  ${r.runId.padEnd(36)}  ${r.sizeKB.toFixed(1).padStart(6)}KB  ${r.timestamp}  (${typeStr})`);
+        const session = r.sessionId ? `  session=${r.sessionId}` : "";
+        console.log(`  ${r.runId.padEnd(36)}  ${r.sizeKB.toFixed(1).padStart(6)}KB  ${r.timestamp}  (${typeStr})${session}`);
+      }
+      break;
+    }
+    case "session": {
+      if (!argId) { console.log("Usage: inspector.ts session <sessionId>"); return; }
+      const runs = await findRunsBySessionId(argId);
+      if (runs.length === 0) {
+        console.log(`No runs found for sessionId ${argId}`);
+        return;
+      }
+      console.log(`Runs for sessionId ${argId} (${runs.length}):\n`);
+      for (const run of runs) {
+        const labels = [
+          run.hasRunRequest ? "run" : "",
+          run.hasConnect ? "connect" : "",
+          run.hasWarningsOrErrors ? "warn/error" : "",
+        ].filter(Boolean).join(", ") || "other";
+        const duration =
+          run.firstTime && run.lastTime
+            ? `${new Date(run.lastTime).getTime() - new Date(run.firstTime).getTime()}ms`
+            : "n/a";
+        console.log(
+          `  ${run.runId.padEnd(36)}  ${run.firstTime ?? run.timestamp}  ${duration.padStart(8)}  ${labels}  events=${run.eventCount} matched=${run.matchingEventCount}`,
+        );
+      }
+      break;
+    }
+    case "timeline":
+    case "reconnect": {
+      if (!argId) {
+        console.log(`Usage: inspector.ts ${command} <sessionId>`);
+        return;
+      }
+      const runs = await findRunsBySessionId(argId);
+      if (runs.length === 0) {
+        console.log(`No runs found for sessionId ${argId}`);
+        return;
+      }
+      const reconnectOnly = command === "reconnect";
+      const timeline: Array<{ runId: string; event: TraceRecord }> = [];
+      for (const run of runs) {
+        const events = await readRunEvents(run.runId);
+        const includeWholeRun = run.sessionId === argId;
+        for (const event of events) {
+          if (!includeWholeRun && !eventMatchesSessionId(event, argId)) continue;
+          if (reconnectOnly ? isReconnectEvent(event) : isTimelineEvent(event)) {
+            timeline.push({ runId: run.runId, event });
+          }
+        }
+      }
+      timeline.sort((a, b) => a.event.timestamp.localeCompare(b.event.timestamp));
+      console.log(`${reconnectOnly ? "Reconnect" : "Timeline"} events for sessionId ${argId} (${timeline.length}):\n`);
+      for (const { runId, event } of timeline) {
+        const payload = formatPayload(event.payload, reconnectOnly ? 900 : 500);
+        console.log(`${runId.slice(0, 8)}  ${formatEvent(event)}`);
+        if (payload) console.log(`          ${payload}`);
       }
       break;
     }
@@ -352,6 +543,9 @@ async function main() {
       console.log("Usage: npx tsx packages/tracing/src/inspector.ts <command> [args]");
       console.log("Commands:");
       console.log("  list                          List recent trace runs");
+      console.log("  session <sessionId>           List all runs related to a coding-agent session");
+      console.log("  timeline <sessionId>          Show low-noise key events across all session runs");
+      console.log("  reconnect <sessionId>         Show reconnect-focused events across session runs");
       console.log("  summary <runId>               Show the run summary metadata");
       console.log("  show <runId>                  Show lifecycle events chronologically");
       console.log("  errors <runId>                Show only error/warn events");

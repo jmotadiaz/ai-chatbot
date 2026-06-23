@@ -24,7 +24,7 @@ pnpm eval -c compaction --no-server          # asumir next dev ya levantado
 ## ¿Qué hace el runner?
 
 1. Carga `.env.development.local` (API keys reales; `override:false`).
-2. Fuerza vars de evals: `POSTGRES_URL` apuntando a la DB de test (`5434/test`), `AUTH_SECRET=test_secret`, `NEXT_PUBLIC_ENV=evals` (≠ `"test"` para no activar mocks), `TRACE_RECORDS=1`, `TRACE_RUN_ID=<uuid>`, `EVAL_BASE_URL=http://localhost:<port>`.
+2. Fuerza vars de evals: `POSTGRES_URL` apuntando a la DB de test (`5434/test`), `AUTH_SECRET=test_secret`, `NEXT_PUBLIC_ENV=evals` (≠ `"test"` para no activar mocks), `TRACE_ENABLED=1`, `TRACE_RUN_ID=<uuid>`, `EVAL_BASE_URL=http://localhost:<port>`.
 3. Levanta la DB de test (`docker compose -f docker-compose.test.yml up --wait`).
 4. Migra la DB. No siembra datos: cada caso de eval crea su propio usuario con `createTestUser()`.
 5. Arranca `next dev --turbo -p <port>` (con prefijo `[next]` en logs) — o reutiliza uno ya corriendo en ese puerto.
@@ -75,7 +75,7 @@ El sistema escribe dos artefactos por run:
 
 1. **Trazas del eval** (`tests/evals/traces/<evalName>-<timestamp>.json`): Eventos de alto nivel (`simulator`, `chatbot`, `judge`) escritos manualmente por el caso de eval. Incluye el `traceRunId` para correlacionar con las trazas internas.
 
-2. **Trazas internas del modelo** (`tests/evals/traces/<runId>.ndjson`): Eventos progresivos (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) escritos por el middleware de tracing sobre cada llamada `streamText`/`generateText` en la app. Se activa con `TRACE_RECORDS=1` (forzado por el runner).
+2. **Trazas internas del modelo** (`tests/evals/traces/<runId>.ndjson`): Eventos progresivos (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) escritos por el middleware de tracing sobre cada llamada `streamText`/`generateText` en la app. Se activa con `TRACE_ENABLED=1` (forzado por el runner).
 
 El route handler `/api/chat` propaga `X-Trace-Run-Id` y `X-Trace-Request-Id` en la response, y el `chatbot-client.ts` del eval los lee y los guarda en el `metadata` de la traza del chatbot, permitiendo cruzar ambos archivos.
 

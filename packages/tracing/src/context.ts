@@ -19,3 +19,10 @@ export function runWithTraceContext<T>(
 export function getTraceContext(): TraceContext | undefined {
   return storage.getStore();
 }
+
+export function setTraceSessionId(sessionId: string | undefined): void {
+  if (!sessionId) return;
+  const ctx = storage.getStore();
+  if (!ctx || ctx.sessionId) return;
+  ctx.sessionId = sessionId;
+}

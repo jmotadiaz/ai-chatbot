@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
+const EventType = {
+  RUN_STARTED: "RUN_STARTED",
+  RUN_FINISHED: "RUN_FINISHED",
+  TEXT_MESSAGE_CHUNK: "TEXT_MESSAGE_CHUNK",
+  TOOL_CALL_START: "TOOL_CALL_START",
+  TOOL_CALL_ARGS: "TOOL_CALL_ARGS",
+  TOOL_CALL_END: "TOOL_CALL_END",
+  TOOL_CALL_RESULT: "TOOL_CALL_RESULT",
+  STEP_STARTED: "STEP_STARTED",
+  STEP_FINISHED: "STEP_FINISHED",
+} as const;
+
 export async function POST(req: NextRequest) {
   const { method, params } = await req.json();
 
@@ -42,97 +54,30 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        let events = [];
+        let seq = 1;
+        const emit = (event: object) => {
+          controller.enqueue(encoder.encode(JSON.stringify({ seq: seq++, event }) + "\n"));
+        };
+
         if (prompt.includes("list files")) {
-          events = [
-            { type: "agent_start" },
-            { type: "message_start", message: { role: "assistant" } },
-            // Tool 1: list files
-            {
-              type: "message_update",
-              assistantMessageEvent: {
-                type: "toolcall_start",
-                contentIndex: 0,
-                toolCall: { id: "tc-1", name: "bash" },
-              },
-            },
-            {
-              type: "message_update",
-              assistantMessageEvent: {
-                type: "toolcall_delta",
-                contentIndex: 0,
-                delta: '{"command":"ls"}',
-              },
-            },
-            {
-              type: "message_update",
-              assistantMessageEvent: {
-                type: "toolcall_end",
-                contentIndex: 0,
-              },
-            },
-            {
-              type: "tool_execution_start",
-              toolCallId: "tc-1",
-              toolName: "bash",
-            },
-            {
-              type: "tool_execution_end",
-              toolCallId: "tc-1",
-              result: "README.md\nsrc/",
-            },
-            // Tool 2: read README
-            {
-              type: "message_update",
-              assistantMessageEvent: {
-                type: "toolcall_start",
-                contentIndex: 1,
-                toolCall: { id: "tc-2", name: "view_file" },
-              },
-            },
-            {
-              type: "message_update",
-              assistantMessageEvent: {
-                type: "toolcall_delta",
-                contentIndex: 1,
-                delta: '{"path":"README.md"}',
-              },
-            },
-            {
-              type: "message_update",
-              assistantMessageEvent: {
-                type: "toolcall_end",
-                contentIndex: 1,
-              },
-            },
-            {
-              type: "tool_execution_start",
-              toolCallId: "tc-2",
-              toolName: "view_file",
-            },
-            {
-              type: "tool_execution_end",
-              toolCallId: "tc-2",
-              result: "# AI Chatbot\nThis is a Next.js app.",
-            },
-            // Message end
-            { type: "message_end", message: { role: "assistant" } },
-            { type: "agent_end" },
-          ];
+          emit({ type: EventType.RUN_STARTED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
+          emit({ type: EventType.TOOL_CALL_START, toolCallId: "tc-1", toolCallName: "bash" });
+          emit({ type: EventType.TOOL_CALL_ARGS, toolCallId: "tc-1", delta: '{"command":"ls"}' });
+          emit({ type: EventType.TOOL_CALL_END, toolCallId: "tc-1" });
+          emit({ type: EventType.STEP_STARTED, stepName: "tool:bash:tc-1", rawEvent: { toolCallId: "tc-1" } });
+          emit({ type: EventType.TOOL_CALL_RESULT, messageId: "tool-msg-1", toolCallId: "tc-1", role: "tool", content: "README.md\nsrc/" });
+          emit({ type: EventType.STEP_FINISHED, stepName: "tool:bash:tc-1", rawEvent: { toolCallId: "tc-1" } });
+          emit({ type: EventType.TOOL_CALL_START, toolCallId: "tc-2", toolCallName: "view_file" });
+          emit({ type: EventType.TOOL_CALL_ARGS, toolCallId: "tc-2", delta: '{"path":"README.md"}' });
+          emit({ type: EventType.TOOL_CALL_END, toolCallId: "tc-2" });
+          emit({ type: EventType.STEP_STARTED, stepName: "tool:view_file:tc-2", rawEvent: { toolCallId: "tc-2" } });
+          emit({ type: EventType.TOOL_CALL_RESULT, messageId: "tool-msg-2", toolCallId: "tc-2", role: "tool", content: "# AI Chatbot\nThis is a Next.js app." });
+          emit({ type: EventType.STEP_FINISHED, stepName: "tool:view_file:tc-2", rawEvent: { toolCallId: "tc-2" } });
+          emit({ type: EventType.RUN_FINISHED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
         } else {
-          events = [
-            { type: "agent_start" },
-            { type: "message_start", message: { role: "assistant" } },
-            {
-              type: "message_update",
-              assistantMessageEvent: { type: "text_delta", delta: "Hello from stub" },
-            },
-            { type: "message_end", message: { role: "assistant" } },
-            { type: "agent_end" },
-          ];
-        }
-        for (const event of events) {
-          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+          emit({ type: EventType.RUN_STARTED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
+          emit({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "msg-1", role: "assistant", delta: "Hello from stub" });
+          emit({ type: EventType.RUN_FINISHED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
         }
         controller.close();
       },
@@ -146,40 +91,14 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        const messages = [
-          { id: "loaded-0", role: "user", content: "Stub user message" },
-          { id: "loaded-1", role: "assistant", content: "Stub assistant reply" },
-        ];
-        const inFlight: Array<{
-          contentIndex: number;
-          toolCallId: string;
-          name: string;
-          argsSoFar: string;
-          parentMessageId?: string;
-        }> = [];
-        controller.enqueue(
-          encoder.encode(JSON.stringify({ type: "snapshot", messages, inFlight, isStreaming: false }) + "\n"),
-        );
-        controller.enqueue(encoder.encode(JSON.stringify({ type: "agent_start" }) + "\n"));
-        controller.enqueue(
-          encoder.encode(
-            JSON.stringify({ type: "message_start", message: { role: "assistant" } }) + "\n",
-          ),
-        );
-        controller.enqueue(
-          encoder.encode(
-            JSON.stringify({
-              type: "message_update",
-              assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Reconnected to stub" },
-            }) + "\n",
-          ),
-        );
-        controller.enqueue(
-          encoder.encode(
-            JSON.stringify({ type: "message_end", message: { role: "assistant" } }) + "\n",
-          ),
-        );
-        controller.enqueue(encoder.encode(JSON.stringify({ type: "agent_end" }) + "\n"));
+        let seq = params.afterSeq ?? 0;
+        const emit = (event: object) => {
+          seq += 1;
+          controller.enqueue(encoder.encode(JSON.stringify({ seq, event }) + "\n"));
+        };
+        emit({ type: EventType.RUN_STARTED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
+        emit({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "msg-reconnect", role: "assistant", delta: "Reconnected to stub" });
+        emit({ type: EventType.RUN_FINISHED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
         controller.close();
       },
     });

@@ -1,134 +1,86 @@
 ---
 name: trace-analyzer
-description: 'Analyze eval execution results from the evalite test suite or coding agent runs. Use when: (1) User asks to review, analyze, or inspect eval/trace results, (2) User mentions "eval", "evaluation", "compaction eval", "fact recall", or "trace", (3) User asks to debug why a run/eval failed, (4) User wants to understand scores or traces from runs.'
+description: Analyze eval execution results from evalite or coding-agent traces. Use when the user asks to inspect traces, debug a run/session failure, analyze eval results, investigate coding-agent reconnect issues, or understand failures from a session id, run id, trace directory, eval score, or trace output.
 ---
 
-You are an expert Trace Analyzer for this monorepo. There are **two completely separate tracing systems**. You MUST route to the correct one.
+# Trace Analyzer
 
----
+Route first. This monorepo has two different trace systems.
 
-## ⚠️ MANDATORY: Package Routing (Do This FIRST)
+## Route A: Coding Agent
 
-Read the user's request and match it to ONE of the two packages below. **Do NOT mix tools or paths between packages.**
+Use this route when the request mentions coding agent, reconnect, session id, worker, bridge, Pi SDK, AG-UI, translator, RPC, streaming, or runtime failures in the agent UI.
 
-### Route A → Coding Agent
+Read `references/coding-agent-patterns.md` before analyzing.
 
-**Match if the request mentions ANY of**: `coding agent`, `coding-agent`, `worker`, `bridge`, `session`, `RPC`, `PI SDK`, `agui`, `translator`, or the user refers to a **runtime failure** of the chat agent backend.
-
-- **Trace location**: `packages/tracing/traces/coding-agent/<datetime>_<runIdShort>/`
-- **Inspector tool**: `npx tsx packages/tracing/src/inspector.ts <command> [args]`
-- **Reference guide**: Read [coding-agent-patterns.md](file:///home/javier/projects/ai-chatbot/.agents/skills/trace-analyzer/references/coding-agent-patterns.md) BEFORE analyzing.
-- **DO NOT** use `inspect-evals.ts` — that is for the chatbot eval suite only.
-
-### Route B → Chatbot (Evals / Compaction)
-
-**Match if the request mentions ANY of**: `eval`, `evaluation`, `compaction`, `fact recall`, `evalite`, `scorer`, `judge`, `simulator`, or the user refers to an **eval test result**.
-
-- **Trace location**: `tests/evals/traces/chatbot/<datetime>_<runIdShort>/`
-- **Inspector tool**: `npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts <command> [args]`
-- **Reference guide**: Read [chatbot-patterns.md](file:///home/javier/projects/ai-chatbot/.agents/skills/trace-analyzer/references/chatbot-patterns.md) BEFORE analyzing.
-- **DO NOT** use `packages/tracing/src/inspector.ts` — that is for the coding agent only.
-
-> [!CAUTION]
-> If the request does not clearly match either route, ASK the user which package they mean before proceeding. Never guess.
-
----
-
-## Progressive Disclosure Analysis Strategy
-
-Do not load or parse complete trace logs immediately. Follow this progressive disclosure strategy:
-
-```mermaid
-graph TD
-    A[Start: Read summary.json] --> B{Status is Error?}
-    B -- Yes --> C[Read errors.ndjson]
-    B -- No --> D{Performance / Timing issues?}
-    C --> E[Diagnose root cause]
-    D -- Yes --> F[Read lifecycle.ndjson]
-    D -- No --> G[Done / Overview summary]
-    F --> H[Analyze timing durationMs & events]
-    H --> E
-    E --> I{Need deep delta stream debug?}
-    I -- Yes --> J[Read stream.ndjson or run conversation reconstruction]
-    I -- No --> K[Generate recommendations]
-    J --> K
-```
-
-### Step 1: Triage (Always Start Here)
-- Read `summary.json` to get the execution status, counts, duration, and metadata.
-- If status is `"error"`, immediately read `errors.ndjson` to find the exact exception.
-
-### Step 2: Lifecycle Analysis (If triage is OK but details needed)
-- Read `lifecycle.ndjson` (contains only RPC requests, start, finish, tool calls, and results — no streaming noise).
-- Examine `durationMs` on events to pinpoint bottlenecks.
-
-### Step 3: Deep Stream Debug (Only for delta/token-level issues)
-- Read `stream.ndjson` or use reconstruction scripts to inspect text and reasoning deltas.
-
-### Step 4: Reconnection Mismatch Debugging (For Client Reconnect Crashes)
-- Check `errors.ndjson` for client unhandled rejections or error events like `Cannot send 'STEP_FINISHED' for step... that was not started`.
-- Find the `sessionId` from the failed run in `summary.json` or `errors.ndjson`.
-- Run `grep -rn "<sessionId>" packages/tracing/traces/coding-agent/` to locate all related runs (both the preceding run that disconnected, and the reconnect run).
-- Read the preceding run's `lifecycle.ndjson` to see what events actually completed before the disconnect (e.g. `tool_execution_start`, `tool_execution_end`, `message_end`).
-- Read the reconnect run's `lifecycle.ndjson` starting at `connect.start` to inspect `connect.snapshot_received` and `connect.translator_hydrated` payloads.
-- Compare the list of `inFlight` tools and `messages` in the snapshot with the events that actually arrived:
-  - If a tool had `callEnded: false` in the snapshot, did the client receive `STEP_STARTED` later when `tool_execution_start` was processed?
-  - If a tool had `callEnded: true` in the snapshot, did the client receive `STEP_STARTED` and `TOOL_CALL_END` manually during snapshot processing?
-  - Look for logs/warnings like `translate.step_finish_skipped` or `translate.dropped` in the reconnect run logs to pinpoint translation mismatches.
-
----
-
-## Inspection Tools Reference
-
-### Coding Agent Inspector Commands
+Trace location:
 
 ```bash
-# List all recent trace runs
-npx tsx packages/tracing/src/inspector.ts list
+packages/tracing/traces/coding-agent/<datetime>_<runIdShort>/
+```
 
-# View the summary metadata of a run (instant)
+Inspector:
+
+```bash
+npx tsx packages/tracing/src/inspector.ts <command> [args]
+```
+
+Start from the identifier the user has:
+
+```bash
+# User provides a session id. This is the preferred reconnect workflow.
+npx tsx packages/tracing/src/inspector.ts session <sessionId>
+npx tsx packages/tracing/src/inspector.ts timeline <sessionId>
+npx tsx packages/tracing/src/inspector.ts reconnect <sessionId>
+
+# User provides a run id.
 npx tsx packages/tracing/src/inspector.ts summary <runId>
-
-# View clean lifecycle events (without stream noise)
-npx tsx packages/tracing/src/inspector.ts show <runId>
-
-# View errors and warnings only
 npx tsx packages/tracing/src/inspector.ts errors <runId>
-
-# View raw streaming/debug events
-npx tsx packages/tracing/src/inspector.ts stream <runId>
-
-# View statistics of a run
-npx tsx packages/tracing/src/inspector.ts stats <runId>
-
-# View events for a specific layer
-npx tsx packages/tracing/src/inspector.ts layer <worker|bridge|client> <runId>
+npx tsx packages/tracing/src/inspector.ts show <runId>
 ```
 
-### Chatbot Evals Inspector Commands
+For reconnect issues, do not open `stream.ndjson` first. Use `reconnect <sessionId>` and inspect these lifecycle events:
+
+- `client.connect.*` and `client.messages_snapshot_applied`: whether the browser attempted reconnect and accepted the snapshot.
+- `connect.snapshot_received`: snapshot size, `isStreaming`, and in-flight tool shape.
+- `connect.translator_hydrated`: state seeded into `PiToAguiTranslator`.
+- `connect.inflight_events_emitted`: synthetic events emitted from the snapshot.
+- `connect.stream_summary`: Pi input counts, AG-UI output counts, skipped duplicate starts, and translator pending state at close.
+- `worker.response_stream_summary` and `connect.stream_summary`: whether either side saw client disconnect, reader completion, or an error.
+- Warnings such as `translate.step_finish_skipped`, `translate.dropped`, `inflight.*_not_found`, or `connect.malformed`.
+
+Only read `stream.ndjson` when the lifecycle summary proves the issue is token/delta-level, such as dropped text chunks, malformed lines, or missing tool-call args. Prefer `stream <runId>` or `layer bridge <runId>` instead of opening raw files.
+
+## Route B: Chatbot Evals
+
+Use this route when the request mentions eval, evaluation, evalite, compaction, fact recall, scorer, judge, simulator, or model quality metrics.
+
+Read `references/chatbot-patterns.md` before analyzing.
+
+Trace location:
 
 ```bash
-# Get summary of last 10 runs (eval JSON + model NDJSON availability)
-npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts summary
-
-# Show compact details of the last run
-npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts compact
-
-# Show reconstructed conversation flow from chatbot logs
-npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts conversation
-
-# Show judge evaluations of fact recalls
-npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts judge
-
-# Show model events summary or log details for a runId
-npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts model <runId>
-
-# Reconstruct conversation from model deltas (text + reasoning + tools)
-npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts model-conversation <runId>
+tests/evals/traces/chatbot/<datetime>_<runIdShort>/
 ```
 
----
+Inspector:
 
-## Legacy Compatibility
+```bash
+npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts <command> [args]
+```
 
-For backward compatibility, legacy single-file traces (`<runId>.ndjson`) may exist in the root of `packages/tracing/traces/` or `tests/evals/traces/`. Both inspector tools handle these transparently.
+Start here:
+
+```bash
+npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts summary
+npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts compact
+npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts judge
+```
+
+## Analysis Rules
+
+- Keep analysis progressive: summary, errors, lifecycle, then stream only if necessary.
+- Preserve context: quote short event names and compact payload facts, not whole trace records.
+- Prefer cross-run session timelines for reconnect bugs; a single run usually hides the disconnect/reconnect boundary.
+- Report the first broken invariant, the evidence events, and the smallest next probe or fix.
+- If the request does not clearly match coding-agent or eval traces, ask which trace system the user means.

@@ -20,6 +20,15 @@ export interface JsonRpcResponse<T = unknown> {
   id: number;
 }
 
+export interface WorkerSnapshotMessage {
+  id?: string;
+  role: string;
+  content?: unknown;
+  toolCalls?: unknown;
+  toolCallId?: string;
+  name?: string;
+}
+
 export class WorkerClient {
   private baseUrl: string;
   private id = 0;
@@ -31,7 +40,8 @@ export class WorkerClient {
   private async call<T>(method: string, params: unknown): Promise<T> {
     const log = getTraceLogger("bridge");
     const id = ++this.id;
-    const stop = log.startTimer("rpc.call", { method, params });
+    const traceParams = summarizeWorkerRpcParams(method, params);
+    const stop = log.startTimer("rpc.call", { method, params: traceParams });
 
     const body: JsonRpcRequest = { jsonrpc: "2.0", method, params, id };
     const res = await fetch(`${this.baseUrl}/rpc`, {
@@ -41,14 +51,14 @@ export class WorkerClient {
     });
 
     if (!res.ok) {
-      log.error("rpc.http_error", { method, status: res.status, statusText: res.statusText });
+      log.error("rpc.http_error", { method, params: traceParams, status: res.status, statusText: res.statusText });
       stop();
       throw new Error(`Worker request failed: ${res.status} ${res.statusText}`);
     }
 
     const data = (await res.json()) as JsonRpcResponse<T>;
     if (data.error) {
-      log.error("rpc.error", { method, code: data.error.code, message: data.error.message });
+      log.error("rpc.error", { method, params: traceParams, code: data.error.code, message: data.error.message });
       stop();
       throw new Error(`Worker RPC error: ${data.error.message}`);
     }
@@ -71,12 +81,13 @@ export class WorkerClient {
   async sendPrompt(params: {
     sessionId: string;
     prompt: string;
-    messages?: Array<{ role: string; content: string }>;
+    messages?: WorkerSnapshotMessage[];
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");
     const id = ++this.id;
-    const stop = log.startTimer("rpc.call", { method: "sendPrompt", sessionId: params.sessionId });
+    const traceParams = summarizeWorkerRpcParams("sendPrompt", params);
+    const stop = log.startTimer("rpc.call", { method: "sendPrompt", params: traceParams });
 
     const body: JsonRpcRequest = {
       jsonrpc: "2.0",
@@ -91,18 +102,19 @@ export class WorkerClient {
     });
 
     if (!res.ok) {
-      log.error("rpc.http_error", { method: "sendPrompt", status: res.status, statusText: res.statusText });
+      log.error("rpc.http_error", { method: "sendPrompt", params: traceParams, status: res.status, statusText: res.statusText });
       stop();
       throw new Error(`Worker request failed: ${res.status} ${res.statusText}`);
     }
 
     if (!res.body) {
-      log.error("rpc.no_body", { method: "sendPrompt" });
+      log.error("rpc.no_body", { method: "sendPrompt", params: traceParams });
       stop();
       throw new Error("Worker response has no body");
     }
 
     stop();
+    log.info("rpc.stream_opened", { method: "sendPrompt", params: traceParams });
     return res.body;
   }
 
@@ -126,10 +138,11 @@ export class WorkerClient {
     await this.call("disposeSession", params);
   }
 
-  async connectToSession(params: { sessionId: string; _traceRunId?: string }): Promise<ReadableStream<Uint8Array>> {
+  async connectToSession(params: { sessionId: string; afterSeq?: number; _traceRunId?: string }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");
     const id = ++this.id;
-    const stop = log.startTimer("rpc.call", { method: "connectToSession", sessionId: params.sessionId });
+    const traceParams = summarizeWorkerRpcParams("connectToSession", params);
+    const stop = log.startTimer("rpc.call", { method: "connectToSession", params: traceParams });
 
     const body: JsonRpcRequest = {
       jsonrpc: "2.0",
@@ -144,16 +157,17 @@ export class WorkerClient {
     });
 
     if (!res.ok) {
-      log.error("rpc.http_error", { method: "connectToSession", status: res.status });
+      log.error("rpc.http_error", { method: "connectToSession", params: traceParams, status: res.status });
       stop();
       throw new Error(`Worker request failed: ${res.status}`);
     }
     if (!res.body) {
-      log.error("rpc.no_body", { method: "connectToSession" });
+      log.error("rpc.no_body", { method: "connectToSession", params: traceParams });
       stop();
       throw new Error("Worker response has no body");
     }
     stop();
+    log.info("rpc.stream_opened", { method: "connectToSession", params: traceParams });
     return res.body;
   }
 
@@ -163,5 +177,53 @@ export class WorkerClient {
 
   async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean; piSessionId?: string }> {
     return this.call<{ running: boolean; piSessionId?: string }>("getSessionStatus", params);
+  }
+}
+
+function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
+  if (!params || typeof params !== "object") return params;
+  const p = params as Record<string, unknown>;
+  const sessionId = typeof p.sessionId === "string" ? p.sessionId : undefined;
+  const hasTraceRunId = typeof p._traceRunId === "string";
+
+  switch (method) {
+    case "initializeSession":
+      return {
+        sessionId,
+        project: typeof p.project === "string" ? p.project : undefined,
+        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+        hasTraceRunId,
+      };
+    case "sendPrompt":
+      return {
+        sessionId,
+        promptLength: typeof p.prompt === "string" ? p.prompt.length : 0,
+        messageCount: Array.isArray(p.messages) ? p.messages.length : 0,
+        hasTraceRunId,
+      };
+    case "getSessionMessages":
+      return {
+        sessionId,
+        project: typeof p.project === "string" ? p.project : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+      };
+    case "setModel":
+      return {
+        sessionId,
+        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+      };
+    case "disposeSession":
+    case "cancelRun":
+    case "getSessionStatus":
+      return { sessionId, hasTraceRunId };
+    case "connectToSession":
+      return {
+        sessionId,
+        afterSeq: typeof p.afterSeq === "number" ? p.afterSeq : undefined,
+        hasTraceRunId,
+      };
+    default:
+      return { sessionId, keys: Object.keys(p).sort(), hasTraceRunId };
   }
 }

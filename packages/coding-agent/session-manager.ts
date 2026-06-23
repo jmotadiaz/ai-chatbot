@@ -11,6 +11,9 @@ import {
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
+import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
+import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
+import type { CodingAgentEvent } from "./index";
 
 interface InFlightTool {
   toolCallId: string;
@@ -20,15 +23,182 @@ interface InFlightTool {
   callEnded: boolean;
 }
 
+interface SnapshotMessage {
+  id?: string;
+  role: string;
+  content?: unknown;
+  toolCalls?: unknown;
+  toolCallId?: string;
+  name?: string;
+}
+
 interface SessionEntry {
   sessionId: string;
   piSessionId: string;
   project: string;
   runtime: Awaited<ReturnType<typeof createAgentSessionRuntime>>;
   inFlightTools: Map<number, InFlightTool>;
+  eventLog?: SessionEventLog;
+  activeRun?: {
+    runId: string;
+    startSeq: number;
+    unsubscribe: () => void;
+    sawTerminal: boolean;
+  };
 }
 
 const sessions = new Map<string, SessionEntry>();
+
+function incrementCount(counts: Record<string, number>, key: string | undefined): void {
+  if (!key) return;
+  counts[key] = (counts[key] ?? 0) + 1;
+}
+
+function ensureEventLog(entry: SessionEntry): SessionEventLog {
+  entry.eventLog ??= new SessionEventLog();
+  return entry.eventLog;
+}
+
+function isTerminalAguiEvent(event: BaseEvent): boolean {
+  return event.type === EventType.RUN_FINISHED || event.type === EventType.RUN_ERROR;
+}
+
+function loggedLine(entry: LoggedAguiEvent): string {
+  return `${JSON.stringify(entry)}\n`;
+}
+
+function appendAguiEvent(
+  entry: SessionEntry,
+  event: BaseEvent,
+  eventCounts?: Record<string, number>,
+): LoggedAguiEvent {
+  incrementCount(eventCounts ?? {}, event.type);
+  const logged = ensureEventLog(entry).append(event);
+  if (isTerminalAguiEvent(event) && entry.activeRun) {
+    entry.activeRun.sawTerminal = true;
+  }
+  return logged;
+}
+
+function normalizeSnapshotMessages(
+  messages: SnapshotMessage[] | undefined,
+): SnapshotMessage[] {
+  return (messages ?? [])
+    .filter((message): message is SnapshotMessage => (
+      typeof message === "object" &&
+      message !== null &&
+      typeof message.role === "string"
+    ))
+    .map((message, index) => ({
+      id: typeof message.id === "string" ? message.id : `snapshot-${index}`,
+      role: message.role,
+      content: message.content ?? "",
+      ...(Array.isArray(message.toolCalls) ? { toolCalls: message.toolCalls } : {}),
+      ...(typeof message.toolCallId === "string" ? { toolCallId: message.toolCallId } : {}),
+      ...(typeof message.name === "string" ? { name: message.name } : {}),
+    }));
+}
+
+function updateInFlightTools(
+  entry: SessionEntry,
+  event: CodingAgentEvent,
+): void {
+  const log = getTraceLogger("worker");
+  const { sessionId } = entry;
+
+  if (event.type === "message_update") {
+    const ame = event.assistantMessageEvent as
+      | { type: string; contentIndex?: number; toolCall?: { id?: string; name?: string }; delta?: string }
+      | undefined;
+    if (ame?.type === "toolcall_start" && typeof ame.contentIndex === "number") {
+      const toolCallId = ame.toolCall?.id ?? `tool-${crypto.randomUUID()}`;
+      const partial = (ame as { partial?: { content?: unknown[] } }).partial;
+      const block =
+        partial && Array.isArray(partial.content)
+          ? partial.content[ame.contentIndex]
+          : undefined;
+      const blockName =
+        block && typeof block === "object" && block !== null && "name" in block
+          ? (block as { name?: unknown }).name
+          : undefined;
+      const name =
+        (typeof blockName === "string" ? blockName : undefined) ??
+        ame.toolCall?.name ??
+        "unknown";
+      entry.inFlightTools.set(ame.contentIndex, {
+        toolCallId,
+        name,
+        argsSoFar: "",
+        callEnded: false,
+      });
+      log.info("inflight.toolcall_start", { sessionId, contentIndex: ame.contentIndex, toolCallId, name });
+    } else if (ame?.type === "toolcall_delta" && typeof ame.contentIndex === "number") {
+      const t = entry.inFlightTools.get(ame.contentIndex);
+      if (t) t.argsSoFar += ame.delta ?? "";
+    } else if (ame?.type === "toolcall_end" && typeof ame.contentIndex === "number") {
+      const t = entry.inFlightTools.get(ame.contentIndex);
+      if (t) {
+        t.callEnded = true;
+        log.info("inflight.toolcall_end", { sessionId, contentIndex: ame.contentIndex, toolCallId: t.toolCallId });
+      }
+    }
+  } else if (event.type === "tool_execution_start") {
+    const toolCallId = (event as { toolCallId?: string }).toolCallId;
+    const toolName = (event as { toolName?: string }).toolName;
+    log.info("inflight.tool_execution_start", { sessionId, toolCallId, toolName });
+    if (toolCallId && toolName) {
+      let matchedKey: number | undefined;
+      for (const [contentIndex, tool] of entry.inFlightTools) {
+        if (tool.name === toolName && tool.toolCallId.startsWith("tool-")) {
+          matchedKey = contentIndex;
+          break;
+        }
+      }
+      if (matchedKey !== undefined) {
+        const tool = entry.inFlightTools.get(matchedKey)!;
+        const oldId = tool.toolCallId;
+        tool.toolCallId = toolCallId;
+        log.info("inflight.tool_execution_start_mapped", {
+          sessionId,
+          contentIndex: matchedKey,
+          oldId,
+          newId: toolCallId,
+          toolName,
+        });
+      } else {
+        log.warn("inflight.tool_execution_start_no_match", {
+          sessionId,
+          toolCallId,
+          toolName,
+          inFlight: Array.from(entry.inFlightTools.values()).map((t) => ({
+            id: t.toolCallId,
+            name: t.name,
+          })),
+        });
+      }
+    }
+  } else if (event.type === "tool_execution_end") {
+    const toolCallId = (event as { toolCallId?: string }).toolCallId;
+    if (toolCallId) {
+      let found = false;
+      for (const [contentIndex, tool] of entry.inFlightTools) {
+        if (tool.toolCallId === toolCallId) {
+          entry.inFlightTools.delete(contentIndex);
+          log.info("inflight.tool_execution_end_removed", {
+            sessionId,
+            contentIndex,
+            toolCallId,
+          });
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        log.warn("inflight.tool_execution_end_not_found", { sessionId, toolCallId });
+      }
+    }
+  }
+}
 
 /**
  * @internal Test-only helpers. Not part of the public API.
@@ -138,6 +308,7 @@ async function loadSessionFromDisk(
     project,
     runtime,
     inFlightTools: new Map(),
+    eventLog: new SessionEventLog(),
   };
   sessions.set(appSessionId, entry);
   log.info("session.load_disk_done", { appSessionId, piSessionId });
@@ -227,14 +398,215 @@ export async function getOrCreateSession(options: {
     project: options.project,
     runtime,
     inFlightTools: new Map(),
+    eventLog: new SessionEventLog(),
   });
   return { sessionId, piSessionId };
+}
+
+function createLoggedEventStream(
+  entry: SessionEntry,
+  afterSeq: number,
+  label: string,
+): ReadableStream<Uint8Array> {
+  const log = getTraceLogger("worker");
+  const { sessionId } = entry;
+  const eventLog = ensureEventLog(entry);
+  const encoder = new TextEncoder();
+  let enqueuedLineCount = 0;
+  let enqueueErrorCount = 0;
+  const eventCounts: Record<string, number> = {};
+  let cleanup: (() => void) | undefined;
+  let closed = false;
+
+  const logSummary = (reason: string) => {
+    log.info(`${label}.summary`, {
+      sessionId,
+      reason,
+      afterSeq,
+      enqueuedLineCount,
+      enqueueErrorCount,
+      eventCounts,
+      eventLogLastSeq: eventLog.lastSeq,
+      inFlightToolCount: entry.inFlightTools.size,
+    });
+  };
+
+  const shouldCloseOnTerminal = (event: BaseEvent) => {
+    if (!isTerminalAguiEvent(event)) return false;
+    const eventRunId = (event as { runId?: string }).runId;
+    return !entry.activeRun || eventRunId === entry.activeRun.runId;
+  };
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      const close = (reason: string) => {
+        if (closed) return;
+        closed = true;
+        cleanup?.();
+        logSummary(reason);
+        try {
+          controller.close();
+        } catch {
+          // The browser may already have closed the HTTP stream.
+        }
+      };
+
+      const emit = (logged: LoggedAguiEvent, closeTerminal: boolean) => {
+        if (closed) return;
+        incrementCount(eventCounts, logged.event.type);
+        try {
+          controller.enqueue(encoder.encode(loggedLine(logged)));
+          enqueuedLineCount += 1;
+        } catch (err) {
+          enqueueErrorCount += 1;
+          log.warn(`${label}.enqueue_error`, { sessionId, error: String(err) });
+          close("enqueue_error");
+          return;
+        }
+        if (closeTerminal && shouldCloseOnTerminal(logged.event)) {
+          close("terminal");
+        }
+      };
+
+      const replay = eventLog.readAfter(afterSeq);
+      for (let i = 0; i < replay.length; i += 1) {
+        emit(replay[i]!, i === replay.length - 1);
+      }
+      if (closed) return;
+
+      cleanup = eventLog.subscribe((logged) => emit(logged, true));
+
+      if (!entry.runtime.session.isStreaming && !entry.activeRun && entry.inFlightTools.size === 0) {
+        close("idle");
+      }
+    },
+    cancel() {
+      if (closed) return;
+      closed = true;
+      cleanup?.();
+      log.info(`${label}.cancelled`, { sessionId });
+      logSummary("cancelled");
+    },
+  });
+}
+
+function startPromptCollector(
+  entry: SessionEntry,
+  prompt: string,
+  runId: string,
+  messages: SnapshotMessage[] | undefined,
+): void {
+  const log = getTraceLogger("worker");
+  const { sessionId, runtime } = entry;
+  if (entry.activeRun || runtime.session.isStreaming) {
+    log.warn("session.prompt_already_running", { sessionId });
+    throw new Error("Session is already running");
+  }
+
+  log.info("session.prompt", {
+    sessionId,
+    runId,
+    promptLength: prompt.length,
+    historyMessageCount: messages?.length ?? 0,
+  });
+
+  const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
+  const snapshotMessages = normalizeSnapshotMessages(messages);
+  const startSeq = ensureEventLog(entry).lastSeq + 1;
+  const piEventCounts: Record<string, number> = {};
+  const aguiEventCounts: Record<string, number> = {};
+  let appendedAguiEventCount = 0;
+  let snapshotAppended = false;
+  let collectorClosed = false;
+
+  const logCollectorSummary = (reason: string) => {
+    if (collectorClosed) return;
+    collectorClosed = true;
+    log.info("session.prompt_collector_summary", {
+      sessionId,
+      runId,
+      reason,
+      piEventCounts,
+      aguiEventCounts,
+      appendedAguiEventCount,
+      eventLogLastSeq: ensureEventLog(entry).lastSeq,
+      inFlightToolCount: entry.inFlightTools.size,
+      translator: translator.getDiagnostics(),
+    });
+  };
+
+  const unsubscribe = runtime.session.subscribe((rawEvent) => {
+    const event = rawEvent as CodingAgentEvent;
+    incrementCount(piEventCounts, event.type);
+    log.debug("pi.event", { type: event.type });
+    updateInFlightTools(entry, event);
+
+    const aguiEvents = translator.translate(event);
+    for (const aguiEvent of aguiEvents) {
+      appendAguiEvent(entry, aguiEvent, aguiEventCounts);
+      appendedAguiEventCount += 1;
+      if (!snapshotAppended && aguiEvent.type === EventType.RUN_STARTED) {
+        appendAguiEvent(entry, {
+          type: EventType.MESSAGES_SNAPSHOT,
+          messages: snapshotMessages,
+          timestamp: Date.now(),
+        } as BaseEvent, aguiEventCounts);
+        appendedAguiEventCount += 1;
+        snapshotAppended = true;
+      }
+    }
+  });
+
+  entry.activeRun = {
+    runId,
+    startSeq,
+    unsubscribe,
+    sawTerminal: false,
+  };
+
+  const promptStop = log.startTimer("session.prompt_execution");
+  runtime.session
+    .prompt(prompt)
+    .then(() => {
+      promptStop();
+      log.info("session.prompt_complete", { sessionId, runId });
+      if (!entry.activeRun?.sawTerminal) {
+        appendAguiEvent(entry, {
+          type: EventType.RUN_FINISHED,
+          threadId: sessionId,
+          runId,
+          timestamp: Date.now(),
+        } as BaseEvent, aguiEventCounts);
+        appendedAguiEventCount += 1;
+      }
+      unsubscribe();
+      entry.activeRun = undefined;
+      logCollectorSummary("complete");
+    })
+    .catch((err) => {
+      promptStop();
+      log.error("session.prompt_error", { sessionId, runId, message: String(err) });
+      if (!entry.activeRun?.sawTerminal) {
+        appendAguiEvent(entry, {
+          type: EventType.RUN_ERROR,
+          threadId: sessionId,
+          runId,
+          message: String(err),
+          timestamp: Date.now(),
+        } as BaseEvent, aguiEventCounts);
+        appendedAguiEventCount += 1;
+      }
+      unsubscribe();
+      entry.activeRun = undefined;
+      logCollectorSummary("error");
+    });
 }
 
 export async function sendPrompt(
   sessionId: string,
   prompt: string,
-  messages?: Array<{ role: string; content: string }>,
+  messages?: SnapshotMessage[],
+  runId: string = crypto.randomUUID(),
 ): Promise<ReadableStream<Uint8Array>> {
   const log = getTraceLogger("worker");
   const entry = sessions.get(sessionId);
@@ -243,145 +615,9 @@ export async function sendPrompt(
     throw new Error("Session not found");
   }
 
-  log.info("session.prompt", {
-    sessionId,
-    promptLength: prompt.length,
-    historyMessageCount: messages?.length ?? 0,
-  });
-  const { runtime } = entry;
-  const encoder = new TextEncoder();
-
-  let unsubscribe: (() => void) | undefined;
-
-  const stream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      unsubscribe = runtime.session.subscribe((event) => {
-        log.debug("pi.event", { type: event.type });
-
-        if (event.type === "message_update") {
-          const ame = event.assistantMessageEvent as
-            | { type: string; contentIndex?: number; toolCall?: { id?: string; name?: string }; delta?: string }
-            | undefined;
-          if (ame?.type === "toolcall_start" && typeof ame.contentIndex === "number") {
-            const toolCallId = ame.toolCall?.id ?? `tool-${crypto.randomUUID()}`;
-            const partial = (ame as { partial?: { content?: unknown[] } }).partial;
-            const block =
-              partial && Array.isArray(partial.content)
-                ? partial.content[ame.contentIndex]
-                : undefined;
-            const blockName =
-              block && typeof block === "object" && block !== null && "name" in block
-                ? (block as { name?: unknown }).name
-                : undefined;
-            const name =
-              (typeof blockName === "string" ? blockName : undefined) ??
-              ame.toolCall?.name ??
-              "unknown";
-            entry.inFlightTools.set(ame.contentIndex, {
-              toolCallId,
-              name,
-              argsSoFar: "",
-              callEnded: false,
-            });
-            log.info("inflight.toolcall_start", { sessionId, contentIndex: ame.contentIndex, toolCallId, name });
-          } else if (ame?.type === "toolcall_delta" && typeof ame.contentIndex === "number") {
-            const t = entry.inFlightTools.get(ame.contentIndex);
-            if (t) t.argsSoFar += ame.delta ?? "";
-          } else if (ame?.type === "toolcall_end" && typeof ame.contentIndex === "number") {
-            const t = entry.inFlightTools.get(ame.contentIndex);
-            if (t) {
-              t.callEnded = true;
-              log.info("inflight.toolcall_end", { sessionId, contentIndex: ame.contentIndex, toolCallId: t.toolCallId });
-            }
-          }
-        } else if (event.type === "tool_execution_start") {
-          const toolCallId = (event as { toolCallId?: string }).toolCallId;
-          const toolName = (event as { toolName?: string }).toolName;
-          log.info("inflight.tool_execution_start", { sessionId, toolCallId, toolName });
-          if (toolCallId && toolName) {
-            let matchedKey: number | undefined;
-            for (const [contentIndex, tool] of entry.inFlightTools) {
-              if (tool.name === toolName && tool.toolCallId.startsWith("tool-")) {
-                matchedKey = contentIndex;
-                break;
-              }
-            }
-            if (matchedKey !== undefined) {
-              const tool = entry.inFlightTools.get(matchedKey)!;
-              const oldId = tool.toolCallId;
-              tool.toolCallId = toolCallId;
-              log.info("inflight.tool_execution_start_mapped", {
-                sessionId,
-                contentIndex: matchedKey,
-                oldId,
-                newId: toolCallId,
-                toolName,
-              });
-            } else {
-              log.warn("inflight.tool_execution_start_no_match", {
-                sessionId,
-                toolCallId,
-                toolName,
-                inFlight: Array.from(entry.inFlightTools.values()).map((t) => ({
-                  id: t.toolCallId,
-                  name: t.name,
-                })),
-              });
-            }
-          }
-        } else if (event.type === "tool_execution_end") {
-          const toolCallId = (event as { toolCallId?: string }).toolCallId;
-          if (toolCallId) {
-            let found = false;
-            for (const [contentIndex, tool] of entry.inFlightTools) {
-              if (tool.toolCallId === toolCallId) {
-                entry.inFlightTools.delete(contentIndex);
-                log.info("inflight.tool_execution_end_removed", {
-                  sessionId,
-                  contentIndex,
-                  toolCallId,
-                });
-                found = true;
-                break;
-              }
-            }
-            if (!found) {
-              log.warn("inflight.tool_execution_end_not_found", { sessionId, toolCallId });
-            }
-          }
-        }
-
-        const line = JSON.stringify(event) + "\n";
-        try {
-          controller.enqueue(encoder.encode(line));
-        } catch (err) {
-          log.warn("session.prompt_stream_enqueue_error", { sessionId, error: String(err) });
-        }
-      });
-
-      const promptStop = log.startTimer("session.prompt_execution");
-      runtime.session
-        .prompt(prompt)
-        .then(() => {
-          promptStop();
-          log.info("session.prompt_complete", { sessionId });
-          controller.close();
-          unsubscribe?.();
-        })
-        .catch((err) => {
-          promptStop();
-          log.error("session.prompt_error", { sessionId, message: String(err) });
-          controller.error(err);
-          unsubscribe?.();
-        });
-    },
-    cancel() {
-      log.info("session.prompt_stream_cancelled", { sessionId });
-      unsubscribe?.();
-    },
-  });
-
-  return stream;
+  const afterSeq = ensureEventLog(entry).lastSeq;
+  startPromptCollector(entry, prompt, runId, messages);
+  return createLoggedEventStream(entry, afterSeq, "session.prompt_stream");
 }
 
 /**
@@ -549,165 +785,118 @@ export async function getSessionStatus(sessionId: string): Promise<SessionStatus
   return { running: false };
 }
 
-export interface ConnectSnapshot {
-  type: "snapshot";
-  messages: Array<unknown>;
-  inFlight: Array<{
-    contentIndex: number;
-    toolCallId: string;
-    name: string;
-    argsSoFar: string;
-    parentMessageId?: string;
-    callEnded: boolean;
-  }>;
-  isStreaming: boolean;
-}
-
 export async function connectToSession(
   sessionId: string,
   onEvent: (line: string) => void,
   onError: (err: Error) => void,
   onComplete?: () => void,
+  afterSeq = 0,
 ): Promise<() => void> {
   const log = getTraceLogger("worker");
+  const eventCounts: Record<string, number> = {};
+  let emittedLineCount = 0;
+  let replayLineCount = 0;
+  let connectClosed = false;
+  let eventLogLastSeq = 0;
+  let replayAfterSeq = afterSeq;
 
-  const emitAgentEnd = () => {
-    onEvent(JSON.stringify({ type: "agent_end" }) + "\n");
-  };
-
-  const finishImmediately = () => {
-    emitAgentEnd();
-    onComplete?.();
-    return () => {};
+  const logConnectSummary = (reason: string) => {
+    if (connectClosed) return;
+    connectClosed = true;
+    log.info("connect.stream_summary", {
+      sessionId,
+      reason,
+      afterSeq,
+      replayAfterSeq,
+      emittedLineCount,
+      replayLineCount,
+      eventCounts,
+      eventLogLastSeq,
+    });
   };
 
   const entry = sessions.get(sessionId);
   if (!entry) {
     log.info("connect.session_not_found", { sessionId });
-    onEvent(JSON.stringify({ type: "snapshot", messages: [], inFlight: [], isStreaming: false }) + "\n");
-    return finishImmediately();
-  }
-
-  const messages = await getSessionMessages(sessionId);
-
-  // Tool calls that are still in-flight will be replayed as live AG-UI events
-  // (TOOL_CALL_START + TOOL_CALL_ARGS). If we left them in the snapshot's
-  // assistant message, AG-UI would create duplicate toolCalls when the live
-  // TOOL_CALL_START arrives. We remove them from the snapshot and carry their
-  // parent message id in the inFlight metadata so the BFF can seed the
-  // translator and emit TOOL_CALL_START with the correct parentMessageId.
-  const inFlightToolIds = new Set<string>();
-  for (const [, tool] of entry.inFlightTools) {
-    inFlightToolIds.add(tool.toolCallId);
-  }
-
-  const toolParentMap = new Map<string, string>();
-  for (const m of messages) {
-    if (m.role === "assistant" && Array.isArray(m.toolCalls)) {
-      const remaining = m.toolCalls.filter((tc: { id?: string }) => {
-        if (tc.id && inFlightToolIds.has(tc.id)) {
-          toolParentMap.set(tc.id, m.id);
-          return false;
-        }
-        return true;
-      });
-      if (remaining.length === 0) {
-        delete m.toolCalls;
-      } else {
-        m.toolCalls = remaining;
-      }
-    }
-  }
-
-  const inFlight: ConnectSnapshot["inFlight"] = [];
-  for (const [contentIndex, tool] of entry.inFlightTools) {
-    inFlight.push({
-      contentIndex,
-      toolCallId: tool.toolCallId,
-      name: tool.name,
-      argsSoFar: tool.argsSoFar,
-      parentMessageId: toolParentMap.get(tool.toolCallId) ?? tool.parentMessageId,
-      callEnded: tool.callEnded,
-    });
-  }
-
-  log.info("connect.snapshot_built", {
-    sessionId,
-    messageCount: messages.length,
-    inFlightCount: inFlight.length,
-    inFlight: inFlight.map((t) => ({
-      contentIndex: t.contentIndex,
-      toolCallId: t.toolCallId,
-      name: t.name,
-      parentMessageId: t.parentMessageId,
-      argsSoFarLength: t.argsSoFar.length,
-    })),
-    removedToolCallIds: Array.from(inFlightToolIds),
-  });
-
-  const isStreaming = entry.runtime.session.isStreaming;
-
-  let closed = false;
-  const eventBuffer: string[] = [];
-  let buffering = true;
-  let hadAgentEnd = false;
-
-  const unsubscribe = entry.runtime.session.subscribe((event) => {
-    if (closed) return;
-    try {
-      const line = JSON.stringify(event) + "\n";
-      if (event.type === "agent_end") {
-        hadAgentEnd = true;
-      }
-      if (buffering) {
-        eventBuffer.push(line);
-      } else {
-        onEvent(line);
-      }
-    } catch (err) {
-      onError(err instanceof Error ? err : new Error(String(err)));
-    }
-  });
-
-  onEvent(
-    JSON.stringify({ type: "snapshot", messages, inFlight, isStreaming }) + "\n",
-  );
-
-  const hasNoLiveActivity =
-    !isStreaming && inFlight.length === 0 && eventBuffer.length === 0;
-
-  if (hasNoLiveActivity) {
-    log.info("connect.idle_completed", { sessionId });
-    buffering = false;
-    unsubscribe();
-    return finishImmediately();
-  }
-
-  buffering = false;
-  log.info("connect.draining_buffer", {
-    sessionId,
-    bufferedEventCount: eventBuffer.length,
-  });
-  for (const line of eventBuffer) {
-    if (closed) break;
-    onEvent(line);
-  }
-  eventBuffer.length = 0;
-
-  if (closed) return () => {};
-  if (!entry.runtime.session.isStreaming && entry.inFlightTools.size === 0) {
-    log.info("connect.idle_after_drain", { sessionId });
-    if (!hadAgentEnd) emitAgentEnd();
     onComplete?.();
-    unsubscribe();
+    logConnectSummary("session_not_found");
     return () => {};
   }
+
+  const eventLog = ensureEventLog(entry);
+  eventLogLastSeq = eventLog.lastSeq;
+  replayAfterSeq =
+    afterSeq > 0
+      ? afterSeq
+      : entry.activeRun
+        ? Math.max(0, entry.activeRun.startSeq - 1)
+        : afterSeq;
+
+  let closed = false;
+  let unsubscribe: (() => void) | undefined;
+
+  const finish = (reason: string) => {
+    if (closed) return;
+    closed = true;
+    unsubscribe?.();
+    onComplete?.();
+    eventLogLastSeq = eventLog.lastSeq;
+    logConnectSummary(reason);
+  };
+
+  const shouldCloseOnTerminal = (event: BaseEvent) => {
+    if (!isTerminalAguiEvent(event)) return false;
+    const eventRunId = (event as { runId?: string }).runId;
+    return !entry.activeRun || eventRunId === entry.activeRun.runId;
+  };
+
+  const emitLogged = (logged: LoggedAguiEvent, closeTerminal: boolean) => {
+    if (closed) return;
+    try {
+      incrementCount(eventCounts, logged.event.type);
+      emittedLineCount += 1;
+      onEvent(loggedLine(logged));
+      if (closeTerminal && shouldCloseOnTerminal(logged.event)) {
+        finish("terminal");
+      }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      onError(error);
+      finish("error");
+    }
+  };
+
+  const replay = eventLog.readAfter(replayAfterSeq);
+  log.info("connect.replay", {
+    sessionId,
+    afterSeq,
+    replayAfterSeq,
+    replayCount: replay.length,
+    eventLogLastSeq: eventLog.lastSeq,
+    isStreaming: entry.runtime.session.isStreaming,
+    hasActiveRun: !!entry.activeRun,
+  });
+  for (let i = 0; i < replay.length; i += 1) {
+    replayLineCount += 1;
+    emitLogged(replay[i]!, i === replay.length - 1);
+  }
+
+  if (closed) return () => {};
+
+  if (!entry.runtime.session.isStreaming && !entry.activeRun && entry.inFlightTools.size === 0) {
+    log.info("connect.idle_completed", { sessionId, afterSeq });
+    finish("idle");
+    return () => {};
+  }
+
+  unsubscribe = eventLog.subscribe((logged) => emitLogged(logged, true));
 
   return () => {
     if (closed) return;
     closed = true;
     log.info("connect.client_disconnected", { sessionId });
-    unsubscribe();
+    unsubscribe?.();
+    logConnectSummary("client_disconnected");
   };
 }
 

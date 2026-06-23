@@ -39,6 +39,7 @@ export function groupItems(
 ): AgentItem[] {
   const out: AgentItem[] = [];
   let current: Extract<AgentItem, { kind: "assistant" }> | null = null;
+  const toolGroupsById = new Map<string, ToolCallGroup>();
 
   const flush = () => {
     if (current) {
@@ -55,12 +56,16 @@ export function groupItems(
         const timing = toolTimings?.get(tc.id);
         const startedAt = timing?.startedAt ?? Date.now();
         const finishedAt = timing?.finishedAt;
-        return {
+        const group: ToolCallGroup = {
           id: tc.id,
           name: tc.function?.name ?? tc.type ?? "tool",
           args: raw,
           argsParsed: parsed,
-          status: "running",
+          status: finishedAt
+            ? toolErrors?.has(tc.id)
+              ? "error"
+              : "ok"
+            : "running",
           startedAt,
           finishedAt,
           summary: summarizeToolCall(
@@ -68,6 +73,8 @@ export function groupItems(
             parsed,
           ),
         };
+        toolGroupsById.set(group.id, group);
+        return group;
       });
       current = { kind: "assistant", message: m, toolGroups };
       continue;
@@ -75,15 +82,13 @@ export function groupItems(
 
     if (m.role === "tool") {
       const id = (m as Message & { toolCallId?: string }).toolCallId;
-      if (current && id) {
-        const group = current.toolGroups.find((g) => g.id === id);
-        if (group) {
-          group.result = stringContent(m.content);
-          group.status = toolErrors?.has(id) ? "error" : "ok";
-          const timing = toolTimings?.get(id);
-          group.finishedAt = timing?.finishedAt ?? Date.now();
-          continue;
-        }
+      const group = id ? toolGroupsById.get(id) : undefined;
+      if (id && group) {
+        group.result = stringContent(m.content);
+        group.status = toolErrors?.has(id) ? "error" : "ok";
+        const timing = toolTimings?.get(id);
+        group.finishedAt = timing?.finishedAt ?? Date.now();
+        continue;
       }
       // Orphan tool message: drop.
       if (typeof console !== "undefined") {

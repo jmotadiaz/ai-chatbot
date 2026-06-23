@@ -1,5 +1,10 @@
 import { createServer } from "node:http";
-import { FileTraceSink, isTracingEnabled, runWithTraceContext } from "tracing";
+import {
+  FileTraceSink,
+  getTraceLogger,
+  isTracingEnabled,
+  runWithTraceContext,
+} from "tracing";
 import { handleRpc } from "./rpc-server";
 
 const port = parseInt(process.env.CODING_AGENT_WORKER_PORT ?? "3015", 10);
@@ -17,9 +22,16 @@ const server = createServer(async (req, res) => {
   const body = Buffer.concat(chunks).toString("utf-8");
 
   let runId: string;
+  let sessionId: string | undefined;
+  let method: string | undefined;
   try {
-    const parsed = JSON.parse(body) as { params?: { _traceRunId?: string } };
+    const parsed = JSON.parse(body) as {
+      method?: string;
+      params?: { _traceRunId?: string; sessionId?: string };
+    };
     runId = parsed.params?._traceRunId ?? crypto.randomUUID();
+    sessionId = parsed.params?.sessionId;
+    method = parsed.method;
   } catch {
     runId = crypto.randomUUID();
   }
@@ -27,36 +39,60 @@ const server = createServer(async (req, res) => {
   const sink = isTracingEnabled() ? new FileTraceSink({ runId, truncate: false }) : null;
   await sink?.open();
   try {
-    const response = await runWithTraceContext({ runId, sink }, () =>
-      handleRpc(body),
-    );
-    res.writeHead(
-      response.status,
-      Object.fromEntries(response.headers.entries()),
-    );
-    if (response.body) {
-      const reader = response.body.getReader();
-      const onClose = () => {
-        reader.cancel().catch(() => {});
-      };
-      res.on("close", onClose);
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(value);
+    await runWithTraceContext({ runId, sessionId, sink }, async () => {
+      const response = await handleRpc(body);
+      const log = getTraceLogger("worker");
+      res.writeHead(
+        response.status,
+        Object.fromEntries(response.headers.entries()),
+      );
+      if (response.body) {
+        const reader = response.body.getReader();
+        const stopStream = log.startTimer("worker.response_stream", {
+          method,
+          sessionId,
+          status: response.status,
+        });
+        let chunkCount = 0;
+        let byteCount = 0;
+        let closedByClient = false;
+        const onClose = () => {
+          if (!res.writableEnded) {
+            closedByClient = true;
+            log.warn("worker.response_client_closed", {
+              method,
+              sessionId,
+              chunkCount,
+              byteCount,
+            });
+          }
+          reader.cancel().catch(() => {});
+        };
+        res.on("close", onClose);
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunkCount += 1;
+            byteCount += value.byteLength;
+            res.write(value);
+          }
+        } finally {
+          res.off("close", onClose);
+          reader.releaseLock();
+          stopStream();
+          log.info("worker.response_stream_summary", {
+            method,
+            sessionId,
+            status: response.status,
+            chunkCount,
+            byteCount,
+            closedByClient,
+          });
         }
-      } finally {
-        res.off("close", onClose);
-        reader.releaseLock();
       }
-    }
-    res.on("close", () => {
-      if (!res.writableEnded) {
-        res.end();
-      }
+      res.end();
     });
-    res.end();
   } finally {
     await sink?.close();
   }

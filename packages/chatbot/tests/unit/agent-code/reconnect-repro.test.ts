@@ -2,10 +2,26 @@ import { describe, it, expect } from "vitest";
 import {
   AbstractAgent,
   EventType,
+  runHttpRequest,
+  transformHttpEventStream,
   type BaseEvent,
   type Message,
 } from "@ag-ui/client";
-import { Observable, of } from "rxjs";
+
+function eventStreamFrom(events: BaseEvent[]) {
+  const body = events
+    .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+    .join("");
+  return transformHttpEventStream(
+    runHttpRequest(() =>
+      Promise.resolve(
+        new Response(body, {
+          headers: { "Content-Type": "text/event-stream" },
+        }),
+      ),
+    ),
+  );
+}
 
 class TestAgent extends AbstractAgent {
   private events: BaseEvent[];
@@ -15,12 +31,12 @@ class TestAgent extends AbstractAgent {
     this.events = events;
   }
 
-  run(): Observable<BaseEvent> {
-    return of();
+  run() {
+    return eventStreamFrom([]);
   }
 
-  connect(): Observable<BaseEvent> {
-    return of(...this.events);
+  connect() {
+    return eventStreamFrom(this.events);
   }
 }
 

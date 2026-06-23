@@ -1,4 +1,4 @@
-import { getTraceLogger } from "tracing";
+import { getTraceLogger, setTraceSessionId } from "tracing";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -18,7 +18,8 @@ export async function handleRpc(requestBody: string): Promise<Response> {
     id: number;
   };
 
-  log.info("rpc.request", { method, params });
+  setTraceSessionId(getSessionIdFromParams(params));
+  log.info("rpc.request", { method, params: summarizeRpcParams(method, params) });
   const stop = log.startTimer("rpc.duration", { method });
 
   try {
@@ -35,15 +36,26 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             piSessionId?: string;
           },
         );
+        setTraceSessionId(
+          (result as { sessionId?: string } | undefined)?.sessionId,
+        );
         break;
       }
       case "sendPrompt": {
-        const { sessionId, prompt, messages } = params as {
+        const { sessionId, prompt, messages, _traceRunId } = params as {
           sessionId: string;
           prompt: string;
-          messages?: Array<{ role: string; content: string }>;
+          messages?: Array<{
+            id?: string;
+            role: string;
+            content?: unknown;
+            toolCalls?: unknown;
+            toolCallId?: string;
+            name?: string;
+          }>;
+          _traceRunId?: string;
         };
-        const stream = await sendPrompt(sessionId, prompt, messages);
+        const stream = await sendPrompt(sessionId, prompt, messages, _traceRunId);
         stop();
         return new Response(stream, {
           headers: { "Content-Type": "application/x-ndjson" },
@@ -71,7 +83,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "connectToSession": {
-        const { sessionId } = params as { sessionId: string };
+        const { sessionId, afterSeq } = params as { sessionId: string; afterSeq?: number };
         const encoder = new TextEncoder();
         let cleanup: () => void = () => {};
         let completed = false;
@@ -97,6 +109,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
                     // already closed; ignore
                   }
                 },
+                typeof afterSeq === "number" ? afterSeq : 0,
               );
             } catch (err) {
               log.error("connect.setup_error", { message: String(err) });
@@ -133,13 +146,89 @@ export async function handleRpc(requestBody: string): Promise<Response> {
     }
 
     stop();
-    log.info("rpc.response", { method, result });
+    log.info("rpc.response", { method, result: summarizeRpcResult(method, result) });
     return jsonResponse(result, id);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log.error("rpc.error", { method, message, stack: err instanceof Error ? err.stack : undefined });
     stop();
     return jsonResponse(null, id, { code: -32603, message });
+  }
+}
+
+function getSessionIdFromParams(params: unknown): string | undefined {
+  if (!params || typeof params !== "object") return undefined;
+  const sessionId = (params as { sessionId?: unknown }).sessionId;
+  return typeof sessionId === "string" ? sessionId : undefined;
+}
+
+function summarizeRpcParams(method: string, params: unknown): unknown {
+  if (!params || typeof params !== "object") return params;
+  const p = params as Record<string, unknown>;
+  const sessionId = typeof p.sessionId === "string" ? p.sessionId : undefined;
+  const hasTraceRunId = typeof p._traceRunId === "string";
+
+  switch (method) {
+    case "initializeSession":
+      return {
+        sessionId,
+        project: typeof p.project === "string" ? p.project : undefined,
+        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+        hasTraceRunId,
+      };
+    case "sendPrompt":
+      return {
+        sessionId,
+        promptLength: typeof p.prompt === "string" ? p.prompt.length : 0,
+        messageCount: Array.isArray(p.messages) ? p.messages.length : 0,
+        hasTraceRunId,
+      };
+    case "getSessionMessages":
+      return {
+        sessionId,
+        project: typeof p.project === "string" ? p.project : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+      };
+    case "setModel":
+      return {
+        sessionId,
+        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+      };
+    case "disposeSession":
+    case "cancelRun":
+    case "getSessionStatus":
+      return { sessionId, hasTraceRunId };
+    case "connectToSession":
+      return {
+        sessionId,
+        afterSeq: typeof p.afterSeq === "number" ? p.afterSeq : undefined,
+        hasTraceRunId,
+      };
+    default:
+      return { sessionId, keys: Object.keys(p).sort(), hasTraceRunId };
+  }
+}
+
+function summarizeRpcResult(method: string, result: unknown): unknown {
+  if (!result || typeof result !== "object") return result;
+  const r = result as Record<string, unknown>;
+  switch (method) {
+    case "initializeSession":
+      return {
+        sessionId: r.sessionId,
+        piSessionId: r.piSessionId,
+      };
+    case "getAvailableModels":
+      return {
+        modelCount: Array.isArray(r.models) ? r.models.length : 0,
+      };
+    case "getSessionMessages":
+      return {
+        messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
+      };
+    default:
+      return result;
   }
 }
 

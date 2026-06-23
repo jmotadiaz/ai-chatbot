@@ -75,4 +75,4 @@ export const noopTraceSink: TraceSink = {
 };
 
 export const isTracingEnabled = (): boolean =>
-  process.env.TRACE_RECORDS === "1";
+  process.env.TRACE_ENABLED === "1";

@@ -3,10 +3,8 @@ import {
   runHttpRequest,
   transformHttpEventStream,
   type RunAgentInput,
-  type BaseEvent,
   type Message,
 } from "@ag-ui/client";
-import { Observable } from "rxjs";
 
 export interface ConnectableHttpAgentConfig {
   runUrl: string;
@@ -35,11 +33,11 @@ export class ConnectableHttpAgent extends AbstractAgent {
     this.fetchImpl = config.fetch ?? ((u, init) => fetch(u, init));
   }
 
-  run(input: RunAgentInput): Observable<BaseEvent> {
+  run(input: RunAgentInput) {
     return this.httpStream(this.runUrl, input);
   }
 
-  connect(input: RunAgentInput): Observable<BaseEvent> {
+  connect(input: RunAgentInput) {
     return this.httpStream(this.connectUrl, input);
   }
 
@@ -60,7 +58,7 @@ export class ConnectableHttpAgent extends AbstractAgent {
     };
   }
 
-  private httpStream(url: string, input: RunAgentInput): Observable<BaseEvent> {
+  private httpStream(url: string, input: RunAgentInput) {
     const http$ = runHttpRequest(() => this.fetchImpl(url, this.requestInit(input)));
     return transformHttpEventStream(http$, this.debugLogger);
   }

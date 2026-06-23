@@ -102,4 +102,39 @@ describe("groupItems", () => {
       "assistant",
     ]);
   });
+
+  it("pairs tool results by id even when reasoning appears between the assistant and result", () => {
+    const reasoning = {
+      id: "r0",
+      role: "reasoning",
+      content: "thinking...",
+    } as Message;
+    const items = groupItems([
+      assistantMsg("a1", [bashCall("t1", "ls")]),
+      reasoning,
+      toolMsg("r1", "t1", "file.txt\n"),
+    ]);
+
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    expect(items[0].toolGroups[0].result).toBe("file.txt\n");
+    expect(items[0].toolGroups[0].status).toBe("ok");
+    expect(items[1].kind).toBe("reasoning");
+  });
+
+  it("marks a tool as finished when STEP timing finished even if the tool result is not adjacent yet", () => {
+    const items = groupItems(
+      [assistantMsg("a1", [bashCall("t1", "ls")])],
+      undefined,
+      new Map([["t1", { startedAt: 100, finishedAt: 200 }]]),
+    );
+
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    expect(items[0].toolGroups[0]).toEqual(
+      expect.objectContaining({
+        status: "ok",
+        startedAt: 100,
+        finishedAt: 200,
+      }),
+    );
+  });
 });
