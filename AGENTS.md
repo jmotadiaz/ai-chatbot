@@ -1,8 +1,14 @@
-# Agent Instructions
+# Agent Instructions (Global — Monorepo Root)
 
 ## Package Manager
 
-Use **pnpm**: `pnpm install`, `pnpm dev`, `pnpm test`, `pnpm lint:fix`, `pnpm db:generate`
+Use **pnpm** (workspace mode). Common root scripts:
+
+- `pnpm dev` — start all services (chatbot + coding-agent)
+- `pnpm build` — build the chatbot app
+- `pnpm lint:fix` — lint all packages
+- `pnpm test:unit` / `pnpm test:e2e` — unit & E2E tests
+- `pnpm db:generate` / `pnpm db:migrate` — Drizzle ORM migrations
 
 ## Commit Attribution
 
@@ -14,22 +20,34 @@ Co-Authored-By: (the agent model's name and attribution byline)
 
 Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
 
-## Project Structure
+## Monorepo Structure
 
-- `app/`: Next.js App Router (routes & UI components).
-- `lib/infrastructure/`: Infrastructure code (DB, AI).
-- `lib/features/`: Feature code (Chat, Project, RAG, etc.).
-- `components/`: UI components.
-- `tests/`: End-to-end tests (Playwright)
+```
+packages/
+├── chatbot/        # Main Next.js web application
+├── coding-agent/   # Coding agent HTTP worker
+└── tracing/        # Shared tracing/observability library
+tests/              # E2E tests (Playwright)
+```
 
-## Development Rules
+### `chatbot` — Main Application
 
-- **Linting**: Always run `pnpm lint:fix & npx next build` after changes.
-- **Database**: Use Drizzle ORM. `pnpm db:generate && pnpm db:migrate` for migrations.
-- **Styling**: Tailwind CSS + shadcn/ui. Support Dark/Light modes.
-- **Components**:
-  - Use `React.FC` with explicit prop interfaces.
-  - Headless Component Pattern: Logic in hooks (on lib/features), UI in components (on app or components).
+Full-stack Next.js 16 app (App Router). AI chatbot with multi-model support, RAG, coding agent integration, image editing, and project management.
+
+### `coding-agent` — Worker Process
+
+Separate HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent sessions, translates Pi events into AG-UI protocol events, and exposes an `/rpc` HTTP endpoint. The chatbot communicates with this worker to run coding tasks.
+
+### `tracing` — Shared Library
+
+Reusable observability library used by both `chatbot` and `coding-agent`. Provides AI SDK middleware to capture LLM call traces (prompts, responses, tool calls, token usage) and writes them to disk as JSONL. Enabled via `TRACE_ENABLED=1`.
+
+### Dependency Graph
+
+```
+chatbot ──→ coding-agent ──→ tracing
+   └──────────────────────→ tracing
+```
 
 <!-- context7 -->
 Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service -- even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer -- your training data may not reflect recent changes. Prefer this over web search for library docs.
