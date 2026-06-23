@@ -5,7 +5,7 @@
 
 ## Overview
 
-Implement app-wide structured tracing as a standalone feature (`lib/features/tracing/`), decoupled from AI infrastructure (`lib/infrastructure/ai/tracing/`) and evaluations (`tests/evals/`). Covers 3 layers: worker process (Pi), bridge (API route + worker client + translator), and client (server actions + browser hook).
+Implement app-wide structured tracing as a standalone package (`packages/tracing/`), decoupled from AI infrastructure and evaluations (`tests/evals/`). Covers 3 layers: worker process (Pi), bridge (API route + worker client + translator), and client (server actions + browser hook).
 
 ## Architecture
 

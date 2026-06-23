@@ -47,7 +47,7 @@ Evalúa la calidad de la compactación de conversaciones:
 evalite.config.ts                # Configuración global (raíz del proyecto)
 scripts/eval-runner.ts           # Runner del entorno (DB, next dev, evalite)
 lib/infrastructure/env.ts        # Helpers isTestMode/isEvalMode/resolveEnvFile
-lib/infrastructure/ai/tracing/   # Middleware de tracing (wrap LanguageModelV3)
+packages/tracing/                # Middleware de tracing (wrap LanguageModelV3)
 tests/evals/
 ├── lib/
 │   ├── auth.ts                  # Gestión de usuarios de test
@@ -75,7 +75,7 @@ El sistema escribe dos artefactos por run:
 
 1. **Trazas del eval** (`tests/evals/traces/<evalName>-<timestamp>.json`): Eventos de alto nivel (`simulator`, `chatbot`, `judge`) escritos manualmente por el caso de eval. Incluye el `traceRunId` para correlacionar con las trazas internas.
 
-2. **Trazas internas del modelo** (`tests/evals/traces/<runId>.ndjson`): Eventos progresivos (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) escritos por el middleware de tracing sobre cada llamada `streamText`/`generateText` en la app. Se activa con `TRACE_ENABLED=1` (forzado por el runner).
+2. **Trazas internas del modelo** (`tests/evals/traces/chatbot/<timestamp>_<runId>/`): Eventos progresivos (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) escritos por el middleware de tracing sobre cada llamada `streamText`/`generateText` en la app. Se activa con `TRACE_ENABLED=1` (forzado por el runner).
 
 El route handler `/api/chat` propaga `X-Trace-Run-Id` y `X-Trace-Request-Id` en la response, y el `chatbot-client.ts` del eval los lee y los guarda en el `metadata` de la traza del chatbot, permitiendo cruzar ambos archivos.
 
@@ -141,4 +141,3 @@ Abre `http://localhost:3006` para ver resultados en una interfaz web.
 1. Crear `tests/evals/cases/[case-name].eval.ts`
 2. Usar `evalite()` con `data`, `task`, y `scorers`
 3. Ejecutar con `pnpm eval -c [case-name]`
-

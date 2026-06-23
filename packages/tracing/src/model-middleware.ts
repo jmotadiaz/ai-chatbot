@@ -1,6 +1,4 @@
-import "server-only";
 import { performance } from "node:perf_hooks";
-import { randomUUID } from "node:crypto";
 import type {
   LanguageModelV3,
   LanguageModelV3CallOptions,
@@ -10,16 +8,14 @@ import type {
 import {
   bumpStepIndex,
   getTraceContext,
-  newRequestId,
-} from "./trace-context";
+} from "./context";
 import type {
   FinishPayload,
   PromptPayload,
   ToolCallPayload,
   TraceEvent,
   TraceSink,
-} from "./trace-sink";
-
+} from "./types";
 
 const handlePromptContent = (
   content: LanguageModelV3CallOptions["prompt"][number]["content"],
@@ -58,8 +54,6 @@ const handlePromptContent = (
         type: "file",
         mediaType: part.mediaType,
         filename: part.filename,
-        // Binary data is omitted to keep traces small; the filename/mediaType
-        // is enough to identify the attachment.
         data: "<omitted>",
       };
     }
@@ -92,7 +86,12 @@ const buildPromptPayload = (
   settings,
 });
 
-const baseEvent = (sink: TraceSink, phase: TraceEvent["phase"], payload: unknown, extra: Partial<TraceEvent> = {}): void => {
+const baseEvent = (
+  sink: TraceSink,
+  phase: TraceEvent["phase"],
+  payload: unknown,
+  extra: Partial<TraceEvent> = {},
+): void => {
   const ctx = getTraceContext();
   const event: TraceEvent = {
     ts: new Date().toISOString(),
@@ -164,12 +163,13 @@ export const createTracingMiddleware = (sink: TraceSink): LanguageModelV3Middlew
               type: "tool-result";
               toolCallId: string;
               toolName: string;
-              result: unknown;
+              output?: unknown;
+              result?: unknown;
             };
             return {
               toolCallId: tr.toolCallId,
               toolName: tr.toolName,
-              output: serializeToolResultOutput(tr.result),
+              output: serializeToolResultOutput(tr.output ?? tr.result),
             };
           });
 
@@ -304,12 +304,13 @@ export const createTracingMiddleware = (sink: TraceSink): LanguageModelV3Middlew
               const tr = chunk as unknown as {
                 toolCallId: string;
                 toolName: string;
-                result: unknown;
+                output?: unknown;
+                result?: unknown;
               };
               baseEvent(sink, "tool-result", {
                 toolCallId: tr.toolCallId,
                 toolName: tr.toolName,
-                output: serializeToolResultOutput(tr.result),
+                output: serializeToolResultOutput(tr.output ?? tr.result),
               }, { mode: "stream", stepIndex });
               break;
             }
@@ -357,8 +358,6 @@ export const createTracingMiddleware = (sink: TraceSink): LanguageModelV3Middlew
         },
       });
 
-      // Detect cancellation: if the downstream cancels the pipe, we won't get a
-      // flush() callback. Wrap the readable side to surface that.
       const wrapped = new ReadableStream<LanguageModelV3StreamPart>({
         async start(controller) {
           const reader = stream.pipeThrough(transform).getReader();
@@ -423,5 +422,3 @@ const serializeError = (err: unknown): unknown => {
   }
   return err;
 };
-
-export { newRequestId, randomUUID };

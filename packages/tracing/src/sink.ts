@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { appendFile, mkdir, writeFile, readdir, rm, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { existsSync } from "node:fs";
-import type { TraceRecord } from "./types";
+import type { FinishPayload, TraceEvent, TraceRecord, TraceSink } from "./types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_TRACE_DIR = resolve(__dirname, "../traces");
@@ -14,6 +14,11 @@ export interface FileTraceSinkOptions {
   runId: string;
   /** If true, directory is cleared on open. Default true. Set false for worker processes appending to existing run. */
   truncate?: boolean;
+  /** Trace partition under TRACE_DIR. Defaults to coding-agent. */
+  partition?: "coding-agent" | "chatbot" | (string & {});
+  /** Flush policy override. Defaults to (5s OR 20 events). */
+  flushIntervalMs?: number;
+  flushBufferSize?: number;
 }
 
 function getFormattedDateTime(): string {
@@ -27,30 +32,53 @@ function getFormattedDateTime(): string {
   return `${yyyy}${mm}${dd}-${hh}${min}${ss}`;
 }
 
-interface CodingAgentStats {
+interface TraceStats {
   runId: string;
   sessionId?: string;
+  chatId?: string;
+  userId?: string;
+  agent?: string;
   startTime?: string;
   endTime?: string;
   durationMs?: number;
   status: "ok" | "error";
   counts: {
     total: number;
-    byLayer: Record<string, number>;
-    byLevel: Record<string, number>;
-    byEvent: Record<string, number>;
+    byLayer?: Record<string, number>;
+    byLevel?: Record<string, number>;
+    byEvent?: Record<string, number>;
+    byPhase?: Record<string, number>;
+  };
+  tokens?: {
+    input: number;
+    output: number;
   };
 }
 
-export class FileTraceSink {
+type TraceEntry = TraceRecord | TraceEvent;
+
+const isModelTraceEvent = (entry: TraceEntry): entry is TraceEvent =>
+  "phase" in entry && "ts" in entry;
+
+const ensureRecordCount = (
+  counts: TraceStats["counts"],
+  key: "byLayer" | "byLevel" | "byEvent" | "byPhase",
+): Record<string, number> => {
+  counts[key] ??= {};
+  return counts[key];
+};
+
+export class FileTraceSink implements TraceSink {
   private readonly traceDir: string;
   private readonly runId: string;
   private readonly truncate: boolean;
   private readonly flushIntervalMs: number;
   private readonly flushBufferSize: number;
-  private buffer: TraceRecord[] = [];
+  private buffer: TraceEntry[] = [];
+  private opening: Promise<void> | null = null;
   private flushing: Promise<void> | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
+  private opened = false;
   private closed = false;
 
   private targetDirResolved = "";
@@ -63,15 +91,15 @@ export class FileTraceSink {
   constructor(opts: FileTraceSinkOptions) {
     const baseTraceDir =
       opts.traceDir ?? process.env.TRACE_DIR ?? DEFAULT_TRACE_DIR;
-    // Ensure we separate by package: append "coding-agent" if not already present
-    this.traceDir = baseTraceDir.endsWith("coding-agent")
+    const partition = opts.partition ?? "coding-agent";
+    this.traceDir = baseTraceDir.endsWith(partition)
       ? baseTraceDir
-      : resolve(baseTraceDir, "coding-agent");
+      : resolve(baseTraceDir, partition);
 
     this.runId = opts.runId;
     this.truncate = opts.truncate ?? true;
-    this.flushIntervalMs = FLUSH_INTERVAL_MS;
-    this.flushBufferSize = FLUSH_BUFFER_SIZE;
+    this.flushIntervalMs = opts.flushIntervalMs ?? FLUSH_INTERVAL_MS;
+    this.flushBufferSize = opts.flushBufferSize ?? FLUSH_BUFFER_SIZE;
   }
 
   private async resolveTargetDir(): Promise<string> {
@@ -90,6 +118,18 @@ export class FileTraceSink {
   }
 
   async open(): Promise<void> {
+    if (this.opened) return;
+    if (this.opening) {
+      await this.opening;
+      return;
+    }
+    this.opening = this.openInternal().finally(() => {
+      this.opening = null;
+    });
+    await this.opening;
+  }
+
+  private async openInternal(): Promise<void> {
     const targetDir = await this.resolveTargetDir();
     this.targetDirResolved = targetDir;
 
@@ -115,9 +155,10 @@ export class FileTraceSink {
       void this.flush();
     }, this.flushIntervalMs);
     if (this.timer.unref) this.timer.unref();
+    this.opened = true;
   }
 
-  write(event: TraceRecord): void {
+  write(event: TraceEntry): void {
     if (this.closed) return;
     this.buffer.push(event);
     if (this.buffer.length >= this.flushBufferSize) {
@@ -128,11 +169,11 @@ export class FileTraceSink {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+    await this.flush();
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
     }
-    await this.flush();
   }
 
   private async flush(): Promise<void> {
@@ -150,16 +191,29 @@ export class FileTraceSink {
     await this.flushing;
   }
 
-  private async writeBuffer(records: TraceRecord[]): Promise<void> {
+  private async writeBuffer(records: TraceEntry[]): Promise<void> {
     if (records.length === 0) return;
+    await this.open();
 
-    // Classify and write records
-    const lifecycleRecords: TraceRecord[] = [];
-    const streamRecords: TraceRecord[] = [];
-    const errorRecords: TraceRecord[] = [];
+    const lifecycleRecords: TraceEntry[] = [];
+    const streamRecords: TraceEntry[] = [];
+    const errorRecords: TraceEntry[] = [];
 
     for (const record of records) {
-      if (record.level === "warn" || record.level === "error") {
+      if (isModelTraceEvent(record)) {
+        if (record.phase === "error" || record.phase === "abort") {
+          errorRecords.push(record);
+          lifecycleRecords.push(record);
+        } else if (
+          record.phase === "text-delta" ||
+          record.phase === "reasoning-delta" ||
+          record.phase === "tool-input-delta"
+        ) {
+          streamRecords.push(record);
+        } else {
+          lifecycleRecords.push(record);
+        }
+      } else if (record.level === "warn" || record.level === "error") {
         errorRecords.push(record);
         lifecycleRecords.push(record);
       } else if (record.level === "debug") {
@@ -201,8 +255,8 @@ export class FileTraceSink {
     }
   }
 
-  private async updateSummary(newEvents: TraceRecord[]): Promise<void> {
-    let summary: CodingAgentStats = {
+  private async updateSummary(newEvents: TraceEntry[]): Promise<void> {
+    let summary: TraceStats = {
       runId: this.runId,
       status: "ok",
       counts: {
@@ -210,35 +264,65 @@ export class FileTraceSink {
         byLayer: {},
         byLevel: {},
         byEvent: {},
-      }
+        byPhase: {},
+      },
+      tokens: {
+        input: 0,
+        output: 0,
+      },
     };
 
     if (existsSync(this.summaryPath)) {
       try {
-        summary = JSON.parse(await readFile(this.summaryPath, "utf8")) as CodingAgentStats;
+        summary = JSON.parse(await readFile(this.summaryPath, "utf8")) as TraceStats;
+        summary.counts.total ??= 0;
+        summary.tokens ??= { input: 0, output: 0 };
       } catch {
         // Ignored
       }
     }
 
     for (const e of newEvents) {
-      if (e.sessionId && !summary.sessionId) summary.sessionId = e.sessionId;
-      
-      if (!summary.startTime || new Date(e.timestamp) < new Date(summary.startTime)) {
-        summary.startTime = e.timestamp;
+      const timestamp = isModelTraceEvent(e) ? e.ts : e.timestamp;
+
+      if (!summary.startTime || new Date(timestamp) < new Date(summary.startTime)) {
+        summary.startTime = timestamp;
       }
-      if (!summary.endTime || new Date(e.timestamp) > new Date(summary.endTime)) {
-        summary.endTime = e.timestamp;
+      if (!summary.endTime || new Date(timestamp) > new Date(summary.endTime)) {
+        summary.endTime = timestamp;
       }
-      
-      if (e.level === "error") {
-        summary.status = "error";
-      }
-      
+
       summary.counts.total++;
-      summary.counts.byLayer[e.layer] = (summary.counts.byLayer[e.layer] ?? 0) + 1;
-      summary.counts.byLevel[e.level] = (summary.counts.byLevel[e.level] ?? 0) + 1;
-      summary.counts.byEvent[e.eventName] = (summary.counts.byEvent[e.eventName] ?? 0) + 1;
+
+      if (isModelTraceEvent(e)) {
+        if (e.chatId && !summary.chatId) summary.chatId = e.chatId;
+        if (e.userId && !summary.userId) summary.userId = e.userId;
+        if (e.agent && !summary.agent) summary.agent = e.agent;
+        if (e.phase === "error") summary.status = "error";
+
+        const byPhase = ensureRecordCount(summary.counts, "byPhase");
+        byPhase[e.phase] = (byPhase[e.phase] ?? 0) + 1;
+
+        if (e.phase === "finish") {
+          const payload = e.payload as { usage?: FinishPayload["usage"] };
+          if (payload.usage?.inputTokens) {
+            summary.tokens!.input += payload.usage.inputTokens;
+          }
+          if (payload.usage?.outputTokens) {
+            summary.tokens!.output += payload.usage.outputTokens;
+          }
+        }
+      } else {
+        if (e.sessionId && !summary.sessionId) summary.sessionId = e.sessionId;
+        if (e.level === "error") summary.status = "error";
+
+        const byLayer = ensureRecordCount(summary.counts, "byLayer");
+        const byLevel = ensureRecordCount(summary.counts, "byLevel");
+        const byEvent = ensureRecordCount(summary.counts, "byEvent");
+        byLayer[e.layer] = (byLayer[e.layer] ?? 0) + 1;
+        byLevel[e.level] = (byLevel[e.level] ?? 0) + 1;
+        byEvent[e.eventName] = (byEvent[e.eventName] ?? 0) + 1;
+      }
     }
 
     if (summary.startTime && summary.endTime) {

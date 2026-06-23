@@ -9,6 +9,7 @@ import {
 } from "ai";
 import type { ModelMessage } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
+import { isTracingEnabled, wrapWithTracing } from "tracing";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
@@ -33,8 +34,6 @@ import {
   DEFAULT_CONTEXT_WINDOW,
 } from "@/lib/features/compaction/types";
 import type { CompactionAiPort } from "@/lib/features/compaction/ports";
-import { isTracingEnabled } from "@/lib/infrastructure/ai/tracing/trace-sink";
-import { wrapWithTracing } from "@/lib/infrastructure/ai/tracing/wrap-with-tracing";
 import {
   saveChat,
   updateChat,

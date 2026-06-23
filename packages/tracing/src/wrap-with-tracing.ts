@@ -1,9 +1,8 @@
-import "server-only";
 import { wrapLanguageModel } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
-import { isTracingEnabled } from "./trace-sink";
+import { createTracingMiddleware } from "./model-middleware";
 import { getSharedTraceSink } from "./shared-sink";
-import { createTracingMiddleware } from "./middleware";
+import { isTracingEnabled } from "./types";
 
 export const wrapWithTracing = (
   model: LanguageModelV3,
@@ -16,4 +15,3 @@ export const wrapWithTracing = (
     middleware: createTracingMiddleware(sink),
   });
 };
-

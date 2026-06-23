@@ -401,7 +401,14 @@ importers:
         specifier: workspace:*
         version: link:../tracing
 
-  packages/tracing: {}
+  packages/tracing:
+    dependencies:
+      '@ai-sdk/provider':
+        specifier: ^3.0.4
+        version: 3.0.10
+      ai:
+        specifier: ^6.0.39
+        version: 6.0.44(zod@3.25.76)
 
 packages:
 

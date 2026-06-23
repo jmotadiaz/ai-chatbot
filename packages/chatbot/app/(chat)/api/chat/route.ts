@@ -1,10 +1,10 @@
 import { createUIMessageStreamResponse } from "ai";
+import { newRequestId, runWithTraceContext } from "tracing";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { processChatResponse } from "@/lib/features/chat/handlers";
-import { newRequestId, runWithTraceContext } from "@/lib/infrastructure/ai/tracing";
 
 export const maxDuration = 240;
 
