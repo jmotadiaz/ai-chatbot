@@ -7,13 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@ag-ui/client':
-        specifier: ^0.0.57
-        version: 0.0.57
-      chatbot:
-        specifier: ^1.2.3
-        version: 1.2.3
     devDependencies:
       '@types/node':
         specifier: ^22.19.7
@@ -3506,9 +3499,6 @@ packages:
 
   character-reference-invalid@2.0.1:
     resolution: {integrity: sha512-iBZ4F4wRbyORVsu0jPV7gXkOsGYjGHPmAyv+HiHG8gi5PtC9KI2j1+v8/tlibRvjoWX027ypmG/n0HtO5t7unw==}
-
-  chatbot@1.2.3:
-    resolution: {integrity: sha512-VM5Ht+rHl4dO4uSqEEAWOAE7npbmeOC5uV/g9A3eJMJK80jy0t2WlZXSrY2GUrGoD3X3s0+T1ujDGYjEE42B/w==}
 
   chevrotain-allstar@0.3.1:
     resolution: {integrity: sha512-b7g+y9A0v4mxCW1qUhf3BSVPg+/NvGErk/dOkrDaHA0nQIQGAtrOjlX//9OQtRlSCy+x9rfB5N8yC71lH1nvMw==}
@@ -10846,8 +10836,6 @@ snapshots:
   character-reference-invalid@1.1.4: {}
 
   character-reference-invalid@2.0.1: {}
-
-  chatbot@1.2.3: {}
 
   chevrotain-allstar@0.3.1(chevrotain@11.0.3):
     dependencies:

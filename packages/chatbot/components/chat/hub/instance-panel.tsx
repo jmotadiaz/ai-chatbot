@@ -6,7 +6,7 @@ import type { Agent } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils/helpers";
+import { capitalize, cn } from "@/lib/utils/helpers";
 import { ChatConversation } from "@/components/chat/conversation";
 import { AgentSelector } from "@/components/chat/controls/agent-selector";
 import { SettingsControl } from "@/components/chat/controls/settings-control";
@@ -175,14 +175,9 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       <ChatConversation
         messages={chat.messages}
         status={chat.status}
-        title={
-          <div className="text-lg font-medium">
-            {instance.model}
-            <p className="text-sm text-muted-foreground mt-1">
-              Agent: <span className="capitalize">{instance.agent}</span>
-            </p>
-          </div>
-        }
+        title={instance.model}
+        description={`Agent: ${capitalize(instance.agent)}`}
+        overviewSize="compact"
         className={cn(
           "flex-1 flex",
           chat.messages.length ? "items-start" : "items-center",

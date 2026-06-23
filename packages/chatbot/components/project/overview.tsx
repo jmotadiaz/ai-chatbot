@@ -1,33 +1,92 @@
-"use client";
-import { useSearchParams } from "next/navigation";
-import { ReactNode } from "react";
-import { LogoIcon } from "@/components/ui/icons";
+import type * as React from "react";
+import { cn } from "@/lib/utils/helpers";
 
-export interface ProjectOverviewProps {
-  title?: ReactNode;
+export interface ProjectOverviewContainerProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
-export const ProjectOverview = ({ title }: ProjectOverviewProps) => {
-  const searchParams = useSearchParams();
-  const chatType = searchParams.get("chatType");
+export type ProjectOverviewSize = "default" | "compact";
+
+export interface ProjectOverviewTitleProps {
+  children: React.ReactNode;
+  className?: string;
+  size?: ProjectOverviewSize;
+}
+
+export interface ProjectOverviewSubtitleProps {
+  children: React.ReactNode;
+  className?: string;
+  size?: ProjectOverviewSize;
+}
+
+interface ProjectOverviewComponent {
+  Container: React.FC<ProjectOverviewContainerProps>;
+  Title: React.FC<ProjectOverviewTitleProps>;
+  Subtitle: React.FC<ProjectOverviewSubtitleProps>;
+}
+
+const ProjectOverviewContainer: React.FC<ProjectOverviewContainerProps> = ({
+  children,
+  className,
+}) => {
   return (
-    <div className="h-full flex flex-col items-center justify-end px-4">
-      <h1 className="text-3xl text-center font-semibold mb-4 select-none">
-        {title ? (
-          title
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <LogoIcon className="mr-1" strokeWidth={2} size={42} /> Chatbot
-            </div>
-          </div>
-        )}
-        {chatType === "temporary" && (
-          <div className="text-base text-zinc-500 dark:text-zinc-400">
-            Temporary chat
-          </div>
-        )}
-      </h1>
+    <div
+      className={cn(
+        "h-full flex flex-col items-center justify-end px-4",
+        className,
+      )}
+    >
+      {children}
     </div>
   );
+};
+
+const ProjectOverviewTitle: React.FC<ProjectOverviewTitleProps> = ({
+  children,
+  className,
+  size = "default",
+}) => {
+  const titleClassName =
+    size === "compact"
+      ? "text-lg font-medium mb-2"
+      : "text-3xl font-semibold mb-4";
+
+  return (
+    <h1
+      className={cn(
+        "text-center select-none max-w-full",
+        titleClassName,
+        className,
+      )}
+    >
+      <span className="flex max-w-full flex-wrap items-center justify-center gap-2 text-balance break-words">
+        {children}
+      </span>
+    </h1>
+  );
+};
+
+const ProjectOverviewSubtitle: React.FC<ProjectOverviewSubtitleProps> = ({
+  children,
+  className,
+  size = "default",
+}) => {
+  return (
+    <span
+      className={cn(
+        "block basis-full font-normal text-zinc-500 dark:text-zinc-400",
+        size === "compact" ? "text-sm mt-1" : "text-base",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+};
+
+export const ProjectOverview: ProjectOverviewComponent = {
+  Container: ProjectOverviewContainer,
+  Title: ProjectOverviewTitle,
+  Subtitle: ProjectOverviewSubtitle,
 };

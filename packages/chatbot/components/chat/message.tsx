@@ -13,7 +13,6 @@ import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
-import { FileThumbnail } from "@/components/chat/attachments/thumbnail";
 import { Response } from "@/components/chat/response";
 import {
   mergeReasoningParts,
@@ -24,6 +23,8 @@ import { Context7SourceMessagePart } from "@/components/chat/context7-source";
 import type { RagChunk } from "@/lib/features/rag/types";
 import { ChatReload } from "@/components/chat/reload";
 import { ReasoningBlock } from "@/components/chat/reasoning";
+import { UserMessage } from "@/components/chat/user-message";
+import type { FilePart } from "@/lib/features/attachment/types";
 
 export interface MessagesProps {
   messages: ChatbotMessage[];
@@ -55,7 +56,7 @@ export const Message: React.FC<MessageProps> = ({ message, showReload }) => {
         data-role={message.role}
       >
         {message.role === "user" ? (
-          <UserMessage message={message} />
+          <ChatbotUserMessage message={message} />
         ) : (
           <AssistantMessage message={message} showReload={showReload} />
         )}
@@ -64,90 +65,30 @@ export const Message: React.FC<MessageProps> = ({ message, showReload }) => {
   );
 };
 
-interface UserMessageProps {
+interface ChatbotUserMessageProps {
   message: ChatbotMessage;
 }
 
-const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
+const ChatbotUserMessage: React.FC<ChatbotUserMessageProps> = ({ message }) => {
   const { textParts, fileParts: files } = useMemo(
     () => destructuringMessageParts(message),
     [message],
   );
-  const text = textParts[0].text ?? "";
-  const textFiles = message.metadata?.textFiles || [];
-  const isLongMessage = text.length > 350;
-  const [isCollapseTransitionEnd, setIsCollapseTransitionEnd] = useState(true);
-  const { getCollapseProps, getToggleProps, isExpanded } = useCollapse({
-    collapsedHeight: 16 * 1.5 * 3, // 3 lines of text + margin
-    defaultExpanded: !isLongMessage,
-    onTransitionStateChange: (state) => {
-      setIsCollapseTransitionEnd(state === "collapseEnd");
-    },
-  });
+  const text = textParts[0]?.text ?? "";
+  const displayFiles = useMemo<FilePart[]>(() => {
+    const textFiles =
+      message.metadata?.textFiles?.map((file) => ({
+        type: "file" as const,
+        filename: file.filename,
+        mediaType: file.mediaType,
+        url: "",
+      })) ?? [];
+
+    return [...files, ...textFiles];
+  }, [files, message.metadata?.textFiles]);
 
   return (
-    <div className="mb-8 pt-4">
-      <div
-        className={cn(
-          "flex gap-4 w-full ml-auto max-w-full 4xl:max-w-4xl",
-          "w-fit",
-        )}
-      >
-        <div className="flex flex-col w-full space-y-2">
-          {(files.length > 0 || textFiles.length > 0) && (
-            <div className="flex gap-3 max-w-full self-end overflow-x-auto scrollbar-none">
-              {files.map((part, i) => (
-                <FileThumbnail key={`message-${message.id}-${i}`} file={part} />
-              ))}
-              {textFiles.map((file, i) => (
-                <FileThumbnail
-                  key={`message-${message.id}-text-${i}`}
-                  file={{
-                    type: "file",
-                    filename: file.filename,
-                    mediaType: file.mediaType,
-                    url: "",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          {text.trim() && (
-            <CopyBlock text={text}>
-              <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
-                <>
-                  <motion.div
-                    initial={{ y: 5, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="flex flex-row gap-2 items-start w-full"
-                  >
-                    <div
-                      className={cn({
-                        "line-clamp-3 ![display:-webkit-box]":
-                          !isExpanded && isCollapseTransitionEnd,
-                      })}
-                      {...getCollapseProps()}
-                    >
-                      {text}
-                    </div>
-                  </motion.div>
-                </>
-                {isLongMessage && (
-                  <div className="pt-2 flex justify-end text-sm text-zinc-500 dark:text-zinc-400">
-                    <button
-                      {...getToggleProps()}
-                      className="hover:text-zinc-700 dark:hover:text-zinc-200 font-semibold cursor-pointer"
-                    >
-                      Show {isExpanded ? "less" : "more"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </CopyBlock>
-          )}
-        </div>
-      </div>
-    </div>
+    <UserMessage text={text} files={displayFiles} messageId={message.id} />
   );
 };
 

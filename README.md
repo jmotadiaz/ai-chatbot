@@ -24,29 +24,33 @@
 
 ## Deploy Your Own
 
-You can deploy your own version to Vercel by clicking the button below:
+This repository is a pnpm monorepo. The Next.js app lives in
+`packages/chatbot`, so the Vercel project must use that package as its Root
+Directory:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?project-name=Vercel+x+Groq+Chatbot&repository-name=ai-sdk-starter-groq&repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fai-sdk-starter-groq&demo-title=Vercel+x+Groq+Chatbot&demo-url=https%3A%2F%2Fai-sdk-starter-groq.labs.vercel.dev%2F&demo-description=A+simple+chatbot+application+built+with+Next.js+that+uses+Groq+via+the+AI+SDK+and+the+Vercel+Marketplace&products=%5B%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22ai%22%2C%22productSlug%22%3A%22api-key%22%2C%22integrationSlug%22%3A%22groq%22%7D%5D)
+```txt
+Root Directory: packages/chatbot
+Framework Preset: Next.js
+Install Command: leave as Vercel default
+Build Command: pnpm build
+Output Directory: .next
+```
+
+Keeping the Vercel Root Directory pointed at the repository root will fail
+framework detection because the root `package.json` is the workspace manifest,
+not the Next.js application manifest.
 
 ## Running Locally
 
 1. Clone the repository and install dependencies:
 
    ```bash
-   npm install
-   # or
-   yarn install
-   # or
    pnpm install
    ```
 
 2. Install the [Vercel CLI](https://vercel.com/docs/cli):
 
    ```bash
-   npm i -g vercel
-   # or
-   yarn global add vercel
-   # or
    pnpm install -g vercel
    ```
 
@@ -67,10 +71,6 @@ You can deploy your own version to Vercel by clicking the button below:
 3. Run the development server:
 
    ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
    pnpm dev
    ```
 

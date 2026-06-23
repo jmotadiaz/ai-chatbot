@@ -1,12 +1,18 @@
 "use client";
 
 import * as React from "react";
+import { CodeXml } from "lucide-react";
 import { AgentMessage } from "./agent-message";
 import { ChatNavigation } from "@/components/chat/navigation";
 import type { AgentStatus } from "@/lib/features/code/hooks/use-coding-agent";
 import { DotsLoadingIcon } from "@/components/ui/icons";
 import type { AgentItem } from "@/lib/features/code/types";
 import { useAgentConversationScroll } from "@/lib/features/code/hooks/use-agent-conversation-scroll";
+import {
+  ConversationBody,
+  ConversationContainer,
+} from "@/components/chat/conversation-container";
+import { ProjectOverview } from "@/components/project/overview";
 
 export interface AgentConversationProps {
   items: AgentItem[];
@@ -26,48 +32,56 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     scrollToTop,
     scrollToBottom,
   } = useAgentConversationScroll({ items });
+  const hasConversationContent = items.length;
 
   return (
-    <div className="w-full relative overflow-y-hidden flex-1">
-      <div className="w-full h-full overflow-y-auto" ref={scrollContainerRef}>
-        {items.length === 0 && !isRunning && (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Ask the coding agent a question to get started.
-          </div>
-        )}
-        <div className="max-w-5xl mx-auto px-8 pb-15">
-          {items.map((item, index) => {
-            const isLast = index === items.length - 1;
-            const isItemStreaming = isLast && isRunning && status.kind === "thinking";
+    <ConversationContainer className="flex-1">
+      <ConversationBody bodyRef={scrollContainerRef} className="h-full">
+        {hasConversationContent ? (
+          <div className="max-w-5xl mx-auto px-8 pb-15">
+            {items.map((item, index) => {
+              const isLast = index === items.length - 1;
+              const isItemStreaming =
+                isLast && isRunning && status.kind === "thinking";
 
-            if (item.kind === "assistant") {
+              if (item.kind === "assistant") {
+                return (
+                  <AgentMessage
+                    key={item.message.id}
+                    message={item.message}
+                    toolGroups={item.toolGroups}
+                    isStreaming={isItemStreaming}
+                  />
+                );
+              }
               return (
                 <AgentMessage
                   key={item.message.id}
                   message={item.message}
-                  toolGroups={item.toolGroups}
                   isStreaming={isItemStreaming}
                 />
               );
-            }
-            return (
-              <AgentMessage
-                key={item.message.id}
-                message={item.message}
-                isStreaming={isItemStreaming}
-              />
-            );
-          })}
-          {isRunning && (
-            <div
-              data-testid="agent-status"
-              className="flex items-center gap-2 text-muted-foreground text-sm py-3"
-            >
-              <DotsLoadingIcon />
-            </div>
-          )}
-        </div>
-      </div>
+            })}
+          </div>
+        ) : (
+          <ProjectOverview.Container className="justify-center">
+            <ProjectOverview.Title>
+              <CodeXml className="mr-1" strokeWidth={2} size={42} />
+              <span>Coding Agent</span>
+            </ProjectOverview.Title>
+          </ProjectOverview.Container>
+        )}
+
+        {isRunning && (
+          <div
+            data-testid="agent-status"
+            className="flex items-center gap-2 text-muted-foreground text-sm py-3"
+          >
+            <DotsLoadingIcon />
+          </div>
+        )}
+      </ConversationBody>
+
       <ChatNavigation
         showPrev={false}
         showNext={false}
@@ -79,6 +93,6 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
         scrollToTop={scrollToTop}
         className="bottom-4"
       />
-    </div>
+    </ConversationContainer>
   );
 };

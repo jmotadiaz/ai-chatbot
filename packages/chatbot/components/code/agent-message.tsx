@@ -6,6 +6,7 @@ import type { Message } from "@ag-ui/client";
 import { ToolCallGroup } from "./tool-call-group";
 import { Response } from "@/components/chat/response";
 import { ReasoningBlock } from "@/components/chat/reasoning";
+import { UserMessage } from "@/components/chat/user-message";
 import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 
 export interface AgentMessageProps {
@@ -80,17 +81,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
   ({ message, toolGroups, isStreaming }) => {
     if (message.role === "user") {
       const text = typeof message.content === "string" ? message.content : "";
-      return (
-        <div className="mb-8 pt-4">
-          <div className="flex gap-4 w-full ml-auto max-w-full w-fit">
-            <div className="flex flex-col w-full space-y-2">
-              <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
-                {text}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
+      return <UserMessage text={text} messageId={message.id} />;
     }
 
     if (message.role === "reasoning") {
