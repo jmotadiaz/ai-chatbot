@@ -4,6 +4,12 @@ import type {
   ContentBlock,
   RelaxedToolCall,
 } from "./index";
+import {
+  assistantMessageId,
+  reasoningMessageId,
+  toolResultMessageId,
+  IdDeduper,
+} from "./message-ids";
 
 export type BaseEvent = { type: string; [key: string]: unknown };
 
@@ -46,7 +52,6 @@ export interface TranslatorDiagnostics {
   inputEventCounts: Record<string, number>;
   outputEventCounts: Record<string, number>;
   currentMessageId: string | null;
-  messageCounter: number;
   activeToolCallCount: number;
   bufferedToolResultCount: number;
   emittedToolResultCount: number;
@@ -67,7 +72,7 @@ export class PiToAguiTranslator {
   private toolResultBuffer = new Map<string, BufferedToolResult>();
   private emittedToolResults = new Set<string>();
   private stepNames = new Map<string, string>();
-  private messageCounter = 0;
+  private messageIdDeduper = new IdDeduper();
   private toolIdMap = new Map<string, string>();
   private unmappedToolCalls: Array<{ generatedId: string; name: string }> = [];
   private inputEventCounts = new Map<string, number>();
@@ -78,7 +83,6 @@ export class PiToAguiTranslator {
   hydrateState(state: {
     currentMessageId?: string | null;
     activeToolCalls?: ReadonlyMap<number, ActiveToolCall>;
-    messageCounter?: number;
     emittedToolResultIds?: ReadonlySet<string>;
     stepNames?: ReadonlyMap<string, string>;
     unmappedToolCalls?: Array<{ generatedId: string; name: string }>;
@@ -90,12 +94,6 @@ export class PiToAguiTranslator {
       for (const [idx, tool] of state.activeToolCalls) {
         this.activeToolCalls.set(idx, { ...tool });
       }
-    }
-    if (
-      state.messageCounter !== undefined &&
-      state.messageCounter > this.messageCounter
-    ) {
-      this.messageCounter = state.messageCounter;
     }
     if (state.emittedToolResultIds) {
       for (const id of state.emittedToolResultIds) {
@@ -113,16 +111,6 @@ export class PiToAguiTranslator {
     }
   }
 
-  private nextMessageId(): string {
-    this.messageCounter += 1;
-    return `msg-${this.messageCounter}`;
-  }
-
-  private nextToolMessageId(): string {
-    this.messageCounter += 1;
-    return `tool-msg-${this.messageCounter}`;
-  }
-
   private now(): number {
     return Date.now();
   }
@@ -136,7 +124,6 @@ export class PiToAguiTranslator {
       inputEventCounts: Object.fromEntries(this.inputEventCounts),
       outputEventCounts: Object.fromEntries(this.outputEventCounts),
       currentMessageId: this.currentMessageId,
-      messageCounter: this.messageCounter,
       activeToolCallCount: this.activeToolCalls.size,
       bufferedToolResultCount: this.toolResultBuffer.size,
       emittedToolResultCount: this.emittedToolResults.size,
@@ -212,7 +199,12 @@ export class PiToAguiTranslator {
           log.debug("translate.skip_non_assistant_message_start", { role });
           break;
         }
-        this.currentMessageId = this.nextMessageId();
+        const timestamp = event.message?.timestamp;
+        const baseId =
+          typeof timestamp === "number"
+            ? assistantMessageId(timestamp)
+            : crypto.randomUUID();
+        this.currentMessageId = this.messageIdDeduper.dedupe(baseId);
         break;
       }
 
@@ -232,7 +224,7 @@ export class PiToAguiTranslator {
             this.emittedToolResults.add(toolCallId);
             out.push({
               type: EventType.TOOL_CALL_RESULT,
-              messageId: this.nextToolMessageId(),
+              messageId: toolResultMessageId(toolCallId),
               toolCallId,
               role: "tool",
               content,
@@ -280,7 +272,7 @@ export class PiToAguiTranslator {
             }
             out.push({
               type: EventType.REASONING_MESSAGE_CHUNK,
-              messageId: `${this.currentMessageId}-reason`,
+              messageId: reasoningMessageId(this.currentMessageId),
               delta: ame.delta,
               timestamp: this.now(),
             } as BaseEvent);
@@ -305,7 +297,7 @@ export class PiToAguiTranslator {
               : isToolCall(ame.toolCall)
                 ? ame.toolCall
                 : undefined;
-            const toolCallId = toolCall?.id ?? this.nextMessageId();
+            const toolCallId = toolCall?.id ?? crypto.randomUUID();
             const toolCallName = toolCall?.name ?? "unknown";
 
             if (
@@ -422,7 +414,7 @@ export class PiToAguiTranslator {
           }
         }
 
-        const finalId = toolCallId ?? this.nextMessageId();
+        const finalId = toolCallId ?? crypto.randomUUID();
         const stepName = `tool:${event.toolName}:${finalId}`;
         if (finalId) {
           this.stepNames.set(finalId, stepName);
@@ -444,7 +436,7 @@ export class PiToAguiTranslator {
         if (toolCallId && this.toolIdMap.has(toolCallId)) {
           toolCallId = this.toolIdMap.get(toolCallId)!;
         }
-        const finalId = toolCallId ?? this.nextMessageId();
+        const finalId = toolCallId ?? crypto.randomUUID();
 
         if (!this.emittedToolResults.has(finalId)) {
           const buffered = this.toolResultBuffer.get(finalId);
@@ -457,7 +449,7 @@ export class PiToAguiTranslator {
           this.emittedToolResults.add(finalId);
           out.push({
             type: EventType.TOOL_CALL_RESULT,
-            messageId: this.nextToolMessageId(),
+            messageId: toolResultMessageId(finalId),
             toolCallId: finalId,
             role: "tool",
             content,

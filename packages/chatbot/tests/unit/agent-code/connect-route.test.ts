@@ -75,7 +75,7 @@ function parseSseEvents(text: string): Array<{ type: string; [k: string]: any }>
     .map((s) => JSON.parse(s.replace(/^data: /, "")) as { type: string; [k: string]: any });
 }
 
-function makeRequest(afterSeq = "0") {
+function makeRequest(afterSeq?: string) {
   return new Request("http://test/api/agent/code/connect", {
     method: "POST",
     body: JSON.stringify({
@@ -86,7 +86,7 @@ function makeRequest(afterSeq = "0") {
         { description: "sessionId", value: "s" },
         { description: "modelId", value: "Deepseek v4 Pro" },
       ],
-      forwardedProps: { afterSeq },
+      forwardedProps: afterSeq === undefined ? {} : { afterSeq },
       messages: [],
     }),
   });
@@ -182,5 +182,13 @@ describe("POST /api/agent/code/connect", () => {
       EventType.RUN_STARTED,
       EventType.RUN_FINISHED,
     ]);
+  });
+
+  it("does not default afterSeq to 0 when the client omits it, so the worker computes its own default window", async () => {
+    await POST(makeRequest() as never);
+
+    expect(mockState.connectParams[0]).toEqual(
+      expect.objectContaining({ sessionId: "s", afterSeq: undefined }),
+    );
   });
 });

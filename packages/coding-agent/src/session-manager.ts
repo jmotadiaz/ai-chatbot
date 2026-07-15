@@ -14,6 +14,13 @@ import { getTraceLogger } from "tracing";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import type { CodingAgentEvent } from "./index";
+import {
+  assistantMessageId,
+  reasoningMessageId,
+  toolResultMessageId,
+  userMessageId,
+  IdDeduper,
+} from "./message-ids";
 
 interface InFlightTool {
   toolCallId: string;
@@ -45,6 +52,30 @@ interface SessionEntry {
     unsubscribe: () => void;
     sawTerminal: boolean;
   };
+  /**
+   * startSeq of the most recent run (active or finished) started in this
+   * worker's lifetime. Unlike `activeRun`, this is never cleared when the
+   * run ends — it's used to compute the default replay window for
+   * `connectToSession` so a client reconnecting after a run finished still
+   * only replays that run's events (from its RUN_STARTED), rather than the
+   * entire session history that SSR already delivered.
+   */
+  lastRunStartSeq?: number;
+  /**
+   * eventLog.lastSeq as of the most recently finalized message (user,
+   * assistant, or tool result) in this worker's lifetime. A message
+   * "finalizes" when Pi pushes it into `session.messages` — which is also
+   * exactly when it becomes visible to a fresh `getSessionMessages` /ssr
+   * fetch. Used, like `lastRunStartSeq`, to compute the default replay
+   * window: reconnecting after this point avoids replaying deltas for
+   * messages the client's SSR-loaded state already has in full (which
+   * would otherwise duplicate their content — deltas accumulate onto
+   * existing message content unconditionally) and avoids resending a
+   * run-start MESSAGES_SNAPSHOT that's stale relative to that SSR state
+   * (whose merge, in the AG-UI client, is positional against the client's
+   * CURRENT list and can scramble message order — see connectToSession).
+   */
+  lastFinalizedMessageSeq?: number;
 }
 
 const sessions = new Map<string, SessionEntry>();
@@ -511,7 +542,22 @@ function startPromptCollector(
   });
 
   const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
-  const snapshotMessages = normalizeSnapshotMessages(messages);
+  // The run-start snapshot must mirror the worker's canonical state (same
+  // derived ids the history load produces), NOT the client's echoed message
+  // list: the AG-UI client merges snapshots by id, so echoed optimistic ids
+  // drop the SSR-loaded canonical messages on reconnect and re-append them
+  // at the end, scrambling the order. The new user prompt is not in Pi
+  // state yet (Pi appends it during prompt()), so only that trailing user
+  // message is taken from the client's post; its position — after the
+  // canonical history — is correct in every reconnect scenario.
+  const preRunHistory = convertPiMessagesToAgui(runtime.session.messages);
+  const clientMessages = normalizeSnapshotMessages(messages);
+  const lastClientMessage = clientMessages[clientMessages.length - 1];
+  const userTail =
+    lastClientMessage && lastClientMessage.role === "user"
+      ? [lastClientMessage]
+      : [{ id: crypto.randomUUID(), role: "user", content: prompt }];
+  const snapshotMessages = [...preRunHistory, ...userTail];
   const startSeq = ensureEventLog(entry).lastSeq + 1;
   const piEventCounts: Record<string, number> = {};
   const aguiEventCounts: Record<string, number> = {};
@@ -555,6 +601,14 @@ function startPromptCollector(
         snapshotAppended = true;
       }
     }
+    // A message just became part of Pi's canonical `session.messages` (and
+    // thus of any SSR fetch made from this point on). Move the default
+    // reconnect replay window past it so a later reconnect never re-sends
+    // deltas the client will already have in full — see
+    // `lastFinalizedMessageSeq` on SessionEntry.
+    if (event.type === "message_end" || event.type === "tool_execution_end") {
+      entry.lastFinalizedMessageSeq = ensureEventLog(entry).lastSeq;
+    }
   });
 
   entry.activeRun = {
@@ -563,6 +617,7 @@ function startPromptCollector(
     unsubscribe,
     sawTerminal: false,
   };
+  entry.lastRunStartSeq = startSeq;
 
   const promptStop = log.startTimer("session.prompt_execution");
   runtime.session
@@ -663,16 +718,35 @@ export async function getSessionMessages(
     return [];
   }
 
+  return convertPiMessagesToAgui(entry.runtime.session.messages);
+}
+
+/**
+ * Convert Pi session messages to AG-UI-shaped messages.
+ *
+ * Ids are derived deterministically from each Pi message's own data
+ * (timestamp for user/assistant messages, real toolCallId for tool
+ * results) so they match the ids the live translator assigns to the same
+ * messages during streaming (see message-ids.ts). One deduper is shared
+ * across the whole conversion so same-millisecond collisions resolve the
+ * same way every time it runs. Used by both the history load path and the
+ * run-start MESSAGES_SNAPSHOT so a message keeps the same identity in
+ * every delivery channel.
+ */
+function convertPiMessagesToAgui(piMessages: ReadonlyArray<any>): Array<any> {
   const result: Array<any> = [];
-  entry.runtime.session.messages.forEach((msg, index) => {
-    const id = `loaded-${index}`;
+  const idDeduper = new IdDeduper();
+  piMessages.forEach((msg) => {
     if (msg.role === "user") {
+      const id = idDeduper.dedupe(userMessageId(msg.timestamp));
       result.push({
         id,
         role: "user",
         content: typeof msg.content === "string" ? msg.content : extractMessageText(msg.content),
       });
     } else if (msg.role === "assistant") {
+      const id = idDeduper.dedupe(assistantMessageId(msg.timestamp));
+
       // Extract thinking parts as separate "reasoning" messages if any exist
       if (Array.isArray(msg.content)) {
         const thinking = msg.content
@@ -681,7 +755,7 @@ export async function getSessionMessages(
           .join("\n");
         if (thinking) {
           result.push({
-            id: `${id}-reason`,
+            id: reasoningMessageId(id),
             role: "reasoning",
             content: thinking,
           });
@@ -718,7 +792,7 @@ export async function getSessionMessages(
       });
     } else if (msg.role === "toolResult") {
       result.push({
-        id,
+        id: toolResultMessageId(msg.toolCallId),
         role: "tool",
         toolCallId: msg.toolCallId,
         content: Array.isArray(msg.content)
@@ -742,7 +816,7 @@ export async function getAvailableModels(): Promise<
 
   const authStorage = AuthStorage.create(process.env.CODING_AGENT_AUTH_JSON);
   const registry = ModelRegistry.create(authStorage);
-  const available = await registry.getAvailable();
+  const available = registry.getAvailable();
   const filtered = available
     .filter((model) => model.provider === "opencode-go")
     .map((model) => ({
@@ -785,12 +859,45 @@ export async function getSessionStatus(sessionId: string): Promise<SessionStatus
   return { running: false };
 }
 
+/**
+ * Compute the default replay window (an `afterSeq` cursor) for a client that
+ * connects without specifying one.
+ *
+ * Prefers `lastFinalizedMessageSeq`: replaying from right after the most
+ * recently finalized message means the client only ever receives deltas for
+ * messages it doesn't already have in full via its SSR-loaded state (Pi
+ * pushes a message into `session.messages` — and thus into any fresh
+ * `getSessionMessages` fetch — the moment it finalizes). This also means the
+ * run-start MESSAGES_SNAPSHOT is skipped once any message in the run has
+ * finalized, which is true by the time any real reconnect can occur (the
+ * user prompt itself finalizes synchronously at run start, well before an
+ * HTTP round trip could complete) — replaying that snapshot instead would
+ * both duplicate already-finalized messages' content (deltas accumulate
+ * onto existing content unconditionally) and scramble message order (the
+ * AG-UI client merges MESSAGES_SNAPSHOT positionally against its current
+ * list, using the client's own optimistic ids for the snapshot's user
+ * message, which the client's SSR-loaded list won't recognize).
+ *
+ * Falls back to `lastRunStartSeq - 1` for the rare case where a run has
+ * started but no message has finalized yet, and to `eventLogLastSeq`
+ * (replay nothing) when no run has happened yet in this worker's lifetime —
+ * SSR already delivered the full message history in that case.
+ */
+export function computeDefaultAfterSeq(
+  lastRunStartSeq: number | undefined,
+  lastFinalizedMessageSeq: number | undefined,
+  eventLogLastSeq: number,
+): number {
+  if (lastFinalizedMessageSeq !== undefined) return lastFinalizedMessageSeq;
+  return lastRunStartSeq !== undefined ? lastRunStartSeq - 1 : eventLogLastSeq;
+}
+
 export async function connectToSession(
   sessionId: string,
   onEvent: (line: string) => void,
   onError: (err: Error) => void,
   onComplete?: () => void,
-  afterSeq = 0,
+  afterSeq?: number,
 ): Promise<() => void> {
   const log = getTraceLogger("worker");
   const eventCounts: Record<string, number> = {};
@@ -798,7 +905,7 @@ export async function connectToSession(
   let replayLineCount = 0;
   let connectClosed = false;
   let eventLogLastSeq = 0;
-  let replayAfterSeq = afterSeq;
+  let replayAfterSeq = afterSeq ?? 0;
 
   const logConnectSummary = (reason: string) => {
     if (connectClosed) return;
@@ -826,11 +933,13 @@ export async function connectToSession(
   const eventLog = ensureEventLog(entry);
   eventLogLastSeq = eventLog.lastSeq;
   replayAfterSeq =
-    afterSeq > 0
+    afterSeq !== undefined
       ? afterSeq
-      : entry.activeRun
-        ? Math.max(0, entry.activeRun.startSeq - 1)
-        : afterSeq;
+      : computeDefaultAfterSeq(
+          entry.lastRunStartSeq,
+          entry.lastFinalizedMessageSeq,
+          eventLog.lastSeq,
+        );
 
   let closed = false;
   let unsubscribe: (() => void) | undefined;

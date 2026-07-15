@@ -54,7 +54,7 @@ export function groupItems(
       const toolGroups: ToolCallGroup[] = (m.toolCalls ?? []).map((tc) => {
         const { raw, parsed } = extractArgs(tc as never);
         const timing = toolTimings?.get(tc.id);
-        const startedAt = timing?.startedAt ?? Date.now();
+        const startedAt = timing?.startedAt;
         const finishedAt = timing?.finishedAt;
         const group: ToolCallGroup = {
           id: tc.id,
@@ -87,7 +87,7 @@ export function groupItems(
         group.result = stringContent(m.content);
         group.status = toolErrors?.has(id) ? "error" : "ok";
         const timing = toolTimings?.get(id);
-        group.finishedAt = timing?.finishedAt ?? Date.now();
+        group.finishedAt = timing?.finishedAt;
         continue;
       }
       // Orphan tool message: drop.

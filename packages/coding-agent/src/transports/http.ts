@@ -255,7 +255,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
                     // already closed; ignore
                   }
                 },
-                typeof afterSeq === "number" ? afterSeq : 0,
+                typeof afterSeq === "number" ? afterSeq : undefined,
               );
             } catch (err) {
               log.error("connect.setup_error", { message: String(err) });

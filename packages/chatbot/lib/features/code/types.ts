@@ -9,7 +9,7 @@ export interface ToolCallGroup {
   argsParsed?: unknown;
   result?: string;
   status: ToolCallStatus;
-  startedAt: number;
+  startedAt?: number;
   finishedAt?: number;
   summary: string;
 }

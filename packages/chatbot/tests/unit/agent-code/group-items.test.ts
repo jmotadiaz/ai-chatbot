@@ -44,7 +44,10 @@ describe("groupItems", () => {
     expect(g.summary).toBe("ls");
     expect(g.result).toBe("file.txt\n");
     expect(g.status).toBe("ok");
-    expect(g.finishedAt).toBeTypeOf("number");
+    // No toolTimings were provided, so finishedAt must stay undefined rather
+    // than being fabricated with Date.now() (that fabrication broke memo
+    // stability across rebuilds).
+    expect(g.finishedAt).toBeUndefined();
   });
 
   it("marks status error when toolErrors contains the toolCallId", () => {
@@ -136,5 +139,65 @@ describe("groupItems", () => {
         finishedAt: 200,
       }),
     );
+  });
+
+  it("marks every historical tool group ok/error (never running) when loaded from history with no timings", () => {
+    // Simulates a page refresh: messages come straight from history, so
+    // toolTimings is empty/undefined for all of them, but the tool results
+    // are present in the message list.
+    const messages = [
+      assistantMsg("a1", [bashCall("t1", "ls"), bashCall("t2", "false")]),
+      toolMsg("r1", "t1", "file.txt\n"),
+      toolMsg("r2", "t2", "exit 1"),
+    ];
+    const items = groupItems(messages, new Map([["t2", true]]), undefined);
+
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    const [g1, g2] = items[0].toolGroups;
+    expect(g1.status).toBe("ok");
+    expect(g1.startedAt).toBeUndefined();
+    expect(g1.finishedAt).toBeUndefined();
+    expect(g2.status).toBe("error");
+    expect(g2.startedAt).toBeUndefined();
+    expect(g2.finishedAt).toBeUndefined();
+  });
+
+  it("leaves a genuinely in-flight tool call (no timing, no result yet) as running", () => {
+    const items = groupItems([assistantMsg("a1", [bashCall("t1", "ls")])]);
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    expect(items[0].toolGroups[0].status).toBe("running");
+  });
+
+  it("is memo-stable: identical inputs produce field-equal groups across two calls", () => {
+    const messages = [
+      userMsg("u1"),
+      assistantMsg("a1", [bashCall("t1", "ls"), bashCall("t2", "pwd")]),
+      toolMsg("r1", "t1", "file.txt\n"),
+      toolMsg("r2", "t2", "/home"),
+    ];
+    // No toolTimings at all, mirroring a conversation loaded from history.
+    const first = groupItems(messages, undefined, undefined);
+    const second = groupItems(messages, undefined, undefined);
+
+    const firstAssistant = first[1];
+    const secondAssistant = second[1];
+    if (firstAssistant.kind !== "assistant" || secondAssistant.kind !== "assistant") {
+      throw new Error("expected assistant");
+    }
+
+    expect(firstAssistant.toolGroups).toHaveLength(secondAssistant.toolGroups.length);
+    firstAssistant.toolGroups.forEach((g1, i) => {
+      const g2 = secondAssistant.toolGroups[i];
+      // These are exactly the fields the memo comparators in
+      // agent-message.tsx / tool-call-group.tsx compare with === / !==.
+      expect(g1.id).toBe(g2.id);
+      expect(g1.name).toBe(g2.name);
+      expect(g1.status).toBe(g2.status);
+      expect(g1.result).toBe(g2.result);
+      expect(g1.startedAt).toBe(g2.startedAt);
+      expect(g1.finishedAt).toBe(g2.finishedAt);
+      expect(g1.summary).toBe(g2.summary);
+      expect(g1.args).toBe(g2.args);
+    });
   });
 });

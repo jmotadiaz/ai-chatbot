@@ -54,6 +54,18 @@ function isTerminalEvent(event: BaseEvent): boolean {
 }
 
 export function parseAfterSeq(value: unknown): number {
+  return parseAfterSeqOrUndefined(value) ?? 0;
+}
+
+/**
+ * Like `parseAfterSeq`, but returns `undefined` instead of defaulting to 0
+ * when the caller didn't send a valid cursor. Used by the connect route so
+ * an absent (or malformed) `afterSeq` is forwarded to the worker as
+ * "not provided" rather than as an explicit request to replay the entire
+ * session log — the worker computes a better default (the last run's
+ * window) when it doesn't receive an explicit cursor.
+ */
+export function parseAfterSeqOrUndefined(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     return Math.floor(value);
   }
@@ -63,7 +75,7 @@ export function parseAfterSeq(value: unknown): number {
       return Math.floor(parsed);
     }
   }
-  return 0;
+  return undefined;
 }
 
 export function emitAguiSseEvent(

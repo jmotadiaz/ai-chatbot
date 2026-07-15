@@ -73,11 +73,13 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
         )}
 
         {isRunning && (
-          <div
-            data-testid="agent-status"
-            className="flex items-center gap-2 text-muted-foreground text-sm py-3"
-          >
-            <DotsLoadingIcon />
+          <div className="max-w-5xl mx-auto px-8">
+            <div
+              data-testid="agent-status"
+              className="flex items-center gap-2 text-muted-foreground text-sm py-3"
+            >
+              <DotsLoadingIcon />
+            </div>
           </div>
         )}
       </ConversationBody>

@@ -43,9 +43,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     e.preventDefault();
     const message = serializeComments(input, pendingComments);
     if (!message) return;
-    await sendMessage(message);
     setInput("");
     fileBrowserActions.clearComments();
+    await sendMessage(message);
   };
 
   const isLoading = isRunning;

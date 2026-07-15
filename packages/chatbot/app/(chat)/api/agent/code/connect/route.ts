@@ -6,7 +6,7 @@ import { getSession, touchSession } from "@/lib/features/code/session-store";
 import { toPiModelId } from "@/lib/features/code/model-mapping";
 import {
   emitAguiSseEvent,
-  parseAfterSeq,
+  parseAfterSeqOrUndefined,
   relayLoggedAguiNdjsonToSse,
   type RelaySummary,
 } from "@/lib/features/code/agui-stream-relay";
@@ -31,7 +31,10 @@ export const POST = withAuth(async (user, req) => {
     context.find((c) => c.description === "modelId")?.value ??
     (typeof forwardedProps.modelId === "string" ? forwardedProps.modelId : undefined);
   const runId = (body.runId as string | undefined) ?? crypto.randomUUID();
-  const afterSeq = parseAfterSeq(forwardedProps.afterSeq ?? body.afterSeq);
+  // Absent (or malformed) afterSeq is forwarded to the worker as
+  // "not provided" so it can compute its own default replay window
+  // (see connectToSession / computeDefaultAfterSeq in session-manager.ts).
+  const afterSeq = parseAfterSeqOrUndefined(forwardedProps.afterSeq ?? body.afterSeq);
 
   if (!project) {
     return new Response(JSON.stringify({ error: "project is required" }), {
@@ -93,6 +96,7 @@ export const POST = withAuth(async (user, req) => {
           const streamStop = log.startTimer("connect.stream_duration", { sessionId });
           let relaySummary: RelaySummary | null = null;
           let skippedRunStarted = false;
+          let skippedMessagesSnapshot = false;
           let closeReason = "reader_done";
 
           const emitTerminalIfNeeded = () => {
@@ -124,6 +128,17 @@ export const POST = withAuth(async (user, req) => {
               skipEvent: (event) => {
                 if (!skippedRunStarted && event.type === EventType.RUN_STARTED) {
                   skippedRunStarted = true;
+                  return true;
+                }
+                // The worker's default replay window already skips the
+                // run-start MESSAGES_SNAPSHOT once any message in the run
+                // has finalized (see computeDefaultAfterSeq in
+                // session-manager.ts) — the client's SSR-loaded state is at
+                // least as fresh by then, and re-merging that snapshot
+                // corrupts message order. This is defense in depth for any
+                // caller that explicitly requests an earlier cursor.
+                if (!skippedMessagesSnapshot && event.type === EventType.MESSAGES_SNAPSHOT) {
+                  skippedMessagesSnapshot = true;
                   return true;
                 }
                 return false;

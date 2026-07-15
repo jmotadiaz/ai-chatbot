@@ -508,7 +508,6 @@ describe("hydrateState (reconnect)", () => {
     t.hydrateState({
       currentMessageId: "hydrated-msg-1",
       activeToolCalls: inFlightTools,
-      messageCounter: 10,
     });
 
     const events = t.translate({
@@ -533,7 +532,6 @@ describe("hydrateState (reconnect)", () => {
     t.hydrateState({
       currentMessageId: "hydrated-msg-1",
       activeToolCalls: inFlightTools,
-      messageCounter: 10,
     });
 
     const events = t.translate({
@@ -558,7 +556,6 @@ describe("hydrateState (reconnect)", () => {
     t.hydrateState({
       currentMessageId: "hydrated-msg-1",
       activeToolCalls: inFlightTools,
-      messageCounter: 10,
     });
 
     const events = t.translate({
@@ -581,7 +578,6 @@ describe("hydrateState (reconnect)", () => {
     t.hydrateState({
       currentMessageId: "hydrated-msg-1",
       activeToolCalls: inFlightTools,
-      messageCounter: 10,
     });
 
     t.translate({
@@ -606,11 +602,15 @@ describe("hydrateState (reconnect)", () => {
     expect((delta[0] as any).toolCallId).toBe("tc-1");
   });
 
-  it("uses the hydrated messageCounter so new IDs do not collide", () => {
-    const t = new PiToAguiTranslator(ctx);
+});
 
-    t.hydrateState({ messageCounter: 50 });
-    t.translate({ type: "message_start", message: { role: "assistant" } });
+describe("deterministic message ids from Pi timestamp (fixes cross-run id collisions)", () => {
+  it("derives the assistant messageId as a-<timestamp> from the Pi message", () => {
+    const t = new PiToAguiTranslator(ctx);
+    t.translate({
+      type: "message_start",
+      message: { role: "assistant", timestamp: 1_700_000_000_000 },
+    });
     const events = t.translate({
       type: "message_update",
       assistantMessageEvent: {
@@ -620,26 +620,77 @@ describe("hydrateState (reconnect)", () => {
       },
     });
 
-    expect((events[0] as any).messageId).toBe("msg-51");
+    expect((events[0] as any).messageId).toBe("a-1700000000000");
   });
 
-  it("does not overwrite higher messageCounter with a lower one", () => {
+  it("two separate translator instances (two runs) with different timestamps produce different messageIds (regression: cross-run id collision)", () => {
+    const runOne = new PiToAguiTranslator(ctx);
+    const runTwo = new PiToAguiTranslator(ctx);
+
+    runOne.translate({
+      type: "message_start",
+      message: { role: "assistant", timestamp: 1_700_000_000_000 },
+    });
+    const eventsOne = runOne.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "a" },
+    });
+
+    runTwo.translate({
+      type: "message_start",
+      message: { role: "assistant", timestamp: 1_700_000_005_000 },
+    });
+    const eventsTwo = runTwo.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "b" },
+    });
+
+    const idOne = (eventsOne[0] as any).messageId;
+    const idTwo = (eventsTwo[0] as any).messageId;
+    expect(idOne).not.toBe(idTwo);
+    expect(idOne).toBe("a-1700000000000");
+    expect(idTwo).toBe("a-1700000005000");
+  });
+
+  it("two assistant messages in the same run sharing a millisecond timestamp get disambiguated ids", () => {
     const t = new PiToAguiTranslator(ctx);
 
-    t.hydrateState({ messageCounter: 50 });
-    t.hydrateState({ messageCounter: 10 });
+    t.translate({
+      type: "message_start",
+      message: { role: "assistant", timestamp: 1_700_000_000_000 },
+    });
+    const first = t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "a" },
+    });
+    t.translate({ type: "message_end", message: { role: "assistant" } });
 
+    t.translate({
+      type: "message_start",
+      message: { role: "assistant", timestamp: 1_700_000_000_000 },
+    });
+    const second = t.translate({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "b" },
+    });
+
+    const firstId = (first[0] as any).messageId;
+    const secondId = (second[0] as any).messageId;
+    expect(firstId).toBe("a-1700000000000");
+    expect(secondId).toBe("a-1700000000000-2");
+  });
+
+  it("falls back to a random id (never a counter) when the Pi message has no timestamp", () => {
+    const t = new PiToAguiTranslator(ctx);
     t.translate({ type: "message_start", message: { role: "assistant" } });
     const events = t.translate({
       type: "message_update",
-      assistantMessageEvent: {
-        type: "text_delta",
-        contentIndex: 0,
-        delta: "x",
-      },
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "x" },
     });
-
-    expect((events[0] as any).messageId).toBe("msg-51");
+    const id = (events[0] as any).messageId as string;
+    expect(id).not.toMatch(/^msg-/);
+    // crypto.randomUUID() format
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
   });
 });
 
@@ -854,7 +905,7 @@ describe("tool_execution step events", () => {
 
     t.translate({ type: "message_start", message: { role: "assistant" } });
     
-    // 1. Stream starts a tool call without a pre-defined ID (so we generate one, e.g. msg-1)
+    // 1. Stream starts a tool call without a pre-defined ID (so we generate a random one)
     const startEvents = t.translate({
       type: "message_update",
       assistantMessageEvent: {
@@ -866,7 +917,10 @@ describe("tool_execution step events", () => {
 
     const generatedId = (startEvents[0] as any).toolCallId;
     expect(generatedId).toBeDefined();
-    expect(generatedId).toContain("msg-");
+    // Fallback ids collide across runs if generated from a per-instance
+    // counter (the old "msg-N" scheme); they must be globally unique instead.
+    expect(generatedId).not.toContain("msg-");
+    expect(generatedId).toMatch(/^[0-9a-f-]{36}$/);
 
     t.translate({
       type: "message_update",

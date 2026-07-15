@@ -7,7 +7,6 @@ import {
   type Message,
 } from "@ag-ui/client";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
-import { CODING_AGENT_CURSOR_EVENT } from "@/lib/features/code/agui-stream-relay";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
 import { groupItems } from "@/lib/features/code/group-items";
 import type { AgentItem } from "@/lib/features/code/types";
@@ -112,36 +111,6 @@ function shouldTraceClientEvent(event: BaseEvent): boolean {
   );
 }
 
-function cursorStorageKey(sessionId: string): string {
-  return `coding-agent:${sessionId}:event-cursor`;
-}
-
-function readStoredCursor(sessionId: string): number {
-  if (typeof window === "undefined") return 0;
-  const raw = window.sessionStorage.getItem(cursorStorageKey(sessionId));
-  if (!raw) return 0;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-}
-
-function writeStoredCursor(sessionId: string, seq: number): void {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(cursorStorageKey(sessionId), String(seq));
-}
-
-function getCursorSeq(event: BaseEvent): number | undefined {
-  if (
-    event.type !== EventType.CUSTOM ||
-    (event as { name?: string }).name !== CODING_AGENT_CURSOR_EVENT
-  ) {
-    return undefined;
-  }
-  const seq = (event as { value?: { seq?: unknown } }).value?.seq;
-  return typeof seq === "number" && Number.isFinite(seq) && seq >= 0
-    ? Math.floor(seq)
-    : undefined;
-}
-
 export function useCodingAgent({
   project,
   sessionId,
@@ -221,10 +190,6 @@ export function useCodingAgent({
               }));
             },
             onEvent: ({ event }) => {
-              const cursorSeq = getCursorSeq(event);
-              if (cursorSeq !== undefined) {
-                writeStoredCursor(sessionId, cursorSeq);
-              }
               const eventRunId = getEventRunId(event);
               if (eventRunId) currentTraceRunId = eventRunId;
               if (shouldTraceClientEvent(event)) {
@@ -355,8 +320,6 @@ export function useCodingAgent({
   useEffect(() => {
     if (!isInitiallyRunning) return;
     const runId = crypto.randomUUID();
-    const storedCursor = readStoredCursor(sessionId);
-    const afterSeq = storedCursor;
     writeClientTrace({
       runId,
       sessionId,
@@ -365,8 +328,6 @@ export function useCodingAgent({
         project,
         modelId,
         reason: "initially_running",
-        afterSeq,
-        storedCursor,
       },
     });
     void agent.connectAgent({
@@ -376,9 +337,6 @@ export function useCodingAgent({
         { description: "sessionId", value: sessionId },
         { description: "modelId", value: modelId },
       ],
-      forwardedProps: {
-        afterSeq: String(afterSeq),
-      },
     }).then(
       () => {
         writeClientTrace({
