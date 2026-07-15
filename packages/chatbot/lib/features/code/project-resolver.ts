@@ -35,3 +35,23 @@ export function resolveProjectPath(root: string, project: string): string {
   }
   return path.resolve(root, project);
 }
+
+/**
+ * Resolves a relative path inside a project, rejecting any path that
+ * escapes the project directory (e.g. via ".." segments or absolute paths).
+ */
+export function assertWithinProject(
+  root: string,
+  project: string,
+  relPath: string,
+): string {
+  const projectRoot = resolveProjectPath(root, project);
+  if (path.isAbsolute(relPath)) {
+    throw new Error("Invalid path");
+  }
+  const resolved = path.resolve(projectRoot, relPath);
+  if (resolved !== projectRoot && !resolved.startsWith(projectRoot + path.sep)) {
+    throw new Error("Invalid path");
+  }
+  return resolved;
+}

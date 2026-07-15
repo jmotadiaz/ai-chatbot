@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Edit } from "lucide-react";
 import type { Message } from "@ag-ui/client";
 import { AgentCodeChat } from "./agent-code-chat";
+import { FileBrowserEntryButton } from "./file-browser/file-browser-entry-button";
+import { FileBrowserProvider } from "./file-browser/file-browser-provider";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
@@ -36,7 +38,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
     });
 
   return (
-    <>
+    <FileBrowserProvider project={project} sessionId={sessionId}>
       <Header.Container>
         <Header.Left>
           <Logo />
@@ -53,6 +55,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           >
             <Edit size={18} />
           </Button>
+          <FileBrowserEntryButton />
           <ModelPickerSelector
             id="coding-agent-model"
             selectedModel={modelId as chatModelId}
@@ -73,6 +76,6 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           isInitiallyRunning={isInitiallyRunning}
         />
       </Main>
-    </>
+    </FileBrowserProvider>
   );
 };

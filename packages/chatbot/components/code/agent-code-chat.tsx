@@ -4,6 +4,10 @@ import { useState } from "react";
 import { ArrowUp } from "lucide-react";
 import type { Message } from "@ag-ui/client";
 import { AgentConversation } from "./agent-conversation";
+import { FileBrowserOverlay } from "./file-browser/file-browser-overlay";
+import { useFileBrowser } from "./file-browser/file-browser-provider";
+import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
+import { serializeComments } from "./file-browser/serialize-comments";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
@@ -32,11 +36,17 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     isInitiallyRunning,
   });
 
+  const { state: fileBrowserState, actions: fileBrowserActions } =
+    useFileBrowser();
+  const pendingComments = fileBrowserState.pendingComments;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    await sendMessage(input);
+    const message = serializeComments(input, pendingComments);
+    if (!message) return;
+    await sendMessage(message);
     setInput("");
+    fileBrowserActions.clearComments();
   };
 
   const isLoading = isRunning;
@@ -56,6 +66,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         onSubmit={handleSubmit}
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
+        <PendingCommentsBar />
         <div className="relative w-full">
           <Textarea
             onChangeInput={setInput}
@@ -68,12 +79,15 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               Icon={ArrowUp}
               type="submit"
               aria-label="Send message"
-              disabled={!input.trim() || isLoading}
+              disabled={
+                (!input.trim() && pendingComments.length === 0) || isLoading
+              }
               isLoading={isLoading}
             />
           </div>
         </div>
       </form>
+      <FileBrowserOverlay items={items} />
     </div>
   );
 };
