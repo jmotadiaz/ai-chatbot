@@ -35,8 +35,10 @@ export const CodeViewLine = memo<CodeViewLineProps>(
     >
       <span
         className={cn(
-          "sticky left-0 flex w-14 shrink-0 select-none items-center justify-end gap-1 border-l-2 pr-2 text-zinc-400 dark:text-zinc-500 bg-(--background)",
-          isChanged ? "border-emerald-500 bg-emerald-500/10" : "border-transparent",
+          "sticky left-0 flex w-14 shrink-0 select-none items-center justify-end gap-1 border-l-2 pr-2 text-zinc-400 dark:text-zinc-500",
+          isChanged
+            ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-950"
+            : "border-transparent bg-(--background)",
         )}
       >
         {hasComment && (

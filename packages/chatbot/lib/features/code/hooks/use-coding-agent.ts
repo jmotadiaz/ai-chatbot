@@ -356,7 +356,7 @@ export function useCodingAgent({
     if (!isInitiallyRunning) return;
     const runId = crypto.randomUUID();
     const storedCursor = readStoredCursor(sessionId);
-    const afterSeq = 0;
+    const afterSeq = storedCursor;
     writeClientTrace({
       runId,
       sessionId,

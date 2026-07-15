@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ArrowUp } from "lucide-react";
 import type { Message } from "@ag-ui/client";
 import { AgentConversation } from "./agent-conversation";
-import { FileBrowserOverlay } from "./file-browser/file-browser-overlay";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
 import { serializeComments } from "./file-browser/serialize-comments";
@@ -87,7 +86,6 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
           </div>
         </div>
       </form>
-      <FileBrowserOverlay items={items} />
     </div>
   );
 };

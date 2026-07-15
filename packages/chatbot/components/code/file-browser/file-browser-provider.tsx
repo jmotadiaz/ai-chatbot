@@ -14,8 +14,7 @@ import type {
 } from "./types";
 
 const INITIAL_STATE: FileBrowserState = {
-  isOpen: false,
-  scope: "last-turn",
+  scope: "uncommitted",
   pathStack: [],
   activeFile: null,
   pendingComments: [],
@@ -54,8 +53,6 @@ export interface FileBrowserStore {
   subscribe: (listener: () => void) => () => void;
   getSnapshot: () => FileBrowserState;
   hydrateComments: () => void;
-  open: () => void;
-  close: () => void;
   setScope: (scope: FileBrowserScope) => void;
   pushPath: (dirName: string) => void;
   truncatePath: (length: number) => void;
@@ -92,8 +89,6 @@ export function createFileBrowserStore(sessionId: string): FileBrowserStore {
         set({ pendingComments: stored });
       }
     },
-    open: () => set({ isOpen: true }),
-    close: () => set({ isOpen: false }),
     setScope: (scope) => set({ scope, pathStack: [], activeFile: null }),
     pushPath: (dirName) => set({ pathStack: [...state.pathStack, dirName] }),
     truncatePath: (length) => set({ pathStack: state.pathStack.slice(0, length) }),

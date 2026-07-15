@@ -1,21 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { FolderTree } from "lucide-react";
-import { useFileBrowser } from "./file-browser-provider";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
-export const FileBrowserEntryButton: React.FC = () => {
-  const { actions } = useFileBrowser();
-  return (
-    <Button
-      variant="icon"
-      size="icon"
-      type="button"
-      aria-label="Browse project files"
-      title="Browse project files"
-      onClick={actions.open}
-    >
-      <FolderTree size={18} />
-    </Button>
-  );
-};
+export interface FileBrowserEntryButtonProps {
+  project: string;
+  sessionId: string;
+}
+
+export const FileBrowserEntryButton: React.FC<FileBrowserEntryButtonProps> = ({
+  project,
+  sessionId,
+}) => (
+  <Link
+    href={`/agent/code/${project}/${sessionId}/files`}
+    aria-label="Browse project files"
+    title="Browse project files"
+    className={buttonVariants({ variant: "icon", size: "icon" })}
+  >
+    <FolderTree size={18} />
+  </Link>
+);

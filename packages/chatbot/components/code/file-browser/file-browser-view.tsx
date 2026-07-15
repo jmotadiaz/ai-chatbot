@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, FolderOpen, GitBranch, ListX, X } from "lucide-react";
+import { CheckCircle2, FolderOpen, GitBranch, ListX } from "lucide-react";
 import { Breadcrumbs } from "./breadcrumbs";
 import { CodeView } from "./code-view";
 import { FileBrowserEmptyState } from "./empty-states";
@@ -10,18 +9,11 @@ import { FileList } from "./file-list";
 import { FileListItem } from "./file-list-item";
 import { useFileBrowser } from "./file-browser-provider";
 import { ScopeTabs } from "./scope-tabs";
-import type {
-  ChangedFileMeta,
-  ChangesResult,
-  FileEntry,
-} from "./types";
-import type { AgentItem } from "@/lib/features/code/types";
-import { lastTurnChangedFiles } from "@/lib/features/code/last-turn-changes";
+import type { ChangedFileMeta, ChangesResult, FileEntry } from "./types";
 import {
   fetchChanges,
   fetchDir,
 } from "@/lib/features/code/file-browser-fetchers";
-import { Button } from "@/components/ui/button";
 
 function basename(path: string): string {
   return path.split("/").pop() ?? path;
@@ -58,22 +50,15 @@ const ChangedFileList: React.FC<ChangedFileListProps> = ({
   </FileList>
 );
 
-export interface FileBrowserOverlayProps {
-  items: AgentItem[];
-}
-
-export const FileBrowserOverlay: React.FC<FileBrowserOverlayProps> = ({
-  items,
-}) => {
+export const FileBrowserView: React.FC = () => {
   const { state, actions, project } = useFileBrowser();
 
   const [changes, setChanges] = useState<ChangesResult | null>(null);
   const [entries, setEntries] = useState<FileEntry[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
 
-  // Fresh git state on every open.
+  // Fresh git state on every mount.
   useEffect(() => {
-    if (!state.isOpen) return;
     let cancelled = false;
     setChanges(null);
     fetchChanges(project)
@@ -86,11 +71,11 @@ export const FileBrowserOverlay: React.FC<FileBrowserOverlayProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [state.isOpen, project]);
+  }, [project]);
 
   const dirPath = state.pathStack.join("/");
   useEffect(() => {
-    if (!state.isOpen || state.scope !== "tree") return;
+    if (state.scope !== "tree") return;
     let cancelled = false;
     setEntries(null);
     setListError(null);
@@ -104,19 +89,11 @@ export const FileBrowserOverlay: React.FC<FileBrowserOverlayProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [state.isOpen, state.scope, dirPath, project]);
+  }, [state.scope, dirPath, project]);
 
   const changesByPath = useMemo(
     () => new Map((changes?.files ?? []).map((f) => [f.path, f])),
     [changes],
-  );
-
-  const lastTurnFiles = useMemo(
-    () =>
-      lastTurnChangedFiles(items).map(
-        (file) => changesByPath.get(file.path) ?? file,
-      ),
-    [items, changesByPath],
   );
 
   const commentCounts = useMemo(() => {
@@ -171,52 +148,33 @@ export const FileBrowserOverlay: React.FC<FileBrowserOverlayProps> = ({
       );
     }
 
-    if (state.scope === "uncommitted") {
-      if (changes === null) {
-        return (
-          <div className="py-16 text-center text-sm text-zinc-400">Loading…</div>
-        );
-      }
-      if (!changes.isGitRepo) {
-        return (
-          <FileBrowserEmptyState
-            Icon={GitBranch}
-            title="Not a git repository"
-            description="This project has no git history, so uncommitted changes can't be shown."
-          />
-        );
-      }
-      if (changes.files.length === 0) {
-        return (
-          <FileBrowserEmptyState
-            Icon={CheckCircle2}
-            title="No uncommitted changes"
-            description="The working tree is clean."
-          />
-        );
-      }
+    // uncommitted
+    if (changes === null) {
       return (
-        <ChangedFileList
-          files={changes.files}
-          commentCounts={commentCounts}
-          onOpen={actions.openFile}
+        <div className="py-16 text-center text-sm text-zinc-400">Loading…</div>
+      );
+    }
+    if (!changes.isGitRepo) {
+      return (
+        <FileBrowserEmptyState
+          Icon={GitBranch}
+          title="Not a git repository"
+          description="This project has no git history, so uncommitted changes can't be shown."
         />
       );
     }
-
-    // last-turn
-    if (lastTurnFiles.length === 0) {
+    if (changes.files.length === 0) {
       return (
         <FileBrowserEmptyState
           Icon={CheckCircle2}
-          title="No files changed in the last turn"
-          description="Files the agent writes or edits will show up here."
+          title="No uncommitted changes"
+          description="The working tree is clean."
         />
       );
     }
     return (
       <ChangedFileList
-        files={lastTurnFiles}
+        files={changes.files}
         commentCounts={commentCounts}
         onOpen={actions.openFile}
       />
@@ -224,56 +182,39 @@ export const FileBrowserOverlay: React.FC<FileBrowserOverlayProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      {state.isOpen && (
-        <motion.div
-          data-testid="file-browser-overlay"
-          className="fixed inset-0 z-30 flex flex-col bg-(--background)"
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
-        >
-          <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 p-2">
-            <ScopeTabs
-              scope={state.scope}
-              onScopeChange={actions.setScope}
-              disabledScopes={isGitRepo ? [] : ["uncommitted"]}
-              disabledReason="This project is not a git repository"
-            />
-            <Button
-              variant="icon"
-              size="icon"
-              type="button"
-              aria-label="Close file browser"
-              onClick={actions.close}
-            >
-              <X size={20} />
-            </Button>
-          </div>
+    <div
+      data-testid="file-browser-view"
+      className="flex h-full flex-col bg-(--background)"
+    >
+      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 p-2">
+        <ScopeTabs
+          scope={state.scope}
+          onScopeChange={actions.setScope}
+          disabledScopes={isGitRepo ? [] : ["uncommitted"]}
+          disabledReason="This project is not a git repository"
+        />
+      </div>
 
-          {state.scope === "tree" && (
-            <Breadcrumbs
-              rootLabel={project}
-              pathStack={state.pathStack}
-              onNavigate={actions.truncatePath}
-            />
-          )}
-
-          <div className="relative flex-1 overflow-hidden">
-            <div className="h-full overflow-y-auto">{renderList()}</div>
-            {state.activeFile && (
-              <div className="absolute inset-0 z-10 bg-(--background)">
-                <CodeView
-                  path={state.activeFile}
-                  changedRanges={activeRanges}
-                  onBack={actions.closeFile}
-                />
-              </div>
-            )}
-          </div>
-        </motion.div>
+      {state.scope === "tree" && (
+        <Breadcrumbs
+          rootLabel={project}
+          pathStack={state.pathStack}
+          onNavigate={actions.truncatePath}
+        />
       )}
-    </AnimatePresence>
+
+      <div className="relative flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">{renderList()}</div>
+        {state.activeFile && (
+          <div className="absolute inset-0 z-10 bg-(--background)">
+            <CodeView
+              path={state.activeFile}
+              changedRanges={activeRanges}
+              onBack={actions.closeFile}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 };

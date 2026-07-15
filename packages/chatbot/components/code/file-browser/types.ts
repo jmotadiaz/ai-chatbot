@@ -1,4 +1,4 @@
-export type FileBrowserScope = "last-turn" | "uncommitted" | "tree";
+export type FileBrowserScope = "uncommitted" | "tree";
 
 export type GitChangeStatus = "modified" | "added" | "deleted" | "renamed" | "untracked";
 
@@ -32,7 +32,6 @@ export interface ChangesResult {
 }
 
 export interface FileBrowserState {
-  isOpen: boolean;
   scope: FileBrowserScope;
   pathStack: string[]; // breadcrumb segments, [] = project root
   activeFile: string | null; // file open in the code view

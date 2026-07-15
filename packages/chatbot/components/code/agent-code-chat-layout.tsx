@@ -55,7 +55,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           >
             <Edit size={18} />
           </Button>
-          <FileBrowserEntryButton />
+          <FileBrowserEntryButton project={project} sessionId={sessionId} />
           <ModelPickerSelector
             id="coding-agent-model"
             selectedModel={modelId as chatModelId}

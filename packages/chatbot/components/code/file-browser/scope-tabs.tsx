@@ -4,7 +4,6 @@ import type { FileBrowserScope } from "./types";
 import { cn } from "@/lib/utils/helpers";
 
 const TABS: { id: FileBrowserScope; label: string }[] = [
-  { id: "last-turn", label: "Last turn" },
   { id: "uncommitted", label: "Uncommitted" },
   { id: "tree", label: "All files" },
 ];
