@@ -84,23 +84,21 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
         </summary>
         <div>
           <div className="border-t border-border">
-            <div className="px-3 pt-2 pb-1 text-xs text-muted-foreground">
+            <div className="px-3 pt-2 pb-1 text-xs font-medium">
               Args
             </div>
-            <pre className="px-3 pb-2 text-xs bg-secondary overflow-x-auto whitespace-pre-wrap">
+            <pre className="px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap">
               {group.args}
             </pre>
           </div>
           {group.result !== undefined && (
             <div className="border-t border-border">
-              <div className="px-3 pt-2 pb-1 text-xs text-muted-foreground">
+              <div className="px-3 pt-2 pb-1 text-xs font-medium">
                 Output
               </div>
               <pre
                 className={`px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap ${
-                  group.status === "error"
-                    ? "bg-red-50 dark:bg-red-950/30"
-                    : "bg-secondary"
+                  group.status === "error" ? "text-red-600 dark:text-red-400" : ""
                 }`}
               >
                 {visibleResult}
