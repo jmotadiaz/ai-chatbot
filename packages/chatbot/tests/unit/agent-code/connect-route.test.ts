@@ -29,14 +29,17 @@ vi.mock("tracing", () => ({
 }));
 
 vi.mock("@/lib/features/code/session-store", () => ({
-  getSession: vi.fn().mockResolvedValue({ piSessionId: "stub-pi-session" }),
+  getSession: vi.fn().mockResolvedValue({
+    piSessionId: "stub-pi-session",
+    project: "p",
+  }),
   touchSession: vi.fn().mockResolvedValue(undefined),
   updatePiSessionId: vi.fn().mockResolvedValue(undefined),
   updateSessionLabel: vi.fn().mockResolvedValue(undefined),
 }));
 
 const encoder = new TextEncoder();
-type LoggedEvent = { seq: number; event: { type: string; [k: string]: unknown } };
+type LoggedEvent = { epoch?: string; seq: number; event: { type: string; [k: string]: unknown } };
 
 const mockState: {
   events: LoggedEvent[];
@@ -101,6 +104,7 @@ describe("POST /api/agent/code/connect", () => {
   it("emits a synthetic RUN_STARTED, relays logged AG-UI events, and advances cursor", async () => {
     mockState.events = [
       {
+        epoch: "worker-epoch",
         seq: 1,
         event: {
           type: EventType.RUN_STARTED,
@@ -109,6 +113,7 @@ describe("POST /api/agent/code/connect", () => {
         },
       },
       {
+        epoch: "worker-epoch",
         seq: 2,
         event: {
           type: EventType.TEXT_MESSAGE_CHUNK,
@@ -118,6 +123,7 @@ describe("POST /api/agent/code/connect", () => {
         },
       },
       {
+        epoch: "worker-epoch",
         seq: 3,
         event: {
           type: EventType.RUN_FINISHED,
@@ -146,7 +152,7 @@ describe("POST /api/agent/code/connect", () => {
       expect.objectContaining({
         type: EventType.CUSTOM,
         name: CODING_AGENT_CURSOR_EVENT,
-        value: { seq: 1 },
+        value: { seq: 1, epoch: "worker-epoch" },
       }),
     );
     expect(events[2]).toEqual(
@@ -160,17 +166,23 @@ describe("POST /api/agent/code/connect", () => {
       expect.objectContaining({
         type: EventType.CUSTOM,
         name: CODING_AGENT_CURSOR_EVENT,
-        value: { seq: 2 },
+        value: { seq: 2, epoch: "worker-epoch" },
       }),
     );
     expect(events[4]).toEqual(
       expect.objectContaining({
         type: EventType.CUSTOM,
         name: CODING_AGENT_CURSOR_EVENT,
-        value: { seq: 3 },
+        value: { seq: 3, epoch: "worker-epoch", terminal: true },
       }),
     );
-    expect(events[5].type).toBe(EventType.RUN_FINISHED);
+    expect(events[5]).toEqual(
+      expect.objectContaining({
+        type: EventType.RUN_FINISHED,
+        threadId: "s",
+        runId: "worker-run",
+      }),
+    );
     expect(events[6]).toBeUndefined();
   });
 

@@ -3,6 +3,7 @@ import { EventType, type BaseEvent } from "@ag-ui/client";
 export const CODING_AGENT_CURSOR_EVENT = "coding_agent_cursor";
 
 interface LoggedAguiEnvelope {
+  epoch?: string;
   seq: number;
   event: BaseEvent;
 }
@@ -17,9 +18,22 @@ export interface RelaySummary {
   emittedCursorEventCount: number;
   skippedAguiEventCount: number;
   malformedLineCount: number;
+  /** Number of times a burst was yielded so the browser can paint. */
+  burstYieldCount: number;
   terminalSeen: boolean;
   lastSeq?: number;
   aguiEventCounts: Record<string, number>;
+}
+
+export interface BurstPacingOptions {
+  /** Disabled by default so callers opt in only for browser-facing streams. */
+  enabled: boolean;
+  /** Deltas received within this window belong to the same upstream burst. */
+  windowMs?: number;
+  /** Let the browser paint after this many consecutive burst deltas. */
+  batchSize?: number;
+  /** A frame-sized pause between batches. */
+  yieldMs?: number;
 }
 
 function incrementCount(counts: Record<string, number>, key: string | undefined): void {
@@ -33,24 +47,39 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function parseEnvelope(value: unknown): LoggedAguiEnvelope | null {
   if (!isObject(value)) return null;
-  const { seq, event } = value;
+  const { epoch, seq, event } = value;
   if (typeof seq !== "number" || !isObject(event) || typeof event.type !== "string") {
     return null;
   }
-  return { seq, event: event as BaseEvent };
+  return {
+    ...(typeof epoch === "string" ? { epoch } : {}),
+    seq,
+    event: event as BaseEvent,
+  };
 }
 
-function cursorEvent(seq: number): BaseEvent {
+function cursorEvent(seq: number, epoch?: string, terminal = false): BaseEvent {
   return {
     type: EventType.CUSTOM,
     name: CODING_AGENT_CURSOR_EVENT,
-    value: { seq },
+    value: { seq, ...(epoch ? { epoch } : {}), ...(terminal ? { terminal: true } : {}) },
     timestamp: Date.now(),
   } as BaseEvent;
 }
 
 function isTerminalEvent(event: BaseEvent): boolean {
   return event.type === EventType.RUN_FINISHED || event.type === EventType.RUN_ERROR;
+}
+
+function isVisualDeltaEvent(event: BaseEvent): boolean {
+  return (
+    event.type === EventType.TEXT_MESSAGE_CHUNK ||
+    event.type === EventType.REASONING_MESSAGE_CHUNK
+  );
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function parseAfterSeq(value: unknown): number {
@@ -93,6 +122,12 @@ export async function relayLoggedAguiNdjsonToSse(options: {
   log: RelayLogger;
   onReader?: (reader: ReadableStreamDefaultReader<Uint8Array>) => void;
   skipEvent?: (event: BaseEvent) => boolean;
+  /**
+   * Pi providers occasionally deliver hundreds of text/reasoning deltas in
+   * one event-loop turn. Yielding between bounded batches lets the browser
+   * render the already-received content instead of painting it all at once.
+   */
+  burstPacing?: BurstPacingOptions;
 }): Promise<RelaySummary> {
   const {
     workerStream,
@@ -101,6 +136,7 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     log,
     onReader,
     skipEvent,
+    burstPacing,
   } = options;
   const reader = workerStream.getReader();
   onReader?.(reader);
@@ -112,17 +148,43 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     emittedCursorEventCount: 0,
     skippedAguiEventCount: 0,
     malformedLineCount: 0,
+    burstYieldCount: 0,
     terminalSeen: false,
     aguiEventCounts: {},
   };
 
-  const emitCursor = (seq: number) => {
-    emitAguiSseEvent(controller, encoder, cursorEvent(seq));
+  const burstWindowMs = burstPacing?.windowMs ?? 8;
+  const burstBatchSize = burstPacing?.batchSize ?? 16;
+  const burstYieldMs = burstPacing?.yieldMs ?? 16;
+  let previousVisualDeltaAt = 0;
+  let consecutiveVisualDeltas = 0;
+
+  const emitCursor = (seq: number, epoch?: string, terminal = false) => {
+    emitAguiSseEvent(controller, encoder, cursorEvent(seq, epoch, terminal));
     summary.emittedCursorEventCount += 1;
     summary.lastSeq = seq;
   };
 
-  const processLine = (line: string) => {
+  const maybeYieldForBurst = async (event: BaseEvent) => {
+    if (!burstPacing?.enabled || !isVisualDeltaEvent(event)) {
+      consecutiveVisualDeltas = 0;
+      return;
+    }
+
+    const now = Date.now();
+    consecutiveVisualDeltas =
+      now - previousVisualDeltaAt <= burstWindowMs
+        ? consecutiveVisualDeltas + 1
+        : 1;
+    previousVisualDeltaAt = now;
+
+    if (consecutiveVisualDeltas % burstBatchSize === 0) {
+      summary.burstYieldCount += 1;
+      await wait(burstYieldMs);
+    }
+  };
+
+  const processLine = async (line: string) => {
     if (!line.trim()) return;
 
     let parsed: unknown;
@@ -144,7 +206,8 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     const shouldSkip = skipEvent?.(envelope.event) ?? false;
     if (shouldSkip) {
       summary.skippedAguiEventCount += 1;
-      emitCursor(envelope.seq);
+      emitCursor(envelope.seq, envelope.epoch);
+      consecutiveVisualDeltas = 0;
       return;
     }
 
@@ -160,11 +223,17 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     });
 
     if (terminalEvent) {
-      emitCursor(envelope.seq);
+      // AG-UI forbids every event, including CUSTOM, after a terminal event.
+      // Mark this cursor as pending; the client promotes it only after it
+      // applies RUN_FINISHED/RUN_ERROR.
+      emitCursor(envelope.seq, envelope.epoch, true);
     }
     emitAguiSseEvent(controller, encoder, envelope.event);
     if (!terminalEvent) {
-      emitCursor(envelope.seq);
+      emitCursor(envelope.seq, envelope.epoch);
+      await maybeYieldForBurst(envelope.event);
+    } else {
+      consecutiveVisualDeltas = 0;
     }
   };
 
@@ -177,12 +246,12 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     buffer = lines.pop() ?? "";
 
     for (const line of lines) {
-      processLine(line);
+      await processLine(line);
     }
   }
 
   if (buffer.trim()) {
-    processLine(buffer);
+    await processLine(buffer);
   }
 
   return summary;

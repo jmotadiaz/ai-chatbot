@@ -846,6 +846,17 @@ export interface SessionStatus {
   piSessionId?: string;
 }
 
+export interface SessionCursor {
+  epoch: string;
+  seq: number;
+}
+
+export interface SessionSnapshot {
+  messages: Array<any>;
+  cursor: SessionCursor | null;
+  running: boolean;
+}
+
 export async function getSessionStatus(sessionId: string): Promise<SessionStatus> {
   const log = getTraceLogger("worker");
   const entry = sessions.get(sessionId);
@@ -857,6 +868,39 @@ export async function getSessionStatus(sessionId: string): Promise<SessionStatus
     return { running: true, piSessionId: entry.runtime.session.sessionId };
   }
   return { running: false };
+}
+
+/**
+ * Return the conversation state and the exact event-log boundary it represents.
+ *
+ * Pi only commits a message to `session.messages` once it is finalized. When a
+ * run is in progress, the snapshot therefore deliberately points at the last
+ * finalized message so the client replays the remaining partial deltas. This
+ * makes the worker, rather than SSR or the browser, the single authority for
+ * both the snapshot and its resume cursor.
+ */
+export async function getSessionSnapshot(
+  sessionId: string,
+  piSessionId?: string,
+  project?: string,
+): Promise<SessionSnapshot> {
+  const messages = await getSessionMessages(sessionId, piSessionId, project);
+  const entry = sessions.get(sessionId);
+  if (!entry) {
+    return { messages, cursor: null, running: false };
+  }
+
+  const eventLog = ensureEventLog(entry);
+  const seq = computeDefaultAfterSeq(
+    entry.lastRunStartSeq,
+    entry.lastFinalizedMessageSeq,
+    eventLog.lastSeq,
+  );
+  return {
+    messages,
+    cursor: { epoch: eventLog.epoch, seq },
+    running: entry.runtime.session.isStreaming || !!entry.activeRun,
+  };
 }
 
 /**
@@ -898,6 +942,7 @@ export async function connectToSession(
   onError: (err: Error) => void,
   onComplete?: () => void,
   afterSeq?: number,
+  epoch?: string,
 ): Promise<() => void> {
   const log = getTraceLogger("worker");
   const eventCounts: Record<string, number> = {};
@@ -931,6 +976,9 @@ export async function connectToSession(
   }
 
   const eventLog = ensureEventLog(entry);
+  if (epoch !== undefined && epoch !== eventLog.epoch) {
+    throw new Error("Cursor epoch mismatch");
+  }
   eventLogLastSeq = eventLog.lastSeq;
   replayAfterSeq =
     afterSeq !== undefined

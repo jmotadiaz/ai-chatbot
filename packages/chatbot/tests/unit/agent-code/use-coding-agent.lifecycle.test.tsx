@@ -6,9 +6,9 @@ import {
   render,
   screen,
   act,
+  waitFor,
 } from "@testing-library/react";
 import { useState } from "react";
-import type { Message } from "@ag-ui/client";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 
 function makeSseResponse(events: object[]): Response {
@@ -26,14 +26,12 @@ function makeSseResponse(events: object[]): Response {
   );
 }
 
-function Harness({ initialMessages }: { initialMessages: Message[] }) {
+function Harness() {
   const [, setTick] = useState(0);
   const { messages, sendMessage } = useCodingAgent({
     project: "p",
     sessionId: "s",
     modelId: "m",
-    initialMessages,
-    isInitiallyRunning: false,
   });
   return (
     <div>
@@ -56,12 +54,20 @@ describe("useCodingAgent client lifecycle", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue(
+    fetchSpy = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        messages: [],
+        cursor: null,
+        running: false,
+      }), {
+        headers: { "Content-Type": "application/json" },
+      }))
+      .mockResolvedValue(
       makeSseResponse([
         { type: "RUN_STARTED", threadId: "s", runId: "r" },
         { type: "RUN_FINISHED", threadId: "s", runId: "r" },
       ]),
-    );
+      );
     global.fetch = fetchSpy as unknown as typeof fetch;
   });
 
@@ -71,7 +77,8 @@ describe("useCodingAgent client lifecycle", () => {
   });
 
   it("shows the user message after send, even when a re-render happens before send (no dual-agent drift)", async () => {
-    render(<Harness initialMessages={[]} />);
+    render(<Harness />);
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
 
     // Simulate a parent re-render between mount and send (the real cause is
     // AgentCodeChat's input state changing, which makes the hook re-run and
@@ -86,5 +93,39 @@ describe("useCodingAgent client lifecycle", () => {
       timeout: 2000,
     });
     expect(userMsg.textContent).toBe("hello");
+  });
+
+  it("connects an active session from the cursor returned by the worker snapshot", async () => {
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation((url: string) => {
+      if (url === "/api/agent/code/sessions/s/snapshot") {
+        return Promise.resolve(new Response(JSON.stringify({
+          messages: [],
+          cursor: { epoch: "worker-epoch", seq: 12 },
+          running: true,
+        }), {
+          headers: { "Content-Type": "application/json" },
+        }));
+      }
+      if (url === "/api/agent/code/connect") {
+        return Promise.resolve(makeSseResponse([
+          { type: "RUN_STARTED", threadId: "s", runId: "connect-r" },
+          { type: "RUN_FINISHED", threadId: "s", runId: "connect-r" },
+        ]));
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    render(<Harness />);
+
+    await waitFor(() => expect(
+      fetchSpy.mock.calls.some(([url]) => url === "/api/agent/code/connect"),
+    ).toBe(true));
+    const [, request] = fetchSpy.mock.calls.find(
+      ([url]) => url === "/api/agent/code/connect",
+    )!;
+    expect(JSON.parse(request.body)).toEqual(expect.objectContaining({
+      forwardedProps: { afterSeq: 12, epoch: "worker-epoch" },
+    }));
   });
 });

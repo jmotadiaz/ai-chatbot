@@ -217,7 +217,11 @@ export const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   hasTextTokens = false,
 }) => {
   return (
-    <Reasoning isStreaming={isStreaming} hasTextTokens={hasTextTokens}>
+    <Reasoning
+      defaultOpen={isStreaming}
+      isStreaming={isStreaming}
+      hasTextTokens={hasTextTokens}
+    >
       <ReasoningTrigger />
       <ReasoningContent>{text}</ReasoningContent>
     </Reasoning>

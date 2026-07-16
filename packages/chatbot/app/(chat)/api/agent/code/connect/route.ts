@@ -35,6 +35,12 @@ export const POST = withAuth(async (user, req) => {
   // "not provided" so it can compute its own default replay window
   // (see connectToSession / computeDefaultAfterSeq in session-manager.ts).
   const afterSeq = parseAfterSeqOrUndefined(forwardedProps.afterSeq ?? body.afterSeq);
+  const epoch =
+    typeof forwardedProps.epoch === "string"
+      ? forwardedProps.epoch
+      : typeof body.epoch === "string"
+        ? body.epoch
+        : undefined;
 
   if (!project) {
     return new Response(JSON.stringify({ error: "project is required" }), {
@@ -61,12 +67,16 @@ export const POST = withAuth(async (user, req) => {
   try {
     return await runWithTraceContext({ runId, sessionId, sink }, async () => {
       const log = getTraceLogger("bridge");
-      log.info("connect.start", { threadId, sessionId, project, modelId, afterSeq });
+      log.info("connect.start", { threadId, sessionId, project, modelId, afterSeq, epoch });
 
       const dbSession = await getSession({ userId: user.id, sessionId });
       if (!dbSession) {
         await closeSink();
         return new Response("Session not found", { status: 404 });
+      }
+      if (dbSession.project !== project) {
+        await closeSink();
+        return new Response("Session project mismatch", { status: 400 });
       }
 
       const client = new WorkerClient();
@@ -82,11 +92,21 @@ export const POST = withAuth(async (user, req) => {
 
       await touchSession({ userId: user.id, sessionId });
 
-      const workerStream = await client.connectToSession({
-        sessionId,
-        afterSeq,
-        _traceRunId: runId,
-      });
+      let workerStream: ReadableStream<Uint8Array>;
+      try {
+        workerStream = await client.connectToSession({
+          sessionId,
+          afterSeq,
+          epoch,
+          _traceRunId: runId,
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("Cursor epoch mismatch")) {
+          await closeSink();
+          return new Response("Cursor reset required", { status: 409 });
+        }
+        throw err;
+      }
 
       const encoder = new TextEncoder();
       let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
@@ -143,6 +163,7 @@ export const POST = withAuth(async (user, req) => {
                 }
                 return false;
               },
+              burstPacing: { enabled: true },
             });
             emitTerminalIfNeeded();
           } catch (err) {
@@ -202,8 +223,9 @@ export const POST = withAuth(async (user, req) => {
       return new Response(stream, {
         headers: {
           "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
+          "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
           "X-Trace-Run-Id": runId,
         },
       });

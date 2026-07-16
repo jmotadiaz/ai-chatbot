@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Edit } from "lucide-react";
-import type { Message } from "@ag-ui/client";
 import { AgentCodeChat } from "./agent-code-chat";
 import { FileBrowserEntryButton } from "./file-browser/file-browser-entry-button";
 import { FileBrowserProvider } from "./file-browser/file-browser-provider";
@@ -19,16 +18,12 @@ export interface AgentCodeChatLayoutProps {
   project: string;
   sessionId: string;
   availableModels: string[];
-  initialMessages: Message[];
-  isInitiallyRunning: boolean;
 }
 
 export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   project,
   sessionId,
   availableModels,
-  initialMessages,
-  isInitiallyRunning,
 }) => {
   const [modelId, setModelId] = useState<string>(availableModels[0] ?? "");
   const { isCreatingSession, createNewSession } =
@@ -73,8 +68,6 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           project={project}
           sessionId={sessionId}
           modelId={modelId}
-          initialMessages={initialMessages}
-          isInitiallyRunning={isInitiallyRunning}
         />
       </Main>
     </FileBrowserProvider>

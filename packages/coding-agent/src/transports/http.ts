@@ -14,6 +14,7 @@ import {
   getAvailableModels,
   disposeSession,
   getSessionMessages,
+  getSessionSnapshot,
   connectToSession,
   cancelRun,
   getSessionStatus,
@@ -103,6 +104,11 @@ async function writeFetchResponseToNode(
     response.status,
     Object.fromEntries(response.headers.entries()),
   );
+  // Node otherwise holds headers until the first body write. For a live
+  // reconnect there may be a quiet period before Pi emits its next delta;
+  // flushing here lets the BFF establish its SSE response immediately rather
+  // than making `fetch()` wait until that first delta (or the terminal event).
+  res.flushHeaders();
 
   if (!response.body) {
     res.end();
@@ -222,6 +228,15 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         };
         break;
       }
+      case "getSessionSnapshot": {
+        const { sessionId, piSessionId, project } = params as {
+          sessionId: string;
+          piSessionId?: string;
+          project?: string;
+        };
+        result = await getSessionSnapshot(sessionId, piSessionId, project);
+        break;
+      }
       case "disposeSession": {
         const { sessionId } = params as { sessionId: string };
         await disposeSession(sessionId);
@@ -229,7 +244,11 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "connectToSession": {
-        const { sessionId, afterSeq } = params as { sessionId: string; afterSeq?: number };
+        const { sessionId, afterSeq, epoch } = params as {
+          sessionId: string;
+          afterSeq?: number;
+          epoch?: string;
+        };
         const encoder = new TextEncoder();
         let cleanup: () => void = () => {};
         let completed = false;
@@ -256,6 +275,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
                   }
                 },
                 typeof afterSeq === "number" ? afterSeq : undefined,
+                typeof epoch === "string" ? epoch : undefined,
               );
             } catch (err) {
               log.error("connect.setup_error", { message: String(err) });
@@ -336,6 +356,12 @@ function summarizeRpcParams(method: string, params: unknown): unknown {
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
       };
+    case "getSessionSnapshot":
+      return {
+        sessionId,
+        project: typeof p.project === "string" ? p.project : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+      };
     case "setModel":
       return {
         sessionId,
@@ -349,6 +375,7 @@ function summarizeRpcParams(method: string, params: unknown): unknown {
       return {
         sessionId,
         afterSeq: typeof p.afterSeq === "number" ? p.afterSeq : undefined,
+        epoch: typeof p.epoch === "string" ? p.epoch : undefined,
         hasTraceRunId,
       };
     default:
@@ -373,6 +400,14 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       return {
         messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
       };
+    case "getSessionSnapshot": {
+      const cursor = r.cursor as { epoch?: unknown; seq?: unknown } | null;
+      return {
+        messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
+        running: r.running === true,
+        cursorSeq: cursor && typeof cursor.seq === "number" ? cursor.seq : undefined,
+      };
+    }
     default:
       return result;
   }

@@ -60,6 +60,28 @@ function run(events: BaseEvent[]): Promise<{ messages: Message[]; error?: string
 }
 
 describe("reconnect repro", () => {
+  it("accepts a terminal cursor only when it precedes RUN_FINISHED", async () => {
+    const result = await run([
+      {
+        type: EventType.RUN_STARTED,
+        threadId: "t1",
+        runId: "r1",
+      } as BaseEvent,
+      {
+        type: EventType.CUSTOM,
+        name: "coding_agent_cursor",
+        value: { epoch: "worker-epoch", seq: 3, terminal: true },
+      } as BaseEvent,
+      {
+        type: EventType.RUN_FINISHED,
+        threadId: "t1",
+        runId: "r1",
+      } as BaseEvent,
+    ]);
+
+    expect(result.error).toBeUndefined();
+  });
+
   it("applies MESSAGES_SNAPSHOT and in-flight TOOL_CALL_START without duplicates", async () => {
     const events: BaseEvent[] = [
       {

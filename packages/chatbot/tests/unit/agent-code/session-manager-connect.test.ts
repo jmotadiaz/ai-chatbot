@@ -15,6 +15,7 @@ vi.mock("tracing", () => ({
 const {
   connectToSession,
   sendPrompt,
+  getSessionSnapshot,
   computeDefaultAfterSeq,
   __resetSessionsForTests,
   __seedSessionForTests,
@@ -71,6 +72,66 @@ beforeEach(() => {
 });
 
 describe("session-manager.connectToSession event-log replay", () => {
+  it("returns the Pi snapshot with the worker-owned replay cursor", async () => {
+    const mock = createMockPiSession({
+      messages: [{ role: "user", content: "finalized", timestamp: 1 }],
+      isStreaming: true,
+    });
+    const eventLog = new SessionEventLog();
+    eventLog.append({ type: EventType.RUN_STARTED, threadId: "snapshot", runId: "r1" } as never);
+    eventLog.append({ type: EventType.MESSAGES_SNAPSHOT, messages: [] } as never);
+    eventLog.append({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m1", role: "assistant", delta: "partial" } as never);
+
+    __seedSessionForTests("snapshot", {
+      sessionId: "snapshot",
+      piSessionId: "pi-snapshot",
+      project: "p",
+      runtime: { session: mock.session } as never,
+      inFlightTools: new Map(),
+      eventLog,
+      activeRun: {
+        runId: "r1",
+        startSeq: 1,
+        unsubscribe: () => {},
+        sawTerminal: false,
+      },
+      // Pi has committed the user message but not the partial assistant text.
+      lastFinalizedMessageSeq: 2,
+      lastRunStartSeq: 1,
+    });
+
+    const snapshot = await getSessionSnapshot("snapshot");
+
+    expect(snapshot.messages).toEqual([
+      expect.objectContaining({ role: "user", content: "finalized" }),
+    ]);
+    expect(snapshot.cursor).toEqual({ epoch: eventLog.epoch, seq: 2 });
+    expect(snapshot.running).toBe(true);
+  });
+
+  it("rejects a cursor from a previous worker epoch", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: true });
+    const eventLog = new SessionEventLog();
+    __seedSessionForTests("epoch", {
+      sessionId: "epoch",
+      piSessionId: "pi-epoch",
+      project: "p",
+      runtime: { session: mock.session } as never,
+      inFlightTools: new Map(),
+      eventLog,
+      activeRun: {
+        runId: "r1",
+        startSeq: 1,
+        unsubscribe: () => {},
+        sawTerminal: false,
+      },
+    });
+
+    await expect(
+      connectToSession("epoch", vi.fn(), vi.fn(), vi.fn(), 0, "old-epoch"),
+    ).rejects.toThrow("Cursor epoch mismatch");
+  });
+
   it("replays logged AG-UI events after the requested cursor and completes on terminal", async () => {
     const mock = createMockPiSession({
       messages: [{ role: "user", content: "hello" }],

@@ -1,15 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
-import type { Message } from "@ag-ui/client";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 
-function Harness({ initialMessages }: { initialMessages: Message[] }) {
+function Harness() {
   const { messages } = useCodingAgent({
     project: "p",
     sessionId: "s",
     modelId: "m",
-    initialMessages,
-    isInitiallyRunning: false,
   });
   return (
     <div>
@@ -23,11 +20,8 @@ function Harness({ initialMessages }: { initialMessages: Message[] }) {
 }
 
 describe("useCodingAgent SSR", () => {
-  it("renders initialMessages during server rendering", () => {
-    const initial: Message[] = [
-      { id: "u1", role: "user", content: "Hello from SSR" } as Message,
-    ];
-    const html = renderToString(<Harness initialMessages={initial} />);
-    expect(html).toContain("Hello from SSR");
+  it("does not render conversation state during server rendering", () => {
+    const html = renderToString(<Harness />);
+    expect(html).not.toContain("Hello from SSR");
   });
 });

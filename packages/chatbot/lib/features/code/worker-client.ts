@@ -29,6 +29,23 @@ export interface WorkerSnapshotMessage {
   name?: string;
 }
 
+export interface WorkerSessionCursor {
+  epoch: string;
+  seq: number;
+}
+
+export interface WorkerSessionSnapshot {
+  messages: Array<{
+    id?: string;
+    role: string;
+    content: string;
+    toolCalls?: unknown;
+    toolCallId?: string;
+  }>;
+  cursor: WorkerSessionCursor | null;
+  running: boolean;
+}
+
 export class WorkerClient {
   private baseUrl: string;
   private id = 0;
@@ -134,11 +151,24 @@ export class WorkerClient {
     return this.call("getSessionMessages", params);
   }
 
+  async getSessionSnapshot(params: {
+    sessionId: string;
+    piSessionId?: string;
+    project?: string;
+  }): Promise<WorkerSessionSnapshot> {
+    return this.call("getSessionSnapshot", params);
+  }
+
   async disposeSession(params: { sessionId: string }): Promise<void> {
     await this.call("disposeSession", params);
   }
 
-  async connectToSession(params: { sessionId: string; afterSeq?: number; _traceRunId?: string }): Promise<ReadableStream<Uint8Array>> {
+  async connectToSession(params: {
+    sessionId: string;
+    afterSeq?: number;
+    epoch?: string;
+    _traceRunId?: string;
+  }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");
     const id = ++this.id;
     const traceParams = summarizeWorkerRpcParams("connectToSession", params);
@@ -208,6 +238,12 @@ function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
       };
+    case "getSessionSnapshot":
+      return {
+        sessionId,
+        project: typeof p.project === "string" ? p.project : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+      };
     case "setModel":
       return {
         sessionId,
@@ -221,6 +257,7 @@ function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
       return {
         sessionId,
         afterSeq: typeof p.afterSeq === "number" ? p.afterSeq : undefined,
+        epoch: typeof p.epoch === "string" ? p.epoch : undefined,
         hasTraceRunId,
       };
     default:

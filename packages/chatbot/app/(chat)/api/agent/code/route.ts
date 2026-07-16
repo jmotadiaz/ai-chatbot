@@ -104,6 +104,10 @@ export const POST = withAuth(async (user, req) => {
         await closeSink();
         return new Response("Session not found", { status: 404 });
       }
+      if (dbSession.project !== project) {
+        await closeSink();
+        return new Response("Session project mismatch", { status: 400 });
+      }
 
       const client = new WorkerClient();
 
@@ -192,6 +196,7 @@ export const POST = withAuth(async (user, req) => {
               onReader: (r) => {
                 reader = r;
               },
+              burstPacing: { enabled: true },
             });
           } catch (err) {
             closeReason = "error";
@@ -240,8 +245,9 @@ export const POST = withAuth(async (user, req) => {
       return new Response(stream, {
         headers: {
           "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
+          "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
           "X-Trace-Run-Id": runId,
         },
       });

@@ -1,6 +1,7 @@
 import type { BaseEvent } from "./pi-to-agui-translator";
 
 export interface LoggedAguiEvent {
+  epoch: string;
   seq: number;
   event: BaseEvent;
 }
@@ -8,12 +9,18 @@ export interface LoggedAguiEvent {
 type Subscriber = (entry: LoggedAguiEvent) => void;
 
 export class SessionEventLog {
+  /**
+   * Identifies this in-memory incarnation of the log. Sequence numbers are
+   * meaningful only within an epoch: a worker restart creates a new log and
+   * therefore a new epoch.
+   */
+  readonly epoch = crypto.randomUUID();
   private events: LoggedAguiEvent[] = [];
   private subscribers = new Set<Subscriber>();
   private nextSeq = 1;
 
   append(event: BaseEvent): LoggedAguiEvent {
-    const entry = { seq: this.nextSeq, event };
+    const entry = { epoch: this.epoch, seq: this.nextSeq, event };
     this.nextSeq += 1;
     this.events.push(entry);
 

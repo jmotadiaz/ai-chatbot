@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ArrowUp } from "lucide-react";
-import type { Message } from "@ag-ui/client";
 import { AgentConversation } from "./agent-conversation";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
@@ -15,24 +14,18 @@ export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
   modelId: string;
-  initialMessages: Message[];
-  isInitiallyRunning: boolean;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
   modelId,
-  initialMessages,
-  isInitiallyRunning,
 }) => {
   const [input, setInput] = useState("");
-  const { items, isRunning, sendMessage, status, error } = useCodingAgent({
+  const { items, isRunning, isLoading, sendMessage, status, error } = useCodingAgent({
     project,
     sessionId,
     modelId,
-    initialMessages,
-    isInitiallyRunning,
   });
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
@@ -48,7 +41,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     await sendMessage(message);
   };
 
-  const isLoading = isRunning;
+  const inputIsLoading = isRunning || isLoading;
 
   return (
     <div
@@ -70,7 +63,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
           <Textarea
             onChangeInput={setInput}
             input={input}
-            isLoading={isLoading}
+            isLoading={inputIsLoading}
             placeholder="Ask the coding agent..."
           />
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
@@ -79,9 +72,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               type="submit"
               aria-label="Send message"
               disabled={
-                (!input.trim() && pendingComments.length === 0) || isLoading
+                (!input.trim() && pendingComments.length === 0) || inputIsLoading
               }
-              isLoading={isLoading}
+              isLoading={inputIsLoading}
             />
           </div>
         </div>

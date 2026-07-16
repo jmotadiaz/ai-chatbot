@@ -22,8 +22,6 @@ export interface UseCodingAgentArgs {
   project: string;
   sessionId: string;
   modelId: string;
-  initialMessages: Message[];
-  isInitiallyRunning: boolean;
 }
 
 export interface UseCodingAgentResult {
@@ -31,10 +29,27 @@ export interface UseCodingAgentResult {
   items: AgentItem[];
   toolErrors: ReadonlyMap<string, true>;
   isRunning: boolean;
+  isLoading: boolean;
   sendMessage: (content: string) => Promise<void>;
   status: AgentStatus;
   error: string | null;
   cancel: () => Promise<void>;
+}
+
+interface SessionCursor {
+  epoch: string;
+  seq: number;
+}
+
+interface CursorEvent {
+  cursor: SessionCursor;
+  terminal: boolean;
+}
+
+interface SessionSnapshot {
+  messages: Message[];
+  cursor: SessionCursor | null;
+  running: boolean;
 }
 
 export function statusFromEvent(
@@ -111,12 +126,40 @@ function shouldTraceClientEvent(event: BaseEvent): boolean {
   );
 }
 
+function cursorFromEvent(event: BaseEvent): CursorEvent | null {
+  if (
+    event.type !== EventType.CUSTOM ||
+    (event as { name?: string }).name !== "coding_agent_cursor"
+  ) {
+    return null;
+  }
+  const value = (event as { value?: unknown }).value;
+  if (!value || typeof value !== "object") return null;
+  const { epoch, seq, terminal } = value as {
+    epoch?: unknown;
+    seq?: unknown;
+    terminal?: unknown;
+  };
+  return typeof epoch === "string" && typeof seq === "number"
+    ? { cursor: { epoch, seq }, terminal: terminal === true }
+    : null;
+}
+
+function isCursorResetError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "status" in err &&
+    (err as { status?: unknown }).status === 409
+  ) || (
+    err instanceof Error && err.message.includes("Cursor reset required")
+  );
+}
+
 export function useCodingAgent({
   project,
   sessionId,
   modelId,
-  initialMessages,
-  isInitiallyRunning,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agentRef = useRef<{ sessionId: string; agent: ConnectableHttpAgent } | null>(null);
   if (agentRef.current === null || agentRef.current.sessionId !== sessionId) {
@@ -126,11 +169,13 @@ export function useCodingAgent({
         runUrl: "/api/agent/code",
         connectUrl: "/api/agent/code/connect",
         threadId: sessionId,
-        initialMessages,
       }),
     };
   }
   const agent = agentRef.current.agent;
+  const cursorRef = useRef<SessionCursor | null>(null);
+  const pendingTerminalCursorRef = useRef<SessionCursor | null>(null);
+  const shouldReconnectRef = useRef(false);
 
   const store = useMemo(() => {
     const currentAgent = agentRef.current?.agent;
@@ -139,10 +184,9 @@ export function useCodingAgent({
     }
     let snapshot = {
       messages: currentAgent.messages,
-      isRunning: isInitiallyRunning ? true : currentAgent.isRunning,
-      status: (isInitiallyRunning
-        ? { kind: "thinking" }
-        : { kind: "idle" }) as AgentStatus,
+      isRunning: currentAgent.isRunning,
+      isLoading: true,
+      status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
       toolTimings: new Map<
@@ -152,11 +196,10 @@ export function useCodingAgent({
     };
 
     const serverSnapshot = {
-      messages: initialMessages,
-      isRunning: isInitiallyRunning,
-      status: (isInitiallyRunning
-        ? { kind: "thinking" }
-        : { kind: "idle" }) as AgentStatus,
+      messages: [] as Message[],
+      isRunning: false,
+      isLoading: true,
+      status: { kind: "idle" } as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
       toolTimings: new Map<
@@ -182,6 +225,7 @@ export function useCodingAgent({
         if (listeners.size === 1) {
           subscription = currentAgent.subscribe({
             onRunStartedEvent: () => {
+              shouldReconnectRef.current = true;
               update(() => ({
                 isRunning: true,
                 error: null,
@@ -190,6 +234,24 @@ export function useCodingAgent({
               }));
             },
             onEvent: ({ event }) => {
+              const cursor = cursorFromEvent(event);
+              if (cursor) {
+                if (cursor.terminal) {
+                  pendingTerminalCursorRef.current = cursor.cursor;
+                } else {
+                  cursorRef.current = cursor.cursor;
+                }
+              }
+              if (
+                event.type === EventType.RUN_FINISHED ||
+                event.type === EventType.RUN_ERROR
+              ) {
+                if (pendingTerminalCursorRef.current) {
+                  cursorRef.current = pendingTerminalCursorRef.current;
+                  pendingTerminalCursorRef.current = null;
+                }
+                shouldReconnectRef.current = false;
+              }
               const eventRunId = getEventRunId(event);
               if (eventRunId) currentTraceRunId = eventRunId;
               if (shouldTraceClientEvent(event)) {
@@ -253,6 +315,7 @@ export function useCodingAgent({
               });
             },
             onRunFinishedEvent: () => {
+              shouldReconnectRef.current = false;
               update(() => ({ isRunning: false, status: { kind: "idle" } }));
             },
             onRunFinalized: () => {
@@ -306,10 +369,7 @@ export function useCodingAgent({
       },
       update,
     };
-    // sessionId is intentional: the store must be recreated when the
-    // session changes so the captured HttpAgent matches the new one.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, isInitiallyRunning]);
+  }, [sessionId]);
 
   const state = useSyncExternalStore(
     store.subscribe,
@@ -318,53 +378,112 @@ export function useCodingAgent({
   );
 
   useEffect(() => {
-    if (!isInitiallyRunning) return;
-    const runId = crypto.randomUUID();
-    writeClientTrace({
-      runId,
-      sessionId,
-      eventName: "client.connect.start",
-      payload: {
-        project,
-        modelId,
-        reason: "initially_running",
-      },
-    });
-    void agent.connectAgent({
-      runId,
-      context: [
-        { description: "project", value: project },
-        { description: "sessionId", value: sessionId },
-        { description: "modelId", value: modelId },
-      ],
-    }).then(
-      () => {
-        writeClientTrace({
-          runId,
-          sessionId,
-          eventName: "client.connect.complete",
-        });
-      },
-      (err: unknown) => {
-        writeClientTrace({
-          runId,
-          sessionId,
-          eventName: "client.connect.failed",
-          level: "error",
-          payload: { message: err instanceof Error ? err.message : String(err) },
-        });
-      },
-    );
-    return () => {
+    let cancelled = false;
+    let retriedAfterCursorReset = false;
+    let connecting = false;
+
+    const connect = async (cursor: SessionCursor) => {
+      if (cancelled || connecting) return;
+      connecting = true;
+      let reloadAfterCursorReset = false;
+      const runId = crypto.randomUUID();
       writeClientTrace({
         runId,
         sessionId,
-        eventName: "client.connect.detach",
-        payload: { reason: "effect_cleanup" },
+        eventName: "client.connect.start",
+        payload: { project, modelId, cursor },
       });
+      try {
+        await agent.connectAgent({
+          runId,
+          context: [
+            { description: "project", value: project },
+            { description: "sessionId", value: sessionId },
+            { description: "modelId", value: modelId },
+          ],
+          forwardedProps: { afterSeq: cursor.seq, epoch: cursor.epoch },
+        });
+        writeClientTrace({ runId, sessionId, eventName: "client.connect.complete" });
+      } catch (err) {
+        if (!cancelled && isCursorResetError(err) && !retriedAfterCursorReset) {
+          retriedAfterCursorReset = true;
+          reloadAfterCursorReset = true;
+        } else {
+          writeClientTrace({
+            runId,
+            sessionId,
+            eventName: "client.connect.failed",
+            level: "error",
+            payload: { message: err instanceof Error ? err.message : String(err) },
+          });
+          if (!cancelled) {
+            store.update(() => ({
+              isRunning: false,
+              status: { kind: "idle" },
+              error: err instanceof Error ? err.message : String(err),
+            }));
+          }
+        }
+      } finally {
+        connecting = false;
+      }
+      if (reloadAfterCursorReset && !cancelled) {
+        await loadSnapshot();
+      }
+    };
+
+    const loadSnapshot = async () => {
+      try {
+        const response = await fetch(
+          `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/snapshot`,
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to load coding-agent session: ${response.status}`);
+        }
+        const snapshot = await response.json() as SessionSnapshot;
+        if (cancelled) return;
+
+        agent.setMessages(snapshot.messages);
+        cursorRef.current = snapshot.cursor;
+        pendingTerminalCursorRef.current = null;
+        shouldReconnectRef.current = snapshot.running;
+        store.update(() => ({
+          messages: [...agent.messages],
+          isLoading: false,
+          isRunning: snapshot.running,
+          status: snapshot.running ? { kind: "thinking" } : { kind: "idle" },
+          error: null,
+          toolErrors: new Map(),
+          toolTimings: new Map(),
+        }));
+        if (snapshot.running && snapshot.cursor) {
+          await connect(snapshot.cursor);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        store.update(() => ({
+          isLoading: false,
+          isRunning: false,
+          status: { kind: "idle" },
+          error: err instanceof Error ? err.message : String(err),
+        }));
+      }
+    };
+
+    void loadSnapshot();
+    const reconnectOnNetworkRestore = () => {
+      const cursor = cursorRef.current;
+      if (shouldReconnectRef.current && cursor) {
+        void connect(cursor);
+      }
+    };
+    window.addEventListener("online", reconnectOnNetworkRestore);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", reconnectOnNetworkRestore);
       void agent.detachActiveRun();
     };
-  }, [agent, project, sessionId, modelId, isInitiallyRunning]);
+  }, [agent, project, sessionId, modelId, store]);
 
   const items = useMemo(
     () => groupItems(state.messages, state.toolErrors, state.toolTimings),
@@ -373,6 +492,10 @@ export function useCodingAgent({
 
   const sendMessage = useCallback(
     async (content: string) => {
+      if (state.isLoading) {
+        store.update(() => ({ error: "Coding agent session is still loading" }));
+        return;
+      }
       if (!modelId) {
         store.update(() => ({ error: "No model selected" }));
         return;
@@ -389,6 +512,7 @@ export function useCodingAgent({
         isRunning: true,
         status: { kind: "thinking" } as AgentStatus,
       }));
+      shouldReconnectRef.current = true;
       agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
       try {
         await agent.runAgent(
@@ -435,7 +559,7 @@ export function useCodingAgent({
         });
       }
     },
-    [agent, project, sessionId, modelId, store],
+    [agent, project, sessionId, modelId, state.isLoading, store],
   );
 
   return {
@@ -443,6 +567,7 @@ export function useCodingAgent({
     items,
     toolErrors: state.toolErrors,
     isRunning: state.isRunning,
+    isLoading: state.isLoading,
     sendMessage,
     status: state.status,
     error: state.error,
