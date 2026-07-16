@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, FileQuestion, FileX, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronUp, FileQuestion, FileX, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import type {
   BundledLanguage,
@@ -130,6 +130,37 @@ export const CodeView: React.FC<CodeViewProps> = ({
 
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [currentRangeIndex, setCurrentRangeIndex] = useState<number | null>(null);
+  const codeContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToRange = (index: number) => {
+    const container = codeContainerRef.current;
+    if (!container) return;
+    const range = changedRanges[index];
+    if (!range) return;
+    const lineEl = container.querySelector(
+      `[data-line-number="${range.start}"]`,
+    );
+    if (lineEl) {
+      lineEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setCurrentRangeIndex(index);
+  };
+
+  const goToNextDiff = () => {
+    const nextIndex =
+      currentRangeIndex === null ? 0 : currentRangeIndex + 1;
+    if (nextIndex < changedRanges.length) scrollToRange(nextIndex);
+  };
+
+  const goToPrevDiff = () => {
+    if (changedRanges.length === 0) return;
+    const prevIndex =
+      currentRangeIndex === null || currentRangeIndex <= 0
+        ? 0
+        : currentRangeIndex - 1;
+    scrollToRange(prevIndex);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -211,6 +242,37 @@ export const CodeView: React.FC<CodeViewProps> = ({
         <span className="truncate text-sm font-medium" dir="rtl">
           {path}
         </span>
+        {load.status === "ready" && changedRanges.length > 0 && (
+          <div className="ml-auto flex items-center gap-0.5">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+              {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
+              {changedRanges.length}
+            </span>
+            <Button
+              variant="icon"
+              size="icon"
+              type="button"
+              aria-label="Previous diff"
+              disabled={currentRangeIndex === null || currentRangeIndex <= 0}
+              onClick={goToPrevDiff}
+            >
+              <ChevronUp size={16} />
+            </Button>
+            <Button
+              variant="icon"
+              size="icon"
+              type="button"
+              aria-label="Next diff"
+              disabled={
+                currentRangeIndex !== null &&
+                currentRangeIndex >= changedRanges.length - 1
+              }
+              onClick={goToNextDiff}
+            >
+              <ChevronDown size={16} />
+            </Button>
+          </div>
+        )}
       </header>
 
       {load.status === "loading" && (
@@ -241,11 +303,14 @@ export const CodeView: React.FC<CodeViewProps> = ({
       )}
 
       {load.status === "ready" && (
-        <div className={cn("flex-1 overflow-auto overscroll-contain py-2")}>
+        <div
+          ref={codeContainerRef}
+          className={cn("flex-1 overflow-auto overscroll-contain py-2")}
+        >
           {load.lines.map((tokens, idx) => {
             const lineNumber = idx + 1;
             return (
-              <div key={lineNumber}>
+              <div key={lineNumber} data-line-number={lineNumber}>
                 <CodeViewLine
                   lineNumber={lineNumber}
                   tokens={tokens}

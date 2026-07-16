@@ -61,6 +61,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
             selectedModel={modelId as chatModelId}
             setSelectedModel={setModelId as (m: chatModelId) => void}
             models={availableModels as chatModelId[]}
+            dropdownVariant="responsive-bottom-right"
           />
         </Header.Left>
         <Header.Right>
