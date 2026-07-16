@@ -13,11 +13,34 @@ export interface LineRange {
   end: number; // 1-indexed, inclusive
 }
 
+export type DiffLineKind = "context" | "added" | "deleted";
+
+export interface DiffLine {
+  kind: DiffLineKind;
+  content: string;
+  oldLineNumber: number | null;
+  newLineNumber: number | null;
+}
+
+export interface DiffHunk {
+  oldStart: number;
+  oldCount: number;
+  newStart: number;
+  newCount: number;
+  lines: DiffLine[];
+}
+
+export interface FileDiff {
+  hunks: DiffHunk[];
+}
+
 export interface ChangedFileMeta {
   path: string; // POSIX relative path from project root
   status: GitChangeStatus;
   /** Changed line ranges in the new version of the file. Empty for untracked/deleted. */
   changedRanges: LineRange[];
+  /** Unified diff for tracked files, including deleted lines when available. */
+  diff: FileDiff | null;
 }
 
 export type FileContentResult =

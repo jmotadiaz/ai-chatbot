@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildChangedFiles,
   parsePorcelainStatus,
+  parseUnifiedDiff,
   parseUnifiedZeroDiff,
-} from "@/lib/features/code/git-diff-parse";
+} from "@/lib/features/code/file-browser/git-diff-parse";
 
 describe("parsePorcelainStatus", () => {
   it("maps porcelain codes to statuses", () => {
@@ -58,6 +59,22 @@ describe("parseUnifiedZeroDiff", () => {
     ]);
     expect(ranges.has("src/b.ts")).toBe(false);
   });
+
+  it("preserves deleted lines and their old line numbers", () => {
+    const parsed = parseUnifiedDiff(diff).get("src/a.ts");
+    expect(parsed?.hunks[2]).toMatchObject({
+      oldStart: 30,
+      newStart: 31,
+      lines: [
+        {
+          kind: "deleted",
+          content: "gone",
+          oldLineNumber: 30,
+          newLineNumber: null,
+        },
+      ],
+    });
+  });
 });
 
 describe("buildChangedFiles", () => {
@@ -69,14 +86,75 @@ describe("buildChangedFiles", () => {
         { path: "src/gone.ts", status: "deleted" },
       ],
       new Map([
-        ["src/a.ts", [{ start: 1, end: 2 }]],
-        ["src/gone.ts", [{ start: 9, end: 9 }]],
+        [
+          "src/a.ts",
+          {
+            hunks: [
+              {
+                oldStart: 1,
+                oldCount: 0,
+                newStart: 1,
+                newCount: 2,
+                lines: [
+                  {
+                    kind: "added",
+                    content: "one",
+                    oldLineNumber: null,
+                    newLineNumber: 1,
+                  },
+                  {
+                    kind: "added",
+                    content: "two",
+                    oldLineNumber: null,
+                    newLineNumber: 2,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        [
+          "src/gone.ts",
+          {
+            hunks: [
+              {
+                oldStart: 9,
+                oldCount: 1,
+                newStart: 9,
+                newCount: 0,
+                lines: [
+                  {
+                    kind: "deleted",
+                    content: "gone",
+                    oldLineNumber: 9,
+                    newLineNumber: null,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       ]),
     );
     expect(files).toEqual([
-      { path: "src/a.ts", status: "modified", changedRanges: [{ start: 1, end: 2 }] },
-      { path: "notes.md", status: "untracked", changedRanges: [] },
-      { path: "src/gone.ts", status: "deleted", changedRanges: [] },
+      {
+        path: "src/a.ts",
+        status: "modified",
+        changedRanges: [{ start: 1, end: 2 }],
+        diff: expect.any(Object),
+      },
+      {
+        path: "notes.md",
+        status: "untracked",
+        changedRanges: [],
+        diff: null,
+      },
+      {
+        path: "src/gone.ts",
+        status: "deleted",
+        changedRanges: [],
+        diff: expect.any(Object),
+      },
     ]);
   });
 });

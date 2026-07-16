@@ -13,7 +13,7 @@ import type { ChangedFileMeta, ChangesResult, FileEntry } from "./types";
 import {
   fetchChanges,
   fetchDir,
-} from "@/lib/features/code/file-browser-fetchers";
+} from "@/lib/features/code/file-browser/file-browser-fetchers";
 
 function basename(path: string): string {
   return path.split("/").pop() ?? path;
@@ -43,7 +43,7 @@ const ChangedFileList: React.FC<ChangedFileListProps> = ({
         subtitle={dirname(file.path) || undefined}
         badge={file.status}
         commentCount={commentCounts.get(file.path) ?? 0}
-        disabled={file.status === "deleted"}
+        disabled={file.status === "deleted" && file.diff === null}
         onSelect={() => onOpen(file.path)}
       />
     ))}
@@ -108,6 +108,9 @@ export const FileBrowserView: React.FC = () => {
   const activeRanges = state.activeFile
     ? (changesByPath.get(state.activeFile)?.changedRanges ?? [])
     : [];
+  const activeDiff = state.activeFile
+    ? (changesByPath.get(state.activeFile)?.diff ?? null)
+    : null;
 
   const renderList = () => {
     if (state.scope === "tree") {
@@ -122,7 +125,9 @@ export const FileBrowserView: React.FC = () => {
       }
       if (entries === null) {
         return (
-          <div className="py-16 text-center text-sm text-zinc-400">Loading…</div>
+          <div className="py-16 text-center text-sm text-zinc-400">
+            Loading…
+          </div>
         );
       }
       if (entries.length === 0) {
@@ -210,6 +215,7 @@ export const FileBrowserView: React.FC = () => {
             <CodeView
               path={state.activeFile}
               changedRanges={activeRanges}
+              diff={state.scope === "uncommitted" ? activeDiff : null}
               onBack={actions.closeFile}
             />
           </div>

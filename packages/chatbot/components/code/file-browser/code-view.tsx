@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronUp, FileQuestion, FileX, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  FileQuestion,
+  FileX,
+  Trash2,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import type {
   BundledLanguage,
@@ -12,8 +19,13 @@ import type {
 import { CodeViewLine } from "./code-view-line";
 import { FileBrowserEmptyState } from "./empty-states";
 import { useFileBrowser } from "./file-browser-provider";
-import type { LineRange, PendingComment } from "./types";
-import { fetchFile } from "@/lib/features/code/file-browser-fetchers";
+import type {
+  DiffLineKind,
+  FileDiff,
+  LineRange,
+  PendingComment,
+} from "./types";
+import { fetchFile } from "@/lib/features/code/file-browser/file-browser-fetchers";
 import { cn } from "@/lib/utils/helpers";
 import { Button } from "@/components/ui/button";
 
@@ -49,12 +61,41 @@ async function tokenize(
   });
 }
 
+function languageFromPath(path: string): string {
+  const extension = path.split(".").pop()?.toLowerCase();
+  const languages: Record<string, string> = {
+    ts: "typescript",
+    tsx: "tsx",
+    js: "javascript",
+    jsx: "jsx",
+    json: "json",
+    md: "markdown",
+    css: "css",
+    html: "html",
+    py: "python",
+    sh: "shellscript",
+    yml: "yaml",
+    yaml: "yaml",
+  };
+  return (extension && languages[extension]) ?? "plaintext";
+}
+
+type DisplayLine = {
+  id: string;
+  content: string;
+  tokens: ThemedToken[];
+  oldLineNumber: number | null;
+  newLineNumber: number | null;
+  changeKind: DiffLineKind | "unchanged";
+  navigationIndex: number | null;
+};
+
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "binary" }
   | { status: "tooLarge" }
-  | { status: "ready"; lines: ThemedToken[][]; rawLines: string[] };
+  | { status: "ready"; lines: DisplayLine[] };
 
 interface CommentComposerProps {
   lineNumber: number;
@@ -116,12 +157,14 @@ const CommentComposer: React.FC<CommentComposerProps> = ({
 export interface CodeViewProps {
   path: string;
   changedRanges: LineRange[];
+  diff: FileDiff | null;
   onBack: () => void;
 }
 
 export const CodeView: React.FC<CodeViewProps> = ({
   path,
   changedRanges,
+  diff,
   onBack,
 }) => {
   const { state, actions, project } = useFileBrowser();
@@ -130,17 +173,46 @@ export const CodeView: React.FC<CodeViewProps> = ({
 
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
-  const [currentRangeIndex, setCurrentRangeIndex] = useState<number | null>(null);
+  const [currentRangeIndex, setCurrentRangeIndex] = useState<number | null>(
+    null,
+  );
   const codeContainerRef = useRef<HTMLDivElement>(null);
+  const diffNavigationTargets = useMemo(() => {
+    if (!diff) return [];
+
+    const targets: string[] = [];
+    for (const [hunkIndex, hunk] of diff.hunks.entries()) {
+      let inChange = false;
+      for (const [lineIndex, line] of hunk.lines.entries()) {
+        if (line.kind === "context") {
+          inChange = false;
+        } else if (!inChange) {
+          targets.push(`${hunkIndex}-${lineIndex}`);
+          inChange = true;
+        }
+      }
+    }
+    return targets;
+  }, [diff]);
+  const diffNavigationIndexes = useMemo(
+    () => new Map(diffNavigationTargets.map((id, index) => [id, index])),
+    [diffNavigationTargets],
+  );
+  const navigationCount = diff
+    ? diffNavigationTargets.length
+    : changedRanges.length;
 
   const scrollToRange = (index: number) => {
     const container = codeContainerRef.current;
     if (!container) return;
     const range = changedRanges[index];
-    if (!range) return;
-    const lineEl = container.querySelector(
-      `[data-line-number="${range.start}"]`,
-    );
+    const selector = diff
+      ? `[data-change-index="${index}"]`
+      : range
+        ? `[data-line-number="${range.start}"]`
+        : null;
+    if (!selector) return;
+    const lineEl = container.querySelector(selector);
     if (lineEl) {
       lineEl.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -148,13 +220,12 @@ export const CodeView: React.FC<CodeViewProps> = ({
   };
 
   const goToNextDiff = () => {
-    const nextIndex =
-      currentRangeIndex === null ? 0 : currentRangeIndex + 1;
-    if (nextIndex < changedRanges.length) scrollToRange(nextIndex);
+    const nextIndex = currentRangeIndex === null ? 0 : currentRangeIndex + 1;
+    if (nextIndex < navigationCount) scrollToRange(nextIndex);
   };
 
   const goToPrevDiff = () => {
-    if (changedRanges.length === 0) return;
+    if (navigationCount === 0) return;
     const prevIndex =
       currentRangeIndex === null || currentRangeIndex <= 0
         ? 0
@@ -166,6 +237,45 @@ export const CodeView: React.FC<CodeViewProps> = ({
     let cancelled = false;
     setLoad({ status: "loading" });
     setSelectedLine(null);
+    setCurrentRangeIndex(null);
+
+    if (diff) {
+      const sourceLines = diff.hunks.flatMap((hunk, hunkIndex) =>
+        hunk.lines.map((line, lineIndex) => ({
+          ...line,
+          id: `${hunkIndex}-${lineIndex}`,
+          navigationIndex:
+            diffNavigationIndexes.get(`${hunkIndex}-${lineIndex}`) ?? null,
+        })),
+      );
+      if (sourceLines.length === 0) {
+        setLoad({ status: "ready", lines: [] });
+      } else {
+        tokenize(
+          sourceLines.map((line) => line.content).join("\n"),
+          languageFromPath(path),
+          theme,
+        )
+          .then((tokens) => {
+            if (cancelled) return;
+            setLoad({
+              status: "ready",
+              lines: sourceLines.map((line, index) => ({
+                ...line,
+                tokens: tokens[index] ?? [],
+                changeKind: line.kind,
+              })),
+            });
+          })
+          .catch((err: Error) => {
+            if (!cancelled) setLoad({ status: "error", message: err.message });
+          });
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
     fetchFile(project, path)
       .then(async (result) => {
         if (cancelled) return;
@@ -181,8 +291,15 @@ export const CodeView: React.FC<CodeViewProps> = ({
         if (!cancelled) {
           setLoad({
             status: "ready",
-            lines,
-            rawLines: result.content.split("\n"),
+            lines: lines.map((tokens, index) => ({
+              id: `${index + 1}`,
+              content: result.content.split("\n")[index] ?? "",
+              tokens,
+              oldLineNumber: null,
+              newLineNumber: index + 1,
+              changeKind: "unchanged",
+              navigationIndex: null,
+            })),
           });
         }
       })
@@ -192,15 +309,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [project, path, theme]);
-
-  const changedLines = useMemo(() => {
-    const set = new Set<number>();
-    for (const range of changedRanges) {
-      for (let line = range.start; line <= range.end; line++) set.add(line);
-    }
-    return set;
-  }, [changedRanges]);
+  }, [diff, diffNavigationIndexes, project, path, theme]);
 
   const commentsByLine = useMemo(() => {
     const map = new Map<number, PendingComment>();
@@ -220,7 +329,9 @@ export const CodeView: React.FC<CodeViewProps> = ({
       file: path,
       startLine: selectedLine,
       endLine: selectedLine,
-      lineText: load.rawLines[selectedLine - 1] ?? "",
+      lineText:
+        load.lines.find((line) => line.newLineNumber === selectedLine)
+          ?.content ?? "",
       text,
       createdAt: existingComment?.createdAt ?? Date.now(),
     });
@@ -229,7 +340,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-zinc-200 dark:border-zinc-800 px-2">
+      <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
         <Button
           variant="icon"
           size="icon"
@@ -239,38 +350,44 @@ export const CodeView: React.FC<CodeViewProps> = ({
         >
           <ChevronLeft size={20} />
         </Button>
-        <span className="truncate text-sm font-medium" dir="rtl">
+        <span
+          className="min-w-0 flex-1 truncate text-sm font-medium"
+          dir="rtl"
+          title={path}
+        >
           {path}
         </span>
-        {load.status === "ready" && changedRanges.length > 0 && (
-          <div className="ml-auto flex items-center gap-0.5">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+        {load.status === "ready" && navigationCount > 0 && (
+          <div className="ml-4 flex shrink-0 items-center">
+            <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
               {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
-              {changedRanges.length}
+              {navigationCount}
             </span>
-            <Button
-              variant="icon"
-              size="icon"
-              type="button"
-              aria-label="Previous diff"
-              disabled={currentRangeIndex === null || currentRangeIndex <= 0}
-              onClick={goToPrevDiff}
-            >
-              <ChevronUp size={16} />
-            </Button>
-            <Button
-              variant="icon"
-              size="icon"
-              type="button"
-              aria-label="Next diff"
-              disabled={
-                currentRangeIndex !== null &&
-                currentRangeIndex >= changedRanges.length - 1
-              }
-              onClick={goToNextDiff}
-            >
-              <ChevronDown size={16} />
-            </Button>
+            <div className="flex -space-x-1">
+              <Button
+                variant="icon"
+                size="icon"
+                type="button"
+                aria-label="Previous diff"
+                disabled={currentRangeIndex === null || currentRangeIndex <= 0}
+                onClick={goToPrevDiff}
+              >
+                <ChevronUp size={16} />
+              </Button>
+              <Button
+                variant="icon"
+                size="icon"
+                type="button"
+                aria-label="Next diff"
+                disabled={
+                  currentRangeIndex !== null &&
+                  currentRangeIndex >= navigationCount - 1
+                }
+                onClick={goToNextDiff}
+              >
+                <ChevronDown size={16} />
+              </Button>
+            </div>
           </div>
         )}
       </header>
@@ -307,27 +424,37 @@ export const CodeView: React.FC<CodeViewProps> = ({
           ref={codeContainerRef}
           className={cn("flex-1 overflow-auto overscroll-contain py-2")}
         >
-          {load.lines.map((tokens, idx) => {
-            const lineNumber = idx + 1;
+          {load.lines.map((line) => {
+            const lineNumber = line.newLineNumber;
             return (
-              <div key={lineNumber} data-line-number={lineNumber}>
+              <div
+                key={line.id}
+                data-line-number={lineNumber ?? undefined}
+                data-change-index={line.navigationIndex ?? undefined}
+              >
                 <CodeViewLine
-                  lineNumber={lineNumber}
-                  tokens={tokens}
-                  isChanged={changedLines.has(lineNumber)}
-                  hasComment={commentsByLine.has(lineNumber)}
+                  oldLineNumber={line.oldLineNumber}
+                  newLineNumber={line.newLineNumber}
+                  tokens={line.tokens}
+                  changeKind={line.changeKind}
+                  hasComment={
+                    lineNumber !== null && commentsByLine.has(lineNumber)
+                  }
                   isSelected={selectedLine === lineNumber}
                   onSelect={(line) =>
-                    setSelectedLine((current) => (current === line ? null : line))
+                    setSelectedLine((current) =>
+                      current === line ? null : line,
+                    )
                   }
                 />
-                {selectedLine === lineNumber && (
+                {lineNumber !== null && selectedLine === lineNumber && (
                   <CommentComposer
                     lineNumber={lineNumber}
                     existing={existingComment}
                     onSave={saveComment}
                     onRemove={() => {
-                      if (existingComment) actions.removeComment(existingComment.id);
+                      if (existingComment)
+                        actions.removeComment(existingComment.id);
                       setSelectedLine(null);
                     }}
                     onCancel={() => setSelectedLine(null)}

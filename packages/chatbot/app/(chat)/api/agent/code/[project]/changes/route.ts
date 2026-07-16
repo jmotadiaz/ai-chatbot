@@ -6,8 +6,8 @@ import { resolveProjectPath } from "@/lib/features/code/project-resolver";
 import {
   buildChangedFiles,
   parsePorcelainStatus,
-  parseUnifiedZeroDiff,
-} from "@/lib/features/code/git-diff-parse";
+  parseUnifiedDiff,
+} from "@/lib/features/code/file-browser/git-diff-parse";
 import type { ChangesResult } from "@/components/code/file-browser/types";
 
 const execFileAsync = promisify(execFile);
@@ -55,16 +55,16 @@ export const GET = withAuth(async (_user, req: Request) => {
   let diffOutput: string;
   try {
     // HEAD covers staged + unstaged changes; fails on a repo with no commits.
-    diffOutput = await git(projectPath, ["diff", "--unified=0", "HEAD"]);
+    diffOutput = await git(projectPath, ["diff", "--unified=3", "HEAD"]);
   } catch {
-    diffOutput = await git(projectPath, ["diff", "--unified=0"]);
+    diffOutput = await git(projectPath, ["diff", "--unified=3"]);
   }
 
   const result: ChangesResult = {
     isGitRepo: true,
     files: buildChangedFiles(
       parsePorcelainStatus(statusOutput),
-      parseUnifiedZeroDiff(diffOutput),
+      parseUnifiedDiff(diffOutput),
     ),
   };
   return NextResponse.json(result);
