@@ -6,8 +6,10 @@ import { ChevronRight, Folder } from "lucide-react";
 import {
   Astro,
   Audio,
+  BracketsBlue,
   CLang,
   CMake,
+  CodeBlue,
   Cplus,
   Csharp,
   Csv,
@@ -21,7 +23,6 @@ import {
   Eslint,
   Graphql,
   Go,
-  H,
   Haskell,
   Ignore,
   Image,
@@ -63,6 +64,7 @@ import {
   GoMod,
 } from "@react-symbols/icons";
 import type { GitChangeStatus } from "./types";
+import { CSS3Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/helpers";
 
 type IconComponent = FC<ComponentProps<"svg">>;
@@ -82,18 +84,18 @@ const EXT_ICON_MAP: Record<string, IconComponent> = {
   cts: Typescript,
   tsx: Reactts,
   jsx: Reactts,
-  css: PostCSS,
+  css: CSS3Icon,
   pcss: PostCSS,
   scss: Sass,
   sass: Sass,
   less: Stylus,
   styl: Stylus,
-  html: H,
-  htm: H,
+  html: CodeBlue,
+  htm: CodeBlue,
   svg: SVG,
   md: Markdown,
   mdx: MDX,
-  json: Document,
+  json: BracketsBlue,
   yml: Yaml,
   yaml: Yaml,
   xml: XML,
