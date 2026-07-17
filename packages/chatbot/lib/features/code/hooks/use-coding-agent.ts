@@ -528,13 +528,21 @@ export function useCodingAgent({
       cancelPendingRetry();
       const cursor = cursorRef.current;
       if (!cursor) {
+        // Run started but no cursor event has arrived yet (e.g. tab was
+        // hidden before RUN_STARTED). Fall back to snapshot, which fetches
+        // a fresh cursor and will reconnect itself if still running.
         writeClientTrace({
           runId: crypto.randomUUID(),
           sessionId,
           eventName: "client.reconnect.trigger",
           payload: { reason, fallback: "loadSnapshot", reason_detail: "null_cursor" },
         });
-        await loadSnapshot();
+        recovering = true;
+        try {
+          await loadSnapshot();
+        } finally {
+          recovering = false;
+        }
         return;
       }
       recovering = true;
