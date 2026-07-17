@@ -156,6 +156,10 @@ function isCursorResetError(err: unknown): boolean {
   );
 }
 
+// Below this, a reconnect is skipped as redundant: an event that recent means
+// the stream is still alive, so a visibility/pageshow/online trigger is noise.
+const RECONNECT_FRESHNESS_MS = 3000;
+
 export function useCodingAgent({
   project,
   sessionId,
@@ -176,6 +180,7 @@ export function useCodingAgent({
   const cursorRef = useRef<SessionCursor | null>(null);
   const pendingTerminalCursorRef = useRef<SessionCursor | null>(null);
   const shouldReconnectRef = useRef(false);
+  const lastEventAtRef = useRef(0);
 
   const store = useMemo(() => {
     const currentAgent = agentRef.current?.agent;
@@ -234,6 +239,7 @@ export function useCodingAgent({
               }));
             },
             onEvent: ({ event }) => {
+              lastEventAtRef.current = Date.now();
               const cursor = cursorFromEvent(event);
               if (cursor) {
                 if (cursor.terminal) {
@@ -470,17 +476,74 @@ export function useCodingAgent({
       }
     };
 
-    void loadSnapshot();
-    const reconnectOnNetworkRestore = () => {
+    // Guards re-entrancy into ensureConnected specifically. Deliberately
+    // separate from `connecting` (which connect() owns): a zombie stream
+    // (page frozen mid-request) leaves `connecting` stuck at true forever,
+    // since connect()'s awaited call never settles on its own — exactly the
+    // case ensureConnected exists to break out of via detachActiveRun().
+    let recovering = false;
+
+    // Kills any zombie stream (e.g. a page frozen mid-request by the mobile OS)
+    // before resuming, then resumes from the last acknowledged cursor.
+    const ensureConnected = async (reason: string) => {
+      if (cancelled || recovering) return;
+      if (!shouldReconnectRef.current) return;
       const cursor = cursorRef.current;
-      if (shouldReconnectRef.current && cursor) {
-        void connect(cursor);
+      if (!cursor) return;
+      recovering = true;
+      try {
+        writeClientTrace({
+          runId: crypto.randomUUID(),
+          sessionId,
+          eventName: "client.reconnect.trigger",
+          payload: { reason },
+        });
+        await agent.detachActiveRun();
+        if (cancelled) return;
+        await connect(cursor);
+      } finally {
+        recovering = false;
       }
     };
-    window.addEventListener("online", reconnectOnNetworkRestore);
+
+    // Used by online/visibilitychange/pageshow — the only reconnect triggers.
+    // Skips if an event arrived recently enough to prove the stream is still
+    // alive, and never fires on a backgrounded tab (all three of these events
+    // can fire while hidden, e.g. wifi reconnecting behind the app).
+    const reconnectIfStale = (reason: string) => {
+      if (cancelled || recovering) return;
+      if (!shouldReconnectRef.current) return;
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      if (Date.now() - lastEventAtRef.current < RECONNECT_FRESHNESS_MS) return;
+      void ensureConnected(reason);
+    };
+
+    void loadSnapshot();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        reconnectIfStale("visibilitychange");
+      }
+    };
+    // iOS Safari can restore a frozen page from bfcache without re-running
+    // effects or firing visibilitychange — pageshow is the reliable signal.
+    const handlePageShow = () => {
+      reconnectIfStale("pageshow");
+    };
+    const handleOnline = () => {
+      reconnectIfStale("online");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("online", handleOnline);
     return () => {
       cancelled = true;
-      window.removeEventListener("online", reconnectOnNetworkRestore);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("online", handleOnline);
       void agent.detachActiveRun();
     };
   }, [agent, project, sessionId, modelId, store]);
