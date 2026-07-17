@@ -163,7 +163,8 @@ function isAbortError(err: unknown): boolean {
   return name === "aborterror" || /aborted|fetch is aborted/.test(msg);
 }
 
-
+const MAX_CONNECT_ATTEMPTS = 4; // 1 initial + 3 retries
+const CONNECT_BACKOFF_MS = [300, 600, 1200]; // delay before retry attempts 1, 2, 3
 
 export function useCodingAgent({
   project,
@@ -391,7 +392,7 @@ export function useCodingAgent({
     let retriedAfterCursorReset = false;
     let connecting = false;
 
-    const connect = async (cursor: SessionCursor) => {
+    const connect = async (cursor: SessionCursor, attempt = 0) => {
       if (cancelled || connecting) return;
       connecting = true;
       let reloadAfterCursorReset = false;
@@ -400,7 +401,7 @@ export function useCodingAgent({
         runId,
         sessionId,
         eventName: "client.connect.start",
-        payload: { project, modelId, cursor },
+        payload: { project, modelId, cursor, attempt },
       });
       try {
         await agent.connectAgent({
@@ -414,25 +415,41 @@ export function useCodingAgent({
         });
         writeClientTrace({ runId, sessionId, eventName: "client.connect.complete" });
       } catch (err) {
-        if (!cancelled && isCursorResetError(err) && !retriedAfterCursorReset) {
+        if (cancelled) return;
+        if (isCursorResetError(err) && !retriedAfterCursorReset) {
           retriedAfterCursorReset = true;
           reloadAfterCursorReset = true;
         } else if (isAbortError(err)) {
-          // Deliberate cut (e.g. tab hidden). Swallow silently — the next
-          // visibility:visible will reconnect from the last cursor.
+          // Deliberate cut (e.g. tab hidden). Swallow silently.
           writeClientTrace({
             runId,
             sessionId,
             eventName: "client.connect.aborted",
-            payload: { attempt: 0 },
+            payload: { attempt },
           });
+        } else if (attempt + 1 < MAX_CONNECT_ATTEMPTS) {
+          const delay = CONNECT_BACKOFF_MS[attempt];
+          writeClientTrace({
+            runId,
+            sessionId,
+            eventName: "client.connect.retry",
+            payload: { attempt, delayMs: delay, next: attempt + 1 },
+          });
+          cancelPendingRetry();
+          pendingRetryTimer = setTimeout(() => {
+            pendingRetryTimer = null;
+            void connect(cursor, attempt + 1);
+          }, delay);
         } else {
           writeClientTrace({
             runId,
             sessionId,
             eventName: "client.connect.failed",
             level: "error",
-            payload: { message: err instanceof Error ? err.message : String(err) },
+            payload: {
+              message: err instanceof Error ? err.message : String(err),
+              attempts: MAX_CONNECT_ATTEMPTS,
+            },
           });
           if (!cancelled) {
             store.update(() => ({
@@ -495,11 +512,20 @@ export function useCodingAgent({
     // case ensureConnected exists to break out of via detachActiveRun().
     let recovering = false;
 
+    let pendingRetryTimer: ReturnType<typeof setTimeout> | null = null;
+    const cancelPendingRetry = () => {
+      if (pendingRetryTimer) {
+        clearTimeout(pendingRetryTimer);
+        pendingRetryTimer = null;
+      }
+    };
+
     // Kills any zombie stream (e.g. a page frozen mid-request by the mobile OS)
     // before resuming, then resumes from the last acknowledged cursor.
     const ensureConnected = async (reason: string) => {
       if (cancelled || recovering) return;
       if (!shouldReconnectRef.current) return;
+      cancelPendingRetry();
       const cursor = cursorRef.current;
       if (!cursor) return;
       recovering = true;
@@ -515,16 +541,6 @@ export function useCodingAgent({
         await connect(cursor);
       } finally {
         recovering = false;
-      }
-    };
-
-    // Forward-use: Task 3 will schedule retry timers; ensureConnected and
-    // cleanup cancel any pending retry before triggering/tearing down.
-    let pendingRetryTimer: ReturnType<typeof setTimeout> | null = null;
-    const cancelPendingRetry = () => {
-      if (pendingRetryTimer) {
-        clearTimeout(pendingRetryTimer);
-        pendingRetryTimer = null;
       }
     };
 

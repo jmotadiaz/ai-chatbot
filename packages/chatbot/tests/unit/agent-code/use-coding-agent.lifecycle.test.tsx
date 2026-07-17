@@ -75,6 +75,7 @@ describe("useCodingAgent client lifecycle", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -281,21 +282,24 @@ describe("useCodingAgent client lifecycle", () => {
     expect(connectCallCount).toBe(1);
   });
 
-  it("surfaces a genuine connection failure as an error instead of retrying silently in the background", async () => {
+  it("retries connect with exponential backoff then surfaces error after 4 attempts (3 retries)", async () => {
     let connectCallCount = 0;
     fetchSpy.mockReset();
     fetchSpy.mockImplementation((url: string) => {
       if (url === "/api/agent/code/sessions/s/snapshot") {
-        return Promise.resolve(new Response(JSON.stringify({
-          messages: [],
-          cursor: { epoch: "e", seq: 5 },
-          running: true,
-        }), { headers: { "Content-Type": "application/json" } }));
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: { epoch: "e", seq: 5 },
+              running: true,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
       }
       if (url === "/api/agent/code/connect") {
         connectCallCount += 1;
-        // The fetch itself rejects, as it does on a genuine dropped
-        // connection (Safari's "TypeError: network error").
         return Promise.reject(new TypeError("network error"));
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
@@ -306,14 +310,180 @@ describe("useCodingAgent client lifecycle", () => {
       configurable: true,
     });
 
-    render(<Harness />);
+    vi.useFakeTimers();
 
-    await waitFor(() => expect(connectCallCount).toBe(1));
-    // No background retry loop anymore — the failure must show up right away
-    // so the user knows to bring the tab back into focus (or reload) instead
-    // of staring at a spinner that will never resolve on its own.
-    await waitFor(() => expect(screen.getByTestId("error").textContent).toBe("network error"));
-    expect(connectCallCount).toBe(1);
+    try {
+      render(<Harness />);
+
+      // Flush microtasks so the initial loadSnapshot -> connect completes.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(connectCallCount).toBe(1);
+
+      // Retry 1 at +300ms
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      expect(connectCallCount).toBe(2);
+
+      // Retry 2 at +600ms
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600);
+      });
+      expect(connectCallCount).toBe(3);
+
+      // Retry 3 at +1200ms — exhausted, error surfaces
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+      expect(connectCallCount).toBe(4);
+
+      expect(screen.getByTestId("error").textContent).toBe("network error");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancels a pending retry when ensureConnected fires (race resolver)", async () => {
+    let connectCallCount = 0;
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation((url: string) => {
+      if (url === "/api/agent/code/sessions/s/snapshot") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: { epoch: "e", seq: 5 },
+              running: true,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
+      }
+      if (url === "/api/agent/code/connect") {
+        connectCallCount += 1;
+        // First connect attempt fails (will schedule retry). Second attempt
+        // succeeds so that the ensureConnected-triggered connect does not add
+        // its own retry to the count — this isolates the "cancel pending
+        // retry" behavior being tested.
+        if (connectCallCount === 1) {
+          return Promise.reject(new TypeError("network error"));
+        }
+        return Promise.resolve(
+          makeSseResponse([
+            { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+            { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+          ]),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    vi.useFakeTimers();
+
+    try {
+      render(<Harness />);
+
+      // Flush microtasks so the initial connect completes.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(connectCallCount).toBe(1);
+
+      // Wait long enough for the first retry to be scheduled (300ms) but
+      // do NOT advance past it — the timer is pending.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+
+      // A reconnect trigger arrives before the retry fires. It must cancel
+      // the pending retry — else we'd get both the stale retry and the new
+      // connect firing close together.
+      await act(async () => {
+        fireEvent(window, new Event("pageshow"));
+      });
+
+      // Flush microtasks so connect() called via ensureConnected completes.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      // Only ONE new connect should fire from this trigger (the retry was
+      // canceled), bringing the count to 2 — not 3.
+      expect(connectCallCount).toBe(2);
+
+      // Advance past the original 300ms retry deadline to prove the timer
+      // was really canceled — no extra connection.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(connectCallCount).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancels a pending retry timer on unmount", async () => {
+    let connectCallCount = 0;
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation((url: string) => {
+      if (url === "/api/agent/code/sessions/s/snapshot") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: { epoch: "e", seq: 5 },
+              running: true,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
+      }
+      if (url === "/api/agent/code/connect") {
+        connectCallCount += 1;
+        return Promise.reject(new TypeError("network error"));
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    vi.useFakeTimers();
+
+    try {
+      render(<Harness />);
+
+      // Flush microtasks so the initial connect completes.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(connectCallCount).toBe(1);
+
+      // Advance partway so the retry timer is scheduled but not fired.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+
+      cleanup();
+
+      // Advance well past the longest backoff — a leaked retry would surface
+      // either as a new connect or a console error.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(connectCallCount).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does not surface an error when the cut is deliberate (aborted)", async () => {
