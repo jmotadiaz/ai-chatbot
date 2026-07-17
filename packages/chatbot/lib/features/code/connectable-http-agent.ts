@@ -42,7 +42,9 @@ export class ConnectableHttpAgent extends AbstractAgent {
   }
 
   abortRun(): void {
-    this.abortController.abort();
+    const old = this.abortController;
+    this.abortController = new AbortController();
+    old.abort();
   }
 
   private requestInit(input: RunAgentInput): RequestInit {

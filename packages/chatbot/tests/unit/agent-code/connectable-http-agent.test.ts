@@ -83,4 +83,68 @@ describe("ConnectableHttpAgent", () => {
     const [url] = fetchImpl.mock.calls[0]!;
     expect(url).toBe("/api/connect");
   });
+
+  it("aborts the in-flight fetch's signal when abortRun() is called", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    const fetchImpl = vi.fn().mockImplementation((_url, init) => {
+      capturedSignal = init.signal;
+      return new Promise<Response>(() => {}); // never resolves
+    });
+    const agent = new ConnectableHttpAgent({
+      runUrl: "/api/run",
+      connectUrl: "/api/connect",
+      threadId: "t",
+      fetch: fetchImpl,
+    });
+
+    agent
+      .run({
+        threadId: "t",
+        runId: "r",
+        tools: [],
+        context: [],
+        forwardedProps: {},
+        state: {},
+        messages: [],
+      })
+      .subscribe({ next: () => {}, error: () => {}, complete: () => {} });
+
+    await vi.waitFor(() => expect(capturedSignal).toBeDefined());
+    agent.abortRun();
+    expect(capturedSignal!.aborted).toBe(true);
+  });
+
+  it("resets the AbortController so a subsequent run() is not aborted", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      sseResponse([
+        JSON.stringify({ type: "RUN_FINISHED", threadId: "t", runId: "r2" }),
+      ]),
+    );
+    const agent = new ConnectableHttpAgent({
+      runUrl: "/api/run",
+      connectUrl: "/api/connect",
+      threadId: "t",
+      fetch: fetchImpl,
+    });
+
+    agent.abortRun(); // would leave a stale aborted controller on the old impl
+
+    await new Promise<void>((resolve, reject) => {
+      agent
+        .run({
+          threadId: "t",
+          runId: "r2",
+          tools: [],
+          context: [],
+          forwardedProps: {},
+          state: {},
+          messages: [],
+        })
+        .subscribe({ next: () => {}, error: reject, complete: () => resolve() });
+    });
+
+    // The second run happened on a fresh controller — sign unborn.
+    const [, init2] = fetchImpl.mock.calls[0]!;
+    expect((init2.signal as AbortSignal).aborted).toBe(false);
+  });
 });
