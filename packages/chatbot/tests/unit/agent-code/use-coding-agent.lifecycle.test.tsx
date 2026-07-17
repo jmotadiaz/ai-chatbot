@@ -627,4 +627,102 @@ describe("useCodingAgent client lifecycle", () => {
 
     await waitFor(() => expect(connectCallCount).toBe(2));
   });
+
+  it("falls back to loadSnapshot when cursorRef is null on reconnect", async () => {
+    let snapshotCallCount = 0;
+    let runStarted = false;
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation((url: string) => {
+      if (url === "/api/agent/code/sessions/s/snapshot") {
+        snapshotCallCount += 1;
+        const running = snapshotCallCount === 2;
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: running ? { epoch: "e", seq: 9 } : null,
+              running,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
+      }
+      if (url === "/api/agent/code") {
+        runStarted = true;
+        const encoder = new TextEncoder();
+        return Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      type: "RUN_STARTED",
+                      threadId: "s",
+                      runId: "r-send",
+                    })}\n\n`,
+                  ),
+                );
+              },
+            }),
+            { headers: { "Content-Type": "text/event-stream" } },
+          ),
+        );
+      }
+      if (url === "/api/agent/code/connect") {
+        return Promise.resolve(
+          makeSseResponse([
+            { type: "RUN_STARTED", threadId: "s", runId: "r-reconnect" },
+            { type: "RUN_FINISHED", threadId: "s", runId: "r-reconnect" },
+          ]),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    render(<Harness />);
+    await waitFor(() => expect(snapshotCallCount).toBe(1));
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(runStarted).toBe(true));
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "hidden",
+      configurable: true,
+    });
+    await act(async () => {
+      fireEvent(document, new Event("visibilitychange"));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+    await act(async () => {
+      fireEvent(document, new Event("visibilitychange"));
+    });
+
+    await waitFor(() => expect(snapshotCallCount).toBe(2));
+
+    await waitFor(() =>
+      expect(
+        fetchSpy.mock.calls.some(([url]) => url === "/api/agent/code/connect"),
+      ).toBe(true),
+    );
+    const connectInit = fetchSpy.mock.calls.find(
+      ([url]) => url === "/api/agent/code/connect",
+    )![1] as RequestInit;
+    expect(JSON.parse(connectInit.body as string)).toEqual(
+      expect.objectContaining({
+        forwardedProps: { afterSeq: 9, epoch: "e" },
+      }),
+    );
+  });
 });

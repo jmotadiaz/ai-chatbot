@@ -527,7 +527,16 @@ export function useCodingAgent({
       if (!shouldReconnectRef.current) return;
       cancelPendingRetry();
       const cursor = cursorRef.current;
-      if (!cursor) return;
+      if (!cursor) {
+        writeClientTrace({
+          runId: crypto.randomUUID(),
+          sessionId,
+          eventName: "client.reconnect.trigger",
+          payload: { reason, fallback: "loadSnapshot", reason_detail: "null_cursor" },
+        });
+        await loadSnapshot();
+        return;
+      }
       recovering = true;
       try {
         writeClientTrace({
