@@ -156,9 +156,14 @@ function isCursorResetError(err: unknown): boolean {
   );
 }
 
-// Below this, a reconnect is skipped as redundant: an event that recent means
-// the stream is still alive, so a visibility/pageshow/online trigger is noise.
-const RECONNECT_FRESHNESS_MS = 3000;
+function isAbortError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const name = err.name.toLowerCase();
+  const msg = err.message.toLowerCase();
+  return name === "aborterror" || /aborted|fetch is aborted/.test(msg);
+}
+
+
 
 export function useCodingAgent({
   project,
@@ -180,7 +185,6 @@ export function useCodingAgent({
   const cursorRef = useRef<SessionCursor | null>(null);
   const pendingTerminalCursorRef = useRef<SessionCursor | null>(null);
   const shouldReconnectRef = useRef(false);
-  const lastEventAtRef = useRef(0);
 
   const store = useMemo(() => {
     const currentAgent = agentRef.current?.agent;
@@ -239,7 +243,6 @@ export function useCodingAgent({
               }));
             },
             onEvent: ({ event }) => {
-              lastEventAtRef.current = Date.now();
               const cursor = cursorFromEvent(event);
               if (cursor) {
                 if (cursor.terminal) {
@@ -414,6 +417,15 @@ export function useCodingAgent({
         if (!cancelled && isCursorResetError(err) && !retriedAfterCursorReset) {
           retriedAfterCursorReset = true;
           reloadAfterCursorReset = true;
+        } else if (isAbortError(err)) {
+          // Deliberate cut (e.g. tab hidden). Swallow silently — the next
+          // visibility:visible will reconnect from the last cursor.
+          writeClientTrace({
+            runId,
+            sessionId,
+            eventName: "client.connect.aborted",
+            payload: { attempt: 0 },
+          });
         } else {
           writeClientTrace({
             runId,
@@ -506,34 +518,51 @@ export function useCodingAgent({
       }
     };
 
-    // Used by online/visibilitychange/pageshow — the only reconnect triggers.
-    // Skips if an event arrived recently enough to prove the stream is still
-    // alive, and never fires on a backgrounded tab (all three of these events
-    // can fire while hidden, e.g. wifi reconnecting behind the app).
-    const reconnectIfStale = (reason: string) => {
+    // Forward-use: Task 3 will schedule retry timers; ensureConnected and
+    // cleanup cancel any pending retry before triggering/tearing down.
+    let pendingRetryTimer: ReturnType<typeof setTimeout> | null = null;
+    const cancelPendingRetry = () => {
+      if (pendingRetryTimer) {
+        clearTimeout(pendingRetryTimer);
+        pendingRetryTimer = null;
+      }
+    };
+
+    const cutStream = (reason: string) => {
+      if (!shouldReconnectRef.current) return;
+      cancelPendingRetry();
+      writeClientTrace({
+        runId: crypto.randomUUID(),
+        sessionId,
+        eventName: "client.stream.cut",
+        payload: { reason },
+      });
+      agent.abortRun();
+    };
+
+    const reconnectNow = (reason: string) => {
       if (cancelled || recovering) return;
       if (!shouldReconnectRef.current) return;
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-        return;
-      }
-      if (Date.now() - lastEventAtRef.current < RECONNECT_FRESHNESS_MS) return;
       void ensureConnected(reason);
     };
 
     void loadSnapshot();
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        reconnectIfStale("visibilitychange");
+      if (document.visibilityState === "hidden") {
+        cutStream("visibility:hidden");
+        return;
       }
+      reconnectNow("visibility:visible");
     };
     // iOS Safari can restore a frozen page from bfcache without re-running
     // effects or firing visibilitychange — pageshow is the reliable signal.
     const handlePageShow = () => {
-      reconnectIfStale("pageshow");
+      reconnectNow("pageshow");
     };
     const handleOnline = () => {
-      reconnectIfStale("online");
+      if (document.visibilityState !== "visible") return;
+      reconnectNow("online");
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -541,10 +570,11 @@ export function useCodingAgent({
     window.addEventListener("online", handleOnline);
     return () => {
       cancelled = true;
+      cancelPendingRetry();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pageshow", handlePageShow);
       window.removeEventListener("online", handleOnline);
-      void agent.detachActiveRun();
+      void agent.abortRun();
     };
   }, [agent, project, sessionId, modelId, store]);
 

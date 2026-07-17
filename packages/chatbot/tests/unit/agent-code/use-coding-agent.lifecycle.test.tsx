@@ -147,42 +147,53 @@ describe("useCodingAgent client lifecycle", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("reconnects on visibilitychange after the connection goes stale while a run is active", async () => {
-    const nowSpy = vi.spyOn(Date, "now");
-    let currentTime = 1_000_000;
-    nowSpy.mockImplementation(() => currentTime);
-
+  it("cuts the stream when hidden and reconnects when shown again", async () => {
     let connectCallCount = 0;
     fetchSpy.mockReset();
     fetchSpy.mockImplementation((url: string) => {
       if (url === "/api/agent/code/sessions/s/snapshot") {
-        return Promise.resolve(new Response(JSON.stringify({
-          messages: [],
-          cursor: { epoch: "e", seq: 5 },
-          running: true,
-        }), { headers: { "Content-Type": "application/json" } }));
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: { epoch: "e", seq: 5 },
+              running: true,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
       }
       if (url === "/api/agent/code/connect") {
         connectCallCount += 1;
         if (connectCallCount === 1) {
-          // Zombie stream: RUN_STARTED arrives, then the connection hangs
-          // (never closes) — simulates a page frozen mid-request.
+          // The initial connect hangs forever — simulates a stream that
+          // the user navigates away from while it is still flowing.
           const encoder = new TextEncoder();
-          return Promise.resolve(new Response(
-            new ReadableStream({
-              start(controller) {
-                controller.enqueue(encoder.encode(
-                  `data: ${JSON.stringify({ type: "RUN_STARTED", threadId: "s", runId: "r1" })}\n\n`,
-                ));
-              },
-            }),
-            { headers: { "Content-Type": "text/event-stream" } },
-          ));
+          return Promise.resolve(
+            new Response(
+              new ReadableStream({
+                start(controller) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "RUN_STARTED",
+                        threadId: "s",
+                        runId: "r1",
+                      })}\n\n`,
+                    ),
+                  );
+                },
+              }),
+              { headers: { "Content-Type": "text/event-stream" } },
+            ),
+          );
         }
-        return Promise.resolve(makeSseResponse([
-          { type: "RUN_STARTED", threadId: "s", runId: "r2" },
-          { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
-        ]));
+        return Promise.resolve(
+          makeSseResponse([
+            { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+            { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+          ]),
+        );
       }
       return Promise.resolve(new Response("{}", { status: 200 }));
     });
@@ -195,18 +206,43 @@ describe("useCodingAgent client lifecycle", () => {
     render(<Harness />);
     await waitFor(() => expect(connectCallCount).toBe(1));
 
-    // Move the clock past the freshness window so visibilitychange isn't
-    // treated as redundant noise on top of a still-live connection.
-    currentTime += 5000;
+    // Hide the tab — the in-flight fetch must be aborted.
+    const [, firstConnectInit] = fetchSpy.mock.calls.find(
+      ([url]) => url === "/api/agent/code/connect",
+    )!;
+    const firstSignal = (firstConnectInit as RequestInit).signal as AbortSignal;
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "hidden",
+      configurable: true,
+    });
+    await act(async () => {
+      fireEvent(document, new Event("visibilitychange"));
+    });
+    expect(firstSignal.aborted).toBe(true);
+    expect(connectCallCount).toBe(1); // no reconnect while hidden
+
+    // Show the tab — reconnect immediately from the last cursor.
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
     await act(async () => {
       fireEvent(document, new Event("visibilitychange"));
     });
 
     await waitFor(() => expect(connectCallCount).toBe(2));
-    nowSpy.mockRestore();
+
+    const [, secondConnectInit] = fetchSpy.mock.calls
+      .filter(([url]) => url === "/api/agent/code/connect")[1]!;
+    expect(JSON.parse((secondConnectInit as RequestInit).body as string)).toEqual(
+      expect.objectContaining({
+        forwardedProps: { afterSeq: 5, epoch: "e" },
+      }),
+    );
   });
 
-  it("does not reconnect on visibilitychange while the tab is backgrounded", async () => {
+  it("online fires while hidden does not reconnect", async () => {
     let connectCallCount = 0;
     fetchSpy.mockReset();
     fetchSpy.mockImplementation((url: string) => {
@@ -278,5 +314,147 @@ describe("useCodingAgent client lifecycle", () => {
     // of staring at a spinner that will never resolve on its own.
     await waitFor(() => expect(screen.getByTestId("error").textContent).toBe("network error"));
     expect(connectCallCount).toBe(1);
+  });
+
+  it("does not surface an error when the cut is deliberate (aborted)", async () => {
+    let connectCallCount = 0;
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation((url: string) => {
+      if (url === "/api/agent/code/sessions/s/snapshot") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: { epoch: "e", seq: 5 },
+              running: true,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
+      }
+      if (url === "/api/agent/code/connect") {
+        connectCallCount += 1;
+        if (connectCallCount === 1) {
+          // Hangs forever — gets cut when we hide.
+          const encoder = new TextEncoder();
+          return Promise.resolve(
+            new Response(
+              new ReadableStream({
+                start(controller) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "RUN_STARTED",
+                        threadId: "s",
+                        runId: "r1",
+                      })}\n\n`,
+                    ),
+                  );
+                },
+              }),
+              { headers: { "Content-Type": "text/event-stream" } },
+            ),
+          );
+        }
+        return Promise.resolve(
+          makeSseResponse([
+            { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+            { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+          ]),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    render(<Harness />);
+    await waitFor(() => expect(connectCallCount).toBe(1));
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "hidden",
+      configurable: true,
+    });
+    await act(async () => {
+      fireEvent(document, new Event("visibilitychange"));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+    await act(async () => {
+      fireEvent(document, new Event("visibilitychange"));
+    });
+
+    await waitFor(() => expect(connectCallCount).toBe(2));
+    expect(screen.getByTestId("error").textContent).toBe("");
+  });
+
+  it("reconnects on pageshow (iOS bfcache restore)", async () => {
+    let connectCallCount = 0;
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation((url: string) => {
+      if (url === "/api/agent/code/sessions/s/snapshot") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [],
+              cursor: { epoch: "e", seq: 5 },
+              running: true,
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          ),
+        );
+      }
+      if (url === "/api/agent/code/connect") {
+        connectCallCount += 1;
+        if (connectCallCount === 1) {
+          const encoder = new TextEncoder();
+          return Promise.resolve(
+            new Response(
+              new ReadableStream({
+                start(controller) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "RUN_STARTED",
+                        threadId: "s",
+                        runId: "r1",
+                      })}\n\n`,
+                    ),
+                  );
+                },
+              }),
+              { headers: { "Content-Type": "text/event-stream" } },
+            ),
+          );
+        }
+        return Promise.resolve(
+          makeSseResponse([
+            { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+            { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+          ]),
+        );
+      }
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    render(<Harness />);
+    await waitFor(() => expect(connectCallCount).toBe(1));
+
+    await act(async () => {
+      fireEvent(window, new Event("pageshow"));
+    });
+
+    await waitFor(() => expect(connectCallCount).toBe(2));
   });
 });
