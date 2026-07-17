@@ -196,7 +196,6 @@ export const POST = withAuth(async (user, req) => {
               onReader: (r) => {
                 reader = r;
               },
-              burstPacing: { enabled: true },
             });
           } catch (err) {
             closeReason = "error";
@@ -245,9 +244,8 @@ export const POST = withAuth(async (user, req) => {
       return new Response(stream, {
         headers: {
           "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache, no-transform",
+          "Cache-Control": "no-cache",
           Connection: "keep-alive",
-          "X-Accel-Buffering": "no",
           "X-Trace-Run-Id": runId,
         },
       });

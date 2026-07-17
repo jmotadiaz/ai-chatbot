@@ -17,7 +17,6 @@ type ReasoningContextValue = {
   isStreaming: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  duration: number | undefined;
 };
 
 const ReasoningContext = createContext<ReasoningContextValue | null>(null);
@@ -35,12 +34,10 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  duration?: number;
   hasTextTokens?: boolean;
 };
 
 const AUTO_CLOSE_DELAY = 1000;
-const MS_IN_S = 1000;
 
 export const Reasoning = memo(
   ({
@@ -49,7 +46,6 @@ export const Reasoning = memo(
     open,
     defaultOpen = false,
     onOpenChange,
-    duration: durationProp,
     hasTextTokens = false,
     children,
     ...props
@@ -59,26 +55,8 @@ export const Reasoning = memo(
       defaultProp: defaultOpen,
       onChange: onOpenChange,
     });
-    const [duration, setDuration] = useControllableState({
-      prop: durationProp,
-      defaultProp: undefined,
-    });
 
     const [hasAutoClosed, setHasAutoClosed] = useState(false);
-    const [startTime, setStartTime] = useState<number | null>(null);
-
-    // Track duration when streaming starts and ends (accumulates across turns)
-    useEffect(() => {
-      if (isStreaming) {
-        if (startTime === null) {
-          setStartTime(Date.now());
-        }
-      } else if (startTime !== null) {
-        const turnDuration = Math.ceil((Date.now() - startTime) / MS_IN_S);
-        setDuration((prev) => (prev ?? 0) + turnDuration);
-        setStartTime(null);
-      }
-    }, [isStreaming, startTime, setDuration]);
 
     // Auto-close when text tokens arrive (higher priority than streaming end)
     useEffect(() => {
@@ -107,7 +85,7 @@ export const Reasoning = memo(
 
     return (
       <ReasoningContext.Provider
-        value={{ isStreaming, isOpen, setIsOpen, duration }}
+        value={{ isStreaming, isOpen, setIsOpen }}
       >
         <Collapsible
           className={cn("not-prose mb-4", className)}
@@ -125,26 +103,21 @@ export const Reasoning = memo(
 export type ReasoningTriggerProps = ComponentProps<
   typeof CollapsibleTrigger
 > & {
-  getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
+  getThinkingMessage?: (isStreaming: boolean) => ReactNode;
 };
 
-const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
+const defaultGetThinkingMessage = (isStreaming: boolean) => {
   if (isStreaming) {
     return (
       <div className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
-        <Shimmer duration={1}>Thinking.</Shimmer>
+        <Shimmer duration={1}>Thinking</Shimmer>
       </div>
     );
   }
 
-  const durationText =
-    duration && duration > 0
-      ? `Thought for ${duration} second${duration > 1 ? "s" : ""}`
-      : "Thought for a few seconds";
-
   return (
     <p className="font-semibold text-base text-zinc-500 dark:text-zinc-400">
-      {durationText}
+      Thinking
     </p>
   );
 };
@@ -156,11 +129,11 @@ export const ReasoningTrigger = memo(
     getThinkingMessage = defaultGetThinkingMessage,
     ...props
   }: ReasoningTriggerProps) => {
-    const { isStreaming, isOpen, duration } = useReasoning();
+    const { isStreaming, isOpen } = useReasoning();
 
     const content = children ?? (
       <>
-        {getThinkingMessage(isStreaming, duration)}
+        {getThinkingMessage(isStreaming)}
         <ChevronDownIcon
           className={cn(
             "size-4 transition-transform",
@@ -217,11 +190,7 @@ export const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   hasTextTokens = false,
 }) => {
   return (
-    <Reasoning
-      defaultOpen={isStreaming}
-      isStreaming={isStreaming}
-      hasTextTokens={hasTextTokens}
-    >
+    <Reasoning isStreaming={isStreaming} hasTextTokens={hasTextTokens}>
       <ReasoningTrigger />
       <ReasoningContent>{text}</ReasoningContent>
     </Reasoning>

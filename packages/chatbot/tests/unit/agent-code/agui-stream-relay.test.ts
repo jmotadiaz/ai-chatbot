@@ -9,7 +9,7 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 describe("relayLoggedAguiNdjsonToSse", () => {
-  it("yields between bursts of visual deltas without changing their order or cursor", async () => {
+  it("emits text chunks and cursor events in order", async () => {
     const workerStream = new ReadableStream<Uint8Array>({
       start(controller) {
         for (let seq = 1; seq <= 4; seq += 1) {
@@ -37,12 +37,6 @@ describe("relayLoggedAguiNdjsonToSse", () => {
       } as unknown as ReadableStreamDefaultController<Uint8Array>,
       encoder,
       log: { debug() {}, warn() {} },
-      burstPacing: {
-        enabled: true,
-        windowMs: 1_000,
-        batchSize: 2,
-        yieldMs: 0,
-      },
     });
 
     const events = decoder
@@ -51,7 +45,8 @@ describe("relayLoggedAguiNdjsonToSse", () => {
       .filter(Boolean)
       .map((line) => JSON.parse(line.replace(/^data: /, "")) as BaseEvent);
 
-    expect(summary.burstYieldCount).toBe(2);
+    expect(summary.emittedAguiEventCount).toBe(4);
+    expect(summary.terminalSeen).toBe(false);
     expect(events.filter((event) => event.type === EventType.TEXT_MESSAGE_CHUNK))
       .toHaveLength(4);
     expect(events.filter((event) => event.type === EventType.CUSTOM))

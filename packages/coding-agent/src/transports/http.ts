@@ -104,11 +104,6 @@ async function writeFetchResponseToNode(
     response.status,
     Object.fromEntries(response.headers.entries()),
   );
-  // Node otherwise holds headers until the first body write. For a live
-  // reconnect there may be a quiet period before Pi emits its next delta;
-  // flushing here lets the BFF establish its SSE response immediately rather
-  // than making `fetch()` wait until that first delta (or the terminal event).
-  res.flushHeaders();
 
   if (!response.body) {
     res.end();
