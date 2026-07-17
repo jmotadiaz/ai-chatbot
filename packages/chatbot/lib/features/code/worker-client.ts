@@ -139,18 +139,6 @@ export class WorkerClient {
     return this.call("getAvailableModels", {});
   }
 
-  async setModel(params: { sessionId: string; modelId: string }): Promise<void> {
-    await this.call("setModel", params);
-  }
-
-  async getSessionMessages(params: {
-    sessionId: string;
-    piSessionId?: string;
-    project?: string;
-  }): Promise<{ messages: Array<{ role: string; content: string }> }> {
-    return this.call("getSessionMessages", params);
-  }
-
   async getSessionSnapshot(params: {
     sessionId: string;
     piSessionId?: string;
@@ -159,14 +147,10 @@ export class WorkerClient {
     return this.call("getSessionSnapshot", params);
   }
 
-  async disposeSession(params: { sessionId: string }): Promise<void> {
-    await this.call("disposeSession", params);
-  }
-
   async connectToSession(params: {
     sessionId: string;
-    afterSeq?: number;
-    epoch?: string;
+    afterSeq: number;
+    epoch: string;
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");
@@ -232,24 +216,12 @@ function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
         messageCount: Array.isArray(p.messages) ? p.messages.length : 0,
         hasTraceRunId,
       };
-    case "getSessionMessages":
-      return {
-        sessionId,
-        project: typeof p.project === "string" ? p.project : undefined,
-        hasPiSessionId: typeof p.piSessionId === "string",
-      };
     case "getSessionSnapshot":
       return {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
       };
-    case "setModel":
-      return {
-        sessionId,
-        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
-      };
-    case "disposeSession":
     case "cancelRun":
     case "getSessionStatus":
       return { sessionId, hasTraceRunId };

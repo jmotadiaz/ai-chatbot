@@ -16,7 +16,6 @@ interface RelayLogger {
 export interface RelaySummary {
   emittedAguiEventCount: number;
   emittedCursorEventCount: number;
-  skippedAguiEventCount: number;
   malformedLineCount: number;
   terminalSeen: boolean;
   lastSeq?: number;
@@ -58,31 +57,6 @@ function isTerminalEvent(event: BaseEvent): boolean {
   return event.type === EventType.RUN_FINISHED || event.type === EventType.RUN_ERROR;
 }
 
-export function parseAfterSeq(value: unknown): number {
-  return parseAfterSeqOrUndefined(value) ?? 0;
-}
-
-/**
- * Like `parseAfterSeq`, but returns `undefined` instead of defaulting to 0
- * when the caller didn't send a valid cursor. Used by the connect route so
- * an absent (or malformed) `afterSeq` is forwarded to the worker as
- * "not provided" rather than as an explicit request to replay the entire
- * session log — the worker computes a better default (the last run's
- * window) when it doesn't receive an explicit cursor.
- */
-export function parseAfterSeqOrUndefined(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-    return Math.floor(value);
-  }
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed) && parsed >= 0) {
-      return Math.floor(parsed);
-    }
-  }
-  return undefined;
-}
-
 export function emitAguiSseEvent(
   controller: ReadableStreamDefaultController<Uint8Array>,
   encoder: TextEncoder,
@@ -97,16 +71,8 @@ export async function relayLoggedAguiNdjsonToSse(options: {
   encoder: TextEncoder;
   log: RelayLogger;
   onReader?: (reader: ReadableStreamDefaultReader<Uint8Array>) => void;
-  skipEvent?: (event: BaseEvent) => boolean;
 }): Promise<RelaySummary> {
-  const {
-    workerStream,
-    controller,
-    encoder,
-    log,
-    onReader,
-    skipEvent,
-  } = options;
+  const { workerStream, controller, encoder, log, onReader } = options;
   const reader = workerStream.getReader();
   onReader?.(reader);
 
@@ -115,7 +81,6 @@ export async function relayLoggedAguiNdjsonToSse(options: {
   const summary: RelaySummary = {
     emittedAguiEventCount: 0,
     emittedCursorEventCount: 0,
-    skippedAguiEventCount: 0,
     malformedLineCount: 0,
     terminalSeen: false,
     aguiEventCounts: {},
@@ -143,13 +108,6 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     if (!envelope) {
       summary.malformedLineCount += 1;
       log.warn("stream.malformed_envelope", { line: line.slice(0, 500) });
-      return;
-    }
-
-    const shouldSkip = skipEvent?.(envelope.event) ?? false;
-    if (shouldSkip) {
-      summary.skippedAguiEventCount += 1;
-      emitCursor(envelope.seq, envelope.epoch);
       return;
     }
 

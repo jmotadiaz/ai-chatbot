@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, FolderOpen, GitBranch, ListX } from "lucide-react";
 import { Breadcrumbs } from "./breadcrumbs";
-import { CodeView } from "./code-view";
+import { DiffCodeView } from "./diff-code-view";
 import { FileBrowserEmptyState } from "./empty-states";
+import { FileCodeView } from "./file-code-view";
 import { FileList } from "./file-list";
 import { FileListItem } from "./file-list-item";
 import { useFileBrowser } from "./file-browser-provider";
@@ -210,16 +211,26 @@ export const FileBrowserView: React.FC = () => {
 
       <div className="relative flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">{renderList()}</div>
-        {state.activeFile && (
-          <div className="absolute inset-0 z-10 bg-(--background)">
-            <CodeView
-              path={state.activeFile}
-              changedRanges={activeRanges}
-              diff={state.scope === "uncommitted" ? activeDiff : null}
-              onBack={actions.closeFile}
-            />
-          </div>
-        )}
+        {state.activeFile &&
+          (state.scope === "uncommitted" && activeDiff ? (
+            <div className="absolute inset-0 z-10 bg-(--background)">
+              <DiffCodeView
+                key={state.activeFile}
+                path={state.activeFile}
+                diff={activeDiff}
+                onBack={actions.closeFile}
+              />
+            </div>
+          ) : (
+            <div className="absolute inset-0 z-10 bg-(--background)">
+              <FileCodeView
+                key={state.activeFile}
+                path={state.activeFile}
+                changedRanges={activeRanges}
+                onBack={actions.closeFile}
+              />
+            </div>
+          ))}
       </div>
     </div>
   );

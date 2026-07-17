@@ -6,7 +6,6 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import type { Message, ToolCall } from "@ag-ui/client";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
@@ -111,56 +110,3 @@ export async function getCodingAgentModels() {
     return result;
   });
 }
-
-
-export async function getCodingAgentStatus(sessionId: string): Promise<{ running: boolean; piSessionId?: string }> {
-  return withActionTrace("getCodingAgentStatus", async (log) => {
-    assertEnabled();
-    try {
-      const client = new WorkerClient();
-      const status = await client.getSessionStatus({ sessionId });
-      log.info("action.result", { running: status.running });
-      return status;
-    } catch {
-      log.warn("action.failed_fetching_status");
-      return { running: false };
-    }
-  });
-}
-
-export async function getCodingAgentMessages(project: string, sessionId: string): Promise<Message[]> {
-  return withActionTrace("getCodingAgentMessages", async (log) => {
-    assertEnabled();
-    const userId = await getUserId();
-    const dbSession = await getSession({ userId, sessionId });
-    const client = new WorkerClient();
-    try {
-      const { messages } = await client.getSessionMessages({
-        sessionId,
-        piSessionId: dbSession?.piSessionId ?? undefined,
-        project,
-      });
-      interface LoadedMessage {
-        id?: string;
-        role: string;
-        content: string;
-        toolCalls?: ToolCall[];
-        toolCallId?: string;
-      }
-      const loaded: Message[] = ((messages ?? []) as unknown as LoadedMessage[]).map((m, i) => ({
-        id: m.id || `loaded-${i}`,
-        role: m.role as Message["role"],
-        content: m.content,
-        toolCalls: m.toolCalls,
-        toolCallId: m.toolCallId,
-      })) as Message[];
-      log.info("action.result", { count: loaded.length });
-      return loaded;
-    } catch {
-      // Worker unreachable or session gone → empty messages
-      log.warn("action.failed_fetching_messages");
-      return [];
-    }
-  });
-}
-

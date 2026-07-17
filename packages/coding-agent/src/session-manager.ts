@@ -22,14 +22,6 @@ import {
   IdDeduper,
 } from "./message-ids";
 
-interface InFlightTool {
-  toolCallId: string;
-  name: string;
-  argsSoFar: string;
-  parentMessageId?: string;
-  callEnded: boolean;
-}
-
 interface SnapshotMessage {
   id?: string;
   role: string;
@@ -44,7 +36,6 @@ interface SessionEntry {
   piSessionId: string;
   project: string;
   runtime: Awaited<ReturnType<typeof createAgentSessionRuntime>>;
-  inFlightTools: Map<number, InFlightTool>;
   eventLog?: SessionEventLog;
   activeRun?: {
     runId: string;
@@ -53,29 +44,16 @@ interface SessionEntry {
     sawTerminal: boolean;
   };
   /**
-   * startSeq of the most recent run (active or finished) started in this
-   * worker's lifetime. Unlike `activeRun`, this is never cleared when the
-   * run ends — it's used to compute the default replay window for
-   * `connectToSession` so a client reconnecting after a run finished still
-   * only replays that run's events (from its RUN_STARTED), rather than the
-   * entire session history that SSR already delivered.
-   */
-  lastRunStartSeq?: number;
-  /**
    * eventLog.lastSeq as of the most recently finalized message (user,
    * assistant, or tool result) in this worker's lifetime. A message
    * "finalizes" when Pi pushes it into `session.messages` — which is also
    * exactly when it becomes visible to a fresh `getSessionMessages` /ssr
-   * fetch. Used, like `lastRunStartSeq`, to compute the default replay
-   * window: reconnecting after this point avoids replaying deltas for
-   * messages the client's SSR-loaded state already has in full (which
-   * would otherwise duplicate their content — deltas accumulate onto
-   * existing message content unconditionally) and avoids resending a
-   * run-start MESSAGES_SNAPSHOT that's stale relative to that SSR state
-   * (whose merge, in the AG-UI client, is positional against the client's
-   * CURRENT list and can scramble message order — see connectToSession).
+   * fetch. This is the seq `getSessionSnapshot` reports as the cursor: it
+   * points just after the last finalized message, so a client replaying
+   * from it only receives the still-partial tail of an in-progress run
+   * rather than deltas for messages its snapshot already has in full.
    */
-  lastFinalizedMessageSeq?: number;
+  snapshotCursorSeq?: number;
 }
 
 const sessions = new Map<string, SessionEntry>();
@@ -128,107 +106,6 @@ function normalizeSnapshotMessages(
       ...(typeof message.toolCallId === "string" ? { toolCallId: message.toolCallId } : {}),
       ...(typeof message.name === "string" ? { name: message.name } : {}),
     }));
-}
-
-function updateInFlightTools(
-  entry: SessionEntry,
-  event: CodingAgentEvent,
-): void {
-  const log = getTraceLogger("worker");
-  const { sessionId } = entry;
-
-  if (event.type === "message_update") {
-    const ame = event.assistantMessageEvent as
-      | { type: string; contentIndex?: number; toolCall?: { id?: string; name?: string }; delta?: string }
-      | undefined;
-    if (ame?.type === "toolcall_start" && typeof ame.contentIndex === "number") {
-      const toolCallId = ame.toolCall?.id ?? `tool-${crypto.randomUUID()}`;
-      const partial = (ame as { partial?: { content?: unknown[] } }).partial;
-      const block =
-        partial && Array.isArray(partial.content)
-          ? partial.content[ame.contentIndex]
-          : undefined;
-      const blockName =
-        block && typeof block === "object" && block !== null && "name" in block
-          ? (block as { name?: unknown }).name
-          : undefined;
-      const name =
-        (typeof blockName === "string" ? blockName : undefined) ??
-        ame.toolCall?.name ??
-        "unknown";
-      entry.inFlightTools.set(ame.contentIndex, {
-        toolCallId,
-        name,
-        argsSoFar: "",
-        callEnded: false,
-      });
-      log.info("inflight.toolcall_start", { sessionId, contentIndex: ame.contentIndex, toolCallId, name });
-    } else if (ame?.type === "toolcall_delta" && typeof ame.contentIndex === "number") {
-      const t = entry.inFlightTools.get(ame.contentIndex);
-      if (t) t.argsSoFar += ame.delta ?? "";
-    } else if (ame?.type === "toolcall_end" && typeof ame.contentIndex === "number") {
-      const t = entry.inFlightTools.get(ame.contentIndex);
-      if (t) {
-        t.callEnded = true;
-        log.info("inflight.toolcall_end", { sessionId, contentIndex: ame.contentIndex, toolCallId: t.toolCallId });
-      }
-    }
-  } else if (event.type === "tool_execution_start") {
-    const toolCallId = (event as { toolCallId?: string }).toolCallId;
-    const toolName = (event as { toolName?: string }).toolName;
-    log.info("inflight.tool_execution_start", { sessionId, toolCallId, toolName });
-    if (toolCallId && toolName) {
-      let matchedKey: number | undefined;
-      for (const [contentIndex, tool] of entry.inFlightTools) {
-        if (tool.name === toolName && tool.toolCallId.startsWith("tool-")) {
-          matchedKey = contentIndex;
-          break;
-        }
-      }
-      if (matchedKey !== undefined) {
-        const tool = entry.inFlightTools.get(matchedKey)!;
-        const oldId = tool.toolCallId;
-        tool.toolCallId = toolCallId;
-        log.info("inflight.tool_execution_start_mapped", {
-          sessionId,
-          contentIndex: matchedKey,
-          oldId,
-          newId: toolCallId,
-          toolName,
-        });
-      } else {
-        log.warn("inflight.tool_execution_start_no_match", {
-          sessionId,
-          toolCallId,
-          toolName,
-          inFlight: Array.from(entry.inFlightTools.values()).map((t) => ({
-            id: t.toolCallId,
-            name: t.name,
-          })),
-        });
-      }
-    }
-  } else if (event.type === "tool_execution_end") {
-    const toolCallId = (event as { toolCallId?: string }).toolCallId;
-    if (toolCallId) {
-      let found = false;
-      for (const [contentIndex, tool] of entry.inFlightTools) {
-        if (tool.toolCallId === toolCallId) {
-          entry.inFlightTools.delete(contentIndex);
-          log.info("inflight.tool_execution_end_removed", {
-            sessionId,
-            contentIndex,
-            toolCallId,
-          });
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        log.warn("inflight.tool_execution_end_not_found", { sessionId, toolCallId });
-      }
-    }
-  }
 }
 
 /**
@@ -338,7 +215,6 @@ async function loadSessionFromDisk(
     piSessionId,
     project,
     runtime,
-    inFlightTools: new Map(),
     eventLog: new SessionEventLog(),
   };
   sessions.set(appSessionId, entry);
@@ -428,7 +304,6 @@ export async function getOrCreateSession(options: {
     piSessionId,
     project: options.project,
     runtime,
-    inFlightTools: new Map(),
     eventLog: new SessionEventLog(),
   });
   return { sessionId, piSessionId };
@@ -458,7 +333,6 @@ function createLoggedEventStream(
       enqueueErrorCount,
       eventCounts,
       eventLogLastSeq: eventLog.lastSeq,
-      inFlightToolCount: entry.inFlightTools.size,
     });
   };
 
@@ -507,7 +381,7 @@ function createLoggedEventStream(
 
       cleanup = eventLog.subscribe((logged) => emit(logged, true));
 
-      if (!entry.runtime.session.isStreaming && !entry.activeRun && entry.inFlightTools.size === 0) {
+      if (!entry.runtime.session.isStreaming && !entry.activeRun) {
         close("idle");
       }
     },
@@ -542,14 +416,11 @@ function startPromptCollector(
   });
 
   const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
-  // The run-start snapshot must mirror the worker's canonical state (same
-  // derived ids the history load produces), NOT the client's echoed message
-  // list: the AG-UI client merges snapshots by id, so echoed optimistic ids
-  // drop the SSR-loaded canonical messages on reconnect and re-append them
-  // at the end, scrambling the order. The new user prompt is not in Pi
-  // state yet (Pi appends it during prompt()), so only that trailing user
-  // message is taken from the client's post; its position — after the
-  // canonical history — is correct in every reconnect scenario.
+  // Invariant: the run-start snapshot is canonical history plus the new user
+  // message carrying the client's id. That id is stamped onto Pi's own
+  // message record below (on its `message_end`), so every later derivation
+  // of this message — history load, reconnect snapshot, worker restart —
+  // reproduces the same id via `convertPiMessagesToAgui`.
   const preRunHistory = convertPiMessagesToAgui(runtime.session.messages);
   const clientMessages = normalizeSnapshotMessages(messages);
   const lastClientMessage = clientMessages[clientMessages.length - 1];
@@ -557,6 +428,7 @@ function startPromptCollector(
     lastClientMessage && lastClientMessage.role === "user"
       ? [lastClientMessage]
       : [{ id: crypto.randomUUID(), role: "user", content: prompt }];
+  const userMessageClientId = userTail[0].id as string;
   const snapshotMessages = [...preRunHistory, ...userTail];
   const startSeq = ensureEventLog(entry).lastSeq + 1;
   const piEventCounts: Record<string, number> = {};
@@ -564,6 +436,7 @@ function startPromptCollector(
   let appendedAguiEventCount = 0;
   let snapshotAppended = false;
   let collectorClosed = false;
+  let userMessageStamped = false;
 
   const logCollectorSummary = (reason: string) => {
     if (collectorClosed) return;
@@ -576,7 +449,6 @@ function startPromptCollector(
       aguiEventCounts,
       appendedAguiEventCount,
       eventLogLastSeq: ensureEventLog(entry).lastSeq,
-      inFlightToolCount: entry.inFlightTools.size,
       translator: translator.getDiagnostics(),
     });
   };
@@ -585,7 +457,16 @@ function startPromptCollector(
     const event = rawEvent as CodingAgentEvent;
     incrementCount(piEventCounts, event.type);
     log.debug("pi.event", { type: event.type });
-    updateInFlightTools(entry, event);
+
+    // Stamp the client's id onto Pi's own message object before it gets
+    // persisted. Pi's AgentSession emits `message_end` synchronously and
+    // only appends the message to `session.messages` (and to disk) right
+    // after — mutating the same object reference here is durable and makes
+    // this the one place a message's identity is permanently fixed.
+    if (!userMessageStamped && event.type === "message_end" && event.message?.role === "user") {
+      userMessageStamped = true;
+      (event.message as Record<string, unknown>).clientMessageId = userMessageClientId;
+    }
 
     const aguiEvents = translator.translate(event);
     for (const aguiEvent of aguiEvents) {
@@ -602,12 +483,12 @@ function startPromptCollector(
       }
     }
     // A message just became part of Pi's canonical `session.messages` (and
-    // thus of any SSR fetch made from this point on). Move the default
-    // reconnect replay window past it so a later reconnect never re-sends
-    // deltas the client will already have in full — see
-    // `lastFinalizedMessageSeq` on SessionEntry.
+    // thus of any SSR fetch made from this point on). Move the snapshot
+    // cursor past it so a client that re-snapshots and reconnects never
+    // replays deltas it already has in full — see `snapshotCursorSeq` on
+    // SessionEntry.
     if (event.type === "message_end" || event.type === "tool_execution_end") {
-      entry.lastFinalizedMessageSeq = ensureEventLog(entry).lastSeq;
+      entry.snapshotCursorSeq = ensureEventLog(entry).lastSeq;
     }
   });
 
@@ -617,7 +498,6 @@ function startPromptCollector(
     unsubscribe,
     sawTerminal: false,
   };
-  entry.lastRunStartSeq = startSeq;
 
   const promptStop = log.startTimer("session.prompt_execution");
   runtime.session
@@ -727,18 +607,23 @@ export async function getSessionMessages(
  * Ids are derived deterministically from each Pi message's own data
  * (timestamp for user/assistant messages, real toolCallId for tool
  * results) so they match the ids the live translator assigns to the same
- * messages during streaming (see message-ids.ts). One deduper is shared
- * across the whole conversion so same-millisecond collisions resolve the
- * same way every time it runs. Used by both the history load path and the
- * run-start MESSAGES_SNAPSHOT so a message keeps the same identity in
- * every delivery channel.
+ * messages during streaming (see message-ids.ts). For a user message that
+ * carries a `clientMessageId` (stamped in `startPromptCollector` on its
+ * `message_end`), that id takes precedence over the derived timestamp id
+ * so the message keeps the exact id the client originated it with. One
+ * deduper is shared across the whole conversion so same-millisecond
+ * collisions resolve the same way every time it runs. Used by both the
+ * history load path and the run-start MESSAGES_SNAPSHOT so a message keeps
+ * the same identity in every delivery channel.
  */
 function convertPiMessagesToAgui(piMessages: ReadonlyArray<any>): Array<any> {
   const result: Array<any> = [];
   const idDeduper = new IdDeduper();
   piMessages.forEach((msg) => {
     if (msg.role === "user") {
-      const id = idDeduper.dedupe(userMessageId(msg.timestamp));
+      const baseId =
+        typeof msg.clientMessageId === "string" ? msg.clientMessageId : userMessageId(msg.timestamp);
+      const id = idDeduper.dedupe(baseId);
       result.push({
         id,
         role: "user",
@@ -891,11 +776,7 @@ export async function getSessionSnapshot(
   }
 
   const eventLog = ensureEventLog(entry);
-  const seq = computeDefaultAfterSeq(
-    entry.lastRunStartSeq,
-    entry.lastFinalizedMessageSeq,
-    eventLog.lastSeq,
-  );
+  const seq = entry.snapshotCursorSeq ?? eventLog.lastSeq;
   return {
     messages,
     cursor: { epoch: eventLog.epoch, seq },
@@ -903,46 +784,13 @@ export async function getSessionSnapshot(
   };
 }
 
-/**
- * Compute the default replay window (an `afterSeq` cursor) for a client that
- * connects without specifying one.
- *
- * Prefers `lastFinalizedMessageSeq`: replaying from right after the most
- * recently finalized message means the client only ever receives deltas for
- * messages it doesn't already have in full via its SSR-loaded state (Pi
- * pushes a message into `session.messages` — and thus into any fresh
- * `getSessionMessages` fetch — the moment it finalizes). This also means the
- * run-start MESSAGES_SNAPSHOT is skipped once any message in the run has
- * finalized, which is true by the time any real reconnect can occur (the
- * user prompt itself finalizes synchronously at run start, well before an
- * HTTP round trip could complete) — replaying that snapshot instead would
- * both duplicate already-finalized messages' content (deltas accumulate
- * onto existing content unconditionally) and scramble message order (the
- * AG-UI client merges MESSAGES_SNAPSHOT positionally against its current
- * list, using the client's own optimistic ids for the snapshot's user
- * message, which the client's SSR-loaded list won't recognize).
- *
- * Falls back to `lastRunStartSeq - 1` for the rare case where a run has
- * started but no message has finalized yet, and to `eventLogLastSeq`
- * (replay nothing) when no run has happened yet in this worker's lifetime —
- * SSR already delivered the full message history in that case.
- */
-export function computeDefaultAfterSeq(
-  lastRunStartSeq: number | undefined,
-  lastFinalizedMessageSeq: number | undefined,
-  eventLogLastSeq: number,
-): number {
-  if (lastFinalizedMessageSeq !== undefined) return lastFinalizedMessageSeq;
-  return lastRunStartSeq !== undefined ? lastRunStartSeq - 1 : eventLogLastSeq;
-}
-
 export async function connectToSession(
   sessionId: string,
   onEvent: (line: string) => void,
   onError: (err: Error) => void,
-  onComplete?: () => void,
-  afterSeq?: number,
-  epoch?: string,
+  onComplete: (() => void) | undefined,
+  afterSeq: number,
+  epoch: string,
 ): Promise<() => void> {
   const log = getTraceLogger("worker");
   const eventCounts: Record<string, number> = {};
@@ -950,7 +798,6 @@ export async function connectToSession(
   let replayLineCount = 0;
   let connectClosed = false;
   let eventLogLastSeq = 0;
-  let replayAfterSeq = afterSeq ?? 0;
 
   const logConnectSummary = (reason: string) => {
     if (connectClosed) return;
@@ -959,7 +806,6 @@ export async function connectToSession(
       sessionId,
       reason,
       afterSeq,
-      replayAfterSeq,
       emittedLineCount,
       replayLineCount,
       eventCounts,
@@ -976,18 +822,10 @@ export async function connectToSession(
   }
 
   const eventLog = ensureEventLog(entry);
-  if (epoch !== undefined && epoch !== eventLog.epoch) {
+  if (epoch !== eventLog.epoch) {
     throw new Error("Cursor epoch mismatch");
   }
   eventLogLastSeq = eventLog.lastSeq;
-  replayAfterSeq =
-    afterSeq !== undefined
-      ? afterSeq
-      : computeDefaultAfterSeq(
-          entry.lastRunStartSeq,
-          entry.lastFinalizedMessageSeq,
-          eventLog.lastSeq,
-        );
 
   let closed = false;
   let unsubscribe: (() => void) | undefined;
@@ -1023,11 +861,10 @@ export async function connectToSession(
     }
   };
 
-  const replay = eventLog.readAfter(replayAfterSeq);
+  const replay = eventLog.readAfter(afterSeq);
   log.info("connect.replay", {
     sessionId,
     afterSeq,
-    replayAfterSeq,
     replayCount: replay.length,
     eventLogLastSeq: eventLog.lastSeq,
     isStreaming: entry.runtime.session.isStreaming,
@@ -1040,7 +877,7 @@ export async function connectToSession(
 
   if (closed) return () => {};
 
-  if (!entry.runtime.session.isStreaming && !entry.activeRun && entry.inFlightTools.size === 0) {
+  if (!entry.runtime.session.isStreaming && !entry.activeRun) {
     log.info("connect.idle_completed", { sessionId, afterSeq });
     finish("idle");
     return () => {};

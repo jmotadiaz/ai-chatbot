@@ -15,6 +15,10 @@ const EventType = {
 } as const;
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_PUBLIC_ENV !== "test" && process.env.NODE_ENV !== "test") {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const { method, params } = await req.json();
 
   if (method === "getAvailableModels") {

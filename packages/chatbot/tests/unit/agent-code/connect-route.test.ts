@@ -44,9 +44,11 @@ type LoggedEvent = { epoch?: string; seq: number; event: { type: string; [k: str
 const mockState: {
   events: LoggedEvent[];
   connectParams: unknown[];
+  epochMismatch: boolean;
 } = vi.hoisted(() => ({
   events: [] as LoggedEvent[],
   connectParams: [] as unknown[],
+  epochMismatch: false,
 }));
 
 vi.mock("@/lib/features/code/worker-client", () => ({
@@ -56,6 +58,9 @@ vi.mock("@/lib/features/code/worker-client", () => ({
     }
     async connectToSession(params: unknown) {
       mockState.connectParams.push(params);
+      if (mockState.epochMismatch) {
+        throw new Error("Cursor epoch mismatch");
+      }
       return new ReadableStream<Uint8Array>({
         start(controller) {
           for (const e of mockState.events) {
@@ -78,7 +83,7 @@ function parseSseEvents(text: string): Array<{ type: string; [k: string]: any }>
     .map((s) => JSON.parse(s.replace(/^data: /, "")) as { type: string; [k: string]: any });
 }
 
-function makeRequest(afterSeq?: string) {
+function makeRequest(forwardedProps?: { afterSeq?: number; epoch?: string }) {
   return new Request("http://test/api/agent/code/connect", {
     method: "POST",
     body: JSON.stringify({
@@ -89,32 +94,31 @@ function makeRequest(afterSeq?: string) {
         { description: "sessionId", value: "s" },
         { description: "modelId", value: "Deepseek v4 Pro" },
       ],
-      forwardedProps: afterSeq === undefined ? {} : { afterSeq },
+      forwardedProps: forwardedProps ?? { afterSeq: 0, epoch: "worker-epoch" },
       messages: [],
     }),
   });
 }
 
+async function parseJsonBody(res: Response) {
+  return JSON.parse(await res.text()) as { error: string };
+}
+
 beforeEach(() => {
   mockState.events = [];
   mockState.connectParams = [];
+  mockState.epochMismatch = false;
 });
 
 describe("POST /api/agent/code/connect", () => {
   it("emits a synthetic RUN_STARTED, relays logged AG-UI events, and advances cursor", async () => {
+    // A cursor only ever comes from getSessionSnapshot, whose seq always
+    // points past any run-start artifacts, so the worker's replay never
+    // contains a RUN_STARTED or MESSAGES_SNAPSHOT for the client to skip.
     mockState.events = [
       {
         epoch: "worker-epoch",
-        seq: 1,
-        event: {
-          type: EventType.RUN_STARTED,
-          threadId: "s",
-          runId: "worker-run",
-        },
-      },
-      {
-        epoch: "worker-epoch",
-        seq: 2,
+        seq: 8,
         event: {
           type: EventType.TEXT_MESSAGE_CHUNK,
           messageId: "m1",
@@ -124,7 +128,7 @@ describe("POST /api/agent/code/connect", () => {
       },
       {
         epoch: "worker-epoch",
-        seq: 3,
+        seq: 9,
         event: {
           type: EventType.RUN_FINISHED,
           threadId: "s",
@@ -133,13 +137,15 @@ describe("POST /api/agent/code/connect", () => {
       },
     ];
 
-    const res = await POST(makeRequest("7") as never);
+    const res = await POST(
+      makeRequest({ afterSeq: 7, epoch: "worker-epoch" }) as never,
+    );
     expect(res.status).toBe(200);
 
     const events = parseSseEvents(await res.text());
 
     expect(mockState.connectParams[0]).toEqual(
-      expect.objectContaining({ sessionId: "s", afterSeq: 7 }),
+      expect.objectContaining({ sessionId: "s", afterSeq: 7, epoch: "worker-epoch" }),
     );
     expect(events[0]).toEqual(
       expect.objectContaining({
@@ -150,40 +156,33 @@ describe("POST /api/agent/code/connect", () => {
     );
     expect(events[1]).toEqual(
       expect.objectContaining({
-        type: EventType.CUSTOM,
-        name: CODING_AGENT_CURSOR_EVENT,
-        value: { seq: 1, epoch: "worker-epoch" },
+        type: EventType.TEXT_MESSAGE_CHUNK,
+        messageId: "m1",
+        delta: "hello",
       }),
     );
     expect(events[2]).toEqual(
       expect.objectContaining({
-        type: EventType.TEXT_MESSAGE_CHUNK,
-        messageId: "m1",
-        delta: "hello",
+        type: EventType.CUSTOM,
+        name: CODING_AGENT_CURSOR_EVENT,
+        value: { seq: 8, epoch: "worker-epoch" },
       }),
     );
     expect(events[3]).toEqual(
       expect.objectContaining({
         type: EventType.CUSTOM,
         name: CODING_AGENT_CURSOR_EVENT,
-        value: { seq: 2, epoch: "worker-epoch" },
+        value: { seq: 9, epoch: "worker-epoch", terminal: true },
       }),
     );
     expect(events[4]).toEqual(
-      expect.objectContaining({
-        type: EventType.CUSTOM,
-        name: CODING_AGENT_CURSOR_EVENT,
-        value: { seq: 3, epoch: "worker-epoch", terminal: true },
-      }),
-    );
-    expect(events[5]).toEqual(
       expect.objectContaining({
         type: EventType.RUN_FINISHED,
         threadId: "s",
         runId: "worker-run",
       }),
     );
-    expect(events[6]).toBeUndefined();
+    expect(events[5]).toBeUndefined();
   });
 
   it("finishes the synthetic connect run when worker has no events to replay", async () => {
@@ -196,11 +195,27 @@ describe("POST /api/agent/code/connect", () => {
     ]);
   });
 
-  it("does not default afterSeq to 0 when the client omits it, so the worker computes its own default window", async () => {
-    await POST(makeRequest() as never);
+  it("returns 400 when afterSeq is missing", async () => {
+    const res = await POST(makeRequest({ epoch: "worker-epoch" }) as never);
 
-    expect(mockState.connectParams[0]).toEqual(
-      expect.objectContaining({ sessionId: "s", afterSeq: undefined }),
+    expect(res.status).toBe(400);
+    expect(await parseJsonBody(res)).toEqual({ error: "afterSeq is required" });
+  });
+
+  it("returns 400 when epoch is missing", async () => {
+    const res = await POST(makeRequest({ afterSeq: 0 }) as never);
+
+    expect(res.status).toBe(400);
+    expect(await parseJsonBody(res)).toEqual({ error: "epoch is required" });
+  });
+
+  it("returns 409 when the worker reports a cursor epoch mismatch", async () => {
+    mockState.epochMismatch = true;
+
+    const res = await POST(
+      makeRequest({ afterSeq: 0, epoch: "stale-epoch" }) as never,
     );
+
+    expect(res.status).toBe(409);
   });
 });

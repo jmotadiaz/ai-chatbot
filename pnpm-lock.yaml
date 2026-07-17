@@ -74,6 +74,9 @@ importers:
       '@ai-sdk/xai':
         specifier: 3.0.26
         version: 3.0.26(zod@3.25.76)
+      '@drawbotics/file-icons':
+        specifier: ^0.1.3
+        version: 0.1.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@faker-js/faker':
         specifier: ^8.4.1
         version: 8.4.1
@@ -104,6 +107,9 @@ importers:
       '@radix-ui/react-use-controllable-state':
         specifier: ^1.2.2
         version: 1.2.2(@types/react@19.2.1)(react@19.2.3)
+      '@react-symbols/icons':
+        specifier: ^1.4.1
+        version: 1.4.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@streamdown/cjk':
         specifier: ^1.0.1
         version: 1.0.1(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.3)(unified@11.0.5)
@@ -273,6 +279,9 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@earendil-works/pi-coding-agent':
+        specifier: ^0.79.3
+        version: 0.79.3(@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(bufferutil@4.1.0)(ws@8.19.0(bufferutil@4.1.0))(zod@3.25.76)
       '@electric-sql/pglite':
         specifier: 0.4.5
         version: 0.4.5
@@ -872,6 +881,12 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
+
+  '@drawbotics/file-icons@0.1.3':
+    resolution: {integrity: sha512-lX+zf4dJrXDflJ1IzYmhq89uSTDvCJf5UY80HxPEyi1UWxa88IKXRIK1g/x6FXlMcLvOhHPFaQB/r5Kj7Zi+Lw==}
+    peerDependencies:
+      react: 16.x
+      react-dom: 16.x
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -2154,6 +2169,12 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@react-symbols/icons@1.4.1':
+    resolution: {integrity: sha512-LJ9eiCJOoWrT4sjsamUBoSjbRkEeo6CYxqbEuicYib/cwwbN0ndTTGFx4at9D9CwEVdFxW/ZZfNrIdzjA4scIg==}
+    peerDependencies:
+      react: '>= 16.8'
+      react-dom: '>= 16.8'
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     resolution: {integrity: sha512-A6ehUVSiSaaliTxai040ZpZ2zTevHYbvu/lDoeAteHI8QnaosIzm4qwtezfRg1jOYaUmnzLX1AOD6Z+UJjtifg==}
@@ -3523,6 +3544,9 @@ packages:
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
+
+  classnames@2.5.1:
+    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
 
   cli-cursor@5.0.0:
     resolution: {integrity: sha512-aCj4O5wKyszjMmDT4tZj93kxyydN/K5zPWSCe6/0AV/AA1pqe5ZBIw0a2ZfPQV7lL5/yb5HsUreJ6UFAF1tEQw==}
@@ -8354,6 +8378,12 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
+  '@drawbotics/file-icons@0.1.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      classnames: 2.5.1
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
   '@drizzle-team/brocli@0.10.2': {}
 
   '@earendil-works/pi-agent-core@0.79.3(@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(bufferutil@4.1.0)(ws@8.19.0(bufferutil@4.1.0))(zod@3.25.76)':
@@ -9388,6 +9418,11 @@ snapshots:
       react: 19.2.3
     optionalDependencies:
       '@types/react': 19.2.1
+
+  '@react-symbols/icons@1.4.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     optional: true
@@ -10863,6 +10898,8 @@ snapshots:
   class-variance-authority@0.7.1:
     dependencies:
       clsx: 2.1.1
+
+  classnames@2.5.1: {}
 
   cli-cursor@5.0.0:
     dependencies:

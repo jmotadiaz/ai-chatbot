@@ -244,6 +244,13 @@ export async function handleRpc(requestBody: string): Promise<Response> {
           afterSeq?: number;
           epoch?: string;
         };
+        if (typeof afterSeq !== "number" || typeof epoch !== "string") {
+          stop();
+          return jsonResponse(null, id, {
+            code: -32602,
+            message: "afterSeq and epoch are required",
+          });
+        }
         const encoder = new TextEncoder();
         let cleanup: () => void = () => {};
         let completed = false;
@@ -269,8 +276,8 @@ export async function handleRpc(requestBody: string): Promise<Response> {
                     // already closed; ignore
                   }
                 },
-                typeof afterSeq === "number" ? afterSeq : undefined,
-                typeof epoch === "string" ? epoch : undefined,
+                afterSeq,
+                epoch,
               );
             } catch (err) {
               log.error("connect.setup_error", { message: String(err) });
@@ -356,11 +363,6 @@ function summarizeRpcParams(method: string, params: unknown): unknown {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
-      };
-    case "setModel":
-      return {
-        sessionId,
-        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
       };
     case "disposeSession":
     case "cancelRun":

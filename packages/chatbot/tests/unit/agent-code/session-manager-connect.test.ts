@@ -16,7 +16,6 @@ const {
   connectToSession,
   sendPrompt,
   getSessionSnapshot,
-  computeDefaultAfterSeq,
   __resetSessionsForTests,
   __seedSessionForTests,
 } = await import("coding-agent/session-manager");
@@ -87,7 +86,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-snapshot",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
       activeRun: {
         runId: "r1",
@@ -96,8 +94,7 @@ describe("session-manager.connectToSession event-log replay", () => {
         sawTerminal: false,
       },
       // Pi has committed the user message but not the partial assistant text.
-      lastFinalizedMessageSeq: 2,
-      lastRunStartSeq: 1,
+      snapshotCursorSeq: 2,
     });
 
     const snapshot = await getSessionSnapshot("snapshot");
@@ -117,7 +114,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-epoch",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
       activeRun: {
         runId: "r1",
@@ -147,7 +143,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-1",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
     });
 
@@ -155,7 +150,7 @@ describe("session-manager.connectToSession event-log replay", () => {
     const onError = vi.fn();
     const onComplete = vi.fn();
 
-    const cleanup = await connectToSession("s1", onEvent, onError, onComplete, 1);
+    const cleanup = await connectToSession("s1", onEvent, onError, onComplete, 1, eventLog.epoch);
 
     const events = parseLines(onEvent);
     expect(events.map((e) => e.seq)).toEqual([2, 3]);
@@ -183,7 +178,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-2",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
       activeRun: {
         runId: "r2",
@@ -197,7 +191,7 @@ describe("session-manager.connectToSession event-log replay", () => {
     const onError = vi.fn();
     const onComplete = vi.fn();
 
-    const cleanup = await connectToSession("s2", onEvent, onError, onComplete, 1);
+    const cleanup = await connectToSession("s2", onEvent, onError, onComplete, 1, eventLog.epoch);
 
     expect(onEvent).not.toHaveBeenCalled();
     expect(onComplete).not.toHaveBeenCalled();
@@ -214,149 +208,17 @@ describe("session-manager.connectToSession event-log replay", () => {
     cleanup();
   });
 
-  it("defaults to replaying from the active run start when no cursor is provided", async () => {
-    const mock = createMockPiSession({
-      messages: [],
-      isStreaming: true,
-    });
-    const eventLog = new SessionEventLog();
-    eventLog.append({ type: EventType.RUN_STARTED, threadId: "s5", runId: "old" } as never);
-    eventLog.append({ type: EventType.RUN_FINISHED, threadId: "s5", runId: "old" } as never);
-    const activeStart = eventLog.lastSeq + 1;
-    eventLog.append({ type: EventType.RUN_STARTED, threadId: "s5", runId: "active" } as never);
-    eventLog.append({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m5", role: "assistant", delta: "active" } as never);
-
-    __seedSessionForTests("s5", {
-      sessionId: "s5",
-      piSessionId: "pi-5",
-      project: "p",
-      runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
-      eventLog,
-      activeRun: {
-        runId: "active",
-        startSeq: activeStart,
-        unsubscribe: () => {},
-        sawTerminal: false,
-      },
-      lastRunStartSeq: activeStart,
-    });
-
-    const onEvent = vi.fn();
-    const onError = vi.fn();
-    const onComplete = vi.fn();
-
-    const cleanup = await connectToSession("s5", onEvent, onError, onComplete);
-
-    expect(parseLines(onEvent).map((e) => e.event.runId ?? e.event.type)).toEqual([
-      "active",
-      EventType.TEXT_MESSAGE_CHUNK,
-    ]);
-    expect(onError).not.toHaveBeenCalled();
-    expect(onComplete).not.toHaveBeenCalled();
-
-    cleanup();
-  });
-
-  it("defaults to replaying only the last (finished) run's events when the caller omits afterSeq", async () => {
-    const mock = createMockPiSession({ messages: [], isStreaming: false });
-    const eventLog = new SessionEventLog();
-    // First run: fully logged and finished.
-    eventLog.append({ type: EventType.RUN_STARTED, threadId: "s7", runId: "run-1" } as never);
-    eventLog.append({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m-old", role: "assistant", delta: "old" } as never);
-    eventLog.append({ type: EventType.RUN_FINISHED, threadId: "s7", runId: "run-1" } as never);
-    // Second (most recent) run: also finished.
-    const secondRunStart = eventLog.lastSeq + 1;
-    eventLog.append({ type: EventType.RUN_STARTED, threadId: "s7", runId: "run-2" } as never);
-    eventLog.append({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m-new", role: "assistant", delta: "new" } as never);
-    eventLog.append({ type: EventType.RUN_FINISHED, threadId: "s7", runId: "run-2" } as never);
-
-    __seedSessionForTests("s7", {
-      sessionId: "s7",
-      piSessionId: "pi-7",
-      project: "p",
-      runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
-      eventLog,
-      // No activeRun (the run has since finished), but lastRunStartSeq
-      // persists so a reconnect still finds the last run's window.
-      lastRunStartSeq: secondRunStart,
-    });
-
-    const onEvent = vi.fn();
-    const onError = vi.fn();
-    const onComplete = vi.fn();
-
-    const cleanup = await connectToSession("s7", onEvent, onError, onComplete);
-
-    expect(parseLines(onEvent).map((e) => e.event.runId ?? e.event.type)).toEqual([
-      "run-2",
-      EventType.TEXT_MESSAGE_CHUNK,
-      "run-2",
-    ]);
-    expect(onError).not.toHaveBeenCalled();
-    expect(onComplete).toHaveBeenCalledTimes(1);
-
-    cleanup();
-  });
-
-  it("replays nothing when no run has ever started in this worker's lifetime", async () => {
-    const mock = createMockPiSession({ messages: [], isStreaming: false });
-    const eventLog = new SessionEventLog();
-    // Events present in the log (e.g. from some other bookkeeping) but no
-    // run has ever gone through startPromptCollector in this worker's
-    // lifetime, so lastRunStartSeq was never set.
-    eventLog.append({ type: EventType.RUN_STARTED, threadId: "s8", runId: "run-x" } as never);
-    eventLog.append({ type: EventType.RUN_FINISHED, threadId: "s8", runId: "run-x" } as never);
-
-    __seedSessionForTests("s8", {
-      sessionId: "s8",
-      piSessionId: "pi-8",
-      project: "p",
-      runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
-      eventLog,
-    });
-
-    const onEvent = vi.fn();
-    const onError = vi.fn();
-    const onComplete = vi.fn();
-
-    const cleanup = await connectToSession("s8", onEvent, onError, onComplete);
-
-    expect(onEvent).not.toHaveBeenCalled();
-    expect(onError).not.toHaveBeenCalled();
-    expect(onComplete).toHaveBeenCalledTimes(1);
-
-    cleanup();
-  });
-
   it("completes immediately when there is no session to replay", async () => {
     const onEvent = vi.fn();
     const onError = vi.fn();
     const onComplete = vi.fn();
 
-    const cleanup = await connectToSession("missing", onEvent, onError, onComplete, 0);
+    const cleanup = await connectToSession("missing", onEvent, onError, onComplete, 0, "any-epoch");
 
     expect(onEvent).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
     expect(onComplete).toHaveBeenCalledTimes(1);
     cleanup();
-  });
-
-  describe("computeDefaultAfterSeq", () => {
-    it("prefers lastFinalizedMessageSeq when a message has finalized in the current/last run", () => {
-      expect(computeDefaultAfterSeq(5, 30, 42)).toBe(30);
-    });
-
-    it("falls back to lastRunStartSeq - 1 when a run has started but no message finalized yet", () => {
-      expect(computeDefaultAfterSeq(5, undefined, 42)).toBe(4);
-    });
-
-    it("returns the event log's lastSeq (replay nothing new) when no run has started", () => {
-      expect(computeDefaultAfterSeq(undefined, undefined, 42)).toBe(42);
-      expect(computeDefaultAfterSeq(undefined, undefined, 0)).toBe(0);
-    });
   });
 
   it("keeps collecting Pi events after the sendPrompt HTTP stream is cancelled", async () => {
@@ -373,7 +235,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-4",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
     });
 
@@ -410,7 +271,7 @@ describe("session-manager.connectToSession event-log replay", () => {
     const onEvent = vi.fn();
     const onError = vi.fn();
     const onComplete = vi.fn();
-    const cleanup = await connectToSession("s4", onEvent, onError, onComplete, 1);
+    const cleanup = await connectToSession("s4", onEvent, onError, onComplete, 1, eventLog.epoch);
 
     expect(parseLines(onEvent).map((e) => e.event.type)).toEqual([
       EventType.MESSAGES_SNAPSHOT,
@@ -450,7 +311,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-5",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
     });
 
@@ -487,7 +347,7 @@ describe("session-manager.connectToSession event-log replay", () => {
     await prompt.promise;
   });
 
-  it("narrows the default reconnect replay window past finalized message/tool cycles, skipping the stale run-start snapshot", async () => {
+  it("replays from a snapshot cursor taken past finalized message/tool cycles, skipping the stale run-start snapshot", async () => {
     const prompt = deferred<void>();
     const mock = createMockPiSession({
       messages: [],
@@ -501,7 +361,6 @@ describe("session-manager.connectToSession event-log replay", () => {
       piSessionId: "pi-9",
       project: "p",
       runtime: { session: mock.session } as never,
-      inFlightTools: new Map(),
       eventLog,
     });
 
@@ -556,16 +415,27 @@ describe("session-manager.connectToSession event-log replay", () => {
       assistantMessageEvent: { type: "thinking_delta", delta: "in progress" },
     });
 
+    const snapshot = await getSessionSnapshot("s9");
+    expect(snapshot.cursor).not.toBeNull();
+
     const onEvent = vi.fn();
     const onError = vi.fn();
     const onComplete = vi.fn();
-    const cleanup = await connectToSession("s9", onEvent, onError, onComplete);
+    const cleanup = await connectToSession(
+      "s9",
+      onEvent,
+      onError,
+      onComplete,
+      snapshot.cursor!.seq,
+      snapshot.cursor!.epoch,
+    );
 
     const replayed = parseLines(onEvent).map((e) => e.event);
-    // No MESSAGES_SNAPSHOT: by reconnect time the first cycle has already
-    // finalized, so the client's SSR-loaded state supersedes it — replaying
-    // it would scramble message order (positional merge against the
-    // client's current, more-current list) and duplicate content.
+    // No MESSAGES_SNAPSHOT: by the time the snapshot cursor was taken the
+    // first cycle had already finalized, so the client's SSR-loaded state
+    // supersedes it — replaying it would scramble message order
+    // (positional merge against the client's current, more-current list)
+    // and duplicate content.
     expect(replayed.some((e) => e.type === EventType.MESSAGES_SNAPSHOT)).toBe(false);
     // No events from the two already-finalized cycles either — the client's
     // SSR-loaded state already has their full content; replaying their
@@ -586,6 +456,58 @@ describe("session-manager.connectToSession event-log replay", () => {
     expect(onError).not.toHaveBeenCalled();
 
     cleanup();
+    mock.__emit({ type: "agent_end" });
+    prompt.resolve();
+    await prompt.promise;
+  });
+
+  it("stamps the client's user message id onto Pi's message object so snapshot rebuilds return it", async () => {
+    const prompt = deferred<void>();
+    // The same object reference Pi would hand to subscribers on `message_end`
+    // and keep in `session.messages` — mutating it in the collector must be
+    // visible through both.
+    const userMessage: Record<string, unknown> = {
+      role: "user",
+      content: "hello",
+      timestamp: 5000,
+    };
+    const mock = createMockPiSession({
+      messages: [userMessage],
+      isStreaming: false,
+      prompt: () => prompt.promise,
+    });
+    const eventLog = new SessionEventLog();
+
+    __seedSessionForTests("s10", {
+      sessionId: "s10",
+      piSessionId: "pi-10",
+      project: "p",
+      runtime: { session: mock.session } as never,
+      eventLog,
+    });
+
+    const stream = await sendPrompt(
+      "s10",
+      "hello",
+      [{ id: "client-msg-1", role: "user", content: "hello" }],
+      "r10",
+    );
+    const reader = stream.getReader();
+
+    mock.__emit({ type: "agent_start" });
+    await reader.read(); // RUN_STARTED
+    await reader.read(); // MESSAGES_SNAPSHOT
+
+    mock.__emit({ type: "message_end", message: userMessage });
+
+    expect(userMessage.clientMessageId).toBe("client-msg-1");
+
+    const snapshot = await getSessionSnapshot("s10");
+    expect(snapshot.messages).toContainEqual(
+      expect.objectContaining({ id: "client-msg-1", role: "user", content: "hello" }),
+    );
+
+    await reader.cancel();
     mock.__emit({ type: "agent_end" });
     prompt.resolve();
     await prompt.promise;

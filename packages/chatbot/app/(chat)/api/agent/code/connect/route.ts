@@ -6,7 +6,6 @@ import { getSession, touchSession } from "@/lib/features/code/session-store";
 import { toPiModelId } from "@/lib/features/code/model-mapping";
 import {
   emitAguiSseEvent,
-  parseAfterSeqOrUndefined,
   relayLoggedAguiNdjsonToSse,
   type RelaySummary,
 } from "@/lib/features/code/agui-stream-relay";
@@ -31,10 +30,12 @@ export const POST = withAuth(async (user, req) => {
     context.find((c) => c.description === "modelId")?.value ??
     (typeof forwardedProps.modelId === "string" ? forwardedProps.modelId : undefined);
   const runId = (body.runId as string | undefined) ?? crypto.randomUUID();
-  // Absent (or malformed) afterSeq is forwarded to the worker as
-  // "not provided" so it can compute its own default replay window
-  // (see connectToSession / computeDefaultAfterSeq in session-manager.ts).
-  const afterSeq = parseAfterSeqOrUndefined(forwardedProps.afterSeq ?? body.afterSeq);
+  const afterSeq =
+    typeof forwardedProps.afterSeq === "number"
+      ? forwardedProps.afterSeq
+      : typeof body.afterSeq === "number"
+        ? body.afterSeq
+        : undefined;
   const epoch =
     typeof forwardedProps.epoch === "string"
       ? forwardedProps.epoch
@@ -50,6 +51,18 @@ export const POST = withAuth(async (user, req) => {
   }
   if (!modelId) {
     return new Response(JSON.stringify({ error: "modelId is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (typeof afterSeq !== "number") {
+    return new Response(JSON.stringify({ error: "afterSeq is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (!epoch) {
+    return new Response(JSON.stringify({ error: "epoch is required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
@@ -115,8 +128,6 @@ export const POST = withAuth(async (user, req) => {
         async start(controller) {
           const streamStop = log.startTimer("connect.stream_duration", { sessionId });
           let relaySummary: RelaySummary | null = null;
-          let skippedRunStarted = false;
-          let skippedMessagesSnapshot = false;
           let closeReason = "reader_done";
 
           const emitTerminalIfNeeded = () => {
@@ -145,24 +156,6 @@ export const POST = withAuth(async (user, req) => {
               onReader: (r) => {
                 reader = r;
               },
-              skipEvent: (event) => {
-                if (!skippedRunStarted && event.type === EventType.RUN_STARTED) {
-                  skippedRunStarted = true;
-                  return true;
-                }
-                // The worker's default replay window already skips the
-                // run-start MESSAGES_SNAPSHOT once any message in the run
-                // has finalized (see computeDefaultAfterSeq in
-                // session-manager.ts) — the client's SSR-loaded state is at
-                // least as fresh by then, and re-merging that snapshot
-                // corrupts message order. This is defense in depth for any
-                // caller that explicitly requests an earlier cursor.
-                if (!skippedMessagesSnapshot && event.type === EventType.MESSAGES_SNAPSHOT) {
-                  skippedMessagesSnapshot = true;
-                  return true;
-                }
-                return false;
-              },
             });
             emitTerminalIfNeeded();
           } catch (err) {
@@ -183,7 +176,6 @@ export const POST = withAuth(async (user, req) => {
               sessionId,
               afterSeq,
               closeReason,
-              skippedRunStarted,
               relaySummary,
             });
             log.info("connect.close", { sessionId, closeReason });
