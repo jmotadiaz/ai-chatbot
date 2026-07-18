@@ -163,6 +163,18 @@ function isAbortError(err: unknown): boolean {
   return name === "aborterror" || /aborted|fetch is aborted/.test(msg);
 }
 
+// When we abort our own fetch (cut-on-hide, unmount), @ag-ui/client does not
+// reject the run promise: it converts the AbortError into an in-band RUN_ERROR
+// event with code "abort" and completes the stream. Only locally aborted
+// requests carry that code — the worker never stamps `code` on its RUN_ERROR
+// events — so this cleanly separates a deliberate cut from a genuine failure.
+function isLocalAbortRunError(event: BaseEvent): boolean {
+  return (
+    event.type === EventType.RUN_ERROR &&
+    (event as { code?: string }).code === "abort"
+  );
+}
+
 const MAX_CONNECT_ATTEMPTS = 4; // 1 initial + 3 retries
 const CONNECT_BACKOFF_MS = [300, 600, 1200]; // delay before retry attempts 1, 2, 3
 
@@ -244,6 +256,20 @@ export function useCodingAgent({
               }));
             },
             onEvent: ({ event }) => {
+              if (isLocalAbortRunError(event)) {
+                // Not a real terminal event: the run is still active on the
+                // worker. Leave shouldReconnectRef/status/cursor untouched so
+                // the next visibility:visible can resume it.
+                writeClientTrace({
+                  runId: getEventRunId(event) ?? currentTraceRunId ?? sessionId,
+                  sessionId,
+                  eventName: "client.run_error.abort_ignored",
+                  payload: {
+                    message: (event as { message?: string }).message,
+                  },
+                });
+                return;
+              }
               const cursor = cursorFromEvent(event);
               if (cursor) {
                 if (cursor.terminal) {
@@ -332,6 +358,17 @@ export function useCodingAgent({
               update(() => ({ messages: [...currentAgent.messages] }));
             },
             onRunFailed: ({ error: err }) => {
+              if (isAbortError(err)) {
+                // Deliberate local cut — keep the running state intact for
+                // the reconnect on visibility:visible.
+                writeClientTrace({
+                  runId: currentTraceRunId ?? sessionId,
+                  sessionId,
+                  eventName: "client.run_failed.abort_ignored",
+                  payload: { message: err.message },
+                });
+                return;
+              }
               writeClientTrace({
                 runId: currentTraceRunId ?? sessionId,
                 sessionId,

@@ -26,6 +26,35 @@ function makeSseResponse(events: object[]): Response {
   );
 }
 
+// Models what a real browser does with an in-flight SSE response when the
+// request is aborted: the fetch promise has already resolved, so the abort
+// errors the *body stream* (Safari words it "BodyStreamBuffer was aborted").
+// @ag-ui/client then converts that AbortError into an in-band RUN_ERROR event
+// with code "abort" instead of rejecting the run promise.
+function makeHangingSseResponse(
+  events: object[],
+  signal?: AbortSignal | null,
+): Response {
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        for (const e of events) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
+        }
+        signal?.addEventListener("abort", () => {
+          controller.error(
+            Object.assign(new Error("BodyStreamBuffer was aborted"), {
+              name: "AbortError",
+            }),
+          );
+        });
+      },
+    }),
+    { headers: { "Content-Type": "text/event-stream" } },
+  );
+}
+
 function Harness() {
   const [, setTick] = useState(0);
   const { messages, sendMessage, error, isRunning } = useCodingAgent({
@@ -151,7 +180,7 @@ describe("useCodingAgent client lifecycle", () => {
   it("cuts the stream when hidden and reconnects when shown again", async () => {
     let connectCallCount = 0;
     fetchSpy.mockReset();
-    fetchSpy.mockImplementation((url: string) => {
+    fetchSpy.mockImplementation((url: string, init?: RequestInit) => {
       if (url === "/api/agent/code/sessions/s/snapshot") {
         return Promise.resolve(
           new Response(
@@ -167,25 +196,12 @@ describe("useCodingAgent client lifecycle", () => {
       if (url === "/api/agent/code/connect") {
         connectCallCount += 1;
         if (connectCallCount === 1) {
-          // The initial connect hangs forever — simulates a stream that
-          // the user navigates away from while it is still flowing.
-          const encoder = new TextEncoder();
+          // The initial connect hangs until the cut aborts it — simulates a
+          // stream that the user navigates away from while it is flowing.
           return Promise.resolve(
-            new Response(
-              new ReadableStream({
-                start(controller) {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: "RUN_STARTED",
-                        threadId: "s",
-                        runId: "r1",
-                      })}\n\n`,
-                    ),
-                  );
-                },
-              }),
-              { headers: { "Content-Type": "text/event-stream" } },
+            makeHangingSseResponse(
+              [{ type: "RUN_STARTED", threadId: "s", runId: "r1" }],
+              init?.signal,
             ),
           );
         }
@@ -222,6 +238,10 @@ describe("useCodingAgent client lifecycle", () => {
     });
     expect(firstSignal.aborted).toBe(true);
     expect(connectCallCount).toBe(1); // no reconnect while hidden
+    // The run is still active server-side; the in-band RUN_ERROR (code
+    // "abort") produced by the cut must not flip the UI to idle/error.
+    expect(screen.getByTestId("is-running").textContent).toBe("true");
+    expect(screen.getByTestId("error").textContent).toBe("");
 
     // Show the tab — reconnect immediately from the last cursor.
     Object.defineProperty(document, "visibilityState", {
@@ -489,7 +509,7 @@ describe("useCodingAgent client lifecycle", () => {
   it("does not surface an error when the cut is deliberate (aborted)", async () => {
     let connectCallCount = 0;
     fetchSpy.mockReset();
-    fetchSpy.mockImplementation((url: string) => {
+    fetchSpy.mockImplementation((url: string, init?: RequestInit) => {
       if (url === "/api/agent/code/sessions/s/snapshot") {
         return Promise.resolve(
           new Response(
@@ -505,24 +525,11 @@ describe("useCodingAgent client lifecycle", () => {
       if (url === "/api/agent/code/connect") {
         connectCallCount += 1;
         if (connectCallCount === 1) {
-          // Hangs forever — gets cut when we hide.
-          const encoder = new TextEncoder();
+          // Hangs until the cut aborts it when we hide.
           return Promise.resolve(
-            new Response(
-              new ReadableStream({
-                start(controller) {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: "RUN_STARTED",
-                        threadId: "s",
-                        runId: "r1",
-                      })}\n\n`,
-                    ),
-                  );
-                },
-              }),
-              { headers: { "Content-Type": "text/event-stream" } },
+            makeHangingSseResponse(
+              [{ type: "RUN_STARTED", threadId: "s", runId: "r1" }],
+              init?.signal,
             ),
           );
         }
