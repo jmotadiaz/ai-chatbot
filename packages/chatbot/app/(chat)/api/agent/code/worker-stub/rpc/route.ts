@@ -127,6 +127,28 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  if (method === "getSessionSnapshot") {
+    return NextResponse.json({
+      jsonrpc: "2.0",
+      result: {
+        messages: [],
+        cursor: { epoch: "stub-epoch", seq: 0 },
+        running: false,
+      },
+      id: 1,
+    });
+  }
+
+  if (method === "getSessionModel") {
+    // No session material in the stub: the client falls back to the DB
+    // model or the first available one, same as a brand-new session.
+    return NextResponse.json({
+      jsonrpc: "2.0",
+      result: { model: null },
+      id: 1,
+    });
+  }
+
   return NextResponse.json(
     { jsonrpc: "2.0", error: { code: -32601, message: "Method not found" }, id: 1 },
     { status: 404 },

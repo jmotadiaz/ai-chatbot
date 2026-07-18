@@ -438,7 +438,7 @@ export function useCodingAgent({
         runId,
         sessionId,
         eventName: "client.connect.start",
-        payload: { project, modelId, cursor, attempt },
+        payload: { project, cursor, attempt },
       });
       try {
         await agent.connectAgent({
@@ -446,7 +446,6 @@ export function useCodingAgent({
           context: [
             { description: "project", value: project },
             { description: "sessionId", value: sessionId },
-            { description: "modelId", value: modelId },
           ],
           forwardedProps: { afterSeq: cursor.seq, epoch: cursor.epoch },
         });
@@ -646,7 +645,7 @@ export function useCodingAgent({
       window.removeEventListener("online", handleOnline);
       void agent.abortRun();
     };
-  }, [agent, project, sessionId, modelId, store]);
+  }, [agent, project, sessionId, store]);
 
   const items = useMemo(
     () => groupItems(state.messages, state.toolErrors, state.toolTimings),

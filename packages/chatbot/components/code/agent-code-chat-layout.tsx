@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Edit } from "lucide-react";
 import { AgentCodeChat } from "./agent-code-chat";
 import { FileBrowserEntryButton } from "./file-browser/file-browser-entry-button";
@@ -8,9 +7,13 @@ import { FileBrowserProvider } from "./file-browser/file-browser-provider";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
-import { ModelPickerSelector } from "@/components/chat/model-picker";
+import {
+  ModelPickerLoading,
+  ModelPickerSelector,
+} from "@/components/chat/model-picker";
 import { Button } from "@/components/ui/button";
 import { Main } from "@/components/ui/main";
+import { useCodingAgentSessionModel } from "@/lib/features/code/hooks/use-coding-agent-session-model";
 import { useCreateCodingAgentSession } from "@/lib/features/code/hooks/use-create-coding-agent-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
@@ -25,11 +28,15 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   sessionId,
   availableModels,
 }) => {
-  const [modelId, setModelId] = useState<string>(availableModels[0] ?? "");
+  const { modelId, setModelId, isLoading: isLoadingModel } =
+    useCodingAgentSessionModel({
+      sessionId,
+      fallbackModelId: availableModels[0] ?? "",
+    });
   const { isCreatingSession, createNewSession } =
     useCreateCodingAgentSession({
       project,
-      modelId,
+      modelId: modelId ?? "",
     });
 
   return (
@@ -51,13 +58,17 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
             <Edit size={18} />
           </Button>
           <FileBrowserEntryButton project={project} sessionId={sessionId} />
-          <ModelPickerSelector
-            id="coding-agent-model"
-            selectedModel={modelId as chatModelId}
-            setSelectedModel={setModelId as (m: chatModelId) => void}
-            models={availableModels as chatModelId[]}
-            dropdownVariant="responsive-bottom-right"
-          />
+          {isLoadingModel ? (
+            <ModelPickerLoading />
+          ) : (
+            <ModelPickerSelector
+              id="coding-agent-model"
+              selectedModel={modelId as chatModelId}
+              setSelectedModel={setModelId as (m: chatModelId) => void}
+              models={availableModels as chatModelId[]}
+              dropdownVariant="responsive-bottom-right"
+            />
+          )}
         </Header.Left>
         <Header.Right>
           <ThemeToggle />
@@ -67,7 +78,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
         <AgentCodeChat
           project={project}
           sessionId={sessionId}
-          modelId={modelId}
+          modelId={modelId ?? ""}
         />
       </Main>
     </FileBrowserProvider>

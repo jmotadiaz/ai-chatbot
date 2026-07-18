@@ -11,13 +11,18 @@ test.describe("Coding Agent", () => {
     await page.click("text=+ New session");
     await page.waitForURL(/\/agent\/code\/ai-chatbot\/.+/, { timeout: 10000 });
     await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
-    await page.waitForTimeout(1500);
 
     const chatInput = page.locator("[data-testid='chat-input']");
     await chatInput.click();
     await chatInput.fill("Hello agent");
 
-    const sendButton = page.locator("button[aria-label='Send message']");
+    // While the session snapshot loads, the send control renders as a
+    // spinner (type="button", not disabled) whose click is a no-op — wait
+    // for the real submit button instead of just "not disabled".
+    const sendButton = page.locator(
+      "button[aria-label='Send message'][type='submit']",
+    );
+    await expect(sendButton).toBeVisible({ timeout: 15000 });
     await expect(sendButton).not.toBeDisabled();
     await sendButton.click();
 

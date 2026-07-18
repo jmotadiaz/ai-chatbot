@@ -18,6 +18,7 @@ import {
   connectToSession,
   cancelRun,
   getSessionStatus,
+  getSessionModel,
 } from "../session-manager";
 
 export interface HttpTransportOptions {
@@ -303,6 +304,15 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         result = await getSessionStatus(sessionId);
         break;
       }
+      case "getSessionModel": {
+        const { sessionId, piSessionId, project } = params as {
+          sessionId: string;
+          piSessionId?: string;
+          project?: string;
+        };
+        result = { model: await getSessionModel(sessionId, piSessionId, project) };
+        break;
+      }
       default: {
         log.warn("rpc.unknown_method", { method });
         stop();
@@ -359,6 +369,7 @@ function summarizeRpcParams(method: string, params: unknown): unknown {
         hasPiSessionId: typeof p.piSessionId === "string",
       };
     case "getSessionSnapshot":
+    case "getSessionModel":
       return {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
@@ -403,6 +414,12 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
         messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
         running: r.running === true,
         cursorSeq: cursor && typeof cursor.seq === "number" ? cursor.seq : undefined,
+      };
+    }
+    case "getSessionModel": {
+      const model = r.model as { providerId?: unknown; modelId?: unknown } | null;
+      return {
+        model: model ? `${model.providerId}/${model.modelId}` : null,
       };
     }
     default:

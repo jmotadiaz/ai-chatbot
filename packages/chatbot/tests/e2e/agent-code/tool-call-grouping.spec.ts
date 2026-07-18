@@ -9,7 +9,13 @@ test.describe("Coding Agent — tool call grouping", () => {
     await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
 
     await page.locator("[data-testid='chat-input']").fill("list files and read README");
-    await page.locator("button[aria-label='Send message']").click();
+
+    // Wait out the loading spinner (same control, type="button", no-op click).
+    const sendButton = page.locator(
+      "button[aria-label='Send message'][type='submit']",
+    );
+    await expect(sendButton).toBeVisible({ timeout: 15000 });
+    await sendButton.click();
 
     const groups = page.locator("[data-testid='tool-call-group']");
     await expect(groups.first()).toBeVisible({ timeout: 15000 });

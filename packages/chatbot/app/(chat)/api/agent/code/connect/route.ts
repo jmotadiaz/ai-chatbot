@@ -3,13 +3,11 @@ import { FileTraceSink, isTracingEnabled, runWithTraceContext, getTraceLogger } 
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import { getSession, touchSession } from "@/lib/features/code/session-store";
-import { toPiModelId } from "@/lib/features/code/model-mapping";
 import {
   emitAguiSseEvent,
   relayLoggedAguiNdjsonToSse,
   type RelaySummary,
 } from "@/lib/features/code/agui-stream-relay";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export const maxDuration = 240;
 
@@ -26,9 +24,6 @@ export const POST = withAuth(async (user, req) => {
     context.find((c) => c.description === "sessionId")?.value ??
     (typeof forwardedProps.sessionId === "string" ? forwardedProps.sessionId : undefined) ??
     threadId;
-  const modelId =
-    context.find((c) => c.description === "modelId")?.value ??
-    (typeof forwardedProps.modelId === "string" ? forwardedProps.modelId : undefined);
   const runId = (body.runId as string | undefined) ?? crypto.randomUUID();
   const afterSeq =
     typeof forwardedProps.afterSeq === "number"
@@ -45,12 +40,6 @@ export const POST = withAuth(async (user, req) => {
 
   if (!project) {
     return new Response(JSON.stringify({ error: "project is required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  if (!modelId) {
-    return new Response(JSON.stringify({ error: "modelId is required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
@@ -80,7 +69,7 @@ export const POST = withAuth(async (user, req) => {
   try {
     return await runWithTraceContext({ runId, sessionId, sink }, async () => {
       const log = getTraceLogger("bridge");
-      log.info("connect.start", { threadId, sessionId, project, modelId, afterSeq, epoch });
+      log.info("connect.start", { threadId, sessionId, project, afterSeq, epoch });
 
       const dbSession = await getSession({ userId: user.id, sessionId });
       if (!dbSession) {
@@ -92,13 +81,14 @@ export const POST = withAuth(async (user, req) => {
         return new Response("Session project mismatch", { status: 400 });
       }
 
+      // Reconnecting a stream must never change the session's model: no
+      // modelId is forwarded, so the worker keeps (or restores from the Pi
+      // session file) whatever model the session was already using.
       const client = new WorkerClient();
-      const piModelId = modelId ? toPiModelId(modelId as chatModelId) : undefined;
       await client.initializeSession({
         userId: user.id,
         sessionId,
         project,
-        modelId: piModelId ? `${piModelId.providerId}/${piModelId.modelId}` : undefined,
         piSessionId: dbSession.piSessionId ?? undefined,
         _traceRunId: runId,
       });

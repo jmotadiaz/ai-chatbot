@@ -714,6 +714,34 @@ export async function getAvailableModels(): Promise<
   return filtered;
 }
 
+/**
+ * Return the model the session is currently using, reloading the session
+ * from disk if the worker restarted. On a disk reload no model is forced,
+ * so Pi restores the model persisted in the session file.
+ */
+export async function getSessionModel(
+  sessionId: string,
+  piSessionId?: string,
+  project?: string,
+): Promise<{ providerId: string; modelId: string } | null> {
+  const log = getTraceLogger("worker");
+  let entry = sessions.get(sessionId);
+
+  if (!entry && piSessionId && project) {
+    log.info("session.model_load_disk", { sessionId, piSessionId });
+    entry = await loadSessionFromDisk(sessionId, piSessionId, project);
+  }
+
+  if (!entry) {
+    log.info("session.model_not_found", { sessionId });
+    return null;
+  }
+
+  const model = entry.runtime.session.model;
+  if (!model) return null;
+  return { providerId: model.provider, modelId: model.id };
+}
+
 export async function disposeSession(sessionId: string): Promise<void> {
   const log = getTraceLogger("worker");
   const entry = sessions.get(sessionId);

@@ -44,16 +44,19 @@ type LoggedEvent = { epoch?: string; seq: number; event: { type: string; [k: str
 const mockState: {
   events: LoggedEvent[];
   connectParams: unknown[];
+  initParams: unknown[];
   epochMismatch: boolean;
 } = vi.hoisted(() => ({
   events: [] as LoggedEvent[],
   connectParams: [] as unknown[],
+  initParams: [] as unknown[],
   epochMismatch: false,
 }));
 
 vi.mock("@/lib/features/code/worker-client", () => ({
   WorkerClient: class {
-    async initializeSession() {
+    async initializeSession(params: unknown) {
+      mockState.initParams.push(params);
       return { sessionId: "stub-session", piSessionId: "stub-pi-session" };
     }
     async connectToSession(params: unknown) {
@@ -92,7 +95,6 @@ function makeRequest(forwardedProps?: { afterSeq?: number; epoch?: string }) {
       context: [
         { description: "project", value: "p" },
         { description: "sessionId", value: "s" },
-        { description: "modelId", value: "Deepseek v4 Pro" },
       ],
       forwardedProps: forwardedProps ?? { afterSeq: 0, epoch: "worker-epoch" },
       messages: [],
@@ -107,6 +109,7 @@ async function parseJsonBody(res: Response) {
 beforeEach(() => {
   mockState.events = [];
   mockState.connectParams = [];
+  mockState.initParams = [];
   mockState.epochMismatch = false;
 });
 
@@ -193,6 +196,16 @@ describe("POST /api/agent/code/connect", () => {
       EventType.RUN_STARTED,
       EventType.RUN_FINISHED,
     ]);
+  });
+
+  it("never forwards a modelId when initializing the session on connect", async () => {
+    // Reconnecting a stream must not change the session's model: the worker
+    // keeps (or restores from the Pi session file) the model already in use.
+    const res = await POST(makeRequest() as never);
+    await res.text();
+
+    expect(mockState.initParams).toHaveLength(1);
+    expect(mockState.initParams[0]).not.toHaveProperty("modelId");
   });
 
   it("returns 400 when afterSeq is missing", async () => {

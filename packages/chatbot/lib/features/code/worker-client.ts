@@ -192,6 +192,17 @@ export class WorkerClient {
   async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean; piSessionId?: string }> {
     return this.call<{ running: boolean; piSessionId?: string }>("getSessionStatus", params);
   }
+
+  async getSessionModel(params: {
+    sessionId: string;
+    piSessionId?: string;
+    project?: string;
+  }): Promise<{ model: { providerId: string; modelId: string } | null }> {
+    return this.call<{ model: { providerId: string; modelId: string } | null }>(
+      "getSessionModel",
+      params,
+    );
+  }
 }
 
 function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
@@ -217,6 +228,7 @@ function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
         hasTraceRunId,
       };
     case "getSessionSnapshot":
+    case "getSessionModel":
       return {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,

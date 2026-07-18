@@ -41,7 +41,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     await sendMessage(message);
   };
 
-  const inputIsLoading = isRunning || isLoading;
+  // No model yet means the session's model is still being fetched from the
+  // worker (picker shows a skeleton): sending must wait for it too.
+  const inputIsLoading = isRunning || isLoading || !modelId;
 
   return (
     <div
