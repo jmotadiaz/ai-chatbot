@@ -39,7 +39,6 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env
 .env*.local
-.husky
 
 # vercel
 .vercel
@@ -65,3 +64,6 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Superpowers brainstorming artifacts
+.superpowers/

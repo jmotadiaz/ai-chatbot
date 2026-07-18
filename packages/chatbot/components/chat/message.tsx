@@ -1,0 +1,414 @@
+"use client";
+
+import { AnimatePresence, motion } from "motion/react";
+import React, { useMemo, useState } from "react";
+import { useCollapse } from "react-collapsed";
+import { Book, ChevronDownIcon, LinkIcon } from "lucide-react";
+import type {
+  SourceDocumentUIPart,
+  SourceUrlUIPart,
+} from "ai";
+import Image from "next/image";
+import { capitalize, cn } from "@/lib/utils/helpers";
+import { CopyBlock } from "@/components/ui/copy-block";
+import type { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
+import { Response } from "@/components/chat/response";
+import {
+  mergeReasoningParts,
+  destructuringMessageParts,
+} from "@/lib/features/chat/utils";
+import { RagSourceMessagePart } from "@/components/chat/rag-source";
+import { Context7SourceMessagePart } from "@/components/chat/context7-source";
+import type { RagChunk } from "@/lib/features/rag/types";
+import { ChatReload } from "@/components/chat/reload";
+import { ReasoningBlock } from "@/components/chat/reasoning";
+import { UserMessage } from "@/components/chat/user-message";
+import type { FilePart } from "@/lib/features/attachment/types";
+
+export interface MessagesProps {
+  messages: ChatbotMessage[];
+}
+
+export const Messages: React.FC<MessagesProps> = ({ messages }) => {
+  return (
+    <>
+      {messages.map((m, i) => (
+        <Message key={i} message={m} />
+      ))}
+    </>
+  );
+};
+
+export interface MessageProps {
+  message: ChatbotMessage;
+  showReload?: boolean;
+}
+
+export const Message: React.FC<MessageProps> = ({ message, showReload }) => {
+  return (
+    <AnimatePresence key={message.id}>
+      <motion.div
+        className="w-full mx-auto wrap-anywhere"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        key={`message-${message.id}`}
+        data-role={message.role}
+      >
+        {message.role === "user" ? (
+          <ChatbotUserMessage message={message} />
+        ) : (
+          <AssistantMessage message={message} showReload={showReload} />
+        )}
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+interface ChatbotUserMessageProps {
+  message: ChatbotMessage;
+}
+
+const ChatbotUserMessage: React.FC<ChatbotUserMessageProps> = ({ message }) => {
+  const { textParts, fileParts: files } = useMemo(
+    () => destructuringMessageParts(message),
+    [message],
+  );
+  const text = textParts[0]?.text ?? "";
+  const displayFiles = useMemo<FilePart[]>(() => {
+    const textFiles =
+      message.metadata?.textFiles?.map((file) => ({
+        type: "file" as const,
+        filename: file.filename,
+        mediaType: file.mediaType,
+        url: "",
+      })) ?? [];
+
+    return [...files, ...textFiles];
+  }, [files, message.metadata?.textFiles]);
+
+  return (
+    <UserMessage text={text} files={displayFiles} messageId={message.id} />
+  );
+};
+
+interface AssistantMessageProps {
+  message: ChatbotMessage;
+  showReload?: boolean;
+}
+
+const AssistantMessage: React.FC<AssistantMessageProps> = ({
+  message,
+  showReload,
+}) => {
+  const { sourceParts, reasoningParts, ragSourceParts, context7Parts } =
+    useMemo(() => destructuringMessageParts(message), [message]);
+
+  const mergedReasoning = useMemo(
+    () => mergeReasoningParts(reasoningParts),
+    [reasoningParts],
+  );
+
+  // Check if message has text tokens (to auto-close reasoning)
+  const hasTextTokens = message.parts.some(
+    (part) => part.type === "text" && part.text.trim().length > 0,
+  );
+
+  return (
+    <div className={cn("flex w-full")}>
+      <div className="flex flex-col w-full space-y-4">
+        {mergedReasoning && (
+          <ReasoningBlock
+            key={`message-${message.id}-reasoning`}
+            text={mergedReasoning.text}
+            isStreaming={
+              mergedReasoning.state === "streaming" && !hasTextTokens
+            }
+            hasTextTokens={hasTextTokens}
+          />
+        )}
+
+        {message.parts.map((part, i) => {
+          switch (part.type) {
+            case "text":
+              return (
+                <div
+                  key={`message-${message.id}-part-${i}`}
+                  className={cn("max-w-full")}
+                >
+                  <CopyBlock className="pt-2 -top-2" text={part.text}>
+                    <Response
+                      isAnimating={part.state === "streaming"}
+                      className="[&>*:first-child]:mt-6 [&>*:last-child]:mb-6"
+                    >
+                      {part.text}
+                    </Response>
+                  </CopyBlock>
+                </div>
+              );
+            case "file":
+              return (
+                <div key={`message-${message.id}-file-part-${i}`}>
+                  {part.mediaType.startsWith("image/") && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={`message-${message.id}-part-${i}`}
+                      className="mb-4"
+                    >
+                      <Image
+                        src={part.url}
+                        alt={part.filename || "image"}
+                        width={500}
+                        height={500}
+                        className="rounded-lg max-w-full h-auto mx-auto object-contain"
+                      />
+                    </motion.div>
+                  )}
+                </div>
+              );
+            default:
+              return null;
+          }
+        })}
+        {message.metadata?.status === "finished" && (
+          <AssistantMessageActions
+            showReload={showReload}
+            sourceParts={sourceParts}
+            ragSourceParts={ragSourceParts}
+            context7Parts={context7Parts}
+            routingMetadata={message.metadata.autoModel}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AssistantMessageActions: React.FC<{
+  showReload?: boolean;
+  sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
+  ragSourceParts: RagChunk[][];
+  context7Parts: { libraryId: string; output: string }[];
+  routingMetadata?: ModelRoutingMetadata;
+}> = ({
+  showReload,
+  sourceParts,
+  ragSourceParts,
+  context7Parts,
+  routingMetadata,
+}) => {
+  const [activeSection, setActiveSection] = useState<
+    "router" | "sources" | "rag-sources" | "context7-sources" | null
+  >(null);
+
+  const toggleSection = (
+    section: "router" | "sources" | "rag-sources" | "context7-sources",
+  ) => {
+    setActiveSection((prev) => (prev === section ? null : section));
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-row items-center gap-3">
+        {showReload && <ChatReload />}
+        {routingMetadata && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <RouterDetailsTrigger
+              isExpanded={activeSection === "router"}
+              onToggle={() => toggleSection("router")}
+            />
+          </>
+        )}
+        {sourceParts.length > 0 && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <SourceMessagePartTrigger
+              count={sourceParts.length}
+              isExpanded={activeSection === "sources"}
+              onToggle={() => toggleSection("sources")}
+            />
+          </>
+        )}
+
+        {context7Parts.length > 0 && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <div
+              className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+              onClick={() => toggleSection("context7-sources")}
+            >
+              Documentation
+              <ChevronDownIcon
+                className={cn("h-4 w-4 transition-transform duration-200", {
+                  "rotate-180": activeSection === "context7-sources",
+                })}
+              />
+            </div>
+          </>
+        )}
+        {ragSourceParts.length > 0 && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <div
+              className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+              onClick={() => toggleSection("rag-sources")}
+            >
+              Documentation
+              <ChevronDownIcon
+                className={cn("h-4 w-4 transition-transform duration-200", {
+                  "rotate-180": activeSection === "rag-sources",
+                })}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-col">
+        {routingMetadata && (
+          <RouterDetailsContent
+            metadata={routingMetadata}
+            isExpanded={activeSection === "router"}
+          />
+        )}
+        {sourceParts.length > 0 && (
+          <SourceMessagePartContent
+            sourceParts={sourceParts}
+            isExpanded={activeSection === "sources"}
+          />
+        )}
+
+        {context7Parts.length > 0 && (
+          <Context7SourceMessagePart
+            sources={context7Parts}
+            isExpanded={activeSection === "context7-sources"}
+          />
+        )}
+        {ragSourceParts.length > 0 && (
+          <RagSourceMessagePart
+            ragSourceParts={ragSourceParts}
+            isExpanded={activeSection === "rag-sources"}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface SourceMessagePartProps {
+  count: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const SourceMessagePartTrigger: React.FC<SourceMessagePartProps> = ({
+  count,
+  isExpanded,
+  onToggle,
+}) => {
+  return (
+    <div
+      className="flex text-sm font-bold items-center text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+      onClick={onToggle}
+    >
+      <span className="hidden md:inline">Used {count} sources</span>
+      <span className="md:hidden">Sources</span>
+      <ChevronDownIcon
+        className={cn("h-4 w-4 ml-1 transition-transform duration-200", {
+          "rotate-180": isExpanded,
+        })}
+      />
+    </div>
+  );
+};
+
+const SourceMessagePartContent: React.FC<{
+  sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
+  isExpanded: boolean;
+}> = ({ sourceParts, isExpanded }) => {
+  const { getCollapseProps } = useCollapse({ isExpanded });
+
+  return (
+    <div {...getCollapseProps()}>
+      <div className="py-2 pl-2">
+        <div className="flex flex-col space-y-2 text-sm pl-3 py-1 border-l-4 border-secondary overflow-hidden">
+          {sourceParts.map((part) => (
+            <React.Fragment key={part.sourceId}>
+              {part.type === "source-url" ? (
+                <a
+                  href={part.url}
+                  className="font-semibold flex items-center space-x-2 text-zinc-500 dark:text-zinc-400 hover:underline cursor-pointer"
+                  target="_blank"
+                >
+                  <span>
+                    <LinkIcon className="h-4 w-4" />
+                  </span>
+                  <span>{part.title || part.url}</span>
+                </a>
+              ) : (
+                <div className="font-semibold flex items-center space-x-2 text-zinc-500 dark:text-zinc-400">
+                  <span>
+                    <Book className="h-4 w-4" />
+                  </span>
+                  <span>{part.title}</span>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface RouterDetailsProps {
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const RouterDetailsTrigger: React.FC<RouterDetailsProps> = ({
+  isExpanded,
+  onToggle,
+}) => {
+  return (
+    <div
+      className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+      onClick={onToggle}
+    >
+      Router Details
+      <ChevronDownIcon
+        className={cn("h-4 w-4 transition-transform duration-200", {
+          "rotate-180": isExpanded,
+        })}
+      />
+    </div>
+  );
+};
+
+const RouterDetailsContent: React.FC<{
+  metadata: ModelRoutingMetadata;
+  isExpanded: boolean;
+}> = ({ metadata, isExpanded }) => {
+  const { getCollapseProps } = useCollapse({ isExpanded });
+  return (
+    <div className="overflow-hidden" {...getCollapseProps()}>
+      <div className="py-2 pl-2">
+        <div className="flex flex-col space-y-1 text-sm pl-3 text-zinc-500 dark:text-zinc-400 py-1 border-l-4 border-secondary">
+          <div>
+            <span className="font-semibold">Category:</span>{" "}
+            {capitalize(metadata.category)}
+          </div>
+          <div>
+            <span className="font-semibold">Complexity:</span>{" "}
+            {capitalize(metadata.complexity)}
+          </div>
+          <div>
+            <span className="font-semibold">Model:</span> {metadata.model}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

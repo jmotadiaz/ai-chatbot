@@ -1,1 +1,0 @@
-../../.agent/skills/ai-sdk/SKILL.md

@@ -1,0 +1,74 @@
+"use client";
+
+import { MotionConfig } from "motion/react";
+import React, {
+  useCallback,
+  useContext,
+  useState,
+  createContext,
+  useEffect,
+} from "react";
+import { SessionProvider } from "next-auth/react";
+import { ThemeProvider as NextThemeProvider } from "next-themes";
+const ThemeProvider = NextThemeProvider as React.ComponentType<{
+  attribute?: string;
+  enableSystem?: boolean;
+  defaultTheme?: string;
+  children?: React.ReactNode;
+}>;
+import { usePathname } from "next/navigation";
+import { ThemeColorManager } from "@/components/theme-color-manager";
+
+interface ProvidersProps {
+  children: React.ReactNode;
+}
+
+export const Providers: React.FC<ProvidersProps> = ({ children }) => {
+  return (
+    <SessionProvider>
+      <ThemeProvider
+        attribute="data-color-mode"
+        enableSystem
+        defaultTheme="system"
+      >
+        <ThemeColorManager />
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
+      </ThemeProvider>
+    </SessionProvider>
+  );
+};
+
+export interface SidebarContext {
+  showSidebar: boolean;
+  setShowSidebar: (showSidebar: boolean) => void;
+  toggleSidebar: () => void;
+}
+
+const sidebarContext = createContext<SidebarContext>({
+  showSidebar: false,
+  setShowSidebar: () => {},
+  toggleSidebar: () => {},
+});
+
+export const SidebarProvider: React.FC<ProvidersProps> = ({ children }) => {
+  const [showSidebar, setShowSidebar] = useState(false);
+  const toggleSidebar = useCallback(() => {
+    setShowSidebar((prev) => !prev);
+  }, []);
+
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setShowSidebar(false);
+  }, [pathname]);
+
+  return (
+    <sidebarContext.Provider
+      value={{ showSidebar, setShowSidebar, toggleSidebar }}
+    >
+      {children}
+    </sidebarContext.Provider>
+  );
+};
+
+export const useSidebarContext = () => useContext(sidebarContext);

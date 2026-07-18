@@ -1,0 +1,26 @@
+{
+  "name": "coding-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./event-log": "./src/event-log.ts",
+    "./http-transport": "./src/transports/http.ts",
+    "./message-ids": "./src/message-ids.ts",
+    "./pi-to-agui-translator": "./src/pi-to-agui-translator.ts",
+    "./session-manager": "./src/session-manager.ts",
+    "./transports/http": "./src/transports/http.ts"
+  },
+  "dependencies": {
+    "tracing": "workspace:*",
+    "@earendil-works/pi-coding-agent": "^0.79.3"
+  },
+  "scripts": {
+    "dev": "pnpm run transport:http",
+    "start": "pnpm run transport:http",
+    "transport:http": "tsx src/transports/http.ts"
+  }
+}

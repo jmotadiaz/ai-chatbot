@@ -1,1 +1,0 @@
-../../.agent/skills/rag-mcp-guide/SKILL.md
