@@ -22,11 +22,12 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   modelId,
 }) => {
   const [input, setInput] = useState("");
-  const { items, isRunning, isLoading, sendMessage, status, error } = useCodingAgent({
-    project,
-    sessionId,
-    modelId,
-  });
+  const { items, turnFiles, isRunning, isLoading, sendMessage, status, error } =
+    useCodingAgent({
+      project,
+      sessionId,
+      modelId,
+    });
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
     useFileBrowser();
@@ -50,7 +51,12 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       data-testid="chat-container"
       className="flex flex-col relative h-full pt-16"
     >
-      <AgentConversation items={items} isRunning={isRunning} status={status} />
+      <AgentConversation
+        items={items}
+        isRunning={isRunning}
+        status={status}
+        turnFiles={turnFiles}
+      />
       {error && (
         <div role="alert" className="text-xs text-red-600 px-4 py-1">
           {error}

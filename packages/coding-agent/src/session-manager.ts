@@ -13,7 +13,15 @@ import {
 import { getTraceLogger } from "tracing";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
+import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
+import {
+  captureGitFileState,
+  diffTurnFiles,
+  type GitFileState,
+} from "./turn-git-state";
 import type { CodingAgentEvent } from "./index";
+
+export const FILES_CHANGED_EVENT = "coding_agent_files_changed";
 import {
   assistantMessageId,
   reasoningMessageId,
@@ -152,7 +160,12 @@ function makeCreateRuntime(
   modelId?: string,
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
-    const services = await createAgentSessionServices({ cwd: runtimeCwd });
+    const services = await createAgentSessionServices({
+      cwd: runtimeCwd,
+      resourceLoaderOptions: {
+        appendSystemPrompt: [FILE_REFERENCE_PROMPT],
+      },
+    });
     const [piProvider, piModelId] = modelId?.split("/") ?? [];
     const model =
       piProvider && piModelId
@@ -395,11 +408,33 @@ function createLoggedEventStream(
   });
 }
 
+function sessionCwd(entry: SessionEntry): string | null {
+  const root = process.env.CODING_AGENT_PROJECTS_ROOT;
+  if (!root) return null;
+  try {
+    return resolveProjectPath(root, entry.project);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Baseline of the repo's dirty files taken when a run starts. Resolves to
+ * null when the project is not a git repo (or git is unavailable), which
+ * disables the files-changed event for the run.
+ */
+function captureTurnBaseline(entry: SessionEntry): Promise<GitFileState | null> {
+  const cwd = sessionCwd(entry);
+  if (!cwd) return Promise.resolve(null);
+  return captureGitFileState(cwd).catch(() => null);
+}
+
 function startPromptCollector(
   entry: SessionEntry,
   prompt: string,
   runId: string,
   messages: SnapshotMessage[] | undefined,
+  turnBaseline: GitFileState | null,
 ): void {
   const log = getTraceLogger("worker");
   const { sessionId, runtime } = entry;
@@ -437,6 +472,40 @@ function startPromptCollector(
   let snapshotAppended = false;
   let collectorClosed = false;
   let userMessageStamped = false;
+  let terminalFlush: Promise<void> | undefined;
+
+  // AG-UI forbids any event after RUN_FINISHED/RUN_ERROR, so the
+  // files-changed diff (which needs async git calls) must be computed and
+  // appended BEFORE the terminal event. Terminal events therefore don't get
+  // appended synchronously by the subscriber: they are routed through here,
+  // which emits the CUSTOM files-changed event (when the turn touched
+  // files) and only then the terminal event itself.
+  const finalizeTurn = (terminalEvent: BaseEvent): Promise<void> => {
+    const flush = (async () => {
+      try {
+        if (turnBaseline) {
+          const cwd = sessionCwd(entry);
+          const after = cwd ? await captureGitFileState(cwd) : null;
+          const files = diffTurnFiles(turnBaseline, after);
+          if (files.length > 0) {
+            appendAguiEvent(entry, {
+              type: EventType.CUSTOM,
+              name: FILES_CHANGED_EVENT,
+              value: { runId, files },
+              timestamp: Date.now(),
+            } as BaseEvent, aguiEventCounts);
+            appendedAguiEventCount += 1;
+          }
+        }
+      } catch (err) {
+        log.warn("session.turn_files_failed", { sessionId, runId, error: String(err) });
+      }
+      appendAguiEvent(entry, terminalEvent, aguiEventCounts);
+      appendedAguiEventCount += 1;
+    })();
+    terminalFlush = flush;
+    return flush;
+  };
 
   const logCollectorSummary = (reason: string) => {
     if (collectorClosed) return;
@@ -470,6 +539,10 @@ function startPromptCollector(
 
     const aguiEvents = translator.translate(event);
     for (const aguiEvent of aguiEvents) {
+      if (isTerminalAguiEvent(aguiEvent)) {
+        void finalizeTurn(aguiEvent);
+        continue;
+      }
       appendAguiEvent(entry, aguiEvent, aguiEventCounts);
       appendedAguiEventCount += 1;
       if (!snapshotAppended && aguiEvent.type === EventType.RUN_STARTED) {
@@ -502,34 +575,36 @@ function startPromptCollector(
   const promptStop = log.startTimer("session.prompt_execution");
   runtime.session
     .prompt(prompt)
-    .then(() => {
+    .then(async () => {
       promptStop();
       log.info("session.prompt_complete", { sessionId, runId });
+      // A translated terminal event may still be flushing its files-changed
+      // diff; wait for it so sawTerminal reflects the appended state.
+      await terminalFlush;
       if (!entry.activeRun?.sawTerminal) {
-        appendAguiEvent(entry, {
+        await finalizeTurn({
           type: EventType.RUN_FINISHED,
           threadId: sessionId,
           runId,
           timestamp: Date.now(),
-        } as BaseEvent, aguiEventCounts);
-        appendedAguiEventCount += 1;
+        } as BaseEvent);
       }
       unsubscribe();
       entry.activeRun = undefined;
       logCollectorSummary("complete");
     })
-    .catch((err) => {
+    .catch(async (err) => {
       promptStop();
       log.error("session.prompt_error", { sessionId, runId, message: String(err) });
+      await terminalFlush;
       if (!entry.activeRun?.sawTerminal) {
-        appendAguiEvent(entry, {
+        await finalizeTurn({
           type: EventType.RUN_ERROR,
           threadId: sessionId,
           runId,
           message: String(err),
           timestamp: Date.now(),
-        } as BaseEvent, aguiEventCounts);
-        appendedAguiEventCount += 1;
+        } as BaseEvent);
       }
       unsubscribe();
       entry.activeRun = undefined;
@@ -551,7 +626,10 @@ export async function sendPrompt(
   }
 
   const afterSeq = ensureEventLog(entry).lastSeq;
-  startPromptCollector(entry, prompt, runId, messages);
+  // Captured before the run starts so the baseline can never include the
+  // agent's own first edits.
+  const turnBaseline = await captureTurnBaseline(entry);
+  startPromptCollector(entry, prompt, runId, messages, turnBaseline);
   return createLoggedEventStream(entry, afterSeq, "session.prompt_stream");
 }
 

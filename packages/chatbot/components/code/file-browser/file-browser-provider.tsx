@@ -20,6 +20,29 @@ const INITIAL_STATE: FileBrowserState = {
   pendingComments: [],
 };
 
+export interface FileBrowserInitialLocation {
+  scope?: FileBrowserScope;
+  file?: string;
+}
+
+/**
+ * Build the store's initial state from a deep link. Opening a file in the
+ * tree scope also seeds the breadcrumb path so "back" lands in the file's
+ * containing folder instead of the project root.
+ */
+function initialStateFrom(location?: FileBrowserInitialLocation): FileBrowserState {
+  const state = { ...INITIAL_STATE };
+  if (!location) return state;
+  if (location.scope) state.scope = location.scope;
+  if (location.file) {
+    state.activeFile = location.file;
+    if (state.scope === "tree") {
+      state.pathStack = location.file.split("/").slice(0, -1);
+    }
+  }
+  return state;
+}
+
 function storageKey(sessionId: string): string {
   return `coding-agent:comments:${sessionId}`;
 }
@@ -63,8 +86,11 @@ export interface FileBrowserStore {
   clearComments: () => void;
 }
 
-export function createFileBrowserStore(sessionId: string): FileBrowserStore {
-  let state = INITIAL_STATE;
+export function createFileBrowserStore(
+  sessionId: string,
+  initialLocation?: FileBrowserInitialLocation,
+): FileBrowserStore {
+  let state = initialStateFrom(initialLocation);
   const listeners = new Set<() => void>();
 
   const set = (patch: Partial<FileBrowserState>) => {
@@ -122,16 +148,25 @@ const FileBrowserContext = createContext<FileBrowserContextValue | null>(null);
 export interface FileBrowserProviderProps {
   project: string;
   sessionId: string;
+  initialLocation?: FileBrowserInitialLocation;
   children: React.ReactNode;
 }
 
 export const FileBrowserProvider: React.FC<FileBrowserProviderProps> = ({
   project,
   sessionId,
+  initialLocation,
   children,
 }) => {
   const value = useMemo(
-    () => ({ store: createFileBrowserStore(sessionId), project, sessionId }),
+    () => ({
+      store: createFileBrowserStore(sessionId, initialLocation),
+      project,
+      sessionId,
+    }),
+    // Deep-link state is only meaningful on first mount; later URL changes
+    // must not rebuild the store (that would drop pending comments).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [project, sessionId],
   );
 
@@ -153,10 +188,12 @@ export function useFileBrowser() {
   if (!ctx) {
     throw new Error("useFileBrowser must be used within FileBrowserProvider");
   }
+  // Server snapshot delegates to the store: during SSR it holds the initial
+  // (possibly deep-linked) state, so server and first client render match.
   const state = useSyncExternalStore(
     ctx.store.subscribe,
     ctx.store.getSnapshot,
-    () => INITIAL_STATE,
+    ctx.store.getSnapshot,
   );
   return { state, actions: ctx.store, project: ctx.project, sessionId: ctx.sessionId };
 }

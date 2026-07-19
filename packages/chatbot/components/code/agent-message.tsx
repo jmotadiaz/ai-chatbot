@@ -4,7 +4,7 @@ import * as React from "react";
 import { memo } from "react";
 import type { Message } from "@ag-ui/client";
 import { ToolCallGroup } from "./tool-call-group";
-import { Response } from "@/components/chat/response";
+import { AgentResponse } from "./agent-response";
 import { ReasoningBlock } from "@/components/chat/reasoning";
 import { UserMessage } from "@/components/chat/user-message";
 import type { ToolCallGroup as Group } from "@/lib/features/code/types";
@@ -116,7 +116,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
             ))}
             {text && (
               <div className="max-w-full">
-                <Response>{text}</Response>
+                <AgentResponse>{text}</AgentResponse>
               </div>
             )}
           </div>

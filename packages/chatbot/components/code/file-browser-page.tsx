@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { FileBrowserProvider } from "./file-browser/file-browser-provider";
+import {
+  FileBrowserProvider,
+  type FileBrowserInitialLocation,
+} from "./file-browser/file-browser-provider";
 import { FileBrowserView } from "./file-browser/file-browser-view";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
@@ -13,13 +16,19 @@ import { buttonVariants } from "@/components/ui/button";
 export interface FileBrowserPageProps {
   project: string;
   sessionId: string;
+  initialLocation?: FileBrowserInitialLocation;
 }
 
 export const FileBrowserPage: React.FC<FileBrowserPageProps> = ({
   project,
   sessionId,
+  initialLocation,
 }) => (
-  <FileBrowserProvider project={project} sessionId={sessionId}>
+  <FileBrowserProvider
+    project={project}
+    sessionId={sessionId}
+    initialLocation={initialLocation}
+  >
     <Header.Container>
       <Header.Left>
         <Logo />

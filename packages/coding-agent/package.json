@@ -12,7 +12,9 @@
     "./message-ids": "./src/message-ids.ts",
     "./pi-to-agui-translator": "./src/pi-to-agui-translator.ts",
     "./session-manager": "./src/session-manager.ts",
-    "./transports/http": "./src/transports/http.ts"
+    "./transports/http": "./src/transports/http.ts",
+    "./turn-git-state": "./src/turn-git-state.ts",
+    "./file-reference-prompt": "./src/file-reference-prompt.ts"
   },
   "dependencies": {
     "tracing": "workspace:*",

@@ -26,6 +26,7 @@ export const AguiEventType = {
   TOOL_CALL_RESULT: "TOOL_CALL_RESULT",
   STEP_STARTED: "STEP_STARTED",
   STEP_FINISHED: "STEP_FINISHED",
+  CUSTOM: "CUSTOM",
 } as const;
 
 const EventType = AguiEventType;
