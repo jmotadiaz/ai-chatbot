@@ -9,6 +9,12 @@ import {
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
 import { groupItems } from "@/lib/features/code/group-items";
+import {
+  filesChangedFromEvent,
+  loadTurnFiles,
+  persistTurnFiles,
+  type TurnFilesMap,
+} from "@/lib/features/code/turn-files";
 import type { AgentItem } from "@/lib/features/code/types";
 
 export type AgentStatus =
@@ -28,6 +34,8 @@ export interface UseCodingAgentResult {
   messages: Message[];
   items: AgentItem[];
   toolErrors: ReadonlyMap<string, true>;
+  /** Per-turn changed files, keyed by the turn's last assistant message id. */
+  turnFiles: TurnFilesMap;
   isRunning: boolean;
   isLoading: boolean;
   sendMessage: (content: string) => Promise<void>;
@@ -145,6 +153,26 @@ function cursorFromEvent(event: BaseEvent): CursorEvent | null {
     : null;
 }
 
+/**
+ * On reconnect the worker re-opens tool calls cut by the cursor with a
+ * synthetic TOOL_CALL_START. The AG-UI verifier needs it, but the default
+ * apply would push a second toolCalls entry with the same id onto the
+ * assistant message the client already has — suppress the message mutation
+ * (stopPropagation) when the tool call is already present.
+ */
+export function isDuplicateToolCallStart(
+  messages: readonly Message[],
+  event: BaseEvent,
+): boolean {
+  const toolCallId = (event as { toolCallId?: string }).toolCallId;
+  if (!toolCallId) return false;
+  return messages.some((message) =>
+    (message as { toolCalls?: { id?: string }[] }).toolCalls?.some(
+      (toolCall) => toolCall.id === toolCallId,
+    ),
+  );
+}
+
 function isCursorResetError(err: unknown): boolean {
   return (
     typeof err === "object" &&
@@ -215,6 +243,7 @@ export function useCodingAgent({
         string,
         { startedAt: number; finishedAt?: number }
       >(),
+      turnFiles: new Map() as TurnFilesMap,
     };
 
     const serverSnapshot = {
@@ -228,6 +257,7 @@ export function useCodingAgent({
         string,
         { startedAt: number; finishedAt?: number }
       >(),
+      turnFiles: new Map() as TurnFilesMap,
     };
 
     const listeners = new Set<() => void>();
@@ -255,6 +285,12 @@ export function useCodingAgent({
                 toolTimings: new Map(),
               }));
             },
+            onToolCallStartEvent: ({ event, messages }) => {
+              if (isDuplicateToolCallStart(messages, event)) {
+                return { stopPropagation: true };
+              }
+              return undefined;
+            },
             onEvent: ({ event }) => {
               if (isLocalAbortRunError(event)) {
                 // Not a real terminal event: the run is still active on the
@@ -276,6 +312,22 @@ export function useCodingAgent({
                   pendingTerminalCursorRef.current = cursor.cursor;
                 } else {
                   cursorRef.current = cursor.cursor;
+                }
+              }
+              const changedFiles = filesChangedFromEvent(event);
+              if (changedFiles && changedFiles.length > 0) {
+                // The event arrives just before RUN_FINISHED, so the turn's
+                // last assistant message is already in the agent state.
+                const anchor = [...currentAgent.messages]
+                  .reverse()
+                  .find((m) => m.role === "assistant");
+                if (anchor) {
+                  update((prev) => {
+                    const turnFiles = new Map(prev.turnFiles);
+                    turnFiles.set(anchor.id, changedFiles);
+                    persistTurnFiles(sessionId, turnFiles);
+                    return { turnFiles };
+                  });
                 }
               }
               if (
@@ -526,6 +578,7 @@ export function useCodingAgent({
           error: null,
           toolErrors: new Map(),
           toolTimings: new Map(),
+          turnFiles: loadTurnFiles(sessionId),
         }));
         if (snapshot.running && snapshot.cursor) {
           await connect(snapshot.cursor);
@@ -728,6 +781,7 @@ export function useCodingAgent({
     messages: state.messages,
     items,
     toolErrors: state.toolErrors,
+    turnFiles: state.turnFiles,
     isRunning: state.isRunning,
     isLoading: state.isLoading,
     sendMessage,
