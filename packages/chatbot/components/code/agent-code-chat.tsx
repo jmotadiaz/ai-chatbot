@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Undo, WandSparkles } from "lucide-react";
 import { AgentConversation } from "./agent-conversation";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
@@ -9,6 +9,7 @@ import { serializeComments } from "./file-browser/serialize-comments";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
+import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 
 export interface AgentCodeChatProps {
   project: string;
@@ -32,6 +33,14 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   const { state: fileBrowserState, actions: fileBrowserActions } =
     useFileBrowser();
   const pendingComments = fileBrowserState.pendingComments;
+
+  const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
+    usePromptRefiner({
+      input,
+      setInput,
+      mode: "coding-agent",
+      status: isRunning ? "submitted" : undefined,
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,9 +81,24 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             onChangeInput={setInput}
             input={input}
             isLoading={inputIsLoading}
+            isLoadingRefinedPrompt={isLoadingRefinedPrompt}
             placeholder="Ask the coding agent..."
           />
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            {hasPreviousMessage && (
+              <ChatControl
+                Icon={Undo}
+                onClick={undo}
+                aria-label="Undo refined prompt"
+              />
+            )}
+            <ChatControl
+              Icon={WandSparkles}
+              onClick={refinePrompt}
+              disabled={!input.length}
+              isLoading={isLoadingRefinedPrompt}
+              aria-label="Refine prompt"
+            />
             <ChatControl
               Icon={ArrowUp}
               type="submit"
