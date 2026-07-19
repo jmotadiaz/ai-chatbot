@@ -1,5 +1,6 @@
 import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import {
+  codingAgentMetaPrompt,
   continuationMetaPrompt,
   initialMetaPrompt,
   systemMetaPrompt,
@@ -20,7 +21,23 @@ export async function refinePrompt({
     return refineSystemPrompt({ input, projectId, userId });
   }
 
+  if (mode === "coding-agent") {
+    return refineCodingAgentPrompt({ input });
+  }
+
   return refineChatPrompt({ input, messages });
+}
+
+async function refineCodingAgentPrompt({
+  input,
+}: Pick<RefinePromptInput, "input">) {
+  const { text } = await generateText({
+    ...languageModelConfigurations("GPT OSS"),
+    system: codingAgentMetaPrompt,
+    prompt: input,
+  });
+
+  return text;
 }
 
 async function refineChatPrompt({

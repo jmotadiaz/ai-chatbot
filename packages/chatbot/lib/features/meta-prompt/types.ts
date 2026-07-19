@@ -1,6 +1,6 @@
 import { UIMessage } from "ai";
 
-export type RefinePromptMode = "chat" | "project";
+export type RefinePromptMode = "chat" | "project" | "coding-agent";
 
 export interface RefinePromptInput {
   input: string;
