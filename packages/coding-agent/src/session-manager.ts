@@ -12,6 +12,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
+import { buildReconnectPrelude } from "./reconnect-prelude";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import {
@@ -966,6 +967,28 @@ export async function connectToSession(
       finish("error");
     }
   };
+
+  // The cursor may fall inside an open tool call or step (the client cut away
+  // mid-stream). The reconnect run's AG-UI verifier starts with empty state,
+  // so re-open those with synthetic events before replaying the tail —
+  // otherwise the first orphan TOOL_CALL_ARGS/STEP_FINISHED kills the run and
+  // everything behind it (including the terminal events) is never delivered.
+  const prelude = buildReconnectPrelude(eventLog.readUpTo(afterSeq));
+  if (prelude.length > 0) {
+    const preludeCounts: Record<string, number> = {};
+    for (const event of prelude) incrementCount(preludeCounts, event.type);
+    log.info("connect.synthetic_prelude", {
+      sessionId,
+      afterSeq,
+      eventCounts: preludeCounts,
+    });
+    for (const event of prelude) {
+      // Reuse the cursor's seq: the bridge re-emits it as the client cursor,
+      // which must not advance past events the client has not replayed yet.
+      emitLogged({ epoch: eventLog.epoch, seq: afterSeq, event }, false);
+    }
+    if (closed) return () => {};
+  }
 
   const replay = eventLog.readAfter(afterSeq);
   log.info("connect.replay", {

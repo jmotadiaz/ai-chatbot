@@ -153,6 +153,26 @@ function cursorFromEvent(event: BaseEvent): CursorEvent | null {
     : null;
 }
 
+/**
+ * On reconnect the worker re-opens tool calls cut by the cursor with a
+ * synthetic TOOL_CALL_START. The AG-UI verifier needs it, but the default
+ * apply would push a second toolCalls entry with the same id onto the
+ * assistant message the client already has — suppress the message mutation
+ * (stopPropagation) when the tool call is already present.
+ */
+export function isDuplicateToolCallStart(
+  messages: readonly Message[],
+  event: BaseEvent,
+): boolean {
+  const toolCallId = (event as { toolCallId?: string }).toolCallId;
+  if (!toolCallId) return false;
+  return messages.some((message) =>
+    (message as { toolCalls?: { id?: string }[] }).toolCalls?.some(
+      (toolCall) => toolCall.id === toolCallId,
+    ),
+  );
+}
+
 function isCursorResetError(err: unknown): boolean {
   return (
     typeof err === "object" &&
@@ -264,6 +284,12 @@ export function useCodingAgent({
                 toolErrors: new Map(),
                 toolTimings: new Map(),
               }));
+            },
+            onToolCallStartEvent: ({ event, messages }) => {
+              if (isDuplicateToolCallStart(messages, event)) {
+                return { stopPropagation: true };
+              }
+              return undefined;
             },
             onEvent: ({ event }) => {
               if (isLocalAbortRunError(event)) {

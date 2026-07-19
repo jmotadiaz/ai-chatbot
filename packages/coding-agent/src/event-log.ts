@@ -35,6 +35,10 @@ export class SessionEventLog {
     return this.events.filter((entry) => entry.seq > seq);
   }
 
+  readUpTo(seq: number): LoggedAguiEvent[] {
+    return this.events.filter((entry) => entry.seq <= seq);
+  }
+
   subscribe(subscriber: Subscriber): () => void {
     this.subscribers.add(subscriber);
     return () => {
