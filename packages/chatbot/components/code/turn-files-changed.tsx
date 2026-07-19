@@ -42,7 +42,7 @@ export const TurnFilesChanged: React.FC<TurnFilesChangedProps> = ({ files }) => 
   return (
     <div
       data-testid="turn-files-changed"
-      className="-mt-6 mb-8 rounded-md border border-border bg-card overflow-hidden"
+      className="mb-4 rounded-md border border-border bg-card overflow-hidden"
     >
       <div className="flex items-center gap-2 px-3 py-2 text-sm border-b border-border">
         <FileDiff className="size-4 text-muted-foreground" />

@@ -38,6 +38,15 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
   } = useAgentConversationScroll({ items });
   const hasConversationContent = items.length;
 
+  const runningIndicator = isRunning ? (
+    <div
+      data-testid="agent-status"
+      className="flex items-center gap-2 text-muted-foreground text-sm py-1"
+    >
+      <DotsLoadingIcon />
+    </div>
+  ) : null;
+
   return (
     <ConversationContainer className="flex-1">
       <ConversationBody bodyRef={scrollContainerRef} className="h-full">
@@ -69,25 +78,20 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
                 />
               );
             })}
+            {runningIndicator}
           </div>
         ) : (
-          <ProjectOverview.Container className="justify-center">
-            <ProjectOverview.Title>
-              <CodeXml className="mr-1" strokeWidth={2} size={42} />
-              <span>Coding Agent</span>
-            </ProjectOverview.Title>
-          </ProjectOverview.Container>
-        )}
-
-        {isRunning && (
-          <div className="max-w-5xl mx-auto px-8">
-            <div
-              data-testid="agent-status"
-              className="flex items-center gap-2 text-muted-foreground text-sm py-3"
-            >
-              <DotsLoadingIcon />
-            </div>
-          </div>
+          <>
+            <ProjectOverview.Container className="justify-center">
+              <ProjectOverview.Title>
+                <CodeXml className="mr-1" strokeWidth={2} size={42} />
+                <span>Coding Agent</span>
+              </ProjectOverview.Title>
+            </ProjectOverview.Container>
+            {runningIndicator && (
+              <div className="max-w-5xl mx-auto px-8">{runningIndicator}</div>
+            )}
+          </>
         )}
       </ConversationBody>
 

@@ -63,7 +63,7 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
         data-testid="tool-call-group"
         data-tool={group.name}
         data-status={group.status}
-        className="my-2 rounded-md border border-border bg-card overflow-hidden group"
+        className="rounded-md border border-border bg-card overflow-hidden group"
       >
         <summary className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
           <Icon className="size-4 text-muted-foreground" />
