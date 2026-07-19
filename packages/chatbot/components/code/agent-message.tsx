@@ -88,7 +88,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
       const text = typeof message.content === "string" ? message.content : "";
       if (!text) return null;
       return (
-        <div className="mb-4 pt-2">
+        <div className="mb-4">
           <ReasoningBlock text={text} isStreaming={isStreaming} />
         </div>
       );
@@ -100,7 +100,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
     if (message.role === "tool") {
       const text = typeof message.content === "string" ? message.content : "";
       return (
-        <div className="mb-2 pl-4 max-w-full">
+        <div className="mb-4 pl-4 max-w-full">
           <ToolResultBlock content={text} />
         </div>
       );
@@ -109,8 +109,8 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
     if (message.role === "assistant") {
       const text = typeof message.content === "string" ? message.content : "";
       return (
-        <div className="mb-8 pt-4">
-          <div className="flex flex-col w-full space-y-2">
+        <div className="mb-4">
+          <div className="flex flex-col w-full gap-3">
             {toolGroups?.map((g) => (
               <ToolCallGroup key={g.id} group={g} />
             ))}
