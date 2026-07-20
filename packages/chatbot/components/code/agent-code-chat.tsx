@@ -23,12 +23,20 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   modelId,
 }) => {
   const [input, setInput] = useState("");
-  const { items, turnFiles, isRunning, isLoading, sendMessage, status, error } =
-    useCodingAgent({
-      project,
-      sessionId,
-      modelId,
-    });
+  const {
+    items,
+    turnFiles,
+    isRunning,
+    isLoading,
+    sendMessage,
+    status,
+    error,
+    cancel,
+  } = useCodingAgent({
+    project,
+    sessionId,
+    modelId,
+  });
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
     useFileBrowser();
@@ -107,6 +115,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                 (!input.trim() && pendingComments.length === 0) || inputIsLoading
               }
               isLoading={inputIsLoading}
+              // Only a running turn can be cancelled; while the session or
+              // model is still loading the spinner stays inert.
+              onLoadingClick={isRunning ? () => void cancel() : undefined}
             />
           </div>
         </div>
