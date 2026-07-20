@@ -34,7 +34,7 @@ export const ConversationBody: React.FC<ConversationBodyProps> = ({
   return (
     <div
       ref={bodyRef}
-      className={cn("w-full", "h-full overflow-y-auto", className)}
+      className={cn("w-full", "h-full overflow-y-auto overflow-x-hidden", className)}
     >
       {children}
     </div>

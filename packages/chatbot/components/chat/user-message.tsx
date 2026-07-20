@@ -59,7 +59,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
                   className="flex flex-row gap-2 items-start w-full"
                 >
                   <div
-                    className={cn({
+                    className={cn("min-w-0 wrap-anywhere", {
                       "line-clamp-3 ![display:-webkit-box]":
                         !isExpanded && isCollapseTransitionEnd,
                     })}
