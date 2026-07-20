@@ -16,7 +16,7 @@ export async function transcribeAudio(
   audio: Uint8Array,
 ): Promise<TranscribeResult> {
   const result = await aiTranscribe({
-    model: groq.transcription("whisper-large-v3-turbo"),
+    model: groq.transcription("whisper-large-v3"),
     audio,
   });
 
