@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowUp, Undo, WandSparkles } from "lucide-react";
+import { useCallback, useState } from "react";
+import { ArrowUp, Mic, Square, Undo, WandSparkles } from "lucide-react";
 import { AgentConversation } from "./agent-conversation";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
+import { useSpeechToText } from "@/lib/features/speech-to-text/hooks/use-speech-to-text";
 
 export interface AgentCodeChatProps {
   project: string;
@@ -49,6 +50,18 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       mode: "coding-agent",
       status: isRunning ? "submitted" : undefined,
     });
+
+  // Append each dictated segment to whatever is already in the textarea so the
+  // transcript streams in while the user speaks.
+  const appendTranscript = useCallback((text: string) => {
+    setInput((prev) => (prev ? `${prev.replace(/\s+$/, "")} ${text}` : text));
+  }, []);
+  const {
+    isRecording,
+    isTranscribing,
+    isSupported: isSpeechSupported,
+    toggle: toggleRecording,
+  } = useSpeechToText({ onTranscript: appendTranscript });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +106,19 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             placeholder="Ask the coding agent..."
           />
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
+            {isSpeechSupported && (
+              <ChatControl
+                Icon={isRecording ? Square : Mic}
+                onClick={toggleRecording}
+                isActive={isRecording}
+                // Show the spinner only once recording has stopped and the
+                // final segment is still being transcribed.
+                isLoading={isTranscribing && !isRecording}
+                aria-label={
+                  isRecording ? "Stop recording" : "Record voice message"
+                }
+              />
+            )}
             {hasPreviousMessage && (
               <ChatControl
                 Icon={Undo}
