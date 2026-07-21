@@ -340,7 +340,7 @@ function getSessionIdFromParams(params: unknown): string | undefined {
   return typeof sessionId === "string" ? sessionId : undefined;
 }
 
-function summarizeRpcParams(method: string, params: unknown): unknown {
+export function summarizeRpcParams(method: string, params: unknown): unknown {
   if (!params || typeof params !== "object") return params;
   const p = params as Record<string, unknown>;
   const sessionId = typeof p.sessionId === "string" ? p.sessionId : undefined;
@@ -355,13 +355,28 @@ function summarizeRpcParams(method: string, params: unknown): unknown {
         hasPiSessionId: typeof p.piSessionId === "string",
         hasTraceRunId,
       };
-    case "sendPrompt":
+    case "sendPrompt": {
+      const messages = Array.isArray(p.messages) ? p.messages : [];
+      const lastMessage = messages[messages.length - 1] as
+        | { content?: unknown }
+        | undefined;
+      const lastContent = Array.isArray(lastMessage?.content)
+        ? lastMessage.content
+        : [];
       return {
         sessionId,
         promptLength: typeof p.prompt === "string" ? p.prompt.length : 0,
-        messageCount: Array.isArray(p.messages) ? p.messages.length : 0,
+        messageCount: messages.length,
+        lastMessagePartCount: lastContent.length,
+        imageCount: lastContent.filter(
+          (c) => (c as { type?: unknown })?.type === "image",
+        ).length,
+        documentCount: lastContent.filter(
+          (c) => (c as { type?: unknown })?.type === "document",
+        ).length,
         hasTraceRunId,
       };
+    }
     case "getSessionMessages":
       return {
         sessionId,

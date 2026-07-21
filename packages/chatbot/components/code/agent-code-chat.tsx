@@ -8,8 +8,19 @@ import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
 import { serializeComments } from "./file-browser/serialize-comments";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
+import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
+import { handleLocalFileUpload } from "@/lib/features/attachment/utils";
+import type { FilePart } from "@/lib/features/attachment/types";
+import {
+  buildUserContent,
+  CODE_AGENT_SUPPORTED_FILES,
+  MAX_IMAGE_BYTES,
+  MAX_TEXT_FILE_BYTES,
+  MAX_TOTAL_ATTACHMENT_BYTES,
+  totalAttachmentBytes,
+} from "@/lib/features/code/attachments";
 
 export interface AgentCodeChatProps {
   project: string;
@@ -23,6 +34,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   modelId,
 }) => {
   const [input, setInput] = useState("");
+  const [files, setFiles] = useState<FilePart[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const {
     items,
     turnFiles,
@@ -50,13 +63,36 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       status: isRunning ? "submitted" : undefined,
     });
 
+  const uploadOptions = {
+    maxImageBytes: MAX_IMAGE_BYTES,
+    maxTextFileBytes: MAX_TEXT_FILE_BYTES,
+    onError: setAttachmentError,
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    void handleLocalFileUpload(setFiles, e.target.files, uploadOptions);
+    e.target.value = "";
+  };
+
+  const onPasteFiles = (fileList: FileList) => {
+    void handleLocalFileUpload(setFiles, fileList, uploadOptions);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const message = serializeComments(input, pendingComments);
-    if (!message) return;
+    if (!message && files.length === 0) return;
+    if (totalAttachmentBytes(files) > MAX_TOTAL_ATTACHMENT_BYTES) {
+      setAttachmentError(
+        `Attachments are too large (max ${Math.round(MAX_TOTAL_ATTACHMENT_BYTES / (1024 * 1024))}MB total)`,
+      );
+      return;
+    }
+    setAttachmentError(null);
     setInput("");
+    setFiles([]);
     fileBrowserActions.clearComments();
-    await sendMessage(message);
+    await sendMessage(buildUserContent(message, files));
   };
 
   // No model yet means the session's model is still being fetched from the
@@ -74,9 +110,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         status={status}
         turnFiles={turnFiles}
       />
-      {error && (
+      {(error || attachmentError) && (
         <div role="alert" className="text-xs text-red-600 px-4 py-1">
-          {error}
+          {error || attachmentError}
         </div>
       )}
       <form
@@ -91,7 +127,16 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             isLoading={inputIsLoading}
             isLoadingRefinedPrompt={isLoadingRefinedPrompt}
             placeholder="Ask the coding agent..."
+            onPasteFiles={onPasteFiles}
+            files={files}
+            setFiles={setFiles}
           />
+          <div className="absolute left-3 bottom-2 flex items-center space-x-2">
+            <AttachmentsControl
+              handleFileChange={handleFileChange}
+              supportedFiles={CODE_AGENT_SUPPORTED_FILES}
+            />
+          </div>
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
             {hasPreviousMessage && (
               <ChatControl
@@ -112,7 +157,10 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               type="submit"
               aria-label="Send message"
               disabled={
-                (!input.trim() && pendingComments.length === 0) || inputIsLoading
+                (!input.trim() &&
+                  pendingComments.length === 0 &&
+                  files.length === 0) ||
+                inputIsLoading
               }
               isLoading={inputIsLoading}
               // Only a running turn can be cancelled; while the session or

@@ -17,7 +17,11 @@ export const PreviewFiles: React.FC<PreviewFilesProps> = ({
   className,
 }) => {
   const removeFile = (fileToDelete: FilePart) => {
-    deleteFile(fileToDelete.url);
+    // Local-only attachments (data URLs, or text files with url: "") were
+    // never uploaded to Blob storage — nothing to delete remotely.
+    if (fileToDelete.url.startsWith("http")) {
+      deleteFile(fileToDelete.url);
+    }
     setFiles(files.filter((file) => file.filename !== fileToDelete.filename));
   };
 

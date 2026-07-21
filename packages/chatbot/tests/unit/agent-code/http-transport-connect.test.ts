@@ -12,7 +12,7 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { handleRpc } = await import("coding-agent/transports/http");
+const { handleRpc, summarizeRpcParams } = await import("coding-agent/transports/http");
 const { __resetSessionsForTests } = await import("coding-agent/session-manager");
 
 beforeEach(() => {
@@ -49,5 +49,44 @@ describe("connectToSession RPC param validation", () => {
       code: -32602,
       message: "afterSeq and epoch are required",
     });
+  });
+});
+
+describe("summarizeRpcParams", () => {
+  it("never includes attachment payloads for sendPrompt, only counts", () => {
+    const summary = summarizeRpcParams("sendPrompt", {
+      sessionId: "s1",
+      prompt: "hi",
+      messages: [
+        {
+          id: "u1",
+          role: "user",
+          content: [
+            { type: "text", text: "hi" },
+            {
+              type: "image",
+              source: { type: "data", value: "a".repeat(5000), mimeType: "image/png" },
+            },
+            {
+              type: "document",
+              source: { type: "data", value: "b".repeat(5000), mimeType: "text/plain" },
+              metadata: { filename: "notes.txt" },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(summary).toEqual({
+      sessionId: "s1",
+      promptLength: 2,
+      messageCount: 1,
+      lastMessagePartCount: 3,
+      imageCount: 1,
+      documentCount: 1,
+      hasTraceRunId: false,
+    });
+    expect(JSON.stringify(summary)).not.toContain("aaaa");
+    expect(JSON.stringify(summary)).not.toContain("bbbb");
   });
 });

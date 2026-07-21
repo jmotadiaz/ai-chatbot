@@ -9,6 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { useState } from "react";
+import type { InputContent } from "@ag-ui/client";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 
 function makeSseResponse(events: object[]): Response {
@@ -81,6 +82,24 @@ function Harness() {
   );
 }
 
+const ATTACHMENT_CONTENT: InputContent[] = [
+  { type: "text", text: "look at this" },
+  {
+    type: "image",
+    source: { type: "data", value: "aW1hZ2U=", mimeType: "image/png" },
+    metadata: { filename: "cat.png" },
+  },
+];
+
+function AttachmentHarness() {
+  const { sendMessage } = useCodingAgent({ project: "p", sessionId: "s", modelId: "m" });
+  return (
+    <button data-testid="send-attachment" onClick={() => void sendMessage(ATTACHMENT_CONTENT)}>
+      send
+    </button>
+  );
+}
+
 describe("useCodingAgent client lifecycle", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
@@ -125,6 +144,25 @@ describe("useCodingAgent client lifecycle", () => {
       timeout: 2000,
     });
     expect(userMsg.textContent).toBe("hello");
+  });
+
+  it("sends structured InputContent[] (image attachment) through to the run request intact", async () => {
+    render(<AttachmentHarness />);
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send-attachment"));
+    });
+
+    await waitFor(() =>
+      expect(fetchSpy.mock.calls.some(([url]) => url === "/api/agent/code")).toBe(true),
+    );
+    const [, request] = fetchSpy.mock.calls.find(([url]) => url === "/api/agent/code")!;
+    const body = JSON.parse((request as RequestInit).body as string);
+    const messages = body.messages as Array<{ role: string; content: unknown }>;
+    const lastUserMessage = messages[messages.length - 1];
+    expect(lastUserMessage.role).toBe("user");
+    expect(lastUserMessage.content).toEqual(ATTACHMENT_CONTENT);
   });
 
   it("connects an active session from the cursor returned by the worker snapshot", async () => {

@@ -58,6 +58,63 @@ export const toFilePart = (
   };
 };
 
+export interface HandleLocalFileUploadOptions {
+  maxImageBytes: number;
+  maxTextFileBytes: number;
+  onError?: (message: string) => void;
+}
+
+/**
+ * Like `handleFileUpload`, but never uploads to Vercel Blob: images stay as
+ * local data URLs and text files stay as inline `textContent`. Used by the
+ * coding agent, whose worker needs attachments as base64 payloads rather
+ * than fetchable URLs.
+ */
+export const handleLocalFileUpload = async (
+  setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>,
+  fileList: FileList | null,
+  options: HandleLocalFileUploadOptions,
+): Promise<void> => {
+  if (!fileList) return;
+  const { maxImageBytes, maxTextFileBytes, onError } = options;
+
+  for (const file of fileList) {
+    if (isTextFile(file.name)) {
+      if (file.size > maxTextFileBytes) {
+        onError?.(
+          `"${file.name}" is too large (max ${Math.round(maxTextFileBytes / 1024)}KB)`,
+        );
+        continue;
+      }
+      const textContent = await readTextFile(file);
+      setFiles((prevFiles) => [
+        ...prevFiles,
+        {
+          type: "file",
+          mediaType: file.type || "text/plain",
+          filename: file.name,
+          url: "",
+          textContent,
+        },
+      ]);
+      continue;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      onError?.(`"${file.name}" is not a supported file type`);
+      continue;
+    }
+    if (file.size > maxImageBytes) {
+      onError?.(
+        `"${file.name}" is too large (max ${Math.round(maxImageBytes / (1024 * 1024))}MB)`,
+      );
+      continue;
+    }
+    const filePart = await convertFileToDataURLs(file);
+    setFiles((prevFiles) => [...prevFiles, filePart]);
+  }
+};
+
 export const handleFileUpload = async (
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>,
   fileList: FileList | null,

@@ -1,4 +1,5 @@
 import { EventType, type BaseEvent } from "@ag-ui/client";
+import { extractUserContentParts } from "coding-agent/attached-files";
 import {
   FileTraceSink,
   isTracingEnabled,
@@ -23,7 +24,7 @@ import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export const maxDuration = 240;
 
-interface RequestMessage {
+export interface RequestMessage {
   id?: string;
   role: string;
   content?: unknown;
@@ -32,9 +33,35 @@ interface RequestMessage {
   name?: string;
 }
 
-function promptFromMessage(message: RequestMessage | undefined): string {
-  if (!message) return "";
-  return typeof message.content === "string" ? message.content : "";
+// Extracts the typed text from a client message's content, which is either
+// a plain string or an AG-UI `InputContent[]` (text/image/document parts,
+// present when the message carries attachments). Used both for the prompt
+// sent to the worker and for deriving the session label.
+// Exported for unit testing; Next.js only special-cases the uppercase HTTP
+// method exports (GET/POST/...), so this extra export is inert for routing.
+export function promptTextFromContent(content: unknown): string {
+  return extractUserContentParts(content).text;
+}
+
+// The worker only reads the last client message's content (see
+// startPromptCollector in packages/coding-agent/src/session-manager.ts) —
+// earlier messages are forwarded solely to help it stay in sync, never
+// parsed for attachments. Blanking out their base64 payloads avoids
+// re-shipping the whole attachment history to the worker on every turn.
+export function stripNonTailAttachmentData(messages: RequestMessage[]): RequestMessage[] {
+  if (messages.length === 0) return messages;
+  const lastIndex = messages.length - 1;
+  return messages.map((message, index) => {
+    if (index === lastIndex || !Array.isArray(message.content)) return message;
+    const content = (message.content as Array<Record<string, unknown>>).map((part) => {
+      const source = part?.source as { type?: string; value?: unknown } | undefined;
+      if (part?.type !== "text" && source?.type === "data") {
+        return { ...part, source: { ...source, value: "" } };
+      }
+      return part;
+    });
+    return { ...message, content };
+  });
 }
 
 export const POST = withAuth(async (user, req) => {
@@ -145,14 +172,14 @@ export const POST = withAuth(async (user, req) => {
         });
       }
 
-      const prompt = promptFromMessage(messages[messages.length - 1]);
+      const prompt = promptTextFromContent(messages[messages.length - 1]?.content);
       const sendStop = log.startTimer("worker.sendPrompt", {
         promptLength: prompt.length,
       });
       const workerStream = await client.sendPrompt({
         sessionId,
         prompt,
-        messages,
+        messages: stripNonTailAttachmentData(messages),
         _traceRunId: runId,
       });
       sendStop();
@@ -161,20 +188,16 @@ export const POST = withAuth(async (user, req) => {
 
       // Save first user message as session label (if not already set)
       if (!dbSession.label) {
-        const firstUserMsg = messages.find(
-          (m) => m.role === "user" && typeof m.content === "string",
-        );
-        if (typeof firstUserMsg?.content === "string" && firstUserMsg.content.trim()) {
-          const label = firstUserMsg.content
-            .trim()
-            .split("\n")[0]!
-            .slice(0, 80);
+        const firstUserMsg = messages.find((m) => m.role === "user");
+        const label = promptTextFromContent(firstUserMsg?.content).trim();
+        if (label) {
+          const finalLabel = label.split("\n")[0]!.slice(0, 80);
           await updateSessionLabel({
             userId: user.id,
             sessionId,
-            label,
+            label: finalLabel,
           });
-          log.info("db.label_saved", { sessionId, label });
+          log.info("db.label_saved", { sessionId, label: finalLabel });
         }
       }
 
