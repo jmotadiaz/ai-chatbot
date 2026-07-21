@@ -16,6 +16,11 @@ import { buildReconnectPrelude } from "./reconnect-prelude";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import {
+  extractUserContentParts,
+  inlineAttachedFiles,
+  splitAttachedFiles,
+} from "./attached-files";
+import {
   captureGitFileState,
   diffTurnFiles,
   type GitFileState,
@@ -444,13 +449,6 @@ function startPromptCollector(
     throw new Error("Session is already running");
   }
 
-  log.info("session.prompt", {
-    sessionId,
-    runId,
-    promptLength: prompt.length,
-    historyMessageCount: messages?.length ?? 0,
-  });
-
   const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
   // Invariant: the run-start snapshot is canonical history plus the new user
   // message carrying the client's id. That id is stamped onto Pi's own
@@ -466,6 +464,31 @@ function startPromptCollector(
       : [{ id: crypto.randomUUID(), role: "user", content: prompt }];
   const userMessageClientId = userTail[0].id as string;
   const snapshotMessages = [...preRunHistory, ...userTail];
+
+  // The client's tail message may carry structured AG-UI content (images /
+  // text-file attachments) instead of plain text. Text-file content has no
+  // native slot in Pi's prompt() — it is inlined into the prompt text as a
+  // reversible fenced block (see attached-files.ts) so convertPiMessagesToAgui
+  // can reconstruct the original attachment on reload. Images go through
+  // natively via PromptOptions.images.
+  const extracted = extractUserContentParts(userTail[0]?.content ?? prompt);
+  const inlinedText = inlineAttachedFiles(extracted.text, extracted.docs);
+  const promptText =
+    inlinedText.length > 0 ? inlinedText : extracted.images.length > 0 ? " " : prompt;
+  const piImages = extracted.images.map((img) => ({
+    type: "image" as const,
+    data: img.data,
+    mimeType: img.mimeType,
+  }));
+
+  log.info("session.prompt", {
+    sessionId,
+    runId,
+    promptLength: promptText.length,
+    imageCount: piImages.length,
+    docCount: extracted.docs.length,
+    historyMessageCount: messages?.length ?? 0,
+  });
   const startSeq = ensureEventLog(entry).lastSeq + 1;
   const piEventCounts: Record<string, number> = {};
   const aguiEventCounts: Record<string, number> = {};
@@ -575,7 +598,7 @@ function startPromptCollector(
 
   const promptStop = log.startTimer("session.prompt_execution");
   runtime.session
-    .prompt(prompt)
+    .prompt(promptText, piImages.length > 0 ? { images: piImages } : undefined)
     .then(async () => {
       promptStop();
       log.info("session.prompt_complete", { sessionId, runId });
@@ -703,11 +726,40 @@ function convertPiMessagesToAgui(piMessages: ReadonlyArray<any>): Array<any> {
       const baseId =
         typeof msg.clientMessageId === "string" ? msg.clientMessageId : userMessageId(msg.timestamp);
       const id = idDeduper.dedupe(baseId);
-      result.push({
-        id,
-        role: "user",
-        content: typeof msg.content === "string" ? msg.content : extractMessageText(msg.content),
-      });
+      const rawText =
+        typeof msg.content === "string" ? msg.content : extractMessageText(msg.content);
+      const piImages = Array.isArray(msg.content)
+        ? msg.content.filter((c: any) => c && c.type === "image")
+        : [];
+      const { text, docs } = splitAttachedFiles(rawText);
+
+      if (piImages.length === 0 && docs.length === 0) {
+        // No attachments: preserve the exact pre-existing shape (plain string).
+        result.push({ id, role: "user", content: rawText });
+      } else {
+        const parts: unknown[] = [];
+        if (text.trim().length > 0) {
+          parts.push({ type: "text", text });
+        }
+        for (const img of piImages) {
+          parts.push({
+            type: "image",
+            source: { type: "data", value: img.data, mimeType: img.mimeType },
+          });
+        }
+        for (const doc of docs) {
+          parts.push({
+            type: "document",
+            source: {
+              type: "data",
+              value: Buffer.from(doc.content, "utf8").toString("base64"),
+              mimeType: doc.mimeType,
+            },
+            metadata: { filename: doc.filename },
+          });
+        }
+        result.push({ id, role: "user", content: parts });
+      }
     } else if (msg.role === "assistant") {
       const id = idDeduper.dedupe(assistantMessageId(msg.timestamp));
 

@@ -4,11 +4,13 @@ import { useEffect, useMemo, useCallback, useSyncExternalStore, useRef } from "r
 import {
   EventType,
   type BaseEvent,
+  type InputContent,
   type Message,
 } from "@ag-ui/client";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
 import { groupItems } from "@/lib/features/code/group-items";
+import { contentAttachmentCounts, contentTextLength } from "@/lib/features/code/attachments";
 import {
   filesChangedFromEvent,
   loadTurnFiles,
@@ -38,7 +40,7 @@ export interface UseCodingAgentResult {
   turnFiles: TurnFilesMap;
   isRunning: boolean;
   isLoading: boolean;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string | InputContent[]) => Promise<void>;
   status: AgentStatus;
   error: string | null;
   cancel: () => Promise<void>;
@@ -706,7 +708,7 @@ export function useCodingAgent({
   );
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string | InputContent[]) => {
       if (state.isLoading) {
         store.update(() => ({ error: "Coding agent session is still loading" }));
         return;
@@ -720,7 +722,12 @@ export function useCodingAgent({
         runId,
         sessionId,
         eventName: "client.run.start",
-        payload: { project, modelId, promptLength: content.length },
+        payload: {
+          project,
+          modelId,
+          promptLength: contentTextLength(content),
+          ...contentAttachmentCounts(content),
+        },
       });
       store.update(() => ({
         error: null,

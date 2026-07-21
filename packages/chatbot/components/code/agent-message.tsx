@@ -7,6 +7,7 @@ import { ToolCallGroup } from "./tool-call-group";
 import { AgentResponse } from "./agent-response";
 import { ReasoningBlock } from "@/components/chat/reasoning";
 import { UserMessage } from "@/components/chat/user-message";
+import { contentToDisplay } from "@/lib/features/code/attachments";
 import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 
 export interface AgentMessageProps {
@@ -80,8 +81,8 @@ const areEqual = (prevProps: AgentMessageProps, nextProps: AgentMessageProps) =>
 export const AgentMessage: React.FC<AgentMessageProps> = memo(
   ({ message, toolGroups, isStreaming }) => {
     if (message.role === "user") {
-      const text = typeof message.content === "string" ? message.content : "";
-      return <UserMessage text={text} messageId={message.id} />;
+      const { text, files } = contentToDisplay(message.content);
+      return <UserMessage text={text} files={files} messageId={message.id} />;
     }
 
     if (message.role === "reasoning") {

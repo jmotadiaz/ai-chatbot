@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./attached-files": "./src/attached-files.ts",
     "./event-log": "./src/event-log.ts",
     "./http-transport": "./src/transports/http.ts",
     "./message-ids": "./src/message-ids.ts",
