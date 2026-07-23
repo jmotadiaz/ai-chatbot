@@ -284,70 +284,72 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
         </header>
       )}
 
-      {/* Markdown Raw/Preview lives in its own left-aligned row so it sits in
-          the same place in both the diff and file views. */}
-      {canRenderMarkdown && (
-        <div className="flex min-h-12 shrink-0 items-center justify-end gap-1 border-b border-zinc-200 px-2 dark:border-zinc-800">
-          <Button
-            variant={viewMode === "raw" ? "secondary" : "icon"}
-            size="icon"
-            type="button"
-            aria-label="Raw"
-            aria-pressed={viewMode === "raw"}
-            onClick={() => {
-              setSelectedLine(null);
-              setViewMode("raw");
-            }}
-          >
-            <Code2 size={16} />
-          </Button>
-          <Button
-            variant={viewMode === "rendered" ? "secondary" : "icon"}
-            size="icon"
-            type="button"
-            aria-label="Preview"
-            aria-pressed={viewMode === "rendered"}
-            onClick={() => {
-              setSelectedLine(null);
-              setViewMode("rendered");
-            }}
-          >
-            <Eye size={16} />
-          </Button>
-        </div>
-      )}
+      {/* The body is a positioning context so the markdown Raw/Preview toggle
+          can float over the content (transparent, no solid bar) at the
+          top-right, in the same spot for both the diff and file views. */}
+      <div className="relative flex-1 overflow-hidden">
+        {canRenderMarkdown && (
+          <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+            <Button
+              variant={viewMode === "raw" ? "secondary" : "icon"}
+              size="icon"
+              type="button"
+              aria-label="Raw"
+              aria-pressed={viewMode === "raw"}
+              onClick={() => {
+                setSelectedLine(null);
+                setViewMode("raw");
+              }}
+            >
+              <Code2 size={16} />
+            </Button>
+            <Button
+              variant={viewMode === "rendered" ? "secondary" : "icon"}
+              size="icon"
+              type="button"
+              aria-label="Preview"
+              aria-pressed={viewMode === "rendered"}
+              onClick={() => {
+                setSelectedLine(null);
+                setViewMode("rendered");
+              }}
+            >
+              <Eye size={16} />
+            </Button>
+          </div>
+        )}
 
-      {load.status === "loading" && (
-        <div className="flex flex-1 items-center justify-center text-sm text-zinc-400">
-          Loading…
-        </div>
-      )}
-      {load.status === "error" && (
-        <FileBrowserEmptyState
-          Icon={FileX}
-          title="Could not open file"
-          description={load.message}
-        />
-      )}
-      {load.status === "binary" && (
-        <FileBrowserEmptyState
-          Icon={FileQuestion}
-          title="Binary file"
-          description="This file can't be shown here."
-        />
-      )}
-      {load.status === "tooLarge" && (
-        <FileBrowserEmptyState
-          Icon={FileX}
-          title="File too large"
-          description="Files over 1 MB can't be shown here."
-        />
-      )}
+        {load.status === "loading" && (
+          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+            Loading…
+          </div>
+        )}
+        {load.status === "error" && (
+          <FileBrowserEmptyState
+            Icon={FileX}
+            title="Could not open file"
+            description={load.message}
+          />
+        )}
+        {load.status === "binary" && (
+          <FileBrowserEmptyState
+            Icon={FileQuestion}
+            title="Binary file"
+            description="This file can't be shown here."
+          />
+        )}
+        {load.status === "tooLarge" && (
+          <FileBrowserEmptyState
+            Icon={FileX}
+            title="File too large"
+            description="Files over 1 MB can't be shown here."
+          />
+        )}
 
-      {load.status === "ready" && (
+        {load.status === "ready" && (
         <div
           ref={codeContainerRef}
-          className={cn("flex-1 overflow-auto overscroll-contain py-2")}
+          className={cn("h-full overflow-auto overscroll-contain py-2")}
         >
           {canRenderMarkdown && viewMode === "rendered" ? (
             <MarkdownPreview
@@ -385,7 +387,8 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
             })
           )}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
