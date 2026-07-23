@@ -2,9 +2,11 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  Code2,
   ChevronDown,
   ChevronLeft,
   ChevronUp,
+  Eye,
   FileQuestion,
   FileX,
   Trash2,
@@ -13,6 +15,7 @@ import type { ThemedToken } from "shiki";
 import { CodeViewLine } from "./code-view-line";
 import { FileBrowserEmptyState } from "./empty-states";
 import { useFileBrowser } from "./file-browser-provider";
+import { MarkdownPreview } from "./markdown-preview";
 import type { DiffLineKind, PendingComment } from "./types";
 import { cn } from "@/lib/utils/helpers";
 import { Button } from "@/components/ui/button";
@@ -32,7 +35,13 @@ export type LoadState =
   | { status: "error"; message: string }
   | { status: "binary" }
   | { status: "tooLarge" }
-  | { status: "ready"; lines: DisplayLine[] };
+  | { status: "ready"; lines: DisplayLine[]; sourceContent?: string };
+
+type ViewMode = "raw" | "rendered";
+
+function isMarkdownPath(path: string): boolean {
+  return /\.(?:md|markdown)$/i.test(path);
+}
 
 interface CommentComposerProps {
   lineNumber: number;
@@ -51,7 +60,11 @@ const CommentComposer: React.FC<CommentComposerProps> = ({
 }) => {
   const [text, setText] = useState(existing?.text ?? "");
   return (
-    <div className="sticky left-0 w-full max-w-[100dvw] border-y border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-3">
+    <div
+      className="sticky left-0 w-full max-w-[100dvw] border-y border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-3"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
       <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
         Comment on line {lineNumber}
       </p>
@@ -109,6 +122,9 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
   const { state, actions } = useFileBrowser();
 
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    isMarkdownPath(path) ? "rendered" : "raw",
+  );
   const [currentRangeIndex, setCurrentRangeIndex] = useState<number | null>(
     null,
   );
@@ -153,14 +169,17 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
 
   const saveComment = (text: string) => {
     if (selectedLine === null || load.status !== "ready") return;
+    const sourceLine = load.sourceContent?.split("\n")[selectedLine - 1];
     actions.upsertComment({
       id: existingComment?.id ?? crypto.randomUUID(),
       file: path,
       startLine: selectedLine,
       endLine: selectedLine,
       lineText:
+        sourceLine ??
         load.lines.find((line) => line.newLineNumber === selectedLine)
-          ?.content ?? "",
+          ?.content ??
+        "",
       text,
       createdAt: existingComment?.createdAt ?? Date.now(),
     });
@@ -172,6 +191,27 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
       setSelectedLine((current) => (current === line ? null : line)),
     [],
   );
+
+  const canRenderMarkdown =
+    load.status === "ready" &&
+    isMarkdownPath(path) &&
+    load.sourceContent !== undefined;
+
+  const renderCommentComposer = (lineNumber: number) => {
+    const comment = commentsByLine.get(lineNumber);
+    return (
+      <CommentComposer
+        lineNumber={lineNumber}
+        existing={comment}
+        onSave={saveComment}
+        onRemove={() => {
+          if (comment) actions.removeComment(comment.id);
+          setSelectedLine(null);
+        }}
+        onCancel={() => setSelectedLine(null)}
+      />
+    );
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -192,7 +232,42 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
         >
           {path}
         </span>
-        {load.status === "ready" && navigationCount > 0 && (
+        {canRenderMarkdown && (
+          <div
+            className="ml-2 flex shrink-0 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800"
+            aria-label="Markdown view"
+          >
+            <Button
+              variant={viewMode === "raw" ? "secondary" : "ghost"}
+              size="sm"
+              type="button"
+              aria-pressed={viewMode === "raw"}
+              onClick={() => {
+                setSelectedLine(null);
+                setViewMode("raw");
+              }}
+            >
+              <Code2 size={14} />
+              Raw
+            </Button>
+            <Button
+              variant={viewMode === "rendered" ? "secondary" : "ghost"}
+              size="sm"
+              type="button"
+              aria-pressed={viewMode === "rendered"}
+              onClick={() => {
+                setSelectedLine(null);
+                setViewMode("rendered");
+              }}
+            >
+              <Eye size={14} />
+              Preview
+            </Button>
+          </div>
+        )}
+        {load.status === "ready" &&
+          viewMode === "raw" &&
+          navigationCount > 0 && (
           <div className="ml-4 flex shrink-0 items-center">
             <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
               {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
@@ -259,41 +334,41 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
           ref={codeContainerRef}
           className={cn("flex-1 overflow-auto overscroll-contain py-2")}
         >
-          {load.lines.map((line) => {
-            const lineNumber = line.newLineNumber;
-            return (
-              <div
-                key={line.id}
-                data-line-number={lineNumber ?? undefined}
-                data-change-index={line.navigationIndex ?? undefined}
-              >
-                <CodeViewLine
-                  oldLineNumber={line.oldLineNumber}
-                  newLineNumber={line.newLineNumber}
-                  tokens={line.tokens}
-                  changeKind={line.changeKind}
-                  hasComment={
-                    lineNumber !== null && commentsByLine.has(lineNumber)
-                  }
-                  isSelected={selectedLine === lineNumber}
-                  onSelect={handleSelectLine}
-                />
-                {lineNumber !== null && selectedLine === lineNumber && (
-                  <CommentComposer
-                    lineNumber={lineNumber}
-                    existing={existingComment}
-                    onSave={saveComment}
-                    onRemove={() => {
-                      if (existingComment)
-                        actions.removeComment(existingComment.id);
-                      setSelectedLine(null);
-                    }}
-                    onCancel={() => setSelectedLine(null)}
+          {canRenderMarkdown && viewMode === "rendered" ? (
+            <MarkdownPreview
+              content={load.sourceContent ?? ""}
+              commentsByLine={commentsByLine}
+              selectedLine={selectedLine}
+              onSelectLine={handleSelectLine}
+              renderComposer={renderCommentComposer}
+            />
+          ) : (
+            load.lines.map((line) => {
+              const lineNumber = line.newLineNumber;
+              return (
+                <div
+                  key={line.id}
+                  data-line-number={lineNumber ?? undefined}
+                  data-change-index={line.navigationIndex ?? undefined}
+                >
+                  <CodeViewLine
+                    oldLineNumber={line.oldLineNumber}
+                    newLineNumber={line.newLineNumber}
+                    tokens={line.tokens}
+                    changeKind={line.changeKind}
+                    hasComment={
+                      lineNumber !== null && commentsByLine.has(lineNumber)
+                    }
+                    isSelected={selectedLine === lineNumber}
+                    onSelect={handleSelectLine}
                   />
-                )}
-              </div>
-            );
-          })}
+                  {lineNumber !== null &&
+                    selectedLine === lineNumber &&
+                    renderCommentComposer(lineNumber)}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>

@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { CodeViewFrame, type LoadState } from "./code-view-frame";
+import { useFileBrowser } from "./file-browser-provider";
 import type { DiffLineKind, FileDiff } from "./types";
+import { fetchFile } from "@/lib/features/code/file-browser/file-browser-fetchers";
 import {
   DARK_THEME,
   LIGHT_THEME,
@@ -30,6 +32,7 @@ export const DiffCodeView: React.FC<DiffCodeViewProps> = ({
   diff,
   onBack,
 }) => {
+  const { project } = useFileBrowser();
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "dark" ? DARK_THEME : LIGHT_THEME;
 
@@ -64,15 +67,27 @@ export const DiffCodeView: React.FC<DiffCodeViewProps> = ({
       return;
     }
 
-    tokenize(
-      sourceLines.map((line) => line.content).join("\n"),
-      languageFromPath(path),
-      theme,
-    )
-      .then((tokens) => {
+    const sourceContentPromise = /\.(?:md|markdown)$/i.test(path)
+      ? fetchFile(project, path)
+          .then((result) =>
+            result.kind === "file" ? result.content : undefined,
+          )
+          .catch(() => undefined)
+      : Promise.resolve(undefined);
+
+    Promise.all([
+      tokenize(
+        sourceLines.map((line) => line.content).join("\n"),
+        languageFromPath(path),
+        theme,
+      ),
+      sourceContentPromise,
+    ])
+      .then(([tokens, sourceContent]) => {
         if (cancelled) return;
         setLoad({
           status: "ready",
+          sourceContent,
           lines: sourceLines.map((line, index) => ({
             id: `${index}`,
             content: line.content,
@@ -90,7 +105,7 @@ export const DiffCodeView: React.FC<DiffCodeViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [sourceLines, path, theme]);
+  }, [sourceLines, path, project, theme]);
 
   const selectorForIndex = useCallback(
     (i: number) => `[data-change-index="${i}"]`,

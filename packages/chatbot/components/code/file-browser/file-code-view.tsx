@@ -45,6 +45,7 @@ export const FileCodeView: React.FC<FileCodeViewProps> = ({
         const contentLines = result.content.split("\n");
         setLoad({
           status: "ready",
+          sourceContent: result.content,
           lines: lines.map((tokens, index) => ({
             id: `${index + 1}`,
             content: contentLines[index] ?? "",

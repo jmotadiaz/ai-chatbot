@@ -11,6 +11,7 @@ import {
   statusFromXY,
   type GitFileState,
 } from "coding-agent/turn-git-state";
+import { clearInheritedGitRepositoryEnv } from "../../helpers/git-env";
 
 const execFileAsync = promisify(execFile);
 
@@ -89,11 +90,13 @@ describe("diffTurnFiles", () => {
 describe("captureGitFileState (integration)", () => {
   let root: string;
   let repo: string;
+  let restoreGitEnv: () => void;
 
   const git = (args: string[]) =>
     execFileAsync("git", args, { cwd: repo });
 
   beforeAll(async () => {
+    restoreGitEnv = clearInheritedGitRepositoryEnv();
     root = await mkdtemp(join(tmpdir(), "turn-git-state-"));
     repo = join(root, "repo");
     await mkdir(repo);
@@ -107,6 +110,7 @@ describe("captureGitFileState (integration)", () => {
 
   afterAll(async () => {
     await rm(root, { recursive: true, force: true });
+    restoreGitEnv();
   });
 
   it("returns null outside a git work tree", async () => {

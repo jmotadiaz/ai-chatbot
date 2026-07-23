@@ -14,6 +14,7 @@ import {
   afterAll,
   afterEach,
 } from "vitest";
+import { clearInheritedGitRepositoryEnv } from "../../helpers/git-env";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -82,8 +83,10 @@ let projectsRoot: string;
 const PROJECT = "proj";
 let repo: string;
 const savedRoot = process.env.CODING_AGENT_PROJECTS_ROOT;
+let restoreGitEnv: () => void;
 
 beforeAll(async () => {
+  restoreGitEnv = clearInheritedGitRepositoryEnv();
   projectsRoot = await mkdtemp(join(tmpdir(), "worker-projects-"));
   repo = join(projectsRoot, PROJECT);
   await mkdir(repo);
@@ -98,6 +101,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await rm(projectsRoot, { recursive: true, force: true });
+  restoreGitEnv();
 });
 
 beforeEach(() => {
