@@ -205,6 +205,7 @@ export const FileBrowserView: React.FC = () => {
         <Breadcrumbs
           rootLabel={project}
           pathStack={state.pathStack}
+          activeFileName={state.activeFile ? basename(state.activeFile) : null}
           onNavigate={actions.truncatePath}
         />
       )}

@@ -4,12 +4,12 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Code2,
   ChevronDown,
-  ChevronLeft,
   ChevronUp,
   Eye,
   FileQuestion,
   FileX,
   Trash2,
+  X,
 } from "lucide-react";
 import type { ThemedToken } from "shiki";
 import { CodeViewLine } from "./code-view-line";
@@ -197,6 +197,15 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
     isMarkdownPath(path) &&
     load.sourceContent !== undefined;
 
+  // In tree scope the breadcrumbs already show the filename and provide the way
+  // back (tap a folder crumb), so the primary bar only appears when there's diff
+  // navigation to show. In diff scope there are no breadcrumbs, so the primary
+  // bar always shows the filename, diff navigation and a close button.
+  const isTree = state.scope === "tree";
+  const showDiffNav =
+    load.status === "ready" && viewMode === "raw" && navigationCount > 0;
+  const showPrimaryBar = !isTree || showDiffNav;
+
   const renderCommentComposer = (lineNumber: number) => {
     const comment = commentsByLine.get(lineNumber);
     return (
@@ -215,124 +224,144 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
-        <Button
-          variant="icon"
-          size="icon"
-          type="button"
-          aria-label="Back to file list"
-          onClick={onBack}
-        >
-          <ChevronLeft size={20} />
-        </Button>
-        <span
-          className="min-w-0 flex-1 truncate text-sm font-medium"
-          dir="rtl"
-          title={path}
-        >
-          {path}
-        </span>
-        {canRenderMarkdown && (
-          <div
-            className="ml-2 flex shrink-0 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800"
-            aria-label="Markdown view"
-          >
+      {showPrimaryBar && (
+        <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
+          {isTree ? (
+            <div className="flex-1" />
+          ) : (
+            <span
+              className="min-w-0 flex-1 truncate px-1.5 text-sm font-medium"
+              title={path}
+            >
+              {path.split("/").pop()}
+            </span>
+          )}
+          {showDiffNav && (
+            <div className="flex shrink-0 items-center">
+              <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+                {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
+                {navigationCount}
+              </span>
+              <div className="flex -space-x-1">
+                <Button
+                  variant="icon"
+                  size="icon"
+                  type="button"
+                  aria-label="Previous diff"
+                  disabled={currentRangeIndex === null || currentRangeIndex <= 0}
+                  onClick={goToPrevDiff}
+                >
+                  <ChevronUp size={16} />
+                </Button>
+                <Button
+                  variant="icon"
+                  size="icon"
+                  type="button"
+                  aria-label="Next diff"
+                  disabled={
+                    currentRangeIndex !== null &&
+                    currentRangeIndex >= navigationCount - 1
+                  }
+                  onClick={goToNextDiff}
+                >
+                  <ChevronDown size={16} />
+                </Button>
+              </div>
+            </div>
+          )}
+          {!isTree && (
             <Button
-              variant={viewMode === "raw" ? "secondary" : "ghost"}
-              size="sm"
+              variant="icon"
+              size="icon"
               type="button"
+              aria-label="Close file"
+              onClick={onBack}
+              className="ml-1 shrink-0"
+            >
+              <X size={20} />
+            </Button>
+          )}
+        </header>
+      )}
+
+      {/* The body is a positioning context so the markdown Raw/Preview toggle
+          can float over the content (transparent, no solid bar) at the
+          top-right, in the same spot for both the diff and file views. */}
+      <div className="relative flex-1 overflow-hidden">
+        {canRenderMarkdown && (
+          <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+            <Button
+              variant="icon"
+              size="icon"
+              type="button"
+              aria-label="Raw"
               aria-pressed={viewMode === "raw"}
               onClick={() => {
                 setSelectedLine(null);
                 setViewMode("raw");
               }}
+              className={cn(
+                "p-2.5 shadow-sm",
+                viewMode === "raw"
+                  ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
+              )}
             >
-              <Code2 size={14} />
-              Raw
+              <Code2 size={16} />
             </Button>
             <Button
-              variant={viewMode === "rendered" ? "secondary" : "ghost"}
-              size="sm"
+              variant="icon"
+              size="icon"
               type="button"
+              aria-label="Preview"
               aria-pressed={viewMode === "rendered"}
               onClick={() => {
                 setSelectedLine(null);
                 setViewMode("rendered");
               }}
+              className={cn(
+                "p-2.5 shadow-sm",
+                viewMode === "rendered"
+                  ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
+              )}
             >
-              <Eye size={14} />
-              Preview
+              <Eye size={16} />
             </Button>
           </div>
         )}
-        {load.status === "ready" &&
-          viewMode === "raw" &&
-          navigationCount > 0 && (
-          <div className="ml-4 flex shrink-0 items-center">
-            <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
-              {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
-              {navigationCount}
-            </span>
-            <div className="flex -space-x-1">
-              <Button
-                variant="icon"
-                size="icon"
-                type="button"
-                aria-label="Previous diff"
-                disabled={currentRangeIndex === null || currentRangeIndex <= 0}
-                onClick={goToPrevDiff}
-              >
-                <ChevronUp size={16} />
-              </Button>
-              <Button
-                variant="icon"
-                size="icon"
-                type="button"
-                aria-label="Next diff"
-                disabled={
-                  currentRangeIndex !== null &&
-                  currentRangeIndex >= navigationCount - 1
-                }
-                onClick={goToNextDiff}
-              >
-                <ChevronDown size={16} />
-              </Button>
-            </div>
+
+        {load.status === "loading" && (
+          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+            Loading…
           </div>
         )}
-      </header>
+        {load.status === "error" && (
+          <FileBrowserEmptyState
+            Icon={FileX}
+            title="Could not open file"
+            description={load.message}
+          />
+        )}
+        {load.status === "binary" && (
+          <FileBrowserEmptyState
+            Icon={FileQuestion}
+            title="Binary file"
+            description="This file can't be shown here."
+          />
+        )}
+        {load.status === "tooLarge" && (
+          <FileBrowserEmptyState
+            Icon={FileX}
+            title="File too large"
+            description="Files over 1 MB can't be shown here."
+          />
+        )}
 
-      {load.status === "loading" && (
-        <div className="flex flex-1 items-center justify-center text-sm text-zinc-400">
-          Loading…
-        </div>
-      )}
-      {load.status === "error" && (
-        <FileBrowserEmptyState
-          Icon={FileX}
-          title="Could not open file"
-          description={load.message}
-        />
-      )}
-      {load.status === "binary" && (
-        <FileBrowserEmptyState
-          Icon={FileQuestion}
-          title="Binary file"
-          description="This file can't be shown here."
-        />
-      )}
-      {load.status === "tooLarge" && (
-        <FileBrowserEmptyState
-          Icon={FileX}
-          title="File too large"
-          description="Files over 1 MB can't be shown here."
-        />
-      )}
-
-      {load.status === "ready" && (
+        {load.status === "ready" && (
         <div
           ref={codeContainerRef}
-          className={cn("flex-1 overflow-auto overscroll-contain py-2")}
+          className={cn("h-full overflow-auto overscroll-contain py-2")}
         >
           {canRenderMarkdown && viewMode === "rendered" ? (
             <MarkdownPreview
@@ -370,7 +399,8 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
             })
           )}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
