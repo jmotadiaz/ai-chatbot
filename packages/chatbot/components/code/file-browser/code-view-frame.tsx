@@ -230,7 +230,10 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
           dir="rtl"
           title={path}
         >
-          {path}
+          {/* In tree scope the breadcrumbs already show the full path plus the
+              filename, so only the basename is repeated here to avoid showing
+              the whole path twice. */}
+          {state.scope === "tree" ? path.split("/").pop() : path}
         </span>
         {canRenderMarkdown && (
           <div

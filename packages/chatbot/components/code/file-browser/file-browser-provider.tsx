@@ -117,7 +117,8 @@ export function createFileBrowserStore(
     },
     setScope: (scope) => set({ scope, pathStack: [], activeFile: null }),
     pushPath: (dirName) => set({ pathStack: [...state.pathStack, dirName] }),
-    truncatePath: (length) => set({ pathStack: state.pathStack.slice(0, length) }),
+    truncatePath: (length) =>
+      set({ pathStack: state.pathStack.slice(0, length), activeFile: null }),
     openFile: (path) => set({ activeFile: path }),
     closeFile: () => set({ activeFile: null }),
     upsertComment(comment) {
