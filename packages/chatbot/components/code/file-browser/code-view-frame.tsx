@@ -291,7 +291,7 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
         {canRenderMarkdown && (
           <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
             <Button
-              variant={viewMode === "raw" ? "secondary" : "icon"}
+              variant="icon"
               size="icon"
               type="button"
               aria-label="Raw"
@@ -300,11 +300,17 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
                 setSelectedLine(null);
                 setViewMode("raw");
               }}
+              className={cn(
+                "p-2.5 shadow-sm",
+                viewMode === "raw"
+                  ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
+              )}
             >
               <Code2 size={16} />
             </Button>
             <Button
-              variant={viewMode === "rendered" ? "secondary" : "icon"}
+              variant="icon"
               size="icon"
               type="button"
               aria-label="Preview"
@@ -313,6 +319,12 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
                 setSelectedLine(null);
                 setViewMode("rendered");
               }}
+              className={cn(
+                "p-2.5 shadow-sm",
+                viewMode === "rendered"
+                  ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
+              )}
             >
               <Eye size={16} />
             </Button>
