@@ -287,38 +287,33 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
       {/* Markdown Raw/Preview lives in its own left-aligned row so it sits in
           the same place in both the diff and file views. */}
       {canRenderMarkdown && (
-        <div className="flex min-h-12 shrink-0 items-center border-b border-zinc-200 px-2 dark:border-zinc-800">
-          <div
-            className="flex shrink-0 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800"
-            aria-label="Markdown view"
+        <div className="flex min-h-12 shrink-0 items-center gap-1 border-b border-zinc-200 px-2 dark:border-zinc-800">
+          <Button
+            variant={viewMode === "raw" ? "secondary" : "icon"}
+            size="icon"
+            type="button"
+            aria-label="Raw"
+            aria-pressed={viewMode === "raw"}
+            onClick={() => {
+              setSelectedLine(null);
+              setViewMode("raw");
+            }}
           >
-            <Button
-              variant={viewMode === "raw" ? "secondary" : "ghost"}
-              size="sm"
-              type="button"
-              aria-pressed={viewMode === "raw"}
-              onClick={() => {
-                setSelectedLine(null);
-                setViewMode("raw");
-              }}
-            >
-              <Code2 size={14} />
-              Raw
-            </Button>
-            <Button
-              variant={viewMode === "rendered" ? "secondary" : "ghost"}
-              size="sm"
-              type="button"
-              aria-pressed={viewMode === "rendered"}
-              onClick={() => {
-                setSelectedLine(null);
-                setViewMode("rendered");
-              }}
-            >
-              <Eye size={14} />
-              Preview
-            </Button>
-          </div>
+            <Code2 size={16} />
+          </Button>
+          <Button
+            variant={viewMode === "rendered" ? "secondary" : "icon"}
+            size="icon"
+            type="button"
+            aria-label="Preview"
+            aria-pressed={viewMode === "rendered"}
+            onClick={() => {
+              setSelectedLine(null);
+              setViewMode("rendered");
+            }}
+          >
+            <Eye size={16} />
+          </Button>
         </div>
       )}
 
