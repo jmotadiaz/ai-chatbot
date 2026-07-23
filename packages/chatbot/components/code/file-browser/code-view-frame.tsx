@@ -287,7 +287,7 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
       {/* Markdown Raw/Preview lives in its own left-aligned row so it sits in
           the same place in both the diff and file views. */}
       {canRenderMarkdown && (
-        <div className="flex min-h-12 shrink-0 items-center gap-1 border-b border-zinc-200 px-2 dark:border-zinc-800">
+        <div className="flex min-h-12 shrink-0 items-center justify-end gap-1 border-b border-zinc-200 px-2 dark:border-zinc-800">
           <Button
             variant={viewMode === "raw" ? "secondary" : "icon"}
             size="icon"
