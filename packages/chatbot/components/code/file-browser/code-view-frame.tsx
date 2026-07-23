@@ -4,12 +4,12 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Code2,
   ChevronDown,
-  ChevronLeft,
   ChevronUp,
   Eye,
   FileQuestion,
   FileX,
   Trash2,
+  X,
 } from "lucide-react";
 import type { ThemedToken } from "shiki";
 import { CodeViewLine } from "./code-view-line";
@@ -197,6 +197,15 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
     isMarkdownPath(path) &&
     load.sourceContent !== undefined;
 
+  // In tree scope the breadcrumbs already show the filename and provide the way
+  // back (tap a folder crumb), so the header is only useful when there are
+  // file-specific controls to show. In diff scope there are no breadcrumbs, so
+  // the header always shows the filename and a close button.
+  const isTree = state.scope === "tree";
+  const showDiffNav =
+    load.status === "ready" && viewMode === "raw" && navigationCount > 0;
+  const showHeader = !isTree || canRenderMarkdown || showDiffNav;
+
   const renderCommentComposer = (lineNumber: number) => {
     const comment = commentsByLine.get(lineNumber);
     return (
@@ -215,26 +224,18 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
 
   return (
     <div className="flex h-full flex-col">
+      {showHeader && (
       <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
-        <Button
-          variant="icon"
-          size="icon"
-          type="button"
-          aria-label="Back to file list"
-          onClick={onBack}
-        >
-          <ChevronLeft size={20} />
-        </Button>
-        <span
-          className="min-w-0 flex-1 truncate text-sm font-medium"
-          dir="rtl"
-          title={path}
-        >
-          {/* In tree scope the breadcrumbs already show the full path plus the
-              filename, so only the basename is repeated here to avoid showing
-              the whole path twice. */}
-          {state.scope === "tree" ? path.split("/").pop() : path}
-        </span>
+        {isTree ? (
+          <div className="flex-1" />
+        ) : (
+          <span
+            className="min-w-0 flex-1 truncate text-sm font-medium"
+            title={path}
+          >
+            {path.split("/").pop()}
+          </span>
+        )}
         {canRenderMarkdown && (
           <div
             className="ml-2 flex shrink-0 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800"
@@ -268,9 +269,7 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
             </Button>
           </div>
         )}
-        {load.status === "ready" &&
-          viewMode === "raw" &&
-          navigationCount > 0 && (
+        {showDiffNav && (
           <div className="ml-4 flex shrink-0 items-center">
             <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
               {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
@@ -303,7 +302,20 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
             </div>
           </div>
         )}
+        {!isTree && (
+          <Button
+            variant="icon"
+            size="icon"
+            type="button"
+            aria-label="Close file"
+            onClick={onBack}
+            className="ml-1 shrink-0"
+          >
+            <X size={20} />
+          </Button>
+        )}
       </header>
+      )}
 
       {load.status === "loading" && (
         <div className="flex flex-1 items-center justify-center text-sm text-zinc-400">
