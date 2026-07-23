@@ -198,13 +198,13 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
     load.sourceContent !== undefined;
 
   // In tree scope the breadcrumbs already show the filename and provide the way
-  // back (tap a folder crumb), so the header is only useful when there are
-  // file-specific controls to show. In diff scope there are no breadcrumbs, so
-  // the header always shows the filename and a close button.
+  // back (tap a folder crumb), so the primary bar only appears when there's diff
+  // navigation to show. In diff scope there are no breadcrumbs, so the primary
+  // bar always shows the filename, diff navigation and a close button.
   const isTree = state.scope === "tree";
   const showDiffNav =
     load.status === "ready" && viewMode === "raw" && navigationCount > 0;
-  const showHeader = !isTree || canRenderMarkdown || showDiffNav;
+  const showPrimaryBar = !isTree || showDiffNav;
 
   const renderCommentComposer = (lineNumber: number) => {
     const comment = commentsByLine.get(lineNumber);
@@ -224,21 +224,72 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
 
   return (
     <div className="flex h-full flex-col">
-      {showHeader && (
-      <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
-        {isTree ? (
-          <div className="flex-1" />
-        ) : (
-          <span
-            className="min-w-0 flex-1 truncate text-sm font-medium"
-            title={path}
-          >
-            {path.split("/").pop()}
-          </span>
-        )}
-        {canRenderMarkdown && (
+      {showPrimaryBar && (
+        <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
+          {isTree ? (
+            <div className="flex-1" />
+          ) : (
+            <span
+              className="min-w-0 flex-1 truncate px-1.5 text-sm font-medium"
+              title={path}
+            >
+              {path.split("/").pop()}
+            </span>
+          )}
+          {showDiffNav && (
+            <div className="flex shrink-0 items-center">
+              <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+                {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
+                {navigationCount}
+              </span>
+              <div className="flex -space-x-1">
+                <Button
+                  variant="icon"
+                  size="icon"
+                  type="button"
+                  aria-label="Previous diff"
+                  disabled={currentRangeIndex === null || currentRangeIndex <= 0}
+                  onClick={goToPrevDiff}
+                >
+                  <ChevronUp size={16} />
+                </Button>
+                <Button
+                  variant="icon"
+                  size="icon"
+                  type="button"
+                  aria-label="Next diff"
+                  disabled={
+                    currentRangeIndex !== null &&
+                    currentRangeIndex >= navigationCount - 1
+                  }
+                  onClick={goToNextDiff}
+                >
+                  <ChevronDown size={16} />
+                </Button>
+              </div>
+            </div>
+          )}
+          {!isTree && (
+            <Button
+              variant="icon"
+              size="icon"
+              type="button"
+              aria-label="Close file"
+              onClick={onBack}
+              className="ml-1 shrink-0"
+            >
+              <X size={20} />
+            </Button>
+          )}
+        </header>
+      )}
+
+      {/* Markdown Raw/Preview lives in its own left-aligned row so it sits in
+          the same place in both the diff and file views. */}
+      {canRenderMarkdown && (
+        <div className="flex min-h-12 shrink-0 items-center border-b border-zinc-200 px-2 dark:border-zinc-800">
           <div
-            className="ml-2 flex shrink-0 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800"
+            className="flex shrink-0 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800"
             aria-label="Markdown view"
           >
             <Button
@@ -268,53 +319,7 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
               Preview
             </Button>
           </div>
-        )}
-        {showDiffNav && (
-          <div className="ml-4 flex shrink-0 items-center">
-            <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
-              {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
-              {navigationCount}
-            </span>
-            <div className="flex -space-x-1">
-              <Button
-                variant="icon"
-                size="icon"
-                type="button"
-                aria-label="Previous diff"
-                disabled={currentRangeIndex === null || currentRangeIndex <= 0}
-                onClick={goToPrevDiff}
-              >
-                <ChevronUp size={16} />
-              </Button>
-              <Button
-                variant="icon"
-                size="icon"
-                type="button"
-                aria-label="Next diff"
-                disabled={
-                  currentRangeIndex !== null &&
-                  currentRangeIndex >= navigationCount - 1
-                }
-                onClick={goToNextDiff}
-              >
-                <ChevronDown size={16} />
-              </Button>
-            </div>
-          </div>
-        )}
-        {!isTree && (
-          <Button
-            variant="icon"
-            size="icon"
-            type="button"
-            aria-label="Close file"
-            onClick={onBack}
-            className="ml-1 shrink-0"
-          >
-            <X size={20} />
-          </Button>
-        )}
-      </header>
+        </div>
       )}
 
       {load.status === "loading" && (
