@@ -208,6 +208,53 @@ describe("session-manager.connectToSession event-log replay", () => {
     cleanup();
   });
 
+  it("compacts consecutive replay deltas into single events and still closes on terminal", async () => {
+    const mock = createMockPiSession({
+      messages: [{ role: "user", content: "hello" }],
+      isStreaming: false,
+    });
+    const eventLog = new SessionEventLog();
+    eventLog.append({ type: EventType.RUN_STARTED, threadId: "s3", runId: "r3" } as never);
+    eventLog.append({ type: EventType.REASONING_MESSAGE_CHUNK, messageId: "r1", delta: "The " } as never);
+    eventLog.append({ type: EventType.REASONING_MESSAGE_CHUNK, messageId: "r1", delta: "user " } as never);
+    eventLog.append({ type: EventType.REASONING_MESSAGE_CHUNK, messageId: "r1", delta: "wants" } as never);
+    eventLog.append({ type: EventType.TOOL_CALL_START, toolCallId: "t1", toolCallName: "bash" } as never);
+    eventLog.append({ type: EventType.TOOL_CALL_ARGS, toolCallId: "t1", delta: '{"command":' } as never);
+    eventLog.append({ type: EventType.TOOL_CALL_ARGS, toolCallId: "t1", delta: '"ls"}' } as never);
+    eventLog.append({ type: EventType.TOOL_CALL_END, toolCallId: "t1" } as never);
+    eventLog.append({ type: EventType.RUN_FINISHED, threadId: "s3", runId: "r3" } as never);
+
+    __seedSessionForTests("s3", {
+      sessionId: "s3",
+      piSessionId: "pi-3",
+      project: "p",
+      runtime: { session: mock.session } as never,
+      eventLog,
+    });
+
+    const onEvent = vi.fn();
+    const onError = vi.fn();
+    const onComplete = vi.fn();
+
+    const cleanup = await connectToSession("s3", onEvent, onError, onComplete, 1, eventLog.epoch);
+
+    const events = parseLines(onEvent);
+    // The 3 reasoning chunks and the 2 args chunks each collapse into one
+    // event stamped with the last merged seq, so the client cursor still
+    // advances past every merged entry.
+    expect(events.map((e) => [e.seq, e.event.type, e.event.delta ?? null])).toEqual([
+      [4, EventType.REASONING_MESSAGE_CHUNK, "The user wants"],
+      [5, EventType.TOOL_CALL_START, null],
+      [7, EventType.TOOL_CALL_ARGS, '{"command":"ls"}'],
+      [8, EventType.TOOL_CALL_END, null],
+      [9, EventType.RUN_FINISHED, null],
+    ]);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
   it("completes immediately when there is no session to replay", async () => {
     const onEvent = vi.fn();
     const onError = vi.fn();

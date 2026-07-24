@@ -14,6 +14,7 @@ import {
 import { getTraceLogger } from "tracing";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
 import { buildReconnectPrelude } from "./reconnect-prelude";
+import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import {
@@ -1101,11 +1102,16 @@ export async function connectToSession(
     if (closed) return () => {};
   }
 
-  const replay = eventLog.readAfter(afterSeq);
+  // Merge consecutive streaming deltas (reasoning/text chunks, tool call
+  // args) before replaying: verbatim replays of long sessions push thousands
+  // of micro-events through the client, saturating the browser main thread.
+  const rawReplay = eventLog.readAfter(afterSeq);
+  const replay = compactReplayEvents(rawReplay);
   log.info("connect.replay", {
     sessionId,
     afterSeq,
     replayCount: replay.length,
+    rawReplayCount: rawReplay.length,
     eventLogLastSeq: eventLog.lastSeq,
     isStreaming: entry.runtime.session.isStreaming,
     hasActiveRun: !!entry.activeRun,
