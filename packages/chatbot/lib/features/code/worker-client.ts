@@ -6,6 +6,11 @@ export interface WorkerModel {
   label: string;
 }
 
+export interface WorkerSkill {
+  name: string;
+  description: string;
+}
+
 export interface JsonRpcRequest {
   jsonrpc: "2.0";
   method: string;
@@ -203,6 +208,12 @@ export class WorkerClient {
       params,
     );
   }
+
+  async getSessionSkills(params: {
+    sessionId: string;
+  }): Promise<{ skills: WorkerSkill[] }> {
+    return this.call<{ skills: WorkerSkill[] }>("getSessionSkills", params);
+  }
 }
 
 export function summarizeWorkerRpcParams(method: string, params: unknown): unknown {
@@ -250,6 +261,7 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
       };
     case "cancelRun":
     case "getSessionStatus":
+    case "getSessionSkills":
       return { sessionId, hasTraceRunId };
     case "connectToSession":
       return {

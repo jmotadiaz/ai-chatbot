@@ -32,6 +32,16 @@ vi.mock("@/lib/features/meta-prompt/hooks/use-prompt-refiner", () => ({
     hasPreviousMessage: false,
   }),
 }));
+vi.mock("@/lib/features/code/hooks/use-coding-agent-skills", () => ({
+  useCodingAgentSkills: () => ({
+    skills: [
+      { name: "code-review", description: "Review code changes" },
+      { name: "find-docs", description: "Find current documentation" },
+    ],
+    isLoading: false,
+    error: null,
+  }),
+}));
 vi.mock("@/components/code/agent-conversation", () => ({
   AgentConversation: () => null,
 }));
@@ -52,6 +62,7 @@ vi.stubGlobal("CSS", { supports: () => true });
 afterEach(() => {
   cleanup();
   mocks.cancel.mockClear();
+  mocks.hookResult.sendMessage.mockClear();
   mocks.hookResult.isRunning = false;
   mocks.hookResult.isLoading = false;
 });
@@ -72,5 +83,19 @@ describe("AgentCodeChat cancel", () => {
     renderChat();
     fireEvent.click(screen.getByLabelText("Send message"));
     expect(mocks.cancel).not.toHaveBeenCalled();
+  });
+
+  it("sends selected skills as leading commands", () => {
+    renderChat();
+    fireEvent.click(screen.getByLabelText("Select skills"));
+    fireEvent.click(screen.getByText("code-review"));
+    fireEvent.change(screen.getByTestId("chat-input"), {
+      target: { value: "Review this change" },
+    });
+    fireEvent.click(screen.getByLabelText("Send message"));
+
+    expect(mocks.hookResult.sendMessage).toHaveBeenCalledWith(
+      "/skill:code-review\n\nReview this change",
+    );
   });
 });

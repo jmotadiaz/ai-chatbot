@@ -19,6 +19,7 @@ import {
   cancelRun,
   getSessionStatus,
   getSessionModel,
+  getSessionSkills,
 } from "../session-manager";
 
 export interface HttpTransportOptions {
@@ -313,6 +314,11 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         result = { model: await getSessionModel(sessionId, piSessionId, project) };
         break;
       }
+      case "getSessionSkills": {
+        const { sessionId } = params as { sessionId: string };
+        result = { skills: getSessionSkills(sessionId) };
+        break;
+      }
       default: {
         log.warn("rpc.unknown_method", { method });
         stop();
@@ -390,6 +396,8 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
       };
+    case "getSessionSkills":
+      return { sessionId };
     case "disposeSession":
     case "cancelRun":
     case "getSessionStatus":
@@ -437,6 +445,10 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
         model: model ? `${model.providerId}/${model.modelId}` : null,
       };
     }
+    case "getSessionSkills":
+      return {
+        skillCount: Array.isArray(r.skills) ? r.skills.length : 0,
+      };
     default:
       return result;
   }

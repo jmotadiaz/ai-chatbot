@@ -253,6 +253,7 @@ describe("session-manager attachments", () => {
 
     mock.__emit({ type: "message_end", message: storedUserMessage });
     expect(storedUserMessage.clientMessageId).toBe("client-msg-1");
+    expect(storedUserMessage.clientPromptText).toBe("look at this");
 
     const snapshot = await getSessionSnapshot("s5");
     const userMsg = snapshot.messages.find(

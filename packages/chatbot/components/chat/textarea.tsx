@@ -17,6 +17,7 @@ interface TextareaProps {
   files?: FilePart[];
   setFiles?: React.Dispatch<React.SetStateAction<FilePart[]>>;
   placeholder?: string;
+  leadingContent?: React.ReactNode;
 }
 
 export const Textarea = ({
@@ -30,6 +31,7 @@ export const Textarea = ({
   files,
   setFiles,
   placeholder = "Say something...",
+  leadingContent,
 }: TextareaProps) => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -67,6 +69,7 @@ export const Textarea = ({
           className="m-3"
         />
       )}
+      {leadingContent}
       <div className="relative">
         <div
           className={cn(

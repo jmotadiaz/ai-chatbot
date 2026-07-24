@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ArrowUp, Undo, WandSparkles } from "lucide-react";
 import { AgentConversation } from "./agent-conversation";
+import { SkillChip } from "./skill-chip";
+import { SkillsControl } from "./skills-control";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
 import { serializeComments } from "./file-browser/serialize-comments";
@@ -10,7 +12,9 @@ import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
+import { useCodingAgentSkills } from "@/lib/features/code/hooks/use-coding-agent-skills";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
+import { prependSkillCommands } from "@/lib/features/code/skill-commands";
 import { handleLocalFileUpload } from "@/lib/features/attachment/utils";
 import type { FilePart } from "@/lib/features/attachment/types";
 import {
@@ -35,6 +39,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const {
     items,
@@ -54,6 +59,11 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   const { state: fileBrowserState, actions: fileBrowserActions } =
     useFileBrowser();
   const pendingComments = fileBrowserState.pendingComments;
+  const {
+    skills,
+    isLoading: isLoadingSkills,
+    error: skillsError,
+  } = useCodingAgentSkills(sessionId, !isLoading);
 
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     usePromptRefiner({
@@ -80,7 +90,10 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const message = serializeComments(input, pendingComments);
+    const message = prependSkillCommands(
+      serializeComments(input, pendingComments),
+      selectedSkills,
+    );
     if (!message && files.length === 0) return;
     if (totalAttachmentBytes(files) > MAX_TOTAL_ATTACHMENT_BYTES) {
       setAttachmentError(
@@ -91,6 +104,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     setAttachmentError(null);
     setInput("");
     setFiles([]);
+    setSelectedSkills([]);
     fileBrowserActions.clearComments();
     await sendMessage(buildUserContent(message, files));
   };
@@ -98,6 +112,13 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   // No model yet means the session's model is still being fetched from the
   // worker (picker shows a skeleton): sending must wait for it too.
   const inputIsLoading = isRunning || isLoading || !modelId;
+  const toggleSkill = (name: string) => {
+    setSelectedSkills((current) =>
+      current.includes(name)
+        ? current.filter((skill) => skill !== name)
+        : [...current, name],
+    );
+  };
 
   return (
     <div
@@ -130,11 +151,34 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             onPasteFiles={onPasteFiles}
             files={files}
             setFiles={setFiles}
+            leadingContent={
+              selectedSkills.length > 0 ? (
+                <div
+                  className="flex flex-wrap gap-2 px-4 pt-3"
+                  aria-label="Selected skills"
+                >
+                  {selectedSkills.map((skill) => (
+                    <SkillChip
+                      key={skill}
+                      name={skill}
+                      onRemove={() => toggleSkill(skill)}
+                    />
+                  ))}
+                </div>
+              ) : undefined
+            }
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
             <AttachmentsControl
               handleFileChange={handleFileChange}
               supportedFiles={CODE_AGENT_SUPPORTED_FILES}
+            />
+            <SkillsControl
+              skills={skills}
+              selectedSkills={selectedSkills}
+              onToggle={toggleSkill}
+              isLoading={isLoadingSkills}
+              error={skillsError}
             />
           </div>
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
@@ -159,7 +203,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               disabled={
                 (!input.trim() &&
                   pendingComments.length === 0 &&
-                  files.length === 0) ||
+                  files.length === 0 &&
+                  selectedSkills.length === 0) ||
                 inputIsLoading
               }
               isLoading={inputIsLoading}

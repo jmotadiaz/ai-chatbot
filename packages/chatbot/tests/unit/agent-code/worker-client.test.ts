@@ -55,6 +55,33 @@ describe("WorkerClient", () => {
       }),
     );
   });
+
+  it("returns UI-safe skills from the session", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jsonrpc: "2.0",
+        result: {
+          skills: [{ name: "code-review", description: "Review code" }],
+        },
+        id: 1,
+      }),
+    });
+
+    const client = new WorkerClient("http://worker.test");
+    const result = await client.getSessionSkills({ sessionId: "sess-1" });
+
+    expect(result.skills).toEqual([
+      { name: "code-review", description: "Review code" },
+    ]);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://worker.test/rpc",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("getSessionSkills"),
+      }),
+    );
+  });
 });
 
 describe("summarizeWorkerRpcParams", () => {

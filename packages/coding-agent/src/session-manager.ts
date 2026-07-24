@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   createAgentSessionRuntime,
   createAgentSessionFromServices,
@@ -8,6 +8,7 @@ import {
   SessionManager,
   AuthStorage,
   ModelRegistry,
+  stripFrontmatter,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
@@ -43,6 +44,11 @@ interface SnapshotMessage {
   toolCalls?: unknown;
   toolCallId?: string;
   name?: string;
+}
+
+export interface CodingAgentSkill {
+  name: string;
+  description: string;
 }
 
 interface SessionEntry {
@@ -120,6 +126,44 @@ function normalizeSnapshotMessages(
       ...(typeof message.toolCallId === "string" ? { toolCallId: message.toolCallId } : {}),
       ...(typeof message.name === "string" ? { name: message.name } : {}),
     }));
+}
+
+const LEADING_SKILL_COMMANDS =
+  /^((?:\/skill:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:[ \t]+|(?=\r?\n|$)))+)([\s\S]*)$/;
+const SKILL_NAME = /\/skill:([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)/g;
+
+/**
+ * Pi expands one leading /skill command itself. The web composer supports
+ * selecting several skills, so expand the complete leading command sequence
+ * before handing the prompt to Pi.
+ */
+function expandLeadingSkillCommands(
+  runtime: SessionEntry["runtime"],
+  text: string,
+): string {
+  const match = text.match(LEADING_SKILL_COMMANDS);
+  if (!match) return text;
+
+  const availableSkills = runtime.session.resourceLoader.getSkills().skills;
+  const names = Array.from(
+    match[1]!.matchAll(SKILL_NAME),
+    (command) => command[1]!,
+  );
+  const blocks = names.map((name) => {
+    const skill = availableSkills.find((candidate) => candidate.name === name);
+    if (!skill) {
+      throw new Error(`Unknown skill: ${name}`);
+    }
+    const content = readFileSync(skill.filePath, "utf8");
+    const body = stripFrontmatter(content).trim();
+    return `<skill name="${skill.name}" location="${skill.filePath}">
+References are relative to ${skill.baseDir}.
+
+${body}
+</skill>`;
+  });
+  const userText = match[2]!.replace(/^\s+/, "");
+  return userText ? `${blocks.join("\n\n")}\n\n${userText}` : blocks.join("\n\n");
 }
 
 /**
@@ -473,8 +517,9 @@ function startPromptCollector(
   // natively via PromptOptions.images.
   const extracted = extractUserContentParts(userTail[0]?.content ?? prompt);
   const inlinedText = inlineAttachedFiles(extracted.text, extracted.docs);
-  const promptText =
+  const unexpandedPromptText =
     inlinedText.length > 0 ? inlinedText : extracted.images.length > 0 ? " " : prompt;
+  const promptText = expandLeadingSkillCommands(runtime, unexpandedPromptText);
   const piImages = extracted.images.map((img) => ({
     type: "image" as const,
     data: img.data,
@@ -559,6 +604,7 @@ function startPromptCollector(
     if (!userMessageStamped && event.type === "message_end" && event.message?.role === "user") {
       userMessageStamped = true;
       (event.message as Record<string, unknown>).clientMessageId = userMessageClientId;
+      (event.message as Record<string, unknown>).clientPromptText = extracted.text;
     }
 
     const aguiEvents = translator.translate(event);
@@ -703,6 +749,17 @@ export async function getSessionMessages(
   return convertPiMessagesToAgui(entry.runtime.session.messages);
 }
 
+export function getSessionSkills(sessionId: string): CodingAgentSkill[] {
+  const entry = sessions.get(sessionId);
+  if (!entry) {
+    throw new Error("Session not found");
+  }
+  return entry.runtime.session.resourceLoader
+    .getSkills()
+    .skills.map(({ name, description }) => ({ name, description }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /**
  * Convert Pi session messages to AG-UI-shaped messages.
  *
@@ -732,14 +789,16 @@ function convertPiMessagesToAgui(piMessages: ReadonlyArray<any>): Array<any> {
         ? msg.content.filter((c: any) => c && c.type === "image")
         : [];
       const { text, docs } = splitAttachedFiles(rawText);
+      const displayText =
+        typeof msg.clientPromptText === "string" ? msg.clientPromptText : text;
 
       if (piImages.length === 0 && docs.length === 0) {
         // No attachments: preserve the exact pre-existing shape (plain string).
-        result.push({ id, role: "user", content: rawText });
+        result.push({ id, role: "user", content: displayText });
       } else {
         const parts: unknown[] = [];
-        if (text.trim().length > 0) {
-          parts.push({ type: "text", text });
+        if (displayText.trim().length > 0) {
+          parts.push({ type: "text", text: displayText });
         }
         for (const img of piImages) {
           parts.push({

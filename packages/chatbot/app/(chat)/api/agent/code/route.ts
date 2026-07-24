@@ -21,6 +21,7 @@ import {
 } from "@/lib/features/code/session-store";
 import { toPiModelId } from "@/lib/features/code/model-mapping";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
+import { parseLeadingSkillCommands } from "@/lib/features/code/skill-commands";
 
 export const maxDuration = 240;
 
@@ -189,7 +190,9 @@ export const POST = withAuth(async (user, req) => {
       // Save first user message as session label (if not already set)
       if (!dbSession.label) {
         const firstUserMsg = messages.find((m) => m.role === "user");
-        const label = promptTextFromContent(firstUserMsg?.content).trim();
+        const label = parseLeadingSkillCommands(
+          promptTextFromContent(firstUserMsg?.content),
+        ).text.trim();
         if (label) {
           const finalLabel = label.split("\n")[0]!.slice(0, 80);
           await updateSessionLabel({
