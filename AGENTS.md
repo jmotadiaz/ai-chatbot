@@ -26,6 +26,8 @@ Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
 packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
+├── models/         # Shared model catalog (single source of truth for model
+                    # definitions, Pi mapping and models.json generation)
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
 ```
@@ -46,7 +48,9 @@ Reusable observability library used by both `chatbot` and `coding-agent`. Provid
 
 ```
 chatbot ──→ coding-agent ──→ tracing
-   └──────────────────────→ tracing
+   │              │
+   ├────→ tracing ├────→ models
+   └────→ models ←┘
 ```
 
 <!-- context7 -->
