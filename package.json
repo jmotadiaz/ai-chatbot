@@ -34,7 +34,7 @@
     "mcp-server": "pnpm --filter chatbot mcp-server",
     "transport:http": "dotenv -e .env.development.local -- pnpm --filter coding-agent transport:http",
     "worker:dev": "pnpm transport:http",
-    "test:unit": "pnpm --filter chatbot test:unit",
+    "test:unit": "pnpm --filter chatbot --filter models test:unit",
     "prepare": "husky"
   },
   "devDependencies": {
