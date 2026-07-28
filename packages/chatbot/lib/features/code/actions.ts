@@ -6,13 +6,13 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
+import { filterAvailableChatModels } from "models";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
   listSessions,
   getSession,
 } from "./session-store";
-import { filterAvailableChatModels } from "./model-mapping";
 import { WorkerClient } from "./worker-client";
 import { auth } from "@/lib/features/auth/auth-config";
 

@@ -1,7 +1,7 @@
+import { toChatModelId } from "models";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import { getSession } from "@/lib/features/code/session-store";
-import { toChatModelId } from "@/lib/features/code/model-mapping";
 
 function getSessionIdFromUrl(url: URL): string {
   const parts = url.pathname.split("/");

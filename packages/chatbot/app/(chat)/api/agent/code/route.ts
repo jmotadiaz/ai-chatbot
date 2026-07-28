@@ -6,6 +6,7 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
+import { toPiModelId } from "models";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import {
@@ -19,7 +20,6 @@ import {
   updatePiSessionId,
   updateSessionLabel,
 } from "@/lib/features/code/session-store";
-import { toPiModelId } from "@/lib/features/code/model-mapping";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { parseLeadingSkillCommands } from "@/lib/features/code/skill-commands";
 
