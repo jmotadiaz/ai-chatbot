@@ -1,75 +1,61 @@
 import deepmerge from "deepmerge";
+import { wrapLanguageModel } from "ai";
+import {
+  INVOCABLE_MODEL_IDS,
+  MODEL_CATALOG,
+  type InvocableModelId,
+  type ModelCatalogEntry,
+  type ModelId,
+} from "models";
 import type { ModelConfiguration, ProviderOptions } from "./types";
+import { reasoningMw } from "./utils";
+import { providers } from "@/lib/infrastructure/ai/providers";
 
-import { ALIBABA_CONFIG } from "./alibaba";
-import { ANTHROPIC_CONFIG } from "./anthropic";
-import { DEEPSEEK_CONFIG } from "./deepseek";
-import { GOOGLE_CONFIG } from "./google";
-import { META_CONFIG } from "./meta";
-import { MINIMAX_CONFIG } from "./minimax";
-import { MISTRAL_CONFIG } from "./mistral";
-import { MOONSHOTAI_CONFIG } from "./moonshotai";
-import { OPENAI_CONFIG } from "./openai";
-import { PERPLEXITY_CONFIG } from "./perplexity";
-import { XAI_CONFIG } from "./xai";
-import { XIAOMI_CONFIG } from "./xiaomi";
-import { ZAI_CONFIG } from "./zai";
-import { STEPFUN_CONFIG } from "./stepfun";
-import { NVIDIA_CONFIG } from "@/lib/features/foundation-model/nvidia";
+const buildModelConfiguration = (
+  entry: ModelCatalogEntry,
+): ModelConfiguration => {
+  const base = providers[entry.provider.kind](entry.provider.modelId);
+  return {
+    model: entry.wrapWithReasoningMiddleware
+      ? wrapLanguageModel({ model: base, middleware: [reasoningMw] })
+      : base,
+    company: entry.company,
+    ...(entry.reasoning !== undefined && { reasoning: entry.reasoning }),
+    ...(entry.temperature !== undefined && { temperature: entry.temperature }),
+    ...(entry.topP !== undefined && { topP: entry.topP }),
+    ...(entry.topK !== undefined && { topK: entry.topK }),
+    ...(entry.contextWindow !== undefined && {
+      contextWindow: entry.contextWindow,
+    }),
+    ...(entry.supportedFiles && {
+      supportedFiles: [...entry.supportedFiles],
+    }),
+    ...(entry.supportedOutput && {
+      supportedOutput: [...entry.supportedOutput],
+    }),
+    ...(entry.providerOptions && {
+      providerOptions: entry.providerOptions as ProviderOptions,
+    }),
+  };
+};
 
-export const LANGUAGE_MODEL_CONFIGURATIONS_CONST = {
-  ...STEPFUN_CONFIG,
-  ...META_CONFIG,
-  ...MOONSHOTAI_CONFIG,
-  ...MISTRAL_CONFIG,
-  ...DEEPSEEK_CONFIG,
-  ...ALIBABA_CONFIG,
-  ...MINIMAX_CONFIG,
-  ...XIAOMI_CONFIG,
-  ...ZAI_CONFIG,
-  ...PERPLEXITY_CONFIG,
-  ...ANTHROPIC_CONFIG,
-  ...OPENAI_CONFIG,
-  ...GOOGLE_CONFIG,
-  ...XAI_CONFIG,
-  ...NVIDIA_CONFIG,
-} as const satisfies Record<string, ModelConfiguration>;
+export const LANGUAGE_MODEL_CONFIGURATIONS_CONST: Record<
+  ModelId,
+  ModelConfiguration
+> = Object.fromEntries(
+  MODEL_CATALOG.map((entry) => [entry.id, buildModelConfiguration(entry)]),
+) as Record<ModelId, ModelConfiguration>;
 
-export type LanguageModelKeys =
-  keyof typeof LANGUAGE_MODEL_CONFIGURATIONS_CONST;
+export type LanguageModelKeys = ModelId;
 
-export const chatModelKeys = [
-  "Deepseek v4 Flash",
-  "Deepseek v4 Pro",
-  "Nemotron 3 Nano",
-  "Nemotron 3 Super",
-  "Qwen 3.5 Flash",
-  "Qwen 3.6 Plus",
-  "GLM-4.7 Flash",
-  "GLM-5.1",
-  "Kimi K2.6",
-  "MiMo V2.5",
-  "MiMo V2.5 Pro",
-  "MiniMax M2.7",
-  "Claude Haiku 4.5",
-  "Claude Sonnet 4.6",
-  "Claude Opus 4.5",
-  "Grok 4.1 Fast",
-  "Grok 4.3",
-  "GPT OSS",
-  "GPT 5.4 Mini",
-  "GPT 5.4",
-  "Gemini 3.1 Flash Lite",
-  "Gemini 3 Flash",
-  "Gemini 3.1 Pro",
-] satisfies LanguageModelKeys[];
+export const chatModelKeys: chatModelId[] = [...INVOCABLE_MODEL_IDS];
 
-export type chatModelId = (typeof chatModelKeys)[number];
+export type chatModelId = InvocableModelId;
 
 export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 
 // Constants
-export const defaultModel: chatModelId = chatModelKeys[0];
+export const defaultModel: chatModelId = chatModelKeys[0]!;
 
 export const defaultWebSearchNumResults = 4;
 export const defaultRagMaxResources = 4;

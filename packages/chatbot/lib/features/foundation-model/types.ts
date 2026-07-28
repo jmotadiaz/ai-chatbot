@@ -6,28 +6,13 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
+import type { Company } from "models";
 import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 // Types definitions for the models feature
 
 // --- From definition.ts ---
 
-export type Company =
-  | "meta"
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "xai"
-  | "mistral"
-  | "deepseek"
-  | "perplexity"
-  | "alibaba"
-  | "moonshotai"
-  | "minimax"
-  | "nvidia"
-  | "xiaomi"
-  | "zai"
-  | "stepfun"
-  | "ai chatbot";
+export type { Company };
 
 export type ProviderOptions = {
   anthropic?: AnthropicProviderOptions;

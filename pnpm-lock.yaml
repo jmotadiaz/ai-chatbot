@@ -194,6 +194,9 @@ importers:
       marked:
         specifier: ^16.1.1
         version: 16.4.2
+      models:
+        specifier: workspace:*
+        version: link:../models
       motion:
         specifier: ^12.6.3
         version: 12.28.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)

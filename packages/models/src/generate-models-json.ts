@@ -1,4 +1,4 @@
-import { MODEL_CATALOG } from "./catalog";
+import { MODEL_CATALOG, type ModelCatalogEntry } from "./catalog";
 import { PI_PROVIDER } from "./mapping";
 
 export interface PiModelDefinition {
@@ -15,7 +15,7 @@ export interface PiModelsJson {
 }
 
 export function generateModelsJson(
-  catalog: typeof MODEL_CATALOG = MODEL_CATALOG,
+  catalog: readonly ModelCatalogEntry[] = MODEL_CATALOG,
 ): PiModelsJson {
   const models: PiModelDefinition[] = catalog
     .filter((e) => e.userInvocable)
