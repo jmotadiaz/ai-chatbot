@@ -236,7 +236,7 @@ export const MODEL_CATALOG = [
   {
     id: "Sonar Reasoning",
     userInvocable: false,
-    provider: { kind: "perplexity", modelId: "sonar-reasoning" },
+    provider: { kind: "perplexity", modelId: "sonar-pro" },
     company: "perplexity",
     reasoning: true,
     temperature: 0.6,

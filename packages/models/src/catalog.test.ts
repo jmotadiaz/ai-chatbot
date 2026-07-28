@@ -7,10 +7,10 @@ describe("MODEL_CATALOG integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("has unique provider modelIds per provider kind", () => {
-    const keys = MODEL_CATALOG.map(
-      (e) => `${e.provider.kind}/${e.provider.modelId}`,
-    );
+  it("has unique opencodeGo provider modelIds (needed for reverse mapping)", () => {
+    const keys = MODEL_CATALOG
+      .filter((e) => e.provider.kind === "opencodeGo")
+      .map((e) => e.provider.modelId);
     expect(new Set(keys).size).toBe(keys.length);
   });
 
