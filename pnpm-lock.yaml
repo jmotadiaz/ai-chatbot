@@ -405,6 +405,9 @@ importers:
       '@earendil-works/pi-coding-agent':
         specifier: ^0.79.3
         version: 0.79.3(@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(bufferutil@4.1.0)(ws@8.19.0(bufferutil@4.1.0))(zod@3.25.76)
+      models:
+        specifier: workspace:*
+        version: link:../models
       tracing:
         specifier: workspace:*
         version: link:../tracing

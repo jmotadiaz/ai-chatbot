@@ -17,6 +17,7 @@ import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
+import { getModelsJsonPath } from "./models";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -211,8 +212,13 @@ function makeCreateRuntime(
   modelId?: string,
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
+    const authStorage = AuthStorage.create(
+      path.join(getAgentDir(), "auth.json"),
+    );
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
+      authStorage,
+      modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
         appendSystemPrompt: [FILE_REFERENCE_PROMPT],
       },
@@ -891,7 +897,7 @@ export async function getAvailableModels(): Promise<
   log.info("models.fetch");
 
   const authStorage = AuthStorage.create(process.env.CODING_AGENT_AUTH_JSON);
-  const registry = ModelRegistry.create(authStorage);
+  const registry = ModelRegistry.create(authStorage, getModelsJsonPath());
   const available = registry.getAvailable();
   const filtered = available
     .filter((model) => model.provider === "opencode-go")
