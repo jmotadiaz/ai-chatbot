@@ -5,16 +5,14 @@ import type { MockModelEntry } from "../../types";
 const STREAM_ERROR = new Error("Mock mid-stream error");
 
 const model = new MockLanguageModelV3({
-  modelId: "GPT OSS",
+  modelId: "failsMidStream",
   doStream: errorStream(STREAM_ERROR),
   doGenerate: async () => {
     throw STREAM_ERROR;
   },
 });
 
-export const MOCK_GPT_OSS_ERROR: MockModelEntry = {
-  id: "GPT OSS",
-  displayName: "GPT OSS",
+export const MOCK_MID_STREAM_ERROR: MockModelEntry = {
   capabilities: { errorScenarios: ["mid_stream_error"] },
   languageModel: model,
 };

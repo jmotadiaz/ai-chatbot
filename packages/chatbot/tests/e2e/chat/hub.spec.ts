@@ -1,5 +1,12 @@
 import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
+import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
+
+const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools;
+const FAILING_MODEL = CAPABILITY_ALIASES.failsMidStream;
+const VISION_MODEL = CAPABILITY_ALIASES.canSeeImages;
+const BASIC_MODEL = CAPABILITY_ALIASES.basicChat;
+const BASIC_ALT_MODEL = CAPABILITY_ALIASES.basicChatAlt;
 
 test.describe("Chat Hub", () => {
   let hubPage: ChatHubPage;
@@ -18,15 +25,15 @@ test.describe("Chat Hub", () => {
 
     // Add first model
     await hubPage.header.addModel("canExecuteTools");
-    await expect(page.getByText("Claude Sonnet 4.6").first()).toBeVisible();
+    await expect(page.getByText(TOOLS_MODEL).first()).toBeVisible();
 
     // Add second model
     await hubPage.header.addModel("failsMidStream");
-    await expect(page.getByText("GPT OSS").first()).toBeVisible();
+    await expect(page.getByText(FAILING_MODEL).first()).toBeVisible();
 
     // Add third model
     await hubPage.header.addModel("canSeeImages");
-    await expect(page.getByText("Gemini 3 Flash").first()).toBeVisible();
+    await expect(page.getByText(VISION_MODEL).first()).toBeVisible();
 
     // Verify add-model UI is gone after 3 models.
     // Depending on the variant, this can be a "New Model" button (tabs) or the add-model combobox (grid).
@@ -34,10 +41,10 @@ test.describe("Chat Hub", () => {
     await expect(hubPage.header.modelPicker).toBeHidden();
 
     // 1.2 Eliminar un modelo y verificar que el botón de añadir reaparece.
-    const geminiPanel = hubPage.getPanel("Gemini 3 Flash");
+    const visionPanel = hubPage.getPanel(VISION_MODEL);
     // Ensure the model is selected if we are in mobile/tab view
-    await hubPage.header.selectTab("Gemini 3 Flash");
-    await geminiPanel.removeButton.click();
+    await hubPage.header.selectTab(VISION_MODEL);
+    await visionPanel.removeButton.click();
 
     // Verify add-model UI reappears
     const newModelButton = page.getByRole("button", { name: "New Model" });
@@ -50,8 +57,10 @@ test.describe("Chat Hub", () => {
 
   test("Messaging Multi-Modelo and Locking", async ({ page }) => {
     // 2.1 Enviar un mensaje y verificar el streaming simultáneo en los paneles activos.
-    await hubPage.header.addModel("canExecuteTools");
-    await hubPage.header.addModel("failsMidStream");
+    // The hub runs without tools, so both models must be ones that answer with
+    // plain text — no tool calls and no mid-stream failure.
+    await hubPage.header.addModel("basicChat");
+    await hubPage.header.addModel("basicChatAlt");
 
     const message = "Hello models, give me a short response.";
     await hubPage.hubContent.sendMessage(message);
@@ -62,8 +71,8 @@ test.describe("Chat Hub", () => {
       .toBeDisabled();
 
     // Verify both models respond
-    const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
-    const gptPanel = hubPage.getPanel("GPT OSS");
+    const basicPanel = hubPage.getPanel(BASIC_MODEL);
+    const basicAltPanel = hubPage.getPanel(BASIC_ALT_MODEL);
 
     // In desktop view both should be visible.
     // If they are not (e.g. small screen), we might need to select tabs.
@@ -73,15 +82,15 @@ test.describe("Chat Hub", () => {
     await expect
       .soft(async () => {
         // We select the tab to ensure it's in the DOM/visible if needed
-        await hubPage.header.selectTab("Claude Sonnet 4.6");
-        const claudeMsg = await claudePanel.getLastAssistantMessage();
-        expect(claudeMsg).not.toBeNull();
-        expect(claudeMsg?.length).toBeGreaterThan(0);
+        await hubPage.header.selectTab(BASIC_MODEL);
+        const basicMsg = await basicPanel.getLastAssistantMessage();
+        expect(basicMsg).not.toBeNull();
+        expect(basicMsg?.length).toBeGreaterThan(0);
 
-        await hubPage.header.selectTab("GPT OSS");
-        const gptMsg = await gptPanel.getLastAssistantMessage();
-        expect(gptMsg).not.toBeNull();
-        expect(gptMsg?.length).toBeGreaterThan(0);
+        await hubPage.header.selectTab(BASIC_ALT_MODEL);
+        const basicAltMsg = await basicAltPanel.getLastAssistantMessage();
+        expect(basicAltMsg).not.toBeNull();
+        expect(basicAltMsg?.length).toBeGreaterThan(0);
       })
       .toPass({ timeout: 20000 });
 
@@ -99,21 +108,21 @@ test.describe("Chat Hub", () => {
     await hubPage.header.addModel("canExecuteTools");
     await hubPage.hubContent.sendMessage("Hello there");
 
-    const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
+    const toolsPanel = hubPage.getPanel(TOOLS_MODEL);
     // Ensure we are on the right tab to see the button
-    await hubPage.header.selectTab("Claude Sonnet 4.6");
+    await hubPage.header.selectTab(TOOLS_MODEL);
 
-    await expect(claudePanel.selectButton).toBeVisible();
-    await claudePanel.selectButton.click();
+    await expect(toolsPanel.selectButton).toBeVisible();
+    await toolsPanel.selectButton.click();
 
     // 3.2 Verificar que permanece en el Hub y el botón cambia a Delete
     await expect(page).toHaveURL(/\/chat\/hub/);
-    await expect(claudePanel.selectButton).toBeHidden();
-    await expect(claudePanel.deleteButton).toBeVisible();
+    await expect(toolsPanel.selectButton).toBeHidden();
+    await expect(toolsPanel.deleteButton).toBeVisible();
 
     // 3.3 Verificar que Delete elimina la instancia (limpia)
-    await claudePanel.deleteButton.click();
-    await expect(claudePanel.container).toBeHidden();
+    await toolsPanel.deleteButton.click();
+    await expect(toolsPanel.container).toBeHidden();
   });
 
   test("UI & Responsive Grid", async ({ page }) => {
@@ -122,38 +131,38 @@ test.describe("Chat Hub", () => {
     await hubPage.header.addModel("failsMidStream");
 
     // Default desktop grid view - both panels should be visible
-    const claudePanel = hubPage.getPanel("Claude Sonnet 4.6");
-    const gptPanel = hubPage.getPanel("GPT OSS");
+    const toolsPanel = hubPage.getPanel(TOOLS_MODEL);
+    const failingPanel = hubPage.getPanel(FAILING_MODEL);
 
     // Desktop can render as grid (multiple panels visible) or as tabs (single panel visible).
-    const claudeTab = page.getByRole("button", {
-      name: "Claude Sonnet 4.6",
+    const toolsTab = page.getByRole("button", {
+      name: TOOLS_MODEL,
       exact: true,
     });
-    const gptTab = page.getByRole("button", { name: "GPT OSS", exact: true });
+    const failingTab = page.getByRole("button", { name: FAILING_MODEL, exact: true });
 
-    if ((await claudeTab.isVisible()) && (await gptTab.isVisible())) {
-      await hubPage.header.selectTab("Claude Sonnet 4.6");
-      await expect.soft(claudePanel.container).toBeVisible();
-      await hubPage.header.selectTab("GPT OSS");
-      await expect.soft(gptPanel.container).toBeVisible();
+    if ((await toolsTab.isVisible()) && (await failingTab.isVisible())) {
+      await hubPage.header.selectTab(TOOLS_MODEL);
+      await expect.soft(toolsPanel.container).toBeVisible();
+      await hubPage.header.selectTab(FAILING_MODEL);
+      await expect.soft(failingPanel.container).toBeVisible();
     } else {
-      await expect.soft(claudePanel.container).toBeVisible();
-      await expect.soft(gptPanel.container).toBeVisible();
+      await expect.soft(toolsPanel.container).toBeVisible();
+      await expect.soft(failingPanel.container).toBeVisible();
     }
 
     // Mobile view - only the active tab panel should be visible
     await page.setViewportSize({ width: 375, height: 667 });
 
     // Select Claude tab
-    await hubPage.header.selectTab("Claude Sonnet 4.6");
-    await expect.soft(claudePanel.container).toBeVisible();
+    await hubPage.header.selectTab(TOOLS_MODEL);
+    await expect.soft(toolsPanel.container).toBeVisible();
     // In mobile, non-active panel might be hidden or detached
-    await expect.soft(gptPanel.container).toBeHidden();
+    await expect.soft(failingPanel.container).toBeHidden();
 
-    await hubPage.header.selectTab("GPT OSS");
-    await expect.soft(gptPanel.container).toBeVisible();
-    await expect.soft(claudePanel.container).toBeHidden();
+    await hubPage.header.selectTab(FAILING_MODEL);
+    await expect.soft(failingPanel.container).toBeVisible();
+    await expect.soft(toolsPanel.container).toBeHidden();
   });
 
   test("Error States - Offline simulation", async ({ page }) => {

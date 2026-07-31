@@ -4,6 +4,7 @@ export {
   type Company,
   type InvocableModelId,
   type ModelCatalogEntry,
+  type ModelCost,
   type ModelId,
   type ProviderKind,
 } from "./catalog";
@@ -15,6 +16,8 @@ export {
 } from "./mapping";
 export {
   generateModelsJson,
+  type GenerateModelsJsonOptions,
+  type PiModelBaseline,
   type PiModelDefinition,
   type PiModelsJson,
 } from "./generate-models-json";

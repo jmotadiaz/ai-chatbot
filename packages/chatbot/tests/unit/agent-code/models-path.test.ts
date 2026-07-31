@@ -18,4 +18,10 @@ describe("getModelsJsonPath", () => {
     delete process.env.CODING_AGENT_MODELS_JSON;
     expect(getModelsJsonPath()).toMatch(/models\.json$/);
   });
+
+  it("treats an empty override as unset", () => {
+    // Playwright's web server forwards unset variables as empty strings.
+    process.env.CODING_AGENT_MODELS_JSON = "";
+    expect(getModelsJsonPath()).toMatch(/models\.json$/);
+  });
 });

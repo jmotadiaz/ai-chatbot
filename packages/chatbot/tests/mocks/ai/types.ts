@@ -8,9 +8,11 @@ export interface MockCapabilities {
   errorScenarios?: Array<"refusal" | "rate_limit" | "timeout" | "mid_stream_error">;
 }
 
+/**
+ * A behaviour the e2e suite can select. The model it is bound to lives in
+ * CAPABILITY_ALIASES, not here.
+ */
 export interface MockModelEntry {
-  id: string;
-  displayName: string;
   capabilities: MockCapabilities;
   languageModel: LanguageModelV3;
 }

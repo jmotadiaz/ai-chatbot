@@ -34,7 +34,7 @@ describe("WorkerClient", () => {
       ok: true,
       json: async () => ({
         jsonrpc: "2.0",
-        result: { model: { providerId: "opencode-go", modelId: "kimi-k2.6" } },
+        result: { model: { providerId: "opencode-go", modelId: "kimi-k2.7-code" } },
         id: 1,
       }),
     });
@@ -46,7 +46,7 @@ describe("WorkerClient", () => {
       project: "proj-a",
     });
 
-    expect(result.model).toEqual({ providerId: "opencode-go", modelId: "kimi-k2.6" });
+    expect(result.model).toEqual({ providerId: "opencode-go", modelId: "kimi-k2.7-code" });
     expect(global.fetch).toHaveBeenCalledWith(
       "http://worker.test/rpc",
       expect.objectContaining({

@@ -23,7 +23,7 @@ test.describe("Chat functionality", () => {
 
     await chatPage.closeDropdown();
 
-    // Switch back to Kimi
+    // Switch to a model with a different declared temperature
     await chatPage.header.modelPicker.selectModel("alwaysRefuses");
     await chatPage.chat.openSettings();
     await expect.soft(chatPage.chat.settings.temperatureInput).toHaveValue("1");

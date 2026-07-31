@@ -3,7 +3,7 @@ import { textStream } from "../streams";
 import type { MockModelEntry } from "../../types";
 
 const model = new MockLanguageModelV3({
-  modelId: "Kimi K2.6",
+  modelId: "alwaysRefuses",
   doStream: textStream("I cannot help with that request."),
   doGenerate: async () => ({
     content: [{ type: "text", text: "I cannot help with that request." }],
@@ -16,9 +16,7 @@ const model = new MockLanguageModelV3({
   }),
 });
 
-export const MOCK_KIMI_K2_6_REFUSAL: MockModelEntry = {
-  id: "Kimi K2.6",
-  displayName: "Kimi K2.6",
+export const MOCK_REFUSAL: MockModelEntry = {
   capabilities: { errorScenarios: ["refusal"] },
   languageModel: model,
 };

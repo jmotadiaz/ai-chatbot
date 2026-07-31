@@ -10,6 +10,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cohere } from "@ai-sdk/cohere";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createDeepInfra } from "@ai-sdk/deepinfra";
+import { MODEL_CATALOG } from "models";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
@@ -66,30 +67,37 @@ export const providers: Providers = (() => {
     };
   }
 
-  // Test mode: look up the model in the MOCK_MODELS registry. The registry
-  // contains entries for models with specialized behavior (e.g. Claude
-  // Sonnet 4.6). Models without specialized entries fall back to the
-  // content-driven createMockModel mock.
-  const lookupMock = (modelId: string) => {
-    if (modelId in MOCK_MODELS) {
-      return MOCK_MODELS[modelId].languageModel;
-    }
-    return createMockModel(modelId);
+  // Test mode: look up the model in the MOCK_MODELS registry. Providers are
+  // called with the provider-level model id ("anthropic/claude-sonnet-4.6")
+  // while the registry is keyed by catalog id ("Claude Sonnet 4.6"), so the
+  // catalog is used to translate. Models without a specialized entry fall back
+  // to the content-driven createMockModel mock.
+  const catalogIdsByProviderModel = new Map(
+    MODEL_CATALOG.map((entry) => [
+      `${entry.provider.kind}:${entry.provider.modelId}`,
+      entry.id,
+    ]),
+  );
+
+  const lookupMock = (kind: string) => (modelId: string) => {
+    const catalogId = catalogIdsByProviderModel.get(`${kind}:${modelId}`);
+    const mock = catalogId ? MOCK_MODELS[catalogId] : undefined;
+    return mock ? mock.languageModel : createMockModel(modelId);
   };
 
   return {
-    anthropic: lookupMock,
-    openai: lookupMock,
-    google: lookupMock,
-    xai: lookupMock,
-    groq: lookupMock,
-    deepseek: lookupMock,
-    perplexity: lookupMock,
-    gateway: lookupMock,
-    openrouter: lookupMock,
-    deepinfra: lookupMock,
-    lmstudio: lookupMock,
-    opencodeGo: lookupMock,
+    anthropic: lookupMock("anthropic"),
+    openai: lookupMock("openai"),
+    google: lookupMock("google"),
+    xai: lookupMock("xai"),
+    groq: lookupMock("groq"),
+    deepseek: lookupMock("deepseek"),
+    perplexity: lookupMock("perplexity"),
+    gateway: lookupMock("gateway"),
+    openrouter: lookupMock("openrouter"),
+    deepinfra: lookupMock("deepinfra"),
+    lmstudio: lookupMock("lmstudio"),
+    opencodeGo: lookupMock("opencodeGo"),
     embedding: () => createMockEmbeddingModel(),
     rerank: () => async () => [],
   };

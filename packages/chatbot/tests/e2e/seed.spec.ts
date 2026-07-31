@@ -12,13 +12,14 @@ test.describe("Chat functionality", () => {
   test("user sends a message and assistant responds correctly", async () => {
     const userQuery = "What is the capital of France?";
 
-    await chatPage.header.modelPicker.selectModel("canSeeImages");
+    await chatPage.header.modelPicker.selectModel("basicChat");
 
     await chatPage.chat.sendMessage(userQuery);
 
     await chatPage.chat.waitForLoadingComplete();
     const lastMessage = await chatPage.chat.getLastAssistantMessage();
-    expect(lastMessage).toContain("gemini");
+    // The generic mock echoes back the model it was built for.
+    expect(lastMessage).toContain("Hello, I'm");
 
     const userMessages = await chatPage.chat.getUserMessages();
     const assistantMessages = await chatPage.chat.getAssistantMessages();

@@ -26,8 +26,7 @@ Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
 packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
-├── models/         # Shared model catalog (single source of truth for model
-                    # definitions, Pi mapping and models.json generation)
+├── models/         # Shared model catalog (single source of truth)
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
 ```
@@ -40,6 +39,10 @@ Full-stack Next.js 16 app (App Router). AI chatbot with multi-model support, RAG
 
 Separate HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent sessions, translates Pi events into AG-UI protocol events, and exposes an `/rpc` HTTP endpoint. The chatbot communicates with this worker to run coding tasks.
 
+### `models` — Shared Catalog
+
+Single source of truth for model definitions. `MODEL_CATALOG` drives the chatbot's model configurations, the chat/coding-agent model mapping, and the `models.json` the worker generates for Pi at startup. Adding a model means editing this catalog only.
+
 ### `tracing` — Shared Library
 
 Reusable observability library used by both `chatbot` and `coding-agent`. Provides AI SDK middleware to capture LLM call traces (prompts, responses, tool calls, token usage) and writes them to disk as JSONL. Enabled via `TRACE_ENABLED=1`.
@@ -47,10 +50,10 @@ Reusable observability library used by both `chatbot` and `coding-agent`. Provid
 ### Dependency Graph
 
 ```
-chatbot ──→ coding-agent ──→ tracing
+chatbot ──→ coding-agent
    │              │
-   ├────→ tracing ├────→ models
-   └────→ models ←┘
+   ├──────────────┼──→ tracing
+   └──────────────┴──→ models
 ```
 
 <!-- context7 -->

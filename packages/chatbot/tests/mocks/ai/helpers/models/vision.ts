@@ -6,7 +6,7 @@ const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 const model = new MockLanguageModelV3({
-  modelId: "Gemini 3 Flash",
+  modelId: "canSeeImages",
   doStream: fileStream("image/png", TINY_PNG_BASE64, "Image description (mock)"),
   doGenerate: async () => ({
     content: [
@@ -26,9 +26,7 @@ const model = new MockLanguageModelV3({
   }),
 });
 
-export const MOCK_GEMINI_3_FLASH_VISION: MockModelEntry = {
-  id: "Gemini 3 Flash",
-  displayName: "Gemini 3 Flash",
+export const MOCK_VISION: MockModelEntry = {
   capabilities: { multimodal: true },
   languageModel: model,
 };

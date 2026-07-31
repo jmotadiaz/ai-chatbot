@@ -1,5 +1,8 @@
 import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
+import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
+
+const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools;
 
 test.describe("Chat Hub - Sidebar Integration", () => {
   let hubPage: ChatHubPage;
@@ -20,9 +23,9 @@ test.describe("Chat Hub - Sidebar Integration", () => {
     await hubPage.hubContent.sendMessage(uniqueMessage);
 
     // Wait for response and panel
-    const panel = hubPage.getPanel("Claude Sonnet 4.6");
+    const panel = hubPage.getPanel(TOOLS_MODEL);
     // Ensure tab is active
-    await hubPage.header.selectTab("Claude Sonnet 4.6");
+    await hubPage.header.selectTab(TOOLS_MODEL);
     await expect(panel.container).toBeVisible();
 
     // Click "Select this chat"

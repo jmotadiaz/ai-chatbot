@@ -3,7 +3,7 @@ import { reasoningStream } from "../streams";
 import type { MockModelEntry } from "../../types";
 
 const model = new MockLanguageModelV3({
-  modelId: "Deepseek v4 Pro",
+  modelId: "canProduceReasoning",
   doStream: reasoningStream(
     "Let me think about this carefully...",
     "The answer is 42.",
@@ -25,9 +25,7 @@ const model = new MockLanguageModelV3({
   }),
 });
 
-export const MOCK_DEEPSEEK_V4_PRO_THINKING: MockModelEntry = {
-  id: "Deepseek v4 Pro",
-  displayName: "Deepseek v4 Pro",
+export const MOCK_REASONING: MockModelEntry = {
   capabilities: { thinkingBlocks: true },
   languageModel: model,
 };

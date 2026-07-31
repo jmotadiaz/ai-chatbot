@@ -2,7 +2,7 @@ import { MODEL_CATALOG, type InvocableModelId } from "./catalog";
 
 export const PI_PROVIDER = "opencode-go";
 
-export function toPiModelId(modelId: string): {
+export function toPiModelId(modelId: InvocableModelId): {
   providerId: string;
   modelId: string;
 } {

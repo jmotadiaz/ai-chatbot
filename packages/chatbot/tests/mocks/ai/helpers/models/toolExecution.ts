@@ -3,7 +3,7 @@ import { toolCallStream, textStream } from "../streams";
 import type { MockModelEntry } from "../../types";
 
 const model = new MockLanguageModelV3({
-  modelId: "Claude Sonnet 4.6",
+  modelId: "canExecuteTools",
   doStream: [
     toolCallStream("webSearch", { query: "current weather in San Francisco" }),
     textStream(
@@ -11,9 +11,7 @@ const model = new MockLanguageModelV3({
     ),
   ],
   doGenerate: async () => ({
-    content: [
-      { type: "text", text: "Hello from Claude Sonnet 4.6 (mock)" },
-    ],
+    content: [{ type: "text", text: "Hello from the tool-calling mock" }],
     finishReason: { unified: "stop", raw: "stop" },
     usage: {
       inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
@@ -23,9 +21,7 @@ const model = new MockLanguageModelV3({
   }),
 });
 
-export const MOCK_CLAUDE_SONNET: MockModelEntry = {
-  id: "Claude Sonnet 4.6",
-  displayName: "Claude Sonnet 4.6",
+export const MOCK_TOOL_EXECUTION: MockModelEntry = {
   capabilities: { toolExecution: true },
   languageModel: model,
 };

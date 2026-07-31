@@ -23,7 +23,7 @@
     "db:logs": "pnpm --filter chatbot db:logs",
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",
-    "type:check": "pnpm --filter chatbot type:check",
+    "type:check": "pnpm --filter chatbot --filter models type:check",
     "test": "pnpm test:unit",
     "eval": "pnpm --filter chatbot eval",
     "test:e2e": "pnpm --filter chatbot test:e2e",

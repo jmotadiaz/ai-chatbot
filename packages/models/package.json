@@ -9,7 +9,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test:unit": "vitest run --passWithNoTests"
+    "test:unit": "vitest run --passWithNoTests",
+    "type:check": "tsc --noEmit"
   },
   "devDependencies": {
     "vitest": "^4.0.18"

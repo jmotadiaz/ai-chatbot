@@ -17,7 +17,7 @@ import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
-import { getModelsJsonPath } from "./models";
+import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -212,9 +212,7 @@ function makeCreateRuntime(
   modelId?: string,
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
-    const authStorage = AuthStorage.create(
-      path.join(getAgentDir(), "auth.json"),
-    );
+    const authStorage = AuthStorage.create(getAuthJsonPath());
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
       authStorage,
@@ -896,7 +894,7 @@ export async function getAvailableModels(): Promise<
   const log = getTraceLogger("worker");
   log.info("models.fetch");
 
-  const authStorage = AuthStorage.create(process.env.CODING_AGENT_AUTH_JSON);
+  const authStorage = AuthStorage.create(getAuthJsonPath());
   const registry = ModelRegistry.create(authStorage, getModelsJsonPath());
   const available = registry.getAvailable();
   const filtered = available

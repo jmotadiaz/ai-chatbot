@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
           },
           {
             providerId: "opencode-go",
-            modelId: "kimi-k2.6",
-            label: "Kimi K2.6",
+            modelId: "kimi-k2.7-code",
+            label: "Kimi K2.7 Code",
           },
         ],
       },

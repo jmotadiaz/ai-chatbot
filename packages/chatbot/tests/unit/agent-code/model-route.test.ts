@@ -52,12 +52,12 @@ beforeEach(() => {
 
 describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
   it("returns the worker's model mapped to a chat model id", async () => {
-    mockState.workerModel = { providerId: "opencode-go", modelId: "kimi-k2.6" };
+    mockState.workerModel = { providerId: "opencode-go", modelId: "kimi-k2.7-code" };
 
     const res = await GET(makeRequest() as never);
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ modelId: "Kimi K2.6" });
+    expect(await res.json()).toEqual({ modelId: "Kimi K2.7 Code" });
     expect(mockState.modelParams[0]).toEqual({
       sessionId: "s1",
       piSessionId: "pi-1",

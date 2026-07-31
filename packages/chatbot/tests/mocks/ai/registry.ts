@@ -1,14 +1,20 @@
 import type { MockModelEntry } from "./types";
-import { MOCK_CLAUDE_SONNET } from "./helpers/models/claudeSonnet";
-import { MOCK_GEMINI_3_FLASH_VISION } from "./helpers/models/gemini3FlashVision";
-import { MOCK_DEEPSEEK_V4_PRO_THINKING } from "./helpers/models/deepseekV4ProThinking";
-import { MOCK_KIMI_K2_6_REFUSAL } from "./helpers/models/kimiK2_6Refusal";
-import { MOCK_GPT_OSS_ERROR } from "./helpers/models/gptOssError";
+import { CAPABILITY_ALIASES } from "./capabilities";
+import { MOCK_TOOL_EXECUTION } from "./helpers/models/toolExecution";
+import { MOCK_VISION } from "./helpers/models/vision";
+import { MOCK_REASONING } from "./helpers/models/reasoning";
+import { MOCK_REFUSAL } from "./helpers/models/refusal";
+import { MOCK_MID_STREAM_ERROR } from "./helpers/models/midStreamError";
 
+/**
+ * Models with specialised behaviour, keyed by catalog id. Built from
+ * CAPABILITY_ALIASES so the model a behaviour is bound to is declared once.
+ * Models absent from this map fall back to the generic createMockModel.
+ */
 export const MOCK_MODELS: Record<string, MockModelEntry> = {
-  "Claude Sonnet 4.6": MOCK_CLAUDE_SONNET,
-  "Gemini 3 Flash": MOCK_GEMINI_3_FLASH_VISION,
-  "Deepseek v4 Pro": MOCK_DEEPSEEK_V4_PRO_THINKING,
-  "Kimi K2.6": MOCK_KIMI_K2_6_REFUSAL,
-  "GPT OSS": MOCK_GPT_OSS_ERROR,
+  [CAPABILITY_ALIASES.canExecuteTools]: MOCK_TOOL_EXECUTION,
+  [CAPABILITY_ALIASES.canSeeImages]: MOCK_VISION,
+  [CAPABILITY_ALIASES.canProduceReasoning]: MOCK_REASONING,
+  [CAPABILITY_ALIASES.alwaysRefuses]: MOCK_REFUSAL,
+  [CAPABILITY_ALIASES.failsMidStream]: MOCK_MID_STREAM_ERROR,
 };

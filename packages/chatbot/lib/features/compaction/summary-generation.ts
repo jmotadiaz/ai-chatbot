@@ -19,7 +19,7 @@ export async function generateSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey = hasMultimedia ? "Qwen 3.6 Plus" : "Deepseek v4 Flash";
+  const modelKey = hasMultimedia ? "Qwen 3.7 Plus" : "Deepseek v4 Flash";
 
   const promptText = previousSummary
     ? INCREMENTAL_UPDATE_PROMPT.replace("{previousSummary}", previousSummary)
@@ -47,7 +47,7 @@ export async function generateTurnPrefixSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey = hasMultimedia ? "Qwen 3.6 Plus" : "Deepseek v4 Flash";
+  const modelKey = hasMultimedia ? "Qwen 3.7 Plus" : "Deepseek v4 Flash";
 
   const prompt = `Summarize the following turn prefix (the beginning of an assistant response that was interrupted or split):
 

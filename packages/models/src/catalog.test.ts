@@ -21,19 +21,21 @@ describe("MODEL_CATALOG integrity", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("exposes exactly the 6 coding-agent models as invocable, in order", () => {
+  it("exposes exactly the coding-agent models as invocable, in order", () => {
     expect([...INVOCABLE_MODEL_IDS]).toEqual([
       "Deepseek v4 Flash",
       "Deepseek v4 Pro",
-      "Kimi K2.6",
-      "Qwen 3.6 Plus",
+      "Kimi K2.7 Code",
+      "Kimi K3",
+      "MiniMax M3",
+      "Qwen 3.7 Plus",
       "MiMo V2.5",
       "MiMo V2.5 Pro",
     ]);
   });
 
   it("keeps every model id used by internal chatbot features", () => {
-    const ids = new Set(MODEL_CATALOG.map((e) => e.id));
+    const ids = new Set<string>(MODEL_CATALOG.map((e) => e.id));
     for (const internal of [
       "Llama 3.1 Instant",
       "GPT OSS Mini",

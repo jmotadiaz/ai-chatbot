@@ -26,6 +26,14 @@ export type ProviderKind =
   | "perplexity"
   | "lmstudio";
 
+/** Price per million tokens, in the same units Pi uses. */
+export interface ModelCost {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+}
+
 export interface ModelCatalogEntry {
   id: string;
   userInvocable: boolean;
@@ -35,8 +43,13 @@ export interface ModelCatalogEntry {
   temperature?: number;
   topP?: number;
   topK?: number;
+  /**
+   * Only needed when the model is unknown to Pi. For models Pi already ships,
+   * these are inherited from its built-in definition — see generateModelsJson.
+   */
   contextWindow?: number;
   maxTokens?: number;
+  cost?: ModelCost;
   supportedFiles?: readonly ("pdf" | "img")[];
   supportedOutput?: readonly ("text" | "img")[];
   providerOptions?: Readonly<Record<string, unknown>>;
@@ -65,22 +78,43 @@ export const MODEL_CATALOG = [
     topP: 0.95,
   },
   {
-    id: "Kimi K2.6",
+    id: "Kimi K2.7 Code",
     userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "kimi-k2.6" },
+    provider: { kind: "opencodeGo", modelId: "kimi-k2.7-code" },
     company: "moonshotai",
     reasoning: true,
-    supportedFiles: ["img", "pdf"],
-    temperature: 1.0,
+    supportedFiles: ["img"],
+  },
+  {
+    // The only invocable model Pi does not ship, so it has to describe its own
+    // limits and cost — values taken from the opencode-go registry.
+    id: "Kimi K3",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "kimi-k3" },
+    company: "moonshotai",
+    reasoning: true,
+    supportedFiles: ["img"],
+    contextWindow: 1_048_576,
+    maxTokens: 131_072,
+    cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 },
+  },
+  {
+    id: "MiniMax M3",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "minimax-m3" },
+    company: "minimax",
+    reasoning: true,
+    supportedFiles: ["img"],
+    temperature: 1,
     topP: 0.95,
   },
   {
-    id: "Qwen 3.6 Plus",
+    id: "Qwen 3.7 Plus",
     userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "qwen3.6-plus" },
+    provider: { kind: "opencodeGo", modelId: "qwen3.7-plus" },
     company: "alibaba",
     reasoning: true,
-    supportedFiles: ["pdf", "img"],
+    supportedFiles: ["img"],
   },
   {
     id: "MiMo V2.5",
@@ -88,6 +122,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "mimo-v2.5" },
     company: "xiaomi",
     reasoning: true,
+    supportedFiles: ["img"],
     temperature: 0.6,
     topP: 0.95,
   },

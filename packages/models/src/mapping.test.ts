@@ -5,6 +5,10 @@ import {
   toChatModelId,
   toPiModelId,
 } from "./mapping";
+import type { InvocableModelId } from "./catalog";
+
+/** The type rules these ids out; the runtime guard is what's under test. */
+const asInvocable = (id: string) => id as InvocableModelId;
 
 describe("model mapping", () => {
   it("maps an invocable model id to its Pi model", () => {
@@ -15,13 +19,13 @@ describe("model mapping", () => {
   });
 
   it("throws for a non-invocable catalog model", () => {
-    expect(() => toPiModelId("GPT 5.4")).toThrow(
+    expect(() => toPiModelId(asInvocable("GPT 5.4"))).toThrow(
       "Unsupported coding agent model: GPT 5.4",
     );
   });
 
   it("throws for an unknown model id", () => {
-    expect(() => toPiModelId("Nope")).toThrow(
+    expect(() => toPiModelId(asInvocable("Nope"))).toThrow(
       "Unsupported coding agent model: Nope",
     );
   });
