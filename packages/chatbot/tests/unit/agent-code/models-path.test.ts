@@ -24,4 +24,13 @@ describe("getModelsJsonPath", () => {
     process.env.CODING_AGENT_MODELS_JSON = "";
     expect(getModelsJsonPath()).toMatch(/models\.json$/);
   });
+
+  it("anchors a relative override to the coding-agent package", () => {
+    // The cwd differs between the worker, the chatbot and the test runners, so
+    // a relative override must not resolve against it.
+    process.env.CODING_AGENT_MODELS_JSON = ".pi/models.json";
+    expect(getModelsJsonPath()).toMatch(
+      /packages[/\\]coding-agent[/\\]\.pi[/\\]models\.json$/,
+    );
+  });
 });
