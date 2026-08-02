@@ -30,6 +30,10 @@ export interface UseCodingAgentArgs {
   project: string;
   sessionId: string;
   modelId: string;
+  /** Set for subagent sub-sessions: the parent app session id (access guard). */
+  parentSessionId?: string;
+  /** Set for subagent sub-sessions: the persisted Pi session id (cold reload). */
+  piSessionId?: string;
 }
 
 export interface UseCodingAgentResult {
@@ -212,6 +216,8 @@ export function useCodingAgent({
   project,
   sessionId,
   modelId,
+  parentSessionId,
+  piSessionId,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const agentRef = useRef<{ sessionId: string; agent: ConnectableHttpAgent } | null>(null);
   if (agentRef.current === null || agentRef.current.sessionId !== sessionId) {
@@ -500,6 +506,9 @@ export function useCodingAgent({
           context: [
             { description: "project", value: project },
             { description: "sessionId", value: sessionId },
+            ...(parentSessionId
+              ? [{ description: "parentSessionId", value: parentSessionId }]
+              : []),
           ],
           forwardedProps: { afterSeq: cursor.seq, epoch: cursor.epoch },
         });
@@ -559,8 +568,13 @@ export function useCodingAgent({
 
     const loadSnapshot = async () => {
       try {
+        const query = new URLSearchParams();
+        if (parentSessionId) query.set("parentSessionId", parentSessionId);
+        if (piSessionId) query.set("pi", piSessionId);
+        if (parentSessionId) query.set("project", project);
+        const suffix = query.size > 0 ? `?${query.toString()}` : "";
         const response = await fetch(
-          `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/snapshot`,
+          `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/snapshot${suffix}`,
         );
         if (!response.ok) {
           throw new Error(`Failed to load coding-agent session: ${response.status}`);
@@ -700,7 +714,7 @@ export function useCodingAgent({
       window.removeEventListener("online", handleOnline);
       void agent.abortRun();
     };
-  }, [agent, project, sessionId, store]);
+  }, [agent, project, sessionId, parentSessionId, piSessionId, store]);
 
   const items = useMemo(
     () => groupItems(state.messages, state.toolErrors, state.toolTimings),

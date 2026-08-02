@@ -13,13 +13,27 @@ function getSessionIdFromUrl(url: URL): string {
  * The BFF only authorizes access and supplies the persisted Pi-session link.
  */
 export const GET = withAuth(async (user, req) => {
-  const sessionId = getSessionIdFromUrl(new URL(req.url));
+  const url = new URL(req.url);
+  const sessionId = getSessionIdFromUrl(url);
   const dbSession = await getSession({ userId: user.id, sessionId });
+  const client = new WorkerClient();
+
+  // Subagent sub-sessions never get a DB row (spec §4.4): they are served
+  // when the caller presents the parentSessionId the worker guard requires.
   if (!dbSession) {
-    return new Response("Session not found", { status: 404 });
+    const parentSessionId = url.searchParams.get("parentSessionId");
+    if (!parentSessionId) {
+      return new Response("Session not found", { status: 404 });
+    }
+    const snapshot = await client.getSessionSnapshot({
+      sessionId,
+      piSessionId: url.searchParams.get("pi") ?? undefined,
+      project: url.searchParams.get("project") ?? undefined,
+      parentSessionId,
+    });
+    return Response.json(snapshot);
   }
 
-  const client = new WorkerClient();
   const snapshot = await client.getSessionSnapshot({
     sessionId,
     piSessionId: dbSession.piSessionId ?? undefined,

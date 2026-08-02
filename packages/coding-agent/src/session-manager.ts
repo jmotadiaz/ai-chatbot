@@ -772,10 +772,19 @@ export async function getSessionMessages(
   const log = getTraceLogger("worker");
   let entry = sessions.get(sessionId);
 
-  // If not in memory but we have a piSessionId, try reloading from disk
+  // If not in memory but we have a piSessionId, try reloading from disk.
+  // A presented parentSessionId marks the target as a subagent session,
+  // which lives under the subagents/ subdir and is rehydrated with its
+  // parent linkage so the access guard below holds on the cold path too.
   if (!entry && piSessionId && project) {
     log.info("session.messages_load_disk", { sessionId, piSessionId });
-    const loaded = await loadSessionFromDisk(sessionId, piSessionId, project);
+    const loaded = await loadSessionFromDisk(
+      sessionId,
+      piSessionId,
+      project,
+      undefined,
+      parentSessionId ? { sessionsSubdir: "subagents", parentSessionId } : undefined,
+    );
     if (loaded) {
       entry = loaded;
     }

@@ -100,6 +100,25 @@ export async function getCodingAgentSession(project: string, sessionId: string) 
   });
 }
 
+export async function getSubagentSessionAction(input: {
+  parentSessionId: string;
+  toolCallId: string;
+}): Promise<{ subSessionId: string; subPiSessionId: string } | { error: string }> {
+  return withActionTrace("getSubagentSession", async (log) => {
+    try {
+      assertEnabled();
+      await getUserId();
+      const client = new WorkerClient();
+      const result = await client.getSubagentSession(input);
+      log.info("action.result", { subSessionId: result.subSessionId });
+      return result;
+    } catch (err) {
+      log.warn("action.error", { message: String(err) });
+      return { error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+}
+
 export async function getCodingAgentModels() {
   return withActionTrace("getCodingAgentModels", async (log) => {
     assertEnabled();

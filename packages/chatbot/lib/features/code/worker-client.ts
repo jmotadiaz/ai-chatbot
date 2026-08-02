@@ -148,14 +148,23 @@ export class WorkerClient {
     sessionId: string;
     piSessionId?: string;
     project?: string;
+    parentSessionId?: string;
   }): Promise<WorkerSessionSnapshot> {
     return this.call("getSessionSnapshot", params);
+  }
+
+  async getSubagentSession(params: {
+    parentSessionId: string;
+    toolCallId: string;
+  }): Promise<{ subSessionId: string; subPiSessionId: string }> {
+    return this.call("getSubagentSession", params);
   }
 
   async connectToSession(params: {
     sessionId: string;
     afterSeq: number;
     epoch: string;
+    parentSessionId?: string;
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");
@@ -258,6 +267,12 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
+        hasParentSessionId: typeof p.parentSessionId === "string",
+      };
+    case "getSubagentSession":
+      return {
+        hasParentSessionId: typeof p.parentSessionId === "string",
+        toolCallId: typeof p.toolCallId === "string" ? p.toolCallId : undefined,
       };
     case "cancelRun":
     case "getSessionStatus":

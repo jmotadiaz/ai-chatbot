@@ -24,6 +24,11 @@ export const POST = withAuth(async (user, req) => {
     context.find((c) => c.description === "sessionId")?.value ??
     (typeof forwardedProps.sessionId === "string" ? forwardedProps.sessionId : undefined) ??
     threadId;
+  const parentSessionId =
+    context.find((c) => c.description === "parentSessionId")?.value ??
+    (typeof forwardedProps.parentSessionId === "string"
+      ? forwardedProps.parentSessionId
+      : undefined);
   const runId = (body.runId as string | undefined) ?? crypto.randomUUID();
   const afterSeq =
     typeof forwardedProps.afterSeq === "number"
@@ -72,11 +77,14 @@ export const POST = withAuth(async (user, req) => {
       log.info("connect.start", { threadId, sessionId, project, afterSeq, epoch });
 
       const dbSession = await getSession({ userId: user.id, sessionId });
-      if (!dbSession) {
+      // Subagent sub-sessions have no DB row: they connect through the
+      // parentSessionId guard instead of the session-store authorization.
+      const isSubagentSession = !dbSession && typeof parentSessionId === "string";
+      if (!dbSession && !isSubagentSession) {
         await closeSink();
         return new Response("Session not found", { status: 404 });
       }
-      if (dbSession.project !== project) {
+      if (dbSession && dbSession.project !== project) {
         await closeSink();
         return new Response("Session project mismatch", { status: 400 });
       }
@@ -85,15 +93,17 @@ export const POST = withAuth(async (user, req) => {
       // modelId is forwarded, so the worker keeps (or restores from the Pi
       // session file) whatever model the session was already using.
       const client = new WorkerClient();
-      await client.initializeSession({
-        userId: user.id,
-        sessionId,
-        project,
-        piSessionId: dbSession.piSessionId ?? undefined,
-        _traceRunId: runId,
-      });
+      if (!isSubagentSession && dbSession) {
+        await client.initializeSession({
+          userId: user.id,
+          sessionId,
+          project,
+          piSessionId: dbSession.piSessionId ?? undefined,
+          _traceRunId: runId,
+        });
 
-      await touchSession({ userId: user.id, sessionId });
+        await touchSession({ userId: user.id, sessionId });
+      }
 
       let workerStream: ReadableStream<Uint8Array>;
       try {
@@ -101,6 +111,7 @@ export const POST = withAuth(async (user, req) => {
           sessionId,
           afterSeq,
           epoch,
+          parentSessionId: isSubagentSession ? parentSessionId : undefined,
           _traceRunId: runId,
         });
       } catch (err) {
