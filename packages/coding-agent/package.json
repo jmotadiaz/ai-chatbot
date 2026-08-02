@@ -13,6 +13,7 @@
     "./http-transport": "./src/transports/http.ts",
     "./message-ids": "./src/message-ids.ts",
     "./models": "./src/models.ts",
+    "./pi-packages": "./src/pi-packages.ts",
     "./pi-to-agui-translator": "./src/pi-to-agui-translator.ts",
     "./reconnect-prelude": "./src/reconnect-prelude.ts",
     "./replay-compaction": "./src/replay-compaction.ts",

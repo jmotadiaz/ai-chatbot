@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { PACKAGE_ROOT, resolveOverride } from "./paths";
 
 /**
@@ -53,4 +53,40 @@ export function getPiPackageRef(pkg: PiPackage): string {
  */
 export function getPiPackagePaths(): string[] {
   return PI_PACKAGES.map(getPiPackagePath).filter((dir) => existsSync(dir));
+}
+
+/**
+ * First-party extensions live inside the package (`extensions/<name>/index.ts`)
+ * instead of `PI_PACKAGES`, which is reserved for pinned third-party git
+ * checkouts.
+ */
+const FIRST_PARTY_EXTENSIONS_DIR = path.join(PACKAGE_ROOT, "extensions");
+
+/** First-party extension dirs (each with an index.ts), e.g. extensions/subagent. */
+export function getFirstPartyExtensionPaths(): string[] {
+  if (!existsSync(FIRST_PARTY_EXTENSIONS_DIR)) return [];
+  return readdirSync(FIRST_PARTY_EXTENSIONS_DIR, { withFileTypes: true })
+    .filter(
+      (d) =>
+        d.isDirectory() &&
+        existsSync(path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name, "index.ts")),
+    )
+    .map((d) => path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name));
+}
+
+/**
+ * All extension paths handed to the Pi resource loader: third-party package
+ * checkouts plus first-party extensions. `includeSubagentExtension: false`
+ * excludes the subagent tool — child sessions must not get it (structural
+ * anti-recursion, spec §4.2).
+ */
+export function getExtensionPaths(options?: {
+  includeSubagentExtension?: boolean;
+}): string[] {
+  const firstParty = getFirstPartyExtensionPaths().filter(
+    (p) =>
+      options?.includeSubagentExtension !== false ||
+      !p.endsWith(path.join("extensions", "subagent")),
+  );
+  return [...getPiPackagePaths(), ...firstParty];
 }

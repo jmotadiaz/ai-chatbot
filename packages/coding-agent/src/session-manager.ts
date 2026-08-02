@@ -18,7 +18,7 @@ import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
-import { getPiPackagePaths } from "./pi-packages";
+import { getExtensionPaths } from "./pi-packages";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -223,6 +223,7 @@ function resolveProjectPath(root: string, project: string): string {
  */
 function makeCreateRuntime(
   modelId?: string,
+  options?: { includeSubagentExtension?: boolean },
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
     const authStorage = AuthStorage.create(getAuthJsonPath());
@@ -232,7 +233,9 @@ function makeCreateRuntime(
       modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
         appendSystemPrompt: [FILE_REFERENCE_PROMPT],
-        additionalExtensionPaths: getPiPackagePaths(),
+        additionalExtensionPaths: getExtensionPaths({
+          includeSubagentExtension: options?.includeSubagentExtension ?? true,
+        }),
       },
     });
     const [piProvider, piModelId] = modelId?.split("/") ?? [];
