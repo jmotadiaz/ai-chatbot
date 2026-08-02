@@ -215,23 +215,25 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "getSessionMessages": {
-        const { sessionId, piSessionId, project } = params as {
+        const { sessionId, piSessionId, project, parentSessionId } = params as {
           sessionId: string;
           piSessionId?: string;
           project?: string;
+          parentSessionId?: string;
         };
         result = {
-          messages: await getSessionMessages(sessionId, piSessionId, project),
+          messages: await getSessionMessages(sessionId, piSessionId, project, parentSessionId),
         };
         break;
       }
       case "getSessionSnapshot": {
-        const { sessionId, piSessionId, project } = params as {
+        const { sessionId, piSessionId, project, parentSessionId } = params as {
           sessionId: string;
           piSessionId?: string;
           project?: string;
+          parentSessionId?: string;
         };
-        result = await getSessionSnapshot(sessionId, piSessionId, project);
+        result = await getSessionSnapshot(sessionId, piSessionId, project, parentSessionId);
         break;
       }
       case "disposeSession": {
@@ -241,10 +243,11 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "connectToSession": {
-        const { sessionId, afterSeq, epoch } = params as {
+        const { sessionId, afterSeq, epoch, parentSessionId } = params as {
           sessionId: string;
           afterSeq?: number;
           epoch?: string;
+          parentSessionId?: string;
         };
         if (typeof afterSeq !== "number" || typeof epoch !== "string") {
           stop();
@@ -280,6 +283,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
                 },
                 afterSeq,
                 epoch,
+                parentSessionId,
               );
             } catch (err) {
               log.error("connect.setup_error", { message: String(err) });
@@ -301,8 +305,11 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "getSessionStatus": {
-        const { sessionId } = params as { sessionId: string };
-        result = await getSessionStatus(sessionId);
+        const { sessionId, parentSessionId } = params as {
+          sessionId: string;
+          parentSessionId?: string;
+        };
+        result = await getSessionStatus(sessionId, parentSessionId);
         break;
       }
       case "getSessionModel": {
@@ -388,6 +395,7 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
+        hasParentSessionId: typeof p.parentSessionId === "string",
       };
     case "getSessionSnapshot":
     case "getSessionModel":
@@ -395,6 +403,7 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
+        hasParentSessionId: typeof p.parentSessionId === "string",
       };
     case "getSessionSkills":
       return { sessionId };

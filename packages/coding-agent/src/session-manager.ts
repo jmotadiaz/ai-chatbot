@@ -58,6 +58,8 @@ interface SessionEntry {
   sessionId: string;
   piSessionId: string;
   project: string;
+  /** Set for subagent sessions: id of the parent app session that dispatched them. */
+  parentSessionId?: string;
   runtime: Awaited<ReturnType<typeof createAgentSessionRuntime>>;
   eventLog?: SessionEventLog;
   activeRun?: {
@@ -93,6 +95,16 @@ function ensureEventLog(entry: SessionEntry): SessionEventLog {
 
 function isTerminalAguiEvent(event: BaseEvent): boolean {
   return event.type === EventType.RUN_FINISHED || event.type === EventType.RUN_ERROR;
+}
+
+/**
+ * Subagent sessions are reachable only through their parent: any accessor
+ * must present the matching parentSessionId or the lookup fails closed.
+ */
+function assertSessionAccess(entry: SessionEntry, parentSessionId?: string): void {
+  if (entry.parentSessionId && entry.parentSessionId !== parentSessionId) {
+    throw new Error("Subagent session requires valid parent session id");
+  }
 }
 
 function loggedLine(entry: LoggedAguiEvent): string {
@@ -735,6 +747,7 @@ export async function getSessionMessages(
   sessionId: string,
   piSessionId?: string,
   project?: string,
+  parentSessionId?: string,
 ): Promise<Array<any>> {
   const log = getTraceLogger("worker");
   let entry = sessions.get(sessionId);
@@ -753,6 +766,7 @@ export async function getSessionMessages(
     return [];
   }
 
+  assertSessionAccess(entry, parentSessionId);
   return convertPiMessagesToAgui(entry.runtime.session.messages);
 }
 
@@ -967,13 +981,14 @@ export interface SessionSnapshot {
   running: boolean;
 }
 
-export async function getSessionStatus(sessionId: string): Promise<SessionStatus> {
+export async function getSessionStatus(sessionId: string, parentSessionId?: string): Promise<SessionStatus> {
   const log = getTraceLogger("worker");
   const entry = sessions.get(sessionId);
   if (!entry) {
     log.info("session.status_not_found", { sessionId });
     return { running: false };
   }
+  assertSessionAccess(entry, parentSessionId);
   if (entry.runtime.session.isStreaming) {
     return { running: true, piSessionId: entry.runtime.session.sessionId };
   }
@@ -993,12 +1008,14 @@ export async function getSessionSnapshot(
   sessionId: string,
   piSessionId?: string,
   project?: string,
+  parentSessionId?: string,
 ): Promise<SessionSnapshot> {
-  const messages = await getSessionMessages(sessionId, piSessionId, project);
+  const messages = await getSessionMessages(sessionId, piSessionId, project, parentSessionId);
   const entry = sessions.get(sessionId);
   if (!entry) {
     return { messages, cursor: null, running: false };
   }
+  assertSessionAccess(entry, parentSessionId);
 
   const eventLog = ensureEventLog(entry);
   const seq = entry.snapshotCursorSeq ?? eventLog.lastSeq;
@@ -1016,6 +1033,7 @@ export async function connectToSession(
   onComplete: (() => void) | undefined,
   afterSeq: number,
   epoch: string,
+  parentSessionId?: string,
 ): Promise<() => void> {
   const log = getTraceLogger("worker");
   const eventCounts: Record<string, number> = {};
@@ -1045,6 +1063,7 @@ export async function connectToSession(
     logConnectSummary("session_not_found");
     return () => {};
   }
+  assertSessionAccess(entry, parentSessionId);
 
   const eventLog = ensureEventLog(entry);
   if (epoch !== eventLog.epoch) {
