@@ -23,9 +23,10 @@
     "./turn-git-state": "./src/turn-git-state.ts"
   },
   "dependencies": {
+    "@earendil-works/pi-coding-agent": "^0.79.3",
     "models": "workspace:*",
     "tracing": "workspace:*",
-    "@earendil-works/pi-coding-agent": "^0.79.3"
+    "typebox": "1.1.38"
   },
   "scripts": {
     "dev": "pnpm run transport:http",
