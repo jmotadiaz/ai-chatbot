@@ -18,6 +18,7 @@ Pi no incluye subagents por diseño (`docs/usage.md` del paquete: *"intentionall
 | D4 | Definición de agentes | **v1: agente genérico** + parámetro `model` opcional. Parámetro `agent` reservado (error explícito). El formato de agentes especializados (`.pi/agents/*.md`) queda **pendiente de discusión** |
 | D5 | Límite de concurrencia | **Sin límite en v1** (el paralelismo nativo de Pi basta; las skills despachan 2–4 típicamente) |
 | D6 | Transporte del `subSessionId` al frontend | **Lookup RPC** `getSubagentSession(parentSessionId, toolCallId)` resuelto desde el `details` del tool result persistido por Pi. Cero cambios en el stream AG-UI, translator y cliente |
+| D7 | Directorio de trabajo de la hija | **Param `cwd` opcional** (default: cwd del padre, simétrico a `model`). Validado: debe resolver a un directorio existente dentro del project root. Habilita un worktree por subagente en dispatch paralelo; la creación del worktree sigue siendo responsabilidad del orquestador (skill `using-git-worktrees` vía bash) |
 
 Hechos verificados que sustentan el diseño:
 
@@ -34,7 +35,8 @@ Sesión Pi padre (turno normal)
        └─ extensión subagent (packages/coding-agent/extensions/subagent/index.ts)
             └─ runSubagent()  (packages/coding-agent/src/session-manager.ts)
                  ├─ runtime hija vía makeCreateRuntime({ includeSubagentExtension: false })
-                 │    • mismo proceso, mismo cwd del proyecto
+                 │    • mismo proceso; cwd = param `cwd` (validado dentro del project root)
+                 │      o el del padre por defecto — p.ej. un worktree por subagente
                  │    • misma auth.json / models.json / skills (superpowers incluido)
                  │    • SIN la extensión subagent → anti-recursión estructural
                  ├─ SessionManager persistido en <CODING_AGENT_SESSIONS_DIR>/subagents/
@@ -69,21 +71,26 @@ subagent({
   task: string,         // requerido. Prompt autocontenido (las skills ya lo construyen)
   description?: string, // etiqueta corta para la UI
   model?: string,       // "provider/model-id"; default: modelo de la sesión padre
-  agent?: string        // RESERVADO — ver §8
+  cwd?: string,         // directorio de trabajo de la hija; default: cwd del padre.
+                        // Debe resolver a un directorio existente dentro del project root
+                        // (p.ej. un worktree <project>/.worktrees/<nombre>)
+  agent?: string        // RESERVADO — ver §9
 })
 ```
 
 Responsabilidades: validar params, llamar a `runSubagent()` (import relativo a `../../src/`), propagar la señal de abort del `execute` a la sesión hija, y devolver `{ content, details }`. Es un shell fino: toda la lógica vive en el worker (testeable con los unit tests existentes).
 
+**Descubrimiento de modelos (D4):** la `description` del tool se construye en el momento de registro e **incluye la lista de modelos disponibles** (`provider/model-id`, mismos valores que `getAvailableModels`), para que el orquestador pueda elegir `model` sin conocimiento externo. La resolución del string recibido es **estricta** (§4.2): match exacto o error con la lista.
+
 La extensión se carga añadiendo su directorio a `resourceLoaderOptions.additionalExtensionPaths` en `makeCreateRuntime` ([`session-manager.ts`](../../../packages/coding-agent/src/session-manager.ts)) mediante una constante propia (p.ej. `FIRST_PARTY_EXTENSION_PATHS`). **No** forma parte de `PI_PACKAGES` ([`pi-packages.ts`](../../../packages/coding-agent/src/pi-packages.ts)), que está reservado a checkouts git pineados de terceros.
 
 ### 4.2 `runSubagent()` — en `src/session-manager.ts`
 
-1. Resuelve el proyecto/cwd desde la sesión padre (mismo `resolveProjectPath`; la hija hereda el cwd — confinamiento idéntico al padre).
+1. Resuelve el cwd de la hija: el param `cwd` si se pasa, si no el del padre (`resolveProjectPath(projectsRoot, entry.project)`). Si se pasa, se valida con el mismo criterio que `resolveProjectPath`: debe resolver a un directorio **existente dentro del project root** — un worktree creado como `<project>/.worktrees/<nombre>` es válido; cualquier path fuera del proyecto o inexistente → tool `isError` con el path recibido (el modelo puede corregir y reintentar).
 2. Crea `SessionManager.create(path.join(SESSIONS_DIR, "subagents"))` → `subPiSessionId`.
 3. Crea la runtime hija con `makeCreateRuntime(modelId, { includeSubagentExtension: false })`:
    - `modelId` = param `model` si se pasa, si no el modelo actual de la sesión padre.
-   - `model` inválido → tool result `isError` con el identificador recibido (el modelo puede corregir y reintentar).
+   - Resolución del param `model`: match **estricto** contra los modelos disponibles (`provider/model-id`). Si no hay match → tool `isError` con la lista completa de modelos disponibles (el modelo ve la lista en la descripción del tool y de nuevo en el error; corrige y reintenta).
    - `includeSubagentExtension: false` excluye el dir de la extensión de `additionalExtensionPaths` → la hija **no** tiene el tool `subagent` (profundidad máxima 1 garantizada por construcción).
 4. Genera `subSessionId = crypto.randomUUID()` (id a nivel app, como las sesiones normales) y registra la entrada en el `sessions` Map con un campo nuevo `parentSessionId`.
 5. Arranca el colector ligero (§4.3) y ejecuta `childSession.prompt(task)`.
@@ -100,7 +107,7 @@ Versión recortada de `startPromptCollector`:
 
 - Suscribe a los eventos de la hija, los pasa por un `PiToAguiTranslator` propio (`threadId: subSessionId`, `runId` propio) y los anexa a un `SessionEventLog` propio de la entrada hija.
 - Sin `MESSAGES_SNAPSHOT` de arranque (no hay cliente que la necesite mid-run; el primer fetch usa `getSessionSnapshot`).
-- Sin files-changed propio: el diff del turno padre ya captura los edits de la hija (mismo cwd, diff al final del turno).
+- Sin files-changed propio en v1. La cobertura heredada del diff del turno padre **solo aplica cuando la hija comparte cwd con el padre** (mismo repo): en ese caso los edits de la hija quedan capturados automáticamente. Con `cwd` en un worktree distinto (D7), el diff del padre **no** los captura — limitación documentada en §7/§10; la visibilidad de esos edits queda en la vista dedicada de la sub-sesión (que muestra los tool calls de edición de la hija). No se añade UI de files-changed por sub-sesión en v1.
 - Eventos terminales (`RUN_FINISHED`/`RUN_ERROR`) anexados directamente.
 - Mantiene `snapshotCursorSeq` de la entrada hija con la misma invariante que el colector principal (cursor tras el último mensaje finalizado).
 
@@ -112,6 +119,8 @@ Versión recortada de `startPromptCollector`:
 - Las sesiones normales ignoran el parámetro.
 
 Además, las hijas viven en `<SESSIONS_DIR>/subagents/`, así que `SessionManager.list(SESSIONS_DIR)` (usado para recargar sesiones normales tras restart) no las mezcla con chats de primer nivel.
+
+En la UI tampoco pueden aparecer: el listado de sesiones de un proyecto sale de la tabla `codingAgentSessions` de la base de datos del chatbot (`listSessions({ userId, project })` en [`session-store.ts`](../../../packages/chatbot/lib/features/code/session-store.ts)), y las sub-sesiones nunca obtienen una fila ahí. El subdirectorio `subagents/` es defensa en profundidad sobre el listado de disco del worker, no el mecanismo que las oculta del sidebar.
 
 `disposeSession(parentSessionId)` dispone también las entradas hijas registradas de ese padre (libera el `sessions` Map); los archivos en disco se conservan.
 
@@ -144,8 +153,11 @@ Esta RPC es a la vez el mecanismo de descubrimiento y el punto donde se reconstr
 ### 5.2 Ruta dedicada — `app/(chat)/agent/code/[project]/[sessionId]/subagent/[subSessionId]/page.tsx` (nueva)
 
 - La ruta `app/(chat)/agent/code/[project]/[sessionId]` **ya existe**; esto es un segmento anidado nuevo.
-- Compone: `Sidebar` + el componente de conversación ([`agent-conversation.tsx`](../../../packages/chatbot/components/code/agent-conversation.tsx)) alimentado por el hook existente (`use-coding-agent`) apuntando al `subSessionId` (con `parentSessionId` en las llamadas RPC para el guard).
-- **Sin** `AgentCodeChatLayout` → sin composer, sin picker de modelo, sin skills. No hay flag read-only: la ruta simplemente no compone los controles de entrada (D3).
+- Compone:
+  - `Sidebar` (igual que la ruta padre).
+  - **`Header.Container`** (el Header vive hoy dentro de [`AgentCodeChatLayout`](../../../packages/chatbot/components/code/agent-code-chat-layout.tsx), así que la ruta lo compone por su cuenta): `Logo` + enlace "Volver a la sesión principal" (→ la ruta padre) en `Header.Left`, `ThemeToggle` en `Header.Right`. **Sin** los controles de una sesión interactiva: ni botón de nueva sesión, ni model picker, ni file browser.
+  - `Main` + el componente de conversación ([`agent-conversation.tsx`](../../../packages/chatbot/components/code/agent-conversation.tsx)) alimentado por el hook existente (`use-coding-agent`) apuntando al `subSessionId` (con `parentSessionId` en las llamadas RPC para el guard). Si la conversación requiere contexto de `FileBrowserProvider` para sus enlaces de fichero, la ruta lo envuelve con `{ project, sessionId: subSessionId }` (a validar en implementación).
+- **Sin** `AgentCodeChatLayout` → sin composer. No hay flag read-only: la ruta simplemente no compone los controles de entrada (D3).
 - Sin índice ni listado: la única entrada es el enlace del tool call (D6 + guard §4.4).
 - `CODING_AGENT_ENABLED !== "true"` → `notFound()`, como la ruta padre.
 
@@ -154,17 +166,29 @@ Esta RPC es a la vez el mecanismo de descubrimiento y el punto donde se reconstr
 | Caso | Comportamiento |
 |------|----------------|
 | Abort del turno padre | El `execute` recibe la señal → `childSession.abort()` → tool result parcial con prefijo `[aborted]`; la sub-sesión conserva todo lo producido hasta ese punto |
-| `model` inválido | Tool `isError` con el identificador recibido; el modelo puede reintentar con otro valor |
+| `model` sin match exacto | Tool `isError` con la lista completa de modelos disponibles; el modelo puede corregir y reintentar |
+| `cwd` fuera del project root o inexistente | Tool `isError` con el path recibido; el modelo puede corregir y reintentar |
 | Fallo de la hija (excepción, error de provider) | Tool `isError` con el mensaje; sub-sesión persistida e inspeccionable |
 | Uso del param `agent` | Tool `isError`: "parámetro reservado — formato de agentes pendiente de definición" |
 | Worker restart mid-run | La hija muere con el proceso (in-process); el tool result queda como error/abortado. La parte ya persistida es visible vía lookup RPC (camino frío §4.5) |
 | Recarga del navegador | El historial del padre muestra el tool call; el enlace se reconstruye vía lookup RPC; la vista dedicada carga snapshot + replay como cualquier sesión |
 
-## 7. Testing
+## 7. Worktrees y aislamiento de trabajo
+
+Cómo encaja con las skills de superpowers:
+
+- **SDD (secuencial):** el worktree lo crea el controlador una vez al inicio del plan (`using-git-worktrees`); los implementadores trabajan en ese mismo workspace. Funciona con el default del param `cwd` (heredar el del padre), sin cambios.
+- **Dispatch paralelo de implementadores (`dispatching-parallel-agents`):** el patrón correcto es **un worktree por subagente** — si 3 implementadores editan el mismo checkout en paralelo se pisan. El flujo es: el orquestador crea los worktrees vía bash (`git worktree add <project>/.worktrees/<nombre> ...`, o la skill) y despacha cada subagente con `cwd: ".worktrees/<nombre>"`. El aislamiento es **estructural** (la sesión hija nace rooteada ahí: `bash`, paths relativos, `git rev-parse --show-toplevel`, scripts como `sdd-workspace`, tests y package managers resuelven todos contra el worktree) en lugar de depender de que el modelo respete paths absolutos en el brief.
+- **La creación del worktree NO es responsabilidad del tool.** El tool solo rootea la hija; crear/limpiar worktrees es orquestación del agente principal (como hoy).
+- **Restricción documentada:** el `cwd` debe estar dentro del project root. Worktrees externos (p.ej. directorios hermanos) se rechazan; la convención soportada es worktrees como subdirectorio del proyecto.
+
+**Limitación conocida — files-changed con worktrees:** `captureGitFileState` calcula el diff del turno con `git status` sobre la raíz del proyecto. Los edits hechos en un *linked worktree* no aparecen en ese `git status` (a lo sumo el directorio del worktree como untracked). Por tanto, en flujos con worktree el evento `coding_agent_files_changed` del turno padre **no** reflejará los ficheros tocados dentro del worktree — ni los del subagente ni los del propio agente principal. Se documenta en §10; la resolución pasa por files-changed por sub-sesión calculado sobre el `cwd` de cada hija (§9), para lo que el param `cwd` de D7 es el habilitador.
+
+## 8. Testing
 
 **Unit — worker (`packages/coding-agent`):**
 - Extensión: validación de params (`task` requerido, `agent` → error reservado, `model` inválido → error).
-- `runSubagent`: registro de la hija con `parentSessionId`; exclusión del tool `subagent` en la hija; abort propagation; resultado `isError` en fallo.
+- `runSubagent`: registro de la hija con `parentSessionId`; exclusión del tool `subagent` en la hija; abort propagation; resultado `isError` en fallo; validación de `cwd` (dentro del project root / fuera / inexistente) y herencia del cwd del padre por defecto; resolución de `model` (match estricto, sin match → error con lista) y herencia del modelo del padre por defecto.
 - Colector ligero: eventos Pi → eventLog propio; cursor `snapshotCursorSeq`; eventos terminales.
 - Guard §4.4: snapshot/connect/messages rechazan hija sin `parentSessionId` correcto.
 - Lookup RPC: camino en memoria, camino frío (rehidrata desde `details` persistidos), errores.
@@ -178,18 +202,18 @@ Esta RPC es a la vez el mecanismo de descubrimiento y el punto donde se reconstr
 1. Despachar un subagente desde el chat (pedir explícitamente "usa la skill dispatching-parallel-agents" o invocar el tool).
 2. Abrir el enlace en vivo → streaming en la ruta dedicada.
 3. Recargar ambas vistas; reiniciar el worker; reabrir (camino frío).
-4. Dispatch paralelo (2–3 subagentes en un turno) → enlaces independientes.
+4. Dispatch paralelo (2–3 subagentes en un turno, cada uno con su `cwd` de worktree) → enlaces independientes y aislamiento real de edits.
 5. Cancelar el run padre → hija abortada, resultado parcial.
 
-## 8. Fuera de scope (futuro)
+## 9. Fuera de scope (futuro)
 
 - **Formato de agentes especializados** (`.pi/agents/*.md` con frontmatter: nombre, tools permitidas, modelo, prompt) — **pendiente de discusión**; el param `agent` queda reservado para ello.
 - Límite de concurrencia / cola de subagentes (D5: se añadirá si se observa coste descontrolado).
 - Progreso agregado del subagente en la vista principal (custom events de progreso).
-- Evento files-changed propio por sub-sesión.
+- Evento files-changed propio por sub-sesión, calculado sobre el `cwd` de la hija (D7 lo habilita; ver §7).
 - Limpieza/TTL de sub-sesiones en disco.
 
-## 9. Riesgos y mitigaciones
+## 10. Riesgos y mitigaciones
 
 | Riesgo | Mitigación |
 |--------|------------|
@@ -197,4 +221,7 @@ Esta RPC es a la vez el mecanismo de descubrimiento y el punto donde se reconstr
 | Sub-sesiones acumuladas en el `sessions` Map (memoria) | Mismo ciclo de vida que las sesiones normales hoy; `disposeSession` del padre dispone también sus hijas registradas |
 | Import de la extensión → `src/` (acoplamiento) | La extensión vive en el mismo paquete y se carga vía jiti con imports relativos; es código first-party compilado con el worker |
 | Recursión | Estructural: la hija se crea sin la extensión (§4.2) |
-| Mezcla de hijas en el listado de sesiones | Subdirectorio `subagents/` (§4.4) |
+| Mezcla de hijas en el listado de sesiones | Sin fila en `codingAgentSessions` + subdirectorio `subagents/` (§4.4) |
+| Files-changed ciego a edits en linked worktrees | Limitación documentada (§7); resolución futura vía files-changed por sub-sesión sobre el `cwd` de la hija (§9) |
+| `cwd` como vector de escape del proyecto | Validación estructural: debe resolver dentro del project root (§4.2) |
+| Timeout del modelo principal mientras el tool `subagent` sigue vivo | No aplica estructuralmente: durante la ejecución del tool no hay conexión abierta con el provider (turno API → ejecución local → siguiente turno API). Verificado: `pi-agent-core` no tiene timeout de ejecución de tools. Riesgo real = duración wall-clock, mitigado con abort propagado (§6) y paralelismo nativo |
