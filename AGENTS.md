@@ -39,6 +39,8 @@ Full-stack Next.js 16 app (App Router). AI chatbot with multi-model support, RAG
 
 Separate HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent sessions, translates Pi events into AG-UI protocol events, and exposes an `/rpc` HTTP endpoint. The chatbot communicates with this worker to run coding tasks.
 
+Pi packages (currently [superpowers](https://github.com/obra/superpowers)) are checked out into `packages/coding-agent/.pi/packages/` at a pinned ref before startup and handed to the SDK as `additionalExtensionPaths`, instead of being installed with `pi install` into the machine-wide `~/.pi/agent/settings.json`. See `packages/coding-agent/AGENTS.md`.
+
 ### `models` — Shared Catalog
 
 Single source of truth for model definitions. `MODEL_CATALOG` drives the chatbot's model configurations, the chat/coding-agent model mapping, and the `models.json` the worker generates for Pi at startup. Adding a model means editing this catalog only.

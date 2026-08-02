@@ -28,6 +28,7 @@
   "scripts": {
     "dev": "pnpm run transport:http",
     "start": "pnpm run transport:http",
-    "transport:http": "tsx scripts/generate-models.ts && tsx src/transports/http.ts"
+    "packages:install": "tsx scripts/install-packages.ts",
+    "transport:http": "tsx scripts/install-packages.ts && tsx scripts/generate-models.ts && tsx src/transports/http.ts"
   }
 }

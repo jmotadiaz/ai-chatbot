@@ -18,6 +18,7 @@ import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
+import { getPiPackagePaths } from "./pi-packages";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -219,6 +220,7 @@ function makeCreateRuntime(
       modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
         appendSystemPrompt: [FILE_REFERENCE_PROMPT],
+        additionalExtensionPaths: getPiPackagePaths(),
       },
     });
     const [piProvider, piModelId] = modelId?.split("/") ?? [];
