@@ -268,16 +268,26 @@ async function loadSessionFromDisk(
   piSessionId: string,
   project: string,
   modelId?: string,
+  options?: {
+    /** Load from a subdirectory of the sessions dir (e.g. "subagents"). */
+    sessionsSubdir?: string;
+    /** Parent linkage for rehydrated subagent sessions (spec §4.5). */
+    parentSessionId?: string;
+    parentToolCallId?: string;
+  },
 ): Promise<SessionEntry | undefined> {
   const log = getTraceLogger("worker");
   const sessionsDir = process.env.CODING_AGENT_SESSIONS_DIR!;
   const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
   const cwd = resolveProjectPath(projectsRoot, project);
+  const listDir = options?.sessionsSubdir
+    ? path.join(sessionsDir, options.sessionsSubdir)
+    : sessionsDir;
 
   log.info("session.load_disk_attempt", { appSessionId, piSessionId });
 
   // Find the session file by listing sessions for the sessions dir
-  const allSessions = await SessionManager.list(sessionsDir);
+  const allSessions = await SessionManager.list(listDir);
   const found = allSessions.find((s) => s.id === piSessionId);
 
   if (!found || !existsSync(found.path)) {
@@ -287,8 +297,10 @@ async function loadSessionFromDisk(
 
   log.info("session.load_disk_found", { path: found.path });
 
-  const sessionManager = SessionManager.open(found.path, sessionsDir);
-  const createRuntime = makeCreateRuntime(modelId);
+  const sessionManager = SessionManager.open(found.path, listDir);
+  const createRuntime = makeCreateRuntime(modelId, {
+    includeSubagentExtension: !options?.parentSessionId,
+  });
 
   const stop = log.startTimer("session.runtime_create");
   const runtime = await createAgentSessionRuntime(createRuntime, {
@@ -302,6 +314,8 @@ async function loadSessionFromDisk(
     sessionId: appSessionId,
     piSessionId,
     project,
+    parentSessionId: options?.parentSessionId,
+    parentToolCallId: options?.parentToolCallId,
     runtime,
     eventLog: new SessionEventLog(),
   };
@@ -1373,6 +1387,63 @@ export async function runSubagent(
     // The entry stays in the sessions Map: the dedicated view needs it alive
     // for snapshot/stream (spec §4.2.7). disposeSession(parent) reaps it.
   }
+}
+
+/**
+ * Resolve the subagent session dispatched by a given parent tool call
+ * (spec §4.5):
+ * 1. Memory: a registered entry with matching parent linkage.
+ * 2. Cold (after a worker restart): find the persisted toolResult in the
+ *    parent's messages, read its `details.subSessionId/subPiSessionId`,
+ *    rehydrate the child from `<SESSIONS_DIR>/subagents/` and register it.
+ * 3. Otherwise throw — unknown toolCallId, validation-failure results
+ *    (empty ids) or a missing session file all land here.
+ */
+export async function getSubagentSessionForToolCall(
+  parentSessionId: string,
+  toolCallId: string,
+): Promise<{ subSessionId: string; subPiSessionId: string }> {
+  const log = getTraceLogger("worker");
+  const parent = sessions.get(parentSessionId);
+  if (!parent) {
+    log.info("subagent.lookup_parent_not_found", { parentSessionId, toolCallId });
+    throw new Error("Parent session not found");
+  }
+
+  const registered = [...sessions.values()].find(
+    (e) => e.parentSessionId === parentSessionId && e.parentToolCallId === toolCallId,
+  );
+  if (registered) {
+    return { subSessionId: registered.sessionId, subPiSessionId: registered.piSessionId };
+  }
+
+  const toolResult = (parent.runtime.session.messages as ReadonlyArray<any>).find(
+    (msg) => msg?.role === "toolResult" && msg.toolCallId === toolCallId,
+  );
+  const subSessionId = toolResult?.details?.subSessionId;
+  const subPiSessionId = toolResult?.details?.subPiSessionId;
+  if (typeof subSessionId !== "string" || !subSessionId ||
+      typeof subPiSessionId !== "string" || !subPiSessionId) {
+    log.info("subagent.lookup_not_found", { parentSessionId, toolCallId });
+    throw new Error("Subagent session not found for tool call");
+  }
+
+  const rehydrated = await loadSessionFromDisk(
+    subSessionId,
+    subPiSessionId,
+    parent.project,
+    undefined,
+    {
+      sessionsSubdir: "subagents",
+      parentSessionId,
+      parentToolCallId: toolCallId,
+    },
+  );
+  if (!rehydrated) {
+    log.info("subagent.lookup_rehydrate_failed", { parentSessionId, toolCallId, subPiSessionId });
+    throw new Error("Subagent session not found for tool call");
+  }
+  return { subSessionId: rehydrated.sessionId, subPiSessionId: rehydrated.piSessionId };
 }
 
 export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

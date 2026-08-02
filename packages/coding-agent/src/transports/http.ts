@@ -18,6 +18,7 @@ import {
   connectToSession,
   cancelRun,
   getSessionStatus,
+  getSubagentSessionForToolCall,
   getSessionModel,
   getSessionSkills,
 } from "../session-manager";
@@ -304,6 +305,14 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         result = await cancelRun(sessionId);
         break;
       }
+      case "getSubagentSession": {
+        const { parentSessionId, toolCallId } = params as {
+          parentSessionId: string;
+          toolCallId: string;
+        };
+        result = await getSubagentSessionForToolCall(parentSessionId, toolCallId);
+        break;
+      }
       case "getSessionStatus": {
         const { sessionId, parentSessionId } = params as {
           sessionId: string;
@@ -407,6 +416,11 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
       };
     case "getSessionSkills":
       return { sessionId };
+    case "getSubagentSession":
+      return {
+        hasParentSessionId: typeof p.parentSessionId === "string",
+        toolCallId: typeof p.toolCallId === "string" ? p.toolCallId : undefined,
+      };
     case "disposeSession":
     case "cancelRun":
     case "getSessionStatus":
