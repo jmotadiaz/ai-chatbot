@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import {
   createAgentSessionRuntime,
   createAgentSessionFromServices,
@@ -19,6 +19,7 @@ import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
+import { startSubagentCollector } from "./subagent-collector";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -60,6 +61,8 @@ interface SessionEntry {
   project: string;
   /** Set for subagent sessions: id of the parent app session that dispatched them. */
   parentSessionId?: string;
+  /** Set for subagent sessions: the parent tool call that dispatched them. */
+  parentToolCallId?: string;
   runtime: Awaited<ReturnType<typeof createAgentSessionRuntime>>;
   eventLog?: SessionEventLog;
   activeRun?: {
@@ -966,6 +969,18 @@ export async function disposeSession(sessionId: string): Promise<void> {
   } else {
     log.warn("session.dispose_not_found", { sessionId });
   }
+  // Subagent sessions dispatched by this session go down with it (spec §4.4);
+  // their files on disk are kept.
+  const childIds = [...sessions.values()]
+    .filter((candidate) => candidate.parentSessionId === sessionId)
+    .map((candidate) => candidate.sessionId);
+  for (const childId of childIds) {
+    const child = sessions.get(childId);
+    if (!child) continue;
+    log.info("session.dispose_child", { sessionId: childId, parentSessionId: sessionId });
+    child.runtime.session.dispose();
+    sessions.delete(childId);
+  }
 }
 
 export interface SessionStatus {
@@ -1166,6 +1181,198 @@ export async function connectToSession(
     unsubscribe?.();
     logConnectSummary("client_disconnected");
   };
+}
+
+export interface SubagentRunParams {
+  task: string;
+  description?: string;
+  model?: string;
+  cwd?: string;
+}
+
+export interface SubagentDetails {
+  subSessionId: string;
+  subPiSessionId: string;
+  parentSessionId: string;
+  parentToolCallId: string;
+  description?: string;
+}
+
+export interface SubagentRunResult {
+  content: Array<{ type: "text"; text: string }>;
+  details: SubagentDetails;
+  isError?: boolean;
+}
+
+/**
+ * Resolve the child cwd: the `cwd` param when given, else the parent's cwd.
+ * A given param must resolve to an existing directory inside the project
+ * root — a worktree at `<project>/.worktrees/<name>` is valid; anything
+ * outside the project or missing is rejected so the model can retry (D7).
+ */
+export function resolveSubagentCwd(
+  projectCwd: string,
+  cwdParam?: string,
+): { ok: true; cwd: string } | { ok: false; error: string } {
+  if (!cwdParam) return { ok: true, cwd: projectCwd };
+  const resolved = path.resolve(projectCwd, cwdParam);
+  const rel = path.relative(projectCwd, resolved);
+  if (rel === "" || rel.startsWith("..") || path.isAbsolute(rel)) {
+    return { ok: false, error: `cwd must resolve inside the project root: ${cwdParam}` };
+  }
+  if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
+    return { ok: false, error: `cwd is not an existing directory: ${cwdParam}` };
+  }
+  return { ok: true, cwd: resolved };
+}
+
+/**
+ * Resolve the child model: strict match of the `model` param against the
+ * available `provider/model-id` labels, else inherit the parent's model.
+ * No match → error carrying the full list so the model can retry (D4).
+ */
+export function resolveSubagentModelId(
+  parentModel: { provider: string; id: string } | undefined,
+  available: string[],
+  modelParam?: string,
+): { ok: true; modelId?: string } | { ok: false; error: string } {
+  if (!modelParam) {
+    return { ok: true, modelId: parentModel ? `${parentModel.provider}/${parentModel.id}` : undefined };
+  }
+  if (available.includes(modelParam)) return { ok: true, modelId: modelParam };
+  return {
+    ok: false,
+    error: `Unknown model "${modelParam}". Available models: ${available.join(", ")}`,
+  };
+}
+
+function lastAssistantText(messages: ReadonlyArray<any>): string {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i];
+    if (msg?.role !== "assistant") continue;
+    if (typeof msg.content === "string") return msg.content;
+    if (Array.isArray(msg.content)) {
+      return msg.content
+        .filter((c: any) => c?.type === "text")
+        .map((c: any) => c.text ?? "")
+        .join("\n");
+    }
+    return "";
+  }
+  return "";
+}
+
+/**
+ * Dispatch a subagent: create a real Pi session (persisted under
+ * `<SESSIONS_DIR>/subagents/`, runtime without the subagent extension),
+ * register it in the sessions Map with its parent linkage, stream its
+ * events into its own event log via the slim collector, and resolve with
+ * the child's final assistant text plus the linkage details Pi persists
+ * in the tool result (spec §4.2).
+ */
+export async function runSubagent(
+  parentPiSessionId: string,
+  toolCallId: string,
+  params: SubagentRunParams,
+  signal?: AbortSignal,
+): Promise<SubagentRunResult> {
+  const log = getTraceLogger("worker");
+  const parent = [...sessions.values()].find((e) => e.piSessionId === parentPiSessionId);
+  if (!parent) throw new Error(`Parent session not found for pi session ${parentPiSessionId}`);
+
+  const failedDetails = (): SubagentDetails => ({
+    // No session was created on validation failure, so no link should
+    // resolve: getSubagentSessionForToolCall treats empty ids as not found.
+    subSessionId: "",
+    subPiSessionId: "",
+    parentSessionId: parent.sessionId,
+    parentToolCallId: toolCallId,
+    description: params.description,
+  });
+  const errorResult = (error: string): SubagentRunResult => ({
+    content: [{ type: "text", text: error }],
+    details: failedDetails(),
+    isError: true,
+  });
+
+  const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
+  const parentCwd = resolveProjectPath(projectsRoot, parent.project);
+
+  const cwdResult = resolveSubagentCwd(parentCwd, params.cwd);
+  if (!cwdResult.ok) return errorResult(cwdResult.error);
+
+  const available = (await getAvailableModels()).map((m) => m.label);
+  const modelResult = resolveSubagentModelId(parent.runtime.session.model, available, params.model);
+  if (!modelResult.ok) return errorResult(modelResult.error);
+
+  const sessionManager = SessionManager.create(
+    path.join(process.env.CODING_AGENT_SESSIONS_DIR!, "subagents"),
+  );
+  const subPiSessionId = sessionManager.getSessionId();
+  const subSessionId = crypto.randomUUID();
+  const createRuntime = makeCreateRuntime(modelResult.modelId, { includeSubagentExtension: false });
+
+  const stop = log.startTimer("subagent.runtime_create");
+  const runtime = await createAgentSessionRuntime(createRuntime, {
+    cwd: cwdResult.cwd,
+    agentDir: getAgentDir(),
+    sessionManager,
+  });
+  stop();
+
+  const entry: SessionEntry = {
+    sessionId: subSessionId,
+    piSessionId: subPiSessionId,
+    project: parent.project,
+    parentSessionId: parent.sessionId,
+    parentToolCallId: toolCallId,
+    runtime,
+    eventLog: new SessionEventLog(),
+  };
+  sessions.set(subSessionId, entry);
+
+  const runId = crypto.randomUUID();
+  const stopCollector = startSubagentCollector(entry, runId);
+  const onAbort = () => { void runtime.session.abort(); };
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  log.info("subagent.dispatch", {
+    subSessionId,
+    subPiSessionId,
+    parentSessionId: parent.sessionId,
+    parentToolCallId: toolCallId,
+    cwd: cwdResult.cwd,
+    modelId: modelResult.modelId,
+  });
+
+  const makeDetails = (): SubagentDetails => ({
+    subSessionId,
+    subPiSessionId,
+    parentSessionId: parent.sessionId,
+    parentToolCallId: toolCallId,
+    description: params.description,
+  });
+
+  try {
+    await runtime.session.prompt(params.task);
+    const text = lastAssistantText(runtime.session.messages);
+    return {
+      content: [{ type: "text", text: signal?.aborted ? `[aborted] ${text}` : text || "(subagent produced no text output)" }],
+      details: makeDetails(),
+    };
+  } catch (err) {
+    log.error("subagent.failed", { subSessionId, error: String(err) });
+    return {
+      content: [{ type: "text", text: `Subagent failed: ${String(err)}` }],
+      details: makeDetails(),
+      isError: true,
+    };
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+    stopCollector();
+    // The entry stays in the sessions Map: the dedicated view needs it alive
+    // for snapshot/stream (spec §4.2.7). disposeSession(parent) reaps it.
+  }
 }
 
 export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

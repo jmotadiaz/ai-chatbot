@@ -5,7 +5,7 @@ import { PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 interface SubagentCollectorEntry {
   sessionId: string;
   runtime: { session: { subscribe: (cb: (e: unknown) => void) => () => void } };
-  eventLog: SessionEventLog;
+  eventLog?: SessionEventLog;
   snapshotCursorSeq?: number;
 }
 
@@ -21,14 +21,15 @@ export function startSubagentCollector(
 ): () => void {
   const log = getTraceLogger("worker");
   const translator = new PiToAguiTranslator({ threadId: entry.sessionId, runId });
+  const eventLog = (entry.eventLog ??= new SessionEventLog());
 
   const unsubscribe = entry.runtime.session.subscribe((rawEvent) => {
     const event = rawEvent as { type: string };
     for (const aguiEvent of translator.translate(rawEvent as never)) {
-      entry.eventLog.append(aguiEvent as BaseEvent);
+      eventLog.append(aguiEvent as BaseEvent);
     }
     if (event.type === "message_end" || event.type === "tool_execution_end") {
-      entry.snapshotCursorSeq = entry.eventLog.lastSeq;
+      entry.snapshotCursorSeq = eventLog.lastSeq;
     }
   });
 
