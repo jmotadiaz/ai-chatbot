@@ -53,4 +53,16 @@ describe("summarizeToolCall", () => {
     expect(summarizeToolCall("bash", undefined)).toBe("");
     expect(summarizeToolCall("read", null)).toBe("");
   });
+
+  it("prefers description for subagent", () => {
+    expect(
+      summarizeToolCall("subagent", { description: "Explore auth flow", task: "do x" }),
+    ).toBe("Explore auth flow");
+  });
+
+  it("falls back to the first task line for subagent", () => {
+    expect(
+      summarizeToolCall("subagent", { task: "First line\nSecond line" }),
+    ).toBe("First line");
+  });
 });

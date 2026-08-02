@@ -26,6 +26,12 @@ export function summarizeToolCall(name: string, args: unknown): string {
       return String(a?.pattern ?? a?.path ?? "");
     case "ls":
       return String(a?.path ?? "");
+    case "subagent": {
+      const description = typeof a?.description === "string" ? a.description.trim() : "";
+      if (description) return truncate(description);
+      const task = typeof a?.task === "string" ? a.task : "";
+      return truncate(task.split("\n", 1)[0] ?? "");
+    }
     default:
       return truncate(safeStringify(a));
   }

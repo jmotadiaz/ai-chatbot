@@ -10,6 +10,7 @@ import {
   Search,
   FolderOpen,
   Wrench,
+  Bot,
   Check,
   X,
   Loader2,
@@ -17,6 +18,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ToolCallGroup as Group } from "@/lib/features/code/types";
+import { useFileBrowserIds } from "./file-browser/file-browser-provider";
+import { SubagentToolLink } from "./subagent-tool-link";
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
   bash: Terminal,
@@ -27,6 +30,7 @@ const TOOL_ICONS: Record<string, LucideIcon> = {
   grep: Search,
   find: FolderOpen,
   ls: FolderOpen,
+  subagent: Bot,
 };
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
@@ -38,6 +42,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   grep: "Grep",
   find: "Find",
   ls: "Ls",
+  subagent: "Subagent",
 };
 
 const MAX_LINES = 20;
@@ -49,6 +54,7 @@ export interface ToolCallGroupProps {
 export const ToolCallGroup = React.memo<ToolCallGroupProps>(
   ({ group }) => {
     const [expanded, setExpanded] = useState(false);
+    const fileBrowserIds = useFileBrowserIds();
     const Icon = TOOL_ICONS[group.name.toLowerCase()] ?? Wrench;
     const displayName =
       TOOL_DISPLAY_NAMES[group.name.toLowerCase()] ?? group.name;
@@ -91,6 +97,13 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
               {group.args}
             </pre>
           </div>
+          {group.name === "subagent" && fileBrowserIds && (
+            <SubagentToolLink
+              project={fileBrowserIds.project}
+              parentSessionId={fileBrowserIds.sessionId}
+              toolCallId={group.id}
+            />
+          )}
           {group.result !== undefined && (
             <div className="border-t border-border">
               <div className="px-3 pt-2 pb-1 text-xs font-medium">

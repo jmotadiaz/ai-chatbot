@@ -184,6 +184,17 @@ export const FileBrowserProvider: React.FC<FileBrowserProviderProps> = ({
   );
 };
 
+/**
+ * Nullable access to just the provider's routing ids, for components that
+ * can render outside a FileBrowserProvider (e.g. unit tests, the subagent
+ * sub-session view). Unlike useFileBrowser it never throws and does not
+ * subscribe to the store.
+ */
+export function useFileBrowserIds(): { project: string; sessionId: string } | null {
+  const ctx = useContext(FileBrowserContext);
+  return ctx ? { project: ctx.project, sessionId: ctx.sessionId } : null;
+}
+
 export function useFileBrowser() {
   const ctx = useContext(FileBrowserContext);
   if (!ctx) {
