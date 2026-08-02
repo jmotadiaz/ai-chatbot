@@ -18,6 +18,7 @@
     "./reconnect-prelude": "./src/reconnect-prelude.ts",
     "./replay-compaction": "./src/replay-compaction.ts",
     "./session-manager": "./src/session-manager.ts",
+    "./subagent-collector": "./src/subagent-collector.ts",
     "./transports/http": "./src/transports/http.ts",
     "./turn-git-state": "./src/turn-git-state.ts"
   },
