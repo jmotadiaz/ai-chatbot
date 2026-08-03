@@ -99,6 +99,22 @@ describe("generateModelsJson", () => {
     });
   });
 
+  it("describes Qwen 3.8 Max, which Pi does not ship yet", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Qwen 3.8 Max")!;
+    const [max] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(max.id).toBe("qwen3.8-max");
+    expect(max.contextWindow).toBe(1_000_000);
+    expect(max.maxTokens).toBe(65_536);
+    expect(max.cost).toEqual({
+      input: 2.5,
+      output: 7.5,
+      cacheRead: 0.5,
+      cacheWrite: 3.125,
+    });
+    expect(max.reasoning).toBe(true);
+  });
+
   it("throws for a model Pi does not know and the catalog does not describe", () => {
     const entry: ModelCatalogEntry = {
       id: "Brand New Model",

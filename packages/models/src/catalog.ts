@@ -86,8 +86,8 @@ export const MODEL_CATALOG = [
     supportedFiles: ["img"],
   },
   {
-    // The only invocable model Pi does not ship, so it has to describe its own
-    // limits and cost — values taken from the opencode-go registry.
+    // Invocable models Pi does not ship must describe their own limits and
+    // cost — values taken from the opencode-go registry.
     id: "Kimi K3",
     userInvocable: true,
     provider: { kind: "opencodeGo", modelId: "kimi-k3" },
@@ -115,6 +115,18 @@ export const MODEL_CATALOG = [
     company: "alibaba",
     reasoning: true,
     supportedFiles: ["img"],
+  },
+  {
+    // Pi does not ship this model, so it describes its own limits and cost —
+    // taken from the opencode-go registry.
+    id: "Qwen 3.8 Max",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "qwen3.8-max" },
+    company: "alibaba",
+    reasoning: true,
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
   },
   {
     id: "MiMo V2.5",

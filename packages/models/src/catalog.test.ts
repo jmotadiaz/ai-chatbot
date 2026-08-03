@@ -29,6 +29,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Kimi K3",
       "MiniMax M3",
       "Qwen 3.7 Plus",
+      "Qwen 3.8 Max",
       "MiMo V2.5",
       "MiMo V2.5 Pro",
     ]);
