@@ -29,6 +29,12 @@ export {
 } from "./context";
 export { createTracingMiddleware } from "./model-middleware";
 export { closeAllTraceSinks, getSharedTraceSink } from "./shared-sink";
+export {
+  acquireTraceSink,
+  releaseTraceSink,
+  retainTraceSink,
+  traceSinkRefCount,
+} from "./sink-registry";
 export { wrapWithTracing } from "./wrap-with-tracing";
 
 /** Get a TraceLogger scoped to the current AsyncLocalStorage context. */

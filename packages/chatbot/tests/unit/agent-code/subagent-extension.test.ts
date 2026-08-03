@@ -20,6 +20,9 @@ type ToolExecute = (
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
+  acquireTraceSink: async () => null,
+  releaseTraceSink: async () => {},
+  retainTraceSink: () => async () => {},
   getTraceLogger: () => ({
     info: () => {}, warn: () => {}, error: () => {}, debug: () => {},
     startTimer: () => () => {},

@@ -2,9 +2,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  FileTraceSink,
+  acquireTraceSink,
   getTraceLogger,
-  isTracingEnabled,
+  releaseTraceSink,
   runWithTraceContext,
   setTraceSessionId,
 } from "tracing";
@@ -65,18 +65,18 @@ async function handleHttpRequest(req: IncomingMessage, res: ServerResponse) {
 
   const body = await readRequestBody(req);
   const { runId, sessionId, method } = parseTraceMetadata(body);
-  const sink = isTracingEnabled()
-    ? new FileTraceSink({ runId, truncate: false })
-    : null;
+  // The sink is ref-counted per run, not owned by this request: work started
+  // here can outlive the response (a prompt turn keeps running after the
+  // browser disconnects) and must keep tracing until it really ends.
+  const sink = await acquireTraceSink({ runId, truncate: false });
 
-  await sink?.open();
   try {
     await runWithTraceContext({ runId, sessionId, sink }, async () => {
       const response = await handleRpc(body);
       await writeFetchResponseToNode(response, res, { method, sessionId });
     });
   } finally {
-    await sink?.close();
+    await releaseTraceSink(runId);
   }
 }
 

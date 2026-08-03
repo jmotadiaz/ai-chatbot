@@ -3,6 +3,9 @@ import { inlineAttachedFiles } from "coding-agent/attached-files";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
+  acquireTraceSink: async () => null,
+  releaseTraceSink: async () => {},
+  retainTraceSink: () => async () => {},
   getTraceLogger: () => ({
     info: () => {},
     warn: () => {},

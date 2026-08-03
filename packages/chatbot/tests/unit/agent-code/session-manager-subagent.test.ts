@@ -1,17 +1,40 @@
-import { describe, it, expect, vi } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { describe, it, expect, vi } from "vitest";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
+  acquireTraceSink: async () => null,
+  releaseTraceSink: async () => {},
+  retainTraceSink: () => async () => {},
   getTraceLogger: () => ({
     info: () => {}, warn: () => {}, error: () => {}, debug: () => {},
     startTimer: () => () => {},
   }),
 }));
 
-const { resolveSubagentCwd, resolveSubagentModelId } = await import("coding-agent/session-manager");
+const { resolveSubagentCwd, resolveSubagentModelId, ensureSubagentSessionsDir } =
+  await import("coding-agent/session-manager");
+
+describe("ensureSubagentSessionsDir", () => {
+  it("creates the subagents dir when it is missing", () => {
+    const sessionsDir = fs.mkdtempSync(path.join(os.tmpdir(), "subagent-sessions-"));
+    const dir = ensureSubagentSessionsDir(sessionsDir);
+    expect(dir).toBe(path.join(sessionsDir, "subagents"));
+    expect(fs.statSync(dir).isDirectory()).toBe(true);
+  });
+
+  it("leaves an existing dir untouched", () => {
+    const sessionsDir = fs.mkdtempSync(path.join(os.tmpdir(), "subagent-sessions-"));
+    const dir = path.join(sessionsDir, "subagents");
+    fs.mkdirSync(dir);
+    fs.writeFileSync(path.join(dir, "existing.jsonl"), "{}\n");
+
+    expect(ensureSubagentSessionsDir(sessionsDir)).toBe(dir);
+    expect(fs.readdirSync(dir)).toEqual(["existing.jsonl"]);
+  });
+});
 
 describe("resolveSubagentCwd", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "subagent-cwd-"));

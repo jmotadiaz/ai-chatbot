@@ -12,6 +12,9 @@ vi.mock("@/lib/features/auth/with-auth/handler", () => ({
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
+  acquireTraceSink: async () => null,
+  releaseTraceSink: async () => {},
+  retainTraceSink: () => async () => {},
   FileTraceSink: class {
     async open() {}
     async close() {}

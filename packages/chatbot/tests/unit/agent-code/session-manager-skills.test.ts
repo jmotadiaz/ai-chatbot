@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
+  acquireTraceSink: async () => null,
+  releaseTraceSink: async () => {},
+  retainTraceSink: () => async () => {},
   getTraceLogger: () => ({
     info: () => {},
     warn: () => {},

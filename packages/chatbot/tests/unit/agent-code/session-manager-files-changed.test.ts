@@ -18,6 +18,9 @@ import { clearInheritedGitRepositoryEnv } from "../../helpers/git-env";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
+  acquireTraceSink: async () => null,
+  releaseTraceSink: async () => {},
+  retainTraceSink: () => async () => {},
   getTraceLogger: () => ({
     info: () => {},
     warn: () => {},

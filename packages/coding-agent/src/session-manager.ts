@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import {
   createAgentSessionRuntime,
   createAgentSessionFromServices,
@@ -11,7 +11,7 @@ import {
   stripFrontmatter,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
-import { getTraceLogger } from "tracing";
+import { getTraceLogger, retainTraceSink } from "tracing";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
 import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
@@ -686,6 +686,13 @@ function startPromptCollector(
     sawTerminal: false,
   };
 
+  // The turn runs detached from the `sendPrompt` request: the browser can drop
+  // the response (navigating to a subagent view, a reload) while the agent
+  // keeps working for minutes. Hold the run's trace sink open for the turn's
+  // real lifetime so everything it does afterwards — tool calls, subagent
+  // dispatches, the terminal event — still lands in the trace.
+  const releaseTurnSink = retainTraceSink(runId);
+
   const promptStop = log.startTimer("session.prompt_execution");
   runtime.session
     .prompt(promptText, piImages.length > 0 ? { images: piImages } : undefined)
@@ -706,6 +713,7 @@ function startPromptCollector(
       unsubscribe();
       entry.activeRun = undefined;
       logCollectorSummary("complete");
+      await releaseTurnSink();
     })
     .catch(async (err) => {
       promptStop();
@@ -723,6 +731,7 @@ function startPromptCollector(
       unsubscribe();
       entry.activeRun = undefined;
       logCollectorSummary("error");
+      await releaseTurnSink();
     });
 }
 
@@ -1261,6 +1270,18 @@ export function resolveSubagentModelId(
   };
 }
 
+/**
+ * Resolve `<SESSIONS_DIR>/subagents/`, creating it when it is missing. Pi
+ * validates a session's stored working directory while it builds the runtime,
+ * so a subagents dir that does not exist yet makes the very first dispatch of
+ * a fresh install fail with "Stored session working directory does not exist".
+ */
+export function ensureSubagentSessionsDir(sessionsDir: string): string {
+  const dir = path.join(sessionsDir, "subagents");
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 function lastAssistantText(messages: ReadonlyArray<any>): string {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i];
@@ -1321,7 +1342,7 @@ export async function runSubagent(
   if (!modelResult.ok) return errorResult(modelResult.error);
 
   const sessionManager = SessionManager.create(
-    path.join(process.env.CODING_AGENT_SESSIONS_DIR!, "subagents"),
+    ensureSubagentSessionsDir(process.env.CODING_AGENT_SESSIONS_DIR!),
   );
   const subPiSessionId = sessionManager.getSessionId();
   const subSessionId = crypto.randomUUID();
