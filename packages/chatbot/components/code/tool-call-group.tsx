@@ -17,9 +17,9 @@ import {
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
-import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 import { useFileBrowserIds } from "./file-browser/file-browser-provider";
 import { SubagentToolLink } from "./subagent-tool-link";
+import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
   bash: Terminal,
@@ -51,18 +51,83 @@ export interface ToolCallGroupProps {
   group: Group;
 }
 
+interface ToolCallGroupBodyProps {
+  group: Group;
+  expanded: boolean;
+  onExpand: () => void;
+}
+
+/**
+ * Args/output/subagent link, split out so a collapsed group renders none of
+ * it. A `<details>` keeps its children in the DOM when closed, and a long
+ * session holds well over a thousand tool calls — leaving the bodies mounted
+ * costs a DOM node (and a React reconciliation) per line of every tool result
+ * ever produced. Mounting on open also defers the output splitting below and
+ * SubagentToolLink's lookup until something actually needs them.
+ */
+const ToolCallGroupBody: React.FC<ToolCallGroupBodyProps> = ({
+  group,
+  expanded,
+  onExpand,
+}) => {
+  const fileBrowserIds = useFileBrowserIds();
+  const lines = (group.result ?? "").split("\n");
+  const clamped = lines.length > MAX_LINES && !expanded;
+  const visibleResult = clamped
+    ? lines.slice(0, MAX_LINES).join("\n")
+    : (group.result ?? "");
+
+  return (
+    <div>
+      <div className="border-t border-border">
+        <div className="px-3 pt-2 pb-1 text-xs font-medium">
+          Args
+        </div>
+        <pre className="px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap">
+          {group.args}
+        </pre>
+      </div>
+      {group.name === "subagent" && fileBrowserIds && (
+        <SubagentToolLink
+          project={fileBrowserIds.project}
+          parentSessionId={fileBrowserIds.sessionId}
+          toolCallId={group.id}
+        />
+      )}
+      {group.result !== undefined && (
+        <div className="border-t border-border">
+          <div className="px-3 pt-2 pb-1 text-xs font-medium">
+            Output
+          </div>
+          <pre
+            className={`px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap ${
+              group.status === "error" ? "text-red-600 dark:text-red-400" : ""
+            }`}
+          >
+            {visibleResult}
+          </pre>
+          {clamped && (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="block w-full px-3 py-1 text-xs text-muted-foreground hover:bg-secondary"
+            >
+              Show more
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ToolCallGroup = React.memo<ToolCallGroupProps>(
   ({ group }) => {
+    const [open, setOpen] = useState(false);
     const [expanded, setExpanded] = useState(false);
-    const fileBrowserIds = useFileBrowserIds();
     const Icon = TOOL_ICONS[group.name.toLowerCase()] ?? Wrench;
     const displayName =
       TOOL_DISPLAY_NAMES[group.name.toLowerCase()] ?? group.name;
-    const lines = (group.result ?? "").split("\n");
-    const clamped = lines.length > MAX_LINES && !expanded;
-    const visibleResult = clamped
-      ? lines.slice(0, MAX_LINES).join("\n")
-      : (group.result ?? "");
 
     return (
       <details
@@ -70,6 +135,7 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
         data-tool={group.name}
         data-status={group.status}
         className="rounded-md border border-border bg-card overflow-hidden group"
+        onToggle={(e) => setOpen(e.currentTarget.open)}
       >
         <summary className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
           <Icon className="size-4 text-muted-foreground" />
@@ -88,46 +154,13 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
           )}
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
-        <div>
-          <div className="border-t border-border">
-            <div className="px-3 pt-2 pb-1 text-xs font-medium">
-              Args
-            </div>
-            <pre className="px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap">
-              {group.args}
-            </pre>
-          </div>
-          {group.name === "subagent" && fileBrowserIds && (
-            <SubagentToolLink
-              project={fileBrowserIds.project}
-              parentSessionId={fileBrowserIds.sessionId}
-              toolCallId={group.id}
-            />
-          )}
-          {group.result !== undefined && (
-            <div className="border-t border-border">
-              <div className="px-3 pt-2 pb-1 text-xs font-medium">
-                Output
-              </div>
-              <pre
-                className={`px-3 pb-2 text-xs overflow-x-auto whitespace-pre-wrap ${
-                  group.status === "error" ? "text-red-600 dark:text-red-400" : ""
-                }`}
-              >
-                {visibleResult}
-              </pre>
-              {clamped && (
-                <button
-                  type="button"
-                  onClick={() => setExpanded(true)}
-                  className="block w-full px-3 py-1 text-xs text-muted-foreground hover:bg-secondary"
-                >
-                  Show more
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        {open && (
+          <ToolCallGroupBody
+            group={group}
+            expanded={expanded}
+            onExpand={() => setExpanded(true)}
+          />
+        )}
       </details>
     );
   },

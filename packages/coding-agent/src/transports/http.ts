@@ -21,7 +21,9 @@ import {
   getSubagentSessionForToolCall,
   getSessionModel,
   getSessionSkills,
+  runSubagent,
 } from "../session-manager";
+import { setSubagentRunner } from "../subagent-bridge";
 
 export interface HttpTransportOptions {
   port: number;
@@ -35,6 +37,11 @@ interface RequestTraceMetadata {
 }
 
 export function startHttpTransport(options: HttpTransportOptions) {
+  // Must happen before any session exists: Pi loads the subagent extension
+  // when it builds a session runtime, and the extension resolves the runner
+  // off globalThis rather than importing it (see subagent-bridge).
+  setSubagentRunner(runSubagent);
+
   const server = createServer(handleHttpRequest);
   const onListening = () => {
     const host = options.host ?? "localhost";

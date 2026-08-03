@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { AgentMessage } from "@/components/code/agent-message";
+
+// AgentMessage reaches SubagentToolLink, which pulls in the "use server"
+// actions module, whose next-auth import does not resolve under vitest.
+vi.mock("@/lib/features/code/actions", () => ({
+  getSubagentSessionAction: vi.fn(async () => ({ error: "not found" })),
+}));
+
+const { AgentMessage } = await import("@/components/code/agent-message");
 
 afterEach(cleanup);
 

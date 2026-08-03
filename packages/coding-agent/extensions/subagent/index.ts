@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { runSubagent } from "../../src/session-manager";
+import { getSubagentRunner } from "../../src/subagent-bridge";
 import { buildSubagentToolDescription } from "./description";
 
 const SubagentParams = Type.Object({
@@ -28,6 +28,10 @@ const SubagentParams = Type.Object({
  * src/session-manager.ts so it stays unit-testable. Loaded via
  * additionalExtensionPaths; child sessions are created without this
  * extension (structural anti-recursion, spec §4.2).
+ *
+ * The runner is resolved off globalThis instead of imported: Pi loads this
+ * file through jiti, so importing session-manager would hand us a second,
+ * empty copy of the worker's session state (see src/subagent-bridge).
  */
 export default function registerSubagentExtension(pi: ExtensionAPI): void {
   pi.registerTool({
@@ -45,6 +49,19 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
             },
           ],
           details: { reserved: true },
+          isError: true,
+        };
+      }
+      const runSubagent = getSubagentRunner();
+      if (!runSubagent) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Subagent runner unavailable: the worker did not publish it. This session cannot dispatch subagents.",
+            },
+          ],
+          details: { unavailable: true },
           isError: true,
         };
       }

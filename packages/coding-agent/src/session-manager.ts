@@ -20,6 +20,11 @@ import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
 import { startSubagentCollector } from "./subagent-collector";
+import type {
+  SubagentRunParams,
+  SubagentDetails,
+  SubagentRunResult,
+} from "./subagent-bridge";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -1206,26 +1211,13 @@ export async function connectToSession(
   };
 }
 
-export interface SubagentRunParams {
-  task: string;
-  description?: string;
-  model?: string;
-  cwd?: string;
-}
-
-export interface SubagentDetails {
-  subSessionId: string;
-  subPiSessionId: string;
-  parentSessionId: string;
-  parentToolCallId: string;
-  description?: string;
-}
-
-export interface SubagentRunResult {
-  content: Array<{ type: "text"; text: string }>;
-  details: SubagentDetails;
-  isError?: boolean;
-}
+// Defined in subagent-bridge so the Pi extension can type against them
+// without importing this module (see subagent-bridge for why that matters).
+export type {
+  SubagentRunParams,
+  SubagentDetails,
+  SubagentRunResult,
+} from "./subagent-bridge";
 
 /**
  * Resolve the child cwd: the `cwd` param when given, else the parent's cwd.
