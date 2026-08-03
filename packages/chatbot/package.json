@@ -36,7 +36,7 @@
     "mcp:start": "npm run mcp-server",
     "mcp-server": "dotenv -e .env.development.local -- tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts",
     "worker:dev": "pnpm --filter coding-agent transport:http",
-    "test:unit": "vitest run",
+    "test:unit": "NODE_ENV=test vitest run",
     "prepare": "husky"
   },
   "dependencies": {

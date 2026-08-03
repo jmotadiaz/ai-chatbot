@@ -10,6 +10,11 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // React 19 only exports `act` from its development build; force test
+    // mode so the suite is not affected by an ambient NODE_ENV=production.
+    env: {
+      NODE_ENV: "test",
+    },
     include: [
       "tests/unit/**/*.test.ts",
       "tests/unit/**/*.test.tsx",

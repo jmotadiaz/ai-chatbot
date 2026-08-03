@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test:unit": "vitest run --passWithNoTests",
+    "test:unit": "NODE_ENV=test vitest run --passWithNoTests",
     "type:check": "tsc --noEmit"
   },
   "devDependencies": {
