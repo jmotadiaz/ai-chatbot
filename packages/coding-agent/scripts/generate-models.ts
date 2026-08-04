@@ -25,6 +25,8 @@ function readBuiltInBaselines(): Map<string, PiModelBaseline> {
           contextWindow: model.contextWindow,
           maxTokens: model.maxTokens,
           cost: model.cost,
+          api: (model as { api?: string }).api,
+          baseUrl: (model as { baseUrl?: string }).baseUrl,
         },
       ]),
   );

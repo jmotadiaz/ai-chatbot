@@ -21,6 +21,11 @@ const builtIns = new Map<string, PiModelBaseline>(
       contextWindow: 1_000_000,
       maxTokens: 384_000,
       cost: COST,
+      // Mirrors Pi's built-ins: anthropic-messages endpoints differ from the
+      // provider's openai-completions default (deepseek-v4-flash).
+      ...(e.provider.modelId === "minimax-m3"
+        ? { api: "anthropic-messages", baseUrl: "https://opencode.ai/zen/go" }
+        : {}),
     },
   ]),
 );
@@ -125,6 +130,19 @@ describe("generateModelsJson", () => {
     expect(() => generate([entry])).toThrow(
       /Brand New Model.*contextWindow, maxTokens, cost/s,
     );
+  });
+
+  it("inherits Pi's api and baseUrl from the baseline so routing is preserved", () => {
+    const miniMax = generate().providers["opencode-go"].models.find(
+      (m) => m.name === "MiniMax M3",
+    );
+    // The generated models.json must pin the built-in endpoint; otherwise
+    // pi's ModelRegistry fills api/baseUrl from the provider's first built-in
+    // model (deepseek-v4-flash, openai-completions) and minimax's
+    // anthropic-messages endpoint is silently rewritten — its thinking then
+    // arrives inline as <think> text and renders as a plain model response.
+    expect(miniMax?.api).toBe("anthropic-messages");
+    expect(miniMax?.baseUrl).toBe("https://opencode.ai/zen/go");
   });
 
   it("accepts a model Pi does not know when the catalog describes it fully", () => {

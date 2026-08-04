@@ -638,7 +638,17 @@ function startPromptCollector(
   const unsubscribe = runtime.session.subscribe((rawEvent) => {
     const event = rawEvent as CodingAgentEvent;
     incrementCount(piEventCounts, event.type);
-    log.debug("pi.event", { type: event.type });
+    if (event.type === "message_update") {
+      const ame = event.assistantMessageEvent as
+        | { type?: string }
+        | undefined;
+      log.debug("pi.event", {
+        type: event.type,
+        deltaType: ame?.type,
+      });
+    } else {
+      log.debug("pi.event", { type: event.type });
+    }
 
     // Stamp the client's id onto Pi's own message object before it gets
     // persisted. Pi's AgentSession emits `message_end` synchronously and
@@ -747,6 +757,18 @@ export async function sendPrompt(
     log.error("session.not_found", { sessionId });
     throw new Error("Session not found");
   }
+
+  const s = entry.runtime.session as unknown as {
+    thinkingLevel?: string;
+    model?: { id?: string; api?: string; reasoning?: boolean };
+  };
+  log.info("debug.agent_state", {
+    sessionId,
+    thinkingLevel: s.thinkingLevel,
+    modelId: s.model?.id,
+    api: s.model?.api,
+    reasoning: s.model?.reasoning,
+  });
 
   const afterSeq = ensureEventLog(entry).lastSeq;
   // Captured before the run starts so the baseline can never include the

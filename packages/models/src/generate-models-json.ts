@@ -16,6 +16,10 @@ export interface PiModelBaseline {
   contextWindow?: number;
   maxTokens?: number;
   cost?: ModelCost;
+  /** Pi's built-in api flavor (e.g. "openai-completions", "anthropic-messages"). */
+  api?: string;
+  /** Pi's built-in base url for the model. */
+  baseUrl?: string;
 }
 
 export interface PiModelDefinition {
@@ -26,6 +30,8 @@ export interface PiModelDefinition {
   contextWindow: number;
   maxTokens: number;
   cost: ModelCost;
+  api?: string;
+  baseUrl?: string;
 }
 
 export interface PiModelsJson {
@@ -75,6 +81,13 @@ function buildModelDefinition(
     contextWindow,
     maxTokens,
     cost,
+    // Emit Pi's built-in api/baseUrl so the runtime routes to the correct
+    // endpoint. Without them, pi's ModelRegistry fills the gaps from the first
+    // built-in model of the provider, which silently rewrites e.g.
+    // minimax-m3 (anthropic-messages) and qwen3.7-plus (anthropic-messages)
+    // to openai-completions and breaks thinking/reasoning streaming.
+    api: baseline?.api,
+    baseUrl: baseline?.baseUrl,
   };
 }
 
