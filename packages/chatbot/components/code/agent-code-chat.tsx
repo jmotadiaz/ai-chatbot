@@ -8,11 +8,14 @@ import { SkillsControl } from "./skills-control";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
 import { serializeComments } from "./file-browser/serialize-comments";
+import { PromptFormModal } from "./prompt-form-modal";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 import { useCodingAgentSkills } from "@/lib/features/code/hooks/use-coding-agent-skills";
+import { useCodingAgentPrompts } from "@/lib/features/code/hooks/use-coding-agent-prompts";
+import type { PromptSummary } from "@/lib/features/code/worker-client";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 import { prependSkillCommands } from "@/lib/features/code/skill-commands";
 import { handleLocalFileUpload } from "@/lib/features/attachment/utils";
@@ -65,6 +68,14 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     error: skillsError,
   } = useCodingAgentSkills(sessionId, !isLoading);
 
+  const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
+
+  const {
+    prompts,
+    isLoading: isLoadingPrompts,
+    error: promptsError,
+  } = useCodingAgentPrompts(sessionId, !isLoading);
+
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     usePromptRefiner({
       input,
@@ -86,6 +97,16 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
 
   const onPasteFiles = (fileList: FileList) => {
     void handleLocalFileUpload(setFiles, fileList, uploadOptions);
+  };
+
+  const handlePromptSelect = (promptName: string) => {
+    const prompt = prompts.find((p) => p.name === promptName);
+    if (prompt) setPromptModal(prompt);
+  };
+
+  const handlePromptInsert = (text: string) => {
+    setInput((prev) => (prev ? `${prev}\n\n${text}` : text));
+    setPromptModal(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -179,6 +200,10 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               onToggle={toggleSkill}
               isLoading={isLoadingSkills}
               error={skillsError}
+              prompts={prompts}
+              isLoadingPrompts={isLoadingPrompts}
+              promptsError={promptsError}
+              onPromptSelect={handlePromptSelect}
             />
           </div>
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
@@ -215,6 +240,15 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
           </div>
         </div>
       </form>
+      {promptModal && (
+        <PromptFormModal
+          prompt={promptModal}
+          sessionId={sessionId}
+          open={!!promptModal}
+          onClose={() => setPromptModal(null)}
+          onInsert={handlePromptInsert}
+        />
+      )}
     </div>
   );
 };
