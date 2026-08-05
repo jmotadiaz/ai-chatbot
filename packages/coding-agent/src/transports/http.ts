@@ -22,7 +22,9 @@ import {
   getSessionModel,
   getSessionSkills,
   runSubagent,
+  getSessionPrompts,
 } from "../session-manager";
+import { resolvePrompt } from "../prompts";
 import { setSubagentRunner } from "../subagent-bridge";
 
 export interface HttpTransportOptions {
@@ -340,6 +342,20 @@ export async function handleRpc(requestBody: string): Promise<Response> {
       case "getSessionSkills": {
         const { sessionId } = params as { sessionId: string };
         result = { skills: getSessionSkills(sessionId) };
+        break;
+      }
+      case "getSessionPrompts": {
+        const { sessionId } = params as { sessionId: string };
+        result = { prompts: getSessionPrompts(sessionId) };
+        break;
+      }
+      case "resolvePrompt": {
+        const { sessionId, promptName, values } = params as {
+          sessionId: string;
+          promptName: string;
+          values: Record<string, string>;
+        };
+        result = resolvePrompt(sessionId, promptName, values);
         break;
       }
       default: {
