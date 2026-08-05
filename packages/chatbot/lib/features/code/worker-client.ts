@@ -11,6 +11,24 @@ export interface WorkerSkill {
   description: string;
 }
 
+export interface PromptInput {
+  name: string;
+  kind: string;
+  description: string;
+  required: boolean;
+  default?: string;
+  enumValues?: string[];
+  placeholder?: string;
+  render?: string;
+  basePath?: string;
+}
+
+export interface PromptSummary {
+  name: string;
+  description: string;
+  inputs: PromptInput[];
+}
+
 export interface JsonRpcRequest {
   jsonrpc: "2.0";
   method: string;
@@ -222,6 +240,20 @@ export class WorkerClient {
     sessionId: string;
   }): Promise<{ skills: WorkerSkill[] }> {
     return this.call<{ skills: WorkerSkill[] }>("getSessionSkills", params);
+  }
+
+  async getSessionPrompts(params: {
+    sessionId: string;
+  }): Promise<{ prompts: PromptSummary[] }> {
+    return this.call("getSessionPrompts", params);
+  }
+
+  async resolvePrompt(params: {
+    sessionId: string;
+    promptName: string;
+    values: Record<string, string>;
+  }): Promise<{ text: string }> {
+    return this.call("resolvePrompt", params);
   }
 }
 
