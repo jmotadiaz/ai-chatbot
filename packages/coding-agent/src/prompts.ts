@@ -52,21 +52,20 @@ const promptCatalog = new Map<string, CodingAgentPrompt>();
 
 /**
  * Scan three levels of prompts and merge into promptCatalog.
- * Shadowing: project > package > builtin (first load wins for a given name,
- * so we load in reverse priority order — lowest first).
+ * Shadowing: project > package > builtin (highest priority loaded first,
+ * first-load-wins). A name present in multiple levels keeps the version
+ * from the highest-priority level that defined it.
  */
 export function loadPrompts(projectCwd: string): void {
   promptCatalog.clear();
 
-  // 1. Built-in: packages/coding-agent/prompts/
-  const builtinDir = join(PACKAGE_ROOT, "prompts");
-  if (existsSync(builtinDir)) {
-    scanPromptDir(builtinDir, "builtin");
+  // 1. Project-local (HIGHEST priority — loads first, wins collisions)
+  const projectPromptsDir = join(projectCwd, ".agents", "prompts");
+  if (existsSync(projectPromptsDir)) {
+    scanPromptDir(projectPromptsDir, "project");
   }
 
-  // 2. Global (Pi packages): resolved from additionalExtensionPaths.
-  //    These paths are passed via env or constructor; for now scan
-  //    the known .pi/packages directory relative to the coding-agent root.
+  // 2. Global (Pi packages)
   const piPackagesDir = getPiPackagesDir();
   if (existsSync(piPackagesDir)) {
     for (const pkg of readdirSync(piPackagesDir)) {
@@ -77,10 +76,10 @@ export function loadPrompts(projectCwd: string): void {
     }
   }
 
-  // 3. Project-local: .agents/prompts/
-  const projectPromptsDir = join(projectCwd, ".agents", "prompts");
-  if (existsSync(projectPromptsDir)) {
-    scanPromptDir(projectPromptsDir, "project");
+  // 3. Built-in (LOWEST priority — loaded last, gets shadowed)
+  const builtinDir = join(PACKAGE_ROOT, "prompts");
+  if (existsSync(builtinDir)) {
+    scanPromptDir(builtinDir, "builtin");
   }
 }
 

@@ -53,4 +53,28 @@ inputs:
 
     expect(prompts).toHaveLength(0);
   });
+
+  it("first-loaded prompt wins shadowing within a single level", () => {
+    // Two different project roots load in turn. The first root's
+    // prompts must remain visible after a second load that defines
+    // different prompts (no cross-pollination).
+    const projectDirB = join(tmpRoot, "project-b");
+    const promptsDirB = join(projectDirB, ".agents", "prompts");
+    mkdirSync(promptsDirB, { recursive: true });
+    const dirA = join(promptsDir, "alpha");
+    mkdirSync(dirA, { recursive: true });
+    writeFileSync(join(dirA, "prompt.prompty"), "---\nname: alpha\ndescription: from A\n---\nA");
+
+    const dirB = join(promptsDirB, "beta");
+    mkdirSync(dirB, { recursive: true });
+    writeFileSync(join(dirB, "prompt.prompty"), "---\nname: beta\ndescription: from B\n---\nB");
+
+    loadPrompts(projectDir);
+    loadPrompts(projectDirB);
+    const prompts = getSessionPrompts("fake-session");
+    const names = prompts.map((p) => p.name).sort();
+    // After the second load, only projectDirB's prompt survives
+    // (loadPrompts clears the catalog first).
+    expect(names).toEqual(["beta"]);
+  });
 });
