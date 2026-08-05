@@ -20,6 +20,7 @@ import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
 import { startSubagentCollector } from "./subagent-collector";
+import { loadPrompts, getSessionPrompts } from "./prompts";
 import type {
   SubagentRunParams,
   SubagentDetails,
@@ -385,6 +386,8 @@ export async function getOrCreateSession(options: {
   const sessionId = options.sessionId ?? crypto.randomUUID();
   const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
   const cwd = resolveProjectPath(projectsRoot, options.project);
+
+  loadPrompts(cwd);
 
   log.info("session.create", {
     sessionId,
@@ -845,6 +848,8 @@ export function getSessionSkills(sessionId: string): CodingAgentSkill[] {
     .skills.map(({ name, description }) => ({ name, description }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
+
+export { getSessionPrompts } from "./prompts";
 
 /**
  * Convert Pi session messages to AG-UI-shaped messages.
