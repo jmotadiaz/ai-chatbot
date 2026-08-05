@@ -29,6 +29,7 @@ export interface PromptSummary {
   name: string;
   description: string;
   inputs: PromptInput[];
+  level: CodingAgentPrompt["level"];
 }
 
 /** Extracts YAML frontmatter and markdown body from a .prompty file. */
@@ -156,6 +157,7 @@ export function getSessionPrompts(_sessionId: string): PromptSummary[] {
       name: prompt.name,
       description: prompt.description,
       inputs: prompt.inputs,
+      level: prompt.level,
     });
   }
   return result.sort((a, b) => a.name.localeCompare(b.name));
