@@ -64,9 +64,14 @@ export function useAgentConversationScroll({
     };
   }, [handleScroll, checkVisibility]);
 
+  // Depend on the item count, not the array identity: `items` is rebuilt on
+  // every streamed chunk, and checkVisibility reads scrollHeight/clientHeight,
+  // which forces a synchronous reflow over the whole conversation DOM. Keying
+  // on length matches the auto-scroll effect below; the rAF-guarded scroll
+  // listener covers everything else.
   useEffect(() => {
     checkVisibility();
-  }, [items, checkVisibility]);
+  }, [items.length, checkVisibility]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;

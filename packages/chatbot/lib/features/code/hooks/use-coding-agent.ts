@@ -271,8 +271,45 @@ export function useCodingAgent({
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach((l) => l());
 
-    const update = (u: (prev: typeof snapshot) => Partial<typeof snapshot>) => {
+    // During reasoning bursts the worker streams ~100 chunks/s, and every one
+    // of them lands here. Notifying React per chunk re-runs groupItems over
+    // the whole history and re-renders the conversation, so the cost grows
+    // with the session. Coalesce notifications into one per frame instead.
+    // The snapshot itself is always updated synchronously, so getSnapshot
+    // never lags behind the stream and useSyncExternalStore cannot tear.
+    let scheduledEmit: number | null = null;
+
+    const cancelScheduledEmit = () => {
+      if (scheduledEmit === null) return;
+      cancelAnimationFrame(scheduledEmit);
+      scheduledEmit = null;
+    };
+
+    const scheduleEmit = () => {
+      if (scheduledEmit !== null) return;
+      if (typeof requestAnimationFrame !== "function") {
+        emit();
+        return;
+      }
+      scheduledEmit = requestAnimationFrame(() => {
+        scheduledEmit = null;
+        emit();
+      });
+    };
+
+    // `defer` is opt-in: only the high-frequency streaming paths use it, so
+    // lifecycle transitions (run start/finish/error, snapshots) still notify
+    // synchronously and settle the UI immediately.
+    const update = (
+      u: (prev: typeof snapshot) => Partial<typeof snapshot>,
+      options?: { defer?: boolean },
+    ) => {
       snapshot = { ...snapshot, ...u(snapshot) };
+      if (options?.defer) {
+        scheduleEmit();
+        return;
+      }
+      cancelScheduledEmit();
       emit();
     };
 
@@ -358,57 +395,60 @@ export function useCodingAgent({
                   payload: summarizeClientEvent(event),
                 });
               }
-              update((prev) => {
-                const next: Partial<typeof snapshot> = {
-                  status: statusFromEvent(event, prev.status),
-                };
-                if (
-                  event.type === EventType.STEP_STARTED ||
-                  event.type === EventType.STEP_FINISHED
-                ) {
-                  const raw = (
-                    event as {
-                      rawEvent?: { toolCallId?: string; isError?: boolean };
-                      timestamp?: number;
-                    }
-                  ).rawEvent;
-                  const ts = (event as { timestamp?: number }).timestamp;
-                  const id = raw?.toolCallId;
-                  if (id) {
-                    const m = new Map(prev.toolTimings);
-                    const existing = m.get(id);
-                    if (event.type === EventType.STEP_STARTED) {
-                      m.set(id, {
-                        startedAt: ts ?? Date.now(),
-                        finishedAt: existing?.finishedAt,
-                      });
-                    } else {
-                      if (existing) {
-                        m.set(id, {
-                          startedAt: existing.startedAt,
-                          finishedAt: ts ?? Date.now(),
-                        });
-                      } else {
+              update(
+                (prev) => {
+                  const next: Partial<typeof snapshot> = {
+                    status: statusFromEvent(event, prev.status),
+                  };
+                  if (
+                    event.type === EventType.STEP_STARTED ||
+                    event.type === EventType.STEP_FINISHED
+                  ) {
+                    const raw = (
+                      event as {
+                        rawEvent?: { toolCallId?: string; isError?: boolean };
+                        timestamp?: number;
+                      }
+                    ).rawEvent;
+                    const ts = (event as { timestamp?: number }).timestamp;
+                    const id = raw?.toolCallId;
+                    if (id) {
+                      const m = new Map(prev.toolTimings);
+                      const existing = m.get(id);
+                      if (event.type === EventType.STEP_STARTED) {
                         m.set(id, {
                           startedAt: ts ?? Date.now(),
-                          finishedAt: ts ?? Date.now(),
+                          finishedAt: existing?.finishedAt,
                         });
+                      } else {
+                        if (existing) {
+                          m.set(id, {
+                            startedAt: existing.startedAt,
+                            finishedAt: ts ?? Date.now(),
+                          });
+                        } else {
+                          m.set(id, {
+                            startedAt: ts ?? Date.now(),
+                            finishedAt: ts ?? Date.now(),
+                          });
+                        }
                       }
+                      next.toolTimings = m;
                     }
-                    next.toolTimings = m;
+                    if (
+                      event.type === EventType.STEP_FINISHED &&
+                      raw?.toolCallId &&
+                      raw.isError === true
+                    ) {
+                      const errs = new Map(prev.toolErrors);
+                      errs.set(raw.toolCallId, true);
+                      next.toolErrors = errs;
+                    }
                   }
-                  if (
-                    event.type === EventType.STEP_FINISHED &&
-                    raw?.toolCallId &&
-                    raw.isError === true
-                  ) {
-                    const errs = new Map(prev.toolErrors);
-                    errs.set(raw.toolCallId, true);
-                    next.toolErrors = errs;
-                  }
-                }
-                return next;
-              });
+                  return next;
+                },
+                { defer: true },
+              );
             },
             onRunFinishedEvent: () => {
               shouldReconnectRef.current = false;
@@ -444,7 +484,9 @@ export function useCodingAgent({
               }));
             },
             onMessagesChanged: () => {
-              update(() => ({ messages: [...currentAgent.messages] }));
+              update(() => ({ messages: [...currentAgent.messages] }), {
+                defer: true,
+              });
             },
             onMessagesSnapshotEvent: ({ event }) => {
               writeClientTrace({
@@ -465,6 +507,7 @@ export function useCodingAgent({
           if (listeners.size === 0 && subscription) {
             subscription.unsubscribe();
             subscription = null;
+            cancelScheduledEmit();
           }
         };
       },
