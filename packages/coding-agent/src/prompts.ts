@@ -1,4 +1,8 @@
 import { parseFrontmatter } from "@earendil-works/pi-coding-agent";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { getPiPackagesDir } from "./pi-packages";
+import { PACKAGE_ROOT } from "./paths";
 
 export interface PromptInput {
   name: string;
@@ -44,9 +48,106 @@ export function parsePromptyFile(content: string): {
   };
 }
 
-// Stubs — implemented in later tasks
-export function loadPrompts(_cwd: string): void {
-  throw new Error("Not implemented");
+const promptCatalog = new Map<string, CodingAgentPrompt>();
+
+/**
+ * Scan three levels of prompts and merge into promptCatalog.
+ * Shadowing: project > package > builtin (first load wins for a given name,
+ * so we load in reverse priority order — lowest first).
+ */
+export function loadPrompts(projectCwd: string): void {
+  promptCatalog.clear();
+
+  // 1. Built-in: packages/coding-agent/prompts/
+  const builtinDir = join(PACKAGE_ROOT, "prompts");
+  if (existsSync(builtinDir)) {
+    scanPromptDir(builtinDir, "builtin");
+  }
+
+  // 2. Global (Pi packages): resolved from additionalExtensionPaths.
+  //    These paths are passed via env or constructor; for now scan
+  //    the known .pi/packages directory relative to the coding-agent root.
+  const piPackagesDir = getPiPackagesDir();
+  if (existsSync(piPackagesDir)) {
+    for (const pkg of readdirSync(piPackagesDir)) {
+      const promptsDir = join(piPackagesDir, pkg, "prompts");
+      if (existsSync(promptsDir)) {
+        scanPromptDir(promptsDir, "package");
+      }
+    }
+  }
+
+  // 3. Project-local: .agents/prompts/
+  const projectPromptsDir = join(projectCwd, ".agents", "prompts");
+  if (existsSync(projectPromptsDir)) {
+    scanPromptDir(projectPromptsDir, "project");
+  }
+}
+
+function scanPromptDir(
+  dir: string,
+  level: CodingAgentPrompt["level"],
+): void {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const promptDir = join(dir, entry);
+    let st;
+    try {
+      st = statSync(promptDir);
+    } catch {
+      continue;
+    }
+    if (!st.isDirectory()) continue;
+    const promptFile = join(promptDir, "prompt.prompty");
+    if (!existsSync(promptFile)) continue;
+
+    let content: string;
+    try {
+      content = readFileSync(promptFile, "utf8");
+    } catch {
+      continue;
+    }
+    const parsed = parsePromptyFile(content);
+    if (!parsed) continue;
+
+    const fm = parsed.frontmatter as Record<string, unknown>;
+    const name = typeof fm.name === "string" ? fm.name : entry;
+
+    // Shadowing: if already in catalog, skip (lower-priority was loaded first)
+    if (promptCatalog.has(name)) continue;
+
+    const inputs = normalizeInputs(fm.inputs);
+    promptCatalog.set(name, {
+      name,
+      description: typeof fm.description === "string" ? fm.description : "",
+      inputs,
+      filePath: promptFile,
+      baseDir: promptDir,
+      level,
+    });
+  }
+}
+
+function normalizeInputs(raw: unknown): PromptInput[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item: Record<string, unknown>) => ({
+    name: typeof item.name === "string" ? item.name : "",
+    kind: typeof item.kind === "string" ? item.kind : "string",
+    description: typeof item.description === "string" ? item.description : "",
+    required: item.required === true,
+    default: typeof item.default === "string" ? item.default : undefined,
+    enumValues: Array.isArray(item.enumValues)
+      ? item.enumValues.filter((v: unknown): v is string => typeof v === "string")
+      : undefined,
+    placeholder: typeof item.placeholder === "string" ? item.placeholder : undefined,
+    render: typeof item.render === "string" ? item.render : undefined,
+    basePath: typeof item.basePath === "string" ? item.basePath : undefined,
+  }));
 }
 
 export function getSessionPrompts(_sessionId: string): PromptSummary[] {
