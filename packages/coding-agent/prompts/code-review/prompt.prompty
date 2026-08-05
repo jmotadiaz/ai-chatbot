@@ -1,0 +1,32 @@
+---
+name: code-review-session
+description: Resume una sesión del coding agent y sugiere mejoras
+inputs:
+  - name: target_session
+    kind: string
+    description: ID de la sesión a revisar
+    required: true
+    placeholder: ej. s_abc123
+  - name: focus_area
+    kind: string
+    description: Enfoque del review
+    enumValues: [bugs, perf, style]
+  - name: extra_context
+    kind: string
+    description: Notas adicionales
+    placeholder: Algo más que el agente deba saber...
+    required: false
+---
+
+# Code Review de la sesión {{target_session}}
+
+## Enfoque: {{focus_area}}
+
+{{extra_context}}
+
+## Instrucciones
+
+Analiza los cambios de la sesión, enfócate en **{{focus_area}}** y reporta:
+1. Problemas encontrados
+2. Sugerencias de mejora
+3. Riesgos y trade-offs
