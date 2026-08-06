@@ -20,7 +20,6 @@ export interface PromptInput {
   enumValues?: string[];
   placeholder?: string;
   render?: string;
-  basePath?: string;
 }
 
 export interface PromptSummary {
