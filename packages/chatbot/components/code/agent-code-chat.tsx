@@ -72,6 +72,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
 
   const {
     prompts,
+    sessions,
     isLoading: isLoadingPrompts,
     error: promptsError,
   } = useCodingAgentPrompts(sessionId, !isLoading);
@@ -244,6 +245,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         <PromptFormModal
           prompt={promptModal}
           sessionId={sessionId}
+          sessions={sessions}
           open={!!promptModal}
           onClose={() => setPromptModal(null)}
           onInsert={handlePromptInsert}

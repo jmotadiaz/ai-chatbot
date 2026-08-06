@@ -8,7 +8,7 @@ import type { PromptSummary, PromptInput, SessionSummary } from "@/lib/features/
 interface PromptFormModalProps {
   prompt: PromptSummary;
   sessionId: string;
-  sessions?: SessionSummary[];
+  sessions: SessionSummary[];
   open: boolean;
   onClose: () => void;
   onInsert: (text: string) => void;
@@ -17,7 +17,7 @@ interface PromptFormModalProps {
 export const PromptFormModal: React.FC<PromptFormModalProps> = ({
   prompt,
   sessionId,
-  sessions = [],
+  sessions,
   open,
   onClose,
   onInsert,
