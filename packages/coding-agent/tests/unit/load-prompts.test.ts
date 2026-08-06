@@ -1,17 +1,25 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadPrompts, getSessionPrompts, type PromptSummary } from "../../src/prompts";
+import { loadPrompts, getProjectPrompts, type PromptSummary } from "../../src/prompts";
 
 describe("loadPrompts", () => {
-  const tmpRoot = join(tmpdir(), "prompt-test-" + Date.now());
-  const projectDir = join(tmpRoot, "project");
-  const promptsDir = join(projectDir, ".agents", "prompts");
+  let tmpRoot: string;
+  let projectDir: string;
+  let promptsDir: string;
 
   beforeEach(() => {
-    rmSync(tmpRoot, { recursive: true, force: true });
+    // Unique root per test: the catalog is keyed by project path and loaded
+    // at most once, so tests must not reuse paths across tests.
+    tmpRoot = join(tmpdir(), "prompt-test-" + crypto.randomUUID());
+    projectDir = join(tmpRoot, "project");
+    promptsDir = join(projectDir, ".agents", "prompts");
     mkdirSync(promptsDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
   });
 
   // Tests focus on project-level discovery. The built-in `code-review-session`
@@ -38,7 +46,7 @@ inputs:
 `);
 
     loadPrompts(projectDir);
-    const prompts = getSessionPrompts("fake-session");
+    const prompts = getProjectPrompts(projectDir);
     const project = projectLevel(prompts);
 
     expect(project).toHaveLength(1);
@@ -56,15 +64,12 @@ inputs:
     mkdirSync(dir, { recursive: true });
 
     loadPrompts(projectDir);
-    const prompts = getSessionPrompts("fake-session");
+    const prompts = getProjectPrompts(projectDir);
 
     expect(projectLevel(prompts)).toHaveLength(0);
   });
 
-  it("first-loaded prompt wins shadowing within a single level", () => {
-    // Two different project roots load in turn. The first root's
-    // prompts must remain visible after a second load that defines
-    // different prompts (no cross-pollination).
+  it("keeps each project's catalog isolated (no cross-pollination)", () => {
     const projectDirB = join(tmpRoot, "project-b");
     const promptsDirB = join(projectDirB, ".agents", "prompts");
     mkdirSync(promptsDirB, { recursive: true });
@@ -78,20 +83,67 @@ inputs:
 
     loadPrompts(projectDir);
     loadPrompts(projectDirB);
-    const prompts = getSessionPrompts("fake-session");
-    const projectNames = projectLevel(prompts)
+
+    const namesA = projectLevel(getProjectPrompts(projectDir))
       .map((p) => p.name)
       .sort();
-    // After the second load, only projectDirB's prompt survives
-    // (loadPrompts clears the catalog first).
-    expect(projectNames).toEqual(["beta"]);
-    // The built-in should still be present (loaded from PACKAGE_ROOT)
-    expect(prompts.map((p) => p.name)).toContain("code-review-session");
+    const namesB = projectLevel(getProjectPrompts(projectDirB))
+      .map((p) => p.name)
+      .sort();
+
+    // Loading project B must not wipe or shadow project A's catalog, and
+    // vice versa (the worker is one process serving sessions for many
+    // projects at once).
+    expect(namesA).toEqual(["alpha"]);
+    expect(namesB).toEqual(["beta"]);
+    // The built-in should be present for both projects (loaded from PACKAGE_ROOT)
+    expect(getProjectPrompts(projectDir).map((p) => p.name)).toContain("code-review-session");
+    expect(getProjectPrompts(projectDirB).map((p) => p.name)).toContain("code-review-session");
+  });
+
+  it("loads a project's catalog on first access", () => {
+    const dir = join(promptsDir, "on-demand");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "prompt.prompty"), "---\nname: on-demand\ndescription: loaded lazily\n---\non demand");
+
+    // No explicit loadPrompts() call — the getter must load the project's
+    // catalog itself (reconnect paths may never call loadPrompts directly).
+    const prompts = getProjectPrompts(projectDir);
+
+    expect(projectLevel(prompts).map((p) => p.name)).toContain("on-demand");
+  });
+
+  it("does not refresh an already-loaded project catalog (immutable per project)", () => {
+    loadPrompts(projectDir);
+
+    // A prompt added to disk after the first load must not appear: the
+    // catalog is immutable for the lifetime of the project's sessions.
+    const dir = join(promptsDir, "late-added");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "prompt.prompty"), "---\nname: late-added\ndescription: too late\n---\nlate");
+    loadPrompts(projectDir);
+
+    expect(projectLevel(getProjectPrompts(projectDir)).map((p) => p.name)).not.toContain(
+      "late-added",
+    );
+
+    // A fresh project (never loaded) does pick the prompt up.
+    const projectDirC = join(tmpRoot, "project-c");
+    mkdirSync(join(projectDirC, ".agents", "prompts", "late-added"), { recursive: true });
+    writeFileSync(
+      join(projectDirC, ".agents", "prompts", "late-added", "prompt.prompty"),
+      "---\nname: late-added\ndescription: fresh\n---\nlate",
+    );
+    loadPrompts(projectDirC);
+
+    expect(projectLevel(getProjectPrompts(projectDirC)).map((p) => p.name)).toContain(
+      "late-added",
+    );
   });
 
   it("builtin code-review-session declares target_session as kind session", () => {
     loadPrompts(projectDir);
-    const prompts = getSessionPrompts("fake-session");
+    const prompts = getProjectPrompts(projectDir);
     const review = prompts.find((p) => p.name === "code-review-session");
     expect(review).toBeDefined();
     const target = review!.inputs.find((i) => i.name === "target_session");

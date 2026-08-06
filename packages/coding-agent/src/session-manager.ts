@@ -20,7 +20,7 @@ import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
 import { startSubagentCollector } from "./subagent-collector";
-import { loadPrompts, getSessionPrompts } from "./prompts";
+import { loadPrompts, getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "./prompts";
 import type {
   SubagentRunParams,
   SubagentDetails,
@@ -286,6 +286,10 @@ async function loadSessionFromDisk(
   const sessionsDir = process.env.CODING_AGENT_SESSIONS_DIR!;
   const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
   const cwd = resolveProjectPath(projectsRoot, project);
+  // A session rehydrated after a worker restart must surface its project's
+  // prompts without waiting for a brand-new session (review Critical #1).
+  // loadPrompts is idempotent per project, so this is a no-op once loaded.
+  loadPrompts(cwd);
   const listDir = options?.sessionsSubdir
     ? path.join(sessionsDir, options.sessionsSubdir)
     : sessionsDir;
@@ -849,7 +853,32 @@ export function getSessionSkills(sessionId: string): CodingAgentSkill[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export { getSessionPrompts } from "./prompts";
+/**
+ * Resolve the project cwd backing a session, or throw when the session is
+ * not registered in this worker. The catalog is keyed per project (immutable
+ * once loaded), so sessions in different projects never leak into each
+ * other, and a session rehydrated after a worker restart still sees its
+ * project's prompts.
+ */
+function sessionProjectCwd(sessionId: string): string {
+  const entry = sessions.get(sessionId);
+  if (!entry) throw new Error("Session not found");
+  const cwd = sessionCwd(entry);
+  if (!cwd) throw new Error("Session not found");
+  return cwd;
+}
+
+export function getSessionPrompts(sessionId: string): PromptSummary[] {
+  return getProjectPrompts(sessionProjectCwd(sessionId));
+}
+
+export function resolvePrompt(
+  sessionId: string,
+  promptName: string,
+  values: Record<string, string>,
+): { text: string } {
+  return resolveProjectPrompt(sessionProjectCwd(sessionId), promptName, values);
+}
 
 /**
  * Convert Pi session messages to AG-UI-shaped messages.

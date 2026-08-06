@@ -23,8 +23,8 @@ import {
   getSessionSkills,
   runSubagent,
   getSessionPrompts,
+  resolvePrompt,
 } from "../session-manager";
-import { resolvePrompt } from "../prompts";
 import { setSubagentRunner } from "../subagent-bridge";
 
 export interface HttpTransportOptions {

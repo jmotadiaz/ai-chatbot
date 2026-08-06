@@ -49,21 +49,35 @@ export function parsePromptyFile(content: string): {
   };
 }
 
-const promptCatalog = new Map<string, CodingAgentPrompt>();
+/**
+ * Prompt catalogs keyed by project cwd. The worker is a single process
+ * serving sessions across projects, so a global catalog would leak prompts
+ * between projects (session A listing B's prompts, resolvePrompt resolving
+ * A's names against B's files) and be wiped by any session creation in
+ * another project. Keying per project keeps each session's catalog isolated
+ * and stable for the lifetime of the Pi session (spec 2026-08-03 §4.2).
+ */
+const promptCatalogs = new Map<string, Map<string, CodingAgentPrompt>>();
 
 /**
- * Scan three levels of prompts and merge into promptCatalog.
- * Shadowing: project > package > builtin (highest priority loaded first,
- * first-load-wins). A name present in multiple levels keeps the version
- * from the highest-priority level that defined it.
+ * Scan three levels of prompts for a project and merge them into that
+ * project's catalog. Shadowing: project > package > builtin (highest
+ * priority loaded first, first-load-wins). A name present in multiple
+ * levels keeps the version from the highest-priority level that defined it.
+ *
+ * A project's catalog is loaded at most once: the catalog is immutable
+ * during the life of a Pi session, so reconnects and later session
+ * creations in the same project never re-scan (or mutate) it.
  */
 export function loadPrompts(projectCwd: string): void {
-  promptCatalog.clear();
+  if (promptCatalogs.has(projectCwd)) return;
+
+  const catalog = new Map<string, CodingAgentPrompt>();
 
   // 1. Project-local (HIGHEST priority — loads first, wins collisions)
   const projectPromptsDir = join(projectCwd, ".agents", "prompts");
   if (existsSync(projectPromptsDir)) {
-    scanPromptDir(projectPromptsDir, "project");
+    scanPromptDir(projectPromptsDir, "project", catalog);
   }
 
   // 2. Global (Pi packages)
@@ -72,7 +86,7 @@ export function loadPrompts(projectCwd: string): void {
     for (const pkg of readdirSync(piPackagesDir)) {
       const promptsDir = join(piPackagesDir, pkg, "prompts");
       if (existsSync(promptsDir)) {
-        scanPromptDir(promptsDir, "package");
+        scanPromptDir(promptsDir, "package", catalog);
       }
     }
   }
@@ -80,13 +94,16 @@ export function loadPrompts(projectCwd: string): void {
   // 3. Built-in (LOWEST priority — loaded last, gets shadowed)
   const builtinDir = join(PACKAGE_ROOT, "prompts");
   if (existsSync(builtinDir)) {
-    scanPromptDir(builtinDir, "builtin");
+    scanPromptDir(builtinDir, "builtin", catalog);
   }
+
+  promptCatalogs.set(projectCwd, catalog);
 }
 
 function scanPromptDir(
   dir: string,
   level: CodingAgentPrompt["level"],
+  catalog: Map<string, CodingAgentPrompt>,
 ): void {
   let entries: string[];
   try {
@@ -119,10 +136,10 @@ function scanPromptDir(
     const name = typeof fm.name === "string" ? fm.name : entry;
 
     // Shadowing: if already in catalog, skip (lower-priority was loaded first)
-    if (promptCatalog.has(name)) continue;
+    if (catalog.has(name)) continue;
 
     const inputs = normalizeInputs(fm.inputs);
-    promptCatalog.set(name, {
+    catalog.set(name, {
       name,
       description: typeof fm.description === "string" ? fm.description : "",
       inputs,
@@ -150,9 +167,17 @@ function normalizeInputs(raw: unknown): PromptInput[] {
   }));
 }
 
-export function getSessionPrompts(_sessionId: string): PromptSummary[] {
+/**
+ * List the prompt summaries of a project's catalog. The catalog is loaded
+ * on demand so any path that registers a session for the project (including
+ * disk reloads after a worker restart) immediately sees its prompts without
+ * an explicit `loadPrompts` call.
+ */
+export function getProjectPrompts(projectCwd: string): PromptSummary[] {
+  loadPrompts(projectCwd);
+  const catalog = promptCatalogs.get(projectCwd)!;
   const result: PromptSummary[] = [];
-  for (const prompt of promptCatalog.values()) {
+  for (const prompt of catalog.values()) {
     result.push({
       name: prompt.name,
       description: prompt.description,
@@ -163,12 +188,16 @@ export function getSessionPrompts(_sessionId: string): PromptSummary[] {
   return result.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function resolvePrompt(
-  _sessionId: string,
+/**
+ * Render a prompt from a project's catalog.
+ */
+export function resolveProjectPrompt(
+  projectCwd: string,
   promptName: string,
   values: Record<string, string>,
 ): { text: string } {
-  const prompt = promptCatalog.get(promptName);
+  loadPrompts(projectCwd);
+  const prompt = promptCatalogs.get(projectCwd)?.get(promptName);
   if (!prompt) {
     throw new Error(`Unknown prompt: ${promptName}`);
   }
@@ -201,19 +230,26 @@ export function resolvePrompt(
     rendered[input.name] = renderInputValue(input, rawValue, prompt.baseDir);
   }
 
-  // 4. Substitute {{var}} placeholders
+  // 4. Substitute {{var}} placeholders. The replacement is a function so
+  //    user-supplied values are never interpreted as `$` patterns ($&, $',
+  //    $`, $$) by String.prototype.replace.
+  const sourceLines = body.split("\n");
+  const lineHasPlaceholder = sourceLines.map((line) => /\{\{[^{}]*\}\}/.test(line));
   for (const [varName, varValue] of Object.entries(rendered)) {
     body = body.replace(
       new RegExp(`\\{\\{${escapeRegex(varName)}\\}\\}`, "g"),
-      varValue,
+      () => varValue,
     );
   }
 
-  // 5. Remove lines that became empty after substitution
+  // 5. Drop lines that contained an input placeholder and became empty
+  //    because an optional input was left unfilled (spec §4.3 step 5).
+  //    Lines that were blank in the template itself carry no placeholder,
+  //    so intentional blank lines are preserved.
   body = body
-    .split("\\n")
-    .filter((line) => line.trim() !== "" || line.includes("```"))
-    .join("\\n")
+    .split("\n")
+    .filter((line, index) => !(lineHasPlaceholder[index] && line.trim() === ""))
+    .join("\n")
     .trim();
 
   return { text: body };
