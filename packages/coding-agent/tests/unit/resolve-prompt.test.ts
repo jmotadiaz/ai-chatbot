@@ -14,9 +14,9 @@ describe("resolveProjectPrompt", () => {
     mkdirSync(tmpRoot, { recursive: true });
 
     // Create a .agents/prompts directory with one prompt
-    const promptsDir = join(tmpRoot, ".agents", "prompts", "greet");
+    const promptsDir = join(tmpRoot, ".agents", "prompts");
     mkdirSync(promptsDir, { recursive: true });
-    writeFileSync(join(promptsDir, "prompt.prompty"), `---
+    writeFileSync(join(promptsDir, "greet.prompty"), `---
 name: greet
 description: Greet someone
 inputs:
@@ -64,9 +64,9 @@ Hello {{name}}!
 
   it("uses default when value is empty", () => {
     const defaultRoot = join(tmpRoot, "default-project");
-    const promptsDir = join(defaultRoot, ".agents", "prompts", "with-default");
+    const promptsDir = join(defaultRoot, ".agents", "prompts");
     mkdirSync(promptsDir, { recursive: true });
-    writeFileSync(join(promptsDir, "prompt.prompty"), `---
+    writeFileSync(join(promptsDir, "with-default.prompty"), `---
 name: with-default
 description: Has default
 inputs:
@@ -86,9 +86,9 @@ inputs:
 
   it("removes a line emptied by an unfilled optional input and preserves intentional blank lines", () => {
     const optRoot = join(tmpRoot, "optional-project");
-    const promptsDir = join(optRoot, ".agents", "prompts", "with-optional");
+    const promptsDir = join(optRoot, ".agents", "prompts");
     mkdirSync(promptsDir, { recursive: true });
-    writeFileSync(join(promptsDir, "prompt.prompty"), `---
+    writeFileSync(join(promptsDir, "with-optional.prompty"), `---
 name: with-optional
 description: Has optional input
 inputs:

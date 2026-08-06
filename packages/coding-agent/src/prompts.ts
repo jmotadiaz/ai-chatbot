@@ -1,19 +1,18 @@
 import { parseFrontmatter } from "@earendil-works/pi-coding-agent";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { getPiPackagesDir } from "./pi-packages";
 import { PACKAGE_ROOT } from "./paths";
 
 export interface PromptInput {
   name: string;
-  kind: string;          // "string" | "session" | "path" | "prompt"
+  kind: string;          // "string" | "session" | "prompt"
   description: string;   // UI label for the form field
   required: boolean;
   default?: string;
   enumValues?: string[];
   placeholder?: string;
   render?: string;
-  basePath?: string;
 }
 
 export interface CodingAgentPrompt {
@@ -21,7 +20,6 @@ export interface CodingAgentPrompt {
   description: string;
   inputs: PromptInput[];
   filePath: string;
-  baseDir: string;
   level: "builtin" | "package" | "project";
 }
 
@@ -112,16 +110,18 @@ function scanPromptDir(
     return;
   }
   for (const entry of entries) {
-    const promptDir = join(dir, entry);
-    let st;
-    try {
-      st = statSync(promptDir);
-    } catch {
+    // Flat layout: prompts/<name>.prompty. Other files are ignored; legacy
+    // prompts/<name>/prompt.prompty directories warn so authors migrate.
+    if (!entry.endsWith(".prompty")) {
+      if (existsSync(join(dir, entry, "prompt.prompty"))) {
+        console.warn(
+          `[prompts] Ignoring legacy prompt directory ${join(dir, entry)}; ` +
+            `use the flat layout ${join(dir, `${entry}.prompty`)}.`,
+        );
+      }
       continue;
     }
-    if (!st.isDirectory()) continue;
-    const promptFile = join(promptDir, "prompt.prompty");
-    if (!existsSync(promptFile)) continue;
+    const promptFile = join(dir, entry);
 
     let content: string;
     try {
@@ -133,7 +133,8 @@ function scanPromptDir(
     if (!parsed) continue;
 
     const fm = parsed.frontmatter as Record<string, unknown>;
-    const name = typeof fm.name === "string" ? fm.name : entry;
+    const name =
+      typeof fm.name === "string" ? fm.name : entry.slice(0, -".prompty".length);
 
     // Shadowing: if already in catalog, skip (lower-priority was loaded first)
     if (catalog.has(name)) continue;
@@ -144,7 +145,6 @@ function scanPromptDir(
       description: typeof fm.description === "string" ? fm.description : "",
       inputs,
       filePath: promptFile,
-      baseDir: promptDir,
       level,
     });
   }
@@ -163,7 +163,6 @@ function normalizeInputs(raw: unknown): PromptInput[] {
       : undefined,
     placeholder: typeof item.placeholder === "string" ? item.placeholder : undefined,
     render: typeof item.render === "string" ? item.render : undefined,
-    basePath: typeof item.basePath === "string" ? item.basePath : undefined,
   }));
 }
 
@@ -227,7 +226,7 @@ export function resolveProjectPrompt(
   const rendered: Record<string, string> = {};
   for (const input of prompt.inputs) {
     const rawValue = values[input.name] ?? input.default ?? "";
-    rendered[input.name] = renderInputValue(input, rawValue, prompt.baseDir);
+    rendered[input.name] = renderInputValue(input, rawValue);
   }
 
   // 4. Substitute {{var}} placeholders. The replacement is a function so
@@ -255,11 +254,7 @@ export function resolveProjectPrompt(
   return { text: body };
 }
 
-function renderInputValue(
-  input: PromptInput,
-  value: string,
-  baseDir: string,
-): string {
+function renderInputValue(input: PromptInput, value: string): string {
   if (!value) return "";
 
   switch (input.kind) {
@@ -283,29 +278,6 @@ function renderInputValue(
         }
         default:
           return `[${value}](session:${value})`;
-      }
-    }
-    case "path": {
-      const render = input.render ?? "reference";
-      const resolvedPath = input.basePath
-        ? join(baseDir, input.basePath, value)
-        : join(baseDir, value);
-      switch (render) {
-        case "path":
-          return value;
-        case "reference":
-          return `[\`${value}\`](file:${value})`;
-        case "contents": {
-          try {
-            const fileContent = readFileSync(resolvedPath, "utf8");
-            const ext = value.split(".").pop() ?? "";
-            return `\`\`\`${ext}\n${fileContent}\n\`\`\``;
-          } catch {
-            throw new Error(`File not found: ${value}`);
-          }
-        }
-        default:
-          return `[\`${value}\`](file:${value})`;
       }
     }
     case "prompt": {

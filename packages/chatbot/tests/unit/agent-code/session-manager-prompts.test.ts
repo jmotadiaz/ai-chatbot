@@ -25,7 +25,7 @@ const {
 } = await import("coding-agent/session-manager");
 const { SessionEventLog } = await import("coding-agent/event-log");
 
-/** Write a project prompt at <projectsRoot>/<project>/.agents/prompts/<name>/prompt.prompty */
+/** Write a project prompt at <projectsRoot>/<project>/.agents/prompts/<name>.prompty */
 function writePrompt(
   projectsRoot: string,
   project: string,
@@ -33,10 +33,10 @@ function writePrompt(
   body: string,
   inputs?: string,
 ): void {
-  const dir = join(projectsRoot, project, ".agents", "prompts", name);
-  mkdirSync(dir, { recursive: true });
+  const promptsDir = join(projectsRoot, project, ".agents", "prompts");
+  mkdirSync(promptsDir, { recursive: true });
   writeFileSync(
-    join(dir, "prompt.prompty"),
+    join(promptsDir, `${name}.prompty`),
     `---\nname: ${name}\ndescription: ${name}\n${inputs ?? ""}---\n\n${body}`,
   );
 }

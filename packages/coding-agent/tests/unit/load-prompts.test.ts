@@ -28,10 +28,8 @@ describe("loadPrompts", () => {
   const projectLevel = (prompts: PromptSummary[]) =>
     prompts.filter((p) => p.level === "project");
 
-  it("discovers a .prompty file in .agents/prompts/<name>/prompt.prompty", () => {
-    const dir = join(promptsDir, "my-prompt");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "prompt.prompty"), `---
+  it("discovers a .prompty file in .agents/prompts/<name>.prompty", () => {
+    writeFileSync(join(promptsDir, "my-prompt.prompty"), `---
 name: my-prompt
 description: A test prompt
 inputs:
@@ -59,9 +57,12 @@ inputs:
     expect(project[0]!.inputs[0]!.required).toBe(true);
   });
 
-  it("skips directories without prompt.prompty", () => {
-    const dir = join(promptsDir, "empty");
-    mkdirSync(dir, { recursive: true });
+  it("ignores files that are not .prompty and legacy prompt directories", () => {
+    writeFileSync(join(promptsDir, "README.md"), "not a prompt");
+    // Legacy prompts/<name>/prompt.prompty layout is no longer scanned
+    const legacyDir = join(promptsDir, "legacy");
+    mkdirSync(legacyDir, { recursive: true });
+    writeFileSync(join(legacyDir, "prompt.prompty"), "---\nname: legacy\ndescription: old\n---\nold");
 
     loadPrompts(projectDir);
     const prompts = getProjectPrompts(projectDir);
@@ -73,13 +74,9 @@ inputs:
     const projectDirB = join(tmpRoot, "project-b");
     const promptsDirB = join(projectDirB, ".agents", "prompts");
     mkdirSync(promptsDirB, { recursive: true });
-    const dirA = join(promptsDir, "alpha");
-    mkdirSync(dirA, { recursive: true });
-    writeFileSync(join(dirA, "prompt.prompty"), "---\nname: alpha\ndescription: from A\n---\nA");
+    writeFileSync(join(promptsDir, "alpha.prompty"), "---\nname: alpha\ndescription: from A\n---\nA");
 
-    const dirB = join(promptsDirB, "beta");
-    mkdirSync(dirB, { recursive: true });
-    writeFileSync(join(dirB, "prompt.prompty"), "---\nname: beta\ndescription: from B\n---\nB");
+    writeFileSync(join(promptsDirB, "beta.prompty"), "---\nname: beta\ndescription: from B\n---\nB");
 
     loadPrompts(projectDir);
     loadPrompts(projectDirB);
@@ -102,9 +99,7 @@ inputs:
   });
 
   it("loads a project's catalog on first access", () => {
-    const dir = join(promptsDir, "on-demand");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "prompt.prompty"), "---\nname: on-demand\ndescription: loaded lazily\n---\non demand");
+    writeFileSync(join(promptsDir, "on-demand.prompty"), "---\nname: on-demand\ndescription: loaded lazily\n---\non demand");
 
     // No explicit loadPrompts() call — the getter must load the project's
     // catalog itself (reconnect paths may never call loadPrompts directly).
@@ -118,9 +113,7 @@ inputs:
 
     // A prompt added to disk after the first load must not appear: the
     // catalog is immutable for the lifetime of the project's sessions.
-    const dir = join(promptsDir, "late-added");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "prompt.prompty"), "---\nname: late-added\ndescription: too late\n---\nlate");
+    writeFileSync(join(promptsDir, "late-added.prompty"), "---\nname: late-added\ndescription: too late\n---\nlate");
     loadPrompts(projectDir);
 
     expect(projectLevel(getProjectPrompts(projectDir)).map((p) => p.name)).not.toContain(
@@ -129,9 +122,9 @@ inputs:
 
     // A fresh project (never loaded) does pick the prompt up.
     const projectDirC = join(tmpRoot, "project-c");
-    mkdirSync(join(projectDirC, ".agents", "prompts", "late-added"), { recursive: true });
+    mkdirSync(join(projectDirC, ".agents", "prompts"), { recursive: true });
     writeFileSync(
-      join(projectDirC, ".agents", "prompts", "late-added", "prompt.prompty"),
+      join(projectDirC, ".agents", "prompts", "late-added.prompty"),
       "---\nname: late-added\ndescription: fresh\n---\nlate",
     );
     loadPrompts(projectDirC);
