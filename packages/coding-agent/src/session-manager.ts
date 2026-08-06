@@ -17,6 +17,7 @@ import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
+import { FILE_REVIEW_CONVENTION } from "./file-review-convention";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
 import { startSubagentCollector } from "./subagent-collector";
@@ -241,7 +242,7 @@ function makeCreateRuntime(
       authStorage,
       modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
-        appendSystemPrompt: [FILE_REFERENCE_PROMPT],
+        appendSystemPrompt: [FILE_REFERENCE_PROMPT, FILE_REVIEW_CONVENTION],
         additionalExtensionPaths: getExtensionPaths({
           includeSubagentExtension: options?.includeSubagentExtension ?? true,
         }),
