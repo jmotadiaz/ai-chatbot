@@ -3,11 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import type { PromptSummary, PromptInput } from "@/lib/features/code/worker-client";
+import type { PromptSummary, PromptInput, SessionSummary } from "@/lib/features/code/worker-client";
 
 interface PromptFormModalProps {
   prompt: PromptSummary;
   sessionId: string;
+  sessions?: SessionSummary[];
   open: boolean;
   onClose: () => void;
   onInsert: (text: string) => void;
@@ -16,6 +17,7 @@ interface PromptFormModalProps {
 export const PromptFormModal: React.FC<PromptFormModalProps> = ({
   prompt,
   sessionId,
+  sessions = [],
   open,
   onClose,
   onInsert,
@@ -91,6 +93,7 @@ export const PromptFormModal: React.FC<PromptFormModalProps> = ({
               key={input.name}
               input={input}
               value={values[input.name] ?? ""}
+              sessions={sessions}
               onChange={(v) => handleChange(input.name, v)}
             />
           ))}
@@ -116,10 +119,11 @@ export const PromptFormModal: React.FC<PromptFormModalProps> = ({
 interface PromptFormFieldProps {
   input: PromptInput;
   value: string;
+  sessions: SessionSummary[];
   onChange: (value: string) => void;
 }
 
-const PromptFormField: React.FC<PromptFormFieldProps> = ({ input, value, onChange }) => {
+const PromptFormField: React.FC<PromptFormFieldProps> = ({ input, value, sessions, onChange }) => {
   if (input.kind === "string" && input.enumValues && input.enumValues.length > 0) {
     return (
       <label className="block">
@@ -134,6 +138,36 @@ const PromptFormField: React.FC<PromptFormFieldProps> = ({ input, value, onChang
             <option key={v} value={v}>{v}</option>
           ))}
         </select>
+      </label>
+    );
+  }
+
+  if (input.kind === "session") {
+    return (
+      <label className="block">
+        <span className="text-sm font-medium">
+          {input.description}
+          {input.required && <span className="text-red-500 ml-0.5">*</span>}
+        </span>
+        {sessions.length === 0 ? (
+          <span className="mt-1 block text-sm text-muted-foreground">
+            No hay sessions con label disponibles
+          </span>
+        ) : (
+          <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            required={input.required}
+            className="mt-1 block w-full rounded-lg border px-3 py-2 text-sm dark:bg-zinc-800"
+          >
+            <option value="">Seleccionar…</option>
+            {sessions.map((s) => (
+              <option key={s.sessionId} value={s.sessionId}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        )}
       </label>
     );
   }
