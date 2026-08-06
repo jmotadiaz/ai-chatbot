@@ -15,19 +15,24 @@ export const GET = withAuth(async (user, req) => {
   }
 
   const client = new WorkerClient();
-  await client.initializeSession({
-    userId: user.id,
-    sessionId,
-    project: dbSession.project,
-    piSessionId: dbSession.piSessionId ?? undefined,
-  });
-  const result = await client.getSessionPrompts({ sessionId });
-  const sessions = await listSessions({
-    userId: user.id,
-    project: dbSession.project,
-  });
-  return Response.json({
-    prompts: result.prompts,
-    sessions: sessions.map((s) => ({ sessionId: s.sessionId, label: s.label })),
-  });
+  try {
+    await client.initializeSession({
+      userId: user.id,
+      sessionId,
+      project: dbSession.project,
+      piSessionId: dbSession.piSessionId ?? undefined,
+    });
+    const result = await client.getSessionPrompts({ sessionId });
+    const sessions = await listSessions({
+      userId: user.id,
+      project: dbSession.project,
+    });
+    return Response.json({
+      prompts: result.prompts,
+      sessions: sessions.map((s) => ({ sessionId: s.sessionId, label: s.label })),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return Response.json({ error: message }, { status: 400 });
+  }
 });

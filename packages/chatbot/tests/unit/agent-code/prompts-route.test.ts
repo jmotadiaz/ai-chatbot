@@ -15,6 +15,7 @@ const mockState = vi.hoisted(() => ({
   sessions: [] as { sessionId: string; label: string | null }[],
   prompts: [] as unknown[],
   rpcCalls: [] as unknown[],
+  workerError: undefined as Error | undefined,
 }));
 
 vi.mock("@/lib/features/code/session-store", () => ({
@@ -29,6 +30,7 @@ vi.mock("@/lib/features/code/worker-client", () => ({
     }
     async getSessionPrompts(params: unknown) {
       mockState.rpcCalls.push(["getSessionPrompts", params]);
+      if (mockState.workerError) throw mockState.workerError;
       return { prompts: mockState.prompts };
     }
   },
@@ -48,6 +50,7 @@ beforeEach(() => {
   ];
   mockState.prompts = [{ name: "code-review-session" }];
   mockState.rpcCalls = [];
+  mockState.workerError = undefined;
 });
 
 describe("GET /api/agent/code/sessions/[sessionId]/prompts", () => {
@@ -80,5 +83,14 @@ describe("GET /api/agent/code/sessions/[sessionId]/prompts", () => {
 
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ prompts: [], sessions: [] });
+  });
+
+  it("returns 400 with the worker error message when the worker call fails", async () => {
+    mockState.workerError = new Error("worker exploded");
+
+    const res = await GET(makeRequest() as never);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "worker exploded" });
   });
 });
