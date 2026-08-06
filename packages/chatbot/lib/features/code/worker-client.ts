@@ -29,6 +29,11 @@ export interface PromptSummary {
   inputs: PromptInput[];
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  label: string | null;
+}
+
 export interface JsonRpcRequest {
   jsonrpc: "2.0";
   method: string;
