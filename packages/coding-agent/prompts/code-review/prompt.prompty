@@ -3,10 +3,9 @@ name: code-review-session
 description: Resume una sesión del coding agent y sugiere mejoras
 inputs:
   - name: target_session
-    kind: string
+    kind: session
     description: ID de la sesión a revisar
     required: true
-    placeholder: ej. s_abc123
   - name: focus_area
     kind: string
     description: Enfoque del review

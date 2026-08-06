@@ -88,4 +88,14 @@ inputs:
     // The built-in should still be present (loaded from PACKAGE_ROOT)
     expect(prompts.map((p) => p.name)).toContain("code-review-session");
   });
+
+  it("builtin code-review-session declares target_session as kind session", () => {
+    loadPrompts(projectDir);
+    const prompts = getSessionPrompts("fake-session");
+    const review = prompts.find((p) => p.name === "code-review-session");
+    expect(review).toBeDefined();
+    const target = review!.inputs.find((i) => i.name === "target_session");
+    expect(target?.kind).toBe("session");
+    expect(target?.placeholder).toBeUndefined();
+  });
 });
