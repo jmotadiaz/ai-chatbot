@@ -56,6 +56,21 @@ export function getPiPackagePaths(): string[] {
 }
 
 /**
+ * Override extension that exposes harness skills with higher precedence than
+ * third-party package skills. Placed first in `getExtensionPaths()` so that
+ * skills discovered by its `resources_discover` hook win name collisions
+ * against superpowers and other Pi packages.
+ */
+const OVERRIDE_EXTENSION_DIR = path.join(PACKAGE_ROOT, "extensions", "override");
+
+function getOverrideExtensionPath(): string | null {
+  if (existsSync(path.join(OVERRIDE_EXTENSION_DIR, "index.ts"))) {
+    return OVERRIDE_EXTENSION_DIR;
+  }
+  return null;
+}
+
+/**
  * First-party extensions live inside the package (`extensions/<name>/index.ts`)
  * instead of `PI_PACKAGES`, which is reserved for pinned third-party git
  * checkouts.
@@ -69,16 +84,19 @@ export function getFirstPartyExtensionPaths(): string[] {
     .filter(
       (d) =>
         d.isDirectory() &&
+        d.name !== "override" &&
         existsSync(path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name, "index.ts")),
     )
     .map((d) => path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name));
 }
 
 /**
- * All extension paths handed to the Pi resource loader: third-party package
- * checkouts plus first-party extensions. `includeSubagentExtension: false`
- * excludes the subagent tool — child sessions must not get it (structural
- * anti-recursion, spec §4.2).
+ * All extension paths handed to the Pi resource loader. Precedence:
+ * override (harness skills that shadow Pi packages) > Pi packages
+ * (superpowers) > first-party extensions (subagent, etc.).
+ *
+ * `includeSubagentExtension: false` excludes the subagent tool — child
+ * sessions must not get it (structural anti-recursion, spec §4.2).
  */
 export function getExtensionPaths(options?: {
   includeSubagentExtension?: boolean;
@@ -88,5 +106,9 @@ export function getExtensionPaths(options?: {
       options?.includeSubagentExtension !== false ||
       !p.endsWith(path.join("extensions", "subagent")),
   );
-  return [...getPiPackagePaths(), ...firstParty];
+  const override = getOverrideExtensionPath();
+  const paths: string[] = [...getPiPackagePaths()];
+  if (override) paths.unshift(override);
+  paths.push(...firstParty);
+  return paths;
 }
