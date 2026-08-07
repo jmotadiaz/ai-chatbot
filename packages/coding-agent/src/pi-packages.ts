@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { PACKAGE_ROOT, resolveOverride } from "./paths";
 
 /**
@@ -19,6 +19,18 @@ export interface PiPackage {
   defaultRef: string;
   /** Env var that overrides `defaultRef`. */
   refEnvVar: string;
+  /**
+   * Strip the `pi.skills` manifest entry from the checked-out package.json.
+   *
+   * Package-declared skills are loaded by the SDK's `resourceLoader.reload()`
+   * BEFORE any extension `resources_discover` hook, and loadSkills resolves
+   * same-name skills first-wins — so a manifest-declared `brainstorming`
+   * always beats `skills-override/brainstorming`. Stripping the entry makes
+   * the package's skills arrive only through its extension's
+   * `resources_discover`, which the SDK loads in extension order with the
+   * harness override first. See `scripts/install-packages.ts`.
+   */
+  stripManifestSkills?: boolean;
 }
 
 export const PI_PACKAGES: PiPackage[] = [
@@ -27,6 +39,10 @@ export const PI_PACKAGES: PiPackage[] = [
     repo: "https://github.com/obra/superpowers.git",
     defaultRef: "v6.2.0",
     refEnvVar: "CODING_AGENT_SUPERPOWERS_REF",
+    // superpowers declares pi.skills AND its extension registers the same
+    // skills dir via resources_discover; the manifest entry must go so the
+    // harness skills-override wins the brainstorming name collision.
+    stripManifestSkills: true,
   },
 ];
 
@@ -111,4 +127,45 @@ export function getExtensionPaths(options?: {
   if (override) paths.unshift(override);
   paths.push(...firstParty);
   return paths;
+}
+
+/**
+ * Remove the `pi.skills` entry from a checked-out package manifest. Returns
+ * true when the file was modified, false when there was nothing to strip.
+ * The package's skills then reach sessions only through its extension's
+ * `resources_discover` hook, which the SDK loads after the harness override
+ * extension — so `skills-override/` wins same-name collisions (loadSkills
+ * keeps the first skill that claims a name).
+ */
+export function removePiSkillsFromManifest(packageJsonPath: string): boolean {
+  const manifest = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+  if (!manifest.pi || !Array.isArray(manifest.pi.skills)) return false;
+  delete manifest.pi.skills;
+  writeFileSync(packageJsonPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  return true;
+}
+
+/**
+ * Apply the manifest patch for a package's checkout dir (see
+ * `PiPackage.stripManifestSkills`). Called by `scripts/install-packages.ts`
+ * after every install, skipped or not, so existing checkouts get patched too.
+ * Never throws: a patch failure must not block worker startup — it only
+ * means the package's skills keep shadowing the harness override.
+ */
+export function applyManifestSkillPatches(pkg: PiPackage, checkoutDir: string): void {
+  if (!pkg.stripManifestSkills) return;
+  const manifestPath = path.join(checkoutDir, "package.json");
+  if (!existsSync(manifestPath)) return;
+  try {
+    if (removePiSkillsFromManifest(manifestPath)) {
+      console.log(
+        `pi package manifest patched: ${pkg.name} — pi.skills stripped so its skills load via resources_discover after the harness override`,
+      );
+    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `pi package manifest patch failed for ${pkg.name} — its skills may shadow skills-override\n${detail}`,
+    );
+  }
 }

@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import {
   PI_PACKAGES,
+  applyManifestSkillPatches,
   getPiPackagePath,
   getPiPackageRef,
   type PiPackage,
@@ -75,4 +76,7 @@ for (const pkg of PI_PACKAGES) {
       : "the worker starts without its skills and extensions";
     console.warn(`pi package install failed: ${pkg.name}@${ref} — ${state}\n${detail}`);
   }
+  // Apply the manifest patch regardless of install outcome so existing
+  // checkouts (already on the pinned ref, install "skipped") are patched too.
+  applyManifestSkillPatches(pkg, dir);
 }

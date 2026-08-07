@@ -30,6 +30,8 @@ Currently installed: [superpowers](https://github.com/obra/superpowers) (skills 
 
 The install step is idempotent and skips the network when the checkout already matches the pinned ref, so it runs on every `transport:http` start. It never fails the worker: if the clone or fetch fails, the worker starts with whatever is on disk (possibly nothing). Run `pnpm --filter coding-agent packages:install --force` to re-fetch a moving ref.
 
+Some packages declare `pi.skills` in their manifest **and** register the same skills dir via an extension `resources_discover` hook. The SDK loads package-declared skills during `reload()` (before any extension hook) and resolves same-name skills first-wins, so a manifest-declared `brainstorming` would always shadow `skills-override/`. `scripts/install-packages.ts` therefore strips the `pi.skills` manifest entry (flag `stripManifestSkills` in `src/pi-packages.ts`) after checkout, so those skills arrive only through the package extension — loaded after the harness override extension, which then wins the name collision.
+
 ## Subagent Extension
 
 First-party Pi extension (`extensions/subagent/`) that registers a `subagent` tool, letting a session delegate self-contained tasks to in-process child sessions (design: `docs/superpowers/specs/2026-08-02-subagent-extension-design.md`).
