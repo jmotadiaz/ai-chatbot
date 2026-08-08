@@ -152,4 +152,88 @@ describe("session-manager thinking level", () => {
     expect(res.status).toBe(200);
     expect(setThinkingLevel).toHaveBeenCalledWith("low");
   });
+
+  it("rejects a model change while the session is streaming", async () => {
+    const { handleRpc } = await import("coding-agent/transports/http");
+    const setModel = vi.fn();
+    __seedSessionForTests("t-7", {
+      sessionId: "t-7",
+      piSessionId: "pi-t-7",
+      project: "p",
+      runtime: {
+        session: {
+          isStreaming: true,
+          model: { provider: "opencode-go", id: "deepseek-v4-flash" },
+          setModel,
+        },
+        services: {
+          modelRegistry: {
+            find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }),
+          },
+        },
+      } as never,
+      eventLog: new SessionEventLog(),
+    });
+
+    const res = await handleRpc(
+      JSON.stringify({
+        method: "initializeSession",
+        params: {
+          userId: "u1",
+          sessionId: "t-7",
+          project: "p",
+          modelId: "opencode-go/deepseek-v4-pro",
+          defaultThinkingLevel: "low",
+        },
+        id: 4,
+      }),
+    );
+
+    const body = (await res.json()) as {
+      error?: { code: number; message: string };
+    };
+    expect(body.error).toBeTruthy();
+    expect(body.error?.message).toBe("Cannot change model while the agent is running");
+    // The mid-run switch must never reach the Pi session.
+    expect(setModel).not.toHaveBeenCalled();
+  });
+
+  it("allows initializeSession with the same model while streaming", async () => {
+    const { handleRpc } = await import("coding-agent/transports/http");
+    const setModel = vi.fn();
+    __seedSessionForTests("t-8", {
+      sessionId: "t-8",
+      piSessionId: "pi-t-8",
+      project: "p",
+      runtime: {
+        session: {
+          isStreaming: true,
+          model: { provider: "opencode-go", id: "deepseek-v4-pro" },
+          setModel,
+        },
+        services: {
+          modelRegistry: {
+            find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }),
+          },
+        },
+      } as never,
+      eventLog: new SessionEventLog(),
+    });
+
+    const res = await handleRpc(
+      JSON.stringify({
+        method: "initializeSession",
+        params: {
+          userId: "u1",
+          sessionId: "t-8",
+          project: "p",
+          modelId: "opencode-go/deepseek-v4-pro",
+        },
+        id: 5,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(setModel).not.toHaveBeenCalled();
+  });
 });

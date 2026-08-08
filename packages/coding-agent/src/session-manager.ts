@@ -326,6 +326,14 @@ function makeCreateRuntime(
       piProvider && piModelId
           ? services.modelRegistry.find(piProvider, piModelId)
           : undefined;
+    if (piProvider && piModelId && !model) {
+      // The registry is authoritative; a missing entry means the session is
+      // created without a model (Pi falls back to its default), which would
+      // be a silent no-op for the caller. Surface it in the trace.
+      getTraceLogger("worker").warn("session.model_not_in_registry", {
+        modelId,
+      });
+    }
     return {
       ...(await createAgentSessionFromServices({
         services,
@@ -428,6 +436,16 @@ export async function getOrCreateSession(options: {
     if (options.modelId) {
       const current = existing.runtime.session.model;
       if (current && `${current.provider}/${current.id}` !== options.modelId) {
+        // Pi's setModel has no isStreaming guard: swapping the model while a
+        // run is in flight is undefined behavior. Refuse so the caller's
+        // optimistic POST fails and the UI stays honest.
+        if (existing.runtime.session.isStreaming) {
+          log.warn("session.model_change_blocked_streaming", {
+            sessionId: existing.sessionId,
+            modelId: options.modelId,
+          });
+          throw new Error("Cannot change model while the agent is running");
+        }
         const [piProvider, piModelId] = options.modelId.split("/");
         const model =
           piProvider && piModelId
@@ -437,6 +455,11 @@ export async function getOrCreateSession(options: {
           await existing.runtime.session.setModel(model);
           applyDefaultThinkingLevel(existing, options.defaultThinkingLevel);
           log.info("session.model_changed", {
+            sessionId: existing.sessionId,
+            modelId: options.modelId,
+          });
+        } else {
+          log.warn("session.model_not_in_registry", {
             sessionId: existing.sessionId,
             modelId: options.modelId,
           });
