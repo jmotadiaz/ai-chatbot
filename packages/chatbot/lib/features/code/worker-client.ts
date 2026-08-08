@@ -240,6 +240,23 @@ export class WorkerClient {
     );
   }
 
+  async getSessionThinkingLevel(params: {
+    sessionId: string;
+    piSessionId?: string;
+    project?: string;
+  }): Promise<{ thinking: { level: string; levels: string[] } | null }> {
+    return this.call("getSessionThinkingLevel", params);
+  }
+
+  async setSessionThinkingLevel(params: {
+    sessionId: string;
+    level: string;
+    piSessionId?: string;
+    project?: string;
+  }): Promise<{ thinking: { level: string } | null }> {
+    return this.call("setSessionThinkingLevel", params);
+  }
+
   async getSessionSkills(params: {
     sessionId: string;
   }): Promise<{ skills: WorkerSkill[] }> {
@@ -304,6 +321,19 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         project: typeof p.project === "string" ? p.project : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
         hasParentSessionId: typeof p.parentSessionId === "string",
+      };
+    case "getSessionThinkingLevel":
+      return {
+        sessionId,
+        hasPiSessionId: typeof p.piSessionId === "string",
+        project: typeof p.project === "string" ? p.project : undefined,
+      };
+    case "setSessionThinkingLevel":
+      return {
+        sessionId,
+        level: typeof p.level === "string" ? p.level : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+        project: typeof p.project === "string" ? p.project : undefined,
       };
     case "getSubagentSession":
       return {
