@@ -3,6 +3,7 @@ import {
   INVOCABLE_MODEL_IDS,
   MODEL_CATALOG,
   getDefaultThinkingLevel,
+  getSupportedThinkingLevels,
   type ThinkingLevel,
 } from "./catalog";
 
@@ -73,5 +74,44 @@ describe("defaultThinkingLevel", () => {
 
   it("returns undefined for models without a declared default", () => {
     expect(getDefaultThinkingLevel("StepFun 3.5" as never)).toBeUndefined();
+  });
+});
+
+describe("getSupportedThinkingLevels", () => {
+  it("only supports off when reasoning is disabled or unknown", () => {
+    expect(getSupportedThinkingLevels(undefined, undefined)).toEqual(["off"]);
+    expect(getSupportedThinkingLevels(false, undefined)).toEqual(["off"]);
+  });
+
+  it("supports the default level ladder for reasoning models without a map", () => {
+    expect(getSupportedThinkingLevels(true, undefined)).toEqual([
+      "off",
+      "minimal",
+      "low",
+      "medium",
+      "high",
+    ]);
+  });
+
+  it("drops levels mapped to null and adds xhigh only with an explicit mapping", () => {
+    expect(
+      getSupportedThinkingLevels(true, {
+        minimal: null,
+        low: null,
+        medium: null,
+        high: "high",
+        xhigh: "max",
+      }),
+    ).toEqual(["off", "high", "xhigh"]);
+  });
+
+  it("keeps off + high when the map only nulls the lower levels", () => {
+    expect(
+      getSupportedThinkingLevels(true, {
+        minimal: null,
+        low: null,
+        medium: null,
+      }),
+    ).toEqual(["off", "high"]);
   });
 });

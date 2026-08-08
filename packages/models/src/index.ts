@@ -2,6 +2,7 @@ export {
   MODEL_CATALOG,
   INVOCABLE_MODEL_IDS,
   getDefaultThinkingLevel,
+  getSupportedThinkingLevels,
   type Company,
   type InvocableModelId,
   type ModelCatalogEntry,

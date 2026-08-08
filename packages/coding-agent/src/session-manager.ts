@@ -12,7 +12,8 @@ import {
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger, retainTraceSink } from "tracing";
-import type { ThinkingLevel } from "models";
+import { getSupportedThinkingLevels } from "models";
+import type { ThinkingLevel, ThinkingLevelMap } from "models";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
 import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
@@ -1105,7 +1106,7 @@ function convertPiMessagesToAgui(piMessages: ReadonlyArray<any>): Array<any> {
 }
 
 export async function getAvailableModels(): Promise<
-  Array<{ providerId: string; modelId: string; label: string }>
+  Array<{ providerId: string; modelId: string; label: string; levels: ThinkingLevel[] }>
 > {
   const log = getTraceLogger("worker");
   log.info("models.fetch");
@@ -1119,6 +1120,10 @@ export async function getAvailableModels(): Promise<
       providerId: model.provider,
       modelId: model.id,
       label: `${model.provider}/${model.id}`,
+      levels: getSupportedThinkingLevels(
+        model.reasoning,
+        (model as { thinkingLevelMap?: ThinkingLevelMap }).thinkingLevelMap,
+      ),
     }));
 
   log.info("models.result", { count: filtered.length });

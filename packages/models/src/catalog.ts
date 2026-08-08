@@ -529,3 +529,19 @@ export function getDefaultThinkingLevel(
       e.userInvocable && e.id === modelId,
   )?.defaultThinkingLevel;
 }
+
+const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+
+/** Misma semántica que pi-ai: niveles soportados según reasoning + thinkingLevelMap. */
+export function getSupportedThinkingLevels(
+  reasoning: boolean | undefined,
+  thinkingLevelMap: ThinkingLevelMap | undefined,
+): ThinkingLevel[] {
+  if (!reasoning) return ["off"];
+  return THINKING_LEVELS.filter((level) => {
+    const mapped = thinkingLevelMap?.[level];
+    if (mapped === null) return false;
+    if (level === "xhigh") return mapped !== undefined;
+    return true;
+  });
+}
