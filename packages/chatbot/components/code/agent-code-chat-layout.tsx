@@ -32,7 +32,6 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
     modelId,
     setModelId,
     isLoading: isLoadingModel,
-    isApplying,
   } = useCodingAgentSessionModel({
     sessionId,
     fallbackModelId: availableModels[0] ?? "",
@@ -71,7 +70,6 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
               setSelectedModel={setModelId as (m: chatModelId) => void}
               models={availableModels as chatModelId[]}
               dropdownVariant="responsive-bottom-right"
-              disabled={isApplying}
             />
           )}
         </Header.Left>
@@ -84,7 +82,6 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           project={project}
           sessionId={sessionId}
           modelId={modelId ?? ""}
-          isModelChanging={isApplying}
         />
       </Main>
     </FileBrowserProvider>

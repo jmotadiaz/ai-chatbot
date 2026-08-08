@@ -10,8 +10,6 @@ export interface ReasoningControlProps {
   level: ThinkingLevel | null;
   levels: ThinkingLevel[];
   isLoading: boolean;
-  /** true mientras un cambio de modelo se está aplicando en el worker; el control se deshabilita. */
-  isApplying?: boolean;
   onSelect: (level: ThinkingLevel) => void;
 }
 
@@ -19,7 +17,6 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
   level,
   levels,
   isLoading,
-  isApplying = false,
   onSelect,
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
@@ -34,7 +31,7 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
         type="button"
         aria-label={`Reasoning effort: ${level ?? "…"}`}
         title={`Reasoning effort: ${level ?? "…"}`}
-        disabled={isLoading || level === null || isApplying}
+        disabled={isLoading || level === null}
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup

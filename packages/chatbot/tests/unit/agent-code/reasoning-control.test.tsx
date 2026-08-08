@@ -83,30 +83,4 @@ describe("ReasoningControl", () => {
     // repo's vitest setup; assert the native property instead.
     expect(screen.getByRole("button", { name: /Reasoning effort/ })).toHaveProperty("disabled", true);
   });
-
-  it("disables the trigger while a model change is being applied", () => {
-    render(
-      <ReasoningControl
-        level="high"
-        levels={["off", "high", "xhigh"]}
-        isLoading={false}
-        isApplying={true}
-        onSelect={vi.fn()}
-      />,
-    );
-    expect(screen.getByRole("button", { name: /Reasoning effort: high/ })).toHaveProperty("disabled", true);
-  });
-
-  it("keeps the trigger enabled once the model change resolved", () => {
-    render(
-      <ReasoningControl
-        level="high"
-        levels={["off", "high", "xhigh"]}
-        isLoading={false}
-        isApplying={false}
-        onSelect={vi.fn()}
-      />,
-    );
-    expect(screen.getByRole("button", { name: /Reasoning effort: high/ })).toHaveProperty("disabled", false);
-  });
 });
