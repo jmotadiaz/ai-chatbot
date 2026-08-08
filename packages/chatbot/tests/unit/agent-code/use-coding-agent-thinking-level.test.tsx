@@ -22,7 +22,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
 
   it("loads the level and available levels for the session", async () => {
     const { result } = renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true }),
+      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false }),
     );
 
     await waitFor(() => expect(result.current.level).toBe("high"));
@@ -35,7 +35,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     const fetchMock = vi.mocked(fetch);
     const { rerender } = renderHook(
       ({ modelId }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true }),
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false }),
       { initialProps: { modelId: "Deepseek v4 Pro" } },
     );
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -44,10 +44,26 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
+  it("refetches when a run completes (isRunning true→false)", async () => {
+    const fetchMock = vi.mocked(fetch);
+    const { rerender } = renderHook(
+      ({ isRunning }) =>
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning }),
+      { initialProps: { isRunning: true } },
+    );
+    // Initial load while the run is in flight.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    rerender({ isRunning: false });
+    // Falling edge triggers a refetch so the worker-applied default shows up.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/agent/code/sessions/s1/thinking-level");
+  });
+
   it("stays idle while disabled or without a model", () => {
     const fetchMock = vi.mocked(fetch);
     renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: null, enabled: true }),
+      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: null, enabled: true, isRunning: false }),
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -64,7 +80,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     } as unknown as Response);
 
     const { result } = renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true }),
+      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false }),
     );
     await waitFor(() => expect(result.current.level).toBe("high"));
 

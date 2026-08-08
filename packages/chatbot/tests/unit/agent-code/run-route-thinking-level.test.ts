@@ -83,7 +83,7 @@ describe("POST /api/agent/code", () => {
     expect(init.defaultThinkingLevel).toBe("xhigh");
   });
 
-  it("omits defaultThinkingLevel when the model has none declared", async () => {
+  it("passes the catalog default for every invocable model", async () => {
     const req = new Request("http://test/api/agent/code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

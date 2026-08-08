@@ -114,4 +114,10 @@ describe("POST /api/agent/code/sessions/[sessionId]/thinking-level", () => {
     const res = await POST(makePostRequest("") as never);
     expect(res.status).toBe(400);
   });
+
+  it("returns 400 for an invalid level", async () => {
+    const res = await POST(makePostRequest("ultra") as never);
+    expect(res.status).toBe(400);
+    expect(mockState.setParams).toHaveLength(0);
+  });
 });

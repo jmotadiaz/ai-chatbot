@@ -110,4 +110,46 @@ describe("session-manager thinking level", () => {
     expect(session.setThinkingLevel).toHaveBeenCalledWith("xhigh");
     expect(body.result.thinking.level).toBe("xhigh");
   });
+
+  it("wires initializeSession defaultThinkingLevel through handleRpc into the session runtime", async () => {
+    const { handleRpc } = await import("coding-agent/transports/http");
+    const setThinkingLevel = vi.fn();
+    // The session is already in memory with a different model; the reuse path
+    // in getOrCreateSession must switch the model and then apply the default.
+    __seedSessionForTests("t-6", {
+      sessionId: "t-6",
+      piSessionId: "pi-t-6",
+      project: "p",
+      runtime: {
+        session: {
+          model: { provider: "opencode-go", id: "deepseek-v4-flash" },
+          setModel: vi.fn(),
+          setThinkingLevel,
+        },
+        services: {
+          modelRegistry: {
+            find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }),
+          },
+        },
+      } as never,
+      eventLog: new SessionEventLog(),
+    });
+
+    const res = await handleRpc(
+      JSON.stringify({
+        method: "initializeSession",
+        params: {
+          userId: "u1",
+          sessionId: "t-6",
+          project: "p",
+          modelId: "opencode-go/deepseek-v4-pro",
+          defaultThinkingLevel: "low",
+        },
+        id: 3,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(setThinkingLevel).toHaveBeenCalledWith("low");
+  });
 });
