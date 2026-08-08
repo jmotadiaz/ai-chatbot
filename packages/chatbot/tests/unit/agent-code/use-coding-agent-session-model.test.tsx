@@ -98,4 +98,64 @@ describe("useCodingAgentSessionModel", () => {
     expect(result.current.modelId).toBe("Deepseek v4 Pro");
     expect(result.current.isApplying).toBe(false);
   });
+
+  it("ignores a stale pick's revert and isApplying cleanup when a newer pick wins", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: okJson({ modelId: "Deepseek v4 Pro" }),
+    } as unknown as Response);
+    let rejectA!: (reason: Error) => void;
+    let resolveB!: (response: Response) => void;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise<Response>((_, reject) => {
+          rejectA = reject;
+        }),
+    );
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveB = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() =>
+      useCodingAgentSessionModel({ sessionId: "s1", fallbackModelId: "Fallback" }),
+    );
+    await waitFor(() => expect(result.current.modelId).toBe("Deepseek v4 Pro"));
+
+    // Pick A (captured from the render before its optimistic state lands).
+    const pickA = result.current.setModelId("Kimi K2.7 Code");
+    await act(async () => {});
+    expect(result.current.modelId).toBe("Kimi K2.7 Code");
+    expect(result.current.isApplying).toBe(true);
+
+    // Pick B starts while A is still in flight.
+    const pickB = result.current.setModelId("Qwen 3.7 Plus");
+    await act(async () => {});
+    expect(result.current.modelId).toBe("Qwen 3.7 Plus");
+    expect(result.current.isApplying).toBe(true);
+
+    // B succeeds first: state settles on B and isApplying clears.
+    await act(async () => {
+      resolveB({
+        ok: true,
+        json: okJson({ modelId: "Qwen 3.7 Plus" }),
+      } as unknown as Response);
+      await pickB;
+    });
+    expect(result.current.modelId).toBe("Qwen 3.7 Plus");
+    expect(result.current.isApplying).toBe(false);
+
+    // A fails afterwards: its stale catch must not revert to pre-A and its
+    // stale finally must not touch isApplying (B's falling-edge refetch in
+    // the layout depends on that flag staying clear).
+    await act(async () => {
+      rejectA(new Error("boom"));
+      await pickA;
+    });
+    expect(result.current.modelId).toBe("Qwen 3.7 Plus");
+    expect(result.current.isApplying).toBe(false);
+  });
 });

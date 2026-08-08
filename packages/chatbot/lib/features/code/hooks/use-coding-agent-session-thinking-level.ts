@@ -20,6 +20,8 @@ export interface UseCodingAgentSessionThinkingLevelResult {
   /** Niveles disponibles del modelo actual; ["off"] si el modelo no razona. */
   levels: ThinkingLevel[];
   isLoading: boolean;
+  /** true mientras un cambio de modelo se persiste en el worker (el control se deshabilita). */
+  isApplying: boolean;
   setLevel: (level: ThinkingLevel) => Promise<void>;
 }
 
@@ -34,39 +36,40 @@ export function useCodingAgentSessionThinkingLevel({
   const [levels, setLevels] = useState<ThinkingLevel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const load = useCallback(
-    async (isCancelled: () => boolean) => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/thinking-level`,
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to load thinking level: ${response.status}`);
-        }
-        const data = (await response.json()) as {
-          thinking: { level: ThinkingLevel; levels: ThinkingLevel[] } | null;
-        };
-        if (!isCancelled() && data.thinking) {
-          setLevelState(data.thinking.level);
-          setLevels(data.thinking.levels);
-        }
-      } catch {
-        // Worker caído o red: mantener el estado anterior.
-      } finally {
-        if (!isCancelled()) setIsLoading(false);
+  // Monotonic sequence token: the two refetch paths (modelId change + the
+  // isApplyingModel / isRunning falling edges) can overlap, and a slow GET
+  // that started with old-model data must never overwrite fresher state.
+  // Each load captures the token at start and only applies state if it is
+  // still the latest.
+  const loadSeqRef = useRef(0);
+
+  const load = useCallback(async () => {
+    const seq = ++loadSeqRef.current;
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/thinking-level`,
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to load thinking level: ${response.status}`);
       }
-    },
-    [sessionId],
-  );
+      const data = (await response.json()) as {
+        thinking: { level: ThinkingLevel; levels: ThinkingLevel[] } | null;
+      };
+      if (seq === loadSeqRef.current && data.thinking) {
+        setLevelState(data.thinking.level);
+        setLevels(data.thinking.levels);
+      }
+    } catch {
+      // Worker caído o red: mantener el estado anterior.
+    } finally {
+      if (seq === loadSeqRef.current) setIsLoading(false);
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     if (!enabled || !modelId) return;
-    let cancelled = false;
-    void load(() => cancelled);
-    return () => {
-      cancelled = true;
-    };
+    void load();
   }, [sessionId, modelId, enabled, load]);
 
   // Refetch when a run finishes: on session create / model switch the worker
@@ -78,11 +81,7 @@ export function useCodingAgentSessionThinkingLevel({
     const runFinished = prevIsRunningRef.current === true && isRunning === false;
     prevIsRunningRef.current = isRunning;
     if (!runFinished || !enabled || !modelId) return;
-    let cancelled = false;
-    void load(() => cancelled);
-    return () => {
-      cancelled = true;
-    };
+    void load();
   }, [isRunning, enabled, modelId, load]);
 
   // Refetch when a model change is confirmed: the worker applies the new
@@ -95,11 +94,7 @@ export function useCodingAgentSessionThinkingLevel({
       prevIsApplyingRef.current === true && isApplyingModel === false;
     prevIsApplyingRef.current = isApplyingModel;
     if (!modelChangeApplied || !enabled || !modelId) return;
-    let cancelled = false;
-    void load(() => cancelled);
-    return () => {
-      cancelled = true;
-    };
+    void load();
   }, [isApplyingModel, enabled, modelId, load]);
 
   const setLevel = async (next: ThinkingLevel) => {
@@ -120,5 +115,5 @@ export function useCodingAgentSessionThinkingLevel({
     if (data.thinking) setLevelState(data.thinking.level);
   };
 
-  return { level, levels, isLoading, setLevel };
+  return { level, levels, isLoading, isApplying: isApplyingModel, setLevel };
 }

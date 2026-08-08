@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface UseCodingAgentSessionModelArgs {
   sessionId: string;
@@ -29,6 +29,12 @@ export function useCodingAgentSessionModel({
 }: UseCodingAgentSessionModelArgs): UseCodingAgentSessionModelResult {
   const [modelId, setModelIdState] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  // Monotonic sequence for optimistic applies: with the picker disabled while
+  // isApplying is true, overlapping picks can no longer start from the UI, but
+  // the hook still guards against a stale pick's catch/finally clobbering a
+  // newer pick's state (revert race) or clearing isApplying early (dropping
+  // the falling-edge refetch). Only the latest pick may revert or clear.
+  const applySeqRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +64,7 @@ export function useCodingAgentSessionModel({
   const setModelId = useCallback(
     async (next: string) => {
       const previous = modelId;
+      const seq = ++applySeqRef.current;
       setModelIdState(next);
       setIsApplying(true);
       try {
@@ -73,9 +80,9 @@ export function useCodingAgentSessionModel({
           throw new Error(`Failed to set model: ${response.status}`);
         }
       } catch {
-        setModelIdState(previous);
+        if (seq === applySeqRef.current) setModelIdState(previous);
       } finally {
-        setIsApplying(false);
+        if (seq === applySeqRef.current) setIsApplying(false);
       }
     },
     [sessionId, modelId],

@@ -76,6 +76,45 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     expect(fetchMock).toHaveBeenLastCalledWith("/api/agent/code/sessions/s1/thinking-level");
   });
 
+  it("ignores a stale GET that resolves after a newer load already applied state", async () => {
+    const fetchMock = vi.mocked(fetch);
+    let resolveStale!: (response: Response) => void;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveStale = resolve;
+        }),
+    );
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: okJson({ thinking: { level: "xhigh", levels: ["off", "high", "xhigh"] } }),
+    } as unknown as Response);
+
+    const { result, rerender } = renderHook(
+      ({ modelId }) =>
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false, isApplyingModel: false }),
+      { initialProps: { modelId: "Deepseek v4 Pro" } },
+    );
+    // First load (old model) is still in flight when the model changes.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    rerender({ modelId: "Kimi K2.7 Code" });
+    await waitFor(() => expect(result.current.level).toBe("xhigh"));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // The slow old-model response lands late: it must not clobber the state.
+    await act(async () => {
+      resolveStale({
+        ok: true,
+        json: okJson({ thinking: { level: "low", levels: ["off", "low"] } }),
+      } as unknown as Response);
+    });
+
+    expect(result.current.level).toBe("xhigh");
+    expect(result.current.levels).toEqual(["off", "high", "xhigh"]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it("stays idle while disabled or without a model", () => {
     const fetchMock = vi.mocked(fetch);
     renderHook(() =>
