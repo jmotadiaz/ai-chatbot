@@ -31,7 +31,6 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
         type="button"
         aria-label={`Reasoning effort: ${level ?? "…"}`}
         title={`Reasoning effort: ${level ?? "…"}`}
-        isActive={level !== null && level !== "off"}
         disabled={isLoading || level === null}
         {...getDropdownTriggerProps()}
       />

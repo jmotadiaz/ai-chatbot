@@ -1,4 +1,4 @@
-import { MODEL_CATALOG, type ModelCatalogEntry, type ModelCost } from "./catalog";
+import { MODEL_CATALOG, type ModelCatalogEntry, type ModelCost, type ThinkingLevelMap } from "./catalog";
 import { PI_PROVIDER } from "./mapping";
 
 /**
@@ -20,6 +20,8 @@ export interface PiModelBaseline {
   api?: string;
   /** Pi's built-in base url for the model. */
   baseUrl?: string;
+  /** Pi's built-in thinking level map (levels and their provider values). */
+  thinkingLevelMap?: ThinkingLevelMap;
 }
 
 export interface PiModelDefinition {
@@ -32,6 +34,8 @@ export interface PiModelDefinition {
   cost: ModelCost;
   api?: string;
   baseUrl?: string;
+  /** Emitted so pi's ModelRegistry keeps the built-in thinking level map; without it, getSupportedThinkingLevels caps at "high". */
+  thinkingLevelMap?: ThinkingLevelMap;
 }
 
 export interface PiModelsJson {
@@ -88,6 +92,11 @@ function buildModelDefinition(
     // to openai-completions and breaks thinking/reasoning streaming.
     api: baseline?.api,
     baseUrl: baseline?.baseUrl,
+    // Pi replaces the built-in model wholesale with the models.json entry
+    // (mergeCustomModels), so a thinkingLevelMap omitted here silently caps
+    // the model's supported levels at "high" (xhigh needs an explicit
+    // mapping). Inherit it from the built-in unless the catalog overrides.
+    thinkingLevelMap: entry.thinkingLevelMap ?? baseline?.thinkingLevelMap,
   };
 }
 

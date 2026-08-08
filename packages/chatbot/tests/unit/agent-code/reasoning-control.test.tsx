@@ -61,6 +61,19 @@ describe("ReasoningControl", () => {
     expect(onSelect).toHaveBeenCalledWith("off");
   });
 
+  it("does not apply the active style to the trigger", () => {
+    render(
+      <ReasoningControl
+        level="high"
+        levels={["off", "high", "xhigh"]}
+        isLoading={false}
+        onSelect={vi.fn()}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /Reasoning effort: high/ });
+    expect(trigger.className).not.toContain("bg-blue-600");
+  });
+
   it("disables the trigger while loading", () => {
 
     render(

@@ -145,6 +145,55 @@ describe("generateModelsJson", () => {
     expect(miniMax?.baseUrl).toBe("https://opencode.ai/zen/go");
   });
 
+  it("inherits Pi's thinkingLevelMap from the built-in baseline", () => {
+    // Without this, deepseek's built-in thinkingLevelMap ({xhigh: "max"}) is
+    // lost because pi's ModelRegistry replaces the built-in wholesale with the
+    // models.json entry, and getSupportedThinkingLevels then caps at "high".
+    const withMap = new Map(builtIns).set("deepseek-v4-pro", {
+      ...builtIns.get("deepseek-v4-pro")!,
+      thinkingLevelMap: {
+        minimal: null,
+        low: null,
+        medium: null,
+        high: "high",
+        xhigh: "max",
+      },
+    });
+    const pro = generateModelsJson(undefined, { builtIns: withMap })
+      .providers["opencode-go"].models.find((m) => m.id === "deepseek-v4-pro");
+    expect(pro?.thinkingLevelMap).toEqual({
+      minimal: null,
+      low: null,
+      medium: null,
+      high: "high",
+      xhigh: "max",
+    });
+  });
+
+  it("lets the catalog override the inherited thinkingLevelMap", () => {
+    const entry: ModelCatalogEntry = {
+      id: "Deepseek v4 Pro",
+      userInvocable: true,
+      provider: { kind: "opencodeGo", modelId: "deepseek-v4-pro" },
+      company: "deepseek",
+      reasoning: true,
+      thinkingLevelMap: { high: "high", xhigh: null },
+    };
+    const withMap = new Map(builtIns).set("deepseek-v4-pro", {
+      ...builtIns.get("deepseek-v4-pro")!,
+      thinkingLevelMap: {
+        minimal: null,
+        low: null,
+        medium: null,
+        high: "high",
+        xhigh: "max",
+      },
+    });
+    const [model] = generateModelsJson([entry], { builtIns: withMap })
+      .providers["opencode-go"].models;
+    expect(model.thinkingLevelMap).toEqual({ high: "high", xhigh: null });
+  });
+
   it("accepts a model Pi does not know when the catalog describes it fully", () => {
     const entry: ModelCatalogEntry = {
       id: "Brand New Model",

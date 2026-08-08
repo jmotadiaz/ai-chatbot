@@ -36,6 +36,13 @@ export interface ModelCost {
 
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
+/**
+ * Model-level thinking controls, keyed by Pi thinking level. A string value
+ * is what gets sent to the provider for that level; null marks the level as
+ * unsupported (hidden/clamped away).
+ */
+export type ThinkingLevelMap = Partial<Record<ThinkingLevel, string | null>>;
+
 export interface ModelCatalogEntry {
   id: string;
   userInvocable: boolean;
@@ -47,6 +54,12 @@ export interface ModelCatalogEntry {
    * agent (o al cambiar de modelo). Pi lo clampea a lo que el modelo soporta.
    */
   defaultThinkingLevel?: ThinkingLevel;
+  /**
+   * Optional override of the levels a model supports and their provider
+   * mapping. When omitted, the generated models.json inherits Pi's built-in
+   * thinkingLevelMap (e.g. deepseek-v4-pro only supports off/high/xhigh).
+   */
+  thinkingLevelMap?: ThinkingLevelMap;
   temperature?: number;
   topP?: number;
   topK?: number;

@@ -9,6 +9,7 @@ export {
   type ModelId,
   type ProviderKind,
   type ThinkingLevel,
+  type ThinkingLevelMap,
 } from "./catalog";
 export {
   PI_PROVIDER,

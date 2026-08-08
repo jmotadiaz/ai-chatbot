@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { AuthStorage, ModelRegistry } from "@earendil-works/pi-coding-agent";
-import { PI_PROVIDER, generateModelsJson, type PiModelBaseline } from "models";
+import { PI_PROVIDER, generateModelsJson, type PiModelBaseline, type ThinkingLevelMap } from "models";
 import { getModelsJsonPath } from "../src/models";
 
 /**
@@ -27,6 +27,8 @@ function readBuiltInBaselines(): Map<string, PiModelBaseline> {
           cost: model.cost,
           api: (model as { api?: string }).api,
           baseUrl: (model as { baseUrl?: string }).baseUrl,
+          thinkingLevelMap: (model as { thinkingLevelMap?: ThinkingLevelMap })
+            .thinkingLevelMap,
         },
       ]),
   );
