@@ -14,10 +14,12 @@ const mockState: {
   dbSession: Record<string, unknown> | undefined;
   workerModel: { providerId: string; modelId: string } | null;
   modelParams: unknown[];
+  initParams: unknown[];
 } = vi.hoisted(() => ({
   dbSession: undefined,
   workerModel: null,
   modelParams: [] as unknown[],
+  initParams: [] as unknown[],
 }));
 
 vi.mock("@/lib/features/code/session-store", () => ({
@@ -30,10 +32,15 @@ vi.mock("@/lib/features/code/worker-client", () => ({
       mockState.modelParams.push(params);
       return { model: mockState.workerModel };
     }
+
+    async initializeSession(params: unknown) {
+      mockState.initParams.push(params);
+      return { sessionId: "s1", piSessionId: "pi-1" };
+    }
   },
 }));
 
-import { GET } from "@/app/(chat)/api/agent/code/sessions/[sessionId]/model/route";
+import { GET, POST } from "@/app/(chat)/api/agent/code/sessions/[sessionId]/model/route";
 
 function makeRequest() {
   return new Request("http://test/api/agent/code/sessions/s1/model");
@@ -48,7 +55,16 @@ beforeEach(() => {
   };
   mockState.workerModel = null;
   mockState.modelParams = [];
+  mockState.initParams = [];
 });
+
+function makePostRequest(body?: unknown) {
+  return new Request("http://test/api/agent/code/sessions/s1/model", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
 
 describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
   it("returns the worker's model mapped to a chat model id", async () => {
@@ -95,5 +111,49 @@ describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
     const res = await GET(makeRequest() as never);
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe("POST /api/agent/code/sessions/[sessionId]/model", () => {
+  it("applies the model to the worker session immediately", async () => {
+    const res = await POST(makePostRequest({ modelId: "Deepseek v4 Pro" }) as never);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ modelId: "Deepseek v4 Pro" });
+    expect(mockState.initParams).toEqual([
+      {
+        userId: "user-1",
+        sessionId: "s1",
+        project: "p",
+        modelId: "opencode-go/deepseek-v4-pro",
+        defaultThinkingLevel: "xhigh",
+        piSessionId: "pi-1",
+      },
+    ]);
+  });
+
+  it("returns 400 when modelId is missing", async () => {
+    const res = await POST(makePostRequest({}) as never);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "modelId is required" });
+    expect(mockState.initParams).toEqual([]);
+  });
+
+  it("returns 400 when the model is not invocable in the coding agent", async () => {
+    const res = await POST(makePostRequest({ modelId: "StepFun 3.5" }) as never);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Unknown model: StepFun 3.5" });
+    expect(mockState.initParams).toEqual([]);
+  });
+
+  it("returns 404 when the session does not belong to the user", async () => {
+    mockState.dbSession = undefined;
+
+    const res = await POST(makePostRequest({ modelId: "Deepseek v4 Pro" }) as never);
+
+    expect(res.status).toBe(404);
+    expect(mockState.initParams).toEqual([]);
   });
 });
