@@ -15,15 +15,20 @@ const mockState: {
   workerModel: { providerId: string; modelId: string } | null;
   modelParams: unknown[];
   initParams: unknown[];
+  updatePiSessionIdCalls: unknown[];
 } = vi.hoisted(() => ({
   dbSession: undefined,
   workerModel: null,
   modelParams: [] as unknown[],
   initParams: [] as unknown[],
+  updatePiSessionIdCalls: [] as unknown[],
 }));
 
 vi.mock("@/lib/features/code/session-store", () => ({
   getSession: vi.fn(async () => mockState.dbSession),
+  updatePiSessionId: vi.fn(async (params: unknown) => {
+    mockState.updatePiSessionIdCalls.push(params);
+  }),
 }));
 
 vi.mock("@/lib/features/code/worker-client", () => ({
@@ -56,6 +61,7 @@ beforeEach(() => {
   mockState.workerModel = null;
   mockState.modelParams = [];
   mockState.initParams = [];
+  mockState.updatePiSessionIdCalls = [];
 });
 
 function makePostRequest(body?: unknown) {
@@ -129,6 +135,24 @@ describe("POST /api/agent/code/sessions/[sessionId]/model", () => {
         defaultThinkingLevel: "xhigh",
         piSessionId: "pi-1",
       },
+    ]);
+    // The worker returned the same piSessionId the DB already has: no update.
+    expect(mockState.updatePiSessionIdCalls).toEqual([]);
+  });
+
+  it("persists a new piSessionId when the model POST is the first worker contact", async () => {
+    mockState.dbSession = {
+      sessionId: "s1",
+      project: "p",
+      piSessionId: null,
+      modelId: "Deepseek v4 Pro",
+    };
+
+    const res = await POST(makePostRequest({ modelId: "Deepseek v4 Pro" }) as never);
+
+    expect(res.status).toBe(200);
+    expect(mockState.updatePiSessionIdCalls).toEqual([
+      { userId: "user-1", sessionId: "s1", piSessionId: "pi-1" },
     ]);
   });
 

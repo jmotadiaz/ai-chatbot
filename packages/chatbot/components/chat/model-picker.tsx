@@ -67,6 +67,8 @@ export interface ModelPickerSelectorProps {
   id: string;
   dropdownVariant?: React.ComponentProps<typeof Select.Dropdown>["variant"];
   triggerVariant?: "select" | "button";
+  /** Disables the trigger while a model change is being applied to the worker. */
+  disabled?: boolean;
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
@@ -76,6 +78,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   id,
   dropdownVariant,
   triggerVariant = "select",
+  disabled = false,
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -97,6 +100,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
             aria-controls={`dropdown-${id}`}
             aria-expanded={isOpen}
             onClick={toggle}
+            disabled={disabled}
             className="rounded-full"
           >
             <Plus size={24} strokeWidth={2} />
@@ -109,7 +113,11 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
           </span>
         </div>
       ) : (
-        <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
+        <Select.Trigger
+          className="text-[15px]"
+          disabled={disabled}
+          {...getSelectTriggerProps()}
+        />
       )}
       <Select.Dropdown
         {...getSelectContentProps()}

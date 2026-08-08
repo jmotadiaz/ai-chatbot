@@ -1,7 +1,7 @@
 import { getDefaultThinkingLevel, toChatModelId, toPiModelId } from "models";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
-import { getSession } from "@/lib/features/code/session-store";
+import { getSession, updatePiSessionId } from "@/lib/features/code/session-store";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 function getSessionIdFromUrl(url: URL): string {
@@ -66,7 +66,7 @@ export const POST = withAuth(async (user, req) => {
     body.modelId as chatModelId,
   );
   const client = new WorkerClient();
-  await client.initializeSession({
+  const initResult = await client.initializeSession({
     userId: user.id,
     sessionId,
     project: dbSession.project,
@@ -74,5 +74,19 @@ export const POST = withAuth(async (user, req) => {
     defaultThinkingLevel,
     piSessionId: dbSession.piSessionId ?? undefined,
   });
+
+  // Persist a new/changed piSessionId: if this POST is the session's first
+  // worker contact, the mapping must survive a worker restart instead of
+  // being orphaned until the next message (which self-heals it).
+  if (
+    initResult.piSessionId &&
+    initResult.piSessionId !== dbSession.piSessionId
+  ) {
+    await updatePiSessionId({
+      userId: user.id,
+      sessionId,
+      piSessionId: initResult.piSessionId,
+    });
+  }
   return Response.json({ modelId: body.modelId });
 });

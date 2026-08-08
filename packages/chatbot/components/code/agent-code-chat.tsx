@@ -213,6 +213,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               level={thinkingLevel}
               levels={thinkingLevels}
               isLoading={isLoadingThinkingLevel}
+              isApplying={isModelChanging}
               onSelect={(next) => {
                 void setThinkingLevel(next).catch(() => {
                   setAttachmentError("Could not change the reasoning level");
