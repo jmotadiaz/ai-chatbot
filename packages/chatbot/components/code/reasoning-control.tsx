@@ -47,6 +47,7 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
           {levels.map((item) => (
             <button
               key={item}
+              type="button"
               role="menuitem"
               onClick={() => onSelect(item)}
               className={cn(
