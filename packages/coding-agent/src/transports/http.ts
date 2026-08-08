@@ -8,6 +8,7 @@ import {
   runWithTraceContext,
   setTraceSessionId,
 } from "tracing";
+import type { ThinkingLevel } from "models";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -20,6 +21,8 @@ import {
   getSessionStatus,
   getSubagentSessionForToolCall,
   getSessionModel,
+  getSessionThinkingLevel,
+  setSessionThinkingLevel,
   getSessionSkills,
   runSubagent,
   getSessionPrompts,
@@ -339,6 +342,29 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         result = { model: await getSessionModel(sessionId, piSessionId, project) };
         break;
       }
+      case "getSessionThinkingLevel": {
+        const { sessionId, piSessionId, project } = params as {
+          sessionId: string;
+          piSessionId?: string;
+          project?: string;
+        };
+        result = {
+          thinking: await getSessionThinkingLevel(sessionId, piSessionId, project),
+        };
+        break;
+      }
+      case "setSessionThinkingLevel": {
+        const { sessionId, piSessionId, project, level } = params as {
+          sessionId: string;
+          piSessionId?: string;
+          project?: string;
+          level: ThinkingLevel;
+        };
+        result = {
+          thinking: await setSessionThinkingLevel(sessionId, level, piSessionId, project),
+        };
+        break;
+      }
       case "getSessionSkills": {
         const { sessionId } = params as { sessionId: string };
         result = { skills: getSessionSkills(sessionId) };
@@ -437,6 +463,19 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         hasPiSessionId: typeof p.piSessionId === "string",
         hasParentSessionId: typeof p.parentSessionId === "string",
       };
+    case "getSessionThinkingLevel":
+      return {
+        sessionId,
+        hasPiSessionId: typeof p.piSessionId === "string",
+        project: typeof p.project === "string" ? p.project : undefined,
+      };
+    case "setSessionThinkingLevel":
+      return {
+        sessionId,
+        level: typeof p.level === "string" ? p.level : undefined,
+        hasPiSessionId: typeof p.piSessionId === "string",
+        project: typeof p.project === "string" ? p.project : undefined,
+      };
     case "getSessionSkills":
       return { sessionId };
     case "getSubagentSession":
@@ -489,6 +528,15 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       const model = r.model as { providerId?: unknown; modelId?: unknown } | null;
       return {
         model: model ? `${model.providerId}/${model.modelId}` : null,
+      };
+    }
+    case "getSessionThinkingLevel":
+    case "setSessionThinkingLevel": {
+      const thinking = r.thinking as { level?: unknown; levels?: unknown } | null;
+      return {
+        level: thinking && typeof thinking.level === "string" ? thinking.level : null,
+        levelCount:
+          thinking && Array.isArray(thinking.levels) ? thinking.levels.length : 0,
       };
     }
     case "getSessionSkills":

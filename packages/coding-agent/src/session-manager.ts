@@ -223,29 +223,60 @@ export function applyDefaultThinkingLevel(
 
 /**
  * Return the session's current thinking level and the levels the current
- * model supports. Null when the session does not exist.
+ * model supports. Null when the session does not exist. On a cold worker
+ * restart the session is rehydrated from disk (Pi restores the persisted
+ * thinking level, so applyDefaultThinkingLevel is deliberately not applied
+ * on the reload path).
  */
 export async function getSessionThinkingLevel(
   sessionId: string,
-): Promise<{ level: string; levels: string[] } | null> {
-  const entry = sessions.get(sessionId);
-  if (!entry) return null;
+  piSessionId?: string,
+  project?: string,
+): Promise<{ level: ThinkingLevel; levels: ThinkingLevel[] } | null> {
+  const log = getTraceLogger("worker");
+  let entry = sessions.get(sessionId);
+
+  if (!entry && piSessionId && project) {
+    log.info("session.thinking_level_load_disk", { sessionId, piSessionId });
+    entry = await loadSessionFromDisk(sessionId, piSessionId, project);
+  }
+
+  if (!entry) {
+    log.info("session.thinking_level_not_found", { sessionId });
+    return null;
+  }
+
+  const session = entry.runtime.session;
   return {
-    level: entry.runtime.session.thinkingLevel,
-    levels: entry.runtime.session.getAvailableThinkingLevels(),
+    level: session.thinkingLevel,
+    levels: session.getAvailableThinkingLevels(),
   };
 }
 
 /**
  * Set the session's thinking level (Pi clamps to the model's capabilities)
- * and report the effective level. Null when the session does not exist.
+ * and report the effective level. Null when the session does not exist. On
+ * a cold worker restart the session is rehydrated from disk before setting.
  */
 export async function setSessionThinkingLevel(
   sessionId: string,
   level: ThinkingLevel,
-): Promise<{ level: string } | null> {
-  const entry = sessions.get(sessionId);
-  if (!entry) return null;
+  piSessionId?: string,
+  project?: string,
+): Promise<{ level: ThinkingLevel } | null> {
+  const log = getTraceLogger("worker");
+  let entry = sessions.get(sessionId);
+
+  if (!entry && piSessionId && project) {
+    log.info("session.thinking_level_set_load_disk", { sessionId, piSessionId });
+    entry = await loadSessionFromDisk(sessionId, piSessionId, project);
+  }
+
+  if (!entry) {
+    log.info("session.thinking_level_set_not_found", { sessionId });
+    return null;
+  }
+
   entry.runtime.session.setThinkingLevel(level);
   return { level: entry.runtime.session.thinkingLevel };
 }

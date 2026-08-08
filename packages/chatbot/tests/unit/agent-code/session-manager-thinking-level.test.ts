@@ -86,4 +86,28 @@ describe("session-manager thinking level", () => {
     applyDefaultThinkingLevel(entry as never, undefined);
     expect(session.setThinkingLevel).toHaveBeenCalledTimes(1);
   });
+
+  it("routes getSessionThinkingLevel through the RPC handler", async () => {
+    const { handleRpc } = await import("coding-agent/transports/http");
+    seed("t-4", makeSession());
+    const res = await handleRpc(
+      JSON.stringify({ method: "getSessionThinkingLevel", params: { sessionId: "t-4" }, id: 1 }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { result: { thinking: unknown } };
+    expect(body.result.thinking).toEqual({ level: "high", levels: ["off", "high", "xhigh"] });
+  });
+
+  it("routes setSessionThinkingLevel through the RPC handler", async () => {
+    const { handleRpc } = await import("coding-agent/transports/http");
+    const session = makeSession();
+    seed("t-5", session);
+    const res = await handleRpc(
+      JSON.stringify({ method: "setSessionThinkingLevel", params: { sessionId: "t-5", level: "xhigh" }, id: 2 }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { result: { thinking: { level: string } } };
+    expect(session.setThinkingLevel).toHaveBeenCalledWith("xhigh");
+    expect(body.result.thinking.level).toBe("xhigh");
+  });
 });
