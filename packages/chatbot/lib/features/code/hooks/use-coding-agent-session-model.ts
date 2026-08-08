@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface UseCodingAgentSessionModelArgs {
   sessionId: string;
@@ -12,6 +12,8 @@ export interface UseCodingAgentSessionModelResult {
   modelId: string | null;
   setModelId: (modelId: string) => void;
   isLoading: boolean;
+  /** true while an optimistic model change is being persisted to the worker. */
+  isApplying: boolean;
 }
 
 /**
@@ -25,11 +27,12 @@ export function useCodingAgentSessionModel({
   sessionId,
   fallbackModelId,
 }: UseCodingAgentSessionModelArgs): UseCodingAgentSessionModelResult {
-  const [modelId, setModelId] = useState<string | null>(null);
+  const [modelId, setModelIdState] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setModelId(null);
+    setModelIdState(null);
 
     const load = async () => {
       try {
@@ -40,9 +43,9 @@ export function useCodingAgentSessionModel({
           throw new Error(`Failed to load session model: ${response.status}`);
         }
         const data = (await response.json()) as { modelId: string | null };
-        if (!cancelled) setModelId(data.modelId ?? fallbackModelId);
+        if (!cancelled) setModelIdState(data.modelId ?? fallbackModelId);
       } catch {
-        if (!cancelled) setModelId(fallbackModelId);
+        if (!cancelled) setModelIdState(fallbackModelId);
       }
     };
     void load();
@@ -52,5 +55,31 @@ export function useCodingAgentSessionModel({
     };
   }, [sessionId, fallbackModelId]);
 
-  return { modelId, setModelId, isLoading: modelId === null };
+  const setModelId = useCallback(
+    async (next: string) => {
+      const previous = modelId;
+      setModelIdState(next);
+      setIsApplying(true);
+      try {
+        const response = await fetch(
+          `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/model`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ modelId: next }),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to set model: ${response.status}`);
+        }
+      } catch {
+        setModelIdState(previous);
+      } finally {
+        setIsApplying(false);
+      }
+    },
+    [sessionId, modelId],
+  );
+
+  return { modelId, setModelId, isLoading: modelId === null, isApplying };
 }
