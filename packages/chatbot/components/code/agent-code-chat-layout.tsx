@@ -1,6 +1,7 @@
 "use client";
 
 import { Edit } from "lucide-react";
+import type { ThinkingLevel } from "models";
 import { AgentCodeChat } from "./agent-code-chat";
 import { FileBrowserEntryButton } from "./file-browser/file-browser-entry-button";
 import { FileBrowserProvider } from "./file-browser/file-browser-provider";
@@ -21,12 +22,14 @@ export interface AgentCodeChatLayoutProps {
   project: string;
   sessionId: string;
   availableModels: string[];
+  modelLevels: ReadonlyMap<string, ThinkingLevel[]>;
 }
 
 export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   project,
   sessionId,
   availableModels,
+  modelLevels,
 }) => {
   const {
     modelId,
@@ -82,6 +85,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           project={project}
           sessionId={sessionId}
           modelId={modelId ?? ""}
+          modelLevels={modelLevels}
         />
       </Main>
     </FileBrowserProvider>

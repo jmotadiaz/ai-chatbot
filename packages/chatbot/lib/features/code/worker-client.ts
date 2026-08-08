@@ -5,6 +5,7 @@ export interface WorkerModel {
   providerId: string;
   modelId: string;
   label: string;
+  levels: ThinkingLevel[];
 }
 
 export interface WorkerSkill {

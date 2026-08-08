@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { ThinkingLevel } from "models";
 import { AgentCodeChatLayout } from "@/components/code/agent-code-chat-layout";
 import {
   getCodingAgentModels,
@@ -19,6 +20,9 @@ async function CodingAgentChatPage({
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
   const { project, sessionId } = await params;
   const models = await getCodingAgentModels();
+  const modelLevels = new Map<string, ThinkingLevel[]>(
+    models.map((m): [string, ThinkingLevel[]] => [m.id, m.levels]),
+  );
   return (
     <>
       <Sidebar user={user} />
@@ -26,7 +30,8 @@ async function CodingAgentChatPage({
         <AgentCodeChatLayout
           project={project}
           sessionId={sessionId}
-          availableModels={models}
+          availableModels={models.map((m) => m.id)}
+          modelLevels={modelLevels}
         />
       </ClientErrorWrapper>
     </>

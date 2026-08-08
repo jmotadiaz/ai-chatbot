@@ -22,7 +22,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
 
   it("loads the level and available levels for the session", async () => {
     const { result } = renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false }),
+      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false, levels: [] }),
     );
 
     await waitFor(() => expect(result.current.level).toBe("high"));
@@ -31,11 +31,35 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     expect(fetch).toHaveBeenCalledWith("/api/agent/code/sessions/s1/thinking-level");
   });
 
+  it("uses the selected model's levels for the dropdown while keeping the session level from the worker", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: okJson({ thinking: { level: "high", levels: ["off", "minimal", "low", "medium", "high"] } }),
+    } as unknown as Response);
+
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        enabled: true,
+        isRunning: false,
+        levels: ["off", "high", "xhigh"],
+      }),
+    );
+
+    await waitFor(() => expect(result.current.level).toBe("high"));
+    // The dropdown shows the levels of the model selected in the picker…
+    expect(result.current.levels).toEqual(["off", "high", "xhigh"]);
+    // …while the active level still comes from the session (worker GET).
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it("refetches when the model changes", async () => {
     const fetchMock = vi.mocked(fetch);
     const { rerender } = renderHook(
       ({ modelId }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false }),
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false, levels: [] }),
       { initialProps: { modelId: "Deepseek v4 Pro" } },
     );
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -48,7 +72,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     const fetchMock = vi.mocked(fetch);
     const { rerender } = renderHook(
       ({ isRunning }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning }),
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning, levels: [] }),
       { initialProps: { isRunning: true } },
     );
     // Initial load while the run is in flight.
@@ -76,7 +100,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
 
     const { result, rerender } = renderHook(
       ({ modelId }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false }),
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false, levels: [] }),
       { initialProps: { modelId: "Deepseek v4 Pro" } },
     );
     // First load (old model) is still in flight when the model changes.
@@ -102,7 +126,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
   it("stays idle while disabled or without a model", () => {
     const fetchMock = vi.mocked(fetch);
     renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: null, enabled: true, isRunning: false }),
+      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: null, enabled: true, isRunning: false, levels: [] }),
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -119,7 +143,7 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     } as unknown as Response);
 
     const { result } = renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false }),
+      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false, levels: [] }),
     );
     await waitFor(() => expect(result.current.level).toBe("high"));
 

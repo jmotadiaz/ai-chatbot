@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowUp, Undo, WandSparkles } from "lucide-react";
+import type { ThinkingLevel } from "models";
 import { AgentConversation } from "./agent-conversation";
 import { SkillChip } from "./skill-chip";
 import { SkillsControl } from "./skills-control";
@@ -35,12 +36,14 @@ export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
   modelId: string;
+  modelLevels: ReadonlyMap<string, ThinkingLevel[]>;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
   modelId,
+  modelLevels,
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
@@ -80,6 +83,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     modelId: modelId || null,
     enabled: !isLoading,
     isRunning,
+    levels: modelLevels.get(modelId) ?? [],
   });
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);

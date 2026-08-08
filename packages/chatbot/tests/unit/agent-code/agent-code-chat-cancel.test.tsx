@@ -68,7 +68,7 @@ afterEach(() => {
 });
 
 const renderChat = () =>
-  render(<AgentCodeChat project="p" sessionId="s" modelId="m" />);
+  render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelLevels={new Map()} />);
 
 describe("AgentCodeChat cancel", () => {
   it("cancels the running turn when the loading submit button is clicked", () => {

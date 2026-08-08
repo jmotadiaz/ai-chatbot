@@ -10,12 +10,14 @@ export interface UseCodingAgentSessionThinkingLevelArgs {
   enabled: boolean;
   /** true mientras un turno corre; al terminar (true→false) se refetches, porque el worker aplicó el default en el arranque/cambio de modelo. */
   isRunning: boolean;
+  /** Niveles soportados por el modelo seleccionado en el picker (getAvailableModels); vacío mientras la página no los tiene aún. */
+  levels: ThinkingLevel[];
 }
 
 export interface UseCodingAgentSessionThinkingLevelResult {
   /** null mientras carga o si no hay datos aún. */
   level: ThinkingLevel | null;
-  /** Niveles disponibles del modelo actual; ["off"] si el modelo no razona. */
+  /** Niveles del modelo seleccionado en el picker; ["off"] si el modelo no razona. */
   levels: ThinkingLevel[];
   isLoading: boolean;
   setLevel: (level: ThinkingLevel) => Promise<void>;
@@ -26,10 +28,14 @@ export function useCodingAgentSessionThinkingLevel({
   modelId,
   enabled,
   isRunning,
+  levels: modelLevels,
 }: UseCodingAgentSessionThinkingLevelArgs): UseCodingAgentSessionThinkingLevelResult {
   const [level, setLevelState] = useState<ThinkingLevel | null>(null);
-  const [levels, setLevels] = useState<ThinkingLevel[]>([]);
+  // Niveles que devuelve el worker (GET thinking-level); solo se usan como
+  // fallback mientras la página no ha llegado con los del modelo seleccionado.
+  const [sessionLevels, setSessionLevels] = useState<ThinkingLevel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const hasModelLevels = modelLevels.length > 0;
 
   // Monotonic sequence token: the two refetch paths (modelId change + the
   // isRunning falling edge) can overlap, and a slow GET that started with
@@ -51,8 +57,12 @@ export function useCodingAgentSessionThinkingLevel({
         thinking: { level: ThinkingLevel; levels: ThinkingLevel[] } | null;
       };
       if (seq === loadSeqRef.current && data.thinking) {
+        // El nivel activo siempre viene de la sesión (worker).
         setLevelState(data.thinking.level);
-        setLevels(data.thinking.levels);
+        // Fallback de arranque: si la página aún no tiene los niveles del
+        // modelo seleccionado (prop vacía), se usan los del worker para que
+        // el control no quede oculto.
+        setSessionLevels(data.thinking.levels);
       }
     } catch {
       // Worker caído o red: mantener el estado anterior.
@@ -96,5 +106,9 @@ export function useCodingAgentSessionThinkingLevel({
     if (data.thinking) setLevelState(data.thinking.level);
   };
 
-  return { level, levels, isLoading, setLevel };
+  // El dropdown se alimenta del modelo seleccionado en el picker; los niveles
+  // del GET solo se exponen como fallback mientras la prop está vacía (el
+  // arranque). Derivar en vez de sincronizar evita re-renders si el caller
+  // pasa un literal nuevo en cada render.
+  return { level, levels: hasModelLevels ? modelLevels : sessionLevels, isLoading, setLevel };
 }

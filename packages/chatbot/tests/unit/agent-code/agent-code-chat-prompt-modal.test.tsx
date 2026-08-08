@@ -69,7 +69,7 @@ afterEach(() => cleanup());
 
 describe("AgentCodeChat prompt modal", () => {
   it("passes the labeled sessions into the session select of the prompt form", async () => {
-    render(<AgentCodeChat project="p" sessionId="s" modelId="m" />);
+    render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelLevels={new Map()} />);
 
     // El popup del dropdown se abre vía startTransition: usar queries
     // async (findBy*) en lugar de getBy* para esperar el flush.

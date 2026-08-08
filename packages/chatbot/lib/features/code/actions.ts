@@ -6,7 +6,8 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { filterAvailableChatModels } from "models";
+import { filterAvailableChatModels, toPiModelId } from "models";
+import type { InvocableModelId, ThinkingLevel } from "models";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
@@ -124,7 +125,18 @@ export async function getCodingAgentModels() {
     assertEnabled();
     const client = new WorkerClient();
     const { models } = await client.getAvailableModels();
-    const result = filterAvailableChatModels(models);
+    const levelsByModel = new Map<string, ThinkingLevel[]>(
+      models.map((m): [string, ThinkingLevel[]] => [`${m.providerId}/${m.modelId}`, m.levels]),
+    );
+    // Los niveles por modelo vienen del worker; si un modelo del catálogo no
+    // aparece en la respuesta del worker se queda con levels: [] y el hook
+    // cae al fallback del GET thinking-level.
+    const result = filterAvailableChatModels(models).map(
+      (id): { id: InvocableModelId; levels: ThinkingLevel[] } => {
+        const { providerId, modelId } = toPiModelId(id);
+        return { id, levels: levelsByModel.get(`${providerId}/${modelId}`) ?? [] };
+      },
+    );
     log.info("action.result", { count: result.length });
     return result;
   });
