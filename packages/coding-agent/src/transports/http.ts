@@ -196,6 +196,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             project: string;
             modelId?: string;
             piSessionId?: string;
+            defaultThinkingLevel?: ThinkingLevel;
           },
         );
         setTraceSessionId(
@@ -423,6 +424,10 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+        defaultThinkingLevel:
+          typeof p.defaultThinkingLevel === "string"
+            ? p.defaultThinkingLevel
+            : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
         hasTraceRunId,
       };

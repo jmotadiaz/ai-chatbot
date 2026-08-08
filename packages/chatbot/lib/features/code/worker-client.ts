@@ -292,6 +292,10 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+        defaultThinkingLevel:
+          typeof p.defaultThinkingLevel === "string"
+            ? p.defaultThinkingLevel
+            : undefined,
         hasPiSessionId: typeof p.piSessionId === "string",
         hasTraceRunId,
       };

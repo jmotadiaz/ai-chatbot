@@ -79,6 +79,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     sessionId,
     modelId: modelId || null,
     enabled: !isLoading,
+    isRunning,
   });
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
@@ -209,7 +210,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               levels={thinkingLevels}
               isLoading={isLoadingThinkingLevel}
               onSelect={(next) => {
-                void setThinkingLevel(next).catch(() => {});
+                void setThinkingLevel(next).catch(() => {
+                  setAttachmentError("Could not change the reasoning level");
+                });
               }}
             />
             <AttachmentsControl

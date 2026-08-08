@@ -92,9 +92,7 @@ export const POST = withAuth(async (user, req) => {
     );
   }
 
-  const defaultThinkingLevel = modelId
-    ? getDefaultThinkingLevel(modelId as chatModelId)
-    : undefined;
+  const defaultThinkingLevel = getDefaultThinkingLevel(modelId as chatModelId);
 
   if (!project) {
     return new Response(

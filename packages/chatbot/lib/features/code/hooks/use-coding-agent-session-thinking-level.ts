@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ThinkingLevel } from "models";
 
 export interface UseCodingAgentSessionThinkingLevelArgs {
@@ -8,6 +8,8 @@ export interface UseCodingAgentSessionThinkingLevelArgs {
   /** Modelo activo; el nivel se refetches cuando cambia (el worker aplicó el default del nuevo modelo). */
   modelId: string | null;
   enabled: boolean;
+  /** true mientras un turno corre; al terminar (true→false) se refetches, porque el worker aplicó el default en el arranque/cambio de modelo. */
+  isRunning: boolean;
 }
 
 export interface UseCodingAgentSessionThinkingLevelResult {
@@ -23,17 +25,15 @@ export function useCodingAgentSessionThinkingLevel({
   sessionId,
   modelId,
   enabled,
+  isRunning,
 }: UseCodingAgentSessionThinkingLevelArgs): UseCodingAgentSessionThinkingLevelResult {
   const [level, setLevelState] = useState<ThinkingLevel | null>(null);
   const [levels, setLevels] = useState<ThinkingLevel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!enabled || !modelId) return;
-    let cancelled = false;
-    setIsLoading(true);
-
-    const load = async () => {
+  const load = useCallback(
+    async (isCancelled: () => boolean) => {
+      setIsLoading(true);
       try {
         const response = await fetch(
           `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/thinking-level`,
@@ -44,22 +44,43 @@ export function useCodingAgentSessionThinkingLevel({
         const data = (await response.json()) as {
           thinking: { level: ThinkingLevel; levels: ThinkingLevel[] } | null;
         };
-        if (!cancelled && data.thinking) {
+        if (!isCancelled() && data.thinking) {
           setLevelState(data.thinking.level);
           setLevels(data.thinking.levels);
         }
       } catch {
         // Worker caído o red: mantener el estado anterior.
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!isCancelled()) setIsLoading(false);
       }
-    };
-    void load();
+    },
+    [sessionId],
+  );
 
+  useEffect(() => {
+    if (!enabled || !modelId) return;
+    let cancelled = false;
+    void load(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [sessionId, modelId, enabled]);
+  }, [sessionId, modelId, enabled, load]);
+
+  // Refetch when a run finishes: on session create / model switch the worker
+  // only applies the default thinking level once a message is sent, so the
+  // control would otherwise stay hidden (or show the old model's levels)
+  // until the component remounts.
+  const prevIsRunningRef = useRef(isRunning);
+  useEffect(() => {
+    const runFinished = prevIsRunningRef.current === true && isRunning === false;
+    prevIsRunningRef.current = isRunning;
+    if (!runFinished || !enabled || !modelId) return;
+    let cancelled = false;
+    void load(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [isRunning, enabled, modelId, load]);
 
   const setLevel = async (next: ThinkingLevel) => {
     const response = await fetch(
