@@ -5,6 +5,7 @@ import { ArrowUp, Undo, WandSparkles } from "lucide-react";
 import { AgentConversation } from "./agent-conversation";
 import { SkillChip } from "./skill-chip";
 import { SkillsControl } from "./skills-control";
+import { ReasoningControl } from "./reasoning-control";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import { PendingCommentsBar } from "./file-browser/pending-comments-bar";
 import { serializeComments } from "./file-browser/serialize-comments";
@@ -14,6 +15,7 @@ import { ChatControl } from "@/components/chat/control";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
 import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
 import { useCodingAgentSkills } from "@/lib/features/code/hooks/use-coding-agent-skills";
+import { useCodingAgentSessionThinkingLevel } from "@/lib/features/code/hooks/use-coding-agent-session-thinking-level";
 import { useCodingAgentPrompts } from "@/lib/features/code/hooks/use-coding-agent-prompts";
 import type { PromptSummary } from "@/lib/features/code/worker-client";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
@@ -67,6 +69,17 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     isLoading: isLoadingSkills,
     error: skillsError,
   } = useCodingAgentSkills(sessionId, !isLoading);
+
+  const {
+    level: thinkingLevel,
+    levels: thinkingLevels,
+    isLoading: isLoadingThinkingLevel,
+    setLevel: setThinkingLevel,
+  } = useCodingAgentSessionThinkingLevel({
+    sessionId,
+    modelId: modelId || null,
+    enabled: !isLoading,
+  });
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
 
@@ -191,6 +204,14 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             }
           />
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
+            <ReasoningControl
+              level={thinkingLevel}
+              levels={thinkingLevels}
+              isLoading={isLoadingThinkingLevel}
+              onSelect={(next) => {
+                void setThinkingLevel(next).catch(() => {});
+              }}
+            />
             <AttachmentsControl
               handleFileChange={handleFileChange}
               supportedFiles={CODE_AGENT_SUPPORTED_FILES}
