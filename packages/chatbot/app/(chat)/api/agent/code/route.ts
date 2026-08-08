@@ -6,7 +6,7 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { toPiModelId } from "models";
+import { getDefaultThinkingLevel, toPiModelId } from "models";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import {
@@ -92,6 +92,10 @@ export const POST = withAuth(async (user, req) => {
     );
   }
 
+  const defaultThinkingLevel = modelId
+    ? getDefaultThinkingLevel(modelId as chatModelId)
+    : undefined;
+
   if (!project) {
     return new Response(
       JSON.stringify({
@@ -152,6 +156,7 @@ export const POST = withAuth(async (user, req) => {
         modelId: piModelId
           ? `${piModelId.providerId}/${piModelId.modelId}`
           : undefined,
+        defaultThinkingLevel,
         piSessionId: dbSession.piSessionId ?? undefined,
         _traceRunId: runId,
       });

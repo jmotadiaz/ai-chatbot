@@ -1,4 +1,5 @@
 import { getTraceLogger } from "tracing";
+import type { ThinkingLevel } from "models";
 
 export interface WorkerModel {
   providerId: string;
@@ -116,6 +117,7 @@ export class WorkerClient {
     sessionId?: string;
     project: string;
     modelId?: string;
+    defaultThinkingLevel?: ThinkingLevel;
     piSessionId?: string;
     _traceRunId?: string;
   }): Promise<{ sessionId: string; piSessionId: string }> {
