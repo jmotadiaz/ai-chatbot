@@ -34,12 +34,19 @@ export interface ModelCost {
   cacheWrite: number;
 }
 
+export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
 export interface ModelCatalogEntry {
   id: string;
   userInvocable: boolean;
   provider: { kind: ProviderKind; modelId: string };
   company: Company;
   reasoning?: boolean;
+  /**
+   * Nivel de razonamiento aplicado por defecto al crear una sesión de coding
+   * agent (o al cambiar de modelo). Pi lo clampea a lo que el modelo soporta.
+   */
+  defaultThinkingLevel?: ThinkingLevel;
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -64,6 +71,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "deepseek-v4-flash" },
     company: "deepseek",
     reasoning: true,
+    defaultThinkingLevel: "xhigh",
     temperature: 1,
     topP: 0.95,
     providerOptions: { gateway: { zeroDataRetention: true } },
@@ -74,6 +82,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "deepseek-v4-pro" },
     company: "deepseek",
     reasoning: true,
+    defaultThinkingLevel: "xhigh",
     temperature: 1,
     topP: 0.95,
   },
@@ -83,6 +92,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "kimi-k2.7-code" },
     company: "moonshotai",
     reasoning: true,
+    defaultThinkingLevel: "high",
     supportedFiles: ["img"],
   },
   {
@@ -93,6 +103,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "kimi-k3" },
     company: "moonshotai",
     reasoning: true,
+    defaultThinkingLevel: "high",
     supportedFiles: ["img"],
     contextWindow: 1_048_576,
     maxTokens: 131_072,
@@ -104,6 +115,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "minimax-m3" },
     company: "minimax",
     reasoning: true,
+    defaultThinkingLevel: "high",
     supportedFiles: ["img"],
     temperature: 1,
     topP: 0.95,
@@ -114,6 +126,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "qwen3.7-plus" },
     company: "alibaba",
     reasoning: true,
+    defaultThinkingLevel: "high",
     supportedFiles: ["img"],
   },
   {
@@ -124,6 +137,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "qwen3.8-max" },
     company: "alibaba",
     reasoning: true,
+    defaultThinkingLevel: "high",
     contextWindow: 1_000_000,
     maxTokens: 65_536,
     cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
@@ -134,6 +148,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "mimo-v2.5" },
     company: "xiaomi",
     reasoning: true,
+    defaultThinkingLevel: "high",
     supportedFiles: ["img"],
     temperature: 0.6,
     topP: 0.95,
@@ -144,6 +159,7 @@ export const MODEL_CATALOG = [
     provider: { kind: "opencodeGo", modelId: "mimo-v2.5-pro" },
     company: "xiaomi",
     reasoning: true,
+    defaultThinkingLevel: "high",
     temperature: 0.6,
     topP: 0.95,
   },
@@ -491,3 +507,12 @@ export type InvocableModelId = Extract<
 export const INVOCABLE_MODEL_IDS = MODEL_CATALOG.filter(
   (e): e is Extract<(typeof MODEL_CATALOG)[number], { userInvocable: true }> => e.userInvocable,
 ).map((e) => e.id);
+
+export function getDefaultThinkingLevel(
+  modelId: InvocableModelId,
+): ThinkingLevel | undefined {
+  return MODEL_CATALOG.find(
+    (e): e is Extract<(typeof MODEL_CATALOG)[number], { userInvocable: true }> =>
+      e.userInvocable && e.id === modelId,
+  )?.defaultThinkingLevel;
+}

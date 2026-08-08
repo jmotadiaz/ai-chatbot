@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { INVOCABLE_MODEL_IDS, MODEL_CATALOG } from "./catalog";
+import {
+  INVOCABLE_MODEL_IDS,
+  MODEL_CATALOG,
+  getDefaultThinkingLevel,
+  type ThinkingLevel,
+} from "./catalog";
 
 describe("MODEL_CATALOG integrity", () => {
   it("has unique ids", () => {
@@ -48,5 +53,25 @@ describe("MODEL_CATALOG integrity", () => {
     ]) {
       expect(ids.has(internal)).toBe(true);
     }
+  });
+});
+
+describe("defaultThinkingLevel", () => {
+  const LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+
+  it("declares a valid defaultThinkingLevel for every userInvocable model", () => {
+    for (const entry of MODEL_CATALOG) {
+      if (!entry.userInvocable) continue;
+      expect(LEVELS).toContain(entry.defaultThinkingLevel);
+    }
+  });
+
+  it("resolves the catalog default for known coding-agent models", () => {
+    expect(getDefaultThinkingLevel("Deepseek v4 Pro")).toBe("xhigh");
+    expect(getDefaultThinkingLevel("Kimi K2.7 Code")).toBe("high");
+  });
+
+  it("returns undefined for models without a declared default", () => {
+    expect(getDefaultThinkingLevel("StepFun 3.5" as never)).toBeUndefined();
   });
 });

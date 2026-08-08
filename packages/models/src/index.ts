@@ -1,12 +1,14 @@
 export {
   MODEL_CATALOG,
   INVOCABLE_MODEL_IDS,
+  getDefaultThinkingLevel,
   type Company,
   type InvocableModelId,
   type ModelCatalogEntry,
   type ModelCost,
   type ModelId,
   type ProviderKind,
+  type ThinkingLevel,
 } from "./catalog";
 export {
   PI_PROVIDER,
