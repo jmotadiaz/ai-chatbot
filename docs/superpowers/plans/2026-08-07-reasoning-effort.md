@@ -1527,3 +1527,100 @@ Nota: `setModelId` pasa a ser async pero el contrato de uso (`(m) => void` en el
 - [ ] **Step 2:** `pnpm --filter chatbot --filter models test:unit` — PASS.
 - [ ] **Step 3:** `pnpm lint:fix` — limpio.
 - [ ] **Step 4:** Commit final si hubo ajustes (con `Co-Authored-By`).
+
+---
+
+### Task 13: Revertir B2 — el modelo vuelve a viajar con el prompt
+
+**Files:**
+- Modify: `packages/chatbot/app/(chat)/api/agent/code/sessions/[sessionId]/model/route.ts` (quitar POST)
+- Modify: `packages/chatbot/lib/features/code/hooks/use-coding-agent-session-model.ts` (volver a estado local puro)
+- Modify: `packages/chatbot/lib/features/code/hooks/use-coding-agent-session-thinking-level.ts` (quitar `isApplyingModel`; conservar `isRunning` + seq token)
+- Modify: `packages/chatbot/components/code/agent-code-chat-layout.tsx` (quitar `isModelChanging`, disabled del picker)
+- Modify: `packages/chatbot/components/code/agent-code-chat.tsx` (quitar prop)
+- Modify: `packages/chatbot/components/code/reasoning-control.tsx` (quitar `isApplying` del disabled)
+- Tests: `model-route.test.ts` (quitar describe POST), `use-coding-agent-session-model.test.tsx` (reducir a GET), `use-coding-agent-thinking-level.test.tsx` (quitar test `isApplyingModel`)
+
+**Nota:** el guard del worker (`getOrCreateSession` rechaza `setModel` en sesiones streaming) y los `log.warn` de `session.model_not_in_registry` SE MANTIENEN como defensa inerte.
+
+- [ ] **Step 1:** quitar el POST de `model/route.ts` y su describe en `model-route.test.ts` (los 4 tests del POST). Run: `pnpm --filter chatbot test:unit model-route` — PASS (5 tests GET restantes).
+- [ ] **Step 2:** `use-coding-agent-session-model.ts` → eliminar `isApplying`, el `useCallback` de POST y el seq counter; `setModelId` vuelve a ser `(m: string) => void` con estado local. Reducir `use-coding-agent-session-model.test.tsx` al fetch inicial (GET) — borrar los tests de POST/revert. Run: `pnpm --filter chatbot test:unit use-coding-agent-session-model` — PASS.
+- [ ] **Step 3:** hook thinking → quitar `isApplyingModel` de args/efectos (conservar `isRunning` y el seq token); `agent-code-chat-layout.tsx` → quitar `isModelChanging` y el disabled del picker; `agent-code-chat.tsx` → quitar la prop; `reasoning-control.tsx` → `disabled={isLoading || level === null}`. Quitar el test de `isApplyingModel` en `use-coding-agent-thinking-level.test.tsx` y `isApplyingModel: false` de los demás renderHook. Run: `pnpm --filter chatbot test:unit use-coding-agent-thinking-level reasoning-control agent-code-chat` — PASS.
+- [ ] **Step 4:** suite completa + type:check. Run: `pnpm --filter chatbot test:unit` y `pnpm --filter chatbot --filter models type:check` — PASS.
+- [ ] **Step 5: Commit** con `Co-Authored-By: Pi Coding Agent <pi@example.com>`.
+
+---
+
+### Task 14: Worker — `getAvailableModels` con `levels` por modelo
+
+**Files:**
+- Modify: `packages/models/src/catalog.ts` (helper `getSupportedThinkingLevels`)
+- Modify: `packages/models/src/index.ts` (export)
+- Modify: `packages/coding-agent/src/session-manager.ts` (`getAvailableModels`)
+- Test: `packages/models/src/catalog.test.ts` (ampliar)
+
+**Interfaces:**
+- Produces: `export function getSupportedThinkingLevels(reasoning: boolean | undefined, thinkingLevelMap: ThinkingLevelMap | undefined): ThinkingLevel[]` en `models` (misma lógica que pi-ai: sin reasoning → `["off"]`; `xhigh` solo si hay mapping explícito; `null` → excluido). `getAvailableModels()` devuelve `Array<{ providerId; modelId; label; levels: ThinkingLevel[] }>`.
+
+- [ ] **Step 1: Write the failing test** — en `catalog.test.ts`:
+  - `getSupportedThinkingLevels(undefined, undefined)` → `["off"]`
+  - `getSupportedThinkingLevels(true, undefined)` → `["off","minimal","low","medium","high"]` (xhigh exige mapping)
+  - `getSupportedThinkingLevels(true, { minimal: null, low: null, medium: null, high: "high", xhigh: "max" })` → `["off","high","xhigh"]`
+  - `getSupportedThinkingLevels(true, { minimal: null, low: null, medium: null })` → `["off","high"]`
+- [ ] **Step 2:** run → FAIL (`getSupportedThinkingLevels` no existe).
+- [ ] **Step 3: Implement** en `catalog.ts`:
+
+```ts
+const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+
+/** Misma semántica que pi-ai: niveles soportados según reasoning + thinkingLevelMap. */
+export function getSupportedThinkingLevels(
+  reasoning: boolean | undefined,
+  thinkingLevelMap: ThinkingLevelMap | undefined,
+): ThinkingLevel[] {
+  if (!reasoning) return ["off"];
+  return THINKING_LEVELS.filter((level) => {
+    const mapped = thinkingLevelMap?.[level];
+    if (mapped === null) return false;
+    if (level === "xhigh") return mapped !== undefined;
+    return true;
+  });
+}
+```
+
+  Exportar desde `index.ts`.
+- [ ] **Step 4:** en `session-manager.ts`, `getAvailableModels()`: añadir `levels: getSupportedThinkingLevels(model.reasoning, (model as { thinkingLevelMap?: ThinkingLevelMap }).thinkingLevelMap)` al objeto mapeado (import de `models`). El filtro `provider === "opencode-go"` se mantiene. Test del worker: ampliar `session-manager-thinking-level.test.ts`? No — `getAvailableModels` usa un registry real; verificar el nuevo campo con el script manual (no unit test). Confirmar con `pnpm --filter chatbot --filter models --filter coding-agent type:check`.
+- [ ] **Step 5: Commit** con `Co-Authored-By`.
+
+---
+
+### Task 15: Chatbot — dropdown informativo con los niveles del modelo seleccionado
+
+**Files:**
+- Modify: `packages/chatbot/lib/features/code/worker-client.ts` (`WorkerModel.levels`)
+- Modify: `packages/chatbot/lib/features/code/actions.ts` (`getCodingAgentModels` devuelve niveles)
+- Modify: `packages/chatbot/app/(chat)/agent/code/[project]/[sessionId]/page.tsx`
+- Modify: `packages/chatbot/components/code/agent-code-chat-layout.tsx`
+- Modify: `packages/chatbot/components/code/agent-code-chat.tsx`
+- Modify: `packages/chatbot/lib/features/code/hooks/use-coding-agent-session-thinking-level.ts` (prop `levels` del modelo seleccionado)
+- Test: `packages/chatbot/tests/unit/agent-code/use-coding-agent-thinking-level.test.tsx` (ampliar)
+
+**Interfaces:**
+- `WorkerModel` gana `levels: string[]`.
+- `getCodingAgentModels()` devuelve `Array<{ id: InvocableModelId; levels: ThinkingLevel[] }>` (el route `/api/agent/code/models` y la page adaptan).
+- `AgentCodeChatLayout` recibe `modelLevels: ReadonlyMap<string, ThinkingLevel[]>` y lo pasa a `AgentCodeChat` → hook: `useCodingAgentSessionThinkingLevel({ sessionId, modelId, enabled, levels: modelLevels.get(modelId) ?? [] })`. El hook usa la prop `levels` para el dropdown (fallback: `[]` → control oculto mientras no haya datos); el `level` sigue del GET `thinking-level` (post-run refetch con `isRunning`).
+
+- [ ] **Step 1: Write the failing test** — en `use-coding-agent-thinking-level.test.tsx`: nuevo test "uses the selected model's levels for the dropdown while keeping the session level from the worker": `renderHook` con `levels={["off","high","xhigh"]}` y fetch que devuelve `{ thinking: { level: "high", levels: ["off","minimal","low","medium","high"] } }` → `result.current.levels` es `["off","high","xhigh"]` y `level` es `"high"`. Ajustar los renderHook existentes con `levels: []`.
+- [ ] **Step 2:** run → FAIL.
+- [ ] **Step 3: Implement** — hook: nueva prop `levels: ThinkingLevel[]`; `setLevels` solo desde el prop (eliminar el set desde el fetch; el fetch solo setea `level`). Fallback: si la prop está vacía usar los del GET (`data.thinking.levels`) para no romper el arranque. Bridge: `actions.getCodingAgentModels` mapea con `filterAvailableChatModels` + niveles; page → layout (`modelLevels`) → `AgentCodeChat` → hook. El route `/api/agent/code/models` (GET) ya pasa por `getCodingAgentModels` — adaptar su tipo.
+- [ ] **Step 4:** run → PASS; suite completa + type:check.
+- [ ] **Step 5: Commit** con `Co-Authored-By`.
+
+---
+
+### Task 16: Verificación final
+
+- [ ] **Step 1:** `pnpm --filter chatbot --filter models --filter coding-agent type:check` — PASS.
+- [ ] **Step 2:** `pnpm --filter chatbot --filter models test:unit` — PASS.
+- [ ] **Step 3:** `pnpm lint:fix` — limpio.
+- [ ] **Step 4:** Commit final si hubo ajustes (con `Co-Authored-By`).

@@ -26,9 +26,9 @@ Pi ya soporta thinking levels (`off`, `minimal`, `low`, `medium`, `high`, `xhigh
 | 1 | Cómo configurar el default máximo por modelo | Campo declarativo `defaultThinkingLevel` en el catálogo por modelo (opción B) |
 | 2 | Al cambiar de modelo en una sesión existente | Aplicar el `defaultThinkingLevel` del nuevo modelo (opción A) |
 | 3 | Alcance del control de la UI | Por sesión (opción A) — igual que el modelo; Pi lo persiste en la sesión |
-| 4 | Cuándo se aplica el cambio de modelo del picker | **Al vuelo (B2)**: al seleccionar un modelo en el picker, el chatbot llama al worker inmediatamente (POST al endpoint del modelo → `getOrCreateSession` hace `setModel` + aplica el `defaultThinkingLevel` del nuevo modelo). El worker deja de ser lazy (antes el modelo solo cambiaba con el siguiente mensaje). |
+| 4 | Cuándo se aplica el cambio de modelo del picker | **Lazy (revertido de B2)**: el modelo vuelve a viajar con el prompt (cambiar el picker mid-run era problemático: `setModel` sobre una sesión streaming). El dropdown de reasoning es **informativo (B1)**: muestra los niveles del modelo *seleccionado* en el picker (exponiendo `levels` por modelo en `getAvailableModels`), mientras que el nivel activo sigue viniendo de la sesión. El guard del worker que rechaza `setModel` en sesiones streaming se mantiene como defensa. |
 
-> Nota post-implementación: el `thinkingLevelMap` de los built-ins de Pi NO se hereda en runtime (Pi reemplaza el built-in entero con la entrada de `models.json`), así que `generateModelsJson` lo emite explícitamente desde el baseline (commit `7f9207e`). Con B2 no hace falta exponer `levels` por modelo en `getAvailableModels`: el GET `thinking-level` tras el POST de modelo devuelve los niveles del modelo activo, que ya es el seleccionado.
+> Nota post-implementación: el `thinkingLevelMap` de los built-ins de Pi NO se hereda en runtime (Pi reemplaza el built-in entero con la entrada de `models.json`), así que `generateModelsJson` lo emite explícitamente desde el baseline (commit `7f9207e`). B2 se probó y se revirtió (cambiar el modelo mid-run); en su lugar `getAvailableModels` expone `levels` por modelo y el dropdown los muestra para el modelo seleccionado (B1).
 
 ## Diseño
 
@@ -97,9 +97,9 @@ Pi ya soporta thinking levels (`off`, `minimal`, `low`, `medium`, `high`, `xhigh
 - `setLevel(level)` → POST → actualiza el estado local con el nivel efectivo devuelto.
 - No renderiza el control si `levels.length <= 1` (modelo sin reasoning → solo `"off"`).
 
-**`components/code/agent-code-chat-layout.tsx`:** el header mantiene el `ModelPickerSelector` con `useCodingAgentSessionModel`. El `setModelId` del hook ahora dispara el cambio al vuelo: POST a `/api/agent/code/sessions/[sessionId]/model` con el `modelId` seleccionado; el layout propaga `isModelChanging` a `AgentCodeChat`, que lo pasa al hook de thinking como `isApplyingModel` para el refetch post-cambio.
+**`components/code/agent-code-chat-layout.tsx`:** el header mantiene el `ModelPickerSelector` con `useCodingAgentSessionModel` (estado local puro, sin POST — el modelo viaja con el prompt). Recibe `modelLevels` (niveles por modelo del picker) y los propaga a `AgentCodeChat`.
 
-**Nuevo POST `sessions/[sessionId]/model`:** body `{ modelId }` (chat modelId) → se valida con `toPiModelId`, se deriva `defaultThinkingLevel` con `getDefaultThinkingLevel`, y se llama `WorkerClient.initializeSession({ userId, sessionId, project, modelId, defaultThinkingLevel, piSessionId })`. `getOrCreateSession` reusa la sesión existente y aplica `setModel` + default al vuelo (no-op si el modelo ya es el mismo). Devuelve `{ modelId }`.
+**Dropdown informativo (B1):** `getAvailableModels` del worker expone `levels` por modelo (calculados con `getSupportedThinkingLevels` sobre `reasoning` + `thinkingLevelMap` del registry). El hook de thinking recibe los `levels` del modelo *seleccionado* en el picker como prop (no los del modelo activo) y los usa para el dropdown; el `level` activo sigue viniendo de la sesión (GET `thinking-level`). El `POST sessions/[sessionId]/model` de B2 se elimina.
 
 **`components/code/agent-code-chat.tsx`:** en la fila izquierda de controles del textarea (junto a `AttachmentsControl` y `SkillsControl`), un nuevo chat control con icono de settings (`Settings2` de lucide) que despliega un dropdown con los niveles disponibles (reutilizando `components/ui/dropdown`, igual que `Select`). Muestra el nivel actual como etiqueta del botón (p.ej. `high`), items con los niveles disponibles, deshabilitado mientras carga o si el modelo no razona (`levels.length <= 1`). El header no cambia: el model picker sigue ahí y el control de reasoning vive en el textarea, donde hay espacio en mobile.
 
@@ -107,7 +107,7 @@ Pi ya soporta thinking levels (`off`, `minimal`, `low`, `medium`, `high`, `xhigh
 
 1. El usuario abre la sesión → `useCodingAgentSessionModel` resuelve el modelo → el nuevo hook resuelve `{ level, levels }` → el header muestra el picker de modelo y el textarea muestra el chat control de reasoning (si el modelo razona).
 2. El usuario envía un mensaje → `POST /api/agent/code` deriva `defaultThinkingLevel` del `modelId` del context → `initializeSession(modelId, defaultThinkingLevel)` → el worker crea la sesión (o cambia el modelo) aplicando el default → Pi lo persiste en el session file.
-3. El usuario cambia el modelo en el picker → `useCodingAgentSessionModel.setModelId` hace POST a `/api/agent/code/sessions/[sessionId]/model` (con `modelId` + `defaultThinkingLevel` derivado del catálogo) → el worker aplica `setModel` + default al vuelo → el hook de thinking refetches cuando el cambio termina (falling edge de `isApplyingModel`) → la UI muestra el nivel y niveles del nuevo modelo.
+3. El usuario cambia el modelo en el picker → el dropdown de reasoning muestra al instante los niveles del modelo seleccionado (de `getAvailableModels`, sin esperar al worker); el nivel activo de la sesión no cambia hasta que el próximo mensaje aplica el modelo (+ `defaultThinkingLevel`), momento en el que el post-run refetch actualiza el nivel.
 4. El usuario abre el chat control de settings en el textarea y cambia el nivel → `setCodingAgentSessionThinkingLevel` → RPC `setSessionThinkingLevel` → `session.setThinkingLevel(level)` → nivel efectivo devuelto → el botón del control lo refleja.
 
 ### Edge cases y errores
@@ -117,15 +117,17 @@ Pi ya soporta thinking levels (`off`, `minimal`, `low`, `medium`, `high`, `xhigh
 - **Modelo sin reasoning:** `levels = ["off"]` → el dropdown no se muestra.
 - **Cold reload (worker reiniciado):** `getSessionThinkingLevel`/`setSessionThinkingLevel` rehidratan desde disco como `getSessionModel`; el nivel vuelve de la sesión persistida.
 - **Efecto secundario de Pi:** `setThinkingLevel` también persiste un default global en `settings.json` del worker. No es problemático: las sesiones nuevas siempre aplican el default del catálogo (que sobrescribe ese global). Se documenta en el código.
+- **Cambio de modelo mid-run:** el worker rechaza `setModel` mientras la sesión está streaming (guard en `getOrCreateSession`); con el picker lazy esto no ocurre en el flujo normal (el modelo viaja con el mensaje y el input está deshabilitado durante los runs).
+- **Nivel activo no soportado por el modelo seleccionado:** el check del dropdown solo se marca si el nivel de la sesión está en los niveles del modelo seleccionado; el `title` del botón siempre muestra el nivel activo real.
 
 ### Testing
 
 - **`packages/models`:** test del catálogo — todo `userInvocable` con `reasoning: true` declara `defaultThinkingLevel` válido; `getDefaultThinkingLevel` devuelve el valor correcto.
 - **Worker (`packages/coding-agent`, tests en `packages/chatbot/tests/unit/agent-code/` siguiendo `session-manager-skills.test.ts`):** `getSessionThinkingLevel`/`setSessionThinkingLevel` con runtime de Pi mockeado — lectura, escritura, clamp (nivel efectivo), cold reload, sesión inexistente; `getOrCreateSession` aplica el default al crear y al cambiar modelo, y no lo aplica en reload.
-- **Chatbot:** test del route `POST /api/agent/code` derivando `defaultThinkingLevel` del `modelId`; test del nuevo POST `sessions/[sessionId]/model` (valida, deriva default y llama `initializeSession`); test del hook `useCodingAgentSessionModel` (POST optimista con revert en error); test del hook de thinking (fetch inicial, refetch al cambiar modelo, refetch post-aplicación con `isApplyingModel`, setLevel); test de render del chat control en el textarea (visible solo con modelo que razona, dropdown con los niveles, cambio de nivel).
+- **Chatbot:** test del route `POST /api/agent/code` derivando `defaultThinkingLevel` del `modelId`; test de `getAvailableModels` con `levels` por modelo (worker) y del bridge (actions/page); test del hook de thinking (fetch inicial del nivel, dropdown usa los `levels` del modelo seleccionado, setLevel, refetch post-run); test de render del chat control en el textarea (visible solo con modelo que razona, dropdown con los niveles del modelo seleccionado, cambio de nivel).
 
 ## Fuera de alcance
 
-- Exponer `levels` por modelo en `getAvailableModels`: innecesario con B2 (el GET `thinking-level` tras el POST de modelo devuelve los niveles del modelo activo, que ya es el seleccionado).
+- Aplicar el modelo al vuelo desde el picker (B2): probado y revertido; el modelo viaja con el prompt.
 - Control de reasoning en el chat normal (no coding agent): el chat ya usa `providerOptions` del catálogo; no se toca.
 - Persistir el nivel en la BD (`codingAgentSessions`): Pi ya lo persiste en la sesión; añadir columna sería redundante.
