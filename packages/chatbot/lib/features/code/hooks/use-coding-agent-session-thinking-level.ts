@@ -10,6 +10,8 @@ export interface UseCodingAgentSessionThinkingLevelArgs {
   enabled: boolean;
   /** true mientras un turno corre; al terminar (true→false) se refetches, porque el worker aplicó el default en el arranque/cambio de modelo. */
   isRunning: boolean;
+  /** true mientras un cambio de modelo se persiste en el worker; al confirmarse (true→false) se refetches para ver el default del nuevo modelo. */
+  isApplyingModel: boolean;
 }
 
 export interface UseCodingAgentSessionThinkingLevelResult {
@@ -26,6 +28,7 @@ export function useCodingAgentSessionThinkingLevel({
   modelId,
   enabled,
   isRunning,
+  isApplyingModel,
 }: UseCodingAgentSessionThinkingLevelArgs): UseCodingAgentSessionThinkingLevelResult {
   const [level, setLevelState] = useState<ThinkingLevel | null>(null);
   const [levels, setLevels] = useState<ThinkingLevel[]>([]);
@@ -81,6 +84,23 @@ export function useCodingAgentSessionThinkingLevel({
       cancelled = true;
     };
   }, [isRunning, enabled, modelId, load]);
+
+  // Refetch when a model change is confirmed: the worker applies the new
+  // model's default thinking level as part of the model switch, so the
+  // dropdown must re-read it once the POST resolves (isApplyingModel
+  // true→false). Same pattern as isRunning.
+  const prevIsApplyingRef = useRef(isApplyingModel);
+  useEffect(() => {
+    const modelChangeApplied =
+      prevIsApplyingRef.current === true && isApplyingModel === false;
+    prevIsApplyingRef.current = isApplyingModel;
+    if (!modelChangeApplied || !enabled || !modelId) return;
+    let cancelled = false;
+    void load(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [isApplyingModel, enabled, modelId, load]);
 
   const setLevel = async (next: ThinkingLevel) => {
     const response = await fetch(

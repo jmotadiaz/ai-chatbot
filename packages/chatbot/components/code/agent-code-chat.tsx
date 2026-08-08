@@ -35,12 +35,15 @@ export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
   modelId: string;
+  /** true while a model change is being persisted; the thinking dropdown refetches once it resolves. */
+  isModelChanging?: boolean;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
   modelId,
+  isModelChanging = false,
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
@@ -80,6 +83,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     modelId: modelId || null,
     enabled: !isLoading,
     isRunning,
+    isApplyingModel: isModelChanging,
   });
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);

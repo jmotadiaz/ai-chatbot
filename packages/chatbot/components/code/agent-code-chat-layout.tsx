@@ -28,11 +28,15 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   sessionId,
   availableModels,
 }) => {
-  const { modelId, setModelId, isLoading: isLoadingModel } =
-    useCodingAgentSessionModel({
-      sessionId,
-      fallbackModelId: availableModels[0] ?? "",
-    });
+  const {
+    modelId,
+    setModelId,
+    isLoading: isLoadingModel,
+    isApplying,
+  } = useCodingAgentSessionModel({
+    sessionId,
+    fallbackModelId: availableModels[0] ?? "",
+  });
   const { isCreatingSession, createNewSession } =
     useCreateCodingAgentSession({
       project,
@@ -79,6 +83,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           project={project}
           sessionId={sessionId}
           modelId={modelId ?? ""}
+          isModelChanging={isApplying}
         />
       </Main>
     </FileBrowserProvider>
