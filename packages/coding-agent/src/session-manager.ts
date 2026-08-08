@@ -12,6 +12,7 @@ import {
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger, retainTraceSink } from "tracing";
+import type { ThinkingLevel } from "models";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
 import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
@@ -207,6 +208,48 @@ export function __resetSessionsForTests(): void {
   sessions.clear();
 }
 
+/**
+ * Apply the catalog default thinking level to a session runtime. Pi clamps
+ * the level to the model's capabilities (non-reasoning models → "off"), so
+ * an unsupported level is never an error. No-op when no level is given.
+ */
+export function applyDefaultThinkingLevel(
+  entry: SessionEntry,
+  level: ThinkingLevel | undefined,
+): void {
+  if (!level) return;
+  entry.runtime.session.setThinkingLevel(level);
+}
+
+/**
+ * Return the session's current thinking level and the levels the current
+ * model supports. Null when the session does not exist.
+ */
+export async function getSessionThinkingLevel(
+  sessionId: string,
+): Promise<{ level: string; levels: string[] } | null> {
+  const entry = sessions.get(sessionId);
+  if (!entry) return null;
+  return {
+    level: entry.runtime.session.thinkingLevel,
+    levels: entry.runtime.session.getAvailableThinkingLevels(),
+  };
+}
+
+/**
+ * Set the session's thinking level (Pi clamps to the model's capabilities)
+ * and report the effective level. Null when the session does not exist.
+ */
+export async function setSessionThinkingLevel(
+  sessionId: string,
+  level: ThinkingLevel,
+): Promise<{ level: string } | null> {
+  const entry = sessions.get(sessionId);
+  if (!entry) return null;
+  entry.runtime.session.setThinkingLevel(level);
+  return { level: entry.runtime.session.thinkingLevel };
+}
+
 function isValidProjectName(name: string): boolean {
   if (
     !name ||
@@ -340,6 +383,7 @@ export async function getOrCreateSession(options: {
   sessionId?: string;
   modelId?: string;
   piSessionId?: string;
+  defaultThinkingLevel?: ThinkingLevel;
 }): Promise<{ sessionId: string; piSessionId: string }> {
   const log = getTraceLogger("worker");
 
@@ -360,6 +404,7 @@ export async function getOrCreateSession(options: {
               : undefined;
         if (model) {
           await existing.runtime.session.setModel(model);
+          applyDefaultThinkingLevel(existing, options.defaultThinkingLevel);
           log.info("session.model_changed", {
             sessionId: existing.sessionId,
             modelId: options.modelId,
@@ -413,13 +458,15 @@ export async function getOrCreateSession(options: {
   });
   stop();
 
-  sessions.set(sessionId, {
+  const entry: SessionEntry = {
     sessionId,
     piSessionId,
     project: options.project,
     runtime,
     eventLog: new SessionEventLog(),
-  });
+  };
+  sessions.set(sessionId, entry);
+  applyDefaultThinkingLevel(entry, options.defaultThinkingLevel);
   return { sessionId, piSessionId };
 }
 
