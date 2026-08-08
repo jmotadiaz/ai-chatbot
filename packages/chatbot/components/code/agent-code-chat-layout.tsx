@@ -18,18 +18,24 @@ import { useCodingAgentSessionModel } from "@/lib/features/code/hooks/use-coding
 import { useCreateCodingAgentSession } from "@/lib/features/code/hooks/use-create-coding-agent-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
+/** Lo que la UI necesita saber del razonamiento de un modelo del picker. */
+export interface ModelThinking {
+  levels: ThinkingLevel[];
+  defaultLevel: ThinkingLevel | undefined;
+}
+
 export interface AgentCodeChatLayoutProps {
   project: string;
   sessionId: string;
   availableModels: string[];
-  modelLevels: ReadonlyMap<string, ThinkingLevel[]>;
+  modelThinking: ReadonlyMap<string, ModelThinking>;
 }
 
 export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   project,
   sessionId,
   availableModels,
-  modelLevels,
+  modelThinking,
 }) => {
   const {
     modelId,
@@ -85,7 +91,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           project={project}
           sessionId={sessionId}
           modelId={modelId ?? ""}
-          modelLevels={modelLevels}
+          modelThinking={modelThinking}
         />
       </Main>
     </FileBrowserProvider>

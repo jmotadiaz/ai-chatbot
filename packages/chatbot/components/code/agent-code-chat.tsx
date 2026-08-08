@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowUp, Undo, WandSparkles } from "lucide-react";
-import type { ThinkingLevel } from "models";
+import type { ModelThinking } from "./agent-code-chat-layout";
 import { AgentConversation } from "./agent-conversation";
 import { SkillChip } from "./skill-chip";
 import { SkillsControl } from "./skills-control";
@@ -36,19 +36,27 @@ export interface AgentCodeChatProps {
   project: string;
   sessionId: string;
   modelId: string;
-  modelLevels: ReadonlyMap<string, ThinkingLevel[]>;
+  modelThinking: ReadonlyMap<string, ModelThinking>;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   project,
   sessionId,
   modelId,
-  modelLevels,
+  modelThinking,
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const thinking = modelThinking.get(modelId);
+  const { level: thinkingLevel, setLevel: setThinkingLevel } =
+    useCodingAgentSessionThinkingLevel({
+      sessionId,
+      modelId: modelId || null,
+      defaultLevel: thinking?.defaultLevel,
+    });
+
   const {
     items,
     turnFiles,
@@ -62,6 +70,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     project,
     sessionId,
     modelId,
+    thinkingLevel,
   });
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
@@ -72,19 +81,6 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     isLoading: isLoadingSkills,
     error: skillsError,
   } = useCodingAgentSkills(sessionId, !isLoading);
-
-  const {
-    level: thinkingLevel,
-    levels: thinkingLevels,
-    isLoading: isLoadingThinkingLevel,
-    setLevel: setThinkingLevel,
-  } = useCodingAgentSessionThinkingLevel({
-    sessionId,
-    modelId: modelId || null,
-    enabled: !isLoading,
-    isRunning,
-    levels: modelLevels.get(modelId) ?? [],
-  });
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
 
@@ -211,13 +207,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
           <div className="absolute left-3 bottom-2 flex items-center space-x-2">
             <ReasoningControl
               level={thinkingLevel}
-              levels={thinkingLevels}
-              isLoading={isLoadingThinkingLevel}
-              onSelect={(next) => {
-                void setThinkingLevel(next).catch(() => {
-                  setAttachmentError("Could not change the reasoning level");
-                });
-              }}
+              levels={thinking?.levels ?? []}
+              onSelect={setThinkingLevel}
             />
             <AttachmentsControl
               handleFileChange={handleFileChange}

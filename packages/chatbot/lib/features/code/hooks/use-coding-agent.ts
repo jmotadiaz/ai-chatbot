@@ -7,6 +7,7 @@ import {
   type InputContent,
   type Message,
 } from "@ag-ui/client";
+import type { ThinkingLevel } from "models";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
 import { groupItems } from "@/lib/features/code/group-items";
@@ -30,6 +31,12 @@ export interface UseCodingAgentArgs {
   project: string;
   sessionId: string;
   modelId: string;
+  /**
+   * Reasoning level to apply to this turn. Like the model, it is lazy: it
+   * travels with the prompt and the worker applies it before the run. Null
+   * (level not resolved yet) leaves the choice to the server's catalog default.
+   */
+  thinkingLevel?: ThinkingLevel | null;
   /** Set for subagent sub-sessions: the parent app session id (access guard). */
   parentSessionId?: string;
   /** Set for subagent sub-sessions: the persisted Pi session id (cold reload). */
@@ -216,6 +223,7 @@ export function useCodingAgent({
   project,
   sessionId,
   modelId,
+  thinkingLevel,
   parentSessionId,
   piSessionId,
 }: UseCodingAgentArgs): UseCodingAgentResult {
@@ -801,6 +809,9 @@ export function useCodingAgent({
               { description: "project", value: project },
               { description: "sessionId", value: sessionId },
               { description: "modelId", value: modelId },
+              ...(thinkingLevel
+                ? [{ description: "thinkingLevel", value: thinkingLevel }]
+                : []),
             ],
           },
           {
@@ -838,7 +849,7 @@ export function useCodingAgent({
         });
       }
     },
-    [agent, project, sessionId, modelId, state.isLoading, store],
+    [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, store],
   );
 
   return {

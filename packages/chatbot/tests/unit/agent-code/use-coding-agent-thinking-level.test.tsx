@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import type { ThinkingLevel } from "models";
 import { useCodingAgentSessionThinkingLevel } from "@/lib/features/code/hooks/use-coding-agent-session-thinking-level";
 
 const okJson = (data: unknown) => async () => data;
@@ -20,144 +21,164 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads the level and available levels for the session", async () => {
+  it("seeds the level from the catalog default as soon as the model is known", () => {
     const { result } = renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false, levels: [] }),
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+      }),
+    );
+
+    // Sin esperar al worker: es lo que hace usable el control en una sesión
+    // nueva, antes del primer mensaje.
+    expect(result.current.level).toBe("xhigh");
+  });
+
+  it("adopts the session's level when the worker already has one", async () => {
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+      }),
     );
 
     await waitFor(() => expect(result.current.level).toBe("high"));
-    expect(result.current.levels).toEqual(["off", "high", "xhigh"]);
-    expect(result.current.isLoading).toBe(false);
     expect(fetch).toHaveBeenCalledWith("/api/agent/code/sessions/s1/thinking-level");
   });
 
-  it("uses the selected model's levels for the dropdown while keeping the session level from the worker", async () => {
-    const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce({
+  it("keeps the catalog default when the worker has no session yet", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: okJson({ thinking: { level: "high", levels: ["off", "minimal", "low", "medium", "high"] } }),
+      json: okJson({ thinking: null }),
     } as unknown as Response);
 
     const { result } = renderHook(() =>
       useCodingAgentSessionThinkingLevel({
         sessionId: "s1",
         modelId: "Deepseek v4 Pro",
-        enabled: true,
-        isRunning: false,
-        levels: ["off", "high", "xhigh"],
+        defaultLevel: "xhigh",
       }),
     );
 
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(result.current.level).toBe("xhigh");
+  });
+
+  it("resets to the new model's default when the picker changes, without refetching", async () => {
+    const fetchMock = vi.mocked(fetch);
+    const { result, rerender } = renderHook(
+      ({ modelId, defaultLevel }) =>
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, defaultLevel }),
+      {
+        initialProps: {
+          modelId: "Deepseek v4 Pro",
+          defaultLevel: "xhigh" as ThinkingLevel,
+        },
+      },
+    );
     await waitFor(() => expect(result.current.level).toBe("high"));
-    // The dropdown shows the levels of the model selected in the picker…
-    expect(result.current.levels).toEqual(["off", "high", "xhigh"]);
-    // …while the active level still comes from the session (worker GET).
-    expect(result.current.isLoading).toBe(false);
+
+    rerender({ modelId: "Kimi K2.7 Code", defaultLevel: "high" as ThinkingLevel });
+
+    expect(result.current.level).toBe("high");
+    // El nivel de la sesión es del modelo anterior: no hay nada que volver a
+    // pedir, el worker aplicará este default al enviar.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("refetches when the model changes", async () => {
+  it("ignores the initial GET when the user already picked a level", async () => {
     const fetchMock = vi.mocked(fetch);
-    const { rerender } = renderHook(
-      ({ modelId }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false, levels: [] }),
-      { initialProps: { modelId: "Deepseek v4 Pro" } },
-    );
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-
-    rerender({ modelId: "Kimi K2.7 Code" });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-  });
-
-  it("refetches when a run completes (isRunning true→false)", async () => {
-    const fetchMock = vi.mocked(fetch);
-    const { rerender } = renderHook(
-      ({ isRunning }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning, levels: [] }),
-      { initialProps: { isRunning: true } },
-    );
-    // Initial load while the run is in flight.
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-
-    rerender({ isRunning: false });
-    // Falling edge triggers a refetch so the worker-applied default shows up.
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(fetchMock).toHaveBeenLastCalledWith("/api/agent/code/sessions/s1/thinking-level");
-  });
-
-  it("ignores a stale GET that resolves after a newer load already applied state", async () => {
-    const fetchMock = vi.mocked(fetch);
-    let resolveStale!: (response: Response) => void;
+    let resolveGet!: (response: Response) => void;
     fetchMock.mockImplementationOnce(
       () =>
         new Promise<Response>((resolve) => {
-          resolveStale = resolve;
+          resolveGet = resolve;
         }),
     );
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: okJson({ thinking: { level: "xhigh", levels: ["off", "high", "xhigh"] } }),
-    } as unknown as Response);
 
-    const { result, rerender } = renderHook(
-      ({ modelId }) =>
-        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, enabled: true, isRunning: false, levels: [] }),
-      { initialProps: { modelId: "Deepseek v4 Pro" } },
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+      }),
     );
-    // First load (old model) is still in flight when the model changes.
-    expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    rerender({ modelId: "Kimi K2.7 Code" });
-    await waitFor(() => expect(result.current.level).toBe("xhigh"));
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    act(() => result.current.setLevel("low"));
 
-    // The slow old-model response lands late: it must not clobber the state.
     await act(async () => {
-      resolveStale({
+      resolveGet({
         ok: true,
-        json: okJson({ thinking: { level: "low", levels: ["off", "low"] } }),
+        json: okJson({ thinking: { level: "high", levels: ["off", "high", "xhigh"] } }),
       } as unknown as Response);
     });
 
-    expect(result.current.level).toBe("xhigh");
-    expect(result.current.levels).toEqual(["off", "high", "xhigh"]);
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.level).toBe("low");
   });
 
-  it("stays idle while disabled or without a model", () => {
+  it("ignores the initial GET when the model changed while it was in flight", async () => {
     const fetchMock = vi.mocked(fetch);
-    renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: null, enabled: true, isRunning: false, levels: [] }),
+    let resolveGet!: (response: Response) => void;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveGet = resolve;
+        }),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ modelId, defaultLevel }) =>
+        useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId, defaultLevel }),
+      {
+        initialProps: {
+          modelId: "Deepseek v4 Pro",
+          defaultLevel: "xhigh" as ThinkingLevel,
+        },
+      },
+    );
+
+    rerender({ modelId: "Kimi K2.7 Code", defaultLevel: "high" as ThinkingLevel });
+
+    await act(async () => {
+      resolveGet({
+        ok: true,
+        json: okJson({ thinking: { level: "xhigh", levels: ["off", "high", "xhigh"] } }),
+      } as unknown as Response);
+    });
+
+    expect(result.current.level).toBe("high");
+  });
+
+  it("does not fetch until the model is known", () => {
+    const fetchMock = vi.mocked(fetch);
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: null,
+        defaultLevel: "xhigh",
+      }),
     );
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.level).toBeNull();
   });
 
-  it("POSTs the level and adopts the effective level", async () => {
+  it("sets the level locally, with no request (it travels with the prompt)", async () => {
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: okJson({ thinking: { level: "high", levels: ["off", "high", "xhigh"] } }),
-    } as unknown as Response);
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: okJson({ thinking: { level: "xhigh" } }),
-    } as unknown as Response);
-
     const { result } = renderHook(() =>
-      useCodingAgentSessionThinkingLevel({ sessionId: "s1", modelId: "Deepseek v4 Pro", enabled: true, isRunning: false, levels: [] }),
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+      }),
     );
     await waitFor(() => expect(result.current.level).toBe("high"));
 
-    await act(async () => {
-      await result.current.setLevel("xhigh");
-    });
+    act(() => result.current.setLevel("xhigh"));
 
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      "/api/agent/code/sessions/s1/thinking-level",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ level: "xhigh" }),
-      }),
-    );
     expect(result.current.level).toBe("xhigh");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith("/api/agent/code/sessions/s1/thinking-level");
   });
 });

@@ -6,7 +6,7 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { getDefaultThinkingLevel, toPiModelId } from "models";
+import { getDefaultThinkingLevel, isThinkingLevel, toPiModelId } from "models";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import {
@@ -92,7 +92,16 @@ export const POST = withAuth(async (user, req) => {
     );
   }
 
-  const defaultThinkingLevel = getDefaultThinkingLevel(modelId as chatModelId);
+  // The reasoning control is lazy like the model picker: the level the UI is
+  // showing travels with the prompt. Only when the client sends nothing (an
+  // older client, or a run started elsewhere) do we fall back to the model's
+  // catalog default.
+  const requestedThinkingLevel =
+    context.find((c) => c.description === "thinkingLevel")?.value ??
+    forwardedProps.thinkingLevel;
+  const thinkingLevel = isThinkingLevel(requestedThinkingLevel)
+    ? requestedThinkingLevel
+    : getDefaultThinkingLevel(modelId as chatModelId);
 
   if (!project) {
     return new Response(
@@ -154,7 +163,7 @@ export const POST = withAuth(async (user, req) => {
         modelId: piModelId
           ? `${piModelId.providerId}/${piModelId.modelId}`
           : undefined,
-        defaultThinkingLevel,
+        thinkingLevel,
         piSessionId: dbSession.piSessionId ?? undefined,
         _traceRunId: runId,
       });

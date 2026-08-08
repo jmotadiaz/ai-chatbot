@@ -91,6 +91,20 @@ const ATTACHMENT_CONTENT: InputContent[] = [
   },
 ];
 
+function ThinkingLevelHarness({ level }: { level: "low" | null }) {
+  const { sendMessage } = useCodingAgent({
+    project: "p",
+    sessionId: "s",
+    modelId: "m",
+    thinkingLevel: level,
+  });
+  return (
+    <button data-testid="send" onClick={() => void sendMessage("hello")}>
+      send
+    </button>
+  );
+}
+
 function AttachmentHarness() {
   const { sendMessage } = useCodingAgent({ project: "p", sessionId: "s", modelId: "m" });
   return (
@@ -163,6 +177,43 @@ describe("useCodingAgent client lifecycle", () => {
     const lastUserMessage = messages[messages.length - 1];
     expect(lastUserMessage.role).toBe("user");
     expect(lastUserMessage.content).toEqual(ATTACHMENT_CONTENT);
+  });
+
+  it("sends the reasoning level with the prompt, like the model", async () => {
+    render(<ThinkingLevelHarness level="low" />);
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+
+    await waitFor(() =>
+      expect(fetchSpy.mock.calls.some(([url]) => url === "/api/agent/code")).toBe(true),
+    );
+    const [, request] = fetchSpy.mock.calls.find(([url]) => url === "/api/agent/code")!;
+    const body = JSON.parse((request as RequestInit).body as string);
+    expect(body.context).toContainEqual({
+      description: "thinkingLevel",
+      value: "low",
+    });
+  });
+
+  it("omits the reasoning level while it is not resolved yet", async () => {
+    render(<ThinkingLevelHarness level={null} />);
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+
+    await waitFor(() =>
+      expect(fetchSpy.mock.calls.some(([url]) => url === "/api/agent/code")).toBe(true),
+    );
+    const [, request] = fetchSpy.mock.calls.find(([url]) => url === "/api/agent/code")!;
+    const body = JSON.parse((request as RequestInit).body as string);
+    expect(
+      (body.context as Array<{ description: string }>).map((c) => c.description),
+    ).not.toContain("thinkingLevel");
   });
 
   it("connects an active session from the cursor returned by the worker snapshot", async () => {

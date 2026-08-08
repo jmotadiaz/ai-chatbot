@@ -6,7 +6,7 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { filterAvailableChatModels, toPiModelId } from "models";
+import { getDefaultThinkingLevel, toChatModelId } from "models";
 import type { InvocableModelId, ThinkingLevel } from "models";
 import { listProjects } from "./project-resolver";
 import {
@@ -120,23 +120,36 @@ export async function getSubagentSessionAction(input: {
   });
 }
 
-export async function getCodingAgentModels() {
+export interface CodingAgentModel {
+  id: InvocableModelId;
+  /** Niveles de razonamiento del modelo, según el registry de Pi en el worker. */
+  levels: ThinkingLevel[];
+  /** Nivel que se aplica al elegir este modelo, del catálogo. */
+  defaultLevel: ThinkingLevel | undefined;
+}
+
+/**
+ * Modelos disponibles con todo lo que la UI necesita saber de razonamiento.
+ * Los niveles solo los conoce el worker (el `thinkingLevelMap` vive en el
+ * registry de Pi, no en el catálogo), así que este es el único canal.
+ */
+export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
   return withActionTrace("getCodingAgentModels", async (log) => {
     assertEnabled();
     const client = new WorkerClient();
     const { models } = await client.getAvailableModels();
-    const levelsByModel = new Map<string, ThinkingLevel[]>(
-      models.map((m): [string, ThinkingLevel[]] => [`${m.providerId}/${m.modelId}`, m.levels]),
-    );
-    // Los niveles por modelo vienen del worker; si un modelo del catálogo no
-    // aparece en la respuesta del worker se queda con levels: [] y el hook
-    // cae al fallback del GET thinking-level.
-    const result = filterAvailableChatModels(models).map(
-      (id): { id: InvocableModelId; levels: ThinkingLevel[] } => {
-        const { providerId, modelId } = toPiModelId(id);
-        return { id, levels: levelsByModel.get(`${providerId}/${modelId}`) ?? [] };
-      },
-    );
+    const result = models
+      .map((model) => ({ model, id: toChatModelId(model.providerId, model.modelId) }))
+      .filter(
+        (entry): entry is { model: (typeof models)[number]; id: InvocableModelId } =>
+          entry.id !== undefined,
+      )
+      .map(({ model, id }) => ({
+        id,
+        levels: model.levels,
+        defaultLevel: getDefaultThinkingLevel(id),
+      }))
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     log.info("action.result", { count: result.length });
     return result;
   });

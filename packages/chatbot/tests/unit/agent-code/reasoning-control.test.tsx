@@ -8,7 +8,7 @@ afterEach(() => cleanup());
 describe("ReasoningControl", () => {
   it("renders nothing when the model only supports off", () => {
     const { container } = render(
-      <ReasoningControl level="off" levels={["off"]} isLoading={false} onSelect={vi.fn()} />,
+      <ReasoningControl level="off" levels={["off"]} onSelect={vi.fn()} />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -19,7 +19,6 @@ describe("ReasoningControl", () => {
       <ReasoningControl
         level="high"
         levels={["off", "high", "xhigh"]}
-        isLoading={false}
         onSelect={onSelect}
       />,
     );
@@ -47,7 +46,6 @@ describe("ReasoningControl", () => {
         <ReasoningControl
           level="high"
           levels={["off", "high", "xhigh"]}
-          isLoading={false}
           onSelect={onSelect}
         />
       </form>,
@@ -66,7 +64,6 @@ describe("ReasoningControl", () => {
       <ReasoningControl
         level="high"
         levels={["off", "high", "xhigh"]}
-        isLoading={false}
         onSelect={vi.fn()}
       />,
     );
@@ -74,11 +71,8 @@ describe("ReasoningControl", () => {
     expect(trigger.className).not.toContain("bg-blue-600");
   });
 
-  it("disables the trigger while loading", () => {
-
-    render(
-      <ReasoningControl level={null} levels={["off", "high"]} isLoading={true} onSelect={vi.fn()} />,
-    );
+  it("disables the trigger while there is no level to show yet", () => {
+    render(<ReasoningControl level={null} levels={["off", "high"]} onSelect={vi.fn()} />);
     // toBeDisabled is a jest-dom matcher, which is not registered in this
     // repo's vitest setup; assert the native property instead.
     expect(screen.getByRole("button", { name: /Reasoning effort/ })).toHaveProperty("disabled", true);

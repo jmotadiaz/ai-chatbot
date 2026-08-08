@@ -43,7 +43,10 @@ vi.mock("@/lib/features/code/worker-client", () => ({
 
 import { POST } from "@/app/(chat)/api/agent/code/route";
 
-function makeRequest() {
+function makeRequest(
+  options: { modelId?: string; thinkingLevel?: string; runId?: string } = {},
+) {
+  const { modelId = "Deepseek v4 Pro", thinkingLevel, runId = "r1" } = options;
   return new Request("http://test/api/agent/code", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -52,10 +55,13 @@ function makeRequest() {
       context: [
         { description: "project", value: "p" },
         { description: "sessionId", value: "s1" },
-        { description: "modelId", value: "Deepseek v4 Pro" },
+        { description: "modelId", value: modelId },
+        ...(thinkingLevel === undefined
+          ? []
+          : [{ description: "thinkingLevel", value: thinkingLevel }]),
       ],
       messages: [{ id: "u1", role: "user", content: "hola" }],
-      runId: "r1",
+      runId,
     }),
   });
 }
@@ -71,41 +77,41 @@ beforeEach(() => {
 });
 
 describe("POST /api/agent/code", () => {
-  it("passes the catalog defaultThinkingLevel for the selected model", async () => {
-    const res = await POST(makeRequest() as never);
+  it("forwards the level the prompt carries", async () => {
+    const res = await POST(makeRequest({ thinkingLevel: "low" }) as never);
 
     expect(res.status).toBe(200);
     const init = mockState.initParams[0] as {
       modelId?: string;
-      defaultThinkingLevel?: string;
+      thinkingLevel?: string;
     };
     expect(init.modelId).toBe("opencode-go/deepseek-v4-pro");
-    expect(init.defaultThinkingLevel).toBe("xhigh");
+    expect(init.thinkingLevel).toBe("low");
   });
 
-  it("passes the catalog default for every invocable model", async () => {
-    const req = new Request("http://test/api/agent/code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        threadId: "s1",
-        context: [
-          { description: "project", value: "p" },
-          { description: "sessionId", value: "s1" },
-          { description: "modelId", value: "Kimi K3" },
-        ],
-        messages: [{ id: "u1", role: "user", content: "hola" }],
-        runId: "r2",
-      }),
-    });
-    mockState.dbSession = { sessionId: "s1", project: "p", piSessionId: null, label: null };
-
-    const res = await POST(req as never);
+  it("falls back to the catalog default when the prompt carries no level", async () => {
+    const res = await POST(makeRequest() as never);
 
     expect(res.status).toBe(200);
-    const init = mockState.initParams[0] as {
-      defaultThinkingLevel?: string;
-    };
-    expect(init.defaultThinkingLevel).toBe("high");
+    const init = mockState.initParams[0] as { thinkingLevel?: string };
+    expect(init.thinkingLevel).toBe("xhigh");
+  });
+
+  it("falls back to the catalog default when the level is not a valid one", async () => {
+    const res = await POST(makeRequest({ thinkingLevel: "ultra" }) as never);
+
+    expect(res.status).toBe(200);
+    const init = mockState.initParams[0] as { thinkingLevel?: string };
+    expect(init.thinkingLevel).toBe("xhigh");
+  });
+
+  it("uses each model's own catalog default", async () => {
+    const res = await POST(
+      makeRequest({ modelId: "Kimi K3", runId: "r2" }) as never,
+    );
+
+    expect(res.status).toBe(200);
+    const init = mockState.initParams[0] as { thinkingLevel?: string };
+    expect(init.thinkingLevel).toBe("high");
   });
 });

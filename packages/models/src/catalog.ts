@@ -530,7 +530,11 @@ export function getDefaultThinkingLevel(
   )?.defaultThinkingLevel;
 }
 
-const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+export const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+
+export function isThinkingLevel(value: unknown): value is ThinkingLevel {
+  return typeof value === "string" && (THINKING_LEVELS as string[]).includes(value);
+}
 
 /** Misma semántica que pi-ai: niveles soportados según reasoning + thinkingLevelMap. */
 export function getSupportedThinkingLevels(

@@ -7,16 +7,16 @@ import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils/helpers";
 
 export interface ReasoningControlProps {
+  /** Nivel que se aplicará en el próximo turno. */
   level: ThinkingLevel | null;
+  /** Niveles del modelo seleccionado en el picker. */
   levels: ThinkingLevel[];
-  isLoading: boolean;
   onSelect: (level: ThinkingLevel) => void;
 }
 
 export const ReasoningControl: React.FC<ReasoningControlProps> = ({
   level,
   levels,
-  isLoading,
   onSelect,
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
@@ -31,7 +31,7 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
         type="button"
         aria-label={`Reasoning effort: ${level ?? "…"}`}
         title={`Reasoning effort: ${level ?? "…"}`}
-        disabled={isLoading || level === null}
+        disabled={level === null}
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup

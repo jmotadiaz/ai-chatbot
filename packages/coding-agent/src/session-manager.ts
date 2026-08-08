@@ -210,24 +210,28 @@ export function __resetSessionsForTests(): void {
 }
 
 /**
- * Apply the catalog default thinking level to a session runtime. Pi clamps
- * the level to the model's capabilities (non-reasoning models → "off"), so
- * an unsupported level is never an error. No-op when no level is given.
+ * Apply a thinking level to a session. Pi clamps the level to the model's
+ * capabilities (non-reasoning models → "off"), so an unsupported level is
+ * never an error. No-op when no level is given.
+ *
+ * Side effect of Pi: setThinkingLevel also persists a global default in the
+ * worker's settings.json. Harmless here, because every prompt carries the
+ * level the UI is showing, which overwrites that global.
  */
-export function applyDefaultThinkingLevel(
-  entry: SessionEntry,
+export function applyThinkingLevel(
+  session: { setThinkingLevel: (level: ThinkingLevel) => void },
   level: ThinkingLevel | undefined,
 ): void {
   if (!level) return;
-  entry.runtime.session.setThinkingLevel(level);
+  session.setThinkingLevel(level);
 }
 
 /**
  * Return the session's current thinking level and the levels the current
- * model supports. Null when the session does not exist. On a cold worker
- * restart the session is rehydrated from disk (Pi restores the persisted
- * thinking level, so applyDefaultThinkingLevel is deliberately not applied
- * on the reload path).
+ * model supports; the UI reads it once to seed its control. Null when the
+ * session does not exist (a session with no prompt sent yet), in which case
+ * the UI falls back to the catalog default for the selected model. On a cold
+ * worker restart the session is rehydrated from disk.
  */
 export async function getSessionThinkingLevel(
   sessionId: string,
@@ -252,34 +256,6 @@ export async function getSessionThinkingLevel(
     level: session.thinkingLevel,
     levels: session.getAvailableThinkingLevels(),
   };
-}
-
-/**
- * Set the session's thinking level (Pi clamps to the model's capabilities)
- * and report the effective level. Null when the session does not exist. On
- * a cold worker restart the session is rehydrated from disk before setting.
- */
-export async function setSessionThinkingLevel(
-  sessionId: string,
-  level: ThinkingLevel,
-  piSessionId?: string,
-  project?: string,
-): Promise<{ level: ThinkingLevel } | null> {
-  const log = getTraceLogger("worker");
-  let entry = sessions.get(sessionId);
-
-  if (!entry && piSessionId && project) {
-    log.info("session.thinking_level_set_load_disk", { sessionId, piSessionId });
-    entry = await loadSessionFromDisk(sessionId, piSessionId, project);
-  }
-
-  if (!entry) {
-    log.info("session.thinking_level_set_not_found", { sessionId });
-    return null;
-  }
-
-  entry.runtime.session.setThinkingLevel(level);
-  return { level: entry.runtime.session.thinkingLevel };
 }
 
 function isValidProjectName(name: string): boolean {
@@ -417,14 +393,31 @@ async function loadSessionFromDisk(
   return entry;
 }
 
-export async function getOrCreateSession(options: {
+export interface GetOrCreateSessionOptions {
   userId: string;
   project: string;
   sessionId?: string;
   modelId?: string;
   piSessionId?: string;
-  defaultThinkingLevel?: ThinkingLevel;
-}): Promise<{ sessionId: string; piSessionId: string }> {
+  thinkingLevel?: ThinkingLevel;
+}
+
+/**
+ * The thinking level travels with every prompt (it only takes effect when a
+ * turn runs), so it is applied on every path — in-memory reuse, disk reload
+ * and create — not only when the model changes. Pi clamps it to the model.
+ */
+export async function getOrCreateSession(
+  options: GetOrCreateSessionOptions,
+): Promise<{ sessionId: string; piSessionId: string }> {
+  const entry = await resolveSessionEntry(options);
+  applyThinkingLevel(entry.runtime.session, options.thinkingLevel);
+  return { sessionId: entry.sessionId, piSessionId: entry.piSessionId };
+}
+
+async function resolveSessionEntry(
+  options: GetOrCreateSessionOptions,
+): Promise<SessionEntry> {
   const log = getTraceLogger("worker");
 
   // 1. Reuse existing in-memory session
@@ -438,8 +431,8 @@ export async function getOrCreateSession(options: {
       const current = existing.runtime.session.model;
       if (current && `${current.provider}/${current.id}` !== options.modelId) {
         // Pi's setModel has no isStreaming guard: swapping the model while a
-        // run is in flight is undefined behavior. Refuse so the caller's
-        // optimistic POST fails and the UI stays honest.
+        // run is in flight is undefined behavior. Refuse so the caller sees
+        // the failure instead of a session whose model changed mid-turn.
         if (existing.runtime.session.isStreaming) {
           log.warn("session.model_change_blocked_streaming", {
             sessionId: existing.sessionId,
@@ -454,7 +447,6 @@ export async function getOrCreateSession(options: {
               : undefined;
         if (model) {
           await existing.runtime.session.setModel(model);
-          applyDefaultThinkingLevel(existing, options.defaultThinkingLevel);
           log.info("session.model_changed", {
             sessionId: existing.sessionId,
             modelId: options.modelId,
@@ -467,10 +459,7 @@ export async function getOrCreateSession(options: {
         }
       }
     }
-    return {
-      sessionId: existing.sessionId,
-      piSessionId: existing.piSessionId,
-    };
+    return existing;
   }
 
   // 2. Try to reload from disk if piSessionId is provided (worker restarted)
@@ -481,9 +470,7 @@ export async function getOrCreateSession(options: {
       options.project,
       options.modelId,
     );
-    if (loaded) {
-      return { sessionId: loaded.sessionId, piSessionId: loaded.piSessionId };
-    }
+    if (loaded) return loaded;
   }
 
   // 3. Create a brand-new Pi SDK session
@@ -521,8 +508,7 @@ export async function getOrCreateSession(options: {
     eventLog: new SessionEventLog(),
   };
   sessions.set(sessionId, entry);
-  applyDefaultThinkingLevel(entry, options.defaultThinkingLevel);
-  return { sessionId, piSessionId };
+  return entry;
 }
 
 function createLoggedEventStream(

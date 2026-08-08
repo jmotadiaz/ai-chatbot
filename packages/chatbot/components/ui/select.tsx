@@ -99,7 +99,7 @@ function SelectTriggerComponent<T extends string>({
       aria-controls={`dropdown-${id}`}
       aria-expanded={isOpen}
       className={cn(
-        "flex items-center space-x-3 font-semibold text-black dark:text-white select-none cursor-pointer disabled:pointer-events-none disabled:opacity-50",
+        "flex items-center space-x-3 font-semibold text-black dark:text-white select-none cursor-pointer",
         className,
       )}
       {...props}

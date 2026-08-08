@@ -18,9 +18,8 @@ vi.mock("tracing", () => ({
 const {
   __resetSessionsForTests,
   __seedSessionForTests,
-  applyDefaultThinkingLevel,
+  applyThinkingLevel,
   getSessionThinkingLevel,
-  setSessionThinkingLevel,
 } = await import("coding-agent/session-manager");
 const { SessionEventLog } = await import("coding-agent/event-log");
 
@@ -61,29 +60,13 @@ describe("session-manager thinking level", () => {
 
   it("returns null when the session does not exist", async () => {
     expect(await getSessionThinkingLevel("missing")).toBeNull();
-    expect(await setSessionThinkingLevel("missing", "high")).toBeNull();
   });
 
-  it("sets the level and reports the effective level", async () => {
+  it("applyThinkingLevel sets the level only when one is given", () => {
     const session = makeSession();
-    seed("t-2", session);
-    const result = await setSessionThinkingLevel("t-2", "low");
-    expect(session.setThinkingLevel).toHaveBeenCalledWith("low");
-    expect(result).toEqual({ level: "low" });
-  });
-
-  it("applyDefaultThinkingLevel sets the level only when one is given", () => {
-    const session = makeSession();
-    const entry = {
-      sessionId: "t-3",
-      piSessionId: "pi-t-3",
-      project: "p",
-      runtime: { session } as never,
-      eventLog: new SessionEventLog(),
-    };
-    applyDefaultThinkingLevel(entry as never, "xhigh");
+    applyThinkingLevel(session as never, "xhigh");
     expect(session.setThinkingLevel).toHaveBeenCalledWith("xhigh");
-    applyDefaultThinkingLevel(entry as never, undefined);
+    applyThinkingLevel(session as never, undefined);
     expect(session.setThinkingLevel).toHaveBeenCalledTimes(1);
   });
 
@@ -98,24 +81,55 @@ describe("session-manager thinking level", () => {
     expect(body.result.thinking).toEqual({ level: "high", levels: ["off", "high", "xhigh"] });
   });
 
-  it("routes setSessionThinkingLevel through the RPC handler", async () => {
+  it("applies the level on a plain reuse, with no model change", async () => {
     const { handleRpc } = await import("coding-agent/transports/http");
-    const session = makeSession();
-    seed("t-5", session);
+    const setThinkingLevel = vi.fn();
+    const setModel = vi.fn();
+    __seedSessionForTests("t-5", {
+      sessionId: "t-5",
+      piSessionId: "pi-t-5",
+      project: "p",
+      runtime: {
+        session: {
+          model: { provider: "opencode-go", id: "deepseek-v4-pro" },
+          setModel,
+          setThinkingLevel,
+        },
+        services: {
+          modelRegistry: {
+            find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }),
+          },
+        },
+      } as never,
+      eventLog: new SessionEventLog(),
+    });
+
+    // Cambiar solo el nivel (mismo modelo) es el caso normal del control de
+    // razonamiento: tiene que llegar a la sesión igual.
     const res = await handleRpc(
-      JSON.stringify({ method: "setSessionThinkingLevel", params: { sessionId: "t-5", level: "xhigh" }, id: 2 }),
+      JSON.stringify({
+        method: "initializeSession",
+        params: {
+          userId: "u1",
+          sessionId: "t-5",
+          project: "p",
+          modelId: "opencode-go/deepseek-v4-pro",
+          thinkingLevel: "low",
+        },
+        id: 2,
+      }),
     );
+
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { result: { thinking: { level: string } } };
-    expect(session.setThinkingLevel).toHaveBeenCalledWith("xhigh");
-    expect(body.result.thinking.level).toBe("xhigh");
+    expect(setModel).not.toHaveBeenCalled();
+    expect(setThinkingLevel).toHaveBeenCalledWith("low");
   });
 
-  it("wires initializeSession defaultThinkingLevel through handleRpc into the session runtime", async () => {
+  it("wires initializeSession thinkingLevel through handleRpc into the session runtime", async () => {
     const { handleRpc } = await import("coding-agent/transports/http");
     const setThinkingLevel = vi.fn();
     // The session is already in memory with a different model; the reuse path
-    // in getOrCreateSession must switch the model and then apply the default.
+    // in getOrCreateSession must switch the model and then apply the level.
     __seedSessionForTests("t-6", {
       sessionId: "t-6",
       piSessionId: "pi-t-6",
@@ -143,7 +157,7 @@ describe("session-manager thinking level", () => {
           sessionId: "t-6",
           project: "p",
           modelId: "opencode-go/deepseek-v4-pro",
-          defaultThinkingLevel: "low",
+          thinkingLevel: "low",
         },
         id: 3,
       }),
@@ -183,7 +197,7 @@ describe("session-manager thinking level", () => {
           sessionId: "t-7",
           project: "p",
           modelId: "opencode-go/deepseek-v4-pro",
-          defaultThinkingLevel: "low",
+          thinkingLevel: "low",
         },
         id: 4,
       }),
