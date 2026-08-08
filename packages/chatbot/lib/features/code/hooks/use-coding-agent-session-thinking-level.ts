@@ -1,0 +1,83 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { ThinkingLevel } from "models";
+
+export interface UseCodingAgentSessionThinkingLevelArgs {
+  sessionId: string;
+  /** Modelo activo; el nivel se refetches cuando cambia (el worker aplicó el default del nuevo modelo). */
+  modelId: string | null;
+  enabled: boolean;
+}
+
+export interface UseCodingAgentSessionThinkingLevelResult {
+  /** null mientras carga o si no hay datos aún. */
+  level: ThinkingLevel | null;
+  /** Niveles disponibles del modelo actual; ["off"] si el modelo no razona. */
+  levels: ThinkingLevel[];
+  isLoading: boolean;
+  setLevel: (level: ThinkingLevel) => Promise<void>;
+}
+
+export function useCodingAgentSessionThinkingLevel({
+  sessionId,
+  modelId,
+  enabled,
+}: UseCodingAgentSessionThinkingLevelArgs): UseCodingAgentSessionThinkingLevelResult {
+  const [level, setLevelState] = useState<ThinkingLevel | null>(null);
+  const [levels, setLevels] = useState<ThinkingLevel[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!enabled || !modelId) return;
+    let cancelled = false;
+    setIsLoading(true);
+
+    const load = async () => {
+      try {
+        const response = await fetch(
+          `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/thinking-level`,
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to load thinking level: ${response.status}`);
+        }
+        const data = (await response.json()) as {
+          thinking: { level: ThinkingLevel; levels: ThinkingLevel[] } | null;
+        };
+        if (!cancelled && data.thinking) {
+          setLevelState(data.thinking.level);
+          setLevels(data.thinking.levels);
+        }
+      } catch {
+        // Worker caído o red: mantener el estado anterior.
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, modelId, enabled]);
+
+  const setLevel = async (next: ThinkingLevel) => {
+    const response = await fetch(
+      `/api/agent/code/sessions/${encodeURIComponent(sessionId)}/thinking-level`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ level: next }),
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to set thinking level: ${response.status}`);
+    }
+    const data = (await response.json()) as {
+      thinking: { level: ThinkingLevel } | null;
+    };
+    if (data.thinking) setLevelState(data.thinking.level);
+  };
+
+  return { level, levels, isLoading, setLevel };
+}
