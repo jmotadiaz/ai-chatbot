@@ -1101,7 +1101,6 @@ export async function getAvailableModels(): Promise<
   const registry = ModelRegistry.create(authStorage, getModelsJsonPath());
   const available = registry.getAvailable();
   const filtered = available
-    .filter((model) => model.provider === "opencode-go")
     .map((model) => ({
       providerId: model.provider,
       modelId: model.id,
