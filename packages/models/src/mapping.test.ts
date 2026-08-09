@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  CUSTOM_PI_PROVIDERS,
   filterAvailableChatModels,
   PI_PROVIDER,
   toChatModelId,
   toPiModelId,
+  toPiProviderId,
 } from "./mapping";
 import type { InvocableModelId } from "./catalog";
 
@@ -52,5 +54,39 @@ describe("model mapping", () => {
 
   it("exposes the Pi provider id", () => {
     expect(PI_PROVIDER).toBe("opencode-go");
+  });
+
+  it("maps the Muse Spark catalog id to the meta Pi provider", () => {
+    expect(toPiModelId("Muse Spark 1.2")).toEqual({
+      providerId: "meta",
+      modelId: "muse-spark-1.2-contributor",
+    });
+  });
+
+  it("maps the meta Pi provider back to the catalog id", () => {
+    expect(toChatModelId("meta", "muse-spark-1.2-contributor")).toBe("Muse Spark 1.2");
+    expect(toChatModelId("meta", "unknown-model")).toBeUndefined();
+  });
+
+  it("maps provider kinds to pi provider ids", () => {
+    expect(toPiProviderId("opencodeGo")).toBe("opencode-go");
+    expect(toPiProviderId("metaModelApi")).toBe("meta");
+  });
+
+  it("exposes the custom pi provider config for meta", () => {
+    expect(CUSTOM_PI_PROVIDERS.meta).toEqual({
+      baseUrl: "https://api.meta.ai/v1",
+      api: "openai-completions",
+      apiKeyEnv: "META_API_KEY",
+    });
+  });
+
+  it("filters Pi models to the invocable catalog intersection, sorted", () => {
+    const result = filterAvailableChatModels([
+      { providerId: "meta", modelId: "muse-spark-1.2-contributor" },
+      { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
+      { providerId: "opencode-go", modelId: "unknown-model" },
+    ]);
+    expect(result).toEqual(["Deepseek v4 Pro", "Muse Spark 1.2"]);
   });
 });

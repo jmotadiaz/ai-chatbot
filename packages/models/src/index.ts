@@ -14,10 +14,12 @@ export {
   type ThinkingLevelMap,
 } from "./catalog";
 export {
+  CUSTOM_PI_PROVIDERS,
   PI_PROVIDER,
   filterAvailableChatModels,
   toChatModelId,
   toPiModelId,
+  toPiProviderId,
 } from "./mapping";
 export {
   generateModelsJson,
