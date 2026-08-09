@@ -1,5 +1,5 @@
 import { MODEL_CATALOG, type ModelCatalogEntry, type ModelCost, type ThinkingLevelMap } from "./catalog";
-import { PI_PROVIDER } from "./mapping";
+import { CUSTOM_PI_PROVIDERS, toPiProviderId } from "./mapping";
 
 /**
  * Metadata Pi already knows about a model, keyed by its Pi model id.
@@ -38,8 +38,18 @@ export interface PiModelDefinition {
   thinkingLevelMap?: ThinkingLevelMap;
 }
 
+export interface PiProviderConfig {
+  /** Solo para providers custom (no built-in en Pi): endpoint de la API. */
+  baseUrl?: string;
+  /** Solo para providers custom: api flavor de streaming. */
+  api?: string;
+  /** Solo para providers custom: apiKey con sintaxis de models.json ("$ENV_VAR"). */
+  apiKey?: string;
+  models: PiModelDefinition[];
+}
+
 export interface PiModelsJson {
-  providers: Record<string, { models: PiModelDefinition[] }>;
+  providers: Record<string, PiProviderConfig>;
 }
 
 export interface GenerateModelsJsonOptions {
@@ -104,9 +114,24 @@ export function generateModelsJson(
   catalog: readonly ModelCatalogEntry[] = MODEL_CATALOG,
   { builtIns }: GenerateModelsJsonOptions = {},
 ): PiModelsJson {
-  const models = catalog
-    .filter((e) => e.userInvocable)
-    .map((e) => buildModelDefinition(e, builtIns?.get(e.provider.modelId)));
+  const byProvider = new Map<string, PiModelDefinition[]>();
+  for (const entry of catalog.filter((e) => e.userInvocable)) {
+    const providerId = toPiProviderId(entry.provider.kind);
+    const def = buildModelDefinition(entry, builtIns?.get(entry.provider.modelId));
+    byProvider.set(providerId, [...(byProvider.get(providerId) ?? []), def]);
+  }
 
-  return { providers: { [PI_PROVIDER]: { models } } };
+  const providers: PiModelsJson["providers"] = {};
+  for (const [providerId, models] of byProvider) {
+    const custom = CUSTOM_PI_PROVIDERS[providerId as keyof typeof CUSTOM_PI_PROVIDERS];
+    providers[providerId] = custom
+      ? {
+          baseUrl: custom.baseUrl,
+          api: custom.api,
+          apiKey: `$${custom.apiKeyEnv}`,
+          models,
+        }
+      : { models };
+  }
+  return { providers };
 }

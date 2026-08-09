@@ -13,7 +13,9 @@ const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
 const builtIns = new Map<string, PiModelBaseline>(
-  MODEL_CATALOG.filter((e) => e.userInvocable).map((e) => [
+  // Pi only ships opencode-go models; custom-provider models (e.g. Muse
+  // Spark) have no built-in baseline and must be described by the catalog.
+  MODEL_CATALOG.filter((e) => e.userInvocable && e.provider.kind === "opencodeGo").map((e) => [
     e.provider.modelId,
     {
       reasoning: true,
@@ -37,8 +39,12 @@ describe("generateModelsJson", () => {
   const models = generate().providers["opencode-go"].models;
 
   it("emits one Pi model per invocable catalog entry", () => {
-    expect(models).toHaveLength(INVOCABLE_MODEL_IDS.length);
-    expect(models.map((m) => m.name)).toEqual([...INVOCABLE_MODEL_IDS]);
+    // Models are grouped per provider, so count across all of them.
+    const allModels = Object.values(generate().providers).flatMap(
+      (p) => p.models,
+    );
+    expect(allModels).toHaveLength(INVOCABLE_MODEL_IDS.length);
+    expect(allModels.map((m) => m.name)).toEqual([...INVOCABLE_MODEL_IDS]);
   });
 
   it("uses the provider modelId as Pi id", () => {
@@ -214,5 +220,44 @@ describe("generateModelsJson", () => {
       maxTokens: 8_000,
       cost: COST,
     });
+  });
+});
+
+describe("generateModelsJson custom providers", () => {
+  it("emits the meta provider with baseUrl, api and apiKey from CUSTOM_PI_PROVIDERS", () => {
+    const providers = generate().providers;
+    expect(providers["meta"]).toBeDefined();
+    expect(providers["meta"].baseUrl).toBe("https://api.meta.ai/v1");
+    expect(providers["meta"].api).toBe("openai-completions");
+    expect(providers["meta"].apiKey).toBe("$META_API_KEY");
+  });
+
+  it("describes the Muse Spark model fully", () => {
+    const [muse] = generate().providers["meta"].models;
+    expect(muse).toEqual({
+      id: "muse-spark-1.2-contributor",
+      name: "Muse Spark 1.2",
+      reasoning: true,
+      input: ["text"],
+      contextWindow: 1_048_576,
+      maxTokens: 131_072,
+      cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0.002 },
+      thinkingLevelMap: {
+        off: null,
+        minimal: "minimal",
+        low: "low",
+        medium: "medium",
+        high: "high",
+        xhigh: "xhigh",
+      },
+    });
+  });
+
+  it("keeps the opencode-go provider shape (models only, no provider config)", () => {
+    const providers = generate().providers;
+    expect(providers["opencode-go"].baseUrl).toBeUndefined();
+    expect(providers["opencode-go"].api).toBeUndefined();
+    expect(providers["opencode-go"].apiKey).toBeUndefined();
+    expect(providers["opencode-go"].models.length).toBeGreaterThan(0);
   });
 });
