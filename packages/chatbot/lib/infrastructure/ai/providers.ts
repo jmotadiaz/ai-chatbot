@@ -34,6 +34,19 @@ function getOpenCodeGo() {
   return _opencodeGo;
 }
 
+let _metaModelApi: ReturnType<typeof createOpenAICompatible> | null = null;
+
+function getMetaModelApi() {
+  if (!_metaModelApi) {
+    _metaModelApi = createOpenAICompatible({
+      name: "meta-model-api",
+      apiKey: process.env.META_API_KEY,
+      baseURL: "https://api.meta.ai/v1",
+    });
+  }
+  return _metaModelApi;
+}
+
 const openrouter = createOpenRouter();
 const deepinfra = createDeepInfra();
 
@@ -55,6 +68,7 @@ export const providers: Providers = (() => {
       deepinfra: (modelId: string) => deepinfra(modelId),
       lmstudio: (modelId: string) => lmstudio(modelId),
       opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
+      metaModelApi: (modelId: string) => getMetaModelApi()(modelId),
       embedding: () => google.embeddingModel("gemini-embedding-001"),
       rerank: () => async (args) => {
         const { ranking } = await rerank({
@@ -98,6 +112,7 @@ export const providers: Providers = (() => {
     deepinfra: lookupMock("deepinfra"),
     lmstudio: lookupMock("lmstudio"),
     opencodeGo: lookupMock("opencodeGo"),
+    metaModelApi: lookupMock("metaModelApi"),
     embedding: () => createMockEmbeddingModel(),
     rerank: () => async () => [],
   };
