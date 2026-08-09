@@ -4,6 +4,8 @@
 
 **Goal:** Añadir "Muse Spark 1.2" (Meta Model API, tier contributor) como modelo seleccionable en el chat y el coding agent, registrado como el primer custom provider (`meta`) en el `models.json` que Pi consume.
 
+> **Nota de orden de ejecución (decisión del usuario 2026-08-09):** la Task 5 (chat factory) se ejecuta en segundo lugar, después de la Task 1. Añadir `metaModelApi` a `ProviderKind` rompe el type:check del chatbot hasta que la factory existe, así que Tasks 1 → 5 → 2 → 3 → 4 mantiene el pre-commit hook verde en cada commit. La numeración de tareas no cambia.
+
 **Architecture:** El catálogo central (`packages/models`) es la única fuente de verdad. `generateModelsJson` pasa de emitir un solo provider (`opencode-go`) a dos (`opencode-go` + `meta`, este último con `baseUrl`/`api`/`apiKey` propios). El worker elimina su filtro hardcodeado de provider y el chatbot añade una factory `createOpenAICompatible` para el chat. El mapping catálogo↔Pi se generaliza con `toPiProviderId`.
 
 **Tech Stack:** TypeScript, pnpm workspace, vitest, Pi coding agent (`@earendil-works/pi-coding-agent`), AI SDK (`@ai-sdk/openai-compatible`), OpenAI-compatible Chat Completions de Meta (`https://api.meta.ai/v1`).
