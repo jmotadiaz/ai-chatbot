@@ -180,7 +180,7 @@ export const MODEL_CATALOG = [
   {
     id: "Muse Spark 1.2",
     userInvocable: true,
-    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2-contributor" },
+    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2" },
     company: "meta",
     reasoning: true,
     defaultThinkingLevel: "xhigh",

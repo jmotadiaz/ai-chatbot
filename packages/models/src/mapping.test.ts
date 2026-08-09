@@ -59,12 +59,12 @@ describe("model mapping", () => {
   it("maps the Muse Spark catalog id to the meta Pi provider", () => {
     expect(toPiModelId("Muse Spark 1.2")).toEqual({
       providerId: "meta",
-      modelId: "muse-spark-1.2-contributor",
+      modelId: "muse-spark-1.2",
     });
   });
 
   it("maps the meta Pi provider back to the catalog id", () => {
-    expect(toChatModelId("meta", "muse-spark-1.2-contributor")).toBe("Muse Spark 1.2");
+    expect(toChatModelId("meta", "muse-spark-1.2")).toBe("Muse Spark 1.2");
     expect(toChatModelId("meta", "unknown-model")).toBeUndefined();
   });
 
@@ -83,7 +83,7 @@ describe("model mapping", () => {
 
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
-      { providerId: "meta", modelId: "muse-spark-1.2-contributor" },
+      { providerId: "meta", modelId: "muse-spark-1.2" },
       { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
       { providerId: "opencode-go", modelId: "unknown-model" },
     ]);

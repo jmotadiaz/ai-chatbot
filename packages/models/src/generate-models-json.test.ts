@@ -235,7 +235,7 @@ describe("generateModelsJson custom providers", () => {
   it("describes the Muse Spark model fully", () => {
     const [muse] = generate().providers["meta"].models;
     expect(muse).toEqual({
-      id: "muse-spark-1.2-contributor",
+      id: "muse-spark-1.2",
       name: "Muse Spark 1.2",
       reasoning: true,
       input: ["text"],

@@ -25,7 +25,7 @@ const catalog: ModelCatalogEntry[] = [
   {
     id: "Muse Spark 1.2",
     userInvocable: true,
-    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2-contributor" },
+    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2" },
     company: "meta",
     reasoning: true,
     contextWindow: 1_048_576,
@@ -81,10 +81,10 @@ describe("getAvailableModels", () => {
   it("includes custom providers from models.json (meta) with their thinking levels", async () => {
     const models = await getAvailableModels();
     const muse = models.find(
-      (m) => m.providerId === "meta" && m.modelId === "muse-spark-1.2-contributor",
+      (m) => m.providerId === "meta" && m.modelId === "muse-spark-1.2",
     );
     expect(muse).toBeDefined();
-    expect(muse?.label).toBe("meta/muse-spark-1.2-contributor");
+    expect(muse?.label).toBe("meta/muse-spark-1.2");
     expect(muse?.levels).toEqual(["minimal", "low", "medium", "high", "xhigh"]);
   });
 

@@ -17,6 +17,6 @@ describe("Muse Spark 1.2 in the chat model configuration", () => {
 
   it("exposes a metaModelApi provider factory (mock in test mode)", () => {
     expect(providers.metaModelApi).toBeDefined();
-    expect(providers.metaModelApi("muse-spark-1.2-contributor")).toBeDefined();
+    expect(providers.metaModelApi("muse-spark-1.2")).toBeDefined();
   });
 });
