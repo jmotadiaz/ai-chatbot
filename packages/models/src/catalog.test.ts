@@ -20,11 +20,22 @@ describe("MODEL_CATALOG integrity", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("every userInvocable entry uses the opencodeGo provider", () => {
-    const offenders = MODEL_CATALOG.filter(
-      (e) => e.userInvocable && e.provider.kind !== "opencodeGo",
+  it("custom-provider entries (metaModelApi) fully describe their Pi model", () => {
+    const custom = MODEL_CATALOG.filter(
+      (e): e is Extract<(typeof MODEL_CATALOG)[number], { provider: { kind: "metaModelApi" } }> =>
+        e.provider.kind === "metaModelApi",
     );
-    expect(offenders).toEqual([]);
+    expect(custom.length).toBeGreaterThan(0);
+    for (const entry of custom) {
+      expect(entry.userInvocable).toBe(true);
+      expect(entry.reasoning).toBe(true);
+      expect(entry.defaultThinkingLevel).toBe("xhigh");
+      expect(entry.contextWindow).toBeGreaterThan(0);
+      expect(entry.maxTokens).toBeGreaterThan(0);
+      expect(entry.cost).toBeDefined();
+      expect(entry.thinkingLevelMap).toBeDefined();
+      expect(entry.thinkingLevelMap?.off).toBeNull(); // Muse no permite desactivar reasoning
+    }
   });
 
   it("exposes exactly the coding-agent models as invocable, in order", () => {
@@ -38,6 +49,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Qwen 3.8 Max",
       "MiMo V2.5",
       "MiMo V2.5 Pro",
+      "Muse Spark 1.2",
     ]);
   });
 
@@ -70,6 +82,7 @@ describe("defaultThinkingLevel", () => {
   it("resolves the catalog default for known coding-agent models", () => {
     expect(getDefaultThinkingLevel("Deepseek v4 Pro")).toBe("xhigh");
     expect(getDefaultThinkingLevel("Kimi K2.7 Code")).toBe("high");
+    expect(getDefaultThinkingLevel("Muse Spark 1.2")).toBe("xhigh");
   });
 
   it("returns undefined for models without a declared default", () => {
@@ -113,5 +126,18 @@ describe("getSupportedThinkingLevels", () => {
         medium: null,
       }),
     ).toEqual(["off", "high"]);
+  });
+
+  it("hides off when the map nulls it and keeps minimal..xhigh for Muse Spark", () => {
+    expect(
+      getSupportedThinkingLevels(true, {
+        off: null,
+        minimal: "minimal",
+        low: "low",
+        medium: "medium",
+        high: "high",
+        xhigh: "xhigh",
+      }),
+    ).toEqual(["minimal", "low", "medium", "high", "xhigh"]);
   });
 });

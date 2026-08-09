@@ -18,6 +18,7 @@ export type Company =
 
 export type ProviderKind =
   | "opencodeGo"
+  | "metaModelApi"
   | "gateway"
   | "openrouter"
   | "openai"
@@ -175,6 +176,25 @@ export const MODEL_CATALOG = [
     defaultThinkingLevel: "high",
     temperature: 0.6,
     topP: 0.95,
+  },
+  {
+    id: "Muse Spark 1.2",
+    userInvocable: true,
+    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2-contributor" },
+    company: "meta",
+    reasoning: true,
+    defaultThinkingLevel: "xhigh",
+    thinkingLevelMap: {
+      off: null,
+      minimal: "minimal",
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "xhigh",
+    },
+    contextWindow: 1_048_576,
+    maxTokens: 131_072,
+    cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0.002 },
   },
   // --- internal / non-selectable models ---
   {
