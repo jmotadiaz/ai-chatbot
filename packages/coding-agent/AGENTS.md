@@ -19,18 +19,19 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 
 ## Pi Packages
 
-The worker loads Pi packages through the SDK, not through the `pi` CLI. `scripts/install-packages.ts` clones each entry of `PI_PACKAGES` into `.pi/packages/<name>` at the pinned ref, and `session-manager.ts` passes those paths as `resourceLoaderOptions.additionalExtensionPaths` — the programmatic equivalent of `pi -e <source>`. `pi install` is deliberately not used: it writes to the machine-wide `~/.pi/agent/settings.json` and would change every `pi` run outside this repo, the same reason `models.json` is project-scoped.
+The worker loads Pi packages through the SDK, not through the `pi` CLI. `scripts/install-packages.ts` clones each entry of `PI_PACKAGES` into `.pi/packages/<name>` at the pinned ref, and `session-manager.ts` passes each configured extension entrypoint as `resourceLoaderOptions.additionalExtensionPaths`. Passing the extension file rather than the package root deliberately bypasses package manifest resources such as `pi.skills`. `pi install` is not used because it changes machine-wide Pi settings.
 
 Currently installed: [superpowers](https://github.com/obra/superpowers) (skills for brainstorming, planning, TDD and systematic debugging, plus an extension that injects the `using-superpowers` bootstrap at session start and after compaction).
 
 | Env var | Default | Purpose |
 | --- | --- | --- |
+| `CODING_AGENT_AGENT_DIR` | `.pi/agent` | Worker-owned Pi settings and resource-discovery directory |
 | `CODING_AGENT_PI_PACKAGES_DIR` | `.pi/packages` | Checkout directory (relative values resolve against `packages/coding-agent`) |
 | `CODING_AGENT_SUPERPOWERS_REF` | `v6.2.0` | Git ref for superpowers |
 
 The install step is idempotent and skips the network when the checkout already matches the pinned ref, so it runs on every `transport:http` start. It never fails the worker: if the clone or fetch fails, the worker starts with whatever is on disk (possibly nothing). Run `pnpm --filter coding-agent packages:install --force` to re-fetch a moving ref.
 
-Some packages declare `pi.skills` in their manifest **and** register the same skills dir via an extension `resources_discover` hook. The SDK loads package-declared skills during `reload()` (before any extension hook) and resolves same-name skills first-wins, so a manifest-declared `brainstorming` would always shadow `skills-override/`. `scripts/install-packages.ts` therefore strips the `pi.skills` manifest entry (flag `stripManifestSkills` in `src/pi-packages.ts`) after checkout, so those skills arrive only through the package extension — loaded after the harness override extension, which then wins the name collision.
+Some packages declare `pi.skills` in their manifest **and** register the same directory through `resources_discover`. Because package resources load before extension hooks and duplicate names are first-wins, `src/pi-packages.ts` exposes only configured extension entrypoints, with the harness override extension first. `session-manager.ts` explicitly binds extensions so `resources_discover` runs, then verifies that every skill under `skills-override/` is the effective winner. A missing or shadowed override aborts runtime creation instead of silently selecting the wrong workflow.
 
 ## Subagent Extension
 

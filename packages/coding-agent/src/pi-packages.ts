@@ -1,16 +1,14 @@
 import path from "node:path";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { PACKAGE_ROOT, resolveOverride } from "./paths";
 
 /**
- * Pi packages the worker loads on top of whatever `settings.json` configures.
+ * Pi packages the worker loads from pinned, worker-owned checkouts.
  *
- * The Pi SDK resolves these through `resourceLoaderOptions.additionalExtensionPaths`,
- * the programmatic equivalent of `pi -e <source>`. Checkouts are kept inside the
- * package (`.pi/packages/`) instead of being installed with `pi install`, which
- * would write to the machine-wide `~/.pi/agent/settings.json` and change every
- * `pi` run outside this repo — the same reasoning that keeps `models.json`
- * project-scoped.
+ * The Pi SDK resolves their entrypoints through
+ * `resourceLoaderOptions.additionalExtensionPaths`, the programmatic equivalent
+ * of `pi -e <file>`. Checkouts are kept inside `.pi/packages/` instead of being
+ * installed with `pi install`, which would change machine-wide Pi settings.
  */
 export interface PiPackage {
   name: string;
@@ -20,17 +18,12 @@ export interface PiPackage {
   /** Env var that overrides `defaultRef`. */
   refEnvVar: string;
   /**
-   * Strip the `pi.skills` manifest entry from the checked-out package.json.
-   *
-   * Package-declared skills are loaded by the SDK's `resourceLoader.reload()`
-   * BEFORE any extension `resources_discover` hook, and loadSkills resolves
-   * same-name skills first-wins — so a manifest-declared `brainstorming`
-   * always beats `skills-override/brainstorming`. Stripping the entry makes
-   * the package's skills arrive only through its extension's
-   * `resources_discover`, which the SDK loads in extension order with the
-   * harness override first. See `scripts/install-packages.ts`.
+   * Extension entrypoints loaded from the checkout instead of handing Pi the
+   * package root. This deliberately bypasses package.json resource discovery:
+   * package-declared skills otherwise load before extension resources and can
+   * shadow harness overrides before `resources_discover` runs.
    */
-  stripManifestSkills?: boolean;
+  extensionEntrypoints: string[];
 }
 
 export const PI_PACKAGES: PiPackage[] = [
@@ -39,10 +32,10 @@ export const PI_PACKAGES: PiPackage[] = [
     repo: "https://github.com/obra/superpowers.git",
     defaultRef: "v6.2.0",
     refEnvVar: "CODING_AGENT_SUPERPOWERS_REF",
-    // superpowers declares pi.skills AND its extension registers the same
-    // skills dir via resources_discover; the manifest entry must go so the
-    // harness skills-override wins the brainstorming name collision.
-    stripManifestSkills: true,
+    // The extension registers ./skills through resources_discover. Loading
+    // this file directly avoids also loading the duplicate pi.skills manifest
+    // entry and leaves the upstream checkout untouched.
+    extensionEntrypoints: [".pi/extensions/superpowers.ts"],
   },
 ];
 
@@ -62,13 +55,13 @@ export function getPiPackageRef(pkg: PiPackage): string {
   return process.env[pkg.refEnvVar]?.trim() || pkg.defaultRef;
 }
 
-/**
- * Absolute paths handed to the Pi resource loader. Missing checkouts are
- * skipped: a worker that never ran `packages:install`, or one that lost network
- * on its first boot, still starts — just without those skills and extensions.
- */
-export function getPiPackagePaths(): string[] {
-  return PI_PACKAGES.map(getPiPackagePath).filter((dir) => existsSync(dir));
+/** Extension files handed to Pi without loading their package manifests. */
+export function getPiPackageExtensionPaths(): string[] {
+  return PI_PACKAGES.flatMap((pkg) =>
+    pkg.extensionEntrypoints.map((entrypoint) =>
+      path.join(getPiPackagePath(pkg), entrypoint),
+    ),
+  ).filter((entrypoint) => existsSync(entrypoint));
 }
 
 /**
@@ -78,6 +71,12 @@ export function getPiPackagePaths(): string[] {
  * against superpowers and other Pi packages.
  */
 const OVERRIDE_EXTENSION_DIR = path.join(PACKAGE_ROOT, "extensions", "override");
+const SKILLS_OVERRIDE_DIR = path.join(PACKAGE_ROOT, "skills-override");
+
+/** Harness-owned skills whose names must win every collision. */
+export function getSkillsOverrideDir(): string {
+  return SKILLS_OVERRIDE_DIR;
+}
 
 function getOverrideExtensionPath(): string | null {
   if (existsSync(path.join(OVERRIDE_EXTENSION_DIR, "index.ts"))) {
@@ -107,24 +106,8 @@ export function getFirstPartyExtensionPaths(): string[] {
 }
 
 /**
- * Apply manifest skill patches for all configured Pi packages that need them.
- * The install script already does this at checkout time, but patching here
- * defends against a worker that started without the install step or a checkout
- * whose manifest was restored (e.g. by git) afterwards. If `pi.skills` remains
- * in the manifest, the SDK loads those skills during `reload()` before any
- * extension `resources_discover` hook runs, and `loadSkills` is first-wins —
- * so the harness `skills-override/brainstorming` would lose.
- */
-function ensureManifestSkillPatchesApplied(): void {
-  for (const pkg of PI_PACKAGES) {
-    if (!pkg.stripManifestSkills) continue;
-    applyManifestSkillPatches(pkg, getPiPackagePath(pkg));
-  }
-}
-
-/**
  * All extension paths handed to the Pi resource loader. Precedence:
- * override (harness skills that shadow Pi packages) > Pi packages
+ * override (harness skills) > third-party extension entrypoints
  * (superpowers) > first-party extensions (subagent, etc.).
  *
  * `includeSubagentExtension: false` excludes the subagent tool — child
@@ -133,57 +116,14 @@ function ensureManifestSkillPatchesApplied(): void {
 export function getExtensionPaths(options?: {
   includeSubagentExtension?: boolean;
 }): string[] {
-  ensureManifestSkillPatchesApplied();
-
   const firstParty = getFirstPartyExtensionPaths().filter(
     (p) =>
       options?.includeSubagentExtension !== false ||
       !p.endsWith(path.join("extensions", "subagent")),
   );
   const override = getOverrideExtensionPath();
-  const paths: string[] = [...getPiPackagePaths()];
+  const paths: string[] = [...getPiPackageExtensionPaths()];
   if (override) paths.unshift(override);
   paths.push(...firstParty);
   return paths;
-}
-
-/**
- * Remove the `pi.skills` entry from a checked-out package manifest. Returns
- * true when the file was modified, false when there was nothing to strip.
- * The package's skills then reach sessions only through its extension's
- * `resources_discover` hook, which the SDK loads after the harness override
- * extension — so `skills-override/` wins same-name collisions (loadSkills
- * keeps the first skill that claims a name).
- */
-export function removePiSkillsFromManifest(packageJsonPath: string): boolean {
-  const manifest = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
-  if (!manifest.pi || !Array.isArray(manifest.pi.skills)) return false;
-  delete manifest.pi.skills;
-  writeFileSync(packageJsonPath, `${JSON.stringify(manifest, null, 2)}\n`);
-  return true;
-}
-
-/**
- * Apply the manifest patch for a package's checkout dir (see
- * `PiPackage.stripManifestSkills`). Called by `scripts/install-packages.ts`
- * after every install, skipped or not, so existing checkouts get patched too.
- * Never throws: a patch failure must not block worker startup — it only
- * means the package's skills keep shadowing the harness override.
- */
-export function applyManifestSkillPatches(pkg: PiPackage, checkoutDir: string): void {
-  if (!pkg.stripManifestSkills) return;
-  const manifestPath = path.join(checkoutDir, "package.json");
-  if (!existsSync(manifestPath)) return;
-  try {
-    if (removePiSkillsFromManifest(manifestPath)) {
-      console.log(
-        `pi package manifest patched: ${pkg.name} — pi.skills stripped so its skills load via resources_discover after the harness override`,
-      );
-    }
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    console.warn(
-      `pi package manifest patch failed for ${pkg.name} — its skills may shadow skills-override\n${detail}`,
-    );
-  }
 }

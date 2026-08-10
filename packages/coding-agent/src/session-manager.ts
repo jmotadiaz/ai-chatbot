@@ -4,7 +4,6 @@ import {
   createAgentSessionRuntime,
   createAgentSessionFromServices,
   createAgentSessionServices,
-  getAgentDir,
   SessionManager,
   AuthStorage,
   ModelRegistry,
@@ -21,6 +20,8 @@ import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
+import { getCodingAgentDir } from "./paths";
+import { assertSkillOverridesApplied } from "./skill-overrides";
 import { startSubagentCollector } from "./subagent-collector";
 import { loadPrompts, getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "./prompts";
 import type {
@@ -289,6 +290,7 @@ function makeCreateRuntime(
     const authStorage = AuthStorage.create(getAuthJsonPath());
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
+      agentDir: getCodingAgentDir(),
       authStorage,
       modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
@@ -311,13 +313,20 @@ function makeCreateRuntime(
         modelId,
       });
     }
+    const sessionResult = await createAgentSessionFromServices({
+      services,
+      sessionManager,
+      sessionStartEvent,
+      model,
+    });
+    // Pi only emits session_start/resources_discover when the host binds the
+    // extension runtime. The harness has no TUI, but still needs the RPC-mode
+    // lifecycle so extension-provided skills and bootstrap hooks are active.
+    await sessionResult.session.bindExtensions({ mode: "rpc" });
+    assertSkillOverridesApplied(services.resourceLoader);
+
     return {
-      ...(await createAgentSessionFromServices({
-        services,
-        sessionManager,
-        sessionStartEvent,
-        model,
-      })),
+      ...sessionResult,
       services,
       diagnostics: services.diagnostics,
     };
@@ -374,7 +383,7 @@ async function loadSessionFromDisk(
   const stop = log.startTimer("session.runtime_create");
   const runtime = await createAgentSessionRuntime(createRuntime, {
     cwd,
-    agentDir: getAgentDir(),
+    agentDir: getCodingAgentDir(),
     sessionManager,
   });
   stop();
@@ -495,7 +504,7 @@ async function resolveSessionEntry(
   const stop = log.startTimer("session.runtime_create");
   const runtime = await createAgentSessionRuntime(createRuntime, {
     cwd,
-    agentDir: getAgentDir(),
+    agentDir: getCodingAgentDir(),
     sessionManager,
   });
   stop();
@@ -865,8 +874,7 @@ export async function sendPrompt(
     reasoning: s.model?.reasoning,
   });
 
-  const resourceLoader = entry.runtime.services.resourceLoader;
-  const loadedSkills = resourceLoader.getSkills().skills;
+  const loadedSkills = entry.runtime.services?.resourceLoader?.getSkills().skills ?? [];
   log.info("debug.skills_state", {
     sessionId,
     skillCount: loadedSkills.length,
@@ -1506,7 +1514,7 @@ export async function runSubagent(
   const stop = log.startTimer("subagent.runtime_create");
   const runtime = await createAgentSessionRuntime(createRuntime, {
     cwd: cwdResult.cwd,
-    agentDir: getAgentDir(),
+    agentDir: getCodingAgentDir(),
     sessionManager,
   });
   stop();

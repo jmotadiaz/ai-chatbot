@@ -1,11 +1,11 @@
 import path from "node:path";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
-import { resolveOverride } from "./paths";
+import { getCodingAgentDir, resolveOverride } from "./paths";
 
 export function getModelsJsonPath(): string {
   return resolveOverride(
     process.env.CODING_AGENT_MODELS_JSON,
-    path.join(getAgentDir(), "models.json"),
+    path.join(getCodingAgentDir(), "models.json"),
   );
 }
 

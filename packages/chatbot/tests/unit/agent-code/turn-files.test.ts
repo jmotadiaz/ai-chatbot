@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { EventType, type BaseEvent } from "@ag-ui/client";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   FILES_CHANGED_EVENT,
   filesChangedFromEvent,
@@ -14,6 +14,21 @@ function filesChangedEvent(value: unknown): BaseEvent {
     name: FILES_CHANGED_EVENT,
     value,
   } as BaseEvent;
+}
+
+function createStorage(): Storage {
+  const values = new Map<string, string>();
+
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => [...values.keys()][index] ?? null,
+    removeItem: (key) => values.delete(key),
+    setItem: (key, value) => values.set(key, value),
+  };
 }
 
 describe("filesChangedFromEvent", () => {
@@ -71,7 +86,12 @@ describe("filesChangedFromEvent", () => {
 
 describe("turn-files persistence", () => {
   beforeEach(() => {
+    vi.stubGlobal("localStorage", createStorage());
     window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("round-trips through localStorage", () => {

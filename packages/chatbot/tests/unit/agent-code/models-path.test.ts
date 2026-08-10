@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { getModelsJsonPath } from "coding-agent/models";
+import { getCodingAgentDir } from "coding-agent/paths";
 
 describe("getModelsJsonPath", () => {
   const original = process.env.CODING_AGENT_MODELS_JSON;
+  const originalAgentDir = process.env.CODING_AGENT_AGENT_DIR;
 
   afterEach(() => {
     if (original === undefined) delete process.env.CODING_AGENT_MODELS_JSON;
     else process.env.CODING_AGENT_MODELS_JSON = original;
+    if (originalAgentDir === undefined) delete process.env.CODING_AGENT_AGENT_DIR;
+    else process.env.CODING_AGENT_AGENT_DIR = originalAgentDir;
   });
 
   it("honours the CODING_AGENT_MODELS_JSON override", () => {
@@ -14,9 +18,12 @@ describe("getModelsJsonPath", () => {
     expect(getModelsJsonPath()).toBe("/tmp/custom-models.json");
   });
 
-  it("defaults to models.json inside the Pi agent dir", () => {
+  it("defaults to models.json inside the worker-owned Pi agent dir", () => {
     delete process.env.CODING_AGENT_MODELS_JSON;
-    expect(getModelsJsonPath()).toMatch(/models\.json$/);
+    delete process.env.CODING_AGENT_AGENT_DIR;
+    expect(getModelsJsonPath()).toMatch(
+      /packages[/\\]coding-agent[/\\]\.pi[/\\]agent[/\\]models\.json$/,
+    );
   });
 
   it("treats an empty override as unset", () => {
@@ -31,6 +38,13 @@ describe("getModelsJsonPath", () => {
     process.env.CODING_AGENT_MODELS_JSON = ".pi/models.json";
     expect(getModelsJsonPath()).toMatch(
       /packages[/\\]coding-agent[/\\]\.pi[/\\]models\.json$/,
+    );
+  });
+
+  it("supports an isolated agent directory override", () => {
+    process.env.CODING_AGENT_AGENT_DIR = ".pi/custom-agent";
+    expect(getCodingAgentDir()).toMatch(
+      /packages[/\\]coding-agent[/\\]\.pi[/\\]custom-agent$/,
     );
   });
 });

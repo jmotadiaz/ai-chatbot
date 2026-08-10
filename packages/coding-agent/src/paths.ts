@@ -13,3 +13,16 @@ export const PACKAGE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url
 export function resolveOverride(value: string | undefined, fallback: string): string {
   return value ? path.resolve(PACKAGE_ROOT, value) : fallback;
 }
+
+/**
+ * Worker-owned Pi configuration directory.
+ *
+ * Authentication is supplied separately from the global Pi agent directory,
+ * so settings and installed packages cannot leak into the harness runtime.
+ */
+export function getCodingAgentDir(): string {
+  return resolveOverride(
+    process.env.CODING_AGENT_AGENT_DIR,
+    path.join(PACKAGE_ROOT, ".pi", "agent"),
+  );
+}

@@ -45,7 +45,7 @@ Pi packages (currently [superpowers](https://github.com/obra/superpowers)) are c
 
 Single source of truth for model definitions. `MODEL_CATALOG` drives the chatbot's model configurations, the chat/coding-agent model mapping, and the `models.json` the worker generates for Pi at startup. Adding a model means editing this catalog only.
 
-The generated file is written to `CODING_AGENT_MODELS_JSON` (relative values resolve against `packages/coding-agent`, not the cwd). Keep it set — without it the worker overwrites the machine-wide `~/.pi/agent/models.json`, which is shared with any `pi` run outside this repo. `auth.json` stays global on purpose, so credentials are not duplicated per project.
+The generated file is written to `CODING_AGENT_MODELS_JSON` (relative values resolve against `packages/coding-agent`, not the cwd). When unset it defaults to the worker-owned `.pi/agent/models.json`, never the machine-wide Pi config. `auth.json` stays global on purpose, so credentials are not duplicated per project.
 
 ### `tracing` — Shared Library
 

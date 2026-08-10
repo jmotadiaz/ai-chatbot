@@ -1,86 +1,30 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import {
+  createAgentSession,
+  DefaultResourceLoader,
+  loadSkills,
+  SessionManager,
+} from "@earendil-works/pi-coding-agent";
+import {
   PI_PACKAGES,
-  applyManifestSkillPatches,
   getExtensionPaths,
+  getPiPackageExtensionPaths,
   getPiPackagePath,
-  removePiSkillsFromManifest,
-  type PiPackage,
 } from "../../src/pi-packages";
-
-/**
- * These tests guard the override-skill precedence fix: the harness override
- * (`skills-override/brainstorming`) must shadow the superpowers
- * `brainstorming`. That only works if the package's skills reach sessions
- * through its extension `resources_discover` (loaded after the override
- * extension) instead of the `pi.skills` manifest entry (loaded by the SDK's
- * `reload()`, before any extension hook).
- */
-
-describe("removePiSkillsFromManifest", () => {
-  let tmpRoot: string;
-
-  beforeEach(() => {
-    tmpRoot = join(tmpdir(), "pi-pkg-test-" + crypto.randomUUID());
-    mkdirSync(tmpRoot, { recursive: true });
-  });
-
-  afterEach(() => {
-    rmSync(tmpRoot, { recursive: true, force: true });
-  });
-
-  it("removes the pi.skills entry and preserves the rest of the manifest, reporting a change", () => {
-    const manifestPath = join(tmpRoot, "package.json");
-    writeFileSync(
-      manifestPath,
-      JSON.stringify(
-        {
-          name: "superpowers",
-          version: "6.2.0",
-          pi: {
-            extensions: ["./.pi/extensions/superpowers.ts"],
-            skills: ["./skills"],
-          },
-        },
-        null,
-        2,
-      ),
-    );
-
-    const changed = removePiSkillsFromManifest(manifestPath);
-
-    expect(changed).toBe(true);
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-    expect(manifest.name).toBe("superpowers");
-    expect(manifest.pi).toEqual({ extensions: ["./.pi/extensions/superpowers.ts"] });
-  });
-
-  it("is a no-op when the manifest has no pi.skills entry", () => {
-    const manifestPath = join(tmpRoot, "package.json");
-    writeFileSync(
-      manifestPath,
-      JSON.stringify({ name: "plain-pkg", pi: { extensions: ["./ext.ts"] } }, null, 2),
-    );
-
-    const changed = removePiSkillsFromManifest(manifestPath);
-
-    expect(changed).toBe(false);
-    expect(JSON.parse(readFileSync(manifestPath, "utf-8"))).toEqual({
-      name: "plain-pkg",
-      pi: { extensions: ["./ext.ts"] },
-    });
-  });
-});
 
 describe("override skill precedence (SDK assumption)", () => {
   let tmpRoot: string;
 
   beforeEach(() => {
-    tmpRoot = join(tmpdir(), "skill-order-test-" + crypto.randomUUID());
+    tmpRoot = join(tmpdir(), `skill-order-test-${crypto.randomUUID()}`);
     mkdirSync(tmpRoot, { recursive: true });
   });
 
@@ -96,126 +40,152 @@ describe("override skill precedence (SDK assumption)", () => {
     );
   };
 
-  it("loadSkills keeps the FIRST skill that claims a name, so the override dir must precede the package's", async () => {
-    // The SDK does not export loadSkills through its package exports, so
-    // resolve the dist entry and import the sibling module by absolute path.
-    const sdkEntry = new URL(import.meta.resolve("@earendil-works/pi-coding-agent"));
-    const { loadSkills } = await import(join(dirname(fileURLToPath(sdkEntry)), "core", "skills.js"));
-
+  it("loadSkills keeps the first skill that claims a name", () => {
     const overrideDir = join(tmpRoot, "skills-override");
     const packageSkillsDir = join(tmpRoot, "package-skills");
     writeSkill(overrideDir, "override");
     writeSkill(packageSkillsDir, "original");
 
-    // Post-fix order (override dir first): the override wins.
-    const postFix = loadSkills({
+    const result = loadSkills({
       cwd: tmpRoot,
       agentDir: tmpRoot,
       skillPaths: [overrideDir, packageSkillsDir],
       includeDefaults: false,
     });
-    expect(postFix.skills.find((s) => s.name === "brainstorming")?.filePath).toBe(
-      join(overrideDir, "brainstorming", "SKILL.md"),
-    );
 
-    // Pre-fix order (package dir first): the original wins — the bug the
-    // manifest patch prevents.
-    const preFix = loadSkills({
-      cwd: tmpRoot,
-      agentDir: tmpRoot,
-      skillPaths: [packageSkillsDir, overrideDir],
-      includeDefaults: false,
-    });
-    expect(preFix.skills.find((s) => s.name === "brainstorming")?.filePath).toBe(
-      join(packageSkillsDir, "brainstorming", "SKILL.md"),
-    );
+    expect(result.skills.find((skill) => skill.name === "brainstorming")?.filePath)
+      .toBe(join(overrideDir, "brainstorming", "SKILL.md"));
   });
 });
 
-describe("applyManifestSkillPatches", () => {
+describe("Pi package extension entrypoints", () => {
+  const superpowersPkg = PI_PACKAGES.find((pkg) => pkg.name === "superpowers")!;
   let tmpRoot: string;
+  let originalPackagesDir: string | undefined;
+  let manifestPath: string;
+  let extensionPath: string;
 
   beforeEach(() => {
-    tmpRoot = join(tmpdir(), "apply-patch-test-" + crypto.randomUUID());
-    mkdirSync(tmpRoot, { recursive: true });
-  });
+    tmpRoot = join(tmpdir(), `extension-paths-test-${crypto.randomUUID()}`);
+    originalPackagesDir = process.env.CODING_AGENT_PI_PACKAGES_DIR;
+    process.env.CODING_AGENT_PI_PACKAGES_DIR = tmpRoot;
 
-  afterEach(() => {
-    rmSync(tmpRoot, { recursive: true, force: true });
-  });
-
-  const writeManifest = (dir: string) => {
+    const checkout = getPiPackagePath(superpowersPkg);
+    manifestPath = join(checkout, "package.json");
+    extensionPath = join(checkout, ".pi", "extensions", "superpowers.ts");
+    mkdirSync(dirname(extensionPath), { recursive: true });
     writeFileSync(
-      join(dir, "package.json"),
+      manifestPath,
       JSON.stringify(
         {
           name: "superpowers",
-          pi: { extensions: ["./.pi/extensions/superpowers.ts"], skills: ["./skills"] },
+          pi: {
+            extensions: ["./.pi/extensions/superpowers.ts"],
+            skills: ["./skills"],
+          },
         },
         null,
         2,
       ),
     );
-  };
-
-  it("strips pi.skills from the checkout of a package flagged for the patch", () => {
-    // superpowers is the package whose skills must load via its extension.
-    const flagged = PI_PACKAGES.find((p) => p.name === "superpowers");
-    expect(flagged?.stripManifestSkills).toBe(true);
-    const checkout = join(tmpRoot, "superpowers");
-    mkdirSync(checkout, { recursive: true });
-    writeManifest(checkout);
-
-    applyManifestSkillPatches(flagged!, checkout);
-
-    const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf-8"));
-    expect(manifest.pi).toEqual({ extensions: ["./.pi/extensions/superpowers.ts"] });
-  });
-
-  it("leaves unflagged packages untouched", () => {
-    const unflagged: PiPackage = {
-      name: "plain-pkg",
-      repo: "https://example.invalid/repo.git",
-      defaultRef: "v1.0.0",
-      refEnvVar: "PLAIN_REF",
-    };
-    const checkout = join(tmpRoot, "plain-pkg");
-    mkdirSync(checkout, { recursive: true });
-    writeManifest(checkout);
-
-    applyManifestSkillPatches(unflagged, checkout);
-
-    const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf-8"));
-    expect(manifest.pi.skills).toEqual(["./skills"]);
-  });
-});
-
-describe("getExtensionPaths", () => {
-  const superpowersPkg = PI_PACKAGES.find((p) => p.name === "superpowers")!;
-  const manifestPath = join(getPiPackagePath(superpowersPkg), "package.json");
-  let originalManifest: string;
-
-  beforeEach(() => {
-    originalManifest = readFileSync(manifestPath, "utf-8");
+    writeFileSync(extensionPath, "export default function () {}\n");
   });
 
   afterEach(() => {
-    writeFileSync(manifestPath, originalManifest);
+    if (originalPackagesDir === undefined) {
+      delete process.env.CODING_AGENT_PI_PACKAGES_DIR;
+    } else {
+      process.env.CODING_AGENT_PI_PACKAGES_DIR = originalPackagesDir;
+    }
+    rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  it("applies manifest skill patches at runtime so pi.skills does not shadow skills-override", () => {
-    // Simulate a checkout whose manifest was restored to the upstream version
-    // (with pi.skills) after the install script ran.
-    const manifest = JSON.parse(originalManifest);
-    manifest.pi ??= {};
-    manifest.pi.skills = ["./skills"];
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-    expect(JSON.parse(readFileSync(manifestPath, "utf-8")).pi.skills).toBeDefined();
+  it("loads only configured extension files and leaves the upstream manifest untouched", () => {
+    const originalManifest = readFileSync(manifestPath, "utf-8");
 
-    getExtensionPaths();
+    expect(getPiPackageExtensionPaths()).toEqual([extensionPath]);
+    expect(getExtensionPaths()).toContain(extensionPath);
+    expect(getExtensionPaths()).not.toContain(getPiPackagePath(superpowersPkg));
+    expect(readFileSync(manifestPath, "utf-8")).toBe(originalManifest);
+  });
 
-    const patched = JSON.parse(readFileSync(manifestPath, "utf-8"));
-    expect(patched.pi.skills).toBeUndefined();
-    expect(patched.pi.extensions).toEqual(["./.pi/extensions/superpowers.ts"]);
+  it("skips a missing extension entrypoint", () => {
+    rmSync(extensionPath);
+    expect(getPiPackageExtensionPaths()).toEqual([]);
+  });
+});
+
+describe("extension resource integration", () => {
+  const superpowersPkg = PI_PACKAGES.find((pkg) => pkg.name === "superpowers")!;
+  let tmpRoot: string;
+  let originalPackagesDir: string | undefined;
+
+  beforeEach(() => {
+    tmpRoot = join(tmpdir(), `extension-integration-test-${crypto.randomUUID()}`);
+    originalPackagesDir = process.env.CODING_AGENT_PI_PACKAGES_DIR;
+    process.env.CODING_AGENT_PI_PACKAGES_DIR = tmpRoot;
+
+    const checkout = getPiPackagePath(superpowersPkg);
+    const skillDir = join(checkout, "skills", "brainstorming");
+    const extensionPath = join(checkout, ".pi", "extensions", "superpowers.ts");
+    mkdirSync(skillDir, { recursive: true });
+    mkdirSync(dirname(extensionPath), { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: brainstorming\ndescription: original\n---\noriginal\n",
+    );
+    writeFileSync(
+      extensionPath,
+      [
+        'import { dirname, resolve } from "node:path";',
+        'import { fileURLToPath } from "node:url";',
+        "export default function (pi) {",
+        '  const skillsDir = resolve(dirname(fileURLToPath(import.meta.url)), "../../skills");',
+        '  pi.on("resources_discover", async () => ({ skillPaths: [skillsDir] }));',
+        "}",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  afterEach(() => {
+    if (originalPackagesDir === undefined) {
+      delete process.env.CODING_AGENT_PI_PACKAGES_DIR;
+    } else {
+      process.env.CODING_AGENT_PI_PACKAGES_DIR = originalPackagesDir;
+    }
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  it("binds resources_discover and selects the harness override", async () => {
+    const agentDir = join(tmpRoot, "agent");
+    const cwd = join(tmpRoot, "project");
+    mkdirSync(agentDir, { recursive: true });
+    mkdirSync(cwd, { recursive: true });
+    const resourceLoader = new DefaultResourceLoader({
+      cwd,
+      agentDir,
+      additionalExtensionPaths: getExtensionPaths({
+        includeSubagentExtension: false,
+      }),
+    });
+    await resourceLoader.reload();
+    const { session } = await createAgentSession({
+      cwd,
+      agentDir,
+      resourceLoader,
+      sessionManager: SessionManager.inMemory(cwd),
+      noTools: "all",
+    });
+
+    await session.bindExtensions({ mode: "rpc" });
+
+    const winner = resourceLoader
+      .getSkills()
+      .skills.find((skill) => skill.name === "brainstorming");
+    expect(winner?.filePath).toMatch(
+      /packages[/\\]coding-agent[/\\]skills-override[/\\]brainstorming[/\\]SKILL\.md$/,
+    );
+    session.dispose();
   });
 });
