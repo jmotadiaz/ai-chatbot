@@ -130,6 +130,8 @@ export const makeCorrectGrammar =
       - Do not add new information or remove existing factual content.
       - For each significant correction, provide a concise reason explaining *what* was changed and *why*.
 
+      ${zodToPrompt(grammarSchema)}
+
       ${buildGuardrailPrompt("correct the grammar and spelling of the entire user message as-is")}
     `,
       prompt,

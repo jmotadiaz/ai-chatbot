@@ -25,7 +25,8 @@ export type ProviderKind =
   | "xai"
   | "groq"
   | "perplexity"
-  | "lmstudio";
+  | "lmstudio"
+  | "deepinfra";
 
 /** Price per million tokens, in the same units Pi uses. */
 export interface ModelCost {
@@ -206,7 +207,7 @@ export const MODEL_CATALOG = [
   {
     id: "Llama 3.1 Instant",
     userInvocable: false,
-    provider: { kind: "openrouter", modelId: "meta-llama/llama-3.1-8b-instruct" },
+    provider: { kind: "deepinfra", modelId: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo" },
     company: "meta",
     temperature: 0.6,
   },
@@ -483,6 +484,12 @@ export const MODEL_CATALOG = [
     temperature: 0.6,
     supportedFiles: ["img"],
     supportedOutput: ["img"],
+  },
+  {
+    id: "Gemma 4 26B",
+    userInvocable: false,
+    provider: { kind: "deepinfra", modelId: "google/gemma-4-26B-A4B-it" },
+    company: "google",
   },
   {
     id: "Grok Code Fast",

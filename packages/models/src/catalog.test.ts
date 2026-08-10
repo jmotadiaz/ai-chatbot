@@ -63,6 +63,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Gemini 2.5 Flash Lite",
       "Gemini 3 Flash",
       "Deepseek v4 Flash",
+      "Gemma 4 26B",
     ]) {
       expect(ids.has(internal)).toBe(true);
     }

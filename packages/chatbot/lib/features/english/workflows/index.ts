@@ -8,7 +8,7 @@ const grammarAiAdapter: CorrectGrammarAiPort = {
   getDomainModelConfiguration: () =>
     languageModelConfigurations("Llama 3.1 Instant"),
   getGrammarModelConfiguration: () =>
-    languageModelConfigurations("Deepseek v4 Flash"),
+    languageModelConfigurations("Gemma 4 26B"),
 };
 
 const translateAiAdapter: TranslateAiPort = {
@@ -19,7 +19,7 @@ const translateAiAdapter: TranslateAiPort = {
   getDirectionModelConfiguration: () =>
     languageModelConfigurations("GPT OSS Mini"),
   getTranslateModelConfiguration: () =>
-    languageModelConfigurations("Deepseek v4 Flash"),
+    languageModelConfigurations("Gemma 4 26B"),
 };
 
 export const correctGrammar = makeCorrectGrammar(grammarAiAdapter);

@@ -9,7 +9,6 @@ import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cohere } from "@ai-sdk/cohere";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { createDeepInfra } from "@ai-sdk/deepinfra";
 import { MODEL_CATALOG } from "models";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
@@ -48,7 +47,20 @@ function getMetaModelApi() {
 }
 
 const openrouter = createOpenRouter();
-const deepinfra = createDeepInfra();
+
+let _deepinfra: ReturnType<typeof createOpenAICompatible> | null = null;
+
+function getDeepInfra() {
+  if (!_deepinfra) {
+    _deepinfra = createOpenAICompatible({
+      name: "deepinfra",
+      apiKey: process.env.DEEPINFRA_API_KEY,
+      baseURL: "https://api.deepinfra.com/v1/openai",
+      supportsStructuredOutputs: false,
+    });
+  }
+  return _deepinfra;
+}
 
 export const google = createGoogleGenerativeAI();
 export const xai = createXai();
@@ -65,7 +77,7 @@ export const providers: Providers = (() => {
       perplexity: (modelId: string) => perplexity(modelId),
       gateway: (modelId: string) => gateway(modelId),
       openrouter: (modelId: string) => openrouter(modelId),
-      deepinfra: (modelId: string) => deepinfra(modelId),
+      deepinfra: (modelId: string) => getDeepInfra()(modelId),
       lmstudio: (modelId: string) => lmstudio(modelId),
       opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
       metaModelApi: (modelId: string) => getMetaModelApi()(modelId),
