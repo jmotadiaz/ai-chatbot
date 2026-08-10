@@ -2,6 +2,8 @@
 packages:
   - 'packages/*'
 
+engineStrict: true
+
 # Allow build/postinstall scripts execution for the following dependencies:
 allowBuilds:
   '@google/genai': true
@@ -13,4 +15,3 @@ allowBuilds:
   protobufjs: true
   sharp: true
   unrs-resolver: true
-

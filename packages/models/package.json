@@ -9,6 +9,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "lint:fix": "eslint --fix . --config ../../eslint.config.mjs",
     "test:unit": "NODE_ENV=test vitest run --passWithNoTests",
     "type:check": "tsc --noEmit"
   },

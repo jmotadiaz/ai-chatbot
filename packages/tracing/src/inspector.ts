@@ -496,9 +496,6 @@ async function main() {
         const byLayer: Record<string, number> = {};
         const byLevel: Record<string, number> = {};
         const byEvent: Record<string, number> = {};
-        let totalDuration = 0;
-        let maxDur = 0;
-        let maxDurEvent = "";
         let startTime = "";
         let endTime = "";
         for (const e of all) {
@@ -507,10 +504,6 @@ async function main() {
           byEvent[e.eventName] = (byEvent[e.eventName] ?? 0) + 1;
           if (!startTime || e.timestamp < startTime) startTime = e.timestamp;
           if (!endTime || e.timestamp > endTime) endTime = e.timestamp;
-          if (e.durationMs != null) {
-            totalDuration += e.durationMs;
-            if (e.durationMs > maxDur) { maxDur = e.durationMs; maxDurEvent = e.eventName; }
-          }
         }
         const durationMs = startTime && endTime ? new Date(endTime).getTime() - new Date(startTime).getTime() : 0;
         summaryData = {

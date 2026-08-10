@@ -42,6 +42,14 @@ not the Next.js application manifest.
 
 ## Running Locally
 
+This monorepo requires Node.js 24 and pnpm 11. The exact pnpm release is pinned
+in `package.json`; use Corepack to activate it:
+
+```bash
+corepack enable
+corepack install
+```
+
 1. Clone the repository and install dependencies:
 
    ```bash
@@ -73,6 +81,12 @@ not the Next.js application manifest.
    ```bash
    pnpm dev
    ```
+
+Before committing, run the same fast gate used by the pre-commit hook and CI:
+
+```bash
+pnpm verify:fast
+```
 
 ### Tool Configuration & Runtime Settings
 

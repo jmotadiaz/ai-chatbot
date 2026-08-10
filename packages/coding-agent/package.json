@@ -31,6 +31,8 @@
   },
   "scripts": {
     "dev": "pnpm run transport:http",
+    "lint": "eslint src scripts extensions tests --config ../../eslint.config.mjs",
+    "lint:fix": "eslint --fix src scripts extensions tests --config ../../eslint.config.mjs",
     "start": "pnpm run transport:http",
     "packages:install": "tsx scripts/install-packages.ts",
     "transport:http": "tsx scripts/install-packages.ts && tsx scripts/generate-models.ts && tsx src/transports/http.ts",

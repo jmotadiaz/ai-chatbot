@@ -2,12 +2,14 @@
 
 ## Package Manager
 
-Use **pnpm** (workspace mode). Common root scripts:
+Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts:
 
 - `pnpm dev` — start all services (chatbot + coding-agent)
 - `pnpm build` — build the chatbot app
 - `pnpm lint:fix` — lint all packages
-- `pnpm test:unit` / `pnpm test:e2e` — unit & E2E tests
+- `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
+- `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
+- `pnpm test:e2e` — Playwright E2E tests
 - `pnpm db:generate` / `pnpm db:migrate` — Drizzle ORM migrations
 
 ## Commit Attribution
