@@ -1,17 +1,42 @@
-import { describe, it, expect, vi } from "vitest";
-import { WorkerClient, summarizeWorkerRpcParams } from "@/lib/features/code/worker-client";
+import { beforeEach, describe, expect, it } from "vitest";
+import { http, HttpResponse } from "msw";
+import { setupMswServer } from "../../helpers/msw-server";
+import {
+  WorkerClient,
+  summarizeWorkerRpcParams,
+  type JsonRpcRequest,
+} from "@/lib/features/code/worker-client";
+
+const requests: JsonRpcRequest[] = [];
+setupMswServer(
+  http.post("http://worker.test/rpc", async ({ request }) => {
+    const rpc = (await request.json()) as JsonRpcRequest;
+    requests.push(rpc);
+
+    const results: Record<string, unknown> = {
+      initializeSession: { sessionId: "sess-1" },
+      getSessionModel: {
+        model: { providerId: "opencode-go", modelId: "kimi-k2.7-code" },
+      },
+      getSessionSkills: {
+        skills: [{ name: "code-review", description: "Review code" }],
+      },
+    };
+
+    return HttpResponse.json({
+      jsonrpc: "2.0",
+      result: results[rpc.method],
+      id: rpc.id,
+    });
+  }),
+);
+
+beforeEach(() => {
+  requests.length = 0;
+});
 
 describe("WorkerClient", () => {
   it("sends initializeSession request", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        jsonrpc: "2.0",
-        result: { sessionId: "sess-1" },
-        id: 1,
-      }),
-    });
-
     const client = new WorkerClient("http://worker.test");
     const result = await client.initializeSession({
       userId: "user-1",
@@ -20,25 +45,17 @@ describe("WorkerClient", () => {
     });
 
     expect(result.sessionId).toBe("sess-1");
-    expect(global.fetch).toHaveBeenCalledWith(
-      "http://worker.test/rpc",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining("initializeSession"),
-      }),
-    );
+    expect(requests[0]).toMatchObject({
+      method: "initializeSession",
+      params: {
+        userId: "user-1",
+        project: "proj-a",
+        modelId: "opencodeGo/deepseek-v4-pro",
+      },
+    });
   });
 
   it("sends getSessionModel request and returns the worker's model", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        jsonrpc: "2.0",
-        result: { model: { providerId: "opencode-go", modelId: "kimi-k2.7-code" } },
-        id: 1,
-      }),
-    });
-
     const client = new WorkerClient("http://worker.test");
     const result = await client.getSessionModel({
       sessionId: "sess-1",
@@ -47,40 +64,27 @@ describe("WorkerClient", () => {
     });
 
     expect(result.model).toEqual({ providerId: "opencode-go", modelId: "kimi-k2.7-code" });
-    expect(global.fetch).toHaveBeenCalledWith(
-      "http://worker.test/rpc",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining("getSessionModel"),
-      }),
-    );
+    expect(requests[0]).toMatchObject({
+      method: "getSessionModel",
+      params: {
+        sessionId: "sess-1",
+        piSessionId: "pi-1",
+        project: "proj-a",
+      },
+    });
   });
 
   it("returns UI-safe skills from the session", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        jsonrpc: "2.0",
-        result: {
-          skills: [{ name: "code-review", description: "Review code" }],
-        },
-        id: 1,
-      }),
-    });
-
     const client = new WorkerClient("http://worker.test");
     const result = await client.getSessionSkills({ sessionId: "sess-1" });
 
     expect(result.skills).toEqual([
       { name: "code-review", description: "Review code" },
     ]);
-    expect(global.fetch).toHaveBeenCalledWith(
-      "http://worker.test/rpc",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining("getSessionSkills"),
-      }),
-    );
+    expect(requests[0]).toMatchObject({
+      method: "getSessionSkills",
+      params: { sessionId: "sess-1" },
+    });
   });
 });
 

@@ -65,12 +65,12 @@ vi.mock("@/lib/features/code/worker-client", () => ({
   },
 }));
 
+import { POST } from "@/app/(chat)/api/agent/code/route";
 import {
-  POST,
   promptTextFromContent,
   stripNonTailAttachmentData,
   type RequestMessage,
-} from "@/app/(chat)/api/agent/code/route";
+} from "@/lib/features/code/run-request-messages";
 
 function makeRequest(messages: RequestMessage[]) {
   return new Request("http://test/api/agent/code", {

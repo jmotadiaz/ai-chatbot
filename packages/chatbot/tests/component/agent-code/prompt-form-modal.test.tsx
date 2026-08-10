@@ -1,8 +1,12 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { setupMswServer } from "../../helpers/msw-server";
 import { PromptFormModal } from "@/components/code/prompt-form-modal";
 import type { PromptSummary, SessionSummary } from "@/lib/features/code/worker-client";
+
+const server = setupMswServer();
 
 const promptWithSession: PromptSummary = {
   name: "review",
@@ -37,7 +41,6 @@ function renderModal(overrides: { sessions?: SessionSummary[]; onInsert?: () => 
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
 describe("PromptFormModal session input", () => {
@@ -63,11 +66,16 @@ describe("PromptFormModal session input", () => {
   });
 
   it("submits the selected sessionId to the resolve API", async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ text: "resolved" }),
-    }));
-    vi.stubGlobal("fetch", fetchMock);
+    let requestBody: unknown;
+    server.use(
+      http.post(
+        "*/api/agent/code/sessions/current/prompts/resolve",
+        async ({ request }) => {
+          requestBody = await request.json();
+          return HttpResponse.json({ text: "resolved" });
+        },
+      ),
+    );
     const onInsert = vi.fn();
 
     renderModal({ onInsert });
@@ -77,15 +85,9 @@ describe("PromptFormModal session input", () => {
     fireEvent.click(screen.getByRole("button", { name: "Insert" }));
 
     await waitFor(() => expect(onInsert).toHaveBeenCalledWith("resolved"));
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/agent/code/sessions/current/prompts/resolve",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({
-          promptName: "review",
-          values: { target_session: "s2" },
-        }),
-      }),
-    );
+    expect(requestBody).toEqual({
+      promptName: "review",
+      values: { target_session: "s2" },
+    });
   });
 });

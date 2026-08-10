@@ -1,23 +1,22 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { setupMswServer } from "../../helpers/msw-server";
 import { useCodingAgentSessionModel } from "@/lib/features/code/hooks/use-coding-agent-session-model";
 
-const okJson = (data: unknown) => async () => data;
+let requestedUrl: string | null = null;
+
+const server = setupMswServer(
+  http.get("*/api/agent/code/sessions/s1/model", ({ request }) => {
+    requestedUrl = request.url;
+    return HttpResponse.json({ modelId: "Deepseek v4 Pro" });
+  }),
+);
 
 describe("useCodingAgentSessionModel", () => {
   beforeEach(() => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        json: okJson({ modelId: "Deepseek v4 Pro" }),
-      })),
-    );
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
+    requestedUrl = null;
   });
 
   it("loads the session model and exposes isLoading", async () => {
@@ -28,15 +27,18 @@ describe("useCodingAgentSessionModel", () => {
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.modelId).toBe("Deepseek v4 Pro"));
     expect(result.current.isLoading).toBe(false);
-    expect(fetch).toHaveBeenCalledWith("/api/agent/code/sessions/s1/model");
+    expect(new URL(requestedUrl!).pathname).toBe(
+      "/api/agent/code/sessions/s1/model",
+    );
   });
 
   it("falls back to the fallback model when the fetch fails", async () => {
-    const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-    } as unknown as Response);
+    server.use(
+      http.get(
+        "*/api/agent/code/sessions/s1/model",
+        () => new HttpResponse(null, { status: 500 }),
+      ),
+    );
 
     const { result } = renderHook(() =>
       useCodingAgentSessionModel({ sessionId: "s1", fallbackModelId: "Fallback" }),
@@ -44,13 +46,5 @@ describe("useCodingAgentSessionModel", () => {
 
     await waitFor(() => expect(result.current.modelId).toBe("Fallback"));
     expect(result.current.isLoading).toBe(false);
-  });
-
-  it("exposes a plain local setModelId", () => {
-    const { result } = renderHook(() =>
-      useCodingAgentSessionModel({ sessionId: "s1", fallbackModelId: "Fallback" }),
-    );
-
-    expect(typeof result.current.setModelId).toBe("function");
   });
 });

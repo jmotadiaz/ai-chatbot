@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { HttpAgent, EventType } from "@ag-ui/client";
+import { http, HttpResponse } from "msw";
+import { setupMswServer } from "../../helpers/msw-server";
 
 function sseEvent(type: string, data: Record<string, unknown>): string {
   return `data: ${JSON.stringify({ type, ...data })}\n\n`;
 }
+
+const server = setupMswServer();
 
 describe("HttpAgent reasoning → text messageId collision (regression)", () => {
   it("keeps reasoning and text in separate messages when chunks use distinct messageIds", async () => {
@@ -28,16 +32,18 @@ describe("HttpAgent reasoning → text messageId collision (regression)", () => 
       sseEvent(EventType.RUN_FINISHED, { threadId: "t1", runId: "r1" }),
     ].join("");
 
-    const fetchMock = async () =>
-      new Response(sseBody, {
-        status: 200,
-        headers: { "content-type": "text/event-stream" },
-      });
+    server.use(
+      http.post("http://agent.test/sse", () =>
+        new HttpResponse(sseBody, {
+          status: 200,
+          headers: { "content-type": "text/event-stream" },
+        }),
+      ),
+    );
 
     const agent = new HttpAgent({
-      url: "http://test/sse",
+      url: "http://agent.test/sse",
       threadId: "t1",
-      fetch: fetchMock as typeof fetch,
     });
 
     await agent.runAgent({ runId: "r1" });

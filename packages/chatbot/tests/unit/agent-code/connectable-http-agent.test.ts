@@ -1,4 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { http } from "msw";
+import { setupMswServer } from "../../helpers/msw-server";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 
 function sseResponse(lines: string[]): Response {
@@ -9,22 +11,40 @@ function sseResponse(lines: string[]): Response {
   });
 }
 
+const runUrl = "http://agent.test/api/run";
+const connectUrl = "http://agent.test/api/connect";
+let runBody: Record<string, unknown> | undefined;
+let runSignal: AbortSignal | undefined;
+let connectCount = 0;
+
+const server = setupMswServer(
+  http.post(runUrl, async ({ request }) => {
+    runBody = (await request.json()) as Record<string, unknown>;
+    runSignal = request.signal;
+    return sseResponse([
+      JSON.stringify({ type: "RUN_FINISHED", threadId: "t1", runId: "r1" }),
+    ]);
+  }),
+  http.post(connectUrl, () => {
+    connectCount += 1;
+    return sseResponse([
+      JSON.stringify({ type: "RUN_FINISHED", threadId: "t2", runId: "r2" }),
+    ]);
+  }),
+);
+
 describe("ConnectableHttpAgent", () => {
+  beforeEach(() => {
+    runBody = undefined;
+    runSignal = undefined;
+    connectCount = 0;
+  });
+
   it("POSTs to runUrl on run()", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(
-      sseResponse([
-        JSON.stringify({
-          type: "RUN_FINISHED",
-          threadId: "t1",
-          runId: "r1",
-        }),
-      ]),
-    );
     const agent = new ConnectableHttpAgent({
-      runUrl: "/api/run",
-      connectUrl: "/api/connect",
+      runUrl,
+      connectUrl,
       threadId: "t1",
-      fetch: fetchImpl,
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -41,29 +61,15 @@ describe("ConnectableHttpAgent", () => {
         .subscribe({ next: () => {}, error: reject, complete: () => resolve() });
     });
 
-    const [url, init] = fetchImpl.mock.calls[0]!;
-    expect(url).toBe("/api/run");
-    expect(init.method).toBe("POST");
-    const body = JSON.parse(init.body as string);
-    expect(body.threadId).toBe("t1");
-    expect(body.runId).toBe("r1");
+    expect(runBody?.threadId).toBe("t1");
+    expect(runBody?.runId).toBe("r1");
   });
 
   it("POSTs to connectUrl on connect()", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(
-      sseResponse([
-        JSON.stringify({
-          type: "RUN_FINISHED",
-          threadId: "t2",
-          runId: "r2",
-        }),
-      ]),
-    );
     const agent = new ConnectableHttpAgent({
-      runUrl: "/api/run",
-      connectUrl: "/api/connect",
+      runUrl,
+      connectUrl,
       threadId: "t2",
-      fetch: fetchImpl,
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -80,21 +86,20 @@ describe("ConnectableHttpAgent", () => {
         .subscribe({ next: () => {}, error: reject, complete: () => resolve() });
     });
 
-    const [url] = fetchImpl.mock.calls[0]!;
-    expect(url).toBe("/api/connect");
+    expect(connectCount).toBe(1);
   });
 
   it("aborts the in-flight fetch's signal when abortRun() is called", async () => {
-    let capturedSignal: AbortSignal | undefined;
-    const fetchImpl = vi.fn().mockImplementation((_url, init) => {
-      capturedSignal = init.signal;
-      return new Promise<Response>(() => {}); // never resolves
-    });
+    server.use(
+      http.post(runUrl, ({ request }) => {
+        runSignal = request.signal;
+        return new Promise<Response>(() => {});
+      }),
+    );
     const agent = new ConnectableHttpAgent({
-      runUrl: "/api/run",
-      connectUrl: "/api/connect",
+      runUrl,
+      connectUrl,
       threadId: "t",
-      fetch: fetchImpl,
     });
 
     agent
@@ -109,22 +114,24 @@ describe("ConnectableHttpAgent", () => {
       })
       .subscribe({ next: () => {}, error: () => {}, complete: () => {} });
 
-    await vi.waitFor(() => expect(capturedSignal).toBeDefined());
+    await vi.waitFor(() => expect(runSignal).toBeDefined());
     agent.abortRun();
-    expect(capturedSignal!.aborted).toBe(true);
+    expect(runSignal!.aborted).toBe(true);
   });
 
   it("resets the AbortController so a subsequent run() is not aborted", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(
-      sseResponse([
-        JSON.stringify({ type: "RUN_FINISHED", threadId: "t", runId: "r2" }),
-      ]),
+    server.use(
+      http.post(runUrl, ({ request }) => {
+        runSignal = request.signal;
+        return sseResponse([
+          JSON.stringify({ type: "RUN_FINISHED", threadId: "t", runId: "r2" }),
+        ]);
+      }),
     );
     const agent = new ConnectableHttpAgent({
-      runUrl: "/api/run",
-      connectUrl: "/api/connect",
+      runUrl,
+      connectUrl,
       threadId: "t",
-      fetch: fetchImpl,
     });
 
     agent.abortRun(); // would leave a stale aborted controller on the old impl
@@ -144,7 +151,6 @@ describe("ConnectableHttpAgent", () => {
     });
 
     // The second run happened on a fresh controller — sign unborn.
-    const [, init2] = fetchImpl.mock.calls[0]!;
-    expect((init2.signal as AbortSignal).aborted).toBe(false);
+    expect(runSignal?.aborted).toBe(false);
   });
 });
