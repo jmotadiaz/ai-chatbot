@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import {
   PI_PACKAGES,
   applyManifestSkillPatches,
+  getExtensionPaths,
+  getPiPackagePath,
   removePiSkillsFromManifest,
   type PiPackage,
 } from "../../src/pi-packages";
@@ -185,5 +187,35 @@ describe("applyManifestSkillPatches", () => {
 
     const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf-8"));
     expect(manifest.pi.skills).toEqual(["./skills"]);
+  });
+});
+
+describe("getExtensionPaths", () => {
+  const superpowersPkg = PI_PACKAGES.find((p) => p.name === "superpowers")!;
+  const manifestPath = join(getPiPackagePath(superpowersPkg), "package.json");
+  let originalManifest: string;
+
+  beforeEach(() => {
+    originalManifest = readFileSync(manifestPath, "utf-8");
+  });
+
+  afterEach(() => {
+    writeFileSync(manifestPath, originalManifest);
+  });
+
+  it("applies manifest skill patches at runtime so pi.skills does not shadow skills-override", () => {
+    // Simulate a checkout whose manifest was restored to the upstream version
+    // (with pi.skills) after the install script ran.
+    const manifest = JSON.parse(originalManifest);
+    manifest.pi ??= {};
+    manifest.pi.skills = ["./skills"];
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+    expect(JSON.parse(readFileSync(manifestPath, "utf-8")).pi.skills).toBeDefined();
+
+    getExtensionPaths();
+
+    const patched = JSON.parse(readFileSync(manifestPath, "utf-8"));
+    expect(patched.pi.skills).toBeUndefined();
+    expect(patched.pi.extensions).toEqual(["./.pi/extensions/superpowers.ts"]);
   });
 });

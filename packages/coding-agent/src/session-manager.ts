@@ -865,6 +865,14 @@ export async function sendPrompt(
     reasoning: s.model?.reasoning,
   });
 
+  const resourceLoader = entry.runtime.services.resourceLoader;
+  const loadedSkills = resourceLoader.getSkills().skills;
+  log.info("debug.skills_state", {
+    sessionId,
+    skillCount: loadedSkills.length,
+    skillPaths: loadedSkills.map((skill) => skill.filePath),
+  });
+
   const afterSeq = ensureEventLog(entry).lastSeq;
   // Captured before the run starts so the baseline can never include the
   // agent's own first edits.

@@ -107,6 +107,22 @@ export function getFirstPartyExtensionPaths(): string[] {
 }
 
 /**
+ * Apply manifest skill patches for all configured Pi packages that need them.
+ * The install script already does this at checkout time, but patching here
+ * defends against a worker that started without the install step or a checkout
+ * whose manifest was restored (e.g. by git) afterwards. If `pi.skills` remains
+ * in the manifest, the SDK loads those skills during `reload()` before any
+ * extension `resources_discover` hook runs, and `loadSkills` is first-wins —
+ * so the harness `skills-override/brainstorming` would lose.
+ */
+function ensureManifestSkillPatchesApplied(): void {
+  for (const pkg of PI_PACKAGES) {
+    if (!pkg.stripManifestSkills) continue;
+    applyManifestSkillPatches(pkg, getPiPackagePath(pkg));
+  }
+}
+
+/**
  * All extension paths handed to the Pi resource loader. Precedence:
  * override (harness skills that shadow Pi packages) > Pi packages
  * (superpowers) > first-party extensions (subagent, etc.).
@@ -117,6 +133,8 @@ export function getFirstPartyExtensionPaths(): string[] {
 export function getExtensionPaths(options?: {
   includeSubagentExtension?: boolean;
 }): string[] {
+  ensureManifestSkillPatchesApplied();
+
   const firstParty = getFirstPartyExtensionPaths().filter(
     (p) =>
       options?.includeSubagentExtension !== false ||
