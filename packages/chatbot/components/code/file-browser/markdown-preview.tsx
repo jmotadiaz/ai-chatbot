@@ -3,11 +3,15 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   type ComponentPropsWithoutRef,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
 } from "react";
+import { useTheme } from "next-themes";
 import { MessageSquare } from "lucide-react";
 import { marked } from "marked";
 import type { ThemedToken } from "shiki";
@@ -15,9 +19,17 @@ import { CodingAgentMarkdownAnchor } from "../coding-agent-markdown-anchor";
 import { CodeViewLine } from "./code-view-line";
 import type { LineRange } from "./types";
 import { Response } from "@/components/chat/response";
+import {
+  DARK_THEME,
+  LIGHT_THEME,
+  tokenize,
+} from "@/lib/features/code/file-browser/highlight";
 import { cn } from "@/lib/utils/helpers";
 
 const FENCE = /^\s*(?:```|~~~)/;
+
+/** Shared empty map, so an unhighlighted render keeps a stable identity. */
+const NO_TOKENS: Map<number, ThemedToken[]> = new Map();
 
 export type MarkdownBlockKind = "code" | "table" | "other";
 
@@ -30,6 +42,8 @@ interface MarkdownBlock {
   kind: MarkdownBlockKind;
   /** For code blocks, the range of the code itself with the fences excluded. */
   codeRange: LineRange | null;
+  /** The fence's declared language, if any. */
+  lang: string | null;
 }
 
 /**
@@ -76,12 +90,68 @@ export function markdownBlocks(content: string): MarkdownBlock[] {
         endLine: lineNumber + rawLines.length - 1,
         kind,
         codeRange: kind === "code" ? codeRange(lineNumber, rawLines) : null,
+        // An info string can carry more than the language ("ts twoslash"),
+        // and Shiki only understands the language itself.
+        lang:
+          token.type === "code"
+            ? (token.lang?.trim().split(/\s+/)[0] ?? null) || null
+            : null,
       },
     ];
   });
 }
 
-interface TableRowComments {
+/**
+ * Highlights each fenced block with its own declared language. The whole-file
+ * tokens the raw view computes use the Markdown grammar, which leaves fence
+ * bodies uncoloured, so code blocks are re-tokenized here.
+ */
+function useCodeBlockTokens(
+  blocks: MarkdownBlock[],
+  sourceLines: string[],
+): Map<number, ThemedToken[]> {
+  const { resolvedTheme } = useTheme();
+  const theme = resolvedTheme === "dark" ? DARK_THEME : LIGHT_THEME;
+  const [tokens, setTokens] = useState(NO_TOKENS);
+
+  useEffect(() => {
+    const codeBlocks = blocks.flatMap((block) =>
+      block.codeRange ? [{ range: block.codeRange, lang: block.lang }] : [],
+    );
+    if (codeBlocks.length === 0) {
+      setTokens(NO_TOKENS);
+      return;
+    }
+
+    let cancelled = false;
+    Promise.all(
+      codeBlocks.map(async ({ range, lang }) => {
+        const code = sourceLines.slice(range.start - 1, range.end).join("\n");
+        const lines = await tokenize(code, lang ?? "plaintext", theme);
+        return lines.map(
+          (lineTokens, offset): [number, ThemedToken[]] => [
+            range.start + offset,
+            lineTokens,
+          ],
+        );
+      }),
+    )
+      .then((results) => {
+        if (!cancelled) setTokens(new Map(results.flat()));
+      })
+      .catch(() => {
+        // Highlighting is decorative: the plain source lines still render.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [blocks, sourceLines, theme]);
+
+  return tokens;
+}
+
+interface LineComments {
   /** Source line the surrounding block starts on. */
   blockLine: number;
   commentsByLine: Map<number, unknown>;
@@ -90,75 +160,103 @@ interface TableRowComments {
 }
 
 /**
- * Streamdown memoizes its built-in `thead`/`tbody`/`tr` on className and mdast
- * position only — a comparator that ignores `children` — so a `tr` override
- * that closed over the selection would never see it change. Context crosses
- * that memo barrier; prop drilling does not.
+ * Streamdown memoizes its built-in elements on className and mdast position
+ * only — a comparator that ignores `children` — so an override that closed
+ * over the selection would never see it change. Context crosses that memo
+ * barrier; prop drilling does not.
  */
-const TableRowCommentsContext = createContext<TableRowComments | null>(null);
+const LineCommentsContext = createContext<LineComments | null>(null);
 
-type MarkdownRowProps = ComponentPropsWithoutRef<"tr"> & {
+/** Elements that own their click, so selecting a line must not steal it. */
+const INTERACTIVE = "a, button, input, textarea, select";
+
+interface MarkdownNodeProps {
   node?: { position?: { start?: { line?: number } } | null } | null;
-};
+}
+
+interface LineAnchor {
+  line: number;
+  className: string;
+  props: {
+    "data-line-number": number;
+    tabIndex: number;
+    "aria-label": string;
+    onClick: (event: MouseEvent<HTMLElement>) => void;
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  };
+}
 
 /**
- * A GFM table row is always exactly one source line, so the row's offset within
- * the block is all that's needed to anchor a comment to its real file line.
+ * Anchors a rendered element to the source line it came from. Both GFM table
+ * rows and list items start on exactly one line, so the element's offset
+ * within the block is all that's needed.
  */
-const CommentableTableRow: React.FC<MarkdownRowProps> = ({
-  children,
-  className,
-  node,
-  ...rest
-}) => {
-  const comments = useContext(TableRowCommentsContext);
+function useLineAnchor(node: MarkdownNodeProps["node"]): LineAnchor | null {
+  const comments = useContext(LineCommentsContext);
   const offset = node?.position?.start?.line;
-  const rowClassName = cn("border-border border-b", className);
-
-  if (!comments || offset === undefined) {
-    return (
-      <tr className={rowClassName} {...rest}>
-        {children}
-      </tr>
-    );
-  }
+  if (!comments || offset === undefined) return null;
 
   const line = comments.blockLine + offset - 1;
-  const hasComment = comments.commentsByLine.has(line);
-  const isSelected = comments.selectedLine === line;
   const select = () => comments.onSelectLine(line);
 
-  return (
-    <tr
-      data-line-number={line}
-      tabIndex={0}
-      aria-label={`Comment on line ${line}`}
-      className={cn(
-        rowClassName,
-        "cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
-        hasComment && "bg-amber-500/10",
-        isSelected && "bg-blue-500/10",
-      )}
-      onClick={(event) => {
+  return {
+    line,
+    className: cn(
+      "cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
+      comments.commentsByLine.has(line) && "bg-amber-500/10",
+      comments.selectedLine === line && "bg-blue-500/10",
+    ),
+    props: {
+      "data-line-number": line,
+      tabIndex: 0,
+      "aria-label": `Comment on line ${line}`,
+      onClick: (event) => {
+        if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
+        // Without this the enclosing block would select its own first line,
+        // and a nested list item would select its parent's.
         event.stopPropagation();
         select();
-      }}
-      onKeyDown={(event) => {
+      },
+      onKeyDown: (event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         event.preventDefault();
         event.stopPropagation();
         select();
-      }}
-      {...rest}
-    >
+      },
+    },
+  };
+}
+
+const CommentableTableRow: React.FC<
+  ComponentPropsWithoutRef<"tr"> & MarkdownNodeProps
+> = ({ children, className, node, ...rest }) => {
+  const anchor = useLineAnchor(node);
+  const base = cn("border-border border-b", className);
+
+  return (
+    <tr className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
       {children}
     </tr>
+  );
+};
+
+const CommentableListItem: React.FC<
+  ComponentPropsWithoutRef<"li"> & MarkdownNodeProps
+> = ({ children, className, node, ...rest }) => {
+  const anchor = useLineAnchor(node);
+  const base = cn("py-1 [&>p]:inline", className);
+
+  return (
+    <li className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
+      {children}
+    </li>
   );
 };
 
 const MARKDOWN_COMPONENTS = {
   a: CodingAgentMarkdownAnchor,
   tr: CommentableTableRow,
+  li: CommentableListItem,
 };
 
 export interface MarkdownPreviewProps {
@@ -181,10 +279,13 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
 }) => {
   const blocks = useMemo(() => markdownBlocks(content), [content]);
   const sourceLines = useMemo(() => content.split("\n"), [content]);
+  const codeTokens = useCodeBlockTokens(blocks, sourceLines);
 
+  // Per-fence highlighting when it has resolved, the raw view's whole-file
+  // tokens until then, and the plain source line if neither is available.
   const tokensFor = (line: number): ThemedToken[] => {
-    const tokens = tokensByLine?.get(line);
-    if (tokens && tokens.length > 0) return tokens;
+    const highlighted = codeTokens.get(line) ?? tokensByLine?.get(line);
+    if (highlighted && highlighted.length > 0) return highlighted;
     const text = sourceLines[line - 1] ?? "";
     return text ? [{ content: text, offset: 0 } as ThemedToken] : [];
   };
@@ -286,7 +387,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
             >
               <MessageSquare size={13} />
             </span>
-            <TableRowCommentsContext.Provider
+            <LineCommentsContext.Provider
               value={{
                 blockLine: block.lineNumber,
                 commentsByLine,
@@ -300,7 +401,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               >
                 {block.content}
               </Response>
-            </TableRowCommentsContext.Provider>
+            </LineCommentsContext.Provider>
             {composerLine !== null && renderComposer(composerLine)}
           </div>
         );

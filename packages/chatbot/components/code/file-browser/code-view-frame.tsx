@@ -164,8 +164,9 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
     return map;
   }, [state.pendingComments, path]);
 
-  // Lets the Markdown preview render fenced code with the same syntax
-  // highlighting the raw view already computed for those lines.
+  // Seeds the Markdown preview's code blocks with the tokens the raw view
+  // already computed, so they render immediately while the preview
+  // re-highlights each fence with its own declared language.
   const tokensByLine = useMemo(() => {
     if (load.status !== "ready") return undefined;
     const map = new Map<number, ThemedToken[]>();

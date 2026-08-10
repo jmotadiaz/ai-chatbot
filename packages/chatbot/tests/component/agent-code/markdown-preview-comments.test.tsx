@@ -28,6 +28,9 @@ const CONTENT = [
   "| --- | --- |",
   "| 1 | 2 |",
   "",
+  "- alpha",
+  "- beta",
+  "",
 ].join("\n");
 
 function readyLoad(content: string): LoadState {
@@ -105,6 +108,22 @@ describe("Markdown preview line comments", () => {
     await waitFor(() => {
       expect(view.getByTestId("comments").textContent).toBe(
         "9|| 1 | 2 ||wrong value",
+      );
+    });
+  });
+
+  it("stores a comment on the exact list item", async () => {
+    const view = renderFrame();
+
+    // The list starts on line 11, so "beta" is line 12.
+    fireEvent.click(
+      await waitFor(() => view.getByRole("listitem", { name: "Comment on line 12" })),
+    );
+    await writeComment(view, "drop this one");
+
+    await waitFor(() => {
+      expect(view.getByTestId("comments").textContent).toBe(
+        "12|- beta|drop this one",
       );
     });
   });
