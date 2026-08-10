@@ -230,8 +230,10 @@ export class NavigationComponent {
   }
 
   async assertScrollTopLessThan(value: number) {
-    await this.scrollToTop();
     await expect(async () => {
+      // Initial-chat positioning may still settle after the first scroll.
+      // Reapply the requested position on every retry before asserting it.
+      await this.scrollToTop();
       const scrollTop = await this.getScrollTop();
       expect(scrollTop).toBeLessThan(value);
     }).toPass({

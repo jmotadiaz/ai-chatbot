@@ -12,6 +12,12 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts:
 - `pnpm test:e2e` — Playwright E2E tests
 - `pnpm db:generate` / `pnpm db:migrate` — Drizzle ORM migrations
 
+Test ownership follows package ownership. Within each package, keep pure logic
+under `tests/unit`, rendered UI under `tests/component`, multi-module or
+in-process infrastructure checks under `tests/integration`, and public package
+boundary checks under `tests/contract`. Repository-level Playwright scenarios
+remain under `tests/`.
+
 ## Commit Attribution
 
 AI commits MUST include:

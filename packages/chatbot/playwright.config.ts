@@ -24,14 +24,17 @@ export default defineConfig({
   globalTeardown: require.resolve("./tests/e2e/global-teardown"),
   testDir: path.join(__dirname, "tests/e2e"),
   timeout: 50 * 1000,
+  expect: {
+    timeout: 15 * 1000,
+  },
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Tests share one database and one lazily compiled development server. */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [["html", { open: "never" }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -88,7 +91,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `npx next dev --turbo -p ${PORT}`,
+    // Turbopack can stall indefinitely compiling /agent/code under Node 24.
+    // Webpack keeps the E2E server deterministic across local runs and CI.
+    command: `npx next dev --webpack -p ${PORT}`,
     stdout: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     stderr: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
     url: baseURL,

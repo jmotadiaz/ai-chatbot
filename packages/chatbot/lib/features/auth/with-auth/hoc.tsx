@@ -7,18 +7,21 @@ export interface Authenticated {
   user: NonNullable<Session["user"]>;
 }
 
-export function withAuth<P extends object>(
-  Component: React.ComponentType<P & Authenticated>,
-) {
-  async function WithAuth(props: P) {
+export function withAuth<P extends Authenticated>(
+  Component: React.ComponentType<P>,
+): React.ComponentType<Omit<P, keyof Authenticated>> {
+  type PublicProps = Omit<P, keyof Authenticated>;
+
+  async function WithAuth(props: PublicProps) {
     const session = await getSession();
 
     if (!session?.user) {
       redirect("/login");
     }
 
-    return <Component {...props} user={session.user} />;
+    const authenticatedProps = { ...props, user: session.user } as P;
+    return <Component {...authenticatedProps} />;
   }
 
-  return WithAuth as React.ComponentType<P>;
+  return WithAuth;
 }

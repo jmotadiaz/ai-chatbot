@@ -18,7 +18,12 @@ export default defineConfig({
     include: [
       "tests/unit/**/*.test.ts",
       "tests/unit/**/*.test.tsx",
-      "tests/db/**/*.test.ts",
+      "tests/component/**/*.test.ts",
+      "tests/component/**/*.test.tsx",
+      "tests/integration/**/*.test.ts",
+      "tests/integration/**/*.test.tsx",
+      "tests/contract/**/*.test.ts",
+      "tests/contract/**/*.test.tsx",
     ],
     clearMocks: true,
     restoreMocks: true,

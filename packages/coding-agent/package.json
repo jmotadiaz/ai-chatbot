@@ -37,8 +37,11 @@
     "packages:install": "tsx scripts/install-packages.ts",
     "transport:http": "tsx scripts/install-packages.ts && tsx scripts/generate-models.ts && tsx src/transports/http.ts",
     "type:check": "tsc --noEmit --pretty false",
-    "test:unit": "vitest run --passWithNoTests",
-    "test:unit:watch": "vitest"
+    "test:unit": "vitest run tests/unit --passWithNoTests",
+    "test:integration": "vitest run tests/integration --passWithNoTests",
+    "test:contract": "vitest run tests/contract --passWithNoTests",
+    "test:all": "vitest run",
+    "test:unit:watch": "vitest tests/unit"
   },
   "devDependencies": {
     "vitest": "^4.0.18"

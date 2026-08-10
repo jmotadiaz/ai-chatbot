@@ -8,7 +8,8 @@ export default defineConfig({
     },
     include: [
       "tests/unit/**/*.test.ts",
-      "tests/db/**/*.test.ts",
+      "tests/integration/**/*.test.ts",
+      "tests/contract/**/*.test.ts",
     ],
     clearMocks: true,
     restoreMocks: true,
