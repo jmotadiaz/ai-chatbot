@@ -1,10 +1,21 @@
-# pnpm v11 Workspace Configuration
 packages:
   - 'packages/*'
 
-engineStrict: true
+# No engineStrict and no `engines` in package.json on purpose. The toolchain is
+# expressed as a preference — `.node-version` and `packageManager` — not as a
+# hard floor, because the deploy target does not always offer the exact pair
+# they name (Vercel resolves pnpm from the lockfile, which is format 9.0, and
+# refuses to honour a pnpm 11 pin). Enforcing them turned that mismatch into
+# ERR_PNPM_UNSUPPORTED_ENGINE and failed the build outright.
 
-# Allow build/postinstall scripts execution for the following dependencies:
+# Allow build/postinstall scripts execution for the following dependencies.
+#
+# Declared twice on purpose. pnpm 11 reads `allowBuilds` and silently ignores
+# `onlyBuiltDependencies`; pnpm 10 reads only the latter. Since the pnpm version
+# is no longer pinned by an engine range, whichever one the environment brings
+# has to find a list it understands — otherwise these dependencies install
+# without ever building, and sharp, bcrypt and better-sqlite3 fail at runtime
+# rather than at install time. Keep both lists in sync.
 allowBuilds:
   '@google/genai': true
   bcrypt: true
@@ -15,3 +26,14 @@ allowBuilds:
   protobufjs: true
   sharp: true
   unrs-resolver: true
+
+onlyBuiltDependencies:
+  - '@google/genai'
+  - bcrypt
+  - better-sqlite3
+  - bufferutil
+  - esbuild
+  - msw
+  - protobufjs
+  - sharp
+  - unrs-resolver
