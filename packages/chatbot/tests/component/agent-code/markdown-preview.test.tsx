@@ -46,6 +46,97 @@ describe("markdownBlocks", () => {
     );
   });
 
+  it("anchors a comment to the clicked line inside a fenced code block", () => {
+    const onSelectLine = vi.fn();
+    const view = render(
+      <MarkdownPreview
+        content={"# Title\n\n```ts\nconst x = 1;\nconst y = 2;\n```\n"}
+        commentsByLine={new Map()}
+        selectedLine={null}
+        onSelectLine={onSelectLine}
+        renderComposer={() => null}
+      />,
+    );
+
+    // The fence sits on line 3, so its two code lines are 4 and 5.
+    fireEvent.click(view.getByRole("button", { name: "Line 5" }));
+
+    expect(onSelectLine).toHaveBeenCalledWith(5);
+    expect(view.getByRole("button", { name: "Line 4" })).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Line 3" })).toBeNull();
+  });
+
+  it("renders the composer next to the selected code line", () => {
+    const view = render(
+      <MarkdownPreview
+        content={"```ts\nconst x = 1;\nconst y = 2;\n```\n"}
+        commentsByLine={new Map()}
+        selectedLine={3}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    expect(view.getByTestId("composer").textContent).toBe("3");
+  });
+
+  it("anchors a comment to the clicked table row", async () => {
+    const onSelectLine = vi.fn();
+    const view = render(
+      <MarkdownPreview
+        content={"Intro\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\n"}
+        commentsByLine={new Map()}
+        selectedLine={null}
+        onSelectLine={onSelectLine}
+        renderComposer={() => null}
+      />,
+    );
+
+    // The header row is line 3, the delimiter line 4, so the body rows are 5-6.
+    const row = await waitFor(() =>
+      view.getByRole("row", { name: "Comment on line 6" }),
+    );
+    fireEvent.click(row);
+
+    expect(onSelectLine).toHaveBeenCalledWith(6);
+    expect(onSelectLine).not.toHaveBeenCalledWith(3);
+  });
+
+  it("keeps table rows in sync with the selection despite Streamdown's memo", async () => {
+    const content = "| a | b |\n| --- | --- |\n| 1 | 2 |\n";
+    const view = render(
+      <MarkdownPreview
+        content={content}
+        commentsByLine={new Map()}
+        selectedLine={null}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    const row = await waitFor(() =>
+      view.getByRole("row", { name: "Comment on line 3" }),
+    );
+    expect(row.className).not.toContain("bg-blue-500/10");
+
+    view.rerender(
+      <MarkdownPreview
+        content={content}
+        commentsByLine={new Map()}
+        selectedLine={3}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        view.getByRole("row", { name: "Comment on line 3" }).className,
+      ).toContain("bg-blue-500/10");
+    });
+    expect(view.getByTestId("composer").textContent).toBe("3");
+  });
+
   it("routes file references through the file browser", async () => {
     const view = render(
       <FileBrowserProvider project="proj" sessionId="s1">

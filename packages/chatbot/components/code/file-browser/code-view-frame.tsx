@@ -164,6 +164,17 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
     return map;
   }, [state.pendingComments, path]);
 
+  // Lets the Markdown preview render fenced code with the same syntax
+  // highlighting the raw view already computed for those lines.
+  const tokensByLine = useMemo(() => {
+    if (load.status !== "ready") return undefined;
+    const map = new Map<number, ThemedToken[]>();
+    for (const line of load.lines) {
+      if (line.newLineNumber !== null) map.set(line.newLineNumber, line.tokens);
+    }
+    return map;
+  }, [load]);
+
   const existingComment =
     selectedLine !== null ? commentsByLine.get(selectedLine) : undefined;
 
@@ -370,6 +381,7 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
               selectedLine={selectedLine}
               onSelectLine={handleSelectLine}
               renderComposer={renderCommentComposer}
+              tokensByLine={tokensByLine}
             />
           ) : (
             load.lines.map((line) => {
