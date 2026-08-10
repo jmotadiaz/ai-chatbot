@@ -1,19 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   PromptSummary,
   SessionSummary,
 } from "@/lib/features/code/worker-client";
 
-export function useCodingAgentPrompts(sessionId: string, enabled: boolean) {
-  const [prompts, setPrompts] = useState<PromptSummary[]>([]);
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+export interface UseCodingAgentPromptsSeed {
+  prompts: PromptSummary[];
+  sessions: SessionSummary[];
+}
+
+/**
+ * `initialData` is what the server render resolved: present means it asked and
+ * got an answer (the lists may legitimately be empty), so no fetch is needed;
+ * null means it could not ask and the fetch runs as before.
+ */
+export function useCodingAgentPrompts(
+  sessionId: string,
+  enabled: boolean,
+  initialData?: UseCodingAgentPromptsSeed | null,
+) {
+  const [prompts, setPrompts] = useState<PromptSummary[]>(
+    initialData?.prompts ?? [],
+  );
+  const [sessions, setSessions] = useState<SessionSummary[]>(
+    initialData?.sessions ?? [],
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const seededSessionRef = useRef(initialData ? sessionId : null);
 
   useEffect(() => {
     if (!enabled) return;
+    if (seededSessionRef.current === sessionId) return;
     let cancelled = false;
     setIsLoading(true);
     setError(null);

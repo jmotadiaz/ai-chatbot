@@ -42,4 +42,44 @@ describe("useCodingAgentPrompts", () => {
     expect(result.current.sessions).toEqual([]);
     expect(result.current.error).toBe("Prompts could not be loaded.");
   });
+
+  it("uses the server-resolved prompts without fetching", async () => {
+    let requested = false;
+    server.use(
+      http.get("*/api/agent/code/sessions/s1/prompts", () => {
+        requested = true;
+        return HttpResponse.json({ prompts: [], sessions: [] });
+      }),
+    );
+    const prompts: PromptSummary[] = [
+      { name: "code-review-session", description: "Review a session", inputs: [] },
+    ];
+    const sessions: SessionSummary[] = [{ sessionId: "s1", label: "Session A" }];
+
+    const { result } = renderHook(() =>
+      useCodingAgentPrompts("s1", true, { prompts, sessions }),
+    );
+
+    expect(result.current.prompts).toEqual(prompts);
+    expect(result.current.sessions).toEqual(sessions);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(requested).toBe(false);
+  });
+
+  it("treats empty server-resolved lists as an answer, not as a missing one", async () => {
+    let requested = false;
+    server.use(
+      http.get("*/api/agent/code/sessions/s1/prompts", () => {
+        requested = true;
+        return HttpResponse.json({ prompts: [], sessions: [] });
+      }),
+    );
+
+    renderHook(() =>
+      useCodingAgentPrompts("s1", true, { prompts: [], sessions: [] }),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(requested).toBe(false);
+  });
 });

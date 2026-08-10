@@ -18,7 +18,13 @@ import {
   persistTurnFiles,
   type TurnFilesMap,
 } from "@/lib/features/code/turn-files";
-import type { AgentItem } from "@/lib/features/code/types";
+import type {
+  AgentItem,
+  SessionCursor,
+  SessionSnapshot,
+} from "@/lib/features/code/types";
+
+export type { SessionCursor, SessionSnapshot };
 
 export type AgentStatus =
   | { kind: "idle" }
@@ -72,20 +78,9 @@ export interface UseCodingAgentResult {
   cancel: () => Promise<void>;
 }
 
-export interface SessionCursor {
-  epoch: string;
-  seq: number;
-}
-
 interface CursorEvent {
   cursor: SessionCursor;
   terminal: boolean;
-}
-
-export interface SessionSnapshot {
-  messages: Message[];
-  cursor: SessionCursor | null;
-  running: boolean;
 }
 
 export function statusFromEvent(

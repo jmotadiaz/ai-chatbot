@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Main } from "@/components/ui/main";
 import { useCodingAgentSessionModel } from "@/lib/features/code/hooks/use-coding-agent-session-model";
 import { useCreateCodingAgentSession } from "@/lib/features/code/hooks/use-create-coding-agent-session";
-import type { SessionSnapshot } from "@/lib/features/code/hooks/use-coding-agent";
+import type { CodingAgentBootstrap } from "@/lib/features/code/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 /** Lo que la UI necesita saber del razonamiento de un modelo del picker. */
@@ -30,8 +30,8 @@ export interface AgentCodeChatLayoutProps {
   sessionId: string;
   availableModels: string[];
   modelThinking: ReadonlyMap<string, ModelThinking>;
-  /** Snapshot fetched during the server render; null falls back to CSR. */
-  initialSnapshot?: SessionSnapshot | null;
+  /** What the server render resolved; each null field falls back to CSR. */
+  bootstrap?: CodingAgentBootstrap;
 }
 
 export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
@@ -39,7 +39,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   sessionId,
   availableModels,
   modelThinking,
-  initialSnapshot,
+  bootstrap,
 }) => {
   const {
     modelId,
@@ -48,6 +48,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
   } = useCodingAgentSessionModel({
     sessionId,
     fallbackModelId: availableModels[0] ?? "",
+    initialModelId: bootstrap?.modelId,
   });
   const { isCreatingSession, createNewSession } =
     useCreateCodingAgentSession({
@@ -96,7 +97,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           sessionId={sessionId}
           modelId={modelId ?? ""}
           modelThinking={modelThinking}
-          initialSnapshot={initialSnapshot}
+          bootstrap={bootstrap}
         />
       </Main>
     </FileBrowserProvider>

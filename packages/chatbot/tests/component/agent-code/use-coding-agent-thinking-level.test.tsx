@@ -163,6 +163,78 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     expect(result.current.level).toBe("high");
   });
 
+  it("keeps the server-resolved level when the model resolves, without fetching", async () => {
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+        initialThinking: { level: "low" },
+      }),
+    );
+
+    // The catalog default must not overwrite an answer the server already had:
+    // the first model resolution is exactly where that used to happen.
+    expect(result.current.level).toBe("low");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.level).toBe("low");
+    expect(requestCount).toBe(0);
+  });
+
+  it("keeps the catalog default when the server says the session never ran", async () => {
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+        initialThinking: { level: null },
+      }),
+    );
+
+    await waitFor(() => expect(result.current.level).toBe("xhigh"));
+    // An answered "no level yet" is still an answer — nothing left to ask.
+    expect(requestCount).toBe(0);
+  });
+
+  it("fetches when the server could not answer at all", async () => {
+    const { result } = renderHook(() =>
+      useCodingAgentSessionThinkingLevel({
+        sessionId: "s1",
+        modelId: "Deepseek v4 Pro",
+        defaultLevel: "xhigh",
+        initialThinking: null,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.level).toBe("high"));
+    expect(requestCount).toBe(1);
+  });
+
+  it("still resets to the new model's default after a seeded start", async () => {
+    const { result, rerender } = renderHook(
+      ({ modelId, defaultLevel }) =>
+        useCodingAgentSessionThinkingLevel({
+          sessionId: "s1",
+          modelId,
+          defaultLevel,
+          initialThinking: { level: "low" },
+        }),
+      {
+        initialProps: {
+          modelId: "Deepseek v4 Pro",
+          defaultLevel: "xhigh" as ThinkingLevel,
+        },
+      },
+    );
+    expect(result.current.level).toBe("low");
+
+    rerender({ modelId: "Kimi K2.7 Code", defaultLevel: "high" as ThinkingLevel });
+
+    // The seed is consumed once: a real model change still wins over it.
+    expect(result.current.level).toBe("high");
+    expect(requestCount).toBe(0);
+  });
+
   it("does not fetch until the model is known", () => {
     const { result } = renderHook(() =>
       useCodingAgentSessionThinkingLevel({

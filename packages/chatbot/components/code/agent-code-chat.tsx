@@ -14,10 +14,8 @@ import { PromptFormModal } from "./prompt-form-modal";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
-import {
-  useCodingAgent,
-  type SessionSnapshot,
-} from "@/lib/features/code/hooks/use-coding-agent";
+import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
+import type { CodingAgentBootstrap } from "@/lib/features/code/types";
 import { useCodingAgentSkills } from "@/lib/features/code/hooks/use-coding-agent-skills";
 import { useCodingAgentSessionThinkingLevel } from "@/lib/features/code/hooks/use-coding-agent-session-thinking-level";
 import { useCodingAgentPrompts } from "@/lib/features/code/hooks/use-coding-agent-prompts";
@@ -40,8 +38,8 @@ export interface AgentCodeChatProps {
   sessionId: string;
   modelId: string;
   modelThinking: ReadonlyMap<string, ModelThinking>;
-  /** Snapshot fetched during the server render; null falls back to CSR. */
-  initialSnapshot?: SessionSnapshot | null;
+  /** What the server render resolved; each null field falls back to CSR. */
+  bootstrap?: CodingAgentBootstrap;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
@@ -49,7 +47,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   sessionId,
   modelId,
   modelThinking,
-  initialSnapshot,
+  bootstrap,
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
@@ -61,6 +59,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       sessionId,
       modelId: modelId || null,
       defaultLevel: thinking?.defaultLevel,
+      initialThinking: bootstrap?.thinking,
     });
 
   const {
@@ -77,7 +76,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     sessionId,
     modelId,
     thinkingLevel,
-    initialSnapshot,
+    initialSnapshot: bootstrap?.snapshot,
   });
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
@@ -87,7 +86,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     skills,
     isLoading: isLoadingSkills,
     error: skillsError,
-  } = useCodingAgentSkills(sessionId, !isLoading);
+  } = useCodingAgentSkills(sessionId, !isLoading, bootstrap?.skills);
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
 
@@ -96,7 +95,13 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     sessions,
     isLoading: isLoadingPrompts,
     error: promptsError,
-  } = useCodingAgentPrompts(sessionId, !isLoading);
+  } = useCodingAgentPrompts(
+    sessionId,
+    !isLoading,
+    bootstrap?.prompts && bootstrap.promptSessions
+      ? { prompts: bootstrap.prompts, sessions: bootstrap.promptSessions }
+      : null,
+  );
 
   const { isLoadingRefinedPrompt, refinePrompt, undo, hasPreviousMessage } =
     usePromptRefiner({

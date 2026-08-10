@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
-import { loadCodingAgentSnapshot } from "@/lib/features/code/snapshot-loader";
+import { loadCodingAgentSnapshot } from "@/lib/features/code/session-bootstrap";
 
 function getSessionIdFromUrl(url: URL): string {
   const parts = url.pathname.split("/");
