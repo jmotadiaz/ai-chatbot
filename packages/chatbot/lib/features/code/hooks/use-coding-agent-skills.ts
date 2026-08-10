@@ -1,15 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CodingAgentSkill } from "@/components/code/skills-control";
 
-export function useCodingAgentSkills(sessionId: string, enabled: boolean) {
-  const [skills, setSkills] = useState<CodingAgentSkill[]>([]);
+/**
+ * `initialSkills` is what the server render resolved: an array (possibly
+ * empty) means it asked and got an answer, so no fetch is needed; null means
+ * it could not ask and the fetch runs as before.
+ */
+export function useCodingAgentSkills(
+  sessionId: string,
+  enabled: boolean,
+  initialSkills?: CodingAgentSkill[] | null,
+) {
+  const [skills, setSkills] = useState<CodingAgentSkill[]>(
+    initialSkills ?? [],
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const seededSessionRef = useRef(initialSkills ? sessionId : null);
 
   useEffect(() => {
     if (!enabled) return;
+    if (seededSessionRef.current === sessionId) return;
     let cancelled = false;
     setIsLoading(true);
     setError(null);

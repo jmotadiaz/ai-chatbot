@@ -6,6 +6,7 @@ import {
 import {
   getCodingAgentModels,
 } from "@/lib/features/code/actions";
+import { loadCodingAgentBootstrap } from "@/lib/features/code/session-bootstrap";
 import {
   withAuth,
   type Authenticated,
@@ -21,7 +22,14 @@ async function CodingAgentChatPage({
 } & Authenticated) {
   if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
   const { project, sessionId } = await params;
-  const models = await getCodingAgentModels();
+
+  // The catalog does not depend on the session, so it goes out alongside the
+  // session's own bootstrap rather than after it.
+  const [models, bootstrap] = await Promise.all([
+    getCodingAgentModels(),
+    loadCodingAgentBootstrap({ userId: user.id!, sessionId }),
+  ]);
+
   const modelThinking = new Map<string, ModelThinking>(
     models.map((m): [string, ModelThinking] => [
       m.id,
@@ -37,6 +45,7 @@ async function CodingAgentChatPage({
           sessionId={sessionId}
           availableModels={models.map((m) => m.id)}
           modelThinking={modelThinking}
+          bootstrap={bootstrap}
         />
       </ClientErrorWrapper>
     </>

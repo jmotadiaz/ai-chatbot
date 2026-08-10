@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface UseCodingAgentSessionModelArgs {
   sessionId: string;
   fallbackModelId: string;
+  /**
+   * Model resolved during the server render. When set the hook starts with it
+   * and skips its fetch — same answer, one round trip earlier. Null means the
+   * server had none (or could not ask), so the fetch happens as before.
+   */
+  initialModelId?: string | null;
 }
 
 export interface UseCodingAgentSessionModelResult {
@@ -24,10 +30,16 @@ export interface UseCodingAgentSessionModelResult {
 export function useCodingAgentSessionModel({
   sessionId,
   fallbackModelId,
+  initialModelId,
 }: UseCodingAgentSessionModelArgs): UseCodingAgentSessionModelResult {
-  const [modelId, setModelId] = useState<string | null>(null);
+  const [modelId, setModelId] = useState<string | null>(initialModelId ?? null);
+
+  // Which session the seed answered for. Navigating to another session leaves
+  // the seed behind and the fetch takes over again.
+  const seededSessionRef = useRef(initialModelId ? sessionId : null);
 
   useEffect(() => {
+    if (seededSessionRef.current === sessionId) return;
     let cancelled = false;
     setModelId(null);
 

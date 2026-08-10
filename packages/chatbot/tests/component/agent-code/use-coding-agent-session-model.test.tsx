@@ -47,4 +47,35 @@ describe("useCodingAgentSessionModel", () => {
     await waitFor(() => expect(result.current.modelId).toBe("Fallback"));
     expect(result.current.isLoading).toBe(false);
   });
+
+  it("uses the server-resolved model without fetching or ever showing a skeleton", async () => {
+    const { result } = renderHook(() =>
+      useCodingAgentSessionModel({
+        sessionId: "s1",
+        fallbackModelId: "Fallback",
+        initialModelId: "Kimi K2.7 Code",
+      }),
+    );
+
+    // The picker is usable on the very first render, and so is sending: the
+    // whole point of resolving this during the server render.
+    expect(result.current.modelId).toBe("Kimi K2.7 Code");
+    expect(result.current.isLoading).toBe(false);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(requestedUrl).toBeNull();
+  });
+
+  it("still fetches when the server could not resolve a model", async () => {
+    const { result } = renderHook(() =>
+      useCodingAgentSessionModel({
+        sessionId: "s1",
+        fallbackModelId: "Fallback",
+        initialModelId: null,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.modelId).toBe("Deepseek v4 Pro"));
+    expect(requestedUrl).not.toBeNull();
+  });
 });

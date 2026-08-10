@@ -18,7 +18,13 @@ import {
   persistTurnFiles,
   type TurnFilesMap,
 } from "@/lib/features/code/turn-files";
-import type { AgentItem } from "@/lib/features/code/types";
+import type {
+  AgentItem,
+  SessionCursor,
+  SessionSnapshot,
+} from "@/lib/features/code/types";
+
+export type { SessionCursor, SessionSnapshot };
 
 export type AgentStatus =
   | { kind: "idle" }
@@ -41,6 +47,21 @@ export interface UseCodingAgentArgs {
   parentSessionId?: string;
   /** Set for subagent sub-sessions: the persisted Pi session id (cold reload). */
   piSessionId?: string;
+  /**
+   * Snapshot fetched during the server render. It is the exact payload the
+   * `/snapshot` route serves, produced by the same worker RPC, so seeding from
+   * it introduces no second source of truth: the worker still decides both the
+   * messages and the cursor they correspond to, and AG-UI events still reach
+   * the store through the single `agent.subscribe` path.
+   *
+   * When present the hook skips its own initial fetch and resumes straight
+   * from the seeded cursor. Everything the worker emitted between the server
+   * render and that connect is replayed by the existing `afterSeq` protocol,
+   * so the seed being a few hundred milliseconds old is not a correctness
+   * problem. Null (worker unreachable at render time) falls back to the
+   * client-side fetch, which surfaces the failure the way it always has.
+   */
+  initialSnapshot?: SessionSnapshot | null;
 }
 
 export interface UseCodingAgentResult {
@@ -57,20 +78,9 @@ export interface UseCodingAgentResult {
   cancel: () => Promise<void>;
 }
 
-interface SessionCursor {
-  epoch: string;
-  seq: number;
-}
-
 interface CursorEvent {
   cursor: SessionCursor;
   terminal: boolean;
-}
-
-interface SessionSnapshot {
-  messages: Message[];
-  cursor: SessionCursor | null;
-  running: boolean;
 }
 
 export function statusFromEvent(
@@ -226,33 +236,60 @@ export function useCodingAgent({
   thinkingLevel,
   parentSessionId,
   piSessionId,
+  initialSnapshot,
 }: UseCodingAgentArgs): UseCodingAgentResult {
-  const agentRef = useRef<{ sessionId: string; agent: ConnectableHttpAgent } | null>(null);
+  const cursorRef = useRef<SessionCursor | null>(null);
+  const pendingTerminalCursorRef = useRef<SessionCursor | null>(null);
+  const shouldReconnectRef = useRef(false);
+
+  // The agent and the resume state are seeded together, keyed on sessionId, so
+  // the messages the agent starts with and the cursor they resume from always
+  // come from one and the same snapshot. Holding the seed on the ref (rather
+  // than reading the prop later) also keeps the store memo and the connect
+  // effect from re-seeding if the prop's identity changes across renders.
+  const agentRef = useRef<{
+    sessionId: string;
+    agent: ConnectableHttpAgent;
+    seed: SessionSnapshot | null;
+  } | null>(null);
   if (agentRef.current === null || agentRef.current.sessionId !== sessionId) {
+    const seed = initialSnapshot ?? null;
     agentRef.current = {
       sessionId,
       agent: new ConnectableHttpAgent({
         runUrl: "/api/agent/code",
         connectUrl: "/api/agent/code/connect",
         threadId: sessionId,
+        initialMessages: seed?.messages ?? [],
       }),
+      seed,
     };
+    cursorRef.current = seed?.cursor ?? null;
+    pendingTerminalCursorRef.current = null;
+    shouldReconnectRef.current = seed?.running ?? false;
   }
   const agent = agentRef.current.agent;
-  const cursorRef = useRef<SessionCursor | null>(null);
-  const pendingTerminalCursorRef = useRef<SessionCursor | null>(null);
-  const shouldReconnectRef = useRef(false);
 
   const store = useMemo(() => {
     const currentAgent = agentRef.current?.agent;
     if (!currentAgent) {
       throw new Error("HttpAgent not initialized");
     }
-    let snapshot = {
-      messages: currentAgent.messages,
-      isRunning: currentAgent.isRunning,
-      isLoading: true,
-      status: { kind: "idle" } as AgentStatus,
+    const seed = agentRef.current?.seed ?? null;
+
+    // The server render and the first client render must agree, so both start
+    // from this one object. `turnFiles` stays empty in it on purpose: it comes
+    // from localStorage, which does not exist on the server, and is filled by
+    // its own effect after mount.
+    const seeded = {
+      // Copied, not aliased: React may hold this object as the server snapshot
+      // across renders, and the agent mutates its own array as messages arrive.
+      messages: [...currentAgent.messages],
+      isRunning: seed?.running ?? currentAgent.isRunning,
+      isLoading: seed === null,
+      status: (seed?.running
+        ? { kind: "thinking" }
+        : { kind: "idle" }) as AgentStatus,
       error: null as string | null,
       toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
       toolTimings: new Map<
@@ -262,19 +299,12 @@ export function useCodingAgent({
       turnFiles: new Map() as TurnFilesMap,
     };
 
-    const serverSnapshot = {
-      messages: [] as Message[],
-      isRunning: false,
-      isLoading: true,
-      status: { kind: "idle" } as AgentStatus,
-      error: null as string | null,
-      toolErrors: new Map<string, true>() as ReadonlyMap<string, true>,
-      toolTimings: new Map<
-        string,
-        { startedAt: number; finishedAt?: number }
-      >(),
-      turnFiles: new Map() as TurnFilesMap,
-    };
+    let snapshot = seeded;
+
+    // `update` reassigns `snapshot` rather than mutating it, so keeping the
+    // initial object here keeps getServerSnapshot stable for React while the
+    // live snapshot moves on.
+    const serverSnapshot = seeded;
 
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach((l) => l());
@@ -645,7 +675,6 @@ export function useCodingAgent({
           error: null,
           toolErrors: new Map(),
           toolTimings: new Map(),
-          turnFiles: loadTurnFiles(sessionId),
         }));
         if (snapshot.running && snapshot.cursor) {
           await connect(snapshot.cursor);
@@ -735,7 +764,19 @@ export function useCodingAgent({
       void ensureConnected(reason);
     };
 
-    void loadSnapshot();
+    const seed = agentRef.current?.seed ?? null;
+    if (seed) {
+      // The server render already delivered the messages and the cursor they
+      // correspond to. Resume from that cursor directly; the worker replays
+      // everything after it, including whatever it emitted while the HTML was
+      // in flight. loadSnapshot stays reachable as the recovery path (409
+      // cursor reset from a worker restart, or a run with no cursor yet).
+      if (seed.running && seed.cursor) {
+        void connect(seed.cursor);
+      }
+    } else {
+      void loadSnapshot();
+    }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
@@ -766,6 +807,16 @@ export function useCodingAgent({
       void agent.abortRun();
     };
   }, [agent, project, sessionId, parentSessionId, piSessionId, store]);
+
+  // Per-turn changed files live in localStorage, so they can only be read
+  // after mount — never during the server render, which would tear hydration.
+  // Owned here rather than by loadSnapshot so the seeded and the fetched
+  // startup paths pick them up the same way.
+  useEffect(() => {
+    const turnFiles = loadTurnFiles(sessionId);
+    if (turnFiles.size === 0) return;
+    store.update(() => ({ turnFiles }));
+  }, [sessionId, store]);
 
   const items = useMemo(
     () => groupItems(state.messages, state.toolErrors, state.toolTimings),

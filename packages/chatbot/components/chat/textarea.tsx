@@ -18,6 +18,13 @@ interface TextareaProps {
   setFiles?: React.Dispatch<React.SetStateAction<FilePart[]>>;
   placeholder?: string;
   leadingContent?: React.ReactNode;
+  /**
+   * Refuses input outright. Distinct from `isLoading`, which only blocks
+   * submitting: a turn in flight still lets you compose the next message.
+   * This is for a composer that cannot keep what you type — a skeleton whose
+   * state is discarded the moment the real page mounts.
+   */
+  disabled?: boolean;
 }
 
 export const Textarea = ({
@@ -32,6 +39,7 @@ export const Textarea = ({
   setFiles,
   placeholder = "Say something...",
   leadingContent,
+  disabled,
 }: TextareaProps) => {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -91,6 +99,7 @@ export const Textarea = ({
             textAreaClassName
           )}
           theme="outline"
+          disabled={disabled}
           value={input}
           onPaste={(e) => {
             onPasteFiles?.(e.clipboardData.files);
