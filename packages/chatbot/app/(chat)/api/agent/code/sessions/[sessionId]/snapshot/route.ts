@@ -1,6 +1,5 @@
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
-import { WorkerClient } from "@/lib/features/code/worker-client";
-import { getSession, touchSession } from "@/lib/features/code/session-store";
+import { loadCodingAgentSnapshot } from "@/lib/features/code/snapshot-loader";
 
 function getSessionIdFromUrl(url: URL): string {
   const parts = url.pathname.split("/");
@@ -10,35 +9,25 @@ function getSessionIdFromUrl(url: URL): string {
 
 /**
  * The worker owns both the rendered message snapshot and its resume cursor.
- * The BFF only authorizes access and supplies the persisted Pi-session link.
+ * The BFF only authorizes access and supplies the persisted Pi-session link —
+ * see `loadCodingAgentSnapshot`, which the session page's server render calls
+ * too. This route remains the client's recovery path (cursor reset, missing
+ * cursor) even when the initial snapshot arrived with the SSR payload.
  */
 export const GET = withAuth(async (user, req) => {
   const url = new URL(req.url);
   const sessionId = getSessionIdFromUrl(url);
-  const dbSession = await getSession({ userId: user.id, sessionId });
-  const client = new WorkerClient();
 
-  // Subagent sub-sessions never get a DB row (spec §4.4): they are served
-  // when the caller presents the parentSessionId the worker guard requires.
-  if (!dbSession) {
-    const parentSessionId = url.searchParams.get("parentSessionId");
-    if (!parentSessionId) {
-      return new Response("Session not found", { status: 404 });
-    }
-    const snapshot = await client.getSessionSnapshot({
-      sessionId,
-      piSessionId: url.searchParams.get("pi") ?? undefined,
-      project: url.searchParams.get("project") ?? undefined,
-      parentSessionId,
-    });
-    return Response.json(snapshot);
-  }
-
-  const snapshot = await client.getSessionSnapshot({
+  const result = await loadCodingAgentSnapshot({
+    userId: user.id,
     sessionId,
-    piSessionId: dbSession.piSessionId ?? undefined,
-    project: dbSession.project,
+    parentSessionId: url.searchParams.get("parentSessionId") ?? undefined,
+    piSessionId: url.searchParams.get("pi") ?? undefined,
+    project: url.searchParams.get("project") ?? undefined,
   });
-  await touchSession({ userId: user.id, sessionId });
-  return Response.json(snapshot);
+
+  if (!result.ok) {
+    return new Response("Session not found", { status: 404 });
+  }
+  return Response.json(result.snapshot);
 });

@@ -14,7 +14,10 @@ import { PromptFormModal } from "./prompt-form-modal";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
 import { AttachmentsControl } from "@/components/chat/attachments/control";
-import { useCodingAgent } from "@/lib/features/code/hooks/use-coding-agent";
+import {
+  useCodingAgent,
+  type SessionSnapshot,
+} from "@/lib/features/code/hooks/use-coding-agent";
 import { useCodingAgentSkills } from "@/lib/features/code/hooks/use-coding-agent-skills";
 import { useCodingAgentSessionThinkingLevel } from "@/lib/features/code/hooks/use-coding-agent-session-thinking-level";
 import { useCodingAgentPrompts } from "@/lib/features/code/hooks/use-coding-agent-prompts";
@@ -37,6 +40,8 @@ export interface AgentCodeChatProps {
   sessionId: string;
   modelId: string;
   modelThinking: ReadonlyMap<string, ModelThinking>;
+  /** Snapshot fetched during the server render; null falls back to CSR. */
+  initialSnapshot?: SessionSnapshot | null;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
@@ -44,6 +49,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   sessionId,
   modelId,
   modelThinking,
+  initialSnapshot,
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
@@ -71,6 +77,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     sessionId,
     modelId,
     thinkingLevel,
+    initialSnapshot,
   });
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
