@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { config } from "config";
 import {
   deleteResources,
   deleteResourcesByIds,
@@ -116,7 +117,7 @@ export async function uploadResources(
           continue;
         }
 
-        if (process.env.RAG_UPLOAD_LIMIT !== "false" && urls.length > 200) {
+        if (config.ragUploadLimit() !== "false" && urls.length > 200) {
           console.warn(`Max 200 URLs per file: ${jsonFile.name}`);
           // We could return error here or just process first 200.
           // For now let's stick to previous behavior but maybe just warn and skip or process?

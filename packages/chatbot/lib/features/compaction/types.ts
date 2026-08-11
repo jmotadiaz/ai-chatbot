@@ -4,10 +4,7 @@ const RAW_DEFAULT_KEEP_RECENT_TOKENS = 20_000;
 const RAW_DEFAULT_RESERVE_TOKENS = 16_384;
 export const DEFAULT_KEEP_RECENT_TOKENS = RAW_DEFAULT_KEEP_RECENT_TOKENS;
 export const DEFAULT_RESERVE_TOKENS = RAW_DEFAULT_RESERVE_TOKENS;
-export const DEFAULT_CONTEXT_WINDOW = parseInt(
-  process.env.DEFAULT_CONTEXT_WINDOW ?? "128000",
-  10,
-);
+// DEFAULT_CONTEXT_WINDOW eliminado: usar config.contextWindow(), packages/config.
 
 export function getEffectiveKeepRecentTokens(contextWindow: number): number {
   return Math.min(

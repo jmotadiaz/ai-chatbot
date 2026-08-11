@@ -10,6 +10,7 @@ import {
 import type { ModelMessage } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { isTracingEnabled, wrapWithTracing } from "tracing";
+import { config } from "config";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
@@ -31,7 +32,6 @@ import { rebuildContext } from "@/lib/features/compaction/context-rebuild";
 import {
   getEffectiveKeepRecentTokens,
   getEffectiveReserveTokens,
-  DEFAULT_CONTEXT_WINDOW,
 } from "@/lib/features/compaction/types";
 import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import {
@@ -82,7 +82,7 @@ const buildAgentAdapter = (
     const tracedModel = isTracingEnabled()
       ? wrapWithTracing(
           base.model as LanguageModelV3,
-          process.env.TRACE_RUN_ID ?? "default",
+          config.traceRunId() ?? "default",
         )
       : base.model;
     return {
@@ -280,7 +280,7 @@ export const makeProcessChatResponse = (
                       selectedModel,
                     );
                     const contextWindow =
-                      modelConfig.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
+                      modelConfig.contextWindow ?? config.contextWindow();
                     compact(compactionAi, resolvedChatId, {
                       keepRecentTokens: getEffectiveKeepRecentTokens(contextWindow),
                       reserveTokens: getEffectiveReserveTokens(contextWindow),

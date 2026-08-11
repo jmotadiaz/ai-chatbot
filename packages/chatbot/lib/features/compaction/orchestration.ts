@@ -1,9 +1,9 @@
+import { config } from "config";
 import { estimateContextTokens, pruneChatMessages } from "./token-estimation";
 import { shouldCompact } from "./should-compact";
 import { findCutPoint } from "./cut-point";
 import { generateSummary, generateTurnPrefixSummary } from "./summary-generation";
 import type { CompactionSettings, CutPointResult } from "./types";
-import { DEFAULT_CONTEXT_WINDOW } from "./types";
 import type { CompactionAiPort } from "./ports";
 import { getLatestSummary, getMessagesByChatId, saveSummary } from "./queries";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
@@ -62,7 +62,7 @@ export async function compact(
   if (cutPoint.messagesToSummarize.length === 0) return;
   if (signal?.aborted) return;
 
-  const contextWindow = settings.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
+  const contextWindow = settings.contextWindow ?? config.contextWindow();
   if (!shouldCompact(tokensBefore, contextWindow, settings)) return;
 
   const lastSummarizedMessage = cutPoint.messagesToSummarize.at(-1);

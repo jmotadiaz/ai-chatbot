@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 // eslint-disable-next-line import-x/no-named-as-default
 import Exa from "exa-js";
+import { config } from "config";
 import { URL_CONTEXT_TOOL, WEB_SEARCH_TOOL } from "./constants";
 import {
   urlContextDescriptionPrompt,
@@ -13,7 +14,7 @@ import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/conf
 
 // Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY
 const getExaClient = () => {
-  const key = process.env.EXASEARCH_API_KEY || process.env.EXA_API_KEY;
+  const key = config.exaSearchApiKey() || config.exaApiKey();
   if (!key) return null;
   try {
     return new Exa(key);

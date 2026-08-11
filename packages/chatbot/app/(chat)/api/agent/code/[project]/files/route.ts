@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import { NextResponse } from "next/server";
+import { config, optional } from "config";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { assertWithinProject } from "@/lib/features/code/project-resolver";
 import type {
@@ -92,10 +93,10 @@ async function listDir(absPath: string, relPath: string): Promise<FileEntry[]> {
 }
 
 export const GET = withAuth(async (_user, req: Request) => {
-  if (process.env.CODING_AGENT_ENABLED !== "true") {
+  if (!config.codingAgentEnabled()) {
     return new Response("Not found", { status: 404 });
   }
-  const root = process.env.CODING_AGENT_PROJECTS_ROOT;
+  const root = optional(() => config.codingAgentProjectsRoot());
   if (!root) {
     return new Response("Not found", { status: 404 });
   }

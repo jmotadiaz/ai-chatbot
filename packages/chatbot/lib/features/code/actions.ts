@@ -8,6 +8,7 @@ import {
 } from "tracing";
 import { getDefaultThinkingLevel, toChatModelId } from "models";
 import type { InvocableModelId, ThinkingLevel } from "models";
+import { config, optional } from "config";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
@@ -18,7 +19,7 @@ import { WorkerClient } from "./worker-client";
 import { auth } from "@/lib/features/auth/auth-config";
 
 function assertEnabled() {
-  if (process.env.CODING_AGENT_ENABLED !== "true") {
+  if (!config.codingAgentEnabled()) {
     throw new Error("Coding agent is not enabled");
   }
 }
@@ -65,7 +66,7 @@ export async function getCodingAgentProjects() {
       log.info("action.result", { count: 1, mocked: true });
       return ["ai-chatbot"];
     }
-    const root = process.env.CODING_AGENT_PROJECTS_ROOT;
+    const root = optional(() => config.codingAgentProjectsRoot());
     if (!root) return [];
     const result = await listProjects(root);
     log.info("action.result", { count: result.length });

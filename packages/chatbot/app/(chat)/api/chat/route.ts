@@ -1,5 +1,6 @@
 import { createUIMessageStreamResponse } from "ai";
 import { newRequestId, runWithTraceContext } from "tracing";
+import { config } from "config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
@@ -43,7 +44,7 @@ export const POST = withAuth(async (user, req) => {
     minRagResourcesScore?: number;
   } = await req.json();
 
-  const runId = process.env.TRACE_RUN_ID ?? "default";
+  const runId = config.traceRunId() ?? "default";
   const requestId = newRequestId();
 
   const stream = await runWithTraceContext(

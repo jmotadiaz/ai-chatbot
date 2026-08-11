@@ -1,4 +1,5 @@
 import { getTraceLogger } from "tracing";
+import { config } from "config";
 import type { ThinkingLevel } from "models";
 
 export interface WorkerModel {
@@ -80,7 +81,8 @@ export class WorkerClient {
   private id = 0;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl ?? process.env.CODING_AGENT_WORKER_URL ?? "http://localhost:3015";
+    // El default del catálogo se aplica en runtime; el literal cubre el tipo opcional.
+    this.baseUrl = baseUrl ?? config.codingAgentWorkerUrl() ?? "http://localhost:3015";
   }
 
   private async call<T>(method: string, params: unknown): Promise<T> {

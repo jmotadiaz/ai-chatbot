@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { config } from "config";
 import { CodingAgentExplorer } from "@/components/code/coding-agent-explorer";
 import { getCodingAgentProjects } from "@/lib/features/code/actions";
 import {
@@ -13,7 +14,7 @@ import { Main } from "@/components/ui/main";
 import { ClientErrorWrapper } from "@/components/code/client-error-wrapper";
 
 async function CodingAgentProjectsPage({ user }: Authenticated) {
-  if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
+  if (!config.codingAgentEnabled()) return notFound();
   const projects = await getCodingAgentProjects();
   return (
     <>

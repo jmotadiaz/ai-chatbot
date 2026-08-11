@@ -5,6 +5,7 @@ import {
   RecursiveCharacterTextSplitter,
   SupportedTextSplitterLanguages,
 } from "@langchain/textsplitters";
+import { config } from "config";
 
 export interface ChunkGroup {
   content: string;
@@ -255,7 +256,7 @@ async function writeDebugChunks(
   title: string | undefined,
   chunks: ChunkGroup[],
 ) {
-  if (process.env.DEBUG_CHUNKING !== "true" || !title) return;
+  if (!config.debugChunking() || !title) return;
 
   try {
     const debugDir = path.join(process.cwd(), "chunks");

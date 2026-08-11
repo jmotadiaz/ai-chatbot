@@ -1,9 +1,10 @@
 import { CodeXml } from "lucide-react";
+import { config } from "config";
 import ChatLink from "@/components/chat/link";
 import { Item } from "@/components/ui/item";
 
 export const AgentCodeNav: React.FC = () => {
-  if (process.env.CODING_AGENT_ENABLED !== "true") {
+  if (!config.codingAgentEnabled()) {
     return null;
   }
 

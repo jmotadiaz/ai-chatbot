@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { config } from "config";
 import {
   AgentCodeChatLayout,
   type ModelThinking,
@@ -20,7 +21,7 @@ async function CodingAgentChatPage({
 }: {
   params: Promise<{ project: string; sessionId: string }>;
 } & Authenticated) {
-  if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
+  if (!config.codingAgentEnabled()) return notFound();
   const { project, sessionId } = await params;
 
   // The catalog does not depend on the session, so it goes out alongside the

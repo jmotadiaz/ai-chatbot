@@ -1,11 +1,12 @@
 import React from "react";
 import { forbidden } from "next/navigation";
+import { config } from "config";
 import { AuthForm } from "@/components/auth/form";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 import { register } from "@/lib/features/auth/actions";
 
 const Page: React.FC = async () => {
-  if (process.env.PRIVATE_BEHAVIOR !== "enabled") {
+  if (config.privateBehavior() !== "enabled") {
     return forbidden();
   }
 

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { config } from "config";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { ClientErrorWrapper } from "@/components/code/client-error-wrapper";
 import { SubagentSessionView } from "@/components/code/subagent-session-view";
@@ -12,7 +13,7 @@ async function SubagentSessionPage({
   params: Promise<{ project: string; sessionId: string; subSessionId: string }>;
   searchParams: Promise<{ pi?: string }>;
 } & Authenticated) {
-  if (process.env.CODING_AGENT_ENABLED !== "true") return notFound();
+  if (!config.codingAgentEnabled()) return notFound();
   const { project, sessionId, subSessionId } = await params;
   const { pi } = await searchParams;
   return (

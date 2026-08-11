@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { config } from "config";
 
 export const runtime = "edge";
 
@@ -15,7 +16,7 @@ const EventType = {
 } as const;
 
 export async function POST(req: NextRequest) {
-  if (process.env.NEXT_PUBLIC_ENV !== "test" && process.env.NODE_ENV !== "test") {
+  if (process.env.NEXT_PUBLIC_ENV !== "test" && config.nodeEnv() !== "test") {
     return new NextResponse(null, { status: 404 });
   }
 
