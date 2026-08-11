@@ -1,5 +1,6 @@
 import path from "node:path";
 import { existsSync, readdirSync } from "node:fs";
+import { config, readEnv } from "config";
 import { PACKAGE_ROOT, resolveOverride } from "./paths";
 
 /**
@@ -42,7 +43,7 @@ export const PI_PACKAGES: PiPackage[] = [
 /** Directory holding the worker-owned package checkouts. */
 export function getPiPackagesDir(): string {
   return resolveOverride(
-    process.env.CODING_AGENT_PI_PACKAGES_DIR,
+    config.codingAgentPiPackagesDir(),
     path.join(PACKAGE_ROOT, ".pi", "packages"),
   );
 }
@@ -52,7 +53,7 @@ export function getPiPackagePath(pkg: PiPackage): string {
 }
 
 export function getPiPackageRef(pkg: PiPackage): string {
-  return process.env[pkg.refEnvVar]?.trim() || pkg.defaultRef;
+  return readEnv(pkg.refEnvVar)?.trim() || pkg.defaultRef;
 }
 
 /** Extension files handed to Pi without loading their package manifests. */

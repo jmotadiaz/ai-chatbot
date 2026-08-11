@@ -10,6 +10,7 @@ import {
   stripFrontmatter,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
+import { config, optional } from "config";
 import { getTraceLogger, retainTraceSink } from "tracing";
 import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
@@ -351,8 +352,8 @@ async function loadSessionFromDisk(
   },
 ): Promise<SessionEntry | undefined> {
   const log = getTraceLogger("worker");
-  const sessionsDir = process.env.CODING_AGENT_SESSIONS_DIR!;
-  const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
+  const sessionsDir = config.codingAgentSessionsDir();
+  const projectsRoot = config.codingAgentProjectsRoot();
   const cwd = resolveProjectPath(projectsRoot, project);
   // A session rehydrated after a worker restart must surface its project's
   // prompts without waiting for a brand-new session (review Critical #1).
@@ -484,7 +485,7 @@ async function resolveSessionEntry(
 
   // 3. Create a brand-new Pi SDK session
   const sessionId = options.sessionId ?? crypto.randomUUID();
-  const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
+  const projectsRoot = config.codingAgentProjectsRoot();
   const cwd = resolveProjectPath(projectsRoot, options.project);
 
   loadPrompts(cwd);
@@ -496,7 +497,7 @@ async function resolveSessionEntry(
   });
 
   const sessionManager = SessionManager.create(
-    process.env.CODING_AGENT_SESSIONS_DIR!,
+    config.codingAgentSessionsDir(),
   );
   const piSessionId = sessionManager.getSessionId();
   const createRuntime = makeCreateRuntime(options.modelId);
@@ -607,7 +608,7 @@ function createLoggedEventStream(
 }
 
 function sessionCwd(entry: SessionEntry): string | null {
-  const root = process.env.CODING_AGENT_PROJECTS_ROOT;
+  const root = optional(() => config.codingAgentProjectsRoot());
   if (!root) return null;
   try {
     return resolveProjectPath(root, entry.project);
@@ -1494,7 +1495,7 @@ export async function runSubagent(
     isError: true,
   });
 
-  const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT!;
+  const projectsRoot = config.codingAgentProjectsRoot();
   const parentCwd = resolveProjectPath(projectsRoot, parent.project);
 
   const cwdResult = resolveSubagentCwd(parentCwd, params.cwd);
@@ -1505,7 +1506,7 @@ export async function runSubagent(
   if (!modelResult.ok) return errorResult(modelResult.error);
 
   const sessionManager = SessionManager.create(
-    ensureSubagentSessionsDir(process.env.CODING_AGENT_SESSIONS_DIR!),
+    ensureSubagentSessionsDir(config.codingAgentSessionsDir()),
   );
   const subPiSessionId = sessionManager.getSessionId();
   const subSessionId = crypto.randomUUID();

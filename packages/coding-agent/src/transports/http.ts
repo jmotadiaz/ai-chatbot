@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "config";
 import {
   acquireTraceSink,
   getTraceLogger,
@@ -555,7 +556,7 @@ function jsonResponse(
 }
 
 function parsePort(): number {
-  return parseInt(process.env.CODING_AGENT_WORKER_PORT ?? "3015", 10);
+  return config.codingAgentWorkerPort();
 }
 
 function isMainModule(): boolean {

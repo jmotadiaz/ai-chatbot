@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "config";
 
 /** packages/coding-agent — this file lives in its src/ directory. */
 export const PACKAGE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -22,7 +23,7 @@ export function resolveOverride(value: string | undefined, fallback: string): st
  */
 export function getCodingAgentDir(): string {
   return resolveOverride(
-    process.env.CODING_AGENT_AGENT_DIR,
+    config.codingAgentAgentDir(),
     path.join(PACKAGE_ROOT, ".pi", "agent"),
   );
 }
