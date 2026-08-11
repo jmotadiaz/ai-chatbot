@@ -434,6 +434,15 @@ importers:
         specifier: ^4.0.18
         version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/ui@4.0.18)(jiti@2.7.0)(jsdom@26.1.0(bufferutil@4.1.0))(lightningcss@1.30.2)(msw@2.12.10(@types/node@24.13.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)
 
+  packages/config:
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/ui@4.0.18)(jiti@2.7.0)(jsdom@26.1.0(bufferutil@4.1.0))(lightningcss@1.30.2)(msw@2.12.10(@types/node@24.13.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)
+
   packages/model-registry:
     devDependencies:
       typescript:
@@ -12828,7 +12837,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 22.19.7
+      '@types/node': 24.13.3
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
