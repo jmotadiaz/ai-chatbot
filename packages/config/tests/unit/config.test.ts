@@ -32,9 +32,13 @@ describe("config (objeto semántico)", () => {
       const spec = ENV_CATALOG[key];
       if (spec.secret) {
         expect(["secret", "secretOptional"], key).toContain(kind);
+      } else {
+        expect(["secret", "secretOptional"], key).not.toContain(kind);
       }
       if (spec.required) {
         expect(["string", "secret", "int"], key).toContain(kind);
+      } else {
+        expect(["string", "secret", "int"], key).not.toContain(kind);
       }
     }
   });

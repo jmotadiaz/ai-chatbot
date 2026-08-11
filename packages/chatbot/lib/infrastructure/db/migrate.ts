@@ -8,11 +8,12 @@ import { resolveEnvFile } from "@/lib/infrastructure/env";
 loadEnv({ path: resolveEnvFile() });
 
 const runMigrate = async () => {
-  if (!optional(() => config.postgresUrl())) {
+  const url = optional(() => config.postgresUrl());
+  if (!url) {
     throw new Error("POSTGRES_URL is not defined");
   }
 
-  const connection = postgres(optional(() => config.postgresUrl())!, { max: 1 });
+  const connection = postgres(url!, { max: 1 });
   const db = drizzle(connection);
 
   console.log("⏳ Running migrations...");

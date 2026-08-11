@@ -556,7 +556,7 @@ function jsonResponse(
 }
 
 function parsePort(): number {
-  return config.codingAgentWorkerPort();
+  return config.codingAgentWorkerPort() ?? 3015;
 }
 
 function isMainModule(): boolean {

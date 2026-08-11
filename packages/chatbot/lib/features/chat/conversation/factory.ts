@@ -280,7 +280,7 @@ export const makeProcessChatResponse = (
                       selectedModel,
                     );
                     const contextWindow =
-                      modelConfig.contextWindow ?? config.contextWindow();
+                      modelConfig.contextWindow ?? config.contextWindow() ?? 128000;
                     compact(compactionAi, resolvedChatId, {
                       keepRecentTokens: getEffectiveKeepRecentTokens(contextWindow),
                       reserveTokens: getEffectiveReserveTokens(contextWindow),

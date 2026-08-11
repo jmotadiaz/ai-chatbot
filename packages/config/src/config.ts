@@ -1,5 +1,5 @@
 import {
-  bool, int, intOptional, secret, secretOptional, string, stringOptional,
+  bool, intOptional, secret, secretOptional, string, stringOptional,
 } from "./builders";
 import type { EnvKey } from "./catalog";
 
@@ -14,11 +14,11 @@ export const config = {
   codingAgentProjectsRoot: string("CODING_AGENT_PROJECTS_ROOT"),
   codingAgentSessionsDir: string("CODING_AGENT_SESSIONS_DIR"),
   codingAgentWorkerUrl: stringOptional("CODING_AGENT_WORKER_URL"),
-  codingAgentWorkerPort: int("CODING_AGENT_WORKER_PORT"),
+  codingAgentWorkerPort: intOptional("CODING_AGENT_WORKER_PORT"),
   codingAgentAuthJson: stringOptional("CODING_AGENT_AUTH_JSON"),
   dbProvider: stringOptional("DB_PROVIDER"),
   dbDialect: stringOptional("DB_DIALECT"),
-  contextWindow: int("DEFAULT_CONTEXT_WINDOW"),
+  contextWindow: intOptional("DEFAULT_CONTEXT_WINDOW"),
   ragUploadLimit: stringOptional("RAG_UPLOAD_LIMIT"),
   debugChunking: bool("DEBUG_CHUNKING"),
   disableDevIndicator: bool("DISABLE_DEV_INDICATOR"),

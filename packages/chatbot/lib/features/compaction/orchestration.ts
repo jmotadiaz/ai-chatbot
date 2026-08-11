@@ -62,7 +62,7 @@ export async function compact(
   if (cutPoint.messagesToSummarize.length === 0) return;
   if (signal?.aborted) return;
 
-  const contextWindow = settings.contextWindow ?? config.contextWindow();
+  const contextWindow = settings.contextWindow ?? config.contextWindow() ?? 128000;
   if (!shouldCompact(tokensBefore, contextWindow, settings)) return;
 
   const lastSummarizedMessage = cutPoint.messagesToSummarize.at(-1);

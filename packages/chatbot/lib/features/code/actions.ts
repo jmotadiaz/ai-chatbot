@@ -62,7 +62,7 @@ async function withActionTrace<T>(
 export async function getCodingAgentProjects() {
   return withActionTrace("getCodingAgentProjects", async (log) => {
     assertEnabled();
-    if (process.env.NEXT_PUBLIC_ENV === "test" || process.env.NODE_ENV === "test") {
+    if (process.env.NEXT_PUBLIC_ENV === "test" || config.nodeEnv() === "test") {
       log.info("action.result", { count: 1, mocked: true });
       return ["ai-chatbot"];
     }
