@@ -8,6 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { config } from "config";
 import { getDb } from "../lib/infrastructure/db/db";
 import { userApiKey } from "../lib/infrastructure/db/schema";
 import { retrieveResourceChunks } from "../lib/features/rag/retrieve";
@@ -75,7 +76,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(
   CallToolRequestSchema,
   async (request: CallToolRequest) => {
-    const apiKey = process.env.MCP_API_KEY;
+    const apiKey = config.mcpApiKey();
     if (!apiKey) {
       return {
         content: [

@@ -2,6 +2,7 @@ import { compare } from "bcrypt-ts";
 import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import type { DefaultJWT } from "next-auth/jwt";
+import { config } from "config";
 import { getUser } from "./queries";
 
 export type UserType = "regular";
@@ -86,7 +87,7 @@ export const {
       return !!auth;
     },
   },
-  ...(process.env.AUTH_TRUST_HOST === "true" && {
+  ...(config.authTrustHost() && {
     trustHost: true,
   }),
 });

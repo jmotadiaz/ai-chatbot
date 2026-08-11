@@ -10,6 +10,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cohere } from "@ai-sdk/cohere";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { MODEL_CATALOG } from "models";
+import { config } from "config";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
@@ -26,7 +27,7 @@ function getOpenCodeGo() {
   if (!_opencodeGo) {
     _opencodeGo = createOpenAICompatible({
       name: "opencode-zen-go",
-      apiKey: process.env.OPENCODE_ZEN_API_KEY,
+      apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/go/v1",
     });
   }
@@ -39,7 +40,7 @@ function getMetaModelApi() {
   if (!_metaModelApi) {
     _metaModelApi = createOpenAICompatible({
       name: "meta-model-api",
-      apiKey: process.env.META_API_KEY,
+      apiKey: config.metaApiKey(),
       baseURL: "https://api.meta.ai/v1",
     });
   }
@@ -54,7 +55,7 @@ function getDeepInfra() {
   if (!_deepinfra) {
     _deepinfra = createOpenAICompatible({
       name: "deepinfra",
-      apiKey: process.env.DEEPINFRA_API_KEY,
+      apiKey: config.deepInfraApiKey(),
       baseURL: "https://api.deepinfra.com/v1/openai",
       supportsStructuredOutputs: false,
     });

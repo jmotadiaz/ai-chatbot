@@ -3,6 +3,7 @@ import { drizzle as postgresDrizzle, PostgresJsDatabase } from "drizzle-orm/post
 import { drizzle as pgliteDrizzle, PgliteDatabase } from "drizzle-orm/pglite";
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite/vector";
+import { config } from "config";
 import {
   chat,
   user,
@@ -49,8 +50,8 @@ export const setDb = (newDb: DB) => {
 export const getDb = (): DB => {
   if (!db) {
     const usePglite =
-      process.env.DB_PROVIDER === "pglite" ||
-      process.env.DB_DIALECT === "pglite";
+      config.dbProvider() === "pglite" ||
+      config.dbDialect() === "pglite";
 
     if (usePglite) {
       const client = new PGlite({
@@ -60,7 +61,7 @@ export const getDb = (): DB => {
       });
       db = pgliteDrizzle({ client, schema }) as unknown as DB;
     } else {
-      const client = postgres(process.env.POSTGRES_URL!);
+      const client = postgres(config.postgresUrl());
       db = postgresDrizzle({ client, schema }) as unknown as DB;
     }
   }

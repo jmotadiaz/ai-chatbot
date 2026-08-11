@@ -1,7 +1,8 @@
-import { config } from "dotenv";
+import { config as loadEnv } from "dotenv";
 import { defineConfig } from "drizzle-kit";
+import { config } from "config";
 
-config({
+loadEnv({
   path:
     process.env.NEXT_PUBLIC_ENV === "test"
       ? ".env.test"
@@ -14,6 +15,6 @@ export default defineConfig({
   dialect: "postgresql",
   dbCredentials: {
     // biome-ignore lint: Forbidden non-null assertion.
-    url: process.env.POSTGRES_URL!,
+    url: config.postgresUrl(),
   },
 });

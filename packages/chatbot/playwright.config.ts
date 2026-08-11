@@ -5,13 +5,14 @@ import { defineConfig, devices } from "@playwright/test";
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-import { config } from "dotenv";
+import { config as loadEnv } from "dotenv";
+import { config } from "config";
 
-config({
+loadEnv({
   path: ".env.test",
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.port() ?? 3000;
 
 // Set webServer.url and use.baseURL with the location of the WebServer respecting the correct set port
 const baseURL = `http://localhost:${PORT}`;
@@ -30,9 +31,9 @@ export default defineConfig({
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
+  forbidOnly: config.ci(),
   /* Retry on CI only */
-  retries: process.env.CI ? 1 : 0,
+  retries: config.ci() ? 1 : 0,
   /* Tests share one database and one lazily compiled development server. */
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -94,11 +95,14 @@ export default defineConfig({
     // Turbopack can stall indefinitely compiling /agent/code under Node 24.
     // Webpack keeps the E2E server deterministic across local runs and CI.
     command: `npx next dev --webpack -p ${PORT}`,
-    stdout: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
-    stderr: !!process.env.SERVER_OUTPUT ? "pipe" : "ignore",
+    stdout: config.serverOutput() ? "pipe" : "ignore",
+    stderr: config.serverOutput() ? "pipe" : "ignore",
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !config.ci(),
     timeout: 240 * 1000,
+    // Reenvío de valores crudos al webServer (strings, defaults propios del runner).
+    // A propósito NO usa config: aquí se plumbearn a un proceso hijo, no se leen
+    // para la lógica de la app. Ver docs/superpowers/specs/2026-08-10-centralized-env-config-design.md.
     env: {
       DISABLE_DEV_INDICATOR: "1",
       NEXT_PUBLIC_ENV: "test",

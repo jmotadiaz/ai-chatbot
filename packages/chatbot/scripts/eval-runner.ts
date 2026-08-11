@@ -10,6 +10,7 @@ import {
 } from "fs";
 import { randomUUID } from "crypto";
 import { config as dotenv } from "dotenv";
+import { config, optional } from "config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -278,9 +279,9 @@ async function main(): Promise<void> {
   console.log(`\n=== eval-runner ===`);
   console.log(`runId:       ${runId}`);
   console.log(`port:        ${opts.port}`);
-  console.log(`POSTGRES_URL: ${process.env.POSTGRES_URL}`);
-  console.log(`TRACE_DIR:   ${process.env.TRACE_DIR}`);
-  console.log(`EVAL_BASE_URL: ${process.env.EVAL_BASE_URL}\n`);
+  console.log(`POSTGRES_URL: ${optional(() => config.postgresUrl()) ?? "undefined"}`);
+  console.log(`TRACE_DIR:   ${config.traceDir() ?? "undefined"}`);
+  console.log(`EVAL_BASE_URL: ${config.evalBaseUrl() ?? "undefined"}\n`);
 
   let exitCode = 0;
 

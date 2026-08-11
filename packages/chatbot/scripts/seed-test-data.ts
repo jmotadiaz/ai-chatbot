@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { config } from "dotenv";
+import { config as loadEnv } from "dotenv";
 import { and, asc, eq } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase, type PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -7,6 +7,7 @@ import { faker } from "@faker-js/faker";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import { config, optional } from "config";
 import { generateHashedPassword } from "../lib/features/auth/utils";
 import { schema } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
@@ -117,16 +118,16 @@ async function upsertSeedProject(tx: Tx, userId: string) {
 }
 
 async function main() {
-  config({ path: resolveEnvFile() });
+  loadEnv({ path: resolveEnvFile() });
 
   const args = parseArgs(process.argv.slice(2));
   faker.seed(args.seed);
 
-  if (!process.env.POSTGRES_URL) {
+  if (!optional(() => config.postgresUrl())) {
     throw new Error("POSTGRES_URL is not defined");
   }
 
-  const client = postgres(process.env.POSTGRES_URL, { max: 1 });
+  const client = postgres(optional(() => config.postgresUrl())!, { max: 1 });
   try {
     const db = drizzle(client, { schema }) as PostgresJsDatabase<typeof schema>;
 

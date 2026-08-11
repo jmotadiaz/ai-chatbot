@@ -1,7 +1,8 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { config } from "config";
 
-const disableDevIndicators = process.env.DISABLE_DEV_INDICATOR === "1";
+const disableDevIndicators = config.disableDevIndicator();
 
 const nextConfig: NextConfig = {
   /* config options here */
