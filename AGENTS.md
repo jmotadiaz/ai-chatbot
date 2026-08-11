@@ -34,10 +34,22 @@ Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
 packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
-├── models/         # Shared model catalog (single source of truth)
+├── config/         # Central env catalog + typed config accessors (no process.env en src/)
+├── model-registry/ # Single-source model catalog
+├── models/         # Shared model catalog consumed by chatbot & coding-agent
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
 ```
+
+### `config` — Central Env Config
+
+Catálogo único de variables de entorno (`ENV_CATALOG` en `packages/config/src/catalog.ts`)
+y acceso tipado vía el objeto semántico `config` (`packages/config/src/config.ts`).
+
+Regla: en `src/` de cualquier paquete NO se usa `process.env` directamente; se importa
+`config` (o `readEnv` para claves dinámicas documentadas). Las variables `NEXT_PUBLIC_*`
+quedan fuera (Next.js las inlinea en build). El paquete deja marcada la evolución a la
+credentials API de systemd en `packages/config/src/source.ts`.
 
 ### `chatbot` — Main Application
 
