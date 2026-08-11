@@ -1,3 +1,5 @@
+import { config } from "config";
+
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export type TraceLayer = "worker" | "bridge" | "client";
@@ -90,5 +92,5 @@ export const noopTraceSink: TraceSink = {
 };
 
 export function isTracingEnabled(): boolean {
-  return process.env.TRACE_ENABLED === "1";
+  return config.traceEnabled();
 }

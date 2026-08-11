@@ -1,4 +1,5 @@
 import { performance } from "node:perf_hooks";
+import { config } from "config";
 import type {
   LanguageModelV3,
   LanguageModelV3CallOptions,
@@ -95,7 +96,7 @@ const baseEvent = (
   const ctx = getTraceContext();
   const event: TraceEvent = {
     ts: new Date().toISOString(),
-    runId: ctx?.runId ?? process.env.TRACE_RUN_ID ?? "unknown",
+    runId: ctx?.runId ?? config.traceRunId() ?? "unknown",
     requestId: ctx?.requestId ?? "no-request",
     stepIndex: ctx?.stepIndex ?? 0,
     mode: "stream",

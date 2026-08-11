@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { appendFile, mkdir, writeFile, readdir, rm, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { existsSync } from "node:fs";
+import { config } from "config";
 import type { FinishPayload, TraceEvent, TraceRecord, TraceSink } from "./types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -90,7 +91,7 @@ export class FileTraceSink implements TraceSink {
 
   constructor(opts: FileTraceSinkOptions) {
     const baseTraceDir =
-      opts.traceDir ?? process.env.TRACE_DIR ?? DEFAULT_TRACE_DIR;
+      opts.traceDir ?? config.traceDir() ?? DEFAULT_TRACE_DIR;
     const partition = opts.partition ?? "coding-agent";
     this.traceDir = baseTraceDir.endsWith(partition)
       ? baseTraceDir
@@ -147,7 +148,7 @@ export class FileTraceSink implements TraceSink {
     this.streamPath = resolve(targetDir, "stream.ndjson");
     this.errorsPath = resolve(targetDir, "errors.ndjson");
     this.summaryPath = resolve(targetDir, "summary.json");
-    if (process.env.TRACE_RAW === "1") {
+    if (config.traceRaw()) {
       this.rawPath = resolve(targetDir, "raw.ndjson");
     }
 

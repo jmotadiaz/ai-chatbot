@@ -466,6 +466,9 @@ importers:
       ai:
         specifier: ^6.0.39
         version: 6.0.44(zod@3.25.76)
+      config:
+        specifier: workspace:*
+        version: link:../config
     devDependencies:
       typescript:
         specifier: ^5.8.3

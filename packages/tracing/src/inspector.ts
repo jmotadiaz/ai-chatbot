@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, resolve, basename } from "node:path";
 import { existsSync } from "node:fs";
+import { config } from "config";
 import type { TraceRecord, TraceLayer } from "./types";
 
 process.stdout.on("error", (err: any) => {
@@ -12,7 +13,7 @@ process.stdout.on("error", (err: any) => {
 });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TRACE_DIR = process.env.TRACE_DIR ?? resolve(__dirname, "../traces");
+const TRACE_DIR = config.traceDir() ?? resolve(__dirname, "../traces");
 
 interface ResolvedRunFiles {
   isLegacy: boolean;
