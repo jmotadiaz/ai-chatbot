@@ -17,7 +17,7 @@ export interface EnvVarSpec {
 const catalogDef = {
   // --- chatbot: secretos ---
   POSTGRES_URL: { description: "DSN de la base de datos Postgres", type: "string", required: true, secret: true },
-  META_API_KEY: { description: "API key del proveedor Meta (gateway)", type: "string", required: false, secret: true },
+  AI_GATEWAY_API_KEY: { description: "API key del Vercel AI Gateway (ai-gateway.vercel.sh); la consumen el AI SDK (gateway) y Pi (vercel-ai-gateway)", type: "string", required: false, secret: true },
   OPENCODE_ZEN_API_KEY: { description: "API key del proveedor OpenCode Zen", type: "string", required: false, secret: true },
   DEEPINFRA_API_KEY: { description: "API key de DeepInfra", type: "string", required: false, secret: true },
   EXASEARCH_API_KEY: { description: "API key de Exa Search (actual)", type: "string", required: false, secret: true },

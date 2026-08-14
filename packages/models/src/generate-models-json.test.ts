@@ -224,18 +224,20 @@ describe("generateModelsJson", () => {
 });
 
 describe("generateModelsJson custom providers", () => {
-  it("emits the meta provider with baseUrl, api and apiKey from CUSTOM_PI_PROVIDERS", () => {
+  it("emits the vercel-ai-gateway provider with models only (built-in in Pi)", () => {
     const providers = generate().providers;
-    expect(providers["meta"]).toBeDefined();
-    expect(providers["meta"].baseUrl).toBe("https://api.meta.ai/v1");
-    expect(providers["meta"].api).toBe("openai-completions");
-    expect(providers["meta"].apiKey).toBe("$META_API_KEY");
+    expect(providers["vercel-ai-gateway"]).toBeDefined();
+    // Pi conoce el provider (baseUrl/api/apiKey heredados de sus built-ins;
+    // el apiKey llega vía env AI_GATEWAY_API_KEY), así que no se emite config.
+    expect(providers["vercel-ai-gateway"].baseUrl).toBeUndefined();
+    expect(providers["vercel-ai-gateway"].api).toBeUndefined();
+    expect(providers["vercel-ai-gateway"].apiKey).toBeUndefined();
   });
 
   it("describes the Muse Spark model fully", () => {
-    const [muse] = generate().providers["meta"].models;
+    const [muse] = generate().providers["vercel-ai-gateway"].models;
     expect(muse).toEqual({
-      id: "muse-spark-1.2",
+      id: "meta/muse-spark-1.2-contributor",
       name: "Muse Spark 1.2",
       reasoning: true,
       input: ["text"],
@@ -249,6 +251,29 @@ describe("generateModelsJson custom providers", () => {
         medium: "medium",
         high: "high",
         xhigh: "xhigh",
+      },
+    });
+  });
+
+  it("describes Gemini 3.7 Flash, which Pi does not ship on openrouter", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Gemini 3.7 Flash")!;
+    const [flash] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["openrouter"].models;
+    expect(flash).toEqual({
+      id: "google/gemini-3.7-flash",
+      name: "Gemini 3.7 Flash",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_048_576,
+      maxTokens: 65_536,
+      cost: { input: 0.375, output: 1.875, cacheRead: 0.0375, cacheWrite: 0.020833 },
+      // Reasoning es obligatorio y el provider solo soporta low/medium/high.
+      thinkingLevelMap: {
+        off: null,
+        minimal: null,
+        low: "low",
+        medium: "medium",
+        high: "high",
       },
     });
   });

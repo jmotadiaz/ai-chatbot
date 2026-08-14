@@ -20,14 +20,16 @@ describe("MODEL_CATALOG integrity", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("custom-provider entries (metaModelApi) fully describe their Pi model", () => {
+  it("custom-provider entries (gateway) fully describe their Pi model", () => {
+    // Pi no trae built-in "meta/muse-spark-1.2-contributor": la entrada del
+    // catálogo debe declarar límites, coste y thinkingLevelMap propios (el
+    // generador ya lanza error si faltan).
     const custom = MODEL_CATALOG.filter(
-      (e): e is Extract<(typeof MODEL_CATALOG)[number], { provider: { kind: "metaModelApi" } }> =>
-        e.provider.kind === "metaModelApi",
+      (e): e is Extract<(typeof MODEL_CATALOG)[number], { userInvocable: true; provider: { kind: "gateway" } }> =>
+        e.userInvocable && e.provider.kind === "gateway",
     );
     expect(custom.length).toBeGreaterThan(0);
     for (const entry of custom) {
-      expect(entry.userInvocable).toBe(true);
       expect(entry.reasoning).toBe(true);
       expect(entry.defaultThinkingLevel).toBe("xhigh");
       expect(entry.contextWindow).toBeGreaterThan(0);
@@ -50,6 +52,7 @@ describe("MODEL_CATALOG integrity", () => {
       "MiMo V2.5",
       "MiMo V2.5 Pro",
       "Muse Spark 1.2",
+      "Gemini 3.7 Flash",
     ]);
   });
 

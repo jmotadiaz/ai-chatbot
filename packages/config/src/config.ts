@@ -33,7 +33,7 @@ export const config = {
 
   // --- chatbot: secretos ---
   postgresUrl: secret("POSTGRES_URL"),
-  metaApiKey: secretOptional("META_API_KEY"),
+  gatewayApiKey: secretOptional("AI_GATEWAY_API_KEY"),
   opencodeZenApiKey: secretOptional("OPENCODE_ZEN_API_KEY"),
   deepInfraApiKey: secretOptional("DEEPINFRA_API_KEY"),
   exaSearchApiKey: secretOptional("EXASEARCH_API_KEY"),

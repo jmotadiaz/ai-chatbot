@@ -18,7 +18,7 @@ describe("source (costura de lectura)", () => {
     // LoadCredential=meta_api_key, systemd expone $CREDENTIALS_DIRECTORY/meta_api_key.
     // La inyección ocurrirá aquí (y en readEnv): si CREDENTIALS_DIRECTORY está
     // definida y ${dir}/${key.toLowerCase()} existe, se lee primero ese archivo.
-    vi.stubEnv("META_API_KEY", "sk-test");
-    expect(resolveSecret("META_API_KEY")).toBe("sk-test");
+    vi.stubEnv("AI_GATEWAY_API_KEY", "sk-test");
+    expect(resolveSecret("AI_GATEWAY_API_KEY")).toBe("sk-test");
   });
 });

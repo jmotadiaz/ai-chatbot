@@ -2,25 +2,19 @@ import { MODEL_CATALOG, type InvocableModelId, type ProviderKind } from "./catal
 
 export const PI_PROVIDER = "opencode-go";
 
-/**
- * Config de providers custom (no built-in en Pi) que el generador emite en
- * models.json. Key = pi provider id.
- */
-export const CUSTOM_PI_PROVIDERS = {
-  meta: {
-    baseUrl: "https://api.meta.ai/v1",
-    api: "openai-completions",
-    apiKeyEnv: "META_API_KEY",
-  },
-} as const;
-
 /** Pi provider id for a catalog provider kind. */
 export function toPiProviderId(kind: ProviderKind): string {
   switch (kind) {
     case "opencodeGo":
       return PI_PROVIDER;
-    case "metaModelApi":
-      return "meta";
+    // Pi ships the Vercel AI Gateway as a built-in provider (env key
+    // AI_GATEWAY_API_KEY), so gateway models need no custom provider config.
+    case "gateway":
+      return "vercel-ai-gateway";
+    // Pi ships OpenRouter as a built-in provider (env key OPENROUTER_API_KEY),
+    // so openrouter models need no custom provider config.
+    case "openrouter":
+      return "openrouter";
     default:
       throw new Error(`Unsupported Pi provider kind: ${kind}`);
   }

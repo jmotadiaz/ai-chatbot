@@ -46,7 +46,7 @@ describe("builders", () => {
 
     it("secretOptional devuelve undefined si falta", () => {
       mockResolveSecret.mockReturnValue(undefined);
-      expect(secretOptional("META_API_KEY")()).toBeUndefined();
+      expect(secretOptional("AI_GATEWAY_API_KEY")()).toBeUndefined();
     });
   });
 

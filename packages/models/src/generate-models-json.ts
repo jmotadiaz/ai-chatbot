@@ -1,5 +1,5 @@
 import { MODEL_CATALOG, type ModelCatalogEntry, type ModelCost, type ThinkingLevelMap } from "./catalog";
-import { CUSTOM_PI_PROVIDERS, toPiProviderId } from "./mapping";
+import { toPiProviderId } from "./mapping";
 
 /**
  * Metadata Pi already knows about a model, keyed by its Pi model id.
@@ -123,15 +123,10 @@ export function generateModelsJson(
 
   const providers: PiModelsJson["providers"] = {};
   for (const [providerId, models] of byProvider) {
-    const custom = CUSTOM_PI_PROVIDERS[providerId as keyof typeof CUSTOM_PI_PROVIDERS];
-    providers[providerId] = custom
-      ? {
-          baseUrl: custom.baseUrl,
-          api: custom.api,
-          apiKey: `$${custom.apiKeyEnv}`,
-          models,
-        }
-      : { models };
+    // Todos los providers del catálogo son built-in en Pi (opencode-go,
+    // vercel-ai-gateway), que heredan baseUrl/api/apiKey de su definición
+    // interna — el apiKey llega vía env var. Emitir solo `models`.
+    providers[providerId] = { models };
   }
   return { providers };
 }

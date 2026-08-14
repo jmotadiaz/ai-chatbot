@@ -281,6 +281,23 @@ function resolveProjectPath(root: string, project: string): string {
 }
 
 /**
+ * Split a `provider/model-id` reference. Model ids may themselves contain
+ * slashes (e.g. vercel-ai-gateway routes like "meta/muse-spark-1.2-contributor"
+ * or openrouter ids), so only the first slash separates provider from model.
+ */
+function splitModelReference(
+  modelId: string | undefined,
+): { provider: string | undefined; model: string | undefined } {
+  if (!modelId) return { provider: undefined, model: undefined };
+  const slashIndex = modelId.indexOf("/");
+  if (slashIndex === -1) return { provider: modelId, model: undefined };
+  return {
+    provider: modelId.slice(0, slashIndex),
+    model: modelId.slice(slashIndex + 1),
+  };
+}
+
+/**
  * Create the runtime factory reused for both new and reloaded sessions.
  */
 function makeCreateRuntime(
@@ -301,7 +318,8 @@ function makeCreateRuntime(
         }),
       },
     });
-    const [piProvider, piModelId] = modelId?.split("/") ?? [];
+    const { provider: piProvider, model: piModelId } =
+      splitModelReference(modelId);
     const model =
       piProvider && piModelId
           ? services.modelRegistry.find(piProvider, piModelId)
@@ -450,7 +468,8 @@ async function resolveSessionEntry(
           });
           throw new Error("Cannot change model while the agent is running");
         }
-        const [piProvider, piModelId] = options.modelId.split("/");
+        const { provider: piProvider, model: piModelId } =
+          splitModelReference(options.modelId);
         const model =
           piProvider && piModelId
               ? existing.runtime.services.modelRegistry.find(piProvider, piModelId)

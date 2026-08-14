@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  CUSTOM_PI_PROVIDERS,
   filterAvailableChatModels,
   PI_PROVIDER,
   toChatModelId,
@@ -56,34 +55,39 @@ describe("model mapping", () => {
     expect(PI_PROVIDER).toBe("opencode-go");
   });
 
-  it("maps the Muse Spark catalog id to the meta Pi provider", () => {
+  it("maps the Muse Spark catalog id to the vercel-ai-gateway Pi provider", () => {
     expect(toPiModelId("Muse Spark 1.2")).toEqual({
-      providerId: "meta",
-      modelId: "muse-spark-1.2",
+      providerId: "vercel-ai-gateway",
+      modelId: "meta/muse-spark-1.2-contributor",
     });
   });
 
-  it("maps the meta Pi provider back to the catalog id", () => {
-    expect(toChatModelId("meta", "muse-spark-1.2")).toBe("Muse Spark 1.2");
-    expect(toChatModelId("meta", "unknown-model")).toBeUndefined();
+  it("maps the vercel-ai-gateway Pi model back to the catalog id", () => {
+    expect(toChatModelId("vercel-ai-gateway", "meta/muse-spark-1.2-contributor")).toBe(
+      "Muse Spark 1.2",
+    );
+    expect(toChatModelId("vercel-ai-gateway", "unknown-model")).toBeUndefined();
   });
 
   it("maps provider kinds to pi provider ids", () => {
     expect(toPiProviderId("opencodeGo")).toBe("opencode-go");
-    expect(toPiProviderId("metaModelApi")).toBe("meta");
+    expect(toPiProviderId("gateway")).toBe("vercel-ai-gateway");
+    expect(toPiProviderId("openrouter")).toBe("openrouter");
   });
 
-  it("exposes the custom pi provider config for meta", () => {
-    expect(CUSTOM_PI_PROVIDERS.meta).toEqual({
-      baseUrl: "https://api.meta.ai/v1",
-      api: "openai-completions",
-      apiKeyEnv: "META_API_KEY",
+  it("maps the Gemini 3.7 Flash catalog id to the openrouter Pi provider", () => {
+    expect(toPiModelId("Gemini 3.7 Flash")).toEqual({
+      providerId: "openrouter",
+      modelId: "google/gemini-3.7-flash",
     });
+    expect(toChatModelId("openrouter", "google/gemini-3.7-flash")).toBe(
+      "Gemini 3.7 Flash",
+    );
   });
 
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
-      { providerId: "meta", modelId: "muse-spark-1.2" },
+      { providerId: "vercel-ai-gateway", modelId: "meta/muse-spark-1.2-contributor" },
       { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
       { providerId: "opencode-go", modelId: "unknown-model" },
     ]);

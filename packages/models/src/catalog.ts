@@ -18,7 +18,6 @@ export type Company =
 
 export type ProviderKind =
   | "opencodeGo"
-  | "metaModelApi"
   | "gateway"
   | "openrouter"
   | "openai"
@@ -181,7 +180,9 @@ export const MODEL_CATALOG = [
   {
     id: "Muse Spark 1.2",
     userInvocable: true,
-    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2" },
+    // Vercel AI Gateway route: provider/model; el sufijo "contributor" es solo
+    // detalle de facturación, no aparece en el display name.
+    provider: { kind: "gateway", modelId: "meta/muse-spark-1.2-contributor" },
     company: "meta",
     reasoning: true,
     defaultThinkingLevel: "xhigh",
@@ -196,6 +197,31 @@ export const MODEL_CATALOG = [
     contextWindow: 1_048_576,
     maxTokens: 131_072,
     cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0.002 },
+  },
+  {
+    // OpenRouter model Pi does not ship, so it describes its own limits and
+    // cost — values from the OpenRouter API. Reasoning is mandatory and the
+    // provider only supports low/medium/high effort, so off/minimal are
+    // hidden and xhigh is not exposed; the highest supported level (high)
+    // is the session default.
+    id: "Gemini 3.7 Flash",
+    userInvocable: true,
+    provider: { kind: "openrouter", modelId: "google/gemini-3.7-flash" },
+    company: "google",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: "medium",
+      high: "high",
+    },
+    contextWindow: 1_048_576,
+    maxTokens: 65_536,
+    cost: { input: 0.375, output: 1.875, cacheRead: 0.0375, cacheWrite: 0.020833 },
+    supportedFiles: ["img", "pdf"],
+    temperature: 0.6,
   },
   // --- internal / non-selectable models ---
   {

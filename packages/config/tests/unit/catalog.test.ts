@@ -5,7 +5,7 @@ describe("ENV_CATALOG", () => {
   it("declara todas las variables verificadas del monorepo (fuente única)", () => {
     const expectedKeys = [
       // chatbot — secretos
-      "POSTGRES_URL", "META_API_KEY", "OPENCODE_ZEN_API_KEY", "DEEPINFRA_API_KEY",
+      "POSTGRES_URL", "AI_GATEWAY_API_KEY", "OPENCODE_ZEN_API_KEY", "DEEPINFRA_API_KEY",
       "EXASEARCH_API_KEY", "EXA_API_KEY", "MCP_API_KEY", "AUTH_SECRET",
       // chatbot — configuración
       "CODING_AGENT_ENABLED", "CODING_AGENT_PROJECTS_ROOT", "CODING_AGENT_SESSIONS_DIR",

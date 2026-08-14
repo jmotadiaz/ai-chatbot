@@ -15,8 +15,8 @@ describe("Muse Spark 1.2 in the chat model configuration", () => {
     expect(cfg.supportedFiles).toBeUndefined();
   });
 
-  it("exposes a metaModelApi provider factory (mock in test mode)", () => {
-    expect(providers.metaModelApi).toBeDefined();
-    expect(providers.metaModelApi("muse-spark-1.2")).toBeDefined();
+  it("exposes a gateway provider factory with the gateway route id (mock in test mode)", () => {
+    expect(providers.gateway).toBeDefined();
+    expect(providers.gateway("meta/muse-spark-1.2-contributor")).toBeDefined();
   });
 });

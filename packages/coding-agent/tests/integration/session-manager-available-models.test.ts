@@ -25,7 +25,7 @@ const catalog: ModelCatalogEntry[] = [
   {
     id: "Muse Spark 1.2",
     userInvocable: true,
-    provider: { kind: "metaModelApi", modelId: "muse-spark-1.2" },
+    provider: { kind: "gateway", modelId: "meta/muse-spark-1.2-contributor" },
     company: "meta",
     reasoning: true,
     contextWindow: 1_048_576,
@@ -59,10 +59,10 @@ beforeEach(() => {
   tmp = mkdtempSync(path.join(tmpdir(), "available-models-"));
   savedEnv.CODING_AGENT_MODELS_JSON = process.env.CODING_AGENT_MODELS_JSON;
   savedEnv.CODING_AGENT_AUTH_JSON = process.env.CODING_AGENT_AUTH_JSON;
-  savedEnv.META_API_KEY = process.env.META_API_KEY;
+  savedEnv.AI_GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY;
   process.env.CODING_AGENT_MODELS_JSON = path.join(tmp, "models.json");
   process.env.CODING_AGENT_AUTH_JSON = path.join(tmp, "auth.json");
-  process.env.META_API_KEY = "test-key";
+  process.env.AI_GATEWAY_API_KEY = "test-key";
   writeFileSync(
     process.env.CODING_AGENT_MODELS_JSON,
     JSON.stringify(generateModelsJson(catalog), null, 2),
@@ -78,21 +78,23 @@ afterEach(() => {
 });
 
 describe("getAvailableModels", () => {
-  it("includes custom providers from models.json (meta) with their thinking levels", async () => {
+  it("includes gateway models from models.json (vercel-ai-gateway) with their thinking levels", async () => {
     const models = await getAvailableModels();
     const muse = models.find(
-      (m) => m.providerId === "meta" && m.modelId === "muse-spark-1.2",
+      (m) =>
+        m.providerId === "vercel-ai-gateway" &&
+        m.modelId === "meta/muse-spark-1.2-contributor",
     );
     expect(muse).toBeDefined();
-    expect(muse?.label).toBe("meta/muse-spark-1.2");
+    expect(muse?.label).toBe("vercel-ai-gateway/meta/muse-spark-1.2-contributor");
     expect(muse?.levels).toEqual(["minimal", "low", "medium", "high", "xhigh"]);
   });
 
-  it("hides the meta model when META_API_KEY is not configured", async () => {
-    delete process.env.META_API_KEY;
+  it("hides the gateway model when AI_GATEWAY_API_KEY is not configured", async () => {
+    delete process.env.AI_GATEWAY_API_KEY;
     const models = await getAvailableModels();
     expect(
-      models.find((m) => m.providerId === "meta"),
+      models.find((m) => m.providerId === "vercel-ai-gateway"),
     ).toBeUndefined();
   });
 });

@@ -14,7 +14,6 @@ export {
   type ThinkingLevelMap,
 } from "./catalog";
 export {
-  CUSTOM_PI_PROVIDERS,
   PI_PROVIDER,
   filterAvailableChatModels,
   toChatModelId,
