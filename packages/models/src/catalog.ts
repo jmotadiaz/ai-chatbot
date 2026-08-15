@@ -489,9 +489,11 @@ export const MODEL_CATALOG = [
   {
     id: "Gemini 3.1 Flash Lite",
     userInvocable: false,
-    provider: { kind: "openrouter", modelId: "google/gemini-3.1-flash-lite-preview" },
+    // Vercel AI Gateway route: provider/model. Zero data retention.
+    provider: { kind: "gateway", modelId: "google/gemini-3.1-flash-lite" },
     company: "google",
     temperature: 0.6,
+    providerOptions: { gateway: { zeroDataRetention: true } },
   },
   {
     id: "Gemini 3.1 Pro",
