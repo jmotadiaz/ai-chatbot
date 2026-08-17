@@ -24,7 +24,6 @@ export const GET = withAuth(async (user, req) => {
   const client = new WorkerClient();
   const thinking = await client.getSessionThinkingLevel({
     sessionId,
-    piSessionId: dbSession.piSessionId ?? undefined,
     project: dbSession.project,
   });
   return Response.json(thinking);

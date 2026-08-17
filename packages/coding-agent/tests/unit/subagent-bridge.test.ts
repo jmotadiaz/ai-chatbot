@@ -19,11 +19,10 @@ const importSecondInstance = async (): Promise<Bridge> => {
   return import("../../src/subagent-bridge");
 };
 
-const runner: SubagentRunner = async (_parentPiSessionId, toolCallId) => ({
+const runner: SubagentRunner = async (_parentSessionId, toolCallId) => ({
   content: [{ type: "text", text: "ok" }],
   details: {
     subSessionId: "sub-1",
-    subPiSessionId: "pi-sub-1",
     parentSessionId: "parent-1",
     parentToolCallId: toolCallId,
   },

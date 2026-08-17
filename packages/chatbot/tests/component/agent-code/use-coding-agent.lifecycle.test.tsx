@@ -741,4 +741,145 @@ describe("useCodingAgent client lifecycle", () => {
       }),
     );
   });
+
+  it("cuts the stream on freeze and reconnects on resume (Page Lifecycle API)", async () => {
+    server.use(
+      http.get(snapshotUrl, () => {
+        snapshotCallCount += 1;
+        return HttpResponse.json({
+          messages: [],
+          cursor: { epoch: "e", seq: 5 },
+          running: true,
+        });
+      }),
+      http.post(connectUrl, async ({ request }) => {
+        connectRequests.push({
+          body: (await request.json()) as Record<string, unknown>,
+          signal: request.signal,
+        });
+        if (connectRequests.length === 1) {
+          return makeHangingSseResponse(
+            [{ type: "RUN_STARTED", threadId: "s", runId: "r1" }],
+            request.signal,
+          );
+        }
+        return makeSseResponse([
+          { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+          { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+        ]);
+      }),
+    );
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    render(<Harness />);
+    await waitFor(() => expect(connectRequests).toHaveLength(1));
+
+    // Freeze cuts the stream
+    await act(async () => {
+      fireEvent(document, new Event("freeze"));
+    });
+
+    // Resume triggers immediate reconnect
+    await act(async () => {
+      fireEvent(document, new Event("resume"));
+    });
+
+    await waitFor(() => expect(connectRequests).toHaveLength(2));
+    expect(screen.getByTestId("error").textContent).toBe("");
+  });
+
+  it("cuts the stream on pagehide", async () => {
+    server.use(
+      http.get(snapshotUrl, () => {
+        snapshotCallCount += 1;
+        return HttpResponse.json({
+          messages: [],
+          cursor: { epoch: "e", seq: 5 },
+          running: true,
+        });
+      }),
+      http.post(connectUrl, async ({ request }) => {
+        connectRequests.push({
+          body: (await request.json()) as Record<string, unknown>,
+          signal: request.signal,
+        });
+        if (connectRequests.length === 1) {
+          return makeHangingSseResponse(
+            [{ type: "RUN_STARTED", threadId: "s", runId: "r1" }],
+            request.signal,
+          );
+        }
+        return makeSseResponse([
+          { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+          { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+        ]);
+      }),
+    );
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    render(<Harness />);
+    await waitFor(() => expect(connectRequests).toHaveLength(1));
+
+    await act(async () => {
+      fireEvent(window, new Event("pagehide"));
+    });
+
+    // Reconnecting on pageshow after pagehide
+    await act(async () => {
+      fireEvent(window, new Event("pageshow"));
+    });
+
+    await waitFor(() => expect(connectRequests).toHaveLength(2));
+  });
+
+  it("reconnects on window focus when visible", async () => {
+    server.use(
+      http.get(snapshotUrl, () => {
+        snapshotCallCount += 1;
+        return HttpResponse.json({
+          messages: [],
+          cursor: { epoch: "e", seq: 5 },
+          running: true,
+        });
+      }),
+      http.post(connectUrl, async ({ request }) => {
+        connectRequests.push({
+          body: (await request.json()) as Record<string, unknown>,
+          signal: request.signal,
+        });
+        if (connectRequests.length === 1) {
+          return makeHangingSseResponse(
+            [{ type: "RUN_STARTED", threadId: "s", runId: "r1" }],
+            request.signal,
+          );
+        }
+        return makeSseResponse([
+          { type: "RUN_STARTED", threadId: "s", runId: "r2" },
+          { type: "RUN_FINISHED", threadId: "s", runId: "r2" },
+        ]);
+      }),
+    );
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+
+    render(<Harness />);
+    await waitFor(() => expect(connectRequests).toHaveLength(1));
+
+    await act(async () => {
+      fireEvent(window, new Event("focus"));
+    });
+
+    await waitFor(() => expect(connectRequests).toHaveLength(2));
+  });
 });

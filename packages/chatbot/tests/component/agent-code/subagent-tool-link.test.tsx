@@ -16,13 +16,13 @@ describe("SubagentToolLink", () => {
 
   it("renders the link to the dedicated subagent route", async () => {
     vi.mocked(getSubagentSessionAction).mockResolvedValue({
-      subSessionId: "child-1", subPiSessionId: "pi-child-1",
+      subSessionId: "child-1",
     });
     render(<SubagentToolLink project="proj" parentSessionId="p" toolCallId="tc-1" />);
     await waitFor(() => {
       const link = screen.getByRole("link", { name: /sesión del subagente/i });
       expect(link.getAttribute("href")).toBe(
-        "/agent/code/proj/p/subagent/child-1?pi=pi-child-1",
+        "/agent/code/proj/p/subagent/child-1",
       );
     });
   });

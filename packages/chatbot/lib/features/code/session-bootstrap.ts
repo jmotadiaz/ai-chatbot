@@ -50,7 +50,6 @@ async function fetchSnapshot(
 ): Promise<WorkerSessionSnapshot> {
   return client.getSessionSnapshot({
     sessionId: dbSession.sessionId,
-    piSessionId: dbSession.piSessionId ?? undefined,
     project: dbSession.project,
   });
 }
@@ -60,8 +59,6 @@ export interface LoadCodingAgentSnapshotArgs {
   sessionId: string;
   /** Set for subagent sub-sessions: the parent app session id (access guard). */
   parentSessionId?: string;
-  /** Set for subagent sub-sessions: the persisted Pi session id (cold reload). */
-  piSessionId?: string;
   /** Set for subagent sub-sessions, which have no DB row to read it from. */
   project?: string;
 }
@@ -75,16 +72,14 @@ export type LoadCodingAgentSnapshotResult =
  *
  * The worker owns both the rendered message snapshot and its resume cursor
  * (`getSessionSnapshot` returns them as one atomic tuple); this only decides
- * who is allowed to ask and supplies the persisted Pi-session link. Shared by
- * the `/snapshot` BFF route and the session page's server render so both go
- * through the very same authorization and the very same RPC — SSR adds a
- * second *caller*, never a second source of truth.
+ * who is allowed to ask. Shared by the `/snapshot` BFF route and the session
+ * page's server render so both go through the very same authorization and the
+ * very same RPC — SSR adds a second *caller*, never a second source of truth.
  */
 export async function loadCodingAgentSnapshot({
   userId,
   sessionId,
   parentSessionId,
-  piSessionId,
   project,
 }: LoadCodingAgentSnapshotArgs): Promise<LoadCodingAgentSnapshotResult> {
   const dbSession = await getSession({ userId, sessionId });
@@ -96,7 +91,6 @@ export async function loadCodingAgentSnapshot({
     if (!parentSessionId) return { ok: false, reason: "not-found" };
     const snapshot = await client.getSessionSnapshot({
       sessionId,
-      piSessionId,
       project,
       parentSessionId,
     });
@@ -130,7 +124,6 @@ export async function loadCodingAgentBootstrap(params: {
   if (!dbSession) return EMPTY_BOOTSTRAP;
 
   const client = new WorkerClient();
-  const piSessionId = dbSession.piSessionId ?? undefined;
   const project = dbSession.project;
 
   const snapshot = await optional("snapshot", sessionId, () =>
@@ -143,7 +136,6 @@ export async function loadCodingAgentBootstrap(params: {
     optional("model", sessionId, async () => {
       const { model } = await client.getSessionModel({
         sessionId,
-        piSessionId,
         project,
       });
       return (
@@ -155,7 +147,6 @@ export async function loadCodingAgentBootstrap(params: {
     optional("thinking", sessionId, async () => {
       const { thinking: loaded } = await client.getSessionThinkingLevel({
         sessionId,
-        piSessionId,
         project,
       });
       return { level: (loaded?.level as ThinkingLevel | undefined) ?? null };

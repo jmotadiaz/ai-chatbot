@@ -43,7 +43,6 @@ function writePrompt(
 function seedSession(sessionId: string, project: string): void {
   __seedSessionForTests(sessionId, {
     sessionId,
-    piSessionId: `pi-${sessionId}`,
     project,
     runtime: { session: {} } as never,
     eventLog: new SessionEventLog(),

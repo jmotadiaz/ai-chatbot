@@ -54,14 +54,13 @@ describe("subagent extension", () => {
   });
 
   it("dispatches through the runner published on globalThis", async () => {
-    const calls: Array<{ parentPiSessionId: string; toolCallId: string }> = [];
-    const stub: SubagentRunner = async (parentPiSessionId, toolCallId) => {
-      calls.push({ parentPiSessionId, toolCallId });
+    const calls: Array<{ parentSessionId: string; toolCallId: string }> = [];
+    const stub: SubagentRunner = async (parentSessionId, toolCallId) => {
+      calls.push({ parentSessionId, toolCallId });
       return {
         content: [{ type: "text", text: "done" }],
         details: {
           subSessionId: "sub-1",
-          subPiSessionId: "pi-sub-1",
           parentSessionId: "parent-1",
           parentToolCallId: toolCallId,
         },
@@ -76,10 +75,10 @@ describe("subagent extension", () => {
       { task: "do x" },
       undefined,
       undefined,
-      { sessionManager: { getSessionId: () => "pi-parent" } },
+      { sessionManager: { getSessionId: () => "parent-1" } },
     );
 
-    expect(calls).toEqual([{ parentPiSessionId: "pi-parent", toolCallId: "tc-1" }]);
+    expect(calls).toEqual([{ parentSessionId: "parent-1", toolCallId: "tc-1" }]);
     expect(result.isError).toBeUndefined();
     expect(result.details.subSessionId).toBe("sub-1");
   });

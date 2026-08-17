@@ -25,7 +25,7 @@ setupMswServer(
     };
     requests.push(rpc);
     const result = rpc.method === "getSubagentSession"
-      ? { subSessionId: "child-1", subPiSessionId: "pi-child-1" }
+      ? { subSessionId: "child-1" }
       : { messages: [], cursor: null, running: false };
     return HttpResponse.json({ jsonrpc: "2.0", id: rpc.id, result });
   }),
@@ -39,7 +39,7 @@ describe("WorkerClient.getSubagentSession", () => {
   it("calls the getSubagentSession RPC method", async () => {
     const client = new WorkerClient("http://worker.test");
     const r = await client.getSubagentSession({ parentSessionId: "p", toolCallId: "tc-1" });
-    expect(r).toEqual({ subSessionId: "child-1", subPiSessionId: "pi-child-1" });
+    expect(r).toEqual({ subSessionId: "child-1" });
     expect(requests[0]).toEqual(expect.objectContaining({
       method: "getSubagentSession",
       params: { parentSessionId: "p", toolCallId: "tc-1" },

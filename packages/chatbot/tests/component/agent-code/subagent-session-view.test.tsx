@@ -30,16 +30,16 @@ afterEach(cleanup);
 describe("SubagentSessionView", () => {
   it("feeds the hook with sub session and parent ids", () => {
     render(
-      <SubagentSessionView project="proj" parentSessionId="p" subSessionId="c" subPiSessionId="pi-c" />,
+      <SubagentSessionView project="proj" parentSessionId="p" subSessionId="c" />,
     );
     expect(useCodingAgent).toHaveBeenCalledWith(
-      expect.objectContaining({ project: "proj", sessionId: "c", parentSessionId: "p", piSessionId: "pi-c" }),
+      expect.objectContaining({ project: "proj", sessionId: "c", parentSessionId: "p" }),
     );
   });
 
   it("renders a back link to the parent session and no composer", () => {
     render(
-      <SubagentSessionView project="proj" parentSessionId="p" subSessionId="c" subPiSessionId="pi-c" />,
+      <SubagentSessionView project="proj" parentSessionId="p" subSessionId="c" />,
     );
     const back = screen.getByRole("link", { name: /sesión principal/i });
     expect(back.getAttribute("href")).toBe("/agent/code/proj/p");

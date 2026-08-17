@@ -98,7 +98,6 @@ export const POST = withAuth(async (user, req) => {
           userId: user.id,
           sessionId,
           project,
-          piSessionId: dbSession.piSessionId ?? undefined,
           _traceRunId: runId,
         });
 

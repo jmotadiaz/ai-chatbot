@@ -27,7 +27,6 @@ export const POST = withAuth(async (user, req) => {
     userId: user.id,
     sessionId,
     project: dbSession.project,
-    piSessionId: dbSession.piSessionId ?? undefined,
   });
 
   try {

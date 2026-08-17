@@ -26,7 +26,6 @@ export interface SubagentRunParams {
 
 export interface SubagentDetails {
   subSessionId: string;
-  subPiSessionId: string;
   parentSessionId: string;
   parentToolCallId: string;
   description?: string;
@@ -39,7 +38,7 @@ export interface SubagentRunResult {
 }
 
 export type SubagentRunner = (
-  parentPiSessionId: string,
+  parentSessionId: string,
   toolCallId: string,
   params: SubagentRunParams,
   signal?: AbortSignal,

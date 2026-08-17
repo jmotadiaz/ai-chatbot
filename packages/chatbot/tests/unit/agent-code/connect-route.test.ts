@@ -33,11 +33,9 @@ vi.mock("tracing", () => ({
 
 vi.mock("@/lib/features/code/session-store", () => ({
   getSession: vi.fn().mockResolvedValue({
-    piSessionId: "stub-pi-session",
     project: "p",
   }),
   touchSession: vi.fn().mockResolvedValue(undefined),
-  updatePiSessionId: vi.fn().mockResolvedValue(undefined),
   updateSessionLabel: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -60,7 +58,7 @@ vi.mock("@/lib/features/code/worker-client", () => ({
   WorkerClient: class {
     async initializeSession(params: unknown) {
       mockState.initParams.push(params);
-      return { sessionId: "stub-session", piSessionId: "stub-pi-session" };
+      return { sessionId: "stub-session" };
     }
     async connectToSession(params: unknown) {
       mockState.connectParams.push(params);

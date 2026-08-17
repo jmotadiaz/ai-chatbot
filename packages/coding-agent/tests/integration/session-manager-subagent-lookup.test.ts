@@ -22,13 +22,13 @@ beforeEach(() => __resetSessionsForTests());
 
 function seedParentWithToolResult() {
   __seedSessionForTests("parent-1", {
-    sessionId: "parent-1", piSessionId: "pi-parent-1", project: "proj",
+    sessionId: "parent-1", project: "proj",
     runtime: {
       session: {
         isStreaming: false,
         messages: [
           { role: "toolResult", toolCallId: "tc-9", content: "done",
-            details: { subSessionId: "child-9", subPiSessionId: "pi-child-9" } },
+            details: { subSessionId: "child-9" } },
         ],
       },
     },
@@ -40,13 +40,13 @@ describe("getSubagentSessionForToolCall", () => {
   it("resolves from the in-memory map when registered", async () => {
     seedParentWithToolResult();
     __seedSessionForTests("child-9", {
-      sessionId: "child-9", piSessionId: "pi-child-9", project: "proj",
+      sessionId: "child-9", project: "proj",
       parentSessionId: "parent-1", parentToolCallId: "tc-9",
       runtime: { session: { messages: [], isStreaming: false } },
       eventLog: new SessionEventLog(),
     } as never);
     const r = await getSubagentSessionForToolCall("parent-1", "tc-9");
-    expect(r).toEqual({ subSessionId: "child-9", subPiSessionId: "pi-child-9" });
+    expect(r).toEqual({ subSessionId: "child-9" });
   });
 
   it("throws for an unknown toolCallId", async () => {

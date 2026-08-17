@@ -72,24 +72,6 @@ export async function updateSessionLabel(input: {
     );
 }
 
-export async function updatePiSessionId(input: {
-  userId: string;
-  sessionId: string;
-  piSessionId: string;
-}) {
-  await getDb()
-    .update(codingAgentSessions)
-    .set({
-      piSessionId: input.piSessionId,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(codingAgentSessions.userId, input.userId),
-        eq(codingAgentSessions.sessionId, input.sessionId),
-      ),
-    );
-}
 
 export async function touchSession(input: { userId: string; sessionId: string }) {
   await getDb()

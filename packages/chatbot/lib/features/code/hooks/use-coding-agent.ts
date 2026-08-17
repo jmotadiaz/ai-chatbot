@@ -45,8 +45,6 @@ export interface UseCodingAgentArgs {
   thinkingLevel?: ThinkingLevel | null;
   /** Set for subagent sub-sessions: the parent app session id (access guard). */
   parentSessionId?: string;
-  /** Set for subagent sub-sessions: the persisted Pi session id (cold reload). */
-  piSessionId?: string;
   /**
    * Snapshot fetched during the server render. It is the exact payload the
    * `/snapshot` route serves, produced by the same worker RPC, so seeding from
@@ -235,7 +233,6 @@ export function useCodingAgent({
   modelId,
   thinkingLevel,
   parentSessionId,
-  piSessionId,
   initialSnapshot,
 }: UseCodingAgentArgs): UseCodingAgentResult {
   const cursorRef = useRef<SessionCursor | null>(null);
@@ -651,7 +648,6 @@ export function useCodingAgent({
       try {
         const query = new URLSearchParams();
         if (parentSessionId) query.set("parentSessionId", parentSessionId);
-        if (piSessionId) query.set("pi", piSessionId);
         if (parentSessionId) query.set("project", project);
         const suffix = query.size > 0 ? `?${query.toString()}` : "";
         const response = await fetch(
@@ -785,6 +781,19 @@ export function useCodingAgent({
       }
       reconnectNow("visibility:visible");
     };
+    // Page Lifecycle API (Chrome/Edge Mobile/Desktop): fired before the OS
+    // freezes the page execution context mid-request.
+    const handleFreeze = () => {
+      cutStream("freeze");
+    };
+    // Fired when the page is un-frozen (resumed) by the OS.
+    const handleResume = () => {
+      reconnectNow("resume");
+    };
+    // Standard bfcache entry event (and page dismissal).
+    const handlePageHide = () => {
+      cutStream("pagehide");
+    };
     // iOS Safari can restore a frozen page from bfcache without re-running
     // effects or firing visibilitychange — pageshow is the reliable signal.
     const handlePageShow = () => {
@@ -794,19 +803,31 @@ export function useCodingAgent({
       if (document.visibilityState !== "visible") return;
       reconnectNow("online");
     };
+    const handleFocus = () => {
+      if (document.visibilityState !== "visible") return;
+      reconnectNow("focus");
+    };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("freeze", handleFreeze);
+    document.addEventListener("resume", handleResume);
+    window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("pageshow", handlePageShow);
     window.addEventListener("online", handleOnline);
+    window.addEventListener("focus", handleFocus);
     return () => {
       cancelled = true;
       cancelPendingRetry();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("freeze", handleFreeze);
+      document.removeEventListener("resume", handleResume);
+      window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("pageshow", handlePageShow);
       window.removeEventListener("online", handleOnline);
+      window.removeEventListener("focus", handleFocus);
       void agent.abortRun();
     };
-  }, [agent, project, sessionId, parentSessionId, piSessionId, store]);
+  }, [agent, project, sessionId, parentSessionId, store]);
 
   // Per-turn changed files live in localStorage, so they can only be read
   // after mount — never during the server render, which would tear hydration.

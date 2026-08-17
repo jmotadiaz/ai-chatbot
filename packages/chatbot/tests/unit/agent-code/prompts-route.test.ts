@@ -43,7 +43,7 @@ function makeRequest() {
 }
 
 beforeEach(() => {
-  mockState.dbSession = { sessionId: "s1", project: "p", piSessionId: "pi-1" };
+  mockState.dbSession = { sessionId: "s1", project: "p" };
   mockState.sessions = [
     { sessionId: "s1", label: "Session A" },
     { sessionId: "s2", label: "Session B" },
@@ -72,7 +72,7 @@ describe("GET /api/agent/code/sessions/[sessionId]/prompts", () => {
 
     expect(mockState.rpcCalls[0]).toEqual([
       "initializeSession",
-      { userId: "user-1", sessionId: "s1", project: "p", piSessionId: "pi-1" },
+      { userId: "user-1", sessionId: "s1", project: "p" },
     ]);
   });
 

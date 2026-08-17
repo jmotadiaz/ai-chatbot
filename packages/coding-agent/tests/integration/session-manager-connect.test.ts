@@ -86,7 +86,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("snapshot", {
       sessionId: "snapshot",
-      piSessionId: "pi-snapshot",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -114,7 +113,6 @@ describe("session-manager.connectToSession event-log replay", () => {
     const eventLog = new SessionEventLog();
     __seedSessionForTests("epoch", {
       sessionId: "epoch",
-      piSessionId: "pi-epoch",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -143,7 +141,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s1", {
       sessionId: "s1",
-      piSessionId: "pi-1",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -178,7 +175,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s2", {
       sessionId: "s2",
-      piSessionId: "pi-2",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -229,7 +225,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s3", {
       sessionId: "s3",
-      piSessionId: "pi-3",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -282,7 +277,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s4", {
       sessionId: "s4",
-      piSessionId: "pi-4",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -358,7 +352,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s5", {
       sessionId: "s5",
-      piSessionId: "pi-5",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -408,7 +401,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s9", {
       sessionId: "s9",
-      piSessionId: "pi-9",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,
@@ -530,7 +522,6 @@ describe("session-manager.connectToSession event-log replay", () => {
 
     __seedSessionForTests("s10", {
       sessionId: "s10",
-      piSessionId: "pi-10",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog,

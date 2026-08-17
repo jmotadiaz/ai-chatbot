@@ -121,9 +121,8 @@ export class WorkerClient {
     project: string;
     modelId?: string;
     thinkingLevel?: ThinkingLevel;
-    piSessionId?: string;
     _traceRunId?: string;
-  }): Promise<{ sessionId: string; piSessionId: string }> {
+  }): Promise<{ sessionId: string }> {
     return this.call("initializeSession", params);
   }
 
@@ -173,7 +172,6 @@ export class WorkerClient {
 
   async getSessionSnapshot(params: {
     sessionId: string;
-    piSessionId?: string;
     project?: string;
     parentSessionId?: string;
   }): Promise<WorkerSessionSnapshot> {
@@ -183,7 +181,7 @@ export class WorkerClient {
   async getSubagentSession(params: {
     parentSessionId: string;
     toolCallId: string;
-  }): Promise<{ subSessionId: string; subPiSessionId: string }> {
+  }): Promise<{ subSessionId: string }> {
     return this.call("getSubagentSession", params);
   }
 
@@ -230,13 +228,12 @@ export class WorkerClient {
     return this.call<{ cancelled: boolean }>("cancelRun", params);
   }
 
-  async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean; piSessionId?: string }> {
-    return this.call<{ running: boolean; piSessionId?: string }>("getSessionStatus", params);
+  async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean }> {
+    return this.call<{ running: boolean }>("getSessionStatus", params);
   }
 
   async getSessionModel(params: {
     sessionId: string;
-    piSessionId?: string;
     project?: string;
   }): Promise<{ model: { providerId: string; modelId: string } | null }> {
     return this.call<{ model: { providerId: string; modelId: string } | null }>(
@@ -247,7 +244,6 @@ export class WorkerClient {
 
   async getSessionThinkingLevel(params: {
     sessionId: string;
-    piSessionId?: string;
     project?: string;
   }): Promise<{ thinking: { level: string; levels: string[] } | null }> {
     return this.call("getSessionThinkingLevel", params);
@@ -288,7 +284,6 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         modelId: typeof p.modelId === "string" ? p.modelId : undefined,
         thinkingLevel:
           typeof p.thinkingLevel === "string" ? p.thinkingLevel : undefined,
-        hasPiSessionId: typeof p.piSessionId === "string",
         hasTraceRunId,
       };
     case "sendPrompt": {
@@ -317,13 +312,11 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
       return {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
-        hasPiSessionId: typeof p.piSessionId === "string",
         hasParentSessionId: typeof p.parentSessionId === "string",
       };
     case "getSessionThinkingLevel":
       return {
         sessionId,
-        hasPiSessionId: typeof p.piSessionId === "string",
         project: typeof p.project === "string" ? p.project : undefined,
       };
     case "getSubagentSession":

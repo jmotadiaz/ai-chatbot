@@ -66,7 +66,6 @@ describe("session-manager skills", () => {
     };
     __seedSessionForTests("skills-1", {
       sessionId: "skills-1",
-      piSessionId: "pi-skills-1",
       project: "p",
       runtime: { session } as never,
       eventLog: new SessionEventLog(),
@@ -105,7 +104,6 @@ describe("session-manager skills", () => {
     ];
     __seedSessionForTests("skills-2", {
       sessionId: "skills-2",
-      piSessionId: "pi-skills-2",
       project: "p",
       runtime: {
         session: {

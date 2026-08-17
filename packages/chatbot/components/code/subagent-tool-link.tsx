@@ -23,7 +23,7 @@ export const SubagentToolLink: React.FC<SubagentToolLinkProps> = ({
   toolCallId,
 }) => {
   const [ids, setIds] = React.useState<
-    { subSessionId: string; subPiSessionId: string } | "error" | null
+    { subSessionId: string } | "error" | null
   >(null);
 
   React.useEffect(() => {
@@ -44,7 +44,7 @@ export const SubagentToolLink: React.FC<SubagentToolLinkProps> = ({
   return (
     <div className="border-t border-border">
       <Link
-        href={`/agent/code/${project}/${parentSessionId}/subagent/${ids.subSessionId}?pi=${ids.subPiSessionId}`}
+        href={`/agent/code/${project}/${parentSessionId}/subagent/${ids.subSessionId}`}
         className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary"
       >
         <Bot className="size-4 text-muted-foreground" />

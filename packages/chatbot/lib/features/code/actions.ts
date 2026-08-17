@@ -105,7 +105,7 @@ export async function getCodingAgentSession(project: string, sessionId: string) 
 export async function getSubagentSessionAction(input: {
   parentSessionId: string;
   toolCallId: string;
-}): Promise<{ subSessionId: string; subPiSessionId: string } | { error: string }> {
+}): Promise<{ subSessionId: string } | { error: string }> {
   return withActionTrace("getSubagentSession", async (log) => {
     try {
       assertEnabled();

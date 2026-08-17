@@ -69,7 +69,6 @@ describe("session-manager attachments", () => {
     const mock = createMockPiSession({ messages: [], isStreaming: false });
     __seedSessionForTests("s1", {
       sessionId: "s1",
-      piSessionId: "pi-1",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -110,7 +109,6 @@ describe("session-manager attachments", () => {
     const mock = createMockPiSession({ messages: [], isStreaming: false });
     __seedSessionForTests("s2", {
       sessionId: "s2",
-      piSessionId: "pi-2",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -148,7 +146,6 @@ describe("session-manager attachments", () => {
     const mock = createMockPiSession({ messages: [], isStreaming: false });
     __seedSessionForTests("s3", {
       sessionId: "s3",
-      piSessionId: "pi-3",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -177,7 +174,6 @@ describe("session-manager attachments", () => {
     const mock = createMockPiSession({ messages: [], isStreaming: false });
     __seedSessionForTests("s4", {
       sessionId: "s4",
-      piSessionId: "pi-4",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -224,7 +220,6 @@ describe("session-manager attachments", () => {
     });
     __seedSessionForTests("s5", {
       sessionId: "s5",
-      piSessionId: "pi-5",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -290,7 +285,6 @@ describe("session-manager attachments", () => {
     const mock = createMockPiSession({ messages: [storedUserMessage], isStreaming: false });
     __seedSessionForTests("s6", {
       sessionId: "s6",
-      piSessionId: "pi-6",
       project: "p",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),

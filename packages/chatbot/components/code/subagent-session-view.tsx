@@ -14,7 +14,6 @@ export interface SubagentSessionViewProps {
   project: string;
   parentSessionId: string;
   subSessionId: string;
-  subPiSessionId?: string;
 }
 
 /**
@@ -28,7 +27,6 @@ export const SubagentSessionView: React.FC<SubagentSessionViewProps> = ({
   project,
   parentSessionId,
   subSessionId,
-  subPiSessionId,
 }) => {
   const { items, isRunning, status, turnFiles } = useCodingAgent({
     project,
@@ -36,7 +34,6 @@ export const SubagentSessionView: React.FC<SubagentSessionViewProps> = ({
     // The view never sends messages, so no model is needed.
     modelId: "",
     parentSessionId,
-    piSessionId: subPiSessionId,
   });
 
   return (

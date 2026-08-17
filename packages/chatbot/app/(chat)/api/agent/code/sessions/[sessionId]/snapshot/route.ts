@@ -22,7 +22,6 @@ export const GET = withAuth(async (user, req) => {
     userId: user.id,
     sessionId,
     parentSessionId: url.searchParams.get("parentSessionId") ?? undefined,
-    piSessionId: url.searchParams.get("pi") ?? undefined,
     project: url.searchParams.get("project") ?? undefined,
   });
 

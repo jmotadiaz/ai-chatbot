@@ -33,9 +33,9 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
   AuthStorage: { create: () => ({}) },
   ModelRegistry: { create: () => ({ find: () => undefined }) },
   SessionManager: {
-    list: async () => [{ id: "pi-1", path: piState.sessionFilePath }],
-    open: () => ({ getSessionId: () => "pi-1" }),
-    create: () => ({ getSessionId: () => "pi-new" }),
+    list: async () => [{ id: "s1", path: piState.sessionFilePath }],
+    open: () => ({ getSessionId: () => "s1" }),
+    create: () => ({ getSessionId: () => "s1" }),
   },
 }));
 
@@ -59,7 +59,7 @@ describe("getOrCreateSession thinking level on the disk-reload path", () => {
   beforeEach(() => {
     __resetSessionsForTests();
     root = mkdtempSync(join(tmpdir(), "sm-reload-"));
-    piState.sessionFilePath = join(root, "pi-1.jsonl");
+    piState.sessionFilePath = join(root, "s1.jsonl");
     piState.setThinkingLevel = vi.fn();
     writeFileSync(piState.sessionFilePath, "");
     process.env.CODING_AGENT_PROJECTS_ROOT = root;
@@ -78,12 +78,11 @@ describe("getOrCreateSession thinking level on the disk-reload path", () => {
       userId: "u1",
       project: "p",
       sessionId: "s1",
-      piSessionId: "pi-1",
       modelId: "opencode-go/deepseek-v4-pro",
       thinkingLevel: "xhigh",
     });
 
-    expect(result).toEqual({ sessionId: "s1", piSessionId: "pi-1" });
+    expect(result).toEqual({ sessionId: "s1" });
     expect(piState.setThinkingLevel).toHaveBeenCalledWith("xhigh");
   });
 
@@ -92,7 +91,6 @@ describe("getOrCreateSession thinking level on the disk-reload path", () => {
       userId: "u1",
       project: "p",
       sessionId: "s1",
-      piSessionId: "pi-1",
     });
 
     expect(piState.setThinkingLevel).not.toHaveBeenCalled();

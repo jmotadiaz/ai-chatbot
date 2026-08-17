@@ -20,7 +20,6 @@ export const GET = withAuth(async (user, req) => {
       userId: user.id,
       sessionId,
       project: dbSession.project,
-      piSessionId: dbSession.piSessionId ?? undefined,
     });
     const result = await client.getSessionPrompts({ sessionId });
     const sessions = await listSessions({

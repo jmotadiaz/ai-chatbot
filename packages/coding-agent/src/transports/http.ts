@@ -195,7 +195,6 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             sessionId?: string;
             project: string;
             modelId?: string;
-            piSessionId?: string;
             thinkingLevel?: ThinkingLevel;
           },
         );
@@ -229,25 +228,23 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "getSessionMessages": {
-        const { sessionId, piSessionId, project, parentSessionId } = params as {
+        const { sessionId, project, parentSessionId } = params as {
           sessionId: string;
-          piSessionId?: string;
           project?: string;
           parentSessionId?: string;
         };
         result = {
-          messages: await getSessionMessages(sessionId, piSessionId, project, parentSessionId),
+          messages: await getSessionMessages(sessionId, project, parentSessionId),
         };
         break;
       }
       case "getSessionSnapshot": {
-        const { sessionId, piSessionId, project, parentSessionId } = params as {
+        const { sessionId, project, parentSessionId } = params as {
           sessionId: string;
-          piSessionId?: string;
           project?: string;
           parentSessionId?: string;
         };
-        result = await getSessionSnapshot(sessionId, piSessionId, project, parentSessionId);
+        result = await getSessionSnapshot(sessionId, project, parentSessionId);
         break;
       }
       case "disposeSession": {
@@ -335,22 +332,20 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "getSessionModel": {
-        const { sessionId, piSessionId, project } = params as {
+        const { sessionId, project } = params as {
           sessionId: string;
-          piSessionId?: string;
           project?: string;
         };
-        result = { model: await getSessionModel(sessionId, piSessionId, project) };
+        result = { model: await getSessionModel(sessionId, project) };
         break;
       }
       case "getSessionThinkingLevel": {
-        const { sessionId, piSessionId, project } = params as {
+        const { sessionId, project } = params as {
           sessionId: string;
-          piSessionId?: string;
           project?: string;
         };
         result = {
-          thinking: await getSessionThinkingLevel(sessionId, piSessionId, project),
+          thinking: await getSessionThinkingLevel(sessionId, project),
         };
         break;
       }
@@ -414,7 +409,6 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         modelId: typeof p.modelId === "string" ? p.modelId : undefined,
         thinkingLevel:
           typeof p.thinkingLevel === "string" ? p.thinkingLevel : undefined,
-        hasPiSessionId: typeof p.piSessionId === "string",
         hasTraceRunId,
       };
     case "sendPrompt": {
@@ -443,7 +437,6 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
       return {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
-        hasPiSessionId: typeof p.piSessionId === "string",
         hasParentSessionId: typeof p.parentSessionId === "string",
       };
     case "getSessionSnapshot":
@@ -451,13 +444,11 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
       return {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
-        hasPiSessionId: typeof p.piSessionId === "string",
         hasParentSessionId: typeof p.parentSessionId === "string",
       };
     case "getSessionThinkingLevel":
       return {
         sessionId,
-        hasPiSessionId: typeof p.piSessionId === "string",
         project: typeof p.project === "string" ? p.project : undefined,
       };
     case "getSessionSkills":
@@ -490,7 +481,6 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
     case "initializeSession":
       return {
         sessionId: r.sessionId,
-        piSessionId: r.piSessionId,
       };
     case "getAvailableModels":
       return {

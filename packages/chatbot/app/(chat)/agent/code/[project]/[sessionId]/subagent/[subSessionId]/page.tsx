@@ -7,15 +7,12 @@ import { withAuth, type Authenticated } from "@/lib/features/auth/with-auth/hoc"
 
 async function SubagentSessionPage({
   params,
-  searchParams,
   user,
 }: {
   params: Promise<{ project: string; sessionId: string; subSessionId: string }>;
-  searchParams: Promise<{ pi?: string }>;
 } & Authenticated) {
   if (!config.codingAgentEnabled()) return notFound();
   const { project, sessionId, subSessionId } = await params;
-  const { pi } = await searchParams;
   return (
     <>
       <Sidebar user={user} />
@@ -24,7 +21,6 @@ async function SubagentSessionPage({
           project={project}
           parentSessionId={sessionId}
           subSessionId={subSessionId}
-          subPiSessionId={pi}
         />
       </ClientErrorWrapper>
     </>

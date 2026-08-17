@@ -30,11 +30,11 @@ vi.mock("tracing", () => ({
 }));
 
 const mockState: {
-  dbSession: { piSessionId: string | null; project: string; label?: string | null };
+  dbSession: { project: string; label?: string | null };
   labelCalls: unknown[];
   sendPromptParams: unknown[];
 } = vi.hoisted(() => ({
-  dbSession: { piSessionId: "stub-pi-session", project: "p", label: null },
+  dbSession: { project: "p", label: null },
   labelCalls: [],
   sendPromptParams: [],
 }));
@@ -42,7 +42,6 @@ const mockState: {
 vi.mock("@/lib/features/code/session-store", () => ({
   getSession: vi.fn(() => Promise.resolve(mockState.dbSession)),
   touchSession: vi.fn().mockResolvedValue(undefined),
-  updatePiSessionId: vi.fn().mockResolvedValue(undefined),
   updateSessionLabel: vi.fn((params: unknown) => {
     mockState.labelCalls.push(params);
     return Promise.resolve(undefined);
@@ -52,7 +51,7 @@ vi.mock("@/lib/features/code/session-store", () => ({
 vi.mock("@/lib/features/code/worker-client", () => ({
   WorkerClient: class {
     async initializeSession() {
-      return { sessionId: "s", piSessionId: "stub-pi-session" };
+      return { sessionId: "s" };
     }
     async sendPrompt(params: unknown) {
       mockState.sendPromptParams.push(params);
@@ -89,7 +88,7 @@ function makeRequest(messages: RequestMessage[]) {
 }
 
 beforeEach(() => {
-  mockState.dbSession = { piSessionId: "stub-pi-session", project: "p", label: null };
+  mockState.dbSession = { project: "p", label: null };
   mockState.labelCalls = [];
   mockState.sendPromptParams = [];
 });

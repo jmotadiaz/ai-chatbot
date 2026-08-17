@@ -43,7 +43,6 @@ beforeEach(() => {
   mockState.dbSession = {
     sessionId: "s1",
     project: "p",
-    piSessionId: "pi-1",
     modelId: "Deepseek v4 Pro",
   };
   mockState.thinking = null;
@@ -62,7 +61,6 @@ describe("GET /api/agent/code/sessions/[sessionId]/thinking-level", () => {
     });
     expect(mockState.getParams[0]).toEqual({
       sessionId: "s1",
-      piSessionId: "pi-1",
       project: "p",
     });
   });

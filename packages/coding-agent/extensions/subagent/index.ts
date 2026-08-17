@@ -65,8 +65,8 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
           isError: true,
         };
       }
-      const parentPiSessionId = ctx.sessionManager.getSessionId();
-      return runSubagent(parentPiSessionId, toolCallId, params, signal);
+      const parentSessionId = ctx.sessionManager.getSessionId();
+      return runSubagent(parentSessionId, toolCallId, params, signal);
     },
   });
 }

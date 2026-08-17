@@ -43,7 +43,6 @@ beforeEach(() => {
   mockState.dbSession = {
     sessionId: "s1",
     project: "p",
-    piSessionId: "pi-1",
     modelId: "Deepseek v4 Pro",
   };
   mockState.workerModel = null;
@@ -60,7 +59,6 @@ describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
     expect(await res.json()).toEqual({ modelId: "Kimi K2.7 Code" });
     expect(mockState.modelParams[0]).toEqual({
       sessionId: "s1",
-      piSessionId: "pi-1",
       project: "p",
     });
   });
@@ -82,7 +80,7 @@ describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
   });
 
   it("returns null when neither the worker nor the DB know a model", async () => {
-    mockState.dbSession = { sessionId: "s1", project: "p", piSessionId: null, modelId: null };
+    mockState.dbSession = { sessionId: "s1", project: "p", modelId: null };
 
     const res = await GET(makeRequest() as never);
 

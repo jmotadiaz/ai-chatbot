@@ -1,0 +1,2 @@
+ALTER TABLE "coding_agent_sessions" ADD COLUMN "bk_session_id" text;
+UPDATE "coding_agent_sessions" SET "bk_session_id" = "session_id", "session_id" = "pi_session_id" WHERE "pi_session_id" IS NOT NULL;

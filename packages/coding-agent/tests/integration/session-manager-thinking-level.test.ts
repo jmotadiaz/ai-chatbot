@@ -38,7 +38,6 @@ function makeSession(overrides: Record<string, unknown> = {}) {
 function seed(sessionId: string, session: unknown) {
   __seedSessionForTests(sessionId, {
     sessionId,
-    piSessionId: `pi-${sessionId}`,
     project: "p",
     runtime: { session } as never,
     eventLog: new SessionEventLog(),
@@ -87,7 +86,6 @@ describe("session-manager thinking level", () => {
     const setModel = vi.fn();
     __seedSessionForTests("t-5", {
       sessionId: "t-5",
-      piSessionId: "pi-t-5",
       project: "p",
       runtime: {
         session: {
@@ -132,7 +130,6 @@ describe("session-manager thinking level", () => {
     // in getOrCreateSession must switch the model and then apply the level.
     __seedSessionForTests("t-6", {
       sessionId: "t-6",
-      piSessionId: "pi-t-6",
       project: "p",
       runtime: {
         session: {
@@ -172,7 +169,6 @@ describe("session-manager thinking level", () => {
     const setModel = vi.fn();
     __seedSessionForTests("t-7", {
       sessionId: "t-7",
-      piSessionId: "pi-t-7",
       project: "p",
       runtime: {
         session: {
@@ -217,7 +213,6 @@ describe("session-manager thinking level", () => {
     const setModel = vi.fn();
     __seedSessionForTests("t-8", {
       sessionId: "t-8",
-      piSessionId: "pi-t-8",
       project: "p",
       runtime: {
         session: {

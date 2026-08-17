@@ -24,7 +24,6 @@ export const GET = withAuth(async (user, req) => {
   const client = new WorkerClient();
   const { model } = await client.getSessionModel({
     sessionId,
-    piSessionId: dbSession.piSessionId ?? undefined,
     project: dbSession.project,
   });
 

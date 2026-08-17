@@ -19,7 +19,6 @@ export const GET = withAuth(async (user, req) => {
     userId: user.id,
     sessionId,
     project: dbSession.project,
-    piSessionId: dbSession.piSessionId ?? undefined,
   });
   const result = await client.getSessionSkills({ sessionId });
   return Response.json(result);

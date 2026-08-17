@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
       jsonrpc: "2.0",
       result: {
         sessionId: params.sessionId ?? "stub-session",
-        piSessionId: "stub-pi-session",
       },
       id: 1,
     });

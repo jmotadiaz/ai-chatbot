@@ -16,7 +16,6 @@ import {
 import {
   getSession,
   touchSession,
-  updatePiSessionId,
   updateSessionLabel,
 } from "@/lib/features/code/session-store";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -120,7 +119,7 @@ export const POST = withAuth(async (user, req) => {
       log.info("model.mapping", { from: modelId, to: piModelId });
 
       const initStop = log.startTimer("worker.initialize");
-      const initResult = await client.initializeSession({
+      await client.initializeSession({
         userId: user.id,
         sessionId,
         project,
@@ -128,26 +127,9 @@ export const POST = withAuth(async (user, req) => {
           ? `${piModelId.providerId}/${piModelId.modelId}`
           : undefined,
         thinkingLevel,
-        piSessionId: dbSession.piSessionId ?? undefined,
         _traceRunId: runId,
       });
       initStop();
-
-      // Persist the piSessionId mapping if it's new or changed
-      if (
-        initResult.piSessionId &&
-        initResult.piSessionId !== dbSession.piSessionId
-      ) {
-        log.info("db.update_pi_session_id", {
-          sessionId,
-          piSessionId: initResult.piSessionId,
-        });
-        await updatePiSessionId({
-          userId: user.id,
-          sessionId,
-          piSessionId: initResult.piSessionId,
-        });
-      }
 
       const prompt = promptTextFromContent(messages[messages.length - 1]?.content);
       const sendStop = log.startTimer("worker.sendPrompt", {

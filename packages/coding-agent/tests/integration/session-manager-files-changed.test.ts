@@ -129,7 +129,6 @@ describe("session-manager files-changed event", () => {
     const mock = createMockPiSession({ prompt: () => prompt.promise });
     __seedSessionForTests("fc1", {
       sessionId: "fc1",
-      piSessionId: "pi-fc1",
       project: PROJECT,
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -166,7 +165,6 @@ describe("session-manager files-changed event", () => {
     const mock = createMockPiSession({ prompt: () => prompt.promise });
     __seedSessionForTests("fc2", {
       sessionId: "fc2",
-      piSessionId: "pi-fc2",
       project: PROJECT,
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -189,7 +187,6 @@ describe("session-manager files-changed event", () => {
     const mock = createMockPiSession({ prompt: () => prompt.promise });
     __seedSessionForTests("fc3", {
       sessionId: "fc3",
-      piSessionId: "pi-fc3",
       project: "plain",
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),
@@ -211,7 +208,6 @@ describe("session-manager files-changed event", () => {
     });
     __seedSessionForTests("fc4", {
       sessionId: "fc4",
-      piSessionId: "pi-fc4",
       project: PROJECT,
       runtime: { session: mock.session } as never,
       eventLog: new SessionEventLog(),

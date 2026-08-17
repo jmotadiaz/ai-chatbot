@@ -67,7 +67,6 @@ export interface CodingAgentSkill {
 
 interface SessionEntry {
   sessionId: string;
-  piSessionId: string;
   project: string;
   /** Set for subagent sessions: id of the parent app session that dispatched them. */
   parentSessionId?: string;
@@ -237,15 +236,14 @@ export function applyThinkingLevel(
  */
 export async function getSessionThinkingLevel(
   sessionId: string,
-  piSessionId?: string,
   project?: string,
 ): Promise<{ level: ThinkingLevel; levels: ThinkingLevel[] } | null> {
   const log = getTraceLogger("worker");
   let entry = sessions.get(sessionId);
 
-  if (!entry && piSessionId && project) {
-    log.info("session.thinking_level_load_disk", { sessionId, piSessionId });
-    entry = await loadSessionFromDisk(sessionId, piSessionId, project);
+  if (!entry && project) {
+    log.info("session.thinking_level_load_disk", { sessionId });
+    entry = await loadSessionFromDisk(sessionId, project);
   }
 
   if (!entry) {
@@ -353,12 +351,11 @@ function makeCreateRuntime(
 }
 
 /**
- * Load a session from disk by its Pi SDK session ID.
+ * Load a session from disk by its session ID.
  * Returns the session entry if found and loaded, undefined otherwise.
  */
 async function loadSessionFromDisk(
-  appSessionId: string,
-  piSessionId: string,
+  sessionId: string,
   project: string,
   modelId?: string,
   options?: {
@@ -381,14 +378,14 @@ async function loadSessionFromDisk(
     ? path.join(sessionsDir, options.sessionsSubdir)
     : sessionsDir;
 
-  log.info("session.load_disk_attempt", { appSessionId, piSessionId });
+  log.info("session.load_disk_attempt", { sessionId });
 
   // Find the session file by listing sessions for the sessions dir
   const allSessions = await SessionManager.list(listDir);
-  const found = allSessions.find((s) => s.id === piSessionId);
+  const found = allSessions.find((s) => s.id === sessionId);
 
   if (!found || !existsSync(found.path)) {
-    log.warn("session.load_disk_not_found", { piSessionId, sessionsChecked: allSessions.length });
+    log.warn("session.load_disk_not_found", { sessionId, sessionsChecked: allSessions.length });
     return undefined;
   }
 
@@ -408,16 +405,15 @@ async function loadSessionFromDisk(
   stop();
 
   const entry: SessionEntry = {
-    sessionId: appSessionId,
-    piSessionId,
+    sessionId,
     project,
     parentSessionId: options?.parentSessionId,
     parentToolCallId: options?.parentToolCallId,
     runtime,
     eventLog: new SessionEventLog(),
   };
-  sessions.set(appSessionId, entry);
-  log.info("session.load_disk_done", { appSessionId, piSessionId });
+  sessions.set(sessionId, entry);
+  log.info("session.load_disk_done", { sessionId });
   return entry;
 }
 
@@ -426,7 +422,6 @@ export interface GetOrCreateSessionOptions {
   project: string;
   sessionId?: string;
   modelId?: string;
-  piSessionId?: string;
   thinkingLevel?: ThinkingLevel;
 }
 
@@ -437,10 +432,10 @@ export interface GetOrCreateSessionOptions {
  */
 export async function getOrCreateSession(
   options: GetOrCreateSessionOptions,
-): Promise<{ sessionId: string; piSessionId: string }> {
+): Promise<{ sessionId: string }> {
   const entry = await resolveSessionEntry(options);
   applyThinkingLevel(entry.runtime.session, options.thinkingLevel);
-  return { sessionId: entry.sessionId, piSessionId: entry.piSessionId };
+  return { sessionId: entry.sessionId };
 }
 
 async function resolveSessionEntry(
@@ -491,11 +486,10 @@ async function resolveSessionEntry(
     return existing;
   }
 
-  // 2. Try to reload from disk if piSessionId is provided (worker restarted)
-  if (options.sessionId && options.piSessionId) {
+  // 2. Try to reload from disk if sessionId is provided (worker restarted)
+  if (options.sessionId) {
     const loaded = await loadSessionFromDisk(
       options.sessionId,
-      options.piSessionId,
       options.project,
       options.modelId,
     );
@@ -517,8 +511,9 @@ async function resolveSessionEntry(
 
   const sessionManager = SessionManager.create(
     config.codingAgentSessionsDir(),
+    undefined,
+    { id: sessionId },
   );
-  const piSessionId = sessionManager.getSessionId();
   const createRuntime = makeCreateRuntime(options.modelId);
 
   const stop = log.startTimer("session.runtime_create");
@@ -531,7 +526,6 @@ async function resolveSessionEntry(
 
   const entry: SessionEntry = {
     sessionId,
-    piSessionId,
     project: options.project,
     runtime,
     eventLog: new SessionEventLog(),
@@ -926,28 +920,26 @@ function extractMessageText(content: unknown): string {
 }
 
 /**
- * Get messages for a session.
- * If the session is not in the in-memory Map but piSessionId is provided,
+ * Return all messages in a session.
+ * If the session is not in the in-memory Map,
  * attempts to load the session from disk first.
  */
 export async function getSessionMessages(
   sessionId: string,
-  piSessionId?: string,
   project?: string,
   parentSessionId?: string,
 ): Promise<Array<any>> {
   const log = getTraceLogger("worker");
   let entry = sessions.get(sessionId);
 
-  // If not in memory but we have a piSessionId, try reloading from disk.
+  // If not in memory, try reloading from disk.
   // A presented parentSessionId marks the target as a subagent session,
   // which lives under the subagents/ subdir and is rehydrated with its
   // parent linkage so the access guard below holds on the cold path too.
-  if (!entry && piSessionId && project) {
-    log.info("session.messages_load_disk", { sessionId, piSessionId });
+  if (!entry && project) {
+    log.info("session.messages_load_disk", { sessionId });
     const loaded = await loadSessionFromDisk(
       sessionId,
-      piSessionId,
       project,
       undefined,
       parentSessionId ? { sessionsSubdir: "subagents", parentSessionId } : undefined,
@@ -1158,15 +1150,14 @@ export async function getAvailableModels(): Promise<
  */
 export async function getSessionModel(
   sessionId: string,
-  piSessionId?: string,
   project?: string,
 ): Promise<{ providerId: string; modelId: string } | null> {
   const log = getTraceLogger("worker");
   let entry = sessions.get(sessionId);
 
-  if (!entry && piSessionId && project) {
-    log.info("session.model_load_disk", { sessionId, piSessionId });
-    entry = await loadSessionFromDisk(sessionId, piSessionId, project);
+  if (!entry && project) {
+    log.info("session.model_load_disk", { sessionId });
+    entry = await loadSessionFromDisk(sessionId, project);
   }
 
   if (!entry) {
@@ -1205,7 +1196,6 @@ export async function disposeSession(sessionId: string): Promise<void> {
 
 export interface SessionStatus {
   running: boolean;
-  piSessionId?: string;
 }
 
 export interface SessionCursor {
@@ -1228,7 +1218,7 @@ export async function getSessionStatus(sessionId: string, parentSessionId?: stri
   }
   assertSessionAccess(entry, parentSessionId);
   if (entry.runtime.session.isStreaming) {
-    return { running: true, piSessionId: entry.runtime.session.sessionId };
+    return { running: true };
   }
   return { running: false };
 }
@@ -1244,11 +1234,10 @@ export async function getSessionStatus(sessionId: string, parentSessionId?: stri
  */
 export async function getSessionSnapshot(
   sessionId: string,
-  piSessionId?: string,
   project?: string,
   parentSessionId?: string,
 ): Promise<SessionSnapshot> {
-  const messages = await getSessionMessages(sessionId, piSessionId, project, parentSessionId);
+  const messages = await getSessionMessages(sessionId, project, parentSessionId);
   const entry = sessions.get(sessionId);
   if (!entry) {
     return { messages, cursor: null, running: false };
@@ -1490,20 +1479,19 @@ function lastAssistantText(messages: ReadonlyArray<any>): string {
  * in the tool result (spec §4.2).
  */
 export async function runSubagent(
-  parentPiSessionId: string,
+  parentSessionId: string,
   toolCallId: string,
   params: SubagentRunParams,
   signal?: AbortSignal,
 ): Promise<SubagentRunResult> {
   const log = getTraceLogger("worker");
-  const parent = [...sessions.values()].find((e) => e.piSessionId === parentPiSessionId);
-  if (!parent) throw new Error(`Parent session not found for pi session ${parentPiSessionId}`);
+  const parent = sessions.get(parentSessionId);
+  if (!parent) throw new Error(`Parent session not found for session ${parentSessionId}`);
 
   const failedDetails = (): SubagentDetails => ({
     // No session was created on validation failure, so no link should
     // resolve: getSubagentSessionForToolCall treats empty ids as not found.
     subSessionId: "",
-    subPiSessionId: "",
     parentSessionId: parent.sessionId,
     parentToolCallId: toolCallId,
     description: params.description,
@@ -1524,11 +1512,12 @@ export async function runSubagent(
   const modelResult = resolveSubagentModelId(parent.runtime.session.model, available, params.model);
   if (!modelResult.ok) return errorResult(modelResult.error);
 
+  const subSessionId = crypto.randomUUID();
   const sessionManager = SessionManager.create(
     ensureSubagentSessionsDir(config.codingAgentSessionsDir()),
+    undefined,
+    { id: subSessionId },
   );
-  const subPiSessionId = sessionManager.getSessionId();
-  const subSessionId = crypto.randomUUID();
   const createRuntime = makeCreateRuntime(modelResult.modelId, { includeSubagentExtension: false });
 
   const stop = log.startTimer("subagent.runtime_create");
@@ -1541,7 +1530,6 @@ export async function runSubagent(
 
   const entry: SessionEntry = {
     sessionId: subSessionId,
-    piSessionId: subPiSessionId,
     project: parent.project,
     parentSessionId: parent.sessionId,
     parentToolCallId: toolCallId,
@@ -1557,7 +1545,6 @@ export async function runSubagent(
 
   log.info("subagent.dispatch", {
     subSessionId,
-    subPiSessionId,
     parentSessionId: parent.sessionId,
     parentToolCallId: toolCallId,
     cwd: cwdResult.cwd,
@@ -1566,7 +1553,6 @@ export async function runSubagent(
 
   const makeDetails = (): SubagentDetails => ({
     subSessionId,
-    subPiSessionId,
     parentSessionId: parent.sessionId,
     parentToolCallId: toolCallId,
     description: params.description,
@@ -1599,7 +1585,7 @@ export async function runSubagent(
  * (spec §4.5):
  * 1. Memory: a registered entry with matching parent linkage.
  * 2. Cold (after a worker restart): find the persisted toolResult in the
- *    parent's messages, read its `details.subSessionId/subPiSessionId`,
+ *    parent's messages, read its `details.subSessionId`,
  *    rehydrate the child from `<SESSIONS_DIR>/subagents/` and register it.
  * 3. Otherwise throw — unknown toolCallId, validation-failure results
  *    (empty ids) or a missing session file all land here.
@@ -1607,7 +1593,7 @@ export async function runSubagent(
 export async function getSubagentSessionForToolCall(
   parentSessionId: string,
   toolCallId: string,
-): Promise<{ subSessionId: string; subPiSessionId: string }> {
+): Promise<{ subSessionId: string }> {
   const log = getTraceLogger("worker");
   const parent = sessions.get(parentSessionId);
   if (!parent) {
@@ -1619,23 +1605,20 @@ export async function getSubagentSessionForToolCall(
     (e) => e.parentSessionId === parentSessionId && e.parentToolCallId === toolCallId,
   );
   if (registered) {
-    return { subSessionId: registered.sessionId, subPiSessionId: registered.piSessionId };
+    return { subSessionId: registered.sessionId };
   }
 
   const toolResult = (parent.runtime.session.messages as ReadonlyArray<any>).find(
     (msg) => msg?.role === "toolResult" && msg.toolCallId === toolCallId,
   );
   const subSessionId = toolResult?.details?.subSessionId;
-  const subPiSessionId = toolResult?.details?.subPiSessionId;
-  if (typeof subSessionId !== "string" || !subSessionId ||
-      typeof subPiSessionId !== "string" || !subPiSessionId) {
+  if (typeof subSessionId !== "string" || !subSessionId) {
     log.info("subagent.lookup_not_found", { parentSessionId, toolCallId });
     throw new Error("Subagent session not found for tool call");
   }
 
   const rehydrated = await loadSessionFromDisk(
     subSessionId,
-    subPiSessionId,
     parent.project,
     undefined,
     {
@@ -1645,10 +1628,10 @@ export async function getSubagentSessionForToolCall(
     },
   );
   if (!rehydrated) {
-    log.info("subagent.lookup_rehydrate_failed", { parentSessionId, toolCallId, subPiSessionId });
+    log.info("subagent.lookup_rehydrate_failed", { parentSessionId, toolCallId, subSessionId });
     throw new Error("Subagent session not found for tool call");
   }
-  return { subSessionId: rehydrated.sessionId, subPiSessionId: rehydrated.piSessionId };
+  return { subSessionId: rehydrated.sessionId };
 }
 
 export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

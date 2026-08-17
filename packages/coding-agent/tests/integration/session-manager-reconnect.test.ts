@@ -43,7 +43,6 @@ describe("connectToSession synthetic prelude", () => {
     for (const event of turnEvents) eventLog.append(event as never);
     __seedSessionForTests(sessionId, {
       sessionId,
-      piSessionId: `pi-${sessionId}`,
       project: "proj",
       runtime: { session: { isStreaming: false, messages: [] } } as never,
       eventLog,

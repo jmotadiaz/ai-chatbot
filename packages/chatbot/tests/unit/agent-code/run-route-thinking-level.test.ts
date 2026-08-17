@@ -29,7 +29,7 @@ vi.mock("@/lib/features/code/worker-client", () => ({
   WorkerClient: class {
     async initializeSession(params: unknown) {
       mockState.initParams.push(params);
-      return { sessionId: "s1", piSessionId: "pi-1" };
+      return { sessionId: "s1" };
     }
     async sendPrompt() {
       return new ReadableStream<Uint8Array>({
@@ -70,7 +70,6 @@ beforeEach(() => {
   mockState.dbSession = {
     sessionId: "s1",
     project: "p",
-    piSessionId: null,
     label: null,
   };
   mockState.initParams = [];

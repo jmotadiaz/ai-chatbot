@@ -59,7 +59,6 @@ describe("WorkerClient", () => {
     const client = new WorkerClient("http://worker.test");
     const result = await client.getSessionModel({
       sessionId: "sess-1",
-      piSessionId: "pi-1",
       project: "proj-a",
     });
 
@@ -68,7 +67,6 @@ describe("WorkerClient", () => {
       method: "getSessionModel",
       params: {
         sessionId: "sess-1",
-        piSessionId: "pi-1",
         project: "proj-a",
       },
     });
