@@ -84,3 +84,17 @@ export async function touchSession(input: { userId: string; sessionId: string })
       ),
     );
 }
+
+export async function deleteSession(input: {
+  userId: string;
+  sessionId: string;
+}) {
+  await getDb()
+    .delete(codingAgentSessions)
+    .where(
+      and(
+        eq(codingAgentSessions.userId, input.userId),
+        eq(codingAgentSessions.sessionId, input.sessionId),
+      ),
+    );
+}

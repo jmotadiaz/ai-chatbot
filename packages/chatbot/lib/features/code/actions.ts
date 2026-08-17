@@ -12,6 +12,7 @@ import { config, optional } from "config";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
+  deleteSession,
   getSession,
   listSessions,
   updateSessionLabel,
@@ -103,14 +104,19 @@ export async function createCodingAgentSession(
     log.info("action.result", { sessionId: result.sessionId });
 
     if (initialPrompt) {
-      await startInitialRun({
-        userId,
-        project,
-        sessionId: result.sessionId,
-        modelId,
-        initialPrompt,
-        log,
-      });
+      try {
+        await startInitialRun({
+          userId,
+          project,
+          sessionId: result.sessionId,
+          modelId,
+          initialPrompt,
+          log,
+        });
+      } catch (err) {
+        await deleteSession({ userId, sessionId: result.sessionId });
+        throw err;
+      }
     }
 
     return result;

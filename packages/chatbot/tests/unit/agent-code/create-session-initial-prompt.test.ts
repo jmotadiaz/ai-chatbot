@@ -30,6 +30,8 @@ const state = vi.hoisted(() => ({
   sendParams: [] as unknown[],
   streamCancelled: false,
   savedLabel: null as string | null,
+  sendRejects: false,
+  deleteCalls: [] as Array<{ userId: string; sessionId: string }>,
 }));
 
 vi.mock("@/lib/features/code/worker-client", () => ({
@@ -39,6 +41,9 @@ vi.mock("@/lib/features/code/worker-client", () => ({
       return { sessionId: "s1" };
     }
     async sendPrompt(params: unknown) {
+      if (state.sendRejects) {
+        throw new Error("Worker unreachable");
+      }
       state.sendParams.push(params);
       return {
         cancel: async () => {
@@ -60,6 +65,9 @@ vi.mock("@/lib/features/code/session-store", () => ({
   })),
   updateSessionLabel: vi.fn(async (input: { label: string }) => {
     state.savedLabel = input.label;
+  }),
+  deleteSession: vi.fn(async (input: { userId: string; sessionId: string }) => {
+    state.deleteCalls.push(input);
   }),
   getSession: vi.fn(),
 }));
@@ -121,5 +129,17 @@ describe("createCodingAgentSession", () => {
     expect(state.initParams).toHaveLength(0);
     expect(state.sendParams).toHaveLength(0);
     expect(state.savedLabel).toBeNull();
+  });
+
+  it("deletes the session row when startInitialRun fails and rethrows", async () => {
+    state.sendRejects = true;
+
+    await expect(
+      createCodingAgentSession("p", "Deepseek v4 Pro", "# Fail"),
+    ).rejects.toThrow("Worker unreachable");
+
+    expect(state.deleteCalls).toEqual([
+      { userId: "user-1", sessionId: "s1" },
+    ]);
   });
 });

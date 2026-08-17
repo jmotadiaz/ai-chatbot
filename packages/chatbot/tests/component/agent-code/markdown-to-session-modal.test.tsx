@@ -13,6 +13,31 @@ const mocks = vi.hoisted(() => ({
   createCodingAgentSession: vi.fn(),
   push: vi.fn(),
   modelId: "Deepseek v4 Pro",
+  promptMock: [
+    {
+      name: "summarize",
+      description: "Summarize a document",
+      inputs: [
+        {
+          name: "length",
+          kind: "string",
+          description: "Length",
+          required: false,
+          default: "short",
+        },
+      ],
+    },
+  ] as Array<{
+    name: string;
+    description: string;
+    inputs: Array<{
+      name: string;
+      kind: string;
+      description: string;
+      required: boolean;
+      default?: string;
+    }>;
+  }>,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -45,7 +70,7 @@ vi.mock("@/lib/features/code/hooks/use-coding-agent-skills", () => ({
 
 vi.mock("@/lib/features/code/hooks/use-coding-agent-prompts", () => ({
   useCodingAgentPrompts: () => ({
-    prompts: [],
+    prompts: mocks.promptMock,
     sessions: [],
     isLoading: false,
     error: null,
@@ -63,7 +88,7 @@ vi.mock("@/lib/features/meta-prompt/hooks/use-prompt-refiner", () => ({
 
 // jsdom lacks the CSS global the Textarea autosize effect probes.
 vi.stubGlobal("CSS", { supports: () => true });
-// The component's own availabilities fetch.
+// Models fetch from /api/agent/code/models.
 vi.stubGlobal("fetch", () =>
   Promise.resolve({
     ok: true,
@@ -77,14 +102,14 @@ afterEach(() => {
   mocks.push.mockReset();
 });
 
-const renderModal = () =>
+const renderModal = (onClose?: () => void) =>
   render(
     <MarkdownToSessionModal
       path="docs/guide.md"
       content="# Guide body"
       project="p"
       sessionId="s"
-      onClose={() => {}}
+      onClose={onClose ?? (() => {})}
     />,
   );
 
@@ -136,5 +161,33 @@ describe("MarkdownToSessionModal", () => {
         "/skill:code-review\n\nDo it\n\n# Guide body",
       ),
     );
+  });
+
+  it("opens PromptFormModal without closing the main modal when a prompt template is selected", async () => {
+    const onClose = vi.fn();
+    renderModal(onClose);
+
+    // Open the skills control dropdown.
+    fireEvent.click(screen.getByLabelText("Select skills"));
+
+    // Switch to the Prompts tab.
+    fireEvent.click(screen.getByRole("tab", { name: "Prompts" }));
+
+    // Select the "summarize" prompt template.
+    fireEvent.click(screen.getByText("summarize"));
+
+    // PromptFormModal should be visible (its heading contains the prompt name).
+    await waitFor(() => {
+      expect(screen.getByText("summarize", { selector: "h2" })).toBeTruthy();
+    });
+
+    // Click inside the PromptFormModal — this must NOT close the main modal.
+    // Before the fix, the click bubbled to the overlay's onClick={onClose}.
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("dialog", { name: "New session from guide.md" }),
+    ).toBeTruthy();
   });
 });
