@@ -10,6 +10,30 @@ import {
   useFileBrowser,
 } from "@/components/code/file-browser/file-browser-provider";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+vi.mock("@/lib/features/code/actions", () => ({
+  createCodingAgentSession: vi.fn(),
+}));
+vi.mock("@/lib/features/code/hooks/use-coding-agent-session-model", () => ({
+  useCodingAgentSessionModel: () => ({ modelId: null, setModelId: vi.fn(), isLoading: false }),
+}));
+vi.mock("@/lib/features/code/hooks/use-coding-agent-skills", () => ({
+  useCodingAgentSkills: () => ({ skills: [], isLoading: false, error: null }),
+}));
+vi.mock("@/lib/features/code/hooks/use-coding-agent-prompts", () => ({
+  useCodingAgentPrompts: () => ({ prompts: [], sessions: [], isLoading: false }),
+}));
+vi.mock("@/lib/features/meta-prompt/hooks/use-prompt-refiner", () => ({
+  usePromptRefiner: () => ({
+    isLoadingRefinedPrompt: false,
+    refinePrompt: vi.fn(),
+    undo: vi.fn(),
+    hasPreviousMessage: false,
+  }),
+}));
+
 afterEach(() => {
   cleanup();
   // The store persists pending comments per session id, so tests would

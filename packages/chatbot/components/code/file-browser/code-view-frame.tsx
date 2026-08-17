@@ -8,10 +8,12 @@ import {
   Eye,
   FileQuestion,
   FileX,
+  Send,
   Trash2,
   X,
 } from "lucide-react";
 import type { ThemedToken } from "shiki";
+import { MarkdownToSessionModal } from "../markdown-to-session-modal";
 import { CodeViewLine } from "./code-view-line";
 import { FileBrowserEmptyState } from "./empty-states";
 import { useFileBrowser } from "./file-browser-provider";
@@ -119,7 +121,8 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
   selectorForIndex,
   onBack,
 }) => {
-  const { state, actions } = useFileBrowser();
+  const { state, actions, project, sessionId } = useFileBrowser();
+  const [sessionModalOpen, setSessionModalOpen] = useState(false);
 
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -235,185 +238,214 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {showPrimaryBar && (
-        <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
-          {isTree ? (
-            <div className="flex-1" />
-          ) : (
-            <span
-              className="min-w-0 flex-1 truncate px-1.5 text-sm font-medium"
-              title={path}
-            >
-              {path.split("/").pop()}
-            </span>
-          )}
-          {showDiffNav && (
-            <div className="flex shrink-0 items-center">
-              <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
-                {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
-                {navigationCount}
+    <>
+      <div className="flex h-full flex-col">
+        {showPrimaryBar && (
+          <header className="flex min-h-12 shrink-0 items-center gap-1 overflow-hidden border-b border-zinc-200 px-2 dark:border-zinc-800">
+            {isTree ? (
+              <div className="flex-1" />
+            ) : (
+              <span
+                className="min-w-0 flex-1 truncate px-1.5 text-sm font-medium"
+                title={path}
+              >
+                {path.split("/").pop()}
               </span>
-              <div className="flex -space-x-1">
-                <Button
-                  variant="icon"
-                  size="icon"
-                  type="button"
-                  aria-label="Previous diff"
-                  disabled={currentRangeIndex === null || currentRangeIndex <= 0}
-                  onClick={goToPrevDiff}
-                >
-                  <ChevronUp size={16} />
-                </Button>
-                <Button
-                  variant="icon"
-                  size="icon"
-                  type="button"
-                  aria-label="Next diff"
-                  disabled={
-                    currentRangeIndex !== null &&
-                    currentRangeIndex >= navigationCount - 1
-                  }
-                  onClick={goToNextDiff}
-                >
-                  <ChevronDown size={16} />
-                </Button>
+            )}
+            {showDiffNav && (
+              <div className="flex shrink-0 items-center">
+                <span className="mr-1 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
+                  {currentRangeIndex !== null ? currentRangeIndex + 1 : 0} /{" "}
+                  {navigationCount}
+                </span>
+                <div className="flex -space-x-1">
+                  <Button
+                    variant="icon"
+                    size="icon"
+                    type="button"
+                    aria-label="Previous diff"
+                    disabled={
+                      currentRangeIndex === null || currentRangeIndex <= 0
+                    }
+                    onClick={goToPrevDiff}
+                  >
+                    <ChevronUp size={16} />
+                  </Button>
+                  <Button
+                    variant="icon"
+                    size="icon"
+                    type="button"
+                    aria-label="Next diff"
+                    disabled={
+                      currentRangeIndex !== null &&
+                      currentRangeIndex >= navigationCount - 1
+                    }
+                    onClick={goToNextDiff}
+                  >
+                    <ChevronDown size={16} />
+                  </Button>
+                </div>
               </div>
+            )}
+            {!isTree && (
+              <Button
+                variant="icon"
+                size="icon"
+                type="button"
+                aria-label="Close file"
+                onClick={onBack}
+                className="ml-1 shrink-0"
+              >
+                <X size={20} />
+              </Button>
+            )}
+          </header>
+        )}
+
+        {/* The body is a positioning context so the markdown Raw/Preview toggle
+            can float over the content (transparent, no solid bar) at the
+            top-right, in the same spot for both the diff and file views. */}
+        <div className="relative flex-1 overflow-hidden">
+          {canRenderMarkdown && (
+            <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+              <Button
+                variant="icon"
+                size="icon"
+                type="button"
+                aria-label="Raw"
+                aria-pressed={viewMode === "raw"}
+                onClick={() => {
+                  setSelectedLine(null);
+                  setViewMode("raw");
+                }}
+                className={cn(
+                  "p-2.5 shadow-sm",
+                  viewMode === "raw"
+                    ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                    : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
+                )}
+              >
+                <Code2 size={16} />
+              </Button>
+              <Button
+                variant="icon"
+                size="icon"
+                type="button"
+                aria-label="Preview"
+                aria-pressed={viewMode === "rendered"}
+                onClick={() => {
+                  setSelectedLine(null);
+                  setViewMode("rendered");
+                }}
+                className={cn(
+                  "p-2.5 shadow-sm",
+                  viewMode === "rendered"
+                    ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                    : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
+                )}
+              >
+                <Eye size={16} />
+              </Button>
             </div>
           )}
-          {!isTree && (
-            <Button
-              variant="icon"
-              size="icon"
-              type="button"
-              aria-label="Close file"
-              onClick={onBack}
-              className="ml-1 shrink-0"
-            >
-              <X size={20} />
-            </Button>
+
+          {canRenderMarkdown && (
+            <div className="absolute bottom-2 right-2 z-10">
+              <Button
+                variant="icon"
+                size="icon"
+                type="button"
+                aria-label="Open markdown in a new coding agent session"
+                title="Open markdown in a new coding agent session"
+                onClick={() => setSessionModalOpen(true)}
+                className="bg-zinc-100 p-2.5 text-zinc-500 shadow-sm hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              >
+                <Send size={16} />
+              </Button>
+            </div>
           )}
-        </header>
-      )}
 
-      {/* The body is a positioning context so the markdown Raw/Preview toggle
-          can float over the content (transparent, no solid bar) at the
-          top-right, in the same spot for both the diff and file views. */}
-      <div className="relative flex-1 overflow-hidden">
-        {canRenderMarkdown && (
-          <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
-            <Button
-              variant="icon"
-              size="icon"
-              type="button"
-              aria-label="Raw"
-              aria-pressed={viewMode === "raw"}
-              onClick={() => {
-                setSelectedLine(null);
-                setViewMode("raw");
-              }}
-              className={cn(
-                "p-2.5 shadow-sm",
-                viewMode === "raw"
-                  ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
-                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
-              )}
-            >
-              <Code2 size={16} />
-            </Button>
-            <Button
-              variant="icon"
-              size="icon"
-              type="button"
-              aria-label="Preview"
-              aria-pressed={viewMode === "rendered"}
-              onClick={() => {
-                setSelectedLine(null);
-                setViewMode("rendered");
-              }}
-              className={cn(
-                "p-2.5 shadow-sm",
-                viewMode === "rendered"
-                  ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
-                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700",
-              )}
-            >
-              <Eye size={16} />
-            </Button>
-          </div>
-        )}
-
-        {load.status === "loading" && (
-          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-            Loading…
-          </div>
-        )}
-        {load.status === "error" && (
-          <FileBrowserEmptyState
-            Icon={FileX}
-            title="Could not open file"
-            description={load.message}
-          />
-        )}
-        {load.status === "binary" && (
-          <FileBrowserEmptyState
-            Icon={FileQuestion}
-            title="Binary file"
-            description="This file can't be shown here."
-          />
-        )}
-        {load.status === "tooLarge" && (
-          <FileBrowserEmptyState
-            Icon={FileX}
-            title="File too large"
-            description="Files over 1 MB can't be shown here."
-          />
-        )}
-
-        {load.status === "ready" && (
-        <div
-          ref={codeContainerRef}
-          className={cn("h-full overflow-auto overscroll-contain py-2")}
-        >
-          {canRenderMarkdown && viewMode === "rendered" ? (
-            <MarkdownPreview
-              content={load.sourceContent ?? ""}
-              commentsByLine={commentsByLine}
-              selectedLine={selectedLine}
-              onSelectLine={handleSelectLine}
-              renderComposer={renderCommentComposer}
-              tokensByLine={tokensByLine}
+          {load.status === "loading" && (
+            <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+              Loading…
+            </div>
+          )}
+          {load.status === "error" && (
+            <FileBrowserEmptyState
+              Icon={FileX}
+              title="Could not open file"
+              description={load.message}
             />
-          ) : (
-            load.lines.map((line) => {
-              const lineNumber = line.newLineNumber;
-              return (
-                <div
-                  key={line.id}
-                  data-line-number={lineNumber ?? undefined}
-                  data-change-index={line.navigationIndex ?? undefined}
-                >
-                  <CodeViewLine
-                    oldLineNumber={line.oldLineNumber}
-                    newLineNumber={line.newLineNumber}
-                    tokens={line.tokens}
-                    changeKind={line.changeKind}
-                    hasComment={
-                      lineNumber !== null && commentsByLine.has(lineNumber)
-                    }
-                    isSelected={selectedLine === lineNumber}
-                    onSelect={handleSelectLine}
-                  />
-                  {lineNumber !== null &&
-                    selectedLine === lineNumber &&
-                    renderCommentComposer(lineNumber)}
-                </div>
-              );
-            })
+          )}
+          {load.status === "binary" && (
+            <FileBrowserEmptyState
+              Icon={FileQuestion}
+              title="Binary file"
+              description="This file can't be shown here."
+            />
+          )}
+          {load.status === "tooLarge" && (
+            <FileBrowserEmptyState
+              Icon={FileX}
+              title="File too large"
+              description="Files over 1 MB can't be shown here."
+            />
+          )}
+
+          {load.status === "ready" && (
+            <div
+              ref={codeContainerRef}
+              className={cn("h-full overflow-auto overscroll-contain py-2")}
+            >
+              {canRenderMarkdown && viewMode === "rendered" ? (
+                <MarkdownPreview
+                  content={load.sourceContent ?? ""}
+                  commentsByLine={commentsByLine}
+                  selectedLine={selectedLine}
+                  onSelectLine={handleSelectLine}
+                  renderComposer={renderCommentComposer}
+                  tokensByLine={tokensByLine}
+                />
+              ) : (
+                load.lines.map((line) => {
+                  const lineNumber = line.newLineNumber;
+                  return (
+                    <div
+                      key={line.id}
+                      data-line-number={lineNumber ?? undefined}
+                      data-change-index={line.navigationIndex ?? undefined}
+                    >
+                      <CodeViewLine
+                        oldLineNumber={line.oldLineNumber}
+                        newLineNumber={line.newLineNumber}
+                        tokens={line.tokens}
+                        changeKind={line.changeKind}
+                        hasComment={
+                          lineNumber !== null && commentsByLine.has(lineNumber)
+                        }
+                        isSelected={selectedLine === lineNumber}
+                        onSelect={handleSelectLine}
+                      />
+                      {lineNumber !== null &&
+                        selectedLine === lineNumber &&
+                        renderCommentComposer(lineNumber)}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           )}
         </div>
-        )}
       </div>
-    </div>
+      {sessionModalOpen && load.status === "ready" && (
+        <MarkdownToSessionModal
+          path={path}
+          content={load.sourceContent ?? ""}
+          project={project}
+          sessionId={sessionId}
+          onClose={() => setSessionModalOpen(false)}
+        />
+      )}
+    </>
   );
 };
