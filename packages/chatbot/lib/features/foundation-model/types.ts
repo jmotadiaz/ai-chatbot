@@ -64,6 +64,7 @@ export interface Providers {
   deepinfra: (modelId: string) => LanguageModelV3;
   lmstudio: (modelId: string) => LanguageModelV3;
   opencodeGo: (modelId: string) => LanguageModelV3;
+  opencodeZen: (modelId: string) => LanguageModelV3;
   embedding: () => EmbeddingModelV3;
   rerank: () => (
     args: Omit<Parameters<typeof rerank>[0], "model">,

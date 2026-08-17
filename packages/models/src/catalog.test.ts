@@ -43,6 +43,7 @@ describe("MODEL_CATALOG integrity", () => {
   it("exposes exactly the coding-agent models as invocable, in order", () => {
     expect([...INVOCABLE_MODEL_IDS]).toEqual([
       "Deepseek v4 Flash",
+      "Deepseek v4 Flash (free)",
       "Deepseek v4 Pro",
       "Kimi K2.7 Code",
       "Kimi K3",

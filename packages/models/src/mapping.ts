@@ -7,6 +7,10 @@ export function toPiProviderId(kind: ProviderKind): string {
   switch (kind) {
     case "opencodeGo":
       return PI_PROVIDER;
+    // Pi trae OpenCode Zen como provider built-in "opencode" (env
+    // OPENCODE_API_KEY, la misma que opencode-go).
+    case "opencodeZen":
+      return "opencode";
     // Pi ships the Vercel AI Gateway as a built-in provider (env key
     // AI_GATEWAY_API_KEY), so gateway models need no custom provider config.
     case "gateway":

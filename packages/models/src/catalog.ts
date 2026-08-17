@@ -18,6 +18,7 @@ export type Company =
 
 export type ProviderKind =
   | "opencodeGo"
+  | "opencodeZen"
   | "gateway"
   | "openrouter"
   | "openai"
@@ -89,6 +90,30 @@ export const MODEL_CATALOG = [
     temperature: 1,
     topP: 0.95,
     providerOptions: { gateway: { zeroDataRetention: true } },
+  },
+  {
+    // Variante free servida por OpenCode Zen (provider "opencode" built-in
+    // de Pi). Los baselines solo cubren opencode-go, así que la entrada se
+    // describe a sí misma: valores espejo de la definición built-in de
+    // Pi 0.79.3.
+    id: "Deepseek v4 Flash (free)",
+    userInvocable: true,
+    provider: { kind: "opencodeZen", modelId: "deepseek-v4-flash-free" },
+    company: "deepseek",
+    reasoning: true,
+    defaultThinkingLevel: "xhigh",
+    thinkingLevelMap: {
+      minimal: null,
+      low: null,
+      medium: null,
+      high: "high",
+      xhigh: "max",
+    },
+    contextWindow: 200_000,
+    maxTokens: 128_000,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    temperature: 1,
+    topP: 0.95,
   },
   {
     id: "Deepseek v4 Pro",

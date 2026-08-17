@@ -34,6 +34,19 @@ function getOpenCodeGo() {
   return _opencodeGo;
 }
 
+let _opencodeZen: ReturnType<typeof createOpenAICompatible> | null = null;
+
+function getOpenCodeZen() {
+  if (!_opencodeZen) {
+    _opencodeZen = createOpenAICompatible({
+      name: "opencode-zen",
+      apiKey: config.opencodeZenApiKey(),
+      baseURL: "https://opencode.ai/zen/v1",
+    });
+  }
+  return _opencodeZen;
+}
+
 const openrouter = createOpenRouter();
 
 let _deepinfra: ReturnType<typeof createOpenAICompatible> | null = null;
@@ -68,6 +81,7 @@ export const providers: Providers = (() => {
       deepinfra: (modelId: string) => getDeepInfra()(modelId),
       lmstudio: (modelId: string) => lmstudio(modelId),
       opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
+      opencodeZen: (modelId: string) => getOpenCodeZen()(modelId),
       embedding: () => google.embeddingModel("gemini-embedding-001"),
       rerank: () => async (args) => {
         const { ranking } = await rerank({
@@ -111,6 +125,7 @@ export const providers: Providers = (() => {
     deepinfra: lookupMock("deepinfra"),
     lmstudio: lookupMock("lmstudio"),
     opencodeGo: lookupMock("opencodeGo"),
+    opencodeZen: lookupMock("opencodeZen"),
     embedding: () => createMockEmbeddingModel(),
     rerank: () => async () => [],
   };

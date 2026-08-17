@@ -50,7 +50,7 @@ Nota de acoplamiento: añadir `"opencodeZen"` a `ProviderKind` rompe el type-che
 - Consumes: `config.opencodeZenApiKey()` (paquete `config`, retorna `string | undefined`), `createOpenAICompatible` de `@ai-sdk/openai-compatible`, `lookupMock` (ya existe en `providers.ts`).
 - Produces: `ProviderKind` incluye `"opencodeZen"`; `MODEL_CATALOG` incluye la entrada `{ id: "Deepseek v4 Flash (free)", userInvocable: true, provider: { kind: "opencodeZen", modelId: "deepseek-v4-flash-free" }, ... }`; `Providers.opencodeZen: (modelId: string) => LanguageModelV3`.
 
-- [ ] **Step 1: Escribir los tests fallando (models)**
+- [x] **Step 1: Escribir los tests fallando (models)**
 
 En `packages/models/src/catalog.test.ts`, en el test "exposes exactly the coding-agent models as invocable, in order", insertar `"Deepseek v4 Flash (free)"` entre `"Deepseek v4 Flash"` y `"Deepseek v4 Pro"`:
 
@@ -96,14 +96,14 @@ describe("generateModelsJson opencode zen (free) model", () => {
 
 (Importes ya presentes en ese archivo: `generateModelsJson`, `MODEL_CATALOG`.)
 
-- [ ] **Step 2: Correr los tests para confirmar que fallan**
+- [x] **Step 2: Correr los tests para confirmar que fallan**
 
 Run: `pnpm --filter models test:unit`
 Expected: 2 fallos —
 1. `catalog.test.ts` "exposes exactly the coding-agent models as invocable, in order": la lista real no contiene `"Deepseek v4 Flash (free)"`.
 2. `generate-models-json.test.ts` "opencode zen (free) model": `TypeError` (o `Cannot read properties of undefined`) porque `generate().providers["opencode"]` no existe y el `find` devuelve `undefined`.
 
-- [ ] **Step 3: Implementar en `packages/models`**
+- [x] **Step 3: Implementar en `packages/models`**
 
 `packages/models/src/catalog.ts` — añadir `"opencodeZen"` a `ProviderKind` (tras `"opencodeGo"`):
 
@@ -159,14 +159,14 @@ export type ProviderKind =
       return "opencode";
 ```
 
-- [ ] **Step 4: Correr tests y type-check de `models`**
+- [x] **Step 4: Correr tests y type-check de `models`**
 
 Run: `pnpm --filter models test:unit && pnpm --filter models type:check`
 Expected: PASS (todos los tests de models, sin errores de tipos).
 
 Nota: en este punto el type-check del chatbot está roto a propósito (`ProviderKind` incluye `"opencodeZen"` pero `Providers` aún no). No commitear hasta completar el Step 6.
 
-- [ ] **Step 5: Añadir la key `opencodeZen` en el chatbot**
+- [x] **Step 5: Añadir la key `opencodeZen` en el chatbot**
 
 `packages/chatbot/lib/features/foundation-model/types.ts` — en `interface Providers`, tras la línea `opencodeGo: (modelId: string) => LanguageModelV3;`:
 
@@ -203,12 +203,12 @@ Cableado en la rama test (tras `opencodeGo: lookupMock("opencodeGo"),`):
     opencodeZen: lookupMock("opencodeZen"),
 ```
 
-- [ ] **Step 6: Verificar el chatbot**
+- [x] **Step 6: Verificar el chatbot**
 
 Run: `pnpm --filter chatbot type:check && pnpm --filter chatbot test:unit`
 Expected: PASS (type-check limpio; los 216+ tests unit existentes siguen pasando — la rama test resuelve el nuevo provider vía `lookupMock`/`createMockModel` genéricos).
 
-- [ ] **Step 7: Verify completo + commit**
+- [x] **Step 7: Verify completo + commit**
 
 Run: `pnpm verify:fast`
 Expected: PASS en todos los paquetes (models, chatbot, coding-agent, config, tracing).

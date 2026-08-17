@@ -290,3 +290,30 @@ describe("generateModelsJson custom providers", () => {
     expect(providers["opencode-go"].models.length).toBeGreaterThan(0);
   });
 });
+
+describe("generateModelsJson opencode zen (free) model", () => {
+  it("emits deepseek-v4-flash-free under the built-in opencode provider, fully self-described", () => {
+    // Pi trae el modelo built-in (provider "opencode"), pero los baselines
+    // solo cubren opencode-go: la entrada se auto-describe y sobrevive con
+    // builtIns vacías.
+    const entry = MODEL_CATALOG.find((e) => e.id === "Deepseek v4 Flash (free)")!;
+    const [model] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode"].models;
+    expect(model).toEqual({
+      id: "deepseek-v4-flash-free",
+      name: "Deepseek v4 Flash (free)",
+      reasoning: true,
+      input: ["text"],
+      contextWindow: 200_000,
+      maxTokens: 128_000,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      thinkingLevelMap: {
+        minimal: null,
+        low: null,
+        medium: null,
+        high: "high",
+        xhigh: "max",
+      },
+    });
+  });
+});
