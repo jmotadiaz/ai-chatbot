@@ -6,16 +6,19 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { getDefaultThinkingLevel, toChatModelId } from "models";
+import { getDefaultThinkingLevel, toChatModelId, toPiModelId } from "models";
 import type { InvocableModelId, ThinkingLevel } from "models";
 import { config, optional } from "config";
 import { listProjects } from "./project-resolver";
 import {
   createSession,
-  listSessions,
   getSession,
+  listSessions,
+  updateSessionLabel,
 } from "./session-store";
 import { WorkerClient } from "./worker-client";
+import { parseLeadingSkillCommands } from "./skill-commands";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { auth } from "@/lib/features/auth/auth-config";
 
 function assertEnabled() {
@@ -84,14 +87,89 @@ export async function getCodingAgentSessions(project: string) {
   });
 }
 
-export async function createCodingAgentSession(project: string, modelId?: string) {
+export async function createCodingAgentSession(
+  project: string,
+  modelId?: string,
+  initialPrompt?: string,
+) {
   return withActionTrace("createCodingAgentSession", async (log) => {
     assertEnabled();
     const userId = await getUserId();
-    const result = await createSession({ userId, project, modelId });
+    const result = await createSession({
+      userId,
+      project,
+      modelId: modelId || undefined,
+    });
     log.info("action.result", { sessionId: result.sessionId });
+
+    if (initialPrompt) {
+      await startInitialRun({
+        userId,
+        project,
+        sessionId: result.sessionId,
+        modelId,
+        initialPrompt,
+        log,
+      });
+    }
+
     return result;
   });
+}
+
+/**
+ * A session created from the Markdown button carries its first prompt in the
+ * same request: the worker starts the first turn detached (events land in the
+ * session event log) before the client ever connects, so navigating to the
+ * session later just reconnects and replays like any open session.
+ */
+async function startInitialRun(args: {
+  userId: string;
+  project: string;
+  sessionId: string;
+  modelId?: string;
+  initialPrompt: string;
+  log: ReturnType<typeof getTraceLogger>;
+}) {
+  const { userId, project, sessionId, modelId, initialPrompt, log } = args;
+  const runId = crypto.randomUUID();
+  const client = new WorkerClient();
+
+  const piModelId = modelId ? toPiModelId(modelId as chatModelId) : undefined;
+  const modelRef = piModelId
+    ? `${piModelId.providerId}/${piModelId.modelId}`
+    : undefined;
+  const thinkingLevel = modelId
+    ? getDefaultThinkingLevel(modelId as chatModelId)
+    : undefined;
+
+  await client.initializeSession({
+    userId,
+    sessionId,
+    project,
+    modelId: modelRef,
+    thinkingLevel,
+    _traceRunId: runId,
+  });
+
+  const stream = await client.sendPrompt({
+    sessionId,
+    prompt: initialPrompt,
+    _traceRunId: runId,
+  });
+  // The turn is detached from this request: closing the relay stream must not
+  // abort it. The worker retains the run sink and keeps logging to the event
+  // log, which is what a later reconnect replays.
+  await stream.cancel().catch(() => {});
+
+  const label = parseLeadingSkillCommands(initialPrompt).text
+    .trim()
+    .split("\n")[0]
+    ?.slice(0, 80);
+  if (label) {
+    await updateSessionLabel({ userId, sessionId, label });
+  }
+  log.info("initial_run_started", { sessionId, modelRef, runId });
 }
 
 export async function getCodingAgentSession(project: string, sessionId: string) {
