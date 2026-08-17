@@ -44,7 +44,9 @@ describe("generateModelsJson", () => {
       (p) => p.models,
     );
     expect(allModels).toHaveLength(INVOCABLE_MODEL_IDS.length);
-    expect(allModels.map((m) => m.name)).toEqual([...INVOCABLE_MODEL_IDS]);
+    // Models are grouped by provider (opencode-go first, then gateway/openrouter),
+    // so the order differs from INVOCABLE_MODEL_IDS (catalog order).
+    expect(new Set(allModels.map((m) => m.name))).toEqual(new Set(INVOCABLE_MODEL_IDS));
   });
 
   it("uses the provider modelId as Pi id", () => {
@@ -235,7 +237,9 @@ describe("generateModelsJson custom providers", () => {
   });
 
   it("describes the Muse Spark model fully", () => {
-    const [muse] = generate().providers["vercel-ai-gateway"].models;
+    const muse = generate().providers["vercel-ai-gateway"].models.find(
+      (m) => m.name === "Muse Spark 1.2",
+    );
     expect(muse).toEqual({
       id: "meta/muse-spark-1.2-contributor",
       name: "Muse Spark 1.2",

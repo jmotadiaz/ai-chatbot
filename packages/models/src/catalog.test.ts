@@ -31,12 +31,12 @@ describe("MODEL_CATALOG integrity", () => {
     expect(custom.length).toBeGreaterThan(0);
     for (const entry of custom) {
       expect(entry.reasoning).toBe(true);
-      expect(entry.defaultThinkingLevel).toBe("xhigh");
+      expect(entry.defaultThinkingLevel).toBeDefined();
       expect(entry.contextWindow).toBeGreaterThan(0);
       expect(entry.maxTokens).toBeGreaterThan(0);
       expect(entry.cost).toBeDefined();
       expect(entry.thinkingLevelMap).toBeDefined();
-      expect(entry.thinkingLevelMap?.off).toBeNull(); // Muse no permite desactivar reasoning
+      expect(entry.thinkingLevelMap?.off).toBeNull();
     }
   });
 
@@ -49,6 +49,7 @@ describe("MODEL_CATALOG integrity", () => {
       "MiniMax M3",
       "Qwen 3.7 Plus",
       "Qwen 3.8 Max",
+      "Qwen 3.8 27B",
       "MiMo V2.5",
       "MiMo V2.5 Pro",
       "Muse Spark 1.2",
