@@ -290,6 +290,29 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
+  it("describes GLM 5.3 on vercel-ai-gateway fully", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "GLM 5.3")!;
+    const [glm] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["vercel-ai-gateway"].models;
+    expect(glm).toEqual({
+      id: "zai/glm-5.3",
+      name: "GLM 5.3",
+      reasoning: true,
+      input: ["text"],
+      contextWindow: 1_000_000,
+      maxTokens: 12_800,
+      cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+      thinkingLevelMap: {
+        off: null,
+        minimal: "minimal",
+        low: "low",
+        medium: "medium",
+        high: "high",
+        xhigh: "xhigh",
+      },
+    });
+  });
+
   it("keeps the opencode-go provider shape (models only, no provider config)", () => {
     const providers = generate().providers;
     expect(providers["opencode-go"].baseUrl).toBeUndefined();

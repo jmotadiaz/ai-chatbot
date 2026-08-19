@@ -268,6 +268,27 @@ export const MODEL_CATALOG = [
     supportedFiles: ["img", "pdf"],
     temperature: 0.6,
   },
+  {
+    id: "GLM 5.3",
+    userInvocable: true,
+    provider: { kind: "gateway", modelId: "zai/glm-5.3" },
+    company: "zai",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: null,
+      minimal: "minimal",
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "xhigh",
+    },
+    temperature: 0.6,
+    topP: 0.95,
+    contextWindow: 1_000_000,
+    maxTokens: 12_800,
+    cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+  },
   // --- internal / non-selectable models ---
   {
     id: "StepFun 3.5",

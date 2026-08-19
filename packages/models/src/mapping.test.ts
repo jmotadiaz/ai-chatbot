@@ -85,6 +85,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the GLM 5.3 catalog id to the vercel-ai-gateway Pi provider", () => {
+    expect(toPiModelId("GLM 5.3")).toEqual({
+      providerId: "vercel-ai-gateway",
+      modelId: "zai/glm-5.3",
+    });
+    expect(toChatModelId("vercel-ai-gateway", "zai/glm-5.3")).toBe(
+      "GLM 5.3",
+    );
+  });
+
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
       {

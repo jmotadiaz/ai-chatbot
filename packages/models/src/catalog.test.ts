@@ -55,6 +55,7 @@ describe("MODEL_CATALOG integrity", () => {
       "MiMo V2.5 Pro",
       "Muse Spark 1.2",
       "Gemini 3.7 Flash",
+      "GLM 5.3",
     ]);
   });
 
@@ -89,6 +90,7 @@ describe("defaultThinkingLevel", () => {
     expect(getDefaultThinkingLevel("Deepseek v4 Pro")).toBe("xhigh");
     expect(getDefaultThinkingLevel("Kimi K2.7 Code")).toBe("high");
     expect(getDefaultThinkingLevel("Muse Spark 1.2")).toBe("xhigh");
+    expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
   });
 
   it("returns undefined for models without a declared default", () => {
