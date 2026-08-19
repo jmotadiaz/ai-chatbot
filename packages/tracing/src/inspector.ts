@@ -24,28 +24,44 @@ interface ResolvedRunFiles {
   summary?: string;
 }
 
+let codingAgentIndex: Map<string, string> | null = null;
+
+async function getCodingAgentIndex(): Promise<Map<string, string>> {
+  if (codingAgentIndex) return codingAgentIndex;
+  codingAgentIndex = new Map();
+  const codingAgentDir = resolve(TRACE_DIR, "coding-agent");
+  try {
+    if (existsSync(codingAgentDir)) {
+      const entries = await readdir(codingAgentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const idx = entry.name.indexOf("_");
+          const runIdShort = idx !== -1 ? entry.name.slice(idx + 1) : entry.name;
+          codingAgentIndex.set(runIdShort, resolve(codingAgentDir, entry.name));
+        }
+      }
+    }
+  } catch {}
+  return codingAgentIndex;
+}
+
 async function resolveRunFiles(runId: string): Promise<ResolvedRunFiles | null> {
   const runIdShort = runId.length > 8 ? runId.slice(0, 8) : runId;
   const codingAgentDir = resolve(TRACE_DIR, "coding-agent");
   
-  // 1. Try new format under coding-agent
-  try {
-    if (existsSync(codingAgentDir)) {
-      const entries = await readdir(codingAgentDir, { withFileTypes: true });
-      const dirEntry = entries.find((e) => e.isDirectory() && e.name.endsWith(`_${runIdShort}`));
-      if (dirEntry) {
-        const dirPath = resolve(codingAgentDir, dirEntry.name);
-        return {
-          isLegacy: false,
-          dirPath,
-          lifecycle: resolve(dirPath, "lifecycle.ndjson"),
-          stream: resolve(dirPath, "stream.ndjson"),
-          errors: resolve(dirPath, "errors.ndjson"),
-          summary: resolve(dirPath, "summary.json"),
-        };
-      }
-    }
-  } catch {}
+  // 1. Try new format under coding-agent via indexed map
+  const index = await getCodingAgentIndex();
+  const dirPath = index.get(runIdShort) ?? index.get(runId);
+  if (dirPath && existsSync(dirPath)) {
+    return {
+      isLegacy: false,
+      dirPath,
+      lifecycle: resolve(dirPath, "lifecycle.ndjson"),
+      stream: resolve(dirPath, "stream.ndjson"),
+      errors: resolve(dirPath, "errors.ndjson"),
+      summary: resolve(dirPath, "summary.json"),
+    };
+  }
 
   // 2. Try legacy format in TRACE_DIR
   const legacyPath = resolve(TRACE_DIR, `${runId}.ndjson`);
@@ -116,48 +132,62 @@ interface RunListEntry {
 
 async function listAllRuns(): Promise<RunListEntry[]> {
   const list: RunListEntry[] = [];
-  
-  // 1. Scan new format directories in coding-agent
   const codingAgentDir = resolve(TRACE_DIR, "coding-agent");
+
+  // 1. Scan new format directories in coding-agent in parallel batches
   try {
     if (existsSync(codingAgentDir)) {
       const entries = await readdir(codingAgentDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const summaryPath = resolve(codingAgentDir, entry.name, "summary.json");
-          const lifecyclePath = resolve(codingAgentDir, entry.name, "lifecycle.ndjson");
-          const runIdShort = entry.name.split("_")[1] || entry.name;
-          let runId = runIdShort;
-          let sessionId: string | undefined;
-          let status = "ok";
-          let timestamp = entry.name.split("_")[0] || "";
-          
-          if (existsSync(summaryPath)) {
-            try {
-              const sumData = JSON.parse(await readFile(summaryPath, "utf8"));
-              runId = sumData.runId || runId;
-              sessionId = sumData.sessionId;
-              status = sumData.status || status;
-              if (sumData.startTime) {
-                timestamp = sumData.startTime.slice(0, 19).replace("T", " ");
-              }
-            } catch {}
-          }
-          
-          let size = 0;
-          if (existsSync(lifecyclePath)) {
-            size = (await stat(lifecyclePath)).size;
-          }
-          
-          list.push({
-            runId,
-            sessionId,
-            timestamp,
-            sizeKB: size / 1024,
-            isLegacy: false,
-            status,
-          });
-        }
+      const dirEntries = entries.filter((e) => e.isDirectory());
+      
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < dirEntries.length; i += BATCH_SIZE) {
+        const batch = dirEntries.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(async (entry) => {
+            const dirPath = resolve(codingAgentDir, entry.name);
+            const summaryPath = resolve(dirPath, "summary.json");
+            const lifecyclePath = resolve(dirPath, "lifecycle.ndjson");
+            const idx = entry.name.indexOf("_");
+            const runIdShort = idx !== -1 ? entry.name.slice(idx + 1) : entry.name;
+            let runId = runIdShort;
+            let sessionId: string | undefined;
+            let status = "ok";
+            let timestamp = idx !== -1 ? entry.name.slice(0, idx) : "";
+            let sizeKB = 0;
+
+            const [sumContent, lifeStat] = await Promise.all([
+              readFile(summaryPath, "utf8").catch(() => null),
+              stat(lifecyclePath).catch(() => null),
+            ]);
+
+            if (sumContent) {
+              try {
+                const sumData = JSON.parse(sumContent);
+                runId = sumData.runId || runId;
+                sessionId = sumData.sessionId;
+                status = sumData.status || status;
+                if (sumData.startTime) {
+                  timestamp = sumData.startTime.slice(0, 19).replace("T", " ");
+                }
+              } catch {}
+            }
+
+            if (lifeStat) {
+              sizeKB = lifeStat.size / 1024;
+            }
+
+            return {
+              runId,
+              sessionId,
+              timestamp,
+              sizeKB,
+              isLegacy: false,
+              status,
+            };
+          })
+        );
+        list.push(...batchResults);
       }
     }
   } catch {}
@@ -165,18 +195,20 @@ async function listAllRuns(): Promise<RunListEntry[]> {
   // 2. Scan legacy files in TRACE_DIR
   try {
     const entries = await readdir(TRACE_DIR, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isFile() && entry.name.endsWith(".ndjson")) {
+    const legacyFiles = entries.filter((e) => e.isFile() && e.name.endsWith(".ndjson"));
+    const legacyResults = await Promise.all(
+      legacyFiles.map(async (entry) => {
         const runId = basename(entry.name, ".ndjson");
-        const s = await stat(resolve(TRACE_DIR, entry.name));
-        list.push({
+        const s = await stat(resolve(TRACE_DIR, entry.name)).catch(() => null);
+        return {
           runId,
-          timestamp: s.mtime.toISOString().slice(0, 19).replace("T", " "),
-          sizeKB: s.size / 1024,
+          timestamp: s ? s.mtime.toISOString().slice(0, 19).replace("T", " ") : "",
+          sizeKB: s ? s.size / 1024 : 0,
           isLegacy: true,
-        });
-      }
-    }
+        };
+      })
+    );
+    list.push(...legacyResults);
   } catch {}
 
   return list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -245,7 +277,33 @@ async function findRunsBySessionId(sessionId: string): Promise<SessionRunEntry[]
   const runs = await listAllRuns();
   const matches: SessionRunEntry[] = [];
 
+  // Filter candidates: only inspect runs that match or could match sessionId
   for (const run of runs) {
+    const isDirectMatch = Boolean(
+      run.sessionId && (run.sessionId === sessionId || run.sessionId.includes(sessionId))
+    );
+
+    // If it's a segmented run with a known non-matching sessionId, skip loading full events
+    if (run.sessionId && !isDirectMatch) {
+      continue;
+    }
+
+    // For legacy runs or runs without sessionId in summary, do a fast substring check before reading all events
+    if (!isDirectMatch) {
+      const resolved = await resolveRunFiles(run.runId);
+      if (!resolved) continue;
+      try {
+        const lifecycleContent = existsSync(resolved.lifecycle)
+          ? await readFile(resolved.lifecycle, "utf-8")
+          : "";
+        if (!lifecycleContent.includes(sessionId)) {
+          continue;
+        }
+      } catch {
+        continue;
+      }
+    }
+
     let events: TraceRecord[] = [];
     try {
       events = await readRunEvents(run.runId);
@@ -253,7 +311,7 @@ async function findRunsBySessionId(sessionId: string): Promise<SessionRunEntry[]
       continue;
     }
     const matching = events.filter((event) => eventMatchesSessionId(event, sessionId));
-    if (run.sessionId !== sessionId && matching.length === 0) continue;
+    if (!isDirectMatch && matching.length === 0) continue;
 
     const relevant = matching.length > 0 ? matching : events;
     matches.push({

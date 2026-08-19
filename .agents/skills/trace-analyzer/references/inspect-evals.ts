@@ -46,12 +46,16 @@ interface EvalTrace {
   }>
 }
 
-function loadEvalTraces(): EvalTrace[] {
+function loadEvalTraces(limit?: number): EvalTrace[] {
   try {
-    const files = readdirSync(tracesDir)
+    let files = readdirSync(tracesDir)
       .filter((f) => f.endsWith(".json"))
       .sort()
       .reverse()
+
+    if (limit && limit > 0) {
+      files = files.slice(0, limit);
+    }
 
     return files.map((f) => {
       const content = readFileSync(resolve(tracesDir, f), "utf8")
@@ -71,28 +75,44 @@ interface ResolvedChatbotRun {
   summary?: string;
 }
 
+let chatbotIndex: Map<string, string> | null = null;
+
+function getChatbotIndex(): Map<string, string> {
+  if (chatbotIndex) return chatbotIndex;
+  chatbotIndex = new Map();
+  const chatbotDir = resolve(tracesDir, "chatbot");
+  try {
+    if (existsSync(chatbotDir)) {
+      const entries = readdirSync(chatbotDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const idx = entry.name.indexOf("_");
+          const runIdShort = idx !== -1 ? entry.name.slice(idx + 1) : entry.name;
+          chatbotIndex.set(runIdShort, resolve(chatbotDir, entry.name));
+        }
+      }
+    }
+  } catch {}
+  return chatbotIndex;
+}
+
 function resolveChatbotRunFiles(runId: string): ResolvedChatbotRun | null {
   const runIdShort = runId.length > 8 ? runId.slice(0, 8) : runId;
   const chatbotDir = resolve(tracesDir, "chatbot");
 
-  // 1. New segmented format
-  try {
-    if (existsSync(chatbotDir)) {
-      const entries = readdirSync(chatbotDir, { withFileTypes: true });
-      const dirEntry = entries.find((e) => e.isDirectory() && e.name.endsWith(`_${runIdShort}`));
-      if (dirEntry) {
-        const dirPath = resolve(chatbotDir, dirEntry.name);
-        return {
-          isLegacy: false,
-          dirPath,
-          lifecycle: resolve(dirPath, "lifecycle.ndjson"),
-          stream: resolve(dirPath, "stream.ndjson"),
-          errors: resolve(dirPath, "errors.ndjson"),
-          summary: resolve(dirPath, "summary.json"),
-        };
-      }
-    }
-  } catch {}
+  // 1. New segmented format via index
+  const index = getChatbotIndex();
+  const dirPath = index.get(runIdShort) ?? index.get(runId);
+  if (dirPath && existsSync(dirPath)) {
+    return {
+      isLegacy: false,
+      dirPath,
+      lifecycle: resolve(dirPath, "lifecycle.ndjson"),
+      stream: resolve(dirPath, "stream.ndjson"),
+      errors: resolve(dirPath, "errors.ndjson"),
+      summary: resolve(dirPath, "summary.json"),
+    };
+  }
 
   // 2. Legacy format
   const legacyPath = resolve(tracesDir, `${runId}.ndjson`);
@@ -355,14 +375,14 @@ const command = args[0] || "summary"
 
 switch (command) {
   case "summary": {
-    const traces = loadEvalTraces()
+    const traces = loadEvalTraces(10)
     if (traces.length === 0) {
       console.log("No hay trazas. Ejecuta primero: pnpm eval -c compaction")
       break
     }
 
     console.log("\nÚltimas 10 ejecuciones:\n")
-    traces.slice(0, 10).forEach((t, i) => {
+    traces.forEach((t, i) => {
       const hasNdjson = t.traceRunId ? findNdjsonForRun(t.traceRunId) !== null : false
       console.log(`${i + 1}. [${t.status.toUpperCase()}] ${t.eval_name}`)
       console.log(`   Started: ${t.started_at}`)
@@ -382,7 +402,7 @@ switch (command) {
   }
 
   case "last": {
-    const traces = loadEvalTraces()
+    const traces = loadEvalTraces(1)
     if (traces.length === 0) {
       console.log("No hay trazas. Ejecuta primero: pnpm eval -c compaction")
       break
@@ -403,7 +423,7 @@ switch (command) {
   }
 
   case "compact": {
-    const traces = loadEvalTraces()
+    const traces = loadEvalTraces(1)
     if (traces.length === 0) {
       console.log("No hay trazas")
       break
@@ -469,7 +489,7 @@ switch (command) {
   }
 
   case "conversation": {
-    const traces = loadEvalTraces()
+    const traces = loadEvalTraces(1)
     if (traces.length === 0) {
       console.log("No hay trazas")
       break
@@ -496,7 +516,7 @@ switch (command) {
   }
 
   case "judge": {
-    const traces = loadEvalTraces()
+    const traces = loadEvalTraces(1)
     if (traces.length === 0) {
       console.log("No hay trazas")
       break
