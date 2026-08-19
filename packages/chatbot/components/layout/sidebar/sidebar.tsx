@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { User } from "next-auth";
+import { config } from "config";
 import { SidebarContainer } from "@/components/layout/sidebar/container";
 import { SidebarContent } from "@/components/layout/sidebar/content";
 import { SidebarFooter } from "@/components/layout/sidebar/footer";
@@ -14,7 +15,11 @@ import {
 } from "@/components/layout/sidebar/chat-list";
 import { UserMenu } from "@/components/layout/sidebar/user-menu";
 import { RAGNav } from "@/components/layout/sidebar/rag-nav";
-import { AgentCodeNav } from "@/components/layout/sidebar/agent-code-nav";
+import {
+  AgentCodeSection,
+  AgentCodeSectionLoading,
+} from "@/components/layout/sidebar/agent-code-section";
+import { getCodingAgentProjects } from "@/lib/features/code/actions";
 import { getChats } from "@/lib/features/chat/queries";
 import { NewChatSidebar } from "@/components/chat/new";
 import { Authenticated } from "@/lib/features/auth/with-auth/hoc";
@@ -35,7 +40,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex flex-col gap-1">
           <NewChatSidebar />
           <RAGNav />
-          <AgentCodeNav />
+          <Suspense fallback={<AgentCodeSectionLoading className="my-0 mt-4" />}>
+            <AgentCodeProjects />
+          </Suspense>
           <Suspense fallback={<ProjectListLoading className="my-0 mt-4" />}>
             <ProjectList
               className="my-0 mt-4"
@@ -61,6 +68,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 interface ChatsProps extends Omit<ChatListProps, "chats"> {
   user: User;
 }
+
+const AgentCodeProjects: React.FC = async () => {
+  if (!config.codingAgentEnabled()) return null;
+  const projects = await getCodingAgentProjects();
+  return <AgentCodeSection projects={projects} />;
+};
 
 const Chats: React.FC<ChatsProps> = async ({ chatId, className, user }) => {
   const { chats } = await getChats({
