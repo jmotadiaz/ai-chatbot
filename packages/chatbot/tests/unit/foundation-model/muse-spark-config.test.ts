@@ -11,7 +11,9 @@ describe("Muse Spark 1.2 in the chat model configuration", () => {
     const cfg = languageModelConfigurations("Muse Spark 1.2");
     expect(cfg.company).toBe("meta");
     expect(cfg.reasoning).toBe(true);
-    expect(cfg.temperature).toBeUndefined();
+    expect(cfg.temperature).toBe(1);
+    expect(cfg.topP).toBe(0.95);
+    expect(cfg.topK).toBe(64);
     expect(cfg.supportedFiles).toBeUndefined();
   });
 

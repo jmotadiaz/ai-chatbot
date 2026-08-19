@@ -63,9 +63,9 @@ describe("model mapping", () => {
   });
 
   it("maps the vercel-ai-gateway Pi model back to the catalog id", () => {
-    expect(toChatModelId("vercel-ai-gateway", "meta/muse-spark-1.2-contributor")).toBe(
-      "Muse Spark 1.2",
-    );
+    expect(
+      toChatModelId("vercel-ai-gateway", "meta/muse-spark-1.2-contributor"),
+    ).toBe("Muse Spark 1.2");
     expect(toChatModelId("vercel-ai-gateway", "unknown-model")).toBeUndefined();
   });
 
@@ -75,19 +75,22 @@ describe("model mapping", () => {
     expect(toPiProviderId("openrouter")).toBe("openrouter");
   });
 
-  it("maps the Gemini 3.7 Flash catalog id to the openrouter Pi provider", () => {
+  it("maps the Gemini 3.7 Flash catalog id to the vercel-ai-gateway Pi provider", () => {
     expect(toPiModelId("Gemini 3.7 Flash")).toEqual({
-      providerId: "openrouter",
+      providerId: "vercel-ai-gateway",
       modelId: "google/gemini-3.7-flash",
     });
-    expect(toChatModelId("openrouter", "google/gemini-3.7-flash")).toBe(
+    expect(toChatModelId("vercel-ai-gateway", "google/gemini-3.7-flash")).toBe(
       "Gemini 3.7 Flash",
     );
   });
 
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
-      { providerId: "vercel-ai-gateway", modelId: "meta/muse-spark-1.2-contributor" },
+      {
+        providerId: "vercel-ai-gateway",
+        modelId: "meta/muse-spark-1.2-contributor",
+      },
       { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
       { providerId: "opencode-go", modelId: "unknown-model" },
     ]);

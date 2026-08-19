@@ -34,6 +34,7 @@ function getOpenCodeGo() {
   return _opencodeGo;
 }
 
+
 let _opencodeZen: ReturnType<typeof createOpenAICompatible> | null = null;
 
 function getOpenCodeZen() {

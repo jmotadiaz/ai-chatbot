@@ -245,6 +245,23 @@ export class PiToAguiTranslator {
           }
           this.activeToolCalls.clear();
         }
+
+        if (
+          event.message?.role === "assistant" &&
+          (event.message?.stopReason === "error" ||
+            event.message?.stopReason === "aborted" ||
+            event.message?.errorMessage)
+        ) {
+          out.push({
+            type: EventType.RUN_ERROR,
+            threadId,
+            runId,
+            message:
+              event.message.errorMessage ??
+              `Assistant finished with ${event.message.stopReason}`,
+            timestamp: this.now(),
+          } as BaseEvent);
+        }
         break;
       }
 

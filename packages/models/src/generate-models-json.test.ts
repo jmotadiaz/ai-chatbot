@@ -12,10 +12,18 @@ import {
 const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
+const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max"]);
+
+/** Stand-in for what Pi reports about the models it already ships. */
 const builtIns = new Map<string, PiModelBaseline>(
-  // Pi only ships opencode-go models; custom-provider models (e.g. Muse
-  // Spark) have no built-in baseline and must be described by the catalog.
-  MODEL_CATALOG.filter((e) => e.userInvocable && e.provider.kind === "opencodeGo").map((e) => [
+  // Pi only ships standard opencode-go models; models not in Pi's built-ins
+  // (e.g. Kimi K3, Qwen 3.8 Max, Muse Spark) have no baseline and must be described by the catalog.
+  MODEL_CATALOG.filter(
+    (e) =>
+      e.userInvocable &&
+      e.provider.kind === "opencodeGo" &&
+      !NOT_BUILT_IN.has(e.provider.modelId),
+  ).map((e) => [
     e.provider.modelId,
     {
       reasoning: true,
@@ -259,10 +267,10 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
-  it("describes Gemini 3.7 Flash, which Pi does not ship on openrouter", () => {
+  it("describes Gemini 3.7 Flash, which Pi does not ship on vercel-ai-gateway", () => {
     const entry = MODEL_CATALOG.find((e) => e.id === "Gemini 3.7 Flash")!;
     const [flash] = generateModelsJson([entry], { builtIns: new Map() })
-      .providers["openrouter"].models;
+      .providers["vercel-ai-gateway"].models;
     expect(flash).toEqual({
       id: "google/gemini-3.7-flash",
       name: "Gemini 3.7 Flash",

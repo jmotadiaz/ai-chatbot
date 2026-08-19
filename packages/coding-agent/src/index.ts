@@ -33,6 +33,8 @@ export interface CodingAgentMessage {
   role?: string;
   toolCallId?: string;
   content?: string | ContentBlock[];
+  stopReason?: string;
+  errorMessage?: string;
   /**
    * Set once when the Pi message is created and never rewritten afterward —
    * stable across `message_start`/`message_update`/`message_end` for the

@@ -237,19 +237,21 @@ export const MODEL_CATALOG = [
       high: "high",
       xhigh: "xhigh",
     },
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
     contextWindow: 1_048_576,
     maxTokens: 131_072,
     cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0.002 },
   },
   {
-    // OpenRouter model Pi does not ship, so it describes its own limits and
-    // cost — values from the OpenRouter API. Reasoning is mandatory and the
-    // provider only supports low/medium/high effort, so off/minimal are
-    // hidden and xhigh is not exposed; the highest supported level (high)
-    // is the session default.
+    // Gateway model Pi does not ship, so it describes its own limits and
+    // cost. Reasoning is mandatory and the provider only supports
+    // low/medium/high effort, so off/minimal are hidden and xhigh is not
+    // exposed; the highest supported level (high) is the session default.
     id: "Gemini 3.7 Flash",
     userInvocable: true,
-    provider: { kind: "openrouter", modelId: "google/gemini-3.7-flash" },
+    provider: { kind: "gateway", modelId: "google/gemini-3.7-flash" },
     company: "google",
     reasoning: true,
     defaultThinkingLevel: "high",
