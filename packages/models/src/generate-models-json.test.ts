@@ -12,7 +12,7 @@ import {
 const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
-const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max"]);
+const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max", "glm-5.2"]);
 
 /** Stand-in for what Pi reports about the models it already ships. */
 const builtIns = new Map<string, PiModelBaseline>(
@@ -134,6 +134,22 @@ describe("generateModelsJson", () => {
       cacheWrite: 3.125,
     });
     expect(max.reasoning).toBe(true);
+  });
+
+  it("describes GLM 5.2, which Pi does not ship yet on opencode-go", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "GLM 5.2")!;
+    const [glm] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(glm.id).toBe("glm-5.2");
+    expect(glm.contextWindow).toBe(1_000_000);
+    expect(glm.maxTokens).toBe(128_000);
+    expect(glm.cost).toEqual({
+      input: 1.4,
+      output: 4.4,
+      cacheRead: 0.26,
+      cacheWrite: 0,
+    });
+    expect(glm.reasoning).toBe(true);
   });
 
   it("throws for a model Pi does not know and the catalog does not describe", () => {

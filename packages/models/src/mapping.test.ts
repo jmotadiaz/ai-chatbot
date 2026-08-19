@@ -95,6 +95,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the GLM 5.2 catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("GLM 5.2")).toEqual({
+      providerId: "opencode-go",
+      modelId: "glm-5.2",
+    });
+    expect(toChatModelId("opencode-go", "glm-5.2")).toBe(
+      "GLM 5.2",
+    );
+  });
+
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
       {

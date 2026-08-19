@@ -289,6 +289,19 @@ export const MODEL_CATALOG = [
     maxTokens: 12_800,
     cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
   },
+  {
+    id: "GLM 5.2",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "glm-5.2" },
+    company: "zai",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    temperature: 0.6,
+    topP: 0.95,
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+  },
   // --- internal / non-selectable models ---
   {
     id: "StepFun 3.5",
