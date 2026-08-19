@@ -79,4 +79,32 @@ describe("session-store", () => {
     const found = await getSession({ userId, sessionId: session.sessionId });
     expect(found?.label).toBe("Refactor");
   });
+
+  it("lists at most N sessions when a limit is given", async () => {
+    await seedUser();
+    for (let i = 0; i < 12; i++) {
+      await createSession({
+        userId,
+        project,
+        modelId: "Deepseek v4 Pro",
+        label: `Session ${String(i).padStart(2, "0")}`,
+      });
+    }
+    const sessions = await listSessions({ userId, project, limit: 10 });
+    expect(sessions).toHaveLength(10);
+  });
+
+  it("returns all sessions when no limit is given", async () => {
+    await seedUser();
+    for (let i = 0; i < 12; i++) {
+      await createSession({
+        userId,
+        project,
+        modelId: "Deepseek v4 Pro",
+        label: `Session ${String(i).padStart(2, "0")}`,
+      });
+    }
+    const sessions = await listSessions({ userId, project });
+    expect(sessions).toHaveLength(12);
+  });
 });

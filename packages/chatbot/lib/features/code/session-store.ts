@@ -42,8 +42,12 @@ export async function getSession(input: { userId: string; sessionId: string }) {
   return row;
 }
 
-export async function listSessions(input: { userId: string; project: string }) {
-  return getDb()
+export async function listSessions(input: {
+  userId: string;
+  project: string;
+  limit?: number;
+}) {
+  const query = getDb()
     .select()
     .from(codingAgentSessions)
     .where(
@@ -54,6 +58,10 @@ export async function listSessions(input: { userId: string; project: string }) {
       ),
     )
     .orderBy(desc(codingAgentSessions.updatedAt));
+  if (input.limit !== undefined) {
+    query.limit(input.limit);
+  }
+  return query;
 }
 
 export async function updateSessionLabel(input: {

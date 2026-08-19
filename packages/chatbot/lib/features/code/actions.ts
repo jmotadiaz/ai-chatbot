@@ -78,11 +78,11 @@ export async function getCodingAgentProjects() {
   });
 }
 
-export async function getCodingAgentSessions(project: string) {
+export async function getCodingAgentSessions(project: string, limit?: number) {
   return withActionTrace("getCodingAgentSessions", async (log) => {
     assertEnabled();
     const userId = await getUserId();
-    const result = await listSessions({ userId, project });
+    const result = await listSessions({ userId, project, limit });
     log.info("action.result", { count: result.length });
     return result;
   });
