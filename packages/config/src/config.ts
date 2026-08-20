@@ -65,4 +65,4 @@ export function optional<T>(get: () => T): T | undefined {
 }
 
 /** Claves dinámicas que se leen vía readEnv (escape hatch documentado). */
-export const DYNAMIC_ENV_KEYS: EnvKey[] = ["CODING_AGENT_SUPERPOWERS_REF"];
+export const DYNAMIC_ENV_KEYS: EnvKey[] = [];

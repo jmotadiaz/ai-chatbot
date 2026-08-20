@@ -16,7 +16,6 @@ describe("ENV_CATALOG", () => {
       "TRACE_RUN_ID", "TRACE_DIR",
       // coding-agent
       "CODING_AGENT_MODELS_JSON", "CODING_AGENT_AGENT_DIR", "CODING_AGENT_PI_PACKAGES_DIR",
-      "CODING_AGENT_SUPERPOWERS_REF",
       // tracing
       "TRACE_ENABLED", "TRACE_RAW",
       // system/framework

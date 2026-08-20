@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { existsSync } from "node:fs";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -16,19 +17,23 @@ const { getExtensionPaths, getFirstPartyExtensionPaths } = await import(
 );
 
 describe("first-party extension paths", () => {
-  it("includes the subagent extension dir by default", () => {
+  it("includes subagent and superpowers extension dirs by default", () => {
     const paths = getExtensionPaths();
     expect(paths.some((p: string) => p.endsWith("extensions/subagent"))).toBe(true);
+    expect(paths.some((p: string) => p.endsWith("extensions/superpowers"))).toBe(true);
   });
 
   it("excludes the subagent extension when includeSubagentExtension is false", () => {
     const paths = getExtensionPaths({ includeSubagentExtension: false });
     expect(paths.some((p: string) => p.endsWith("extensions/subagent"))).toBe(false);
+    expect(paths.some((p: string) => p.endsWith("extensions/superpowers"))).toBe(true);
   });
 
   it("first-party paths exist on disk", () => {
-    for (const p of getFirstPartyExtensionPaths()) {
-      expect(p).toMatch(/extensions\/subagent$/);
+    const paths = getFirstPartyExtensionPaths();
+    expect(paths.length).toBeGreaterThanOrEqual(2);
+    for (const p of paths) {
+      expect(existsSync(p)).toBe(true);
     }
   });
 });

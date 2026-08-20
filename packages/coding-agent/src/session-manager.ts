@@ -22,7 +22,6 @@ import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
 import { getCodingAgentDir } from "./paths";
-import { assertSkillOverridesApplied } from "./skill-overrides";
 import { startSubagentCollector } from "./subagent-collector";
 import { loadPrompts, getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "./prompts";
 import type {
@@ -340,7 +339,6 @@ function makeCreateRuntime(
     // extension runtime. The harness has no TUI, but still needs the RPC-mode
     // lifecycle so extension-provided skills and bootstrap hooks are active.
     await sessionResult.session.bindExtensions({ mode: "rpc" });
-    assertSkillOverridesApplied(services.resourceLoader);
 
     return {
       ...sessionResult,
