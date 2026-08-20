@@ -57,6 +57,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Gemini 3.7 Flash",
       "GLM 5.3",
       "GLM 5.2",
+      "Hy3",
     ]);
   });
 
@@ -93,6 +94,7 @@ describe("defaultThinkingLevel", () => {
     expect(getDefaultThinkingLevel("Muse Spark 1.2")).toBe("xhigh");
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
     expect(getDefaultThinkingLevel("GLM 5.2")).toBe("high");
+    expect(getDefaultThinkingLevel("Hy3")).toBe("high");
   });
 
   it("returns undefined for models without a declared default", () => {

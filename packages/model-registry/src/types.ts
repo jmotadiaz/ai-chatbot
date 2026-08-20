@@ -14,6 +14,7 @@ export type Company =
   | "xiaomi"
   | "zai"
   | "stepfun"
+  | "tencent"
   | "ai chatbot";
 
 export interface ModelMetadata {

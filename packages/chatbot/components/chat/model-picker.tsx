@@ -25,6 +25,7 @@ import {
   ZaiIcon,
   XiaomiIcon,
   NvidiaIcon,
+  TencentIcon,
 } from "@/components/ui/icons";
 
 interface ModelPickerProps {
@@ -146,6 +147,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   zai: ZaiIcon,
   xiaomi: XiaomiIcon,
   stepfun: LogoIcon,
+  tencent: TencentIcon,
   "ai chatbot": LogoIcon,
 };
 

@@ -152,6 +152,29 @@ describe("generateModelsJson", () => {
     expect(glm.reasoning).toBe(true);
   });
 
+  it("describes Hy3, which Pi does not ship yet on opencode-go", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Hy3")!;
+    const [hy3] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(hy3.id).toBe("hy3");
+    expect(hy3.contextWindow).toBe(262_144);
+    expect(hy3.maxTokens).toBe(128_000);
+    expect(hy3.cost).toEqual({
+      input: 0.14,
+      output: 0.58,
+      cacheRead: 0.038,
+      cacheWrite: 0,
+    });
+    expect(hy3.reasoning).toBe(true);
+    expect(hy3.thinkingLevelMap).toEqual({
+      off: "no_think",
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+    });
+  });
+
   it("throws for a model Pi does not know and the catalog does not describe", () => {
     const entry: ModelCatalogEntry = {
       id: "Brand New Model",

@@ -14,6 +14,7 @@ export type Company =
   | "xiaomi"
   | "zai"
   | "stepfun"
+  | "tencent"
   | "ai chatbot";
 
 export type ProviderKind =
@@ -301,6 +302,24 @@ export const MODEL_CATALOG = [
     contextWindow: 1_000_000,
     maxTokens: 128_000,
     cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+  },
+  {
+    id: "Hy3",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "hy3" },
+    company: "tencent",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: "no_think",
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+    },
+    contextWindow: 262_144,
+    maxTokens: 128_000,
+    cost: { input: 0.14, output: 0.58, cacheRead: 0.038, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
   {

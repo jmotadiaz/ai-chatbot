@@ -610,6 +610,20 @@ export const ZaiIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
+export const TencentIcon = ({ size = 16 }: { size?: number }) => (
+  <svg
+    fill="currentColor"
+    fillRule="evenodd"
+    height={size}
+    viewBox="0 0 24 24"
+    width={size}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>Tencent</title>
+    <path d="M9.976 1L24 9.8l-10.587.015L10.723 23H5.489L8.18 9.8H3.244L1 5.4h8.077L9.976 1z"></path>
+  </svg>
+);
+
 export const XiaomiIcon = ({ size = 16 }: { size?: number }) => (
   <svg
     version="1.1"

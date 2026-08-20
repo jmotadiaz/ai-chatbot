@@ -105,6 +105,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the Hy3 catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("Hy3" as never)).toEqual({
+      providerId: "opencode-go",
+      modelId: "hy3",
+    });
+    expect(toChatModelId("opencode-go", "hy3")).toBe(
+      "Hy3",
+    );
+  });
+
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
       {
