@@ -24,10 +24,11 @@ Extensions live inside `extensions/<name>/index.ts` and are handed to the Pi SDK
 
 ### Superpowers (`extensions/superpowers/`)
 
-First-party extension bundling the [Superpowers](https://github.com/obra/superpowers) skill suite and context injection bootstrap.
+First-party extension bundling the [Superpowers](https://github.com/obra/superpowers) skill suite and the using-superpowers bootstrap.
 
-- **Skills:** All 14 skills live in `extensions/superpowers/skills/`. The `brainstorming` skill is customized to use the harness's file browser for uncommitted spec reviews.
-- **Entrypoint:** `extensions/superpowers/index.ts` discovers `./skills` via `resources_discover` and injects the `using-superpowers` bootstrap on `session_start` and compaction.
+- **Skills:** 13 skills live in `extensions/superpowers/skills/`. The `brainstorming` skill is customized to use the harness's file browser for uncommitted spec reviews. `using-superpowers` is NOT a skill file anymore: it was extracted into `extensions/superpowers/using-superpowers.ts` so the harness can load it from the start.
+- **Entrypoint:** `extensions/superpowers/index.ts` discovers `./skills` via `resources_discover`. Runtime context injection was removed: the SDK never emits the extension `context` event (no provider adapter consumes `transformContext`), so the bootstrap would never fire.
+- **Bootstrap:** `USING_SUPERPOWERS_PROMPT` from `extensions/superpowers/using-superpowers.ts` is appended to top-level sessions' system prompt via `resourceLoaderOptions.appendSystemPrompt` in `src/session-manager.ts` — the only channel verified to reach every model request. Subagent runtimes exclude the **whole** extension (bootstrap + the 13 skills) structurally: `makeCreateRuntime` passes `includeSuperpowersExtension: false` alongside the same `includeSubagentExtension: false` flag that removes the `subagent` tool, so the content carries no `<SUBAGENT-STOP>` block.
 - **Documentation & Upgrades:** `extensions/superpowers/AGENTS.md` records the upstream version (`v6.2.0`), all modifications applied to skills, and the upgrade procedure.
 
 ### Subagent (`extensions/subagent/`)
@@ -35,7 +36,7 @@ First-party extension bundling the [Superpowers](https://github.com/obra/superpo
 First-party Pi extension (`extensions/subagent/`) that registers a `subagent` tool, letting a session delegate self-contained tasks to in-process child sessions (design: `docs/superpowers/specs/2026-08-02-subagent-extension-design.md`).
 
 - **Loading:** `getExtensionPaths()` in `src/pi-packages.ts` appends first-party dirs under `extensions/` (each with an `index.ts`) to `additionalExtensionPaths`.
-- **Anti-recursion:** `makeCreateRuntime(modelId, { includeSubagentExtension: false })` excludes the extension dir; `runSubagent` creates every child runtime that way, so a child never gets the `subagent` tool (max depth 1 by construction).
+- **Anti-recursion / orchestrator-only skills:** `makeCreateRuntime(modelId, { includeSubagentExtension: false })` excludes the `subagent` extension dir *and* the `superpowers` extension dir (`includeSuperpowersExtension: false`); `runSubagent` creates every child runtime that way, so a child never gets the `subagent` tool (max depth 1 by construction) nor the superpowers skills/bootstrap — a subagent executes one specific task from a self-contained brief.
 - **Dispatch:** the tool's `execute` resolves the parent Pi session id from `ctx.sessionManager.getSessionId()` and delegates to `runSubagent()` in `src/session-manager.ts`, which validates `cwd` (must resolve to an existing directory inside the project root, e.g. a worktree) and `model` (strict match; errors carry the full available-models list), then creates the child session.
 - **Persistence:** child sessions live under `<CODING_AGENT_SESSIONS_DIR>/subagents/` so `SessionManager.list(SESSIONS_DIR)` never mixes them into top-level reloads. They never get a row in the chatbot's `codingAgentSessions` table, so they cannot appear in the sidebar.
 - **Events:** `startSubagentCollector` (`src/subagent-collector.ts`) translates child Pi events into the child's own `SessionEventLog` — no files-changed diff, no MESSAGES_SNAPSHOT. The entry stays in the `sessions` Map after the run so the dedicated UI view can snapshot/stream it; `disposeSession(parent)` reaps registered children.

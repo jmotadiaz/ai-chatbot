@@ -29,6 +29,15 @@ describe("first-party extension paths", () => {
     expect(paths.some((p: string) => p.endsWith("extensions/superpowers"))).toBe(true);
   });
 
+  it("excludes superpowers when includeSuperpowersExtension is false (subagent runtimes)", () => {
+    const paths = getExtensionPaths({
+      includeSubagentExtension: false,
+      includeSuperpowersExtension: false,
+    });
+    expect(paths.some((p: string) => p.endsWith("extensions/subagent"))).toBe(false);
+    expect(paths.some((p: string) => p.endsWith("extensions/superpowers"))).toBe(false);
+  });
+
   it("first-party paths exist on disk", () => {
     const paths = getFirstPartyExtensionPaths();
     expect(paths.length).toBeGreaterThanOrEqual(2);

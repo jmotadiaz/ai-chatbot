@@ -19,6 +19,7 @@ import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
+import { USING_SUPERPOWERS_PROMPT } from "../extensions/superpowers/using-superpowers";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getExtensionPaths } from "./pi-packages";
 import { getCodingAgentDir } from "./paths";
@@ -303,15 +304,30 @@ function makeCreateRuntime(
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
     const authStorage = AuthStorage.create(getAuthJsonPath());
+    // Child subagent runtimes execute one specific task from a self-contained
+    // brief: they get neither the `subagent` tool, nor the superpowers
+    // bootstrap, nor the superpowers skills. All three exclusions share the
+    // same structural flag (spec §4.2 anti-recursion / orchestrator-only
+    // skills).
+    const isSubagentRuntime = options?.includeSubagentExtension === false;
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
       agentDir: getCodingAgentDir(),
       authStorage,
       modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
-        appendSystemPrompt: [FILE_REFERENCE_PROMPT],
+        appendSystemPrompt: [
+          FILE_REFERENCE_PROMPT,
+          // The superpowers bootstrap (using-superpowers) rides the system
+          // prompt: the SDK never emits the extension `context` event (no
+          // provider adapter consumes `transformContext`), so the upstream
+          // runtime injection is dead code in this harness. The system prompt
+          // is the channel verified to reach every model request.
+          ...(isSubagentRuntime ? [] : [USING_SUPERPOWERS_PROMPT]),
+        ],
         additionalExtensionPaths: getExtensionPaths({
           includeSubagentExtension: options?.includeSubagentExtension ?? true,
+          includeSuperpowersExtension: !isSubagentRuntime,
         }),
       },
     });

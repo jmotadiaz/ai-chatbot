@@ -77,14 +77,23 @@ export function getFirstPartyExtensionPaths(): string[] {
  *
  * `includeSubagentExtension: false` excludes the subagent tool — child
  * sessions must not get it (structural anti-recursion, spec §4.2).
+ *
+ * `includeSuperpowersExtension: false` excludes the superpowers extension —
+ * child sessions must not get the superpowers skills or bootstrap either. A
+ * subagent executes one specific task from a self-contained brief (see the
+ * subagent-driven-development prompts upstream); skill workflows belong to
+ * the orchestrating agent alone.
  */
 export function getExtensionPaths(options?: {
   includeSubagentExtension?: boolean;
+  includeSuperpowersExtension?: boolean;
 }): string[] {
   const firstParty = getFirstPartyExtensionPaths().filter(
     (p) =>
-      options?.includeSubagentExtension !== false ||
-      path.basename(p) !== "subagent",
+      (options?.includeSubagentExtension !== false ||
+        path.basename(p) !== "subagent") &&
+      (options?.includeSuperpowersExtension !== false ||
+        path.basename(p) !== "superpowers"),
   );
   return [...getPiPackageExtensionPaths(), ...firstParty];
 }
