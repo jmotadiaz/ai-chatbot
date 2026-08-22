@@ -19,9 +19,11 @@ import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
-import { USING_SUPERPOWERS_PROMPT } from "../extensions/superpowers/using-superpowers";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
-import { getExtensionPaths } from "./pi-packages";
+import {
+  getExtensionPaths,
+  getFirstPartySkillPathsFiltered,
+} from "./pi-packages";
 import { getCodingAgentDir } from "./paths";
 import { startSubagentCollector } from "./subagent-collector";
 import { loadPrompts, getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "./prompts";
@@ -316,16 +318,23 @@ function makeCreateRuntime(
       authStorage,
       modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
       resourceLoaderOptions: {
-        appendSystemPrompt: [
-          FILE_REFERENCE_PROMPT,
-          // The superpowers bootstrap (using-superpowers) rides the system
-          // prompt: the SDK never emits the extension `context` event (no
-          // provider adapter consumes `transformContext`), so the upstream
-          // runtime injection is dead code in this harness. The system prompt
-          // is the channel verified to reach every model request.
-          ...(isSubagentRuntime ? [] : [USING_SUPERPOWERS_PROMPT]),
-        ],
+        // FILE_REFERENCE_PROMPT is harness-owned. The superpowers bootstrap
+        // (USING_SUPERPOWERS_PROMPT) is NOT appended here — the superpowers
+        // extension injects it via `before_agent_start` (systemPrompt append,
+        // al final como pediste), que es el hook verificado por turno que
+        // reemplaza al muerto upstream `context`. Ver
+        // `extensions/superpowers/index.ts` y `extensions/superpowers/AGENTS.md`.
+        appendSystemPrompt: [FILE_REFERENCE_PROMPT],
         additionalExtensionPaths: getExtensionPaths({
+          includeSubagentExtension: options?.includeSubagentExtension ?? true,
+          includeSuperpowersExtension: !isSubagentRuntime,
+        }),
+        // Skills are discovered from `additionalExtensionPaths` only when the
+        // path is a skill package (directory with `skills/`). Since first-party
+        // extensions are now passed as files (`index.ts`) to ensure the
+        // extension hooks (`before_agent_start`) are registered, their skills
+        // must be provided explicitly via `additionalSkillPaths`.
+        additionalSkillPaths: getFirstPartySkillPathsFiltered({
           includeSubagentExtension: options?.includeSubagentExtension ?? true,
           includeSuperpowersExtension: !isSubagentRuntime,
         }),
@@ -355,6 +364,36 @@ function makeCreateRuntime(
     // extension runtime. The harness has no TUI, but still needs the RPC-mode
     // lifecycle so extension-provided skills and bootstrap hooks are active.
     await sessionResult.session.bindExtensions({ mode: "rpc" });
+
+    // Harness trace for bootstrap mechanism comparison (old: appendSystemPrompt
+    // vs new: before_agent_start append). Visible in lifecycle/raw ndjson.
+    {
+      const log2 = getTraceLogger("worker");
+      const sysPrompt = sessionResult.session.systemPrompt ?? "";
+      log2.info("debug.harness_bootstrap_state", {
+        mechanism: "before_agent_start (extension, systemPrompt append)",
+        isSubagentRuntime,
+        // At bind time the per-turn `before_agent_start` has not fired yet,
+        // so hasBootstrap is expected false — it becomes true on `prompt()`.
+        hasBootstrapInSystemPromptAfterBind: sysPrompt.includes(
+          "You have superpowers",
+        ),
+        systemPromptLengthAfterBind: sysPrompt.length,
+        appendSystemPrompt: services.resourceLoader.getAppendSystemPrompt(),
+        appendSystemPromptLengths:
+          services.resourceLoader.getAppendSystemPrompt().map((s) => s.length),
+        extensionCount:
+          services.resourceLoader.getExtensions().extensions.length,
+        extensionPaths: services.resourceLoader
+          .getExtensions()
+          .extensions.map((e) => e.path),
+        skillCount: services.resourceLoader.getSkills().skills.length,
+        skillNames: services.resourceLoader
+          .getSkills()
+          .skills.map((s) => s.name),
+        sessionId: sessionManager.getSessionId(),
+      });
+    }
 
     return {
       ...sessionResult,
@@ -908,6 +947,30 @@ export async function sendPrompt(
     skillCount: loadedSkills.length,
     skillPaths: loadedSkills.map((skill) => skill.filePath),
   });
+
+  // Harness trace to compare bootstrap injection across sessions.
+  // `before_agent_start` (extension) will append the bootstrap on this
+  // turn, so `hasBootstrapBefore` is expected false here and true after
+  // the extension fires (see `debug.superpowers_bootstrap_injection`).
+  {
+    const sysPrompt = entry.runtime.session.systemPrompt ?? "";
+    const rl = entry.runtime.services?.resourceLoader;
+    log.info("debug.prompt_bootstrap_before", {
+      sessionId,
+      runId,
+      mechanism: "before_agent_start (extension, systemPrompt prepend)",
+      hasBootstrapInSystemPromptBefore: sysPrompt.includes(
+        "You have superpowers",
+      ),
+      systemPromptLengthBefore: sysPrompt.length,
+      systemPromptPreviewBefore: sysPrompt.slice(0, 300),
+      promptLength: prompt.length,
+      promptPreview: prompt.slice(0, 300),
+      skillCount: loadedSkills.length,
+      extensionCount: rl?.getExtensions().extensions.length ?? 0,
+      appendSystemPrompt: rl?.getAppendSystemPrompt() ?? [],
+    });
+  }
 
   const afterSeq = ensureEventLog(entry).lastSeq;
   // Captured before the run starts so the baseline can never include the

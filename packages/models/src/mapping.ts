@@ -6,6 +6,7 @@ export const PI_PROVIDER = "opencode-go";
 export function toPiProviderId(kind: ProviderKind): string {
   switch (kind) {
     case "opencodeGo":
+    case "opencodeGoResponses":
       return PI_PROVIDER;
     // Pi trae OpenCode Zen como provider built-in "opencode" (env
     // OPENCODE_API_KEY, la misma que opencode-go).

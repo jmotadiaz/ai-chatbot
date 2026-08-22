@@ -100,7 +100,10 @@ function buildModelDefinition(
     // built-in model of the provider, which silently rewrites e.g.
     // minimax-m3 (anthropic-messages) and qwen3.7-plus (anthropic-messages)
     // to openai-completions and breaks thinking/reasoning streaming.
-    api: baseline?.api,
+    api:
+      entry.provider.kind === "opencodeGoResponses"
+        ? "openai-responses"
+        : baseline?.api,
     baseUrl: baseline?.baseUrl,
     // Pi replaces the built-in model wholesale with the models.json entry
     // (mergeCustomModels), so a thinkingLevelMap omitted here silently caps

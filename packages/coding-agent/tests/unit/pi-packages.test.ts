@@ -16,6 +16,8 @@ import {
 import {
   getExtensionPaths,
   getFirstPartyExtensionPaths,
+  getFirstPartySkillPaths,
+  getFirstPartySkillPathsFiltered,
   getPiPackageExtensionPaths,
   getPiPackagePath,
   type PiPackage,
@@ -26,26 +28,33 @@ import { USING_SUPERPOWERS_PROMPT } from "../../extensions/superpowers/using-sup
 describe("first-party extension discovery", () => {
   it("discovers all first-party extensions including superpowers and subagent", () => {
     const paths = getFirstPartyExtensionPaths();
-    expect(paths.some((p) => p.endsWith("extensions/superpowers"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("extensions/subagent"))).toBe(true);
+    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
+    expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(true);
+    // Entrypoints are files, not dirs
+    expect(paths.every((p) => p.endsWith("index.ts"))).toBe(true);
   });
 
   it("includes all first-party extensions by default in getExtensionPaths", () => {
     const paths = getExtensionPaths();
-    expect(paths.some((p) => p.endsWith("extensions/superpowers"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("extensions/subagent"))).toBe(true);
+    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
+    expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(true);
   });
 
   it("excludes subagent when includeSubagentExtension is false", () => {
     const paths = getExtensionPaths({ includeSubagentExtension: false });
-    expect(paths.some((p) => p.endsWith("extensions/superpowers"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("extensions/subagent"))).toBe(false);
+    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
+    expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(false);
   });
 
   it("excludes superpowers when includeSuperpowersExtension is false", () => {
     const paths = getExtensionPaths({ includeSuperpowersExtension: false });
-    expect(paths.some((p) => p.endsWith("extensions/superpowers"))).toBe(false);
-    expect(paths.some((p) => p.endsWith("extensions/subagent"))).toBe(true);
+    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(false);
+    expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(true);
+  });
+
+  it("discovers skill dirs for first-party extensions", () => {
+    const skillPaths = getFirstPartySkillPaths();
+    expect(skillPaths.some((p) => p.includes("extensions/superpowers/skills"))).toBe(true);
   });
 });
 
@@ -71,6 +80,9 @@ describe("superpowers first-party extension integration", () => {
       cwd,
       agentDir,
       additionalExtensionPaths: getExtensionPaths({
+        includeSubagentExtension: false,
+      }),
+      additionalSkillPaths: getFirstPartySkillPathsFiltered({
         includeSubagentExtension: false,
       }),
     });
@@ -119,6 +131,10 @@ describe("superpowers first-party extension integration", () => {
       cwd,
       agentDir,
       additionalExtensionPaths: getExtensionPaths({
+        includeSubagentExtension: false,
+        includeSuperpowersExtension: false,
+      }),
+      additionalSkillPaths: getFirstPartySkillPathsFiltered({
         includeSubagentExtension: false,
         includeSuperpowersExtension: false,
       }),

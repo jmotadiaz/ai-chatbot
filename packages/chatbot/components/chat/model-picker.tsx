@@ -149,6 +149,7 @@ const icons: Record<Company, React.ComponentType<{ size: number }>> = {
   stepfun: LogoIcon,
   tencent: TencentIcon,
   "ai chatbot": LogoIcon,
+  "ai-chatbot": LogoIcon,
 };
 
 interface ModelItemProps {

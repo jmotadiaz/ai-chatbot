@@ -1,13 +1,22 @@
 /**
- * Using-superpowers content embedded into the harness system prompt.
+ * Using-superpowers content injected as a system-prompt append by the
+ * superpowers extension.
  *
  * Upstream (obra/superpowers v6.2.0) ships this as a discoverable skill
  * (`skills/using-superpowers/SKILL.md`) and injects it at session start
- * through the extension `context` event. In this harness that event is never
- * emitted (the SDK's provider adapters do not consume `transformContext`), so
- * the skill was silently never loaded. Instead of a runtime bootstrap, the
- * content lives here and is appended to every session's system prompt by
- * `session-manager.ts` via `resourceLoaderOptions.appendSystemPrompt`.
+ * through the extension `context` event (user-message prepend). In this
+ * harness that event is dead — the SDK's provider adapters
+ * (`@earendil-works/pi-ai`) never consume `transformContext` — so the skill
+ * was silently never loaded. The content lives here and is injected by
+ * `extensions/superpowers/index.ts` via `pi.on("before_agent_start")`, which
+ * appends it to `event.systemPrompt` on every turn (you prefer append over
+ * prepend, as the previous `resourceLoaderOptions.appendSystemPrompt` did).
+ *
+ * `session-manager.ts` does NOT append this via
+ * `resourceLoaderOptions.appendSystemPrompt` — the extension owns the
+ * injection (intercambio, no superposición). Subagent runtimes exclude the
+ * whole extension structurally via `getExtensionPaths({ includeSuperpowersExtension: false })`,
+ * so no `<SUBAGENT-STOP>` block is needed.
  *
  * Extracted content:
  * - Front matter (name/description) removed — the module itself is the source.
@@ -73,7 +82,7 @@ This harness is Pi with native skills and no \`Skill\` tool. When a Superpowers 
 
 Pi's built-in coding tools are lowercase: \`read\`, \`write\`, \`edit\`, \`bash\`, plus optional \`grep\`, \`find\`, and \`ls\`. Use those for the corresponding actions: read a file, create or edit files, run shell commands, search file contents, find files by name, and list directories.
 
-Pi does not ship a standard subagent tool. If a subagent tool such as \`subagent\` from \`pi-subagents\` is available, use it for Superpowers subagent workflows. If no subagent tool is available, do the work in this session or explain the missing capability instead of inventing \`Task\` calls.
+This harness provides a \`subagent\` tool via the \`extensions/subagent\` first-party extension. Use it for Superpowers subagent workflows (dispatching-parallel-agents, subagent-driven-development) as described in those skills.
 
 Pi does not ship a standard task-list tool. If an installed todo/task tool is available, use it. Otherwise track work in plan files or a repo-local \`TODO.md\` when task tracking is needed. Treat older \`TodoWrite\` references as this task-tracking action.
 

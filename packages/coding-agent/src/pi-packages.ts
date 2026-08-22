@@ -59,7 +59,7 @@ export function getPiPackageExtensionPaths(): string[] {
  */
 const FIRST_PARTY_EXTENSIONS_DIR = path.join(PACKAGE_ROOT, "extensions");
 
-/** First-party extension dirs (each with an index.ts), e.g. extensions/superpowers, extensions/subagent. */
+/** First-party extension entrypoints (each `extensions/<name>/index.ts`), e.g. extensions/superpowers, extensions/subagent. */
 export function getFirstPartyExtensionPaths(): string[] {
   if (!existsSync(FIRST_PARTY_EXTENSIONS_DIR)) return [];
   return readdirSync(FIRST_PARTY_EXTENSIONS_DIR, { withFileTypes: true })
@@ -68,7 +68,20 @@ export function getFirstPartyExtensionPaths(): string[] {
         d.isDirectory() &&
         existsSync(path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name, "index.ts")),
     )
-    .map((d) => path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name))
+    .map((d) => path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name, "index.ts"))
+    .sort();
+}
+
+/** First-party skill dirs for `additionalSkillPaths` (needed when extensions are passed as files). */
+export function getFirstPartySkillPaths(): string[] {
+  if (!existsSync(FIRST_PARTY_EXTENSIONS_DIR)) return [];
+  return readdirSync(FIRST_PARTY_EXTENSIONS_DIR, { withFileTypes: true })
+    .filter(
+      (d) =>
+        d.isDirectory() &&
+        existsSync(path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name, "skills")),
+    )
+    .map((d) => path.join(FIRST_PARTY_EXTENSIONS_DIR, d.name, "skills"))
     .sort();
 }
 
@@ -88,12 +101,28 @@ export function getExtensionPaths(options?: {
   includeSubagentExtension?: boolean;
   includeSuperpowersExtension?: boolean;
 }): string[] {
-  const firstParty = getFirstPartyExtensionPaths().filter(
-    (p) =>
-      (options?.includeSubagentExtension !== false ||
-        path.basename(p) !== "subagent") &&
-      (options?.includeSuperpowersExtension !== false ||
-        path.basename(p) !== "superpowers"),
-  );
+  const firstParty = getFirstPartyExtensionPaths().filter((p) => {
+    const name = path.basename(path.dirname(p));
+    if (options?.includeSubagentExtension === false && name === "subagent")
+      return false;
+    if (options?.includeSuperpowersExtension === false && name === "superpowers")
+      return false;
+    return true;
+  });
   return [...getPiPackageExtensionPaths(), ...firstParty];
+}
+
+/** Filtered skill paths mirroring `getExtensionPaths` (for `additionalSkillPaths`). */
+export function getFirstPartySkillPathsFiltered(options?: {
+  includeSubagentExtension?: boolean;
+  includeSuperpowersExtension?: boolean;
+}): string[] {
+  return getFirstPartySkillPaths().filter((p) => {
+    const name = path.basename(path.dirname(p));
+    if (options?.includeSubagentExtension === false && name === "subagent")
+      return false;
+    if (options?.includeSuperpowersExtension === false && name === "superpowers")
+      return false;
+    return true;
+  });
 }

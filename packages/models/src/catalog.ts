@@ -15,10 +15,12 @@ export type Company =
   | "zai"
   | "stepfun"
   | "tencent"
-  | "ai chatbot";
+  | "ai chatbot"
+  | "ai-chatbot";
 
 export type ProviderKind =
   | "opencodeGo"
+  | "opencodeGoResponses"
   | "opencodeZen"
   | "gateway"
   | "openrouter"
@@ -224,9 +226,9 @@ export const MODEL_CATALOG = [
   {
     id: "Muse Spark 1.2",
     userInvocable: true,
-    // Vercel AI Gateway route: provider/model; el sufijo "contributor" es solo
-    // detalle de facturación, no aparece en el display name.
-    provider: { kind: "gateway", modelId: "meta/muse-spark-1.2-contributor" },
+    // OpenCode Go model (contributor tier, responses API). Pi does not ship
+    // it built-in, so it describes its own limits and cost.
+    provider: { kind: "opencodeGoResponses", modelId: "muse-spark-1.2-contributor" },
     company: "meta",
     reasoning: true,
     defaultThinkingLevel: "xhigh",
@@ -320,6 +322,29 @@ export const MODEL_CATALOG = [
     contextWindow: 262_144,
     maxTokens: 128_000,
     cost: { input: 0.14, output: 0.58, cacheRead: 0.038, cacheWrite: 0 },
+  },
+  {
+    // Modelo free servido por opencode-go (mismo endpoint que deepseek -
+    // https://opencode.ai/zen/go/v1, api openai-completions). Pi no lo trae
+    // built-in, así que se auto-describe como los otros free.
+    id: "OX Alpha (free)",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "ox-alpha-free" },
+    company: "ai-chatbot",
+    reasoning: true,
+    defaultThinkingLevel: "xhigh",
+    thinkingLevelMap: {
+      minimal: null,
+      low: null,
+      medium: null,
+      high: "high",
+      xhigh: "max",
+    },
+    temperature: 1,
+    topP: 0.95,
+    contextWindow: 200_000,
+    maxTokens: 128_000,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
   {

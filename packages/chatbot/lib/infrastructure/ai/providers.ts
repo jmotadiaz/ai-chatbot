@@ -1,7 +1,7 @@
 import { groq } from "@ai-sdk/groq";
 import { gateway, rerank } from "ai";
 import { createXai } from "@ai-sdk/xai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
@@ -32,6 +32,19 @@ function getOpenCodeGo() {
     });
   }
   return _opencodeGo;
+}
+
+let _opencodeGoResponses: ReturnType<typeof createOpenAI> | null = null;
+
+function getOpenCodeGoResponses() {
+  if (!_opencodeGoResponses) {
+    _opencodeGoResponses = createOpenAI({
+      name: "opencode-zen-go-responses",
+      apiKey: config.opencodeZenApiKey(),
+      baseURL: "https://opencode.ai/zen/go/v1",
+    });
+  }
+  return _opencodeGoResponses;
 }
 
 
@@ -82,6 +95,8 @@ export const providers: Providers = (() => {
       deepinfra: (modelId: string) => getDeepInfra()(modelId),
       lmstudio: (modelId: string) => lmstudio(modelId),
       opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
+      opencodeGoResponses: (modelId: string) =>
+        getOpenCodeGoResponses().responses(modelId),
       opencodeZen: (modelId: string) => getOpenCodeZen()(modelId),
       embedding: () => google.embeddingModel("gemini-embedding-001"),
       rerank: () => async (args) => {
@@ -126,6 +141,7 @@ export const providers: Providers = (() => {
     deepinfra: lookupMock("deepinfra"),
     lmstudio: lookupMock("lmstudio"),
     opencodeGo: lookupMock("opencodeGo"),
+    opencodeGoResponses: lookupMock("opencodeGoResponses"),
     opencodeZen: lookupMock("opencodeZen"),
     embedding: () => createMockEmbeddingModel(),
     rerank: () => async () => [],

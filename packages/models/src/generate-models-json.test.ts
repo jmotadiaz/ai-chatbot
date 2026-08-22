@@ -12,7 +12,7 @@ import {
 const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
-const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max", "glm-5.2"]);
+const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max", "glm-5.2", "muse-spark-1.2-contributor", "ox-alpha-free"]);
 
 /** Stand-in for what Pi reports about the models it already ships. */
 const builtIns = new Map<string, PiModelBaseline>(
@@ -284,12 +284,13 @@ describe("generateModelsJson custom providers", () => {
   });
 
   it("describes the Muse Spark model fully", () => {
-    const muse = generate().providers["vercel-ai-gateway"].models.find(
+    const muse = generate().providers["opencode-go"].models.find(
       (m) => m.name === "Muse Spark 1.2",
     );
     expect(muse).toEqual({
-      id: "meta/muse-spark-1.2-contributor",
+      id: "muse-spark-1.2-contributor",
       name: "Muse Spark 1.2",
+      api: "openai-responses",
       reasoning: true,
       input: ["text"],
       contextWindow: 1_048_576,

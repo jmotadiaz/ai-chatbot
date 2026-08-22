@@ -13,9 +13,13 @@ describe("MODEL_CATALOG integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("has unique opencodeGo provider modelIds (needed for reverse mapping)", () => {
+  it("has unique opencode-go provider modelIds (needed for reverse mapping)", () => {
     const keys = MODEL_CATALOG
-      .filter((e) => e.provider.kind === "opencodeGo")
+      .filter(
+        (e) =>
+          e.provider.kind === "opencodeGo" ||
+          e.provider.kind === "opencodeGoResponses",
+      )
       .map((e) => e.provider.modelId);
     expect(new Set(keys).size).toBe(keys.length);
   });
@@ -58,6 +62,7 @@ describe("MODEL_CATALOG integrity", () => {
       "GLM 5.3",
       "GLM 5.2",
       "Hy3",
+      "OX Alpha (free)",
     ]);
   });
 
