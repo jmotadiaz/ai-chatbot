@@ -56,17 +56,12 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
   // prepend). Traces below let you compare harness behaviour across sessions.
   pi.on("before_agent_start", async (event) => {
     const base = event.systemPrompt ?? "";
-    const hasBootstrapBefore = base.includes("You have superpowers");
     const systemPrompt = base
       ? `${base}\n\n${USING_SUPERPOWERS_PROMPT}`
       : USING_SUPERPOWERS_PROMPT;
-    // Trace for harness comparison — visible in `lifecycle.ndjson` / `raw.ndjson`
-    // as `debug.superpowers_bootstrap_injection` (worker layer).
     void getTraceLog().then((log) => {
       log?.info("debug.superpowers_bootstrap_injection", {
         mechanism: "before_agent_start (systemPrompt append)",
-        hasBootstrapBefore,
-        hasBootstrapAfter: true,
         baseLength: base.length,
         injectedLength: systemPrompt.length,
         bootstrapLength: USING_SUPERPOWERS_PROMPT.length,
