@@ -1,4 +1,5 @@
 import { parseFrontmatter } from "@earendil-works/pi-coding-agent";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import nunjucks from "nunjucks";
@@ -275,26 +276,69 @@ export function resolveProjectPrompt(
 }
 
 /**
- * Render a prompt body against the declared input values.
+ * Render a prompt body against the declared input values and drop lines
+ * left empty by template constructs (spec §4.3 step 5).
  *
- * Step 1 — render with nunjucks.
- * Step 2 — drop lines left empty by unfilled optional inputs (spec §4.3
- * step 5): a line that contained a `{{var}}` placeholder and rendered to
- * nothing is removed; lines that were blank in the template itself carry no
- * placeholder, so intentional blank lines are preserved. (Task 2 rewrites
- * this post-pass to also handle `{%...%}` block tags.)
+ * Rendering: nunjucks with `trimBlocks`/`lstripBlocks`, so the rendered
+ * output can have FEWER lines than the template — block tags and empty
+ * `{{var}}` lines collapse. To tell artifact empty lines (a tag that
+ * rendered to nothing) apart from intentional blank lines even when several
+ * template lines merged into one rendered line, every source line is
+ * prefixed with a unique sentinel before rendering; after rendering each
+ * output line still carries the indices of the source lines it came from.
+ *
+ * Empty-line cleanup, per run of consecutive empty output lines:
+ * - no tagged source line involved → intentional blanks, keep them all;
+ * - only tag-artifact source lines → drop the run entirely;
+ * - mixed (an intentional blank merged with collapsed tags) → keep exactly
+ *   one blank line.
  */
 function renderPromptBody(body: string, view: Record<string, string>): string {
+  const token = `\u0001${randomUUID()}\u0001`;
   const sourceLines = body.split("\n");
-  const lineHasPlaceholder = sourceLines.map((line) =>
-    /\{\{[^{}]*\}\}/.test(line),
+  const lineHasTag = sourceLines.map((line) =>
+    /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(line),
   );
-  body = promptEnv.renderString(body, view);
-  return body
-    .split("\n")
-    .filter((line, index) => !(lineHasPlaceholder[index] && line.trim() === ""))
-    .join("\n")
-    .trim();
+  const sentineledBody = sourceLines
+    .map((line, index) => `${token}${index}${token}${line}`)
+    .join("\n");
+
+  const rendered = promptEnv.renderString(sentineledBody, view);
+  const sentinelRe = new RegExp(`${token}(\\d+)${token}`, "g");
+  const parsed = rendered.split("\n").map((line) => {
+    const indexes = [...line.matchAll(sentinelRe)].map((m) => Number(m[1]));
+    return { indexes, text: line.replace(sentinelRe, "") };
+  });
+
+  const kept: string[] = [];
+  for (let i = 0; i < parsed.length; ) {
+    const item = parsed[i]!;
+    if (item.text.trim() !== "") {
+      kept.push(item.text);
+      i += 1;
+      continue;
+    }
+    // Collect the run of consecutive empty output lines.
+    const run: { indexes: number[]; text: string }[] = [];
+    while (i < parsed.length && parsed[i]!.text.trim() === "") {
+      run.push(parsed[i]!);
+      i += 1;
+    }
+    const touchesTaggedLine = run.some((r) =>
+      r.indexes.some((idx) => lineHasTag[idx]),
+    );
+    if (!touchesTaggedLine) {
+      // Purely intentional blank lines: keep them all.
+      kept.push(...run.map(() => ""));
+    } else {
+      const pureArtifact = run.every(
+        (r) => r.indexes.length > 0 && r.indexes.every((idx) => lineHasTag[idx]),
+      );
+      if (!pureArtifact) kept.push("");
+      // Pure artifact runs are dropped entirely.
+    }
+  }
+  return kept.join("\n").trim();
 }
 
 function renderInputValue(input: PromptInput, value: string): string {

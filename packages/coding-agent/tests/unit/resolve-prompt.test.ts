@@ -255,4 +255,88 @@ inputs:
     });
     expect(result.text).toBe("{{nope}} y {% if %}");
   });
+
+  it("collapses blank lines around an emptied {% if %} block", () => {
+    const ifRoot = join(tmpRoot, "if-empty-project");
+    const promptsDir = join(ifRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "section.prompty"), `---
+name: section
+description: Section
+inputs:
+  - name: focus_area
+    kind: string
+    description: Enfoque
+    enumValues: [bugs]
+  - name: extra_context
+    kind: string
+    description: Extra
+    required: false
+---
+
+# Cabecera
+
+{% if focus_area %}
+## Enfoque: {{ focus_area }}
+{% endif %}
+
+{% if extra_context %}
+{{extra_context}}
+{% endif %}
+
+## Instrucciones
+
+Analiza y enfócate en {{ focus_area }}.`);
+
+    loadPrompts(ifRoot);
+    const result = resolveProjectPrompt(ifRoot, "section", {
+      focus_area: "bugs",
+      extra_context: "",
+    });
+    expect(result.text).toBe(
+      "# Cabecera\n\n## Enfoque: bugs\n\n## Instrucciones\n\nAnaliza y enfócate en bugs.",
+    );
+
+    const filled = resolveProjectPrompt(ifRoot, "section", {
+      focus_area: "bugs",
+      extra_context: "Presta atención a los tests",
+    });
+    expect(filled.text).toBe(
+      "# Cabecera\n\n## Enfoque: bugs\n\nPresta atención a los tests\n\n## Instrucciones\n\nAnaliza y enfócate en bugs.",
+    );
+
+    const none = resolveProjectPrompt(ifRoot, "section", {
+      focus_area: "",
+      extra_context: "",
+    });
+    expect(none.text).toBe(
+      "# Cabecera\n\n## Instrucciones\n\nAnaliza y enfócate en .",
+    );
+  });
+
+  it("drops a {% if %}-only block that rendered to nothing", () => {
+    const pureRoot = join(tmpRoot, "pure-artifact-project");
+    const promptsDir = join(pureRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "pure.prompty"), `---
+name: pure
+description: Pure artifacts
+inputs:
+  - name: v
+    kind: string
+    description: Valor
+    required: false
+---
+
+A
+{% if v %}
+{% endif %}
+{{v}}
+B`);
+
+    loadPrompts(pureRoot);
+    expect(resolveProjectPrompt(pureRoot, "pure", { v: "" }).text).toBe(
+      "A\nB",
+    );
+  });
 });
