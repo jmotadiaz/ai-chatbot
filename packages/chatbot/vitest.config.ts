@@ -25,6 +25,10 @@ export default defineConfig({
       "tests/contract/**/*.test.ts",
       "tests/contract/**/*.test.tsx",
     ],
+    // jsdom test files need a Web Storage implementation: Node 26 exposes an
+    // unconfigured `localStorage` global, which makes vitest's jsdom
+    // environment skip jsdom's own. See tests/helpers/web-storage-setup.ts.
+    setupFiles: ["./tests/helpers/web-storage-setup.ts"],
     clearMocks: true,
     restoreMocks: true,
   },
