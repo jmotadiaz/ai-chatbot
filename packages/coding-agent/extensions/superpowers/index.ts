@@ -3,21 +3,14 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { USING_SUPERPOWERS_PROMPT } from "./using-superpowers";
 
-// Lazy trace logger — `tracing` is not in pi's VIRTUAL_MODULES, but jiti
-// will resolve it via normal Node resolution (workspace package). If it
-// fails we fall back to no-op so the extension never breaks harness startup.
-let _traceLog: { info: (event: string, payload?: unknown) => void } | null = null;
-async function getTraceLog() {
-  if (_traceLog) return _traceLog;
-  try {
-    const mod = await import("tracing");
-    _traceLog = mod.getTraceLogger("worker") as unknown as {
-      info: (event: string, payload?: unknown) => void;
-    };
-    return _traceLog;
-  } catch {
-    return null;
-  }
+// Diagnostics. `tracing` resolves from here (workspace package), but jiti
+// loads this extension as an isolated module instance, so its logger is a
+// second copy of the module with no retained sink and its records go nowhere.
+// The authoritative trace is `debug.superpowers_context_transform`, emitted by
+// the harness in `src/session-manager.ts`; this line only leaves a breadcrumb
+// in the worker's stderr.
+function logInjection(payload: Record<string, unknown>): void {
+  console.error(`[superpowers] bootstrap injected ${JSON.stringify(payload)}`);
 }
 
 /**
@@ -89,13 +82,11 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
     };
 
     const insertAt = firstNonCompactionSummaryIndex(event.messages);
-    void getTraceLog().then((log) => {
-      log?.info("debug.superpowers_bootstrap_injection", {
-        mechanism: "context (user message prepend)",
-        insertAt,
-        messageCount: event.messages.length,
-        bootstrapLength: BOOTSTRAP_MESSAGE_TEXT.length,
-      });
+    logInjection({
+      mechanism: "context (user message prepend)",
+      insertAt,
+      messageCount: event.messages.length,
+      bootstrapLength: BOOTSTRAP_MESSAGE_TEXT.length,
     });
 
     return {

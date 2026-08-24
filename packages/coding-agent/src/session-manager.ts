@@ -365,9 +365,18 @@ function makeCreateRuntime(
     // lifecycle so extension-provided skills and bootstrap hooks are active.
     await sessionResult.session.bindExtensions({ mode: "rpc" });
 
+    // Ground truth for the superpowers bootstrap: wrap the agent's
+    // `transformContext` (the function pi-agent-core calls in
+    // `streamAssistantResponse`, right before `convertToLlm`) so the harness
+    // records what the extension's `context` hook actually produced on the
+    // real prompt path. The extension cannot trace this itself: jiti loads it
+    // as an isolated module instance, so its `tracing` import resolves to a
+    // second copy with no retained sink and every log is dropped.
+    instrumentBootstrapInjection(sessionResult.session, sessionManager.getSessionId());
+
     // Harness trace for bootstrap state at bind time. The bootstrap itself
     // never lands in the system prompt: the extension injects it into the
-    // context (see `debug.superpowers_bootstrap_injection`).
+    // context (see `debug.superpowers_context_transform`).
     {
       const log2 = getTraceLogger("worker");
       const sysPrompt = sessionResult.session.systemPrompt ?? "";
@@ -401,6 +410,56 @@ function makeCreateRuntime(
       services,
       diagnostics: services.diagnostics,
     };
+  };
+}
+
+
+/** Marker the superpowers extension stamps on its bootstrap message. */
+const SUPERPOWERS_BOOTSTRAP_MARKER = "superpowers:using-superpowers bootstrap for pi";
+
+function messageText(message: unknown): string {
+  const content = (message as { content?: unknown }).content;
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => (part as { text?: string }).text ?? "")
+    .join("");
+}
+
+/**
+ * Trace whether the superpowers bootstrap reaches the provider payload.
+ *
+ * `agent.transformContext` is the last harness-visible point before
+ * `convertToLlm` hands the messages to the provider adapter, and pi's
+ * `convertToLlm` maps user messages 1:1, so a marker seen here is a marker
+ * sent to the model. Emits `debug.superpowers_context_transform` per LLM call.
+ */
+function instrumentBootstrapInjection<M>(
+  session: {
+    agent: {
+      transformContext?: (messages: M[], signal?: AbortSignal) => Promise<M[]>;
+    };
+  },
+  sessionId: string,
+): void {
+  const log = getTraceLogger("worker");
+  const inner = session.agent.transformContext;
+  session.agent.transformContext = async (messages: M[], signal?: AbortSignal) => {
+    const before = messages.length;
+    const transformed = inner ? await inner(messages, signal) : messages;
+    const markerIndex = transformed.findIndex((m) =>
+      messageText(m).includes(SUPERPOWERS_BOOTSTRAP_MARKER),
+    );
+    log.info("debug.superpowers_context_transform", {
+      sessionId,
+      messageCountBefore: before,
+      messageCountAfter: transformed.length,
+      bootstrapInjected: transformed.length > before,
+      bootstrapMarkerIndex: markerIndex,
+      bootstrapLength: markerIndex >= 0 ? messageText(transformed[markerIndex]).length : 0,
+      roles: transformed.slice(0, 4).map((m) => (m as { role?: string }).role),
+    });
+    return transformed;
   };
 }
 
@@ -952,7 +1011,7 @@ export async function sendPrompt(
   // Harness trace to compare bootstrap injection across sessions. The
   // extension injects the bootstrap into the context, not the system prompt,
   // so `hasBootstrapInSystemPromptBefore` is expected to stay false (see
-  // `debug.superpowers_bootstrap_injection`).
+  // `debug.superpowers_context_transform`).
   {
     const sysPrompt = entry.runtime.session.systemPrompt ?? "";
     const rl = entry.runtime.services?.resourceLoader;
