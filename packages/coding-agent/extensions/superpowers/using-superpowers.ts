@@ -10,7 +10,9 @@
  * it before every provider call — but keeps the content here instead of in
  * `skills/`, so the per-harness adaptation lives in one place.
  * `extensions/superpowers/index.ts` wraps it in `<EXTREMELY_IMPORTANT>` and
- * prepends it as a user message at the head of the context.
+ * prepends it as a user message at the head of the context, on every LLM
+ * call — upstream only does so on the first turn of a session and leaves the
+ * rest to the model loading the skill by itself.
  *
  * `session-manager.ts` does NOT append this via
  * `resourceLoaderOptions.appendSystemPrompt` — the extension owns the

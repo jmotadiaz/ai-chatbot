@@ -29,9 +29,13 @@ function logInjection(payload: Record<string, unknown>): void {
  * The transform runs on a clone of the message list, so the bootstrap never
  * reaches `session.messages`, the session file, or the UI transcript.
  *
- * Cadence matches upstream: `session_start` and `session_compact` arm the
- * injection, `agent_end` disarms it, so the bootstrap rides along on the first
- * turn of a session and on the first turn after each compaction.
+ * Cadence is harness-owned and deliberately diverges from upstream. Upstream
+ * arms the injection on `session_start`/`session_compact` and disarms it on
+ * `agent_end`, so the bootstrap only rides the first turn of a session; from
+ * turn two on it relies on the model choosing to load the `using-superpowers`
+ * skill from the catalogue. This harness does not leave that to the model: the
+ * bootstrap is injected on every LLM call. Being at the head of the context it
+ * is also a stable cache prefix, since the conversation grows after it.
  *
  * The extension is not loaded for subagent runtimes at all (see
  * `getExtensionPaths({ includeSuperpowersExtension: false })`), so the
@@ -53,26 +57,14 @@ ${USING_SUPERPOWERS_PROMPT}
 ${EXTREMELY_IMPORTANT_CLOSE}`;
 
 export default function superpowersExtension(pi: ExtensionAPI): void {
-  let injectBootstrap = true;
-
   pi.on("resources_discover", async () => ({
     skillPaths: [skillsDir],
   }));
 
-  pi.on("session_start", async () => {
-    injectBootstrap = true;
-  });
-
-  pi.on("session_compact", async () => {
-    injectBootstrap = true;
-  });
-
-  pi.on("agent_end", async () => {
-    injectBootstrap = false;
-  });
-
   pi.on("context", async (event) => {
-    if (!injectBootstrap) return;
+    // The marker check is the only guard: `context` transforms a clone per
+    // provider call, so a list already carrying the bootstrap means another
+    // handler put it there, not that this one already ran.
     if (event.messages.some(messageContainsBootstrap)) return;
 
     const bootstrapMessage = {

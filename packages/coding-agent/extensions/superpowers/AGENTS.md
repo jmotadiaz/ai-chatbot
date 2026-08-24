@@ -51,9 +51,14 @@ bootstrap via `resourceLoaderOptions.appendSystemPrompt` (only
    messages. The transform runs on a clone of the message list, so the
    bootstrap never reaches `session.messages`, the session file, or the UI
    transcript.
-3. Cadence matches upstream: `session_start` and `session_compact` arm the
-   injection, `agent_end` disarms it — the bootstrap rides on the first turn
-   of a session and on the first turn after each compaction.
+3. Cadence is harness-owned and **diverges from upstream**. Upstream arms the
+   injection on `session_start`/`session_compact` and disarms it on
+   `agent_end`, so only the first turn of a session carries the bootstrap;
+   from turn two on it depends on the model deciding to load the
+   `using-superpowers` skill from the catalogue on its own. Here that is not
+   left to the model: the bootstrap is injected on every LLM call, and the
+   skill stays out of `skills/`. At the head of the context it also forms a
+   stable cache prefix, since the conversation grows after it.
 4. Subagent runtimes exclude the superpowers extension **entirely** (bootstrap
    AND the 13 skills): `makeCreateRuntime` passes
    `includeSuperpowersExtension: false` alongside

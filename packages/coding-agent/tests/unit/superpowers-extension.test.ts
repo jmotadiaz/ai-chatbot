@@ -108,26 +108,27 @@ describe("superpowers extension", () => {
     expect(second).toBeUndefined();
   });
 
-  it("stops injecting after agent_end and resumes after compaction", async () => {
+  it("keeps injecting on every turn, including after agent_end", async () => {
+    // Upstream disarms on `agent_end` and leaves turn two onwards to the model
+    // loading the using-superpowers skill by itself. The harness does not: the
+    // bootstrap must ride every call.
     const { fire, context } = bindExtension();
 
     expect(await context([userMessage("turno 1")])).toBeDefined();
 
     await fire("agent_end");
-    expect(await context([userMessage("turno 2")])).toBeUndefined();
+    expect(await context([userMessage("turno 2")])).toBeDefined();
 
-    await fire("session_compact");
+    await fire("agent_end");
     expect(await context([userMessage("turno 3")])).toBeDefined();
   });
 
-  it("re-arms the injection on session_start", async () => {
-    const { fire, context } = bindExtension();
+  it("registers no session lifecycle handlers to gate the injection", async () => {
+    const { handlers } = bindExtension();
 
-    await fire("agent_end");
-    expect(await context([userMessage("turno")])).toBeUndefined();
-
-    await fire("session_start");
-    expect(await context([userMessage("turno")])).toBeDefined();
+    expect(handlers.has("session_start")).toBe(false);
+    expect(handlers.has("session_compact")).toBe(false);
+    expect(handlers.has("agent_end")).toBe(false);
   });
 
   it("does not append the bootstrap to the system prompt", async () => {
