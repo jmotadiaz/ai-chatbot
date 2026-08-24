@@ -12,7 +12,7 @@ First-party Pi extension providing the [Superpowers](https://github.com/obra/sup
 ```text
 extensions/superpowers/
 ├── index.ts               # Extension entrypoint (registers ./skills via resources_discover)
-├── using-superpowers.ts   # Bootstrap embedded in the system prompt (see below) [MODIFIED]
+├── using-superpowers.ts   # Bootstrap injected as a context (user) message (see below) [MODIFIED]
 ├── AGENTS.md              # Upstream version info, applied modifications, and upgrade instructions
 └── skills/                # 13 Superpowers skills (using-superpowers extracted from here)
     ├── brainstorming/                # [MODIFIED] Customized for harness file browser review flow
@@ -33,22 +33,28 @@ extensions/superpowers/
 ### `using-superpowers.ts` (Bootstrap, not a skill)
 
 Upstream ships `using-superpowers` as a skill and injects it at session start
-through an extension `context` event (user-message prepend). That event is dead
-in this harness: the SDK's provider adapters (`@earendil-works/pi-ai`) never
-consume `transformContext`. The content therefore lives in
-`using-superpowers.ts` and is injected by the extension itself via
-`pi.on("before_agent_start")`, which **appends** `USING_SUPERPOWERS_PROMPT` to
-`event.systemPrompt` on every turn (append al final, como hacía el anterior
-`resourceLoaderOptions.appendSystemPrompt` y como prefieres — antes era prepend).
+through the extension `context` event (user-message prepend). This harness
+keeps that channel — it is live in pi 0.79.3: `dist/core/sdk.js` wires
+`transformContext` to `ExtensionRunner.emitContext`, and
+`@earendil-works/pi-agent-core` applies it in `streamAssistantResponse` before
+every provider call — but keeps the content in `using-superpowers.ts` instead
+of in `skills/`, so the harness adaptation lives in one place.
 Intercambio, no superposición: `src/session-manager.ts` does NOT append the
 bootstrap via `resourceLoaderOptions.appendSystemPrompt` (only
 `FILE_REFERENCE_PROMPT` stays there); the extension owns the injection.
 
 1. The skill was extracted from `skills/` (its `references/` per-harness tool
    mappings were deleted; the Pi tool mapping is inlined in the content).
-2. `USING_SUPERPOWERS_PROMPT` lives in `using-superpowers.ts` and is
-   prepended by `extensions/superpowers/index.ts` via `before_agent_start`.
-3. Subagent runtimes exclude the superpowers extension **entirely** (bootstrap
+2. `extensions/superpowers/index.ts` wraps `USING_SUPERPOWERS_PROMPT` in
+   `<EXTREMELY_IMPORTANT>` plus an idempotency marker and prepends it as a
+   `user` message at the head of the context, after any `compactionSummary`
+   messages. The transform runs on a clone of the message list, so the
+   bootstrap never reaches `session.messages`, the session file, or the UI
+   transcript.
+3. Cadence matches upstream: `session_start` and `session_compact` arm the
+   injection, `agent_end` disarms it — the bootstrap rides on the first turn
+   of a session and on the first turn after each compaction.
+4. Subagent runtimes exclude the superpowers extension **entirely** (bootstrap
    AND the 13 skills): `makeCreateRuntime` passes
    `includeSuperpowersExtension: false` alongside
    `includeSubagentExtension: false` (the flag that also strips the `subagent`
@@ -58,7 +64,7 @@ bootstrap via `resourceLoaderOptions.appendSystemPrompt` (only
    agent alone. The content therefore carries no `<SUBAGENT-STOP>` block — the
    harness does not load it for subagents, instead of loading it and telling
    the model to ignore it.
-4. Because the content is injected via the extension (not the resource loader),
+5. Because the content is injected via the extension (not the resource loader),
    the skill is not discoverable and `resources_discover` never lists it.
 
 ## Modifications Applied to Upstream Skills
@@ -151,7 +157,7 @@ When upgrading Superpowers to a newer upstream release, follow these steps:
    - Copy the updated skills into `extensions/superpowers/skills/`. Do NOT copy `using-superpowers/` (it is not a discoverable skill in this harness).
    - Reapply the harness review flow modifications to `extensions/superpowers/skills/brainstorming/SKILL.md` (see section above).
    - Reapply the model selection modifications to `extensions/superpowers/skills/subagent-driven-development/` (see section above).
-   - Update the embedded bootstrap in `using-superpowers.ts`: copy the new upstream `skills/using-superpowers/SKILL.md` body (minus front matter, minus the `## Platform Adaptation` section and its `references/`, minus the `<SUBAGENT-STOP>` block — subagents are excluded structurally by `makeCreateRuntime` via `includeSuperpowersExtension: false`) into the template string, keeping the "You have superpowers. …" preamble, the pi tool mapping in `## Platform Adaptation`, and the `\` escaping for inline code. The injection point stays `pi.on("before_agent_start")` in `extensions/superpowers/index.ts` (systemPrompt prepend), not `resourceLoaderOptions.appendSystemPrompt`.
+   - Update the embedded bootstrap in `using-superpowers.ts`: copy the new upstream `skills/using-superpowers/SKILL.md` body (minus front matter, minus the `## Platform Adaptation` section and its `references/`, minus the `<SUBAGENT-STOP>` block — subagents are excluded structurally by `makeCreateRuntime` via `includeSuperpowersExtension: false`) into the template string, keeping the "You have superpowers. …" preamble, the pi tool mapping in `## Platform Adaptation`, and the `\` escaping for inline code. The injection point stays `pi.on("context")` in `extensions/superpowers/index.ts` (user-message prepend, as upstream), not `resourceLoaderOptions.appendSystemPrompt`.
 
 3. **Update Version Record:**
    - Update `Base Ref / Version` in this `AGENTS.md` file.

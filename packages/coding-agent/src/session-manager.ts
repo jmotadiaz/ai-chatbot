@@ -320,20 +320,20 @@ function makeCreateRuntime(
       resourceLoaderOptions: {
         // FILE_REFERENCE_PROMPT is harness-owned. The superpowers bootstrap
         // (USING_SUPERPOWERS_PROMPT) is NOT appended here — the superpowers
-        // extension injects it via `before_agent_start` (systemPrompt append,
-        // al final como pediste), que es el hook verificado por turno que
-        // reemplaza al muerto upstream `context`. Ver
-        // `extensions/superpowers/index.ts` y `extensions/superpowers/AGENTS.md`.
+        // extension injects it through the upstream `context` channel, as a
+        // user message at the head of the context. See
+        // `extensions/superpowers/index.ts` and
+        // `extensions/superpowers/AGENTS.md`.
         appendSystemPrompt: [FILE_REFERENCE_PROMPT],
         additionalExtensionPaths: getExtensionPaths({
           includeSubagentExtension: options?.includeSubagentExtension ?? true,
           includeSuperpowersExtension: !isSubagentRuntime,
         }),
         // Skills are discovered from `additionalExtensionPaths` only when the
-        // path is a skill package (directory with `skills/`). Since first-party
-        // extensions are now passed as files (`index.ts`) to ensure the
-        // extension hooks (`before_agent_start`) are registered, their skills
-        // must be provided explicitly via `additionalSkillPaths`.
+        // path is a skill package (directory with `skills/`) — and in that
+        // case the directory is NOT registered as an extension, so its hooks
+        // never run. First-party extensions are therefore passed as files
+        // (`index.ts`) and their skills provided explicitly here.
         additionalSkillPaths: getFirstPartySkillPathsFiltered({
           includeSubagentExtension: options?.includeSubagentExtension ?? true,
           includeSuperpowersExtension: !isSubagentRuntime,
@@ -365,16 +365,17 @@ function makeCreateRuntime(
     // lifecycle so extension-provided skills and bootstrap hooks are active.
     await sessionResult.session.bindExtensions({ mode: "rpc" });
 
-    // Harness trace for bootstrap mechanism comparison (old: appendSystemPrompt
-    // vs new: before_agent_start append). Visible in lifecycle/raw ndjson.
+    // Harness trace for bootstrap state at bind time. The bootstrap itself
+    // never lands in the system prompt: the extension injects it into the
+    // context (see `debug.superpowers_bootstrap_injection`).
     {
       const log2 = getTraceLogger("worker");
       const sysPrompt = sessionResult.session.systemPrompt ?? "";
       log2.info("debug.harness_bootstrap_state", {
-        mechanism: "before_agent_start (extension, systemPrompt append)",
+        mechanism: "context (extension, user message prepend)",
         isSubagentRuntime,
-        // At bind time the per-turn `before_agent_start` has not fired yet,
-        // so hasBootstrap is expected false — it becomes true on `prompt()`.
+        // The bootstrap rides in the context, never in the system prompt, so
+        // this is expected to stay false.
         hasBootstrapInSystemPromptAfterBind: sysPrompt.includes(
           "You have superpowers",
         ),
@@ -948,17 +949,17 @@ export async function sendPrompt(
     skillPaths: loadedSkills.map((skill) => skill.filePath),
   });
 
-  // Harness trace to compare bootstrap injection across sessions.
-  // `before_agent_start` (extension) will append the bootstrap on this
-  // turn, so `hasBootstrapBefore` is expected false here and true after
-  // the extension fires (see `debug.superpowers_bootstrap_injection`).
+  // Harness trace to compare bootstrap injection across sessions. The
+  // extension injects the bootstrap into the context, not the system prompt,
+  // so `hasBootstrapInSystemPromptBefore` is expected to stay false (see
+  // `debug.superpowers_bootstrap_injection`).
   {
     const sysPrompt = entry.runtime.session.systemPrompt ?? "";
     const rl = entry.runtime.services?.resourceLoader;
     log.info("debug.prompt_bootstrap_before", {
       sessionId,
       runId,
-      mechanism: "before_agent_start (extension, systemPrompt prepend)",
+      mechanism: "context (extension, user message prepend)",
       hasBootstrapInSystemPromptBefore: sysPrompt.includes(
         "You have superpowers",
       ),

@@ -111,7 +111,7 @@ describe("superpowers first-party extension integration", () => {
     expect(skillNames).toContain("systematic-debugging");
 
     // using-superpowers is no longer a discoverable skill: it was extracted
-    // from skills/ and embedded as a system-prompt bootstrap (see
+    // from skills/ and is injected into the context by the extension (see
     // extensions/superpowers/using-superpowers.ts).
     expect(skillNames).not.toContain("using-superpowers");
 

@@ -1,16 +1,16 @@
 /**
- * Using-superpowers content injected as a system-prompt append by the
+ * Using-superpowers content injected as a context (user) message by the
  * superpowers extension.
  *
  * Upstream (obra/superpowers v6.2.0) ships this as a discoverable skill
  * (`skills/using-superpowers/SKILL.md`) and injects it at session start
- * through the extension `context` event (user-message prepend). In this
- * harness that event is dead — the SDK's provider adapters
- * (`@earendil-works/pi-ai`) never consume `transformContext` — so the skill
- * was silently never loaded. The content lives here and is injected by
- * `extensions/superpowers/index.ts` via `pi.on("before_agent_start")`, which
- * appends it to `event.systemPrompt` on every turn (you prefer append over
- * prepend, as the previous `resourceLoaderOptions.appendSystemPrompt` did).
+ * through the extension `context` event. This harness keeps that channel —
+ * it is live in pi 0.79.3: `dist/core/sdk.js` wires `transformContext` to
+ * `ExtensionRunner.emitContext`, and `@earendil-works/pi-agent-core` applies
+ * it before every provider call — but keeps the content here instead of in
+ * `skills/`, so the per-harness adaptation lives in one place.
+ * `extensions/superpowers/index.ts` wraps it in `<EXTREMELY_IMPORTANT>` and
+ * prepends it as a user message at the head of the context.
  *
  * `session-manager.ts` does NOT append this via
  * `resourceLoaderOptions.appendSystemPrompt` — the extension owns the
@@ -32,7 +32,7 @@
 
 export const USING_SUPERPOWERS_PROMPT = `You have superpowers.
 
-The using-superpowers skill content is included below and is part of your system instructions. Follow it on every turn. Do not try to load using-superpowers again.
+The using-superpowers skill content is included below and is already loaded for this Pi session. Follow it now. Do not try to load using-superpowers again.
 
 <EXTREMELY-IMPORTANT>
 If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
