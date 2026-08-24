@@ -1,8 +1,27 @@
 import { parseFrontmatter } from "@earendil-works/pi-coding-agent";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import nunjucks from "nunjucks";
 import { getPiPackagesDir } from "./pi-packages";
 import { PACKAGE_ROOT } from "./paths";
+
+/**
+ * Nunjucks environment for prompt rendering (Jinja2 syntax per the Prompty
+ * spec). Options are locked on purpose:
+ * - `autoescape: false` — prompt text goes to a chat/textarea; HTML-escaping
+ *   would corrupt markdown and code.
+ * - `trimBlocks`/`lstripBlocks` — drop newlines and leading whitespace
+ *   around block tags (`{% if %}` etc.) so empty blocks leave no stray
+ *   blank lines.
+ * - Missing variables render as `""` (`throwOnUndefined` default false),
+ *   matching the pre-nunjucks behavior.
+ * Stateless per render; safe to share across all sessions.
+ */
+const promptEnv = new nunjucks.Environment(null, {
+  autoescape: false,
+  trimBlocks: true,
+  lstripBlocks: true,
+});
 
 export interface PromptInput {
   name: string;
@@ -229,29 +248,53 @@ export function resolveProjectPrompt(
     rendered[input.name] = renderInputValue(input, rawValue);
   }
 
-  // 4. Substitute {{var}} placeholders. The replacement is a function so
-  //    user-supplied values are never interpreted as `$` patterns ($&, $',
-  //    $`, $$) by String.prototype.replace.
-  const sourceLines = body.split("\n");
-  const lineHasPlaceholder = sourceLines.map((line) => /\{\{[^{}]*\}\}/.test(line));
-  for (const [varName, varValue] of Object.entries(rendered)) {
-    body = body.replace(
-      new RegExp(`\\{\\{${escapeRegex(varName)}\\}\\}`, "g"),
-      () => varValue,
+  // 4. Render the body with nunjucks (Jinja2). Values are passed as the
+  //    template context: they are never re-parsed, so `$` patterns and
+  //    literal `{{`/`{%` inside values render as-is. Note: an undeclared
+  //    `{{placeholder}}` now renders as "" (throwOnUndefined: false)
+  //    instead of staying literal — nunjucks semantics, spec-consistent.
+  let text: string;
+  try {
+    text = renderPromptBody(body, rendered);
+  } catch (error) {
+    // nunjucks reports syntax errors as a plain Error whose message embeds
+    // the position, e.g. "(unknown path) [Line 3, Column 7]" — the sync
+    // renderString path does not expose `err.lineno`.
+    const message = error instanceof Error ? error.message : String(error);
+    const match = message.match(/\[Line (\d+), Column (\d+)\]/);
+    if (match) {
+      throw new Error(
+        `Prompt "${promptName}": error de plantilla en línea ${match[1]} de ${prompt.filePath}: ${message}`,
+      );
+    }
+    throw new Error(
+      `Prompt "${promptName}": error de plantilla de ${prompt.filePath}: ${message}`,
     );
   }
+  return { text };
+}
 
-  // 5. Drop lines that contained an input placeholder and became empty
-  //    because an optional input was left unfilled (spec §4.3 step 5).
-  //    Lines that were blank in the template itself carry no placeholder,
-  //    so intentional blank lines are preserved.
-  body = body
+/**
+ * Render a prompt body against the declared input values.
+ *
+ * Step 1 — render with nunjucks.
+ * Step 2 — drop lines left empty by unfilled optional inputs (spec §4.3
+ * step 5): a line that contained a `{{var}}` placeholder and rendered to
+ * nothing is removed; lines that were blank in the template itself carry no
+ * placeholder, so intentional blank lines are preserved. (Task 2 rewrites
+ * this post-pass to also handle `{%...%}` block tags.)
+ */
+function renderPromptBody(body: string, view: Record<string, string>): string {
+  const sourceLines = body.split("\n");
+  const lineHasPlaceholder = sourceLines.map((line) =>
+    /\{\{[^{}]*\}\}/.test(line),
+  );
+  body = promptEnv.renderString(body, view);
+  return body
     .split("\n")
     .filter((line, index) => !(lineHasPlaceholder[index] && line.trim() === ""))
     .join("\n")
     .trim();
-
-  return { text: body };
 }
 
 function renderInputValue(input: PromptInput, value: string): string {
@@ -300,6 +343,3 @@ function renderInputValue(input: PromptInput, value: string): string {
   }
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}

@@ -125,4 +125,134 @@ Done.`);
     });
     expect(result.text).toBe("Hello A$&B!\n\nhappy");
   });
+
+  it("renders {% if %}/{% elif %}/{% else %} conditionals", () => {
+    const condRoot = join(tmpRoot, "conditional-project");
+    const promptsDir = join(condRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "classify.prompty"), `---
+name: classify
+description: Conditional
+inputs:
+  - name: type
+    kind: string
+    description: Tipo
+    enumValues: [bug, perf, style]
+---
+
+{% if type == "bug" %}
+BUG
+{% elif type == "perf" %}
+PERF
+{% else %}
+OTRO
+{% endif %}`);
+
+    loadPrompts(condRoot);
+    expect(resolveProjectPrompt(condRoot, "classify", { type: "bug" }).text).toBe(
+      "BUG",
+    );
+    expect(resolveProjectPrompt(condRoot, "classify", { type: "perf" }).text).toBe(
+      "PERF",
+    );
+    expect(resolveProjectPrompt(condRoot, "classify", { type: "style" }).text).toBe(
+      "OTRO",
+    );
+  });
+
+  it("treats an empty string as falsy in {% if %}", () => {
+    const truthRoot = join(tmpRoot, "truthy-project");
+    const promptsDir = join(truthRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "flag.prompty"), `---
+name: flag
+description: Truthiness
+inputs:
+  - name: extra_context
+    kind: string
+    description: Extra
+    required: false
+---
+
+{% if extra_context %}
+Y
+{% else %}
+N
+{% endif %}`);
+
+    loadPrompts(truthRoot);
+    expect(
+      resolveProjectPrompt(truthRoot, "flag", { extra_context: "" }).text,
+    ).toBe("N");
+    expect(
+      resolveProjectPrompt(truthRoot, "flag", { extra_context: "notas" }).text,
+    ).toBe("Y");
+  });
+
+  it("renders {% for %} loops and {% set %}", () => {
+    const loopRoot = join(tmpRoot, "loop-project");
+    const promptsDir = join(loopRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "list.prompty"), `---
+name: list
+description: Loop
+inputs:
+  - name: items
+    kind: string
+    description: Items separados por newline
+---
+
+Items:
+{% for i in items.split("\\n") %}- {{i}}
+{% endfor %}
+{% set total = "2" %}
+Total: {{total}}`);
+
+    loadPrompts(loopRoot);
+    const result = resolveProjectPrompt(loopRoot, "list", {
+      items: "a\nb",
+    });
+    expect(result.text).toBe("Items:\n- a\n- b\nTotal: 2");
+  });
+
+  it("wraps template syntax errors with file and line number", () => {
+    const badRoot = join(tmpRoot, "bad-project");
+    const promptsDir = join(badRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "bad.prompty"), `---
+name: bad
+description: Broken
+inputs: []
+---
+
+Línea 1
+{% if %}`);
+
+    loadPrompts(badRoot);
+    expect(() => resolveProjectPrompt(badRoot, "bad", {})).toThrow(
+      /Prompt "bad": error de plantilla en línea 2 de .*bad\.prompty: \(unknown path\) \[Line 2, Column \d+\]/,
+    );
+  });
+
+  it("does not re-parse braces inside substituted values", () => {
+    const bracesRoot = join(tmpRoot, "braces-project");
+    const promptsDir = join(bracesRoot, ".agents", "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    writeFileSync(join(promptsDir, "braces.prompty"), `---
+name: braces
+description: Braces
+inputs:
+  - name: v
+    kind: string
+    description: Valor
+---
+
+{{v}}`);
+
+    loadPrompts(bracesRoot);
+    const result = resolveProjectPrompt(bracesRoot, "braces", {
+      v: "{{nope}} y {% if %}",
+    });
+    expect(result.text).toBe("{{nope}} y {% if %}");
+  });
 });

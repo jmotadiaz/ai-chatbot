@@ -27,6 +27,7 @@
     "@earendil-works/pi-coding-agent": "^0.79.3",
     "config": "workspace:*",
     "models": "workspace:*",
+    "nunjucks": "^3.2.4",
     "tracing": "workspace:*",
     "typebox": "1.1.38"
   },
@@ -45,6 +46,7 @@
     "test:unit:watch": "vitest tests/unit"
   },
   "devDependencies": {
+    "@types/nunjucks": "^3.2.6",
     "vitest": "^4.0.18"
   }
 }
