@@ -99,13 +99,29 @@ describe("superpowers extension", () => {
     expect(textOf(result?.messages[1])).toContain("You have superpowers.");
   });
 
-  it("does not inject twice into the same context", async () => {
+  it("still injects when a tool result quotes the bootstrap marker", async () => {
+    // The agent reading this extension's own source pulls the marker into the
+    // history. Upstream's "already injected?" guard would trip on that and
+    // silently drop the bootstrap for the rest of the session; there is no
+    // such guard here, because the transformed list is thrown away after each
+    // request and a previous injection is undetectable by construction.
     const { context } = bindExtension();
 
-    const first = await context([userMessage("hola")]);
-    const second = await context(first?.messages ?? []);
+    const result = await context([
+      userMessage("lee extensions/superpowers/index.ts"),
+      {
+        role: "toolResult",
+        content: [
+          {
+            type: "text",
+            text: 'const BOOTSTRAP_MARKER = "superpowers:using-superpowers bootstrap for pi";',
+          },
+        ],
+      },
+    ]);
 
-    expect(second).toBeUndefined();
+    expect(result?.messages).toHaveLength(3);
+    expect(textOf(result?.messages[0])).toContain("You have superpowers.");
   });
 
   it("keeps injecting on every turn, including after agent_end", async () => {

@@ -46,11 +46,17 @@ bootstrap via `resourceLoaderOptions.appendSystemPrompt` (only
 1. The skill was extracted from `skills/` (its `references/` per-harness tool
    mappings were deleted; the Pi tool mapping is inlined in the content).
 2. `extensions/superpowers/index.ts` wraps `USING_SUPERPOWERS_PROMPT` in
-   `<EXTREMELY_IMPORTANT>` plus an idempotency marker and prepends it as a
+   `<EXTREMELY_IMPORTANT>` plus an identifying line and prepends it as a
    `user` message at the head of the context, after any `compactionSummary`
    messages. The transform runs on a clone of the message list, so the
    bootstrap never reaches `session.messages`, the session file, or the UI
-   transcript.
+   transcript. Nothing branches on that line — the prepend is unconditional,
+   and the harness only uses it to locate the message in a payload
+   (`bootstrapMarkerIndex`). Upstream guards the injection with an "already
+   present?" check; it cannot work here (the transformed copy is discarded
+   after each request, so a previous injection is undetectable) and it fires
+   on any tool result quoting the marker, such as a `read` of the extension's
+   own source.
 3. Cadence is harness-owned and **diverges from upstream**. Upstream arms the
    injection on `session_start`/`session_compact` and disarms it on
    `agent_end`, so only the first turn of a session carries the bootstrap;

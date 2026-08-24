@@ -44,7 +44,12 @@ function logInjection(payload: Record<string, unknown>): void {
  */
 const EXTREMELY_IMPORTANT_OPEN = "<EXTREMELY_IMPORTANT>";
 const EXTREMELY_IMPORTANT_CLOSE = "</EXTREMELY_IMPORTANT>";
-/** Idempotency marker: a context already carrying it is never re-injected. */
+/**
+ * Identifying line carried by the bootstrap message. Nothing branches on it:
+ * the injection is unconditional. It exists so the harness can find the
+ * message in a payload — `src/session-manager.ts` reports its index as
+ * `bootstrapMarkerIndex` in `debug.superpowers_context_transform`.
+ */
 const BOOTSTRAP_MARKER = "superpowers:using-superpowers bootstrap for pi";
 
 const extensionDir = dirname(fileURLToPath(import.meta.url));
@@ -61,12 +66,14 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
     skillPaths: [skillsDir],
   }));
 
+  // Unconditional prepend, no inspection of the list. `emitContext` hands each
+  // handler a `structuredClone` of the agent's messages and the agent loop
+  // throws the transformed copy away after the request, so a previous
+  // injection leaves no trace to detect — a "have I already injected?" check
+  // could only ever produce false positives. Upstream ships one; it would fire
+  // on any tool result quoting the marker (a `read` of this very file, say)
+  // and silently disable the bootstrap for the rest of the session.
   pi.on("context", async (event) => {
-    // The marker check is the only guard: `context` transforms a clone per
-    // provider call, so a list already carrying the bootstrap means another
-    // handler put it there, not that this one already ran.
-    if (event.messages.some(messageContainsBootstrap)) return;
-
     const bootstrapMessage = {
       role: "user" as const,
       content: [{ type: "text" as const, text: BOOTSTRAP_MESSAGE_TEXT }],
@@ -88,21 +95,6 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
         ...event.messages.slice(insertAt),
       ],
     };
-  });
-}
-
-function messageContainsBootstrap(message: unknown): boolean {
-  const content = (message as { content?: unknown }).content;
-  if (typeof content === "string") return content.includes(BOOTSTRAP_MARKER);
-  if (!Array.isArray(content)) return false;
-  return content.some((part) => {
-    return (
-      part &&
-      typeof part === "object" &&
-      (part as { type?: unknown }).type === "text" &&
-      typeof (part as { text?: unknown }).text === "string" &&
-      (part as { text: string }).text.includes(BOOTSTRAP_MARKER)
-    );
   });
 }
 
