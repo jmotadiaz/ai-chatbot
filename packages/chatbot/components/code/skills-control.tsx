@@ -35,7 +35,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
   promptsError,
   onPromptSelect,
 }) => {
-  const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
+  const { getDropdownPopupProps, getDropdownTriggerProps, close } = useDropdown();
   const [activeTab, setActiveTab] = useState<"skills" | "prompts">("skills");
 
   return (
@@ -168,7 +168,13 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                 <button
                   key={prompt.name}
                   type="button"
-                  onClick={() => onPromptSelect?.(prompt.name)}
+                  onClick={() => {
+                    // Launch action: el modal del prompt toma el foco, así
+                    // que el dropdown se cierra aquí (antes quedaba abierto
+                    // tras el submit del formulario).
+                    close();
+                    onPromptSelect?.(prompt.name);
+                  }}
                   className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-accent-foreground"
                 >
                   <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-zinc-400">

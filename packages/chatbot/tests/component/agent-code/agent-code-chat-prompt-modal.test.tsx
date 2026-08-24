@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { AgentCodeChat } from "@/components/code/agent-code-chat";
 
 const mocks = vi.hoisted(() => ({
@@ -81,6 +81,22 @@ describe("AgentCodeChat prompt modal", () => {
     expect(select.tagName).toBe("SELECT");
     expect(Array.from(select.options).map((o) => o.textContent)).toContain(
       "Session A",
+    );
+  });
+
+  it("closes the skills dropdown when a prompt is selected", async () => {
+    render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelThinking={new Map()} />);
+
+    fireEvent.click(screen.getByLabelText("Select skills"));
+    fireEvent.click(await screen.findByRole("tab", { name: "Prompts" }));
+    fireEvent.click(await screen.findByText("review"));
+
+    // El modal del prompt se abre…
+    await screen.findByLabelText(/Session/);
+    // …y el dropdown de skills/prompts se cierra (antes seguía abierto tras
+    // el submit, tapando el flujo).
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole("tab", { name: "Prompts" }),
     );
   });
 });
