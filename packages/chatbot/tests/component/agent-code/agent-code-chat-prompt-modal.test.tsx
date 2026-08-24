@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { AgentCodeChat } from "@/components/code/agent-code-chat";
 
@@ -62,10 +62,16 @@ vi.mock("@/components/code/file-browser/pending-comments-bar", () => ({
 }));
 
 // jsdom in this setup does not expose the CSS global the Textarea autosize
-// effect probes.
-vi.stubGlobal("CSS", { supports: () => true });
+// effect probes. Re-stubbed in beforeEach because afterEach unstubs globals
+// (the fetch mock of the prompt-resolve flow).
+beforeEach(() => {
+  vi.stubGlobal("CSS", { supports: () => true });
+});
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("AgentCodeChat prompt modal", () => {
   it("passes the labeled sessions into the session select of the prompt form", async () => {
@@ -84,17 +90,41 @@ describe("AgentCodeChat prompt modal", () => {
     );
   });
 
-  it("closes the skills dropdown when a prompt is selected", async () => {
+  it("keeps the dropdown open when the prompt modal is cancelled", async () => {
     render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelThinking={new Map()} />);
 
     fireEvent.click(screen.getByLabelText("Select skills"));
     fireEvent.click(await screen.findByRole("tab", { name: "Prompts" }));
     fireEvent.click(await screen.findByText("review"));
 
-    // El modal del prompt se abre…
+    // El modal se abre y el dropdown permanece abierto detrás.
     await screen.findByLabelText(/Session/);
-    // …y el dropdown de skills/prompts se cierra (antes seguía abierto tras
-    // el submit, tapando el flujo).
+    expect(screen.getByRole("tab", { name: "Prompts" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    // El modal se desmonta síncrono al cancelar; el dropdown sigue abierto.
+    expect(screen.queryByLabelText(/Session/)).toBeNull();
+    expect(screen.getByRole("tab", { name: "Prompts" })).toBeTruthy();
+  });
+
+  it("closes the dropdown when the prompt is inserted", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ text: "resolved text" }),
+      })),
+    );
+    render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelThinking={new Map()} />);
+
+    fireEvent.click(screen.getByLabelText("Select skills"));
+    fireEvent.click(await screen.findByRole("tab", { name: "Prompts" }));
+    fireEvent.click(await screen.findByText("review"));
+
+    const select = (await screen.findByLabelText(/Session/)) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "s1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Insert" }));
+
     await waitForElementToBeRemoved(() =>
       screen.queryByRole("tab", { name: "Prompts" }),
     );

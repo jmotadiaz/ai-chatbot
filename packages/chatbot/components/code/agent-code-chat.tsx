@@ -89,6 +89,10 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   } = useCodingAgentSkills(sessionId, !isLoading, bootstrap?.skills);
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
+  // Apertura del dropdown de skills/prompts, gobernada por el parent para
+  // que el flujo del modal pueda cerrarlo al insertar el texto (no al
+  // cancelar).
+  const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
 
   const {
     prompts,
@@ -134,6 +138,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   const handlePromptInsert = (text: string) => {
     setInput((prev) => (prev ? `${prev}\n\n${text}` : text));
     setPromptModal(null);
+    // Insertar reemplaza el selector: el dropdown se cierra. Al cancelar el
+    // modal permanece abierto para poder elegir otro prompt.
+    setPromptDropdownOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,6 +243,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               isLoadingPrompts={isLoadingPrompts}
               promptsError={promptsError}
               onPromptSelect={handlePromptSelect}
+              open={promptDropdownOpen}
+              onOpenChange={setPromptDropdownOpen}
             />
           </div>
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">

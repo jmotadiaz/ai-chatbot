@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { Check, FolderOpen, Puzzle } from "lucide-react";
 import { ChatControl } from "@/components/chat/control";
-import { Dropdown, useDropdown } from "@/components/ui/dropdown";
+import { Dropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils/helpers";
 import type { PromptSummary } from "@/lib/features/code/worker-client";
 
@@ -22,6 +22,13 @@ export interface SkillsControlProps {
   isLoadingPrompts?: boolean;
   promptsError?: string | null;
   onPromptSelect?: (promptName: string) => void;
+  /**
+   * Popup controlado: si se proveen, el parent gobierna la apertura (el
+   * flujo de prompts cierra el dropdown al insertar el texto, pero lo deja
+   * abierto al cancelar el modal). Sin `open`, el control es autónomo.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const SkillsControl: React.FC<SkillsControlProps> = ({
@@ -34,8 +41,17 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
   isLoadingPrompts = false,
   promptsError,
   onPromptSelect,
+  open,
+  onOpenChange,
 }) => {
-  const { getDropdownPopupProps, getDropdownTriggerProps, close } = useDropdown();
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open !== undefined ? open : internalOpen;
+  const setOpen = (next: boolean) => {
+    startTransition(() => {
+      if (open !== undefined) onOpenChange?.(next);
+      else setInternalOpen(next);
+    });
+  };
   const [activeTab, setActiveTab] = useState<"skills" | "prompts">("skills");
 
   return (
@@ -46,10 +62,11 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
         aria-label="Select skills"
         title="Select skills"
         isActive={selectedSkills.length > 0}
-        {...getDropdownTriggerProps()}
+        onClick={() => setOpen(!isOpen)}
       />
       <Dropdown.Popup
-        {...getDropdownPopupProps()}
+        isShown={isOpen}
+        close={() => setOpen(false)}
         variant="responsive-top-right"
         className="w-full lg:w-96"
       >
@@ -168,13 +185,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                 <button
                   key={prompt.name}
                   type="button"
-                  onClick={() => {
-                    // Launch action: el modal del prompt toma el foco, así
-                    // que el dropdown se cierra aquí (antes quedaba abierto
-                    // tras el submit del formulario).
-                    close();
-                    onPromptSelect?.(prompt.name);
-                  }}
+                  onClick={() => onPromptSelect?.(prompt.name)}
                   className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-accent-foreground"
                 >
                   <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-zinc-400">
