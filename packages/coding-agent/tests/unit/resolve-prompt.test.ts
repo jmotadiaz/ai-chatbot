@@ -348,25 +348,20 @@ B`);
     const full = resolveProjectPrompt(builtinRoot, "code-review-session", {
       target_session: "s-123",
       focus_area: "bugs",
-      extra_context: "Presta atención a los tests",
+      context: "Presta atención a los tests",
     });
     expect(full.text).toBe(
       "# Code Review de la sesión [s-123](session:s-123)\n\n" +
         "## Enfoque: bugs\n\n" +
-        "Presta atención a los tests\n\n" +
-        "## Instrucciones\n\n" +
-        "Analiza los cambios de la sesión, enfócate en **bugs** y reporta:\n" +
-        "1. Problemas encontrados\n" +
-        "2. Sugerencias de mejora\n" +
-        "3. Riesgos y trade-offs",
+        "Presta atención a los tests",
     );
 
-    const noExtra = resolveProjectPrompt(builtinRoot, "code-review-session", {
+    const noContext = resolveProjectPrompt(builtinRoot, "code-review-session", {
       target_session: "s-123",
       focus_area: "bugs",
-      extra_context: "",
+      context: "",
     });
-    expect(noExtra.text).toBe(
+    expect(noContext.text).toBe(
       "# Code Review de la sesión [s-123](session:s-123)\n\n" +
         "## Enfoque: bugs\n\n" +
         "## Instrucciones\n\n" +
@@ -379,7 +374,7 @@ B`);
     const enumOmitted = resolveProjectPrompt(builtinRoot, "code-review-session", {
       target_session: "s-123",
       focus_area: "",
-      extra_context: "",
+      context: "",
     });
     expect(enumOmitted.text).toBe(
       "# Code Review de la sesión [s-123](session:s-123)\n\n" +

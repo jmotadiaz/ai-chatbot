@@ -10,9 +10,9 @@ inputs:
     kind: string
     description: Enfoque del review
     enumValues: [bugs, perf, style]
-  - name: extra_context
+  - name: context
     kind: string
-    description: Notas adicionales
+    description: Contexto del review; si se provee, reemplaza las instrucciones por defecto
     placeholder: Algo más que el agente deba saber...
     required: false
 ---
@@ -23,13 +23,13 @@ inputs:
 ## Enfoque: {{ focus_area }}
 {% endif %}
 
-{% if extra_context %}
-{{extra_context}}
-{% endif %}
-
+{% if context %}
+{{context}}
+{% else %}
 ## Instrucciones
 
 Analiza los cambios de la sesión, enfócate en **{{focus_area}}** y reporta:
 1. Problemas encontrados
 2. Sugerencias de mejora
 3. Riesgos y trade-offs
+{% endif %}
