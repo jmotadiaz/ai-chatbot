@@ -11,7 +11,7 @@ import {
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import { config, optional } from "config";
-import { getTraceLogger, retainTraceSink } from "tracing";
+import { getTraceContext, getTraceLogger, retainTraceSink } from "tracing";
 import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
 import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
@@ -433,6 +433,14 @@ function messageText(message: unknown): string {
  * `convertToLlm` hands the messages to the provider adapter, and pi's
  * `convertToLlm` maps user messages 1:1, so a marker seen here is a marker
  * sent to the model. Emits `debug.superpowers_context_transform` per LLM call.
+ *
+ * The logger is resolved inside the wrapper, never captured here:
+ * `getTraceLogger` snapshots the sink of the trace context that is current
+ * when it is called, and this function runs while the session-creation run is
+ * current. A logger captured at install time would write every later turn
+ * into the creation run's trace — or into a sink already closed — instead of
+ * the run that is actually prompting. Falls back to stderr when the turn
+ * carries no trace context at all.
  */
 function instrumentBootstrapInjection<M>(
   session: {
@@ -442,7 +450,6 @@ function instrumentBootstrapInjection<M>(
   },
   sessionId: string,
 ): void {
-  const log = getTraceLogger("worker");
   const inner = session.agent.transformContext;
   session.agent.transformContext = async (messages: M[], signal?: AbortSignal) => {
     const before = messages.length;
@@ -450,7 +457,7 @@ function instrumentBootstrapInjection<M>(
     const markerIndex = transformed.findIndex((m) =>
       messageText(m).includes(SUPERPOWERS_BOOTSTRAP_MARKER),
     );
-    log.info("debug.superpowers_context_transform", {
+    const payload = {
       sessionId,
       messageCountBefore: before,
       messageCountAfter: transformed.length,
@@ -458,7 +465,13 @@ function instrumentBootstrapInjection<M>(
       bootstrapMarkerIndex: markerIndex,
       bootstrapLength: markerIndex >= 0 ? messageText(transformed[markerIndex]).length : 0,
       roles: transformed.slice(0, 4).map((m) => (m as { role?: string }).role),
-    });
+    };
+    getTraceLogger("worker").info("debug.superpowers_context_transform", payload);
+    if (!getTraceContext()?.sink) {
+      console.error(
+        `[superpowers] context_transform ${JSON.stringify(payload)}`,
+      );
+    }
     return transformed;
   };
 }
