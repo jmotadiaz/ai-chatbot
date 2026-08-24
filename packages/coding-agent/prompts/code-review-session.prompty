@@ -19,9 +19,13 @@ inputs:
 
 # Code Review de la sesión {{target_session}}
 
-## Enfoque: {{focus_area}}
+{% if focus_area %}
+## Enfoque: {{ focus_area }}
+{% endif %}
 
+{% if extra_context %}
 {{extra_context}}
+{% endif %}
 
 ## Instrucciones
 

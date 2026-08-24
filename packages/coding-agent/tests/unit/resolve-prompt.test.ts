@@ -339,4 +339,55 @@ B`);
       "A\nB",
     );
   });
+
+  it("renders the builtin code-review-session prompt with conditionals", () => {
+    const builtinRoot = join(tmpRoot, "builtin-project");
+    mkdirSync(builtinRoot, { recursive: true });
+    loadPrompts(builtinRoot);
+
+    const full = resolveProjectPrompt(builtinRoot, "code-review-session", {
+      target_session: "s-123",
+      focus_area: "bugs",
+      extra_context: "Presta atención a los tests",
+    });
+    expect(full.text).toBe(
+      "# Code Review de la sesión [s-123](session:s-123)\n\n" +
+        "## Enfoque: bugs\n\n" +
+        "Presta atención a los tests\n\n" +
+        "## Instrucciones\n\n" +
+        "Analiza los cambios de la sesión, enfócate en **bugs** y reporta:\n" +
+        "1. Problemas encontrados\n" +
+        "2. Sugerencias de mejora\n" +
+        "3. Riesgos y trade-offs",
+    );
+
+    const noExtra = resolveProjectPrompt(builtinRoot, "code-review-session", {
+      target_session: "s-123",
+      focus_area: "bugs",
+      extra_context: "",
+    });
+    expect(noExtra.text).toBe(
+      "# Code Review de la sesión [s-123](session:s-123)\n\n" +
+        "## Enfoque: bugs\n\n" +
+        "## Instrucciones\n\n" +
+        "Analiza los cambios de la sesión, enfócate en **bugs** y reporta:\n" +
+        "1. Problemas encontrados\n" +
+        "2. Sugerencias de mejora\n" +
+        "3. Riesgos y trade-offs",
+    );
+
+    const enumOmitted = resolveProjectPrompt(builtinRoot, "code-review-session", {
+      target_session: "s-123",
+      focus_area: "",
+      extra_context: "",
+    });
+    expect(enumOmitted.text).toBe(
+      "# Code Review de la sesión [s-123](session:s-123)\n\n" +
+        "## Instrucciones\n\n" +
+        "Analiza los cambios de la sesión, enfócate en **** y reporta:\n" +
+        "1. Problemas encontrados\n" +
+        "2. Sugerencias de mejora\n" +
+        "3. Riesgos y trade-offs",
+    );
+  });
 });
