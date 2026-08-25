@@ -59,6 +59,18 @@ export function getPiPackageExtensionPaths(): string[] {
  */
 const FIRST_PARTY_EXTENSIONS_DIR = path.join(PACKAGE_ROOT, "extensions");
 
+/**
+ * Built-in skills directory (`skills/`).
+ * Standalone skills that require no TypeScript entrypoint or runtime hooks.
+ */
+export const BUILTIN_SKILLS_DIR = path.join(PACKAGE_ROOT, "skills");
+
+/** Built-in skill dirs for `additionalSkillPaths` (standalone skills under `skills/`). */
+export function getBuiltinSkillPaths(): string[] {
+  if (!existsSync(BUILTIN_SKILLS_DIR)) return [];
+  return [BUILTIN_SKILLS_DIR];
+}
+
 /** First-party extension entrypoints (each `extensions/<name>/index.ts`), e.g. extensions/superpowers, extensions/subagent. */
 export function getFirstPartyExtensionPaths(): string[] {
   if (!existsSync(FIRST_PARTY_EXTENSIONS_DIR)) return [];

@@ -14,9 +14,14 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 | `src/transports/http.ts` | HTTP server with `/rpc` POST endpoint |
 | `src/pi-packages.ts` | First-party extension discovery + Pi packages loader |
 | `src/subagent-collector.ts` | Child event collector: Pi events → AG-UI → the subagent's own event log |
+| `skills/` | Standalone built-in skills (`<skill>/SKILL.md`) without TypeScript entrypoints |
 | `extensions/superpowers/` | First-party Superpowers extension (skills suite & bootstrap context) |
 | `extensions/subagent/` | First-party `subagent` tool (thin shell over `runSubagent` in `session-manager.ts`) |
 | `scripts/install-packages.ts` | Clones/updates third-party Pi packages if defined |
+
+## Built-in Skills (`skills/`)
+
+Standalone Agent Skills live under `skills/<name>/SKILL.md` (e.g. `skills/writing-prompties/`). They require no TypeScript runtime hooks and are discovered automatically via `getBuiltinSkillPaths()` in `src/pi-packages.ts` passed to `additionalSkillPaths`.
 
 ## First-Party Extensions
 

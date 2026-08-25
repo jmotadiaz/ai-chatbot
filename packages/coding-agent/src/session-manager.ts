@@ -21,6 +21,7 @@ import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import {
+  getBuiltinSkillPaths,
   getExtensionPaths,
   getFirstPartySkillPathsFiltered,
 } from "./pi-packages";
@@ -334,10 +335,14 @@ function makeCreateRuntime(
         // case the directory is NOT registered as an extension, so its hooks
         // never run. First-party extensions are therefore passed as files
         // (`index.ts`) and their skills provided explicitly here.
-        additionalSkillPaths: getFirstPartySkillPathsFiltered({
-          includeSubagentExtension: options?.includeSubagentExtension ?? true,
-          includeSuperpowersExtension: !isSubagentRuntime,
-        }),
+        // Standalone built-in skills from `skills/` are also passed here.
+        additionalSkillPaths: [
+          ...getBuiltinSkillPaths(),
+          ...getFirstPartySkillPathsFiltered({
+            includeSubagentExtension: options?.includeSubagentExtension ?? true,
+            includeSuperpowersExtension: !isSubagentRuntime,
+          }),
+        ],
       },
     });
     const { provider: piProvider, model: piModelId } =

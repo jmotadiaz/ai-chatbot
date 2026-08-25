@@ -14,6 +14,8 @@ import {
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
 import {
+  BUILTIN_SKILLS_DIR,
+  getBuiltinSkillPaths,
   getExtensionPaths,
   getFirstPartyExtensionPaths,
   getFirstPartySkillPaths,
@@ -25,7 +27,7 @@ import {
 import { PACKAGE_ROOT } from "../../src/paths";
 import { USING_SUPERPOWERS_PROMPT } from "../../extensions/superpowers/using-superpowers";
 
-describe("first-party extension discovery", () => {
+describe("first-party extension and built-in skills discovery", () => {
   it("discovers all first-party extensions including superpowers and subagent", () => {
     const paths = getFirstPartyExtensionPaths();
     expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
@@ -56,6 +58,12 @@ describe("first-party extension discovery", () => {
     const skillPaths = getFirstPartySkillPaths();
     expect(skillPaths.some((p) => p.includes("extensions/superpowers/skills"))).toBe(true);
   });
+
+  it("discovers built-in skills directory and writing-prompties skill", () => {
+    const builtinPaths = getBuiltinSkillPaths();
+    expect(builtinPaths).toEqual([BUILTIN_SKILLS_DIR]);
+    expect(existsSync(join(BUILTIN_SKILLS_DIR, "writing-prompties", "SKILL.md"))).toBe(true);
+  });
 });
 
 describe("superpowers first-party extension integration", () => {
@@ -82,9 +90,12 @@ describe("superpowers first-party extension integration", () => {
       additionalExtensionPaths: getExtensionPaths({
         includeSubagentExtension: false,
       }),
-      additionalSkillPaths: getFirstPartySkillPathsFiltered({
-        includeSubagentExtension: false,
-      }),
+      additionalSkillPaths: [
+        ...getBuiltinSkillPaths(),
+        ...getFirstPartySkillPathsFiltered({
+          includeSubagentExtension: false,
+        }),
+      ],
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -104,11 +115,18 @@ describe("superpowers first-party extension integration", () => {
       /packages[/\\]coding-agent[/\\]extensions[/\\]superpowers[/\\]skills[/\\]brainstorming[/\\]SKILL\.md$/,
     );
 
+    const writingPrompties = loadedSkills.find((s) => s.name === "writing-prompties");
+    expect(writingPrompties).toBeDefined();
+    expect(writingPrompties?.filePath).toMatch(
+      /packages[/\\]coding-agent[/\\]skills[/\\]writing-prompties[/\\]SKILL\.md$/,
+    );
+
     // Verify key skills exist
     const skillNames = loadedSkills.map((s) => s.name);
     expect(skillNames).toContain("writing-plans");
     expect(skillNames).toContain("test-driven-development");
     expect(skillNames).toContain("systematic-debugging");
+    expect(skillNames).toContain("writing-prompties");
 
     // using-superpowers is no longer a discoverable skill: it was extracted
     // from skills/ and is injected into the context by the extension (see
@@ -118,7 +136,7 @@ describe("superpowers first-party extension integration", () => {
     session.dispose();
   });
 
-  it("loads no superpowers skills for subagent runtimes", async () => {
+  it("loads no superpowers skills for subagent runtimes, but retains built-in skills", async () => {
     const agentDir = join(tmpRoot, "agent-subagent");
     const cwd = join(tmpRoot, "project-subagent");
     mkdirSync(agentDir, { recursive: true });
@@ -126,7 +144,8 @@ describe("superpowers first-party extension integration", () => {
 
     // Subagent runtimes are built with includeSubagentExtension: false; the
     // superpowers extension must not be loaded at all (skills + bootstrap
-    // belong to the orchestrating agent only).
+    // belong to the orchestrating agent only). Built-in skills under skills/
+    // remain available.
     const resourceLoader = new DefaultResourceLoader({
       cwd,
       agentDir,
@@ -134,10 +153,13 @@ describe("superpowers first-party extension integration", () => {
         includeSubagentExtension: false,
         includeSuperpowersExtension: false,
       }),
-      additionalSkillPaths: getFirstPartySkillPathsFiltered({
-        includeSubagentExtension: false,
-        includeSuperpowersExtension: false,
-      }),
+      additionalSkillPaths: [
+        ...getBuiltinSkillPaths(),
+        ...getFirstPartySkillPathsFiltered({
+          includeSubagentExtension: false,
+          includeSuperpowersExtension: false,
+        }),
+      ],
     });
     await resourceLoader.reload();
 
@@ -145,6 +167,7 @@ describe("superpowers first-party extension integration", () => {
     expect(skillNames).not.toContain("brainstorming");
     expect(skillNames).not.toContain("test-driven-development");
     expect(skillNames).not.toContain("systematic-debugging");
+    expect(skillNames).toContain("writing-prompties");
   });
 });
 
