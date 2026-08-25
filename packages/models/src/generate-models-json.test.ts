@@ -292,7 +292,7 @@ describe("generateModelsJson custom providers", () => {
       name: "Muse Spark 1.2",
       api: "openai-responses",
       reasoning: true,
-      input: ["text"],
+      input: ["text", "image"],
       contextWindow: 1_048_576,
       maxTokens: 131_072,
       cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0.002 },
@@ -305,6 +305,13 @@ describe("generateModelsJson custom providers", () => {
         xhigh: "xhigh",
       },
     });
+  });
+
+  it("derives image input for OX Alpha (free) from its supportedFiles", () => {
+    const ox = generate().providers["opencode-go"].models.find(
+      (m) => m.name === "OX Alpha (free)",
+    );
+    expect(ox?.input).toEqual(["text", "image"]);
   });
 
   it("describes Gemini 3.7 Flash, which Pi does not ship on vercel-ai-gateway", () => {

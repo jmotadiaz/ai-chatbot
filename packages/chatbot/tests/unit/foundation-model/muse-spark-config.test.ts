@@ -14,7 +14,7 @@ describe("Muse Spark 1.2 in the chat model configuration", () => {
     expect(cfg.temperature).toBe(1);
     expect(cfg.topP).toBe(0.95);
     expect(cfg.topK).toBe(64);
-    expect(cfg.supportedFiles).toBeUndefined();
+    expect(cfg.supportedFiles).toEqual(["img"]);
   });
 
   it("exposes an opencodeGoResponses provider factory with the opencode model id (mock in test mode)", () => {
