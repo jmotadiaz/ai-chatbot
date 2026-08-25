@@ -4,18 +4,18 @@ import { languageModelConfigurations } from "@/lib/features/foundation-model/con
 
 const grammarAiAdapter: CorrectGrammarAiPort = {
   getAudienceModelConfiguration: () =>
-    languageModelConfigurations("Llama 3.1 Instant"),
+    languageModelConfigurations("GPT OSS Mini"),
   getDomainModelConfiguration: () =>
-    languageModelConfigurations("Llama 3.1 Instant"),
+    languageModelConfigurations("GPT OSS Mini"),
   getGrammarModelConfiguration: () =>
     languageModelConfigurations("Gemini 3.1 Flash Lite"),
 };
 
 const translateAiAdapter: TranslateAiPort = {
   getAudienceModelConfiguration: () =>
-    languageModelConfigurations("Llama 3.1 Instant"),
+    languageModelConfigurations("GPT OSS Mini"),
   getDomainModelConfiguration: () =>
-    languageModelConfigurations("Llama 3.1 Instant"),
+    languageModelConfigurations("GPT OSS Mini"),
   getDirectionModelConfiguration: () =>
     languageModelConfigurations("GPT OSS Mini"),
   getTranslateModelConfiguration: () =>

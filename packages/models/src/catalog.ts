@@ -535,10 +535,16 @@ export const MODEL_CATALOG = [
   {
     id: "GPT OSS Mini",
     userInvocable: false,
-    provider: { kind: "openrouter", modelId: "openai/gpt-oss-20b" },
+    provider: { kind: "gateway", modelId: "openai/gpt-oss-20b" },
     company: "openai",
     reasoning: true,
     temperature: 0.6,
+    providerOptions: {
+      gateway: {
+        order: ["groq"],
+        zeroDataRetention: true,
+      },
+    },
   },
   {
     id: "o4 Mini",

@@ -81,6 +81,19 @@ describe("MODEL_CATALOG integrity", () => {
       expect(ids.has(internal)).toBe(true);
     }
   });
+
+  it("configures Groq as primary gateway provider for GPT OSS Mini", () => {
+    const gptOssMini = MODEL_CATALOG.find((e) => e.id === "GPT OSS Mini");
+    expect(gptOssMini).toBeDefined();
+    expect(gptOssMini?.provider.kind).toBe("gateway");
+    expect(
+      (
+        gptOssMini?.providerOptions as
+          | { gateway?: { order?: readonly string[] } }
+          | undefined
+      )?.gateway?.order,
+    ).toEqual(["groq"]);
+  });
 });
 
 describe("defaultThinkingLevel", () => {
