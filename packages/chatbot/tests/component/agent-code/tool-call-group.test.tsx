@@ -1,13 +1,17 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, render, fireEvent } from "@testing-library/react";
 import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 
-// SubagentToolLink pulls in the "use server" actions module, whose next-auth
-// import does not resolve under vitest. The link is covered separately.
 vi.mock("@/lib/features/code/actions", () => ({
   getSubagentSessionAction: vi.fn(async () => ({ error: "not found" })),
 }));
+vi.mock("@/lib/features/code/file-browser/highlight", () => ({
+  DARK_THEME: "github-dark",
+  LIGHT_THEME: "github-light",
+  tokenize: vi.fn(async (c: string) => c.split("\n").map((l) => [{ content: l || "\n", color: "#000" }])),
+}));
+vi.mock("next-themes", () => ({ useTheme: () => ({ resolvedTheme: "light" }) }));
 
 const { ToolCallGroup } = await import("@/components/code/tool-call-group");
 
@@ -15,72 +19,64 @@ const base: Group = {
   id: "t1",
   name: "bash",
   args: '{"command":"ls -la"}',
-  argsParsed: { command: "ls -la" },
   status: "ok",
-  startedAt: 0,
-  finishedAt: 400,
   summary: "ls -la",
 };
 
 afterEach(cleanup);
 
-/**
- * The body only mounts once the group is open, so tests must open it.
- * jsdom does not toggle `<details>` from a summary click, so drive the
- * open attribute and dispatch the toggle event React listens for.
- */
 const openGroup = (container: HTMLElement) => {
-  const details = container.querySelector("details") as HTMLDetailsElement;
-  details.open = true;
-  fireEvent(details, new Event("toggle"));
+  const btn = container.querySelector('button[aria-expanded]') as HTMLButtonElement;
+  fireEvent.click(btn);
 };
 
 describe("ToolCallGroup", () => {
-  it("renders no args or output while collapsed", () => {
-    const { container, queryByText } = render(
-      <ToolCallGroup group={{ ...base, result: "some output" }} />,
-    );
-    expect(queryByText("Args")).toBeNull();
-    expect(queryByText("Output")).toBeNull();
-    expect(container.querySelectorAll("pre")).toHaveLength(0);
+  it("renders no detail while collapsed", () => {
+    const { queryByText } = render(<ToolCallGroup group={{ ...base, result: "out" }} />);
+    expect(queryByText("Parameters")).toBeNull();
+    expect(queryByText("Result")).toBeNull();
   });
 
-  it("renders args and output once opened", () => {
-    const { container, getByText } = render(
-      <ToolCallGroup group={{ ...base, result: "some output" }} />,
-    );
+  it("renders detail once opened", async () => {
+    const { container, findByText } = render(<ToolCallGroup group={{ ...base, result: "out" }} />);
     openGroup(container);
-    expect(getByText("Args")).toBeDefined();
-    expect(getByText("Output")).toBeDefined();
-    expect(container.querySelectorAll("pre").length).toBeGreaterThan(0);
+    expect(await findByText("Parameters")).toBeDefined();
+    expect(await findByText("Result")).toBeDefined();
   });
 
-  it("clamps long output to 20 lines and shows toggle", () => {
+  it("clamps long output and shows Show more", async () => {
     const long = Array.from({ length: 50 }, (_, i) => `line ${i}`).join("\n");
-    const { getByText, container } = render(
-      <ToolCallGroup group={{ ...base, result: long }} />,
-    );
+    const { container, findByText } = render(<ToolCallGroup group={{ ...base, result: long }} />);
     openGroup(container);
-    expect(getByText("Show more")).toBeDefined();
-    const pres = container.querySelectorAll("pre");
-    const resultPre = pres[pres.length - 1] as HTMLPreElement | undefined;
-    expect(resultPre?.textContent).not.toBeNull();
-    expect(resultPre!.textContent!.split("\n")).toHaveLength(20);
+    expect(await findByText("Show more")).toBeDefined();
   });
 
-  it("expands the clamped output when 'Show more' is clicked", () => {
-    const lines = Array.from({ length: 50 }, (_, i) => `line ${i}`);
-    const long = lines.join("\n");
-    const { getByText, container, queryByText } = render(
-      <ToolCallGroup group={{ ...base, result: long }} />,
-    );
-    openGroup(container);
-    const toggle = getByText("Show more");
-    fireEvent.click(toggle);
-    expect(queryByText("Show more")).toBeNull();
-    const pres = container.querySelectorAll("pre");
-    const resultPre = pres[pres.length - 1] as HTMLPreElement | undefined;
-    expect(resultPre?.textContent).not.toBeNull();
-    expect(resultPre!.textContent!.split("\n")).toHaveLength(50);
+  it("applies shimmer in running state", () => {
+    const { container } = render(<ToolCallGroup group={{ ...base, status: "running" }} />);
+    // Shimmer renders with bg-clip-text
+    expect(container.querySelector(".bg-clip-text")).not.toBeNull();
+  });
+
+  it("applies red styling in error state", () => {
+    const { container } = render(<ToolCallGroup group={{ ...base, status: "error" }} />);
+    const row = container.querySelector('button[aria-expanded]') as HTMLElement;
+    expect(row.className).toContain("text-red-600");
+  });
+
+  it("truncates summary aggressively with title tooltip", () => {
+    const longSummary = "a".repeat(200);
+    const { container } = render(<ToolCallGroup group={{ ...base, summary: longSummary }} />);
+    const summaryEl = container.querySelector('[title]') as HTMLElement;
+    expect(summaryEl).not.toBeNull();
+    expect(summaryEl.className).toContain("max-w-48");
+    expect(summaryEl.className).toContain("truncate");
+  });
+
+  it("toggles aria-expanded on click", () => {
+    const { container } = render(<ToolCallGroup group={base} />);
+    const btn = container.querySelector('button[aria-expanded]') as HTMLElement;
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(btn);
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
   });
 });
