@@ -138,7 +138,7 @@ export const MarkdownToSessionModal: React.FC<MarkdownToSessionModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={`New session from ${filename}`}
-          className="mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-visible rounded-xl bg-white shadow-2xl dark:bg-zinc-900"
+          className="mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-visible rounded-xl bg-popover shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
         <div className="flex items-center justify-between border-b px-6 py-4">
