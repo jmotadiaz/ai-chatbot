@@ -80,7 +80,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                 "flex-1 px-4 py-3 text-sm font-semibold text-center transition-colors border-b-2 -mb-px",
                 activeTab === "skills"
                   ? "border-foreground text-foreground"
-                  : "border-transparent text-zinc-600 hover:bg-secondary-accent-foreground",
+                  : "border-transparent text-zinc-600 hover:bg-secondary-accent-foreground hover:text-foreground",
               )}
             >
               Skills
@@ -93,7 +93,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                 "flex-1 px-4 py-3 text-sm font-semibold text-center transition-colors border-b-2 -mb-px",
                 activeTab === "prompts"
                   ? "border-foreground text-foreground"
-                  : "border-transparent text-zinc-600 hover:bg-secondary-accent-foreground",
+                  : "border-transparent text-zinc-600 hover:bg-secondary-accent-foreground hover:text-foreground",
               )}
             >
               Prompts

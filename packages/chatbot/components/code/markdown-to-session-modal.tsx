@@ -50,6 +50,7 @@ export const MarkdownToSessionModal: React.FC<MarkdownToSessionModalProps> = ({
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
+  const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +123,7 @@ export const MarkdownToSessionModal: React.FC<MarkdownToSessionModalProps> = ({
   const handlePromptInsert = (text: string) => {
     setPrefix((prev) => (prev ? `${prev}\n\n${text}` : text));
     setPromptModal(null);
+    setPromptDropdownOpen(false);
   };
 
   const filename = path.split("/").pop() ?? path;
@@ -136,7 +138,7 @@ export const MarkdownToSessionModal: React.FC<MarkdownToSessionModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={`New session from ${filename}`}
-          className="mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-900"
+          className="mx-4 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-visible rounded-xl bg-white shadow-2xl dark:bg-zinc-900"
           onClick={(event) => event.stopPropagation()}
         >
         <div className="flex items-center justify-between border-b px-6 py-4">
@@ -173,7 +175,7 @@ export const MarkdownToSessionModal: React.FC<MarkdownToSessionModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-visible px-6 py-4">
           <div className="relative w-full">
             <Textarea
               onChangeInput={setPrefix}
@@ -201,6 +203,8 @@ export const MarkdownToSessionModal: React.FC<MarkdownToSessionModalProps> = ({
                 isLoadingPrompts={isLoadingPrompts}
                 promptsError={promptsError}
                 onPromptSelect={handlePromptSelect}
+                open={promptDropdownOpen}
+                onOpenChange={setPromptDropdownOpen}
               />
             </div>
             <div className="absolute bottom-2 right-3 flex items-center space-x-2">
