@@ -7,7 +7,7 @@ export function ThemeColorManager() {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    const themeColor = resolvedTheme === "dark" ? "#161618" : "#ffffff";
+    const themeColor = resolvedTheme === "dark" ? "#000000" : "#ffffff";
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
 
     if (metaThemeColor) {

@@ -137,7 +137,7 @@ export async function generateViewport(): Promise<Viewport> {
       userScalable: false,
       interactiveWidget: "resizes-visual",
       viewportFit: "cover",
-      themeColor: "#161618",
+      themeColor: "#000000",
       colorScheme: "dark",
     };
   }
@@ -164,7 +164,7 @@ export async function generateViewport(): Promise<Viewport> {
     viewportFit: "cover",
     themeColor: [
       { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-      { media: "(prefers-color-scheme: dark)", color: "#161618" },
+      { media: "(prefers-color-scheme: dark)", color: "#000000" },
     ],
     colorScheme: "light dark",
   };
