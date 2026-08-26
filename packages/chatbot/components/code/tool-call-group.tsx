@@ -61,12 +61,12 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
           {isRunning ? (
             <Shimmer as="span" className="inline-flex items-center gap-1.5 min-w-0" textLength={displayName.length + group.summary.length}>
               <span className="font-medium shrink-0">{displayName}</span>
-              <span title={group.summary} className="truncate max-w-48 min-w-0">{group.summary}</span>
+              <span title={group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
             </Shimmer>
           ) : (
             <span className="inline-flex items-center gap-1.5 min-w-0">
               <span className="font-medium shrink-0">{displayName}</span>
-              <span title={group.summary} className="truncate max-w-48 min-w-0">{group.summary}</span>
+              <span title={group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
             </span>
           )}
         </button>
