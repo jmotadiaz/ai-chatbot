@@ -123,7 +123,7 @@ input[type=number] {
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.206 0.006 285.9);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.206 0.006 285.9);
+  --popover: oklch(0.34 0.006 286);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.82 0.00009 271.152);
   --primary-foreground: oklch(0.20 0.006 285.885);
