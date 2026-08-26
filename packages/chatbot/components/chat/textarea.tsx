@@ -66,7 +66,7 @@ export const Textarea = ({
   return (
     <div
       className={cn(
-        "bg-secondary w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden",
+        "bg-input w-full rounded-2xl border-2 border-transparent has-[:focus]:border-ring shadow-xs overflow-hidden",
         containerClassName
       )}
     >
