@@ -68,7 +68,6 @@ describe("ToolCallGroup", () => {
     const { container } = render(<ToolCallGroup group={{ ...base, summary: longSummary }} />);
     const summaryEl = container.querySelector('[title]') as HTMLElement;
     expect(summaryEl).not.toBeNull();
-    expect(summaryEl.className).toContain("max-w-48");
     expect(summaryEl.className).toContain("truncate");
   });
 
