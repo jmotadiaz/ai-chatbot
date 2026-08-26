@@ -6,16 +6,18 @@ import {
   type ElementType,
   type JSX,
   memo,
+  type ReactNode,
   useMemo,
 } from "react";
 import { cn } from "@/lib/utils/helpers";
 
 export type TextShimmerProps = {
-  children: string;
+  children: ReactNode;
   as?: ElementType;
   className?: string;
   duration?: number;
   spread?: number;
+  textLength?: number;
 };
 
 const ShimmerComponent = ({
@@ -24,15 +26,16 @@ const ShimmerComponent = ({
   className,
   duration = 2,
   spread = 2,
+  textLength,
 }: TextShimmerProps) => {
   const MotionComponent = motion.create(
     Component as keyof JSX.IntrinsicElements
   );
 
-  const dynamicSpread = useMemo(
-    () => (children?.length ?? 0) * spread,
-    [children, spread]
-  );
+  const dynamicSpread = useMemo(() => {
+    const len = textLength ?? (typeof children === "string" ? children.length : 12);
+    return len * spread;
+  }, [children, spread, textLength]);
 
   return (
     <MotionComponent
