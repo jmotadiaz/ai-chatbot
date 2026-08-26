@@ -50,7 +50,7 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
               role="menuitem"
               onClick={() => onSelect(item)}
               className={cn(
-                "flex w-full items-center justify-between px-4 py-2 text-sm hover:bg-secondary-accent-foreground",
+                "flex w-full items-center justify-between px-4 py-2 text-sm hover:bg-secondary-accent",
                 item === level && "font-semibold",
               )}
             >

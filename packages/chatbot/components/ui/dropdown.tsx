@@ -94,7 +94,7 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
           <motion.div
             key="dropdown-popup"
             className={cn(
-              "bg-secondary-foreground shadow-lg z-50 overflow-hidden",
+              "bg-popover shadow-lg z-50 overflow-hidden",
               variants[variant],
               className,
             )}
@@ -127,7 +127,7 @@ export function DropdownItem<T extends React.ElementType = "div">({
   return (
     <Component
       className={cn(
-        "flex items-center gap-2 px-5 py-3 first:pt-4 last:pb-4 hover:bg-secondary-accent-foreground active:bg-secondary-accent-foreground/70 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
+        "flex items-center gap-2 px-5 py-3 first:pt-4 last:pb-4 hover:bg-secondary-accent active:bg-secondary-accent/70 text-zinc-700 dark:text-zinc-300 cursor-pointer w-full transition-all duration-200",
         className,
       )}
       {...props}

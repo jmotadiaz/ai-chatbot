@@ -80,7 +80,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                 "flex-1 px-4 py-3 text-sm font-semibold text-center transition-colors border-b-2 -mb-px",
                 activeTab === "skills"
                   ? "border-foreground text-foreground"
-                  : "border-transparent text-zinc-600 hover:bg-secondary-accent-foreground hover:text-foreground",
+                  : "border-transparent text-zinc-600 hover:bg-secondary-accent hover:text-foreground",
               )}
             >
               Skills
@@ -93,7 +93,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                 "flex-1 px-4 py-3 text-sm font-semibold text-center transition-colors border-b-2 -mb-px",
                 activeTab === "prompts"
                   ? "border-foreground text-foreground"
-                  : "border-transparent text-zinc-600 hover:bg-secondary-accent-foreground hover:text-foreground",
+                  : "border-transparent text-zinc-600 hover:bg-secondary-accent hover:text-foreground",
               )}
             >
               Prompts
@@ -132,8 +132,8 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                       onClick={() => onToggle(skill.name)}
                       aria-pressed={selected}
                       className={cn(
-                        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-accent-foreground",
-                        selected && "bg-secondary-accent-foreground",
+                        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-accent",
+                        selected && "bg-secondary-accent",
                       )}
                     >
                       <span
@@ -186,7 +186,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
                   key={prompt.name}
                   type="button"
                   onClick={() => onPromptSelect?.(prompt.name)}
-                  className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-accent-foreground"
+                  className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-accent"
                 >
                   <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-zinc-400">
                     <FolderOpen size={14} />

@@ -171,8 +171,8 @@ function SelectItemComponent<T extends string>({
       aria-selected={selected}
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center px-3 py-2 whitespace-nowrap",
-        "hover:bg-secondary-accent-foreground active:bg-secondary-accent-foreground/70",
-        selected && "bg-secondary-accent-foreground",
+        "hover:bg-secondary-accent active:bg-secondary-accent/70",
+        selected && "bg-secondary-accent",
         className,
       )}
       onClick={() => {
