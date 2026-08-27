@@ -22,7 +22,7 @@ export const SidebarContainer = ({ children }: SidebarContainerProps) => {
         <div
           data-testid="sidebar-container"
           className={cn(
-            "flex flex-col justify-between h-full pt-24 bg-secondary transition-all duration-300 overflow-hidden shadow-lg",
+            "flex flex-col justify-between h-full pt-24 bg-background transition-all duration-300 overflow-hidden shadow-lg",
             showSidebar ? "w-80" : "w-0"
           )}
         >
