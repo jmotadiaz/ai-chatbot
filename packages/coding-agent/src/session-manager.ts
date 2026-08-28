@@ -328,7 +328,9 @@ function makeCreateRuntime(
         appendSystemPrompt: [FILE_REFERENCE_PROMPT],
         additionalExtensionPaths: getExtensionPaths({
           includeSubagentExtension: options?.includeSubagentExtension ?? true,
-          includeSuperpowersExtension: !isSubagentRuntime,
+          // Para rehabilitar la carga de la extensión superpowers, descomentar la siguiente línea y eliminar `includeSuperpowersExtension: false`:
+          // includeSuperpowersExtension: !isSubagentRuntime,
+          includeSuperpowersExtension: false,
         }),
         // Skills are discovered from `additionalExtensionPaths` only when the
         // path is a skill package (directory with `skills/`) — and in that
@@ -340,7 +342,9 @@ function makeCreateRuntime(
           ...getBuiltinSkillPaths(),
           ...getFirstPartySkillPathsFiltered({
             includeSubagentExtension: options?.includeSubagentExtension ?? true,
-            includeSuperpowersExtension: !isSubagentRuntime,
+            // Para rehabilitar la carga de la extensión superpowers, descomentar la siguiente línea y eliminar `includeSuperpowersExtension: false`:
+            // includeSuperpowersExtension: !isSubagentRuntime,
+            includeSuperpowersExtension: false,
           }),
         ],
       },
