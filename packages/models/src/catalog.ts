@@ -334,12 +334,11 @@ export const MODEL_CATALOG = [
     cost: { input: 0.14, output: 0.58, cacheRead: 0.038, cacheWrite: 0 },
   },
   {
-    // GLM 5.3 Flash servido por OpenRouter (model id z-ai/glm-5.3-flash, api
-    // openai-completions). Pi trae el provider openrouter built-in (env
-    // OPENROUTER_API_KEY), pero no el modelo, así que se auto-describe.
+    // GLM 5.3 Flash servido por opencode-go (api openai-completions). Pi no
+    // trae el modelo built-in, así que se auto-describe.
     id: "GLM 5.3 Flash",
     userInvocable: true,
-    provider: { kind: "openrouter", modelId: "z-ai/glm-5.3-flash" },
+    provider: { kind: "opencodeGo", modelId: "glm-5.3-flash" },
     company: "zai",
     reasoning: true,
     defaultThinkingLevel: "high",
