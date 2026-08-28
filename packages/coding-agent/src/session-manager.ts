@@ -1009,7 +1009,14 @@ export async function sendPrompt(
 
   const s = entry.runtime.session as unknown as {
     thinkingLevel?: string;
-    model?: { id?: string; api?: string; reasoning?: boolean };
+    model?: {
+      id?: string;
+      api?: string;
+      reasoning?: boolean;
+      provider?: string;
+      baseUrl?: string;
+      compat?: unknown;
+    };
   };
   log.info("debug.agent_state", {
     sessionId,
@@ -1017,6 +1024,9 @@ export async function sendPrompt(
     modelId: s.model?.id,
     api: s.model?.api,
     reasoning: s.model?.reasoning,
+    provider: s.model?.provider,
+    baseUrl: s.model?.baseUrl,
+    compat: s.model?.compat,
   });
 
   const loadedSkills = entry.runtime.services?.resourceLoader?.getSkills().skills ?? [];
