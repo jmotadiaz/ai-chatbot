@@ -85,12 +85,14 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
       const { text, files } = contentToDisplay(message.content);
       const parsed = parseLeadingSkillCommands(text);
       return (
-        <UserMessage
-          text={parsed.text}
-          skills={parsed.skills}
-          files={files}
-          messageId={message.id}
-        />
+        <div data-role="user">
+          <UserMessage
+            text={parsed.text}
+            skills={parsed.skills}
+            files={files}
+            messageId={message.id}
+          />
+        </div>
       );
     }
 
@@ -98,7 +100,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
       const text = typeof message.content === "string" ? message.content : "";
       if (!text) return null;
       return (
-        <div className="mb-4">
+        <div data-role="reasoning" className="mb-4">
           <ReasoningBlock text={text} isStreaming={isStreaming} />
         </div>
       );
@@ -110,7 +112,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
     if (message.role === "tool") {
       const text = typeof message.content === "string" ? message.content : "";
       return (
-        <div className="mb-4 pl-4 max-w-full">
+        <div data-role="tool" className="mb-4 pl-4 max-w-full">
           <ToolResultBlock content={text} />
         </div>
       );
@@ -119,7 +121,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
     if (message.role === "assistant") {
       const text = typeof message.content === "string" ? message.content : "";
       return (
-        <div className="mb-4">
+        <div data-role="assistant" className="mb-4">
           <div className="flex flex-col w-full gap-3">
             {toolGroups?.map((g) => (
               <ToolCallGroup key={g.id} group={g} />

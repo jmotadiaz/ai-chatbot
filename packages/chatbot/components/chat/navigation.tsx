@@ -72,7 +72,7 @@ export const ChatNavigation: React.FC<ChatNavigationProps> = ({
         )}
         data-testid="chat-navigation-wrapper"
       >
-        <div className="grid grid-cols-4 gap-2 w-[152px]">
+        <div className="grid grid-cols-4 gap-3 w-[164px]">
           <div className="flex justify-center items-center w-8">
             {showTop && (
               <ChatNavigationButton

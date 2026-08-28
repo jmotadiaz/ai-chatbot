@@ -33,8 +33,12 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     scrollContainerRef,
     showTop,
     showBottom,
+    showPrev,
+    showNext,
     scrollToTop,
     scrollToBottom,
+    scrollToPrev,
+    scrollToNext,
   } = useAgentConversationScroll({ items });
   const hasConversationContent = items.length;
 
@@ -96,12 +100,12 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
       </ConversationBody>
 
       <ChatNavigation
-        showPrev={false}
-        showNext={false}
+        showPrev={showPrev}
+        showNext={showNext}
         showBottom={showBottom}
         showTop={showTop}
-        scrollToPrev={() => {}}
-        scrollToNext={() => {}}
+        scrollToPrev={scrollToPrev}
+        scrollToNext={scrollToNext}
         scrollToBottom={scrollToBottom}
         scrollToTop={scrollToTop}
         className="bottom-4"
