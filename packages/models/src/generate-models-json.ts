@@ -36,6 +36,13 @@ export interface PiModelDefinition {
   baseUrl?: string;
   /** Emitted so pi's ModelRegistry keeps the built-in thinking level map; without it, getSupportedThinkingLevels caps at "high". */
   thinkingLevelMap?: ThinkingLevelMap;
+  /** Vercel AI Gateway routing — Pi lee compat.vercelGatewayRouting para fijar provider priority. */
+  compat?: {
+    vercelGatewayRouting?: {
+      order?: string[];
+      only?: string[];
+    };
+  };
 }
 
 export interface PiProviderConfig {
@@ -83,6 +90,24 @@ function buildModelDefinition(
     );
   }
 
+  // Vercel AI Gateway routing para Pi: el catálogo lo expresa como
+  // providerOptions.gateway.{order,only} (AI SDK), y aquí se traduce a
+  // compat.vercelGatewayRouting para que Pi lo aplique al generar
+  // providerOptions: { gateway: { order } } en runtime.
+  const gatewayRouting = (() => {
+    const gw = (
+      entry.providerOptions as
+        | { gateway?: { order?: readonly string[]; only?: readonly string[] } }
+        | undefined
+    )?.gateway;
+    if (!gw) return undefined;
+    const routing: { order?: string[]; only?: string[] } = {};
+    if (gw.order) routing.order = [...gw.order];
+    if (gw.only) routing.only = [...gw.only];
+    if (Object.keys(routing).length === 0) return undefined;
+    return routing;
+  })();
+
   return {
     id: entry.provider.modelId,
     name: entry.id,
@@ -100,8 +125,9 @@ function buildModelDefinition(
     // built-in model of the provider, which silently rewrites e.g.
     // minimax-m3 (anthropic-messages) and qwen3.7-plus (anthropic-messages)
     // to openai-completions and breaks thinking/reasoning streaming.
-    api:
-      entry.provider.kind === "opencodeGoResponses"
+    api: entry.api
+      ? (entry.api as string)
+      : entry.provider.kind === "opencodeGoResponses"
         ? "openai-responses"
         : baseline?.api,
     baseUrl: baseline?.baseUrl,
@@ -110,6 +136,9 @@ function buildModelDefinition(
     // the model's supported levels at "high" (xhigh needs an explicit
     // mapping). Inherit it from the built-in unless the catalog overrides.
     thinkingLevelMap: entry.thinkingLevelMap ?? baseline?.thinkingLevelMap,
+    ...(gatewayRouting
+      ? { compat: { vercelGatewayRouting: gatewayRouting } }
+      : {}),
   };
 }
 

@@ -62,7 +62,8 @@ describe("MODEL_CATALOG integrity", () => {
       "GLM 5.3",
       "GLM 5.2",
       "Hy3",
-      "OX Alpha (free)",
+      "GLM 5.3 Flash",
+      "MiniMax M3 (free)",
     ]);
   });
 

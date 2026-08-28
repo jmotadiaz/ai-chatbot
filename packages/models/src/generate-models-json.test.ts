@@ -12,7 +12,7 @@ import {
 const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
-const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max", "glm-5.2", "muse-spark-1.2-contributor", "ox-alpha-free"]);
+const NOT_BUILT_IN = new Set(["kimi-k3", "qwen3.8-max", "glm-5.2", "muse-spark-1.2-contributor"]);
 
 /** Stand-in for what Pi reports about the models it already ships. */
 const builtIns = new Map<string, PiModelBaseline>(
@@ -307,11 +307,21 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
-  it("derives image input for OX Alpha (free) from its supportedFiles", () => {
-    const ox = generate().providers["opencode-go"].models.find(
-      (m) => m.name === "OX Alpha (free)",
+  it("describes GLM 5.3 Flash on openrouter, deriving image input from its supportedFiles", () => {
+    const flash = generate().providers["openrouter"].models.find(
+      (m) => m.name === "GLM 5.3 Flash",
     );
-    expect(ox?.input).toEqual(["text", "image"]);
+    expect(flash?.id).toBe("z-ai/glm-5.3-flash");
+    expect(flash?.input).toEqual(["text", "image"]);
+    expect(flash?.reasoning).toBe(true);
+    expect(flash?.thinkingLevelMap).toEqual({
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+      xhigh: "max",
+    });
   });
 
   it("describes Gemini 3.7 Flash, which Pi does not ship on vercel-ai-gateway", () => {

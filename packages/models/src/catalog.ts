@@ -53,6 +53,8 @@ export interface ModelCatalogEntry {
   userInvocable: boolean;
   provider: { kind: ProviderKind; modelId: string };
   company: Company;
+  /** Override Pi API for the model (e.g. force openai-completions for gateway routing). */
+  api?: string;
   reasoning?: boolean;
   /**
    * Nivel de razonamiento aplicado por defecto al crear una sesión de coding
@@ -201,6 +203,13 @@ export const MODEL_CATALOG = [
     contextWindow: 131_072,
     maxTokens: 8_192,
     cost: { input: 0.3, output: 0.9, cacheRead: 0.03, cacheWrite: 0 },
+    // Vercel AI Gateway: fuerza el routing solo a runinfra.
+    // En AI SDK es providerOptions.gateway.only, en Pi es
+    // compat.vercelGatewayRouting.only (inyectado vía models.json).
+    // Se usa only en lugar de order porque con order el gateway seguía
+    // resolviendo a alibaba (ver trazas 380454d1). With only se fuerza
+    // exclusivamente runinfra.
+    providerOptions: { gateway: { only: ["runinfra"] } },
   },
   {
     id: "MiMo V2.5",
@@ -325,16 +334,42 @@ export const MODEL_CATALOG = [
     cost: { input: 0.14, output: 0.58, cacheRead: 0.038, cacheWrite: 0 },
   },
   {
-    // Modelo free servido por opencode-go (mismo endpoint que deepseek -
-    // https://opencode.ai/zen/go/v1, api openai-completions). Pi no lo trae
-    // built-in, así que se auto-describe como los otros free.
-    id: "OX Alpha (free)",
+    // GLM 5.3 Flash servido por OpenRouter (model id z-ai/glm-5.3-flash, api
+    // openai-completions). Pi trae el provider openrouter built-in (env
+    // OPENROUTER_API_KEY), pero no el modelo, así que se auto-describe.
+    id: "GLM 5.3 Flash",
     userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "ox-alpha-free" },
-    company: "ai-chatbot",
+    provider: { kind: "openrouter", modelId: "z-ai/glm-5.3-flash" },
+    company: "zai",
     reasoning: true,
-    defaultThinkingLevel: "xhigh",
+    defaultThinkingLevel: "high",
     thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+      xhigh: "max",
+    },
+    supportedFiles: ["img", "pdf"],
+    temperature: 0.6,
+    topP: 0.95,
+    contextWindow: 1_000_000,
+    maxTokens: 131_072,
+    cost: { input: 0.075, output: 0.25, cacheRead: 0.015, cacheWrite: 0 },
+  },
+  {
+    // MiniMax M3 Free servido por Vercel AI Gateway (provider "vercel-ai-gateway").
+    // Pi no lo trae built-in, así que se auto-describe. Coste 0 — variante free
+    // del M3, con límites reducidos según el registro de minimax.
+    id: "MiniMax M3 (free)",
+    userInvocable: true,
+    provider: { kind: "gateway", modelId: "minimax/minimax-m3-free" },
+    company: "minimax",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: null,
       minimal: null,
       low: null,
       medium: null,
@@ -345,7 +380,7 @@ export const MODEL_CATALOG = [
     temperature: 1,
     topP: 0.95,
     contextWindow: 200_000,
-    maxTokens: 128_000,
+    maxTokens: 32_000,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
