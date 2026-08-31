@@ -45,6 +45,8 @@ export const config = {
   codingAgentModelsJson: stringOptional("CODING_AGENT_MODELS_JSON"),
   codingAgentAgentDir: stringOptional("CODING_AGENT_AGENT_DIR"),
   codingAgentPiPackagesDir: stringOptional("CODING_AGENT_PI_PACKAGES_DIR"),
+  codingAgentArtifactsDir: stringOptional("CODING_AGENT_ARTIFACTS_DIR"),
+  codingAgentArtifactsUrl: stringOptional("CODING_AGENT_ARTIFACTS_URL"),
 
   // --- tracing ---
   traceEnabled: bool("TRACE_ENABLED"),

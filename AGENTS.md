@@ -124,3 +124,12 @@ Uses the five canonical default labels (`needs-triage`, `needs-info`, `ready-for
 ### Domain docs
 
 Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Vendored skills (local patches)
+
+Skills under `.agents/skills/` are vendored from upstream repos and pinned by
+`skills-lock.json` (`computedHash`). A re-sync overwrites local edits, and the
+hash algorithm is not reproducible from this repo, so patches leave the lock
+stale on purpose — keep them minimal and recorded here:
+
+- `improve-codebase-architecture` (`SKILL.md` §2, `HTML-REPORT.md`): publishes its HTML report through the coding agent's `publish_artifact` tool instead of `xdg-open`, and pins the CDN hosts the artifact viewer allows. The report still reaches users without this edit: the `artifacts` extension publishes temp-dir reports automatically. See `packages/coding-agent/AGENTS.md`.

@@ -51,6 +51,8 @@ const catalogDef = {
   CODING_AGENT_MODELS_JSON: { description: "Ruta del models.json de Pi; relativa se resuelve contra el package", type: "string", required: false, secret: false },
   CODING_AGENT_AGENT_DIR: { description: "Directorio Pi del worker (default .pi/agent)", type: "string", required: false, secret: false },
   CODING_AGENT_PI_PACKAGES_DIR: { description: "Directorio de checkouts de paquetes Pi", type: "string", required: false, secret: false },
+  CODING_AGENT_ARTIFACTS_DIR: { description: "Raíz de artefactos publicados por el agente (reportes HTML/MD/PDF); relativa se resuelve contra el package", type: "string", required: false, secret: false },
+  CODING_AGENT_ARTIFACTS_URL: { description: "URL base para ver artefactos; por defecto la del worker", type: "string", required: false, secret: false },
 
   // --- tracing ---
   TRACE_ENABLED: { description: "Activa el tracing", type: "boolean", required: false, secret: false, truthy: "1" },

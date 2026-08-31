@@ -10,6 +10,8 @@ import {
   setTraceSessionId,
 } from "tracing";
 import type { ThinkingLevel } from "models";
+import { handleArtifactRequest, matchArtifactRoute } from "../artifacts-http";
+import { getArtifactsBaseUrl, getArtifactsDir } from "../paths";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -63,6 +65,21 @@ export function startHttpTransport(options: HttpTransportOptions) {
 }
 
 async function handleHttpRequest(req: IncomingMessage, res: ServerResponse) {
+  // Artifacts are the read-only half of this server: reports the agent
+  // generated for a human to open. Everything else on this port is the RPC
+  // endpoint, which is POST-only and machine-facing.
+  const artifactRoute =
+    req.method === "GET" || req.method === "HEAD"
+      ? matchArtifactRoute(req.url)
+      : undefined;
+  if (artifactRoute) {
+    await handleArtifactRequest(req, res, artifactRoute, {
+      rootDir: getArtifactsDir(),
+      baseUrl: getArtifactsBaseUrl(),
+    });
+    return;
+  }
+
   if (req.method !== "POST" || req.url !== "/rpc") {
     res.writeHead(404).end("Not found");
     return;
