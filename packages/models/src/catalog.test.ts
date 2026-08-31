@@ -52,15 +52,13 @@ describe("MODEL_CATALOG integrity", () => {
       "Kimi K2.7 Code",
       "Kimi K3",
       "MiniMax M3",
-      "Qwen 3.7 Plus",
+      "Qwen 3.8 Flash",
       "Qwen 3.8 Max",
-      "Qwen 3.8 27B",
       "MiMo V2.5",
       "MiMo V2.5 Pro",
       "Muse Spark 1.2",
       "Gemini 3.7 Flash",
       "GLM 5.3",
-      "GLM 5.2",
       "Hy3",
       "GLM 5.3 Flash",
       "MiniMax M3 (free)",
@@ -112,7 +110,6 @@ describe("defaultThinkingLevel", () => {
     expect(getDefaultThinkingLevel("Kimi K2.7 Code")).toBe("high");
     expect(getDefaultThinkingLevel("Muse Spark 1.2")).toBe("xhigh");
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
-    expect(getDefaultThinkingLevel("GLM 5.2")).toBe("high");
     expect(getDefaultThinkingLevel("Hy3")).toBe("high");
   });
 

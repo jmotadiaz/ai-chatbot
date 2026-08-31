@@ -15,9 +15,21 @@ const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 const NOT_BUILT_IN = new Set([
   "kimi-k3",
   "qwen3.8-max",
-  "glm-5.2",
+  "qwen3.8-flash",
+  "glm-5.3",
   "glm-5.3-flash",
   "muse-spark-1.2-contributor",
+]);
+
+/**
+ * opencode-go models Pi serves over the anthropic-messages endpoint (pi-ai
+ * 0.79.3 models.generated.js); everything else rides the provider's
+ * openai-completions default.
+ */
+const ANTHROPIC_ENDPOINT_MODELS = new Set([
+  "minimax-m3",
+  "qwen3.7-plus",
+  "qwen3.7-max",
 ]);
 
 /** Stand-in for what Pi reports about the models it already ships. */
@@ -39,9 +51,12 @@ const builtIns = new Map<string, PiModelBaseline>(
       cost: COST,
       // Mirrors Pi's built-ins: anthropic-messages endpoints differ from the
       // provider's openai-completions default (deepseek-v4-flash).
-      ...(e.provider.modelId === "minimax-m3"
-        ? { api: "anthropic-messages", baseUrl: "https://opencode.ai/zen/go" }
-        : {}),
+      api: ANTHROPIC_ENDPOINT_MODELS.has(e.provider.modelId)
+        ? "anthropic-messages"
+        : "openai-completions",
+      baseUrl: ANTHROPIC_ENDPOINT_MODELS.has(e.provider.modelId)
+        ? "https://opencode.ai/zen/go"
+        : "https://opencode.ai/zen/go/v1",
     },
   ]),
 );
@@ -105,7 +120,7 @@ describe("generateModelsJson", () => {
       "text",
       "image",
     ]);
-    expect(models.find((m) => m.name === "Qwen 3.7 Plus")?.input).toEqual([
+    expect(models.find((m) => m.name === "Qwen 3.8 Flash")?.input).toEqual([
       "text",
       "image",
     ]);
@@ -126,6 +141,27 @@ describe("generateModelsJson", () => {
     });
   });
 
+  it("describes Qwen 3.8 Flash, which Pi does not ship yet", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Qwen 3.8 Flash")!;
+    const [flash] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(flash.id).toBe("qwen3.8-flash");
+    expect(flash.contextWindow).toBe(1_000_000);
+    expect(flash.maxTokens).toBe(65_536);
+    expect(flash.cost).toEqual({
+      input: 0.4,
+      output: 1.6,
+      cacheRead: 0.04,
+      cacheWrite: 0.5,
+    });
+    expect(flash.reasoning).toBe(true);
+    // Without a built-in baseline the catalog must pin the anthropic-messages
+    // endpoint itself; otherwise ModelRegistry falls back to openai-completions
+    // (deepseek-v4-flash) and thinking streaming silently breaks.
+    expect(flash.api).toBe("anthropic-messages");
+    expect(flash.baseUrl).toBe("https://opencode.ai/zen/go");
+  });
+
   it("describes Qwen 3.8 Max, which Pi does not ship yet", () => {
     const entry = MODEL_CATALOG.find((e) => e.id === "Qwen 3.8 Max")!;
     const [max] = generateModelsJson([entry], { builtIns: new Map() })
@@ -140,22 +176,10 @@ describe("generateModelsJson", () => {
       cacheWrite: 3.125,
     });
     expect(max.reasoning).toBe(true);
-  });
-
-  it("describes GLM 5.2, which Pi does not ship yet on opencode-go", () => {
-    const entry = MODEL_CATALOG.find((e) => e.id === "GLM 5.2")!;
-    const [glm] = generateModelsJson([entry], { builtIns: new Map() })
-      .providers["opencode-go"].models;
-    expect(glm.id).toBe("glm-5.2");
-    expect(glm.contextWindow).toBe(1_000_000);
-    expect(glm.maxTokens).toBe(128_000);
-    expect(glm.cost).toEqual({
-      input: 1.4,
-      output: 4.4,
-      cacheRead: 0.26,
-      cacheWrite: 0,
-    });
-    expect(glm.reasoning).toBe(true);
+    // Same pin as Flash: Pi does not ship it, so the catalog must carry the
+    // anthropic-messages endpoint (qwen3.7-max's built-in flavor) explicitly.
+    expect(max.api).toBe("anthropic-messages");
+    expect(max.baseUrl).toBe("https://opencode.ai/zen/go");
   });
 
   it("describes Hy3, which Pi does not ship yet on opencode-go", () => {
@@ -172,6 +196,8 @@ describe("generateModelsJson", () => {
       cacheWrite: 0,
     });
     expect(hy3.reasoning).toBe(true);
+    expect(hy3.api).toBe("openai-completions");
+    expect(hy3.baseUrl).toBe("https://opencode.ai/zen/go/v1");
     expect(hy3.thinkingLevelMap).toEqual({
       off: "no_think",
       minimal: null,
@@ -297,6 +323,7 @@ describe("generateModelsJson custom providers", () => {
       id: "muse-spark-1.2-contributor",
       name: "Muse Spark 1.2",
       api: "openai-responses",
+      baseUrl: "https://opencode.ai/zen/go/v1",
       reasoning: true,
       input: ["text", "image"],
       contextWindow: 1_048_576,
@@ -313,11 +340,33 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
+  it("pins api/baseUrl for every opencode-go model Pi does not ship", () => {
+    // Models without a built-in baseline cannot inherit an endpoint, so the
+    // catalog must carry it: pi's ModelRegistry would otherwise fall back to
+    // the provider's first built-in model (deepseek-v4-flash,
+    // openai-completions) and silently break anthropic-messages models.
+    // Endpoint flavors per https://opencode.ai/docs/es/go (Endpoints table).
+    for (const entry of MODEL_CATALOG.filter(
+      (e) =>
+        e.userInvocable &&
+        !builtIns.has(e.provider.modelId) &&
+        (e.provider.kind === "opencodeGo" ||
+          e.provider.kind === "opencodeGoResponses"),
+    ) as ModelCatalogEntry[]) {
+      expect(entry.baseUrl, `${entry.id} must pin baseUrl`).toBeTruthy();
+      if (entry.provider.kind === "opencodeGo") {
+        expect(entry.api, `${entry.id} must pin api`).toBeTruthy();
+      }
+    }
+  });
+
   it("describes GLM 5.3 Flash on opencode-go, deriving image input from its supportedFiles", () => {
     const flash = generate().providers["opencode-go"].models.find(
       (m) => m.name === "GLM 5.3 Flash",
     );
     expect(flash?.id).toBe("glm-5.3-flash");
+    expect(flash?.api).toBe("openai-completions");
+    expect(flash?.baseUrl).toBe("https://opencode.ai/zen/go/v1");
     expect(flash?.input).toEqual(["text", "image"]);
     expect(flash?.reasoning).toBe(true);
     expect(flash?.thinkingLevelMap).toEqual({
@@ -353,18 +402,20 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
-  it("describes GLM 5.3 on vercel-ai-gateway fully", () => {
+  it("describes GLM 5.3 on opencode-go, which Pi does not ship yet", () => {
     const entry = MODEL_CATALOG.find((e) => e.id === "GLM 5.3")!;
     const [glm] = generateModelsJson([entry], { builtIns: new Map() })
-      .providers["vercel-ai-gateway"].models;
+      .providers["opencode-go"].models;
     expect(glm).toEqual({
-      id: "zai/glm-5.3",
+      id: "glm-5.3",
       name: "GLM 5.3",
       reasoning: true,
       input: ["text"],
       contextWindow: 1_000_000,
-      maxTokens: 12_800,
+      maxTokens: 128_000,
       cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+      api: "openai-completions",
+      baseUrl: "https://opencode.ai/zen/go/v1",
       thinkingLevelMap: {
         off: null,
         minimal: "minimal",

@@ -14,7 +14,7 @@ export const CAPABILITY_ALIASES = {
   // needs two models that just answer.
   basicChatAlt: "Kimi K2.7 Code",
   canExecuteTools: "Deepseek v4 Flash",
-  canSeeImages: "Qwen 3.7 Plus",
+  canSeeImages: "Qwen 3.8 Flash",
   canProduceReasoning: "Deepseek v4 Pro",
   // settings.spec asserts a temperature of 1 here.
   alwaysRefuses: "MiniMax M3",

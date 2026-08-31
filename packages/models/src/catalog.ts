@@ -53,8 +53,17 @@ export interface ModelCatalogEntry {
   userInvocable: boolean;
   provider: { kind: ProviderKind; modelId: string };
   company: Company;
-  /** Override Pi API for the model (e.g. force openai-completions for gateway routing). */
+  /**
+   * Override Pi API for the model (e.g. force openai-completions for gateway
+   * routing). Required (with baseUrl) for models Pi does not ship: without a
+   * baseline, pi's ModelRegistry fills api/baseUrl from the provider's first
+   * built-in model (opencode-go: deepseek-v4-flash, openai-completions), which
+   * silently breaks models served over anthropic-messages (thinking/reasoning
+   * streaming degrades to a plain text response).
+   */
   api?: string;
+  /** Required with `api` when Pi does not ship the model (opencode-go: https://opencode.ai/zen/go for anthropic-messages, /v1 for openai-completions). */
+  baseUrl?: string;
   reasoning?: boolean;
   /**
    * Nivel de razonamiento aplicado por defecto al crear una sesión de coding
@@ -140,14 +149,17 @@ export const MODEL_CATALOG = [
     supportedFiles: ["img"],
   },
   {
-    // Invocable models Pi does not ship must describe their own limits and
-    // cost — values taken from the opencode-go registry.
+    // Invocable models Pi does not ship must describe their own limits,
+    // cost and endpoint — values taken from the opencode-go registry and the
+    // endpoints table at https://opencode.ai/docs/es/go.
     id: "Kimi K3",
     userInvocable: true,
     provider: { kind: "opencodeGo", modelId: "kimi-k3" },
     company: "moonshotai",
     reasoning: true,
     defaultThinkingLevel: "high",
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     supportedFiles: ["img"],
     contextWindow: 1_048_576,
     maxTokens: 131_072,
@@ -165,51 +177,46 @@ export const MODEL_CATALOG = [
     topP: 0.95,
   },
   {
-    id: "Qwen 3.7 Plus",
+    // Pi does not ship this model, so it describes its own limits and cost —
+    // taken from the opencode-go registry (mirrors qwen3.7-plus, the
+    // flash/plus tier Pi does ship built-in there).
+    //
+    // api/baseUrl are pinned on purpose: Pi serves qwen3.7-plus/max over
+    // anthropic-messages (https://opencode.ai/zen/go), but a model without a
+    // built-in baseline inherits the provider default (deepseek-v4-flash,
+    // openai-completions /zen/go/v1) — see buildModelDefinition.
+    id: "Qwen 3.8 Flash",
     userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "qwen3.7-plus" },
+    provider: { kind: "opencodeGo", modelId: "qwen3.8-flash" },
     company: "alibaba",
     reasoning: true,
     defaultThinkingLevel: "high",
+    api: "anthropic-messages",
+    baseUrl: "https://opencode.ai/zen/go",
     supportedFiles: ["img"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    cost: { input: 0.4, output: 1.6, cacheRead: 0.04, cacheWrite: 0.5 },
   },
   {
     // Pi does not ship this model, so it describes its own limits and cost —
     // taken from the opencode-go registry.
+    //
+    // api/baseUrl are pinned on purpose: Pi serves qwen3.7-plus/max over
+    // anthropic-messages (https://opencode.ai/zen/go), but a model without a
+    // built-in baseline inherits the provider default (deepseek-v4-flash,
+    // openai-completions /zen/go/v1) — see buildModelDefinition.
     id: "Qwen 3.8 Max",
     userInvocable: true,
     provider: { kind: "opencodeGo", modelId: "qwen3.8-max" },
     company: "alibaba",
     reasoning: true,
     defaultThinkingLevel: "high",
+    api: "anthropic-messages",
+    baseUrl: "https://opencode.ai/zen/go",
     contextWindow: 1_000_000,
     maxTokens: 65_536,
     cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
-  },
-  {
-    id: "Qwen 3.8 27B",
-    userInvocable: true,
-    provider: { kind: "gateway", modelId: "alibaba/qwen3.8-27b" },
-    company: "alibaba",
-    reasoning: true,
-    defaultThinkingLevel: "high",
-    thinkingLevelMap: {
-      off: null,
-      minimal: "minimal",
-      low: "low",
-      medium: "medium",
-      high: "high",
-    },
-    contextWindow: 131_072,
-    maxTokens: 8_192,
-    cost: { input: 0.3, output: 0.9, cacheRead: 0.03, cacheWrite: 0 },
-    // Vercel AI Gateway: fuerza el routing solo a runinfra.
-    // En AI SDK es providerOptions.gateway.only, en Pi es
-    // compat.vercelGatewayRouting.only (inyectado vía models.json).
-    // Se usa only en lugar de order porque con order el gateway seguía
-    // resolviendo a alibaba (ver trazas 380454d1). With only se fuerza
-    // exclusivamente runinfra.
-    providerOptions: { gateway: { only: ["runinfra"] } },
   },
   {
     id: "MiMo V2.5",
@@ -235,12 +242,15 @@ export const MODEL_CATALOG = [
   {
     id: "Muse Spark 1.2",
     userInvocable: true,
-    // OpenCode Go model (contributor tier, responses API). Pi does not ship
-    // it built-in, so it describes its own limits and cost.
+    // OpenCode Go model (contributor tier, responses API per the endpoints
+    // table at https://opencode.ai/docs/es/go). Pi does not ship it built-in,
+    // so it describes its own limits, cost and baseUrl; the api flavor comes
+    // from the opencodeGoResponses provider kind (openai-responses).
     provider: { kind: "opencodeGoResponses", modelId: "muse-spark-1.2-contributor" },
     company: "meta",
     reasoning: true,
     defaultThinkingLevel: "xhigh",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     thinkingLevelMap: {
       off: null,
       minimal: "minimal",
@@ -282,9 +292,12 @@ export const MODEL_CATALOG = [
     temperature: 0.6,
   },
   {
+    // Pi does not ship this model on opencode-go, so it describes its own
+    // limits, cost and endpoint (openai-completions per the endpoints table
+    // at https://opencode.ai/docs/es/go).
     id: "GLM 5.3",
     userInvocable: true,
-    provider: { kind: "gateway", modelId: "zai/glm-5.3" },
+    provider: { kind: "opencodeGo", modelId: "glm-5.3" },
     company: "zai",
     reasoning: true,
     defaultThinkingLevel: "high",
@@ -296,19 +309,8 @@ export const MODEL_CATALOG = [
       high: "high",
       xhigh: "xhigh",
     },
-    temperature: 0.6,
-    topP: 0.95,
-    contextWindow: 1_000_000,
-    maxTokens: 12_800,
-    cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
-  },
-  {
-    id: "GLM 5.2",
-    userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "glm-5.2" },
-    company: "zai",
-    reasoning: true,
-    defaultThinkingLevel: "high",
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     temperature: 0.6,
     topP: 0.95,
     contextWindow: 1_000_000,
@@ -316,12 +318,17 @@ export const MODEL_CATALOG = [
     cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
   },
   {
+    // Pi does not ship this model, so it describes its own limits, cost and
+    // endpoint (openai-completions per the endpoints table at
+    // https://opencode.ai/docs/es/go).
     id: "Hy3",
     userInvocable: true,
     provider: { kind: "opencodeGo", modelId: "hy3" },
     company: "tencent",
     reasoning: true,
     defaultThinkingLevel: "high",
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     thinkingLevelMap: {
       off: "no_think",
       minimal: null,
@@ -334,14 +341,17 @@ export const MODEL_CATALOG = [
     cost: { input: 0.14, output: 0.58, cacheRead: 0.038, cacheWrite: 0 },
   },
   {
-    // GLM 5.3 Flash servido por opencode-go (api openai-completions). Pi no
-    // trae el modelo built-in, así que se auto-describe.
+    // GLM 5.3 Flash servido por opencode-go (api openai-completions per the
+    // endpoints table at https://opencode.ai/docs/es/go). Pi no trae el modelo
+    // built-in, así que se auto-describe.
     id: "GLM 5.3 Flash",
     userInvocable: true,
     provider: { kind: "opencodeGo", modelId: "glm-5.3-flash" },
     company: "zai",
     reasoning: true,
     defaultThinkingLevel: "high",
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     thinkingLevelMap: {
       off: null,
       minimal: null,

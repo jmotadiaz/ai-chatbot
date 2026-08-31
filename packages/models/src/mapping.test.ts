@@ -86,24 +86,12 @@ describe("model mapping", () => {
     );
   });
 
-  it("maps the GLM 5.3 catalog id to the vercel-ai-gateway Pi provider", () => {
+  it("maps the GLM 5.3 catalog id to the opencode-go Pi provider", () => {
     expect(toPiModelId("GLM 5.3")).toEqual({
-      providerId: "vercel-ai-gateway",
-      modelId: "zai/glm-5.3",
-    });
-    expect(toChatModelId("vercel-ai-gateway", "zai/glm-5.3")).toBe(
-      "GLM 5.3",
-    );
-  });
-
-  it("maps the GLM 5.2 catalog id to the opencode-go Pi provider", () => {
-    expect(toPiModelId("GLM 5.2")).toEqual({
       providerId: "opencode-go",
-      modelId: "glm-5.2",
+      modelId: "glm-5.3",
     });
-    expect(toChatModelId("opencode-go", "glm-5.2")).toBe(
-      "GLM 5.2",
-    );
+    expect(toChatModelId("opencode-go", "glm-5.3")).toBe("GLM 5.3");
   });
 
   it("maps the Hy3 catalog id to the opencode-go Pi provider", () => {

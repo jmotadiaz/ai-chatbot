@@ -17,8 +17,8 @@ describe("GLM 5.3 in the chat model configuration", () => {
     expect(cfg.supportedFiles).toBeUndefined();
   });
 
-  it("exposes a gateway provider factory with the gateway route id (mock in test mode)", () => {
-    expect(providers.gateway).toBeDefined();
-    expect(providers.gateway("zai/glm-5.3")).toBeDefined();
+  it("exposes an opencodeGo provider factory with the model id (mock in test mode)", () => {
+    expect(providers.opencodeGo).toBeDefined();
+    expect(providers.opencodeGo("glm-5.3")).toBeDefined();
   });
 });

@@ -123,14 +123,15 @@ function buildModelDefinition(
     // Emit Pi's built-in api/baseUrl so the runtime routes to the correct
     // endpoint. Without them, pi's ModelRegistry fills the gaps from the first
     // built-in model of the provider, which silently rewrites e.g.
-    // minimax-m3 (anthropic-messages) and qwen3.7-plus (anthropic-messages)
+    // minimax-m3 (anthropic-messages) and Pi's built-in qwen3.7-plus
+    // (anthropic-messages)
     // to openai-completions and breaks thinking/reasoning streaming.
     api: entry.api
       ? (entry.api as string)
       : entry.provider.kind === "opencodeGoResponses"
         ? "openai-responses"
         : baseline?.api,
-    baseUrl: baseline?.baseUrl,
+    baseUrl: entry.baseUrl ?? baseline?.baseUrl,
     // Pi replaces the built-in model wholesale with the models.json entry
     // (mergeCustomModels), so a thinkingLevelMap omitted here silently caps
     // the model's supported levels at "high" (xhigh needs an explicit
