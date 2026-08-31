@@ -1,6 +1,6 @@
 # HTML Report Format
 
-The architectural review is rendered as a single self-contained HTML file in the OS temp directory, then published with the `publish_artifact` tool so the user gets a URL. Tailwind and Mermaid both come from CDNs — keep them at `cdn.tailwindcss.com` and `cdn.jsdelivr.net`, because that is what the harness viewer's Content-Security-Policy allows; another CDN renders an unstyled page with empty diagram slots. Mermaid handles graph-shaped diagrams reliably; hand-built divs and inline SVG handle the more editorial visuals (mass diagrams, cross-sections). Mix the two: don't lean on Mermaid for everything, it'll start to look generic.
+The architectural review is rendered as a single self-contained HTML file in the OS temp directory, then published with the `publish_artifact` tool so the user gets a URL. Author it **mobile-first** and verify it with `pnpm --filter chatbot check:mobile <url>` before handing the URL over; see the `mobile-first-artifacts` skill. Tailwind and Mermaid both come from CDNs — keep them at `cdn.tailwindcss.com` and `cdn.jsdelivr.net`, because that is what the harness viewer's Content-Security-Policy allows; another CDN renders an unstyled page with empty diagram slots. Mermaid handles graph-shaped diagrams reliably; hand-built divs and inline SVG handle the more editorial visuals (mass diagrams, cross-sections). Mix the two: don't lean on Mermaid for everything, it'll start to look generic.
 
 ## Scaffold
 

@@ -24,7 +24,7 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 
 ## Built-in Skills (`skills/`)
 
-Standalone Agent Skills live under `skills/<name>/SKILL.md` (e.g. `skills/writing-prompties/`). They require no TypeScript runtime hooks and are discovered automatically via `getBuiltinSkillPaths()` in `src/pi-packages.ts` passed to `additionalSkillPaths`.
+Standalone Agent Skills live under `skills/<name>/SKILL.md` (e.g. `skills/writing-prompties/`, `skills/mobile-first-artifacts/`). They require no TypeScript runtime hooks and are discovered automatically via `getBuiltinSkillPaths()` in `src/pi-packages.ts` passed to `additionalSkillPaths`.
 
 ## First-Party Extensions
 
@@ -93,6 +93,14 @@ replaces "open it" with "here's the URL".
   model then reads, so skills that were never patched still deliver links (y los
   `.html` del repo a propósito no cuentan). Repo-internal HTML is excluded by the
   temp-directory test, not by name matching.
+- **Mobile-first:** artifacts are opened on phones as much as on desktops, so
+  `skills/mobile-first-artifacts/SKILL.md` carries the authoring rules (base layout
+  one column, breakpoint prefixes add structure, wide content scrolls itself, type
+  floor 12px, `useMaxWidth` for Mermaid, tap targets ≥44px). The rule is checkable:
+  `pnpm --filter chatbot check:mobile <url>` (`packages/chatbot/scripts/check-mobile.ts`,
+  Playwright lives in that package) measures horizontal overflow and sub-12px text at
+  320px and 390px, exits non-zero, and names the offending elements. Written after
+  measuring a real review at 134px of overflow and 296 text nodes < 12px.
 - **Subagents:** not excluded by `getExtensionPaths()`, so child sessions get the tool
   too — a subagent asked to produce a report should be able to hand back a URL.
 - **Tests:** `tests/unit/artifacts.test.ts`, `tests/unit/artifacts-http.test.ts`

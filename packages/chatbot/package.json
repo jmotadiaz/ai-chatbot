@@ -29,6 +29,7 @@
     "type:check": "tsc --noEmit",
     "test": "concurrently \"npm run test:e2e\" \"npm run test:unit\"",
     "eval": "npx tsx scripts/eval-runner.ts",
+    "check:mobile": "npx tsx scripts/check-mobile.ts",
     "test:e2e": "npm run db:test:start && playwright test $PLAYWRIGHT_ARGS",
     "test:e2e:ui": "npm run db:test:start && playwright test --ui $PLAYWRIGHT_ARGS",
     "test:e2e:headed": "npm run db:test:start && playwright test --headed $PLAYWRIGHT_ARGS",

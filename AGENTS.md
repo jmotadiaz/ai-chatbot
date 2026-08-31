@@ -132,4 +132,4 @@ Skills under `.agents/skills/` are vendored from upstream repos and pinned by
 hash algorithm is not reproducible from this repo, so patches leave the lock
 stale on purpose — keep them minimal and recorded here:
 
-- `improve-codebase-architecture` (`SKILL.md` §2, `HTML-REPORT.md`): publishes its HTML report through the coding agent's `publish_artifact` tool instead of `xdg-open`, and pins the CDN hosts the artifact viewer allows. The report still reaches users without this edit: the `artifacts` extension publishes temp-dir reports automatically. See `packages/coding-agent/AGENTS.md`.
+- `improve-codebase-architecture` (`SKILL.md` §2, `HTML-REPORT.md`): publishes its HTML report through the coding agent's `publish_artifact` tool instead of `xdg-open`, pins the CDN hosts the artifact viewer allows, and points at the first-party `mobile-first-artifacts` skill. The report still reaches users without this edit: the `artifacts` extension publishes temp-dir reports automatically. See `packages/coding-agent/AGENTS.md`.
