@@ -3,6 +3,7 @@ import { inlineAttachedFiles } from "../../src/attached-files";
 import { SessionEventLog } from "../../src/event-log";
 import { SessionRegistry } from "../../src/session-registry";
 import { TurnRunner } from "../../src/turn-runner";
+import { AguiEventType as EventType, type BaseEvent } from "../../src/pi-to-agui-translator";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -217,5 +218,115 @@ describe("TurnRunner (deep module)", () => {
     expect(expanded).toContain('<skill name="a"');
     expect(expanded).toContain('<skill name="b"');
     expect(expanded.indexOf('name="a"')).toBeLessThan(expanded.indexOf('name="b"'));
+  });
+
+  describe("connectToSession", () => {
+    async function readLines(stream: ReadableStream<Uint8Array>): Promise<Array<Record<string, unknown>>> {
+      const reader = stream.getReader();
+      const lines: Array<Record<string, unknown>> = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        lines.push(JSON.parse(new TextDecoder().decode(value)) as Record<string, unknown>);
+      }
+      return lines;
+    }
+
+    it("replays the prelude stamped with the cursor seq and the compacted tail, then closes idle", async () => {
+      const mock = createMockPiSession({ messages: [], isStreaming: false });
+      seed("c1", mock);
+      const log = registry.getRaw("c1")!.eventLog!;
+      log.append({ type: EventType.TOOL_CALL_START, toolCallId: "t1", toolCallName: "bash" } as BaseEvent);
+      log.append({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m1", delta: "hola " } as BaseEvent);
+      log.append({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m1", delta: "mundo" } as BaseEvent);
+
+      const lines = await readLines(
+        await runner.connectToSession("c1", { epoch: log.epoch, seq: 1 }),
+      );
+
+      // prelude first (synthetic re-open at the cursor), then the compacted tail.
+      expect(lines.map((l) => l.event)).toMatchObject([
+        { type: EventType.TOOL_CALL_START, toolCallId: "t1" },
+        { type: EventType.TEXT_MESSAGE_CHUNK, messageId: "m1", delta: "hola mundo" },
+      ]);
+      expect(lines[0]!.seq).toBe(1); // cursor seq: prelude does not advance it
+      expect(lines[1]!.seq).toBe(3); // last merged delta: cursor advances past it
+      expect(lines[1]!.epoch).toBe(log.epoch);
+    });
+
+    it("applies the terminal-close policy once: a live RUN_FINISHED closes the stream", async () => {
+      const mock = createMockPiSession({ messages: [], isStreaming: true });
+      seed("c2", mock);
+      const log = registry.getRaw("c2")!.eventLog!;
+
+      const stream = await runner.connectToSession("c2", { epoch: log.epoch, seq: 0 });
+      // start() runs synchronously during construction: the subscription is
+      // live by the time connectToSession resolves.
+      log.append({
+        type: EventType.RUN_FINISHED,
+        threadId: "c2",
+        runId: "r9",
+        timestamp: Date.now(),
+      } as BaseEvent);
+
+      const reader = stream.getReader();
+      const first = await reader.read();
+      expect(first.done).toBe(false);
+      const line = JSON.parse(new TextDecoder().decode(first.value)) as { event: { type: string } };
+      expect(line.event.type).toBe(EventType.RUN_FINISHED);
+
+      expect(await reader.read()).toEqual({ done: true, value: undefined });
+      expect((log as unknown as { subscribers: Set<unknown> }).subscribers.size).toBe(0);
+    });
+
+    it("unsubscribes when the client cancels the stream", async () => {
+      const mock = createMockPiSession({ messages: [], isStreaming: true });
+      seed("c3", mock);
+      const log = registry.getRaw("c3")!.eventLog!;
+
+      const stream = await runner.connectToSession("c3", { epoch: log.epoch, seq: 0 });
+      const reader = stream.getReader();
+      const pending = reader.read();
+
+      await reader.cancel();
+
+      expect(await pending).toEqual({ done: true, value: undefined });
+      expect((log as unknown as { subscribers: Set<unknown> }).subscribers.size).toBe(0);
+    });
+
+    it("fails closed for subagent sessions without the matching parent session id", async () => {
+      const mock = createMockPiSession({ messages: [], isStreaming: false });
+      registry.set("sub1", {
+        sessionId: "sub1",
+        project: "p",
+        parentSessionId: "parent-1",
+        runtime: { session: mock.session } as never,
+        eventLog: new SessionEventLog(),
+      });
+      const log = registry.getRaw("sub1")!.eventLog!;
+
+      // Wrong (missing) parent: the stream errors, connectToSession itself does not throw.
+      const denied = await runner.connectToSession("sub1", { epoch: log.epoch, seq: 0 });
+      await expect(denied.getReader().read()).rejects.toThrow(
+        "Subagent session requires valid parent session id",
+      );
+
+      // Matching parent: connects and closes idle.
+      const allowed = await runner.connectToSession("sub1", { epoch: log.epoch, seq: 0 }, "parent-1");
+      expect(await readLines(allowed)).toEqual([]);
+    });
+
+    it("surfaces a stale epoch as a stream error, preserving the client-visible semantics", async () => {
+      const mock = createMockPiSession({ messages: [], isStreaming: false });
+      seed("c4", mock);
+
+      const stream = await runner.connectToSession("c4", { epoch: "stale-epoch", seq: 0 });
+      await expect(stream.getReader().read()).rejects.toThrow("Cursor epoch mismatch");
+    });
+
+    it("closes quietly when the session does not exist", async () => {
+      const stream = await runner.connectToSession("missing", { epoch: "e", seq: 0 });
+      expect(await stream.getReader().read()).toEqual({ done: true, value: undefined });
+    });
   });
 });

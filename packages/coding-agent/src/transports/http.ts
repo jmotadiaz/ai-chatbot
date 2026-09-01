@@ -286,44 +286,11 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             message: "afterSeq and epoch are required",
           });
         }
-        const encoder = new TextEncoder();
-        let cleanup: () => void = () => {};
-        let completed = false;
-        const stream = new ReadableStream<Uint8Array>({
-          async start(controller) {
-            try {
-              cleanup = await connectToSession(
-                sessionId,
-                (line) => controller.enqueue(encoder.encode(line)),
-                (err) => {
-                  log.error("connect.error", { message: String(err) });
-                  try {
-                    controller.error(err);
-                  } catch {
-                  }
-                },
-                () => {
-                  if (completed) return;
-                  completed = true;
-                  try {
-                    controller.close();
-                  } catch {
-                    // already closed; ignore
-                  }
-                },
-                afterSeq,
-                epoch,
-                parentSessionId,
-              );
-            } catch (err) {
-              log.error("connect.setup_error", { message: String(err) });
-              controller.error(err);
-            }
-          },
-          cancel() {
-            cleanup();
-          },
-        });
+        const stream = await connectToSession(
+          sessionId,
+          { epoch, seq: afterSeq },
+          parentSessionId,
+        );
         stop();
         return new Response(stream, {
           headers: { "Content-Type": "application/x-ndjson" },

@@ -2,9 +2,7 @@ import { readFileSync } from "node:fs";
 import { stripFrontmatter } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger, retainTraceSink } from "tracing";
 import type { ThinkingLevel } from "models";
-import { type LoggedAguiEvent } from "./event-log";
-import { buildReconnectPrelude } from "./reconnect-prelude";
-import { compactReplayEvents } from "./replay-compaction";
+import { type Cursor, type LoggedAguiEvent, type SessionEventLog } from "./event-log";
 import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
 export const FILES_CHANGED_EVENT = "coding_agent_files_changed";
 import {
@@ -97,51 +95,93 @@ export function applyThinkingLevel(
 export class TurnRunner {
   constructor(private readonly registry: SessionRegistry) {}
 
-  private createLoggedEventStream(
-    entry: SessionEntry,
-    afterSeq: number,
+  /**
+   * Single streamer for both live prompts and reconnects: serializes the
+   * initial records (prelude first, then replay events), subscribes for
+   * live events, and applies the terminal-close policy exactly once.
+   * `resolve` runs inside the stream's start so setup failures (access
+   * guard, cursor epoch mismatch) surface as stream errors, not JSON-RPC
+   * errors; returning null closes the stream quietly (session not found).
+   */
+  private createEventStream(
     label: string,
+    summaryEventName: string,
+    cursorSeq: number,
+    resolve: () => {
+      entry: SessionEntry;
+      eventLog: SessionEventLog;
+      prelude: LoggedAguiEvent[];
+      events: LoggedAguiEvent[];
+    } | null,
   ): ReadableStream<Uint8Array> {
     const log = getTraceLogger("worker");
-    const { sessionId } = entry;
-    const eventLog = ensureEventLog(entry);
     const encoder = new TextEncoder();
     let enqueuedLineCount = 0;
     let enqueueErrorCount = 0;
     const eventCounts: Record<string, number> = {};
     let cleanup: (() => void) | undefined;
     let closed = false;
+    // Set by start(); the ReadableStream constructor runs start
+    // synchronously, before cancel() can ever fire.
+    let sessionId: string | undefined;
+    let eventLog: SessionEventLog | undefined;
 
-    const logSummary = (reason: string) => {
-      log.info(`${label}.summary`, {
+    const emitSummary = (reason: string) => {
+      log.info(summaryEventName, {
         sessionId,
         reason,
-        afterSeq,
+        afterSeq: cursorSeq,
         enqueuedLineCount,
         enqueueErrorCount,
         eventCounts,
-        eventLogLastSeq: eventLog.lastSeq,
+        eventLogLastSeq: eventLog?.lastSeq ?? 0,
       });
-    };
-
-    const shouldCloseOnTerminal = (event: BaseEvent) => {
-      if (!isTerminalAguiEvent(event)) return false;
-      const eventRunId = (event as { runId?: string }).runId;
-      return !entry.activeRun || eventRunId === entry.activeRun.runId;
     };
 
     return new ReadableStream<Uint8Array>({
       start: (controller) => {
+        let state: ReturnType<typeof resolve>;
+        try {
+          state = resolve();
+        } catch (err) {
+          // Setup failures (access guard, cursor epoch mismatch) surface
+          // as stream errors: the RPC stays 200 and the error comes out
+          // of the body, exactly as before the refactor.
+          closed = true;
+          log.error(`${label}.setup_error`, { error: String(err) });
+          controller.error(err);
+          return;
+        }
+        if (state === null) {
+          closed = true;
+          emitSummary("session_not_found");
+          try {
+            controller.close();
+          } catch {
+            // Client already gone.
+          }
+          return;
+        }
+        sessionId = state.entry.sessionId;
+        eventLog = state.eventLog;
+        const { entry, prelude, events } = state;
+
+        const shouldCloseOnTerminal = (event: BaseEvent) => {
+          if (!isTerminalAguiEvent(event)) return false;
+          const eventRunId = (event as { runId?: string }).runId;
+          return !entry.activeRun || eventRunId === entry.activeRun.runId;
+        };
+
         const close = (reason: string) => {
           if (closed) return;
           closed = true;
           cleanup?.();
-          logSummary(reason);
           try {
             controller.close();
           } catch {
             // The browser may already have closed the HTTP stream.
           }
+          emitSummary(reason);
         };
 
         const emit = (logged: LoggedAguiEvent, closeTerminal: boolean) => {
@@ -161,9 +201,22 @@ export class TurnRunner {
           }
         };
 
-        const replay = eventLog.readAfter(afterSeq);
-        for (let i = 0; i < replay.length; i += 1) {
-          emit(replay[i]!, i === replay.length - 1);
+        if (prelude.length > 0 || events.length > 0) {
+          log.info(`${label}.replay`, {
+            sessionId,
+            afterSeq: cursorSeq,
+            preludeCount: prelude.length,
+            replayCount: events.length,
+            eventLogLastSeq: eventLog.lastSeq,
+            isStreaming: entry.runtime.session.isStreaming,
+            hasActiveRun: !!entry.activeRun,
+          });
+        }
+        for (const event of prelude) {
+          emit(event, false);
+        }
+        for (let i = 0; i < events.length; i += 1) {
+          emit(events[i]!, i === events.length - 1);
         }
         if (closed) return;
 
@@ -178,7 +231,7 @@ export class TurnRunner {
         closed = true;
         cleanup?.();
         log.info(`${label}.cancelled`, { sessionId });
-        logSummary("cancelled");
+        emitSummary("cancelled");
       },
     });
   }
@@ -471,138 +524,34 @@ export class TurnRunner {
       });
     }
 
-    const afterSeq = ensureEventLog(entry).lastSeq;
+    const eventLog = ensureEventLog(entry);
+    const afterSeq = eventLog.lastSeq;
     const turnBaseline = await captureTurnBaseline(entry);
     this.startPromptCollector(entry, prompt, runId, messages, turnBaseline);
-    return this.createLoggedEventStream(entry, afterSeq, "session.prompt_stream");
+    return this.createEventStream(
+      "session.prompt_stream",
+      "session.prompt_stream.summary",
+      afterSeq,
+      () => ({ entry, eventLog, prelude: [], events: eventLog.readAfter(afterSeq) }),
+    );
   }
 
   async connectToSession(
     sessionId: string,
-    onEvent: (line: string) => void,
-    onError: (err: Error) => void,
-    onComplete: (() => void) | undefined,
-    afterSeq: number,
-    epoch: string,
+    cursor: Cursor,
     parentSessionId?: string,
-  ): Promise<() => void> {
+  ): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("worker");
-    const eventCounts: Record<string, number> = {};
-    let emittedLineCount = 0;
-    let replayLineCount = 0;
-    let connectClosed = false;
-    let eventLogLastSeq = 0;
-
-    const logConnectSummary = (reason: string) => {
-      if (connectClosed) return;
-      connectClosed = true;
-      log.info("connect.stream_summary", {
-        sessionId,
-        reason,
-        afterSeq,
-        emittedLineCount,
-        replayLineCount,
-        eventCounts,
-        eventLogLastSeq,
-      });
-    };
-
-    const entry = this.registry.get(sessionId, parentSessionId);
-    if (!entry) {
-      log.info("connect.session_not_found", { sessionId });
-      onComplete?.();
-      logConnectSummary("session_not_found");
-      return () => {};
-    }
-
-    const eventLog = ensureEventLog(entry);
-    if (epoch !== eventLog.epoch) {
-      throw new Error("Cursor epoch mismatch");
-    }
-    eventLogLastSeq = eventLog.lastSeq;
-
-    let closed = false;
-    let unsubscribe: (() => void) | undefined;
-
-    const finish = (reason: string) => {
-      if (closed) return;
-      closed = true;
-      unsubscribe?.();
-      onComplete?.();
-      eventLogLastSeq = eventLog.lastSeq;
-      logConnectSummary(reason);
-    };
-
-    const shouldCloseOnTerminal = (event: BaseEvent) => {
-      if (!isTerminalAguiEvent(event)) return false;
-      const eventRunId = (event as { runId?: string }).runId;
-      return !entry.activeRun || eventRunId === entry.activeRun.runId;
-    };
-
-    const emitLogged = (logged: LoggedAguiEvent, closeTerminal: boolean) => {
-      if (closed) return;
-      try {
-        incrementCount(eventCounts, logged.event.type);
-        emittedLineCount += 1;
-        onEvent(loggedLine(logged));
-        if (closeTerminal && shouldCloseOnTerminal(logged.event)) {
-          finish("terminal");
-        }
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        onError(error);
-        finish("error");
+    return this.createEventStream("connect.stream", "connect.stream_summary", cursor.seq, () => {
+      const entry = this.registry.get(sessionId, parentSessionId);
+      if (!entry) {
+        log.info("connect.session_not_found", { sessionId });
+        return null;
       }
-    };
-
-    const prelude = buildReconnectPrelude(eventLog.readUpTo(afterSeq));
-    if (prelude.length > 0) {
-      const preludeCounts: Record<string, number> = {};
-      for (const event of prelude) incrementCount(preludeCounts, event.type);
-      log.info("connect.synthetic_prelude", {
-        sessionId,
-        afterSeq,
-        eventCounts: preludeCounts,
-      });
-      for (const event of prelude) {
-        emitLogged({ epoch: eventLog.epoch, seq: afterSeq, event }, false);
-      }
-      if (closed) return () => {};
-    }
-
-    const rawReplay = eventLog.readAfter(afterSeq);
-    const replay = compactReplayEvents(rawReplay);
-    log.info("connect.replay", {
-      sessionId,
-      afterSeq,
-      replayCount: replay.length,
-      rawReplayCount: rawReplay.length,
-      eventLogLastSeq: eventLog.lastSeq,
-      isStreaming: entry.runtime.session.isStreaming,
-      hasActiveRun: !!entry.activeRun,
+      const eventLog = ensureEventLog(entry);
+      const { prelude, events } = eventLog.replayAfter(cursor);
+      return { entry, eventLog, prelude, events };
     });
-    for (let i = 0; i < replay.length; i += 1) {
-      replayLineCount += 1;
-      emitLogged(replay[i]!, i === replay.length - 1);
-    }
-
-    if (closed) return () => {};
-
-    if (!entry.runtime.session.isStreaming && !entry.activeRun) {
-      log.info("connect.idle_completed", { sessionId, afterSeq });
-      finish("idle");
-      return () => {};
-    }
-
-    unsubscribe = eventLog.subscribe((logged) => emitLogged(logged, true));
-
-    return () => {
-      if (closed) return;
-      closed = true;
-      log.info("connect.client_disconnected", { sessionId });
-      unsubscribe?.();
-      logConnectSummary("client_disconnected");
-    };
   }
 
   async cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

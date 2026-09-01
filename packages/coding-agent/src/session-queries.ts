@@ -1,6 +1,7 @@
 import type { ThinkingLevel } from "models";
 import { getTraceLogger as getWorkerLogger } from "tracing";
 import { ensureEventLog } from "./session-entry";
+import type { Cursor } from "./event-log";
 import { convertPiMessagesToAgui } from "./agui-messages";
 import { getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "./prompts";
 import { sessionCwd } from "./session-entry";
@@ -15,10 +16,12 @@ export interface SessionStatus {
   running: boolean;
 }
 
-export interface SessionCursor {
-  epoch: string;
-  seq: number;
-}
+/**
+ * HTTP-border cursor: same shape as the event log's `Cursor` (single
+ * source of truth); the session snapshot emits it and connectToSession
+ * consumes it back.
+ */
+export type SessionCursor = Cursor;
 
 export interface SessionSnapshot {
   messages: Array<any>;

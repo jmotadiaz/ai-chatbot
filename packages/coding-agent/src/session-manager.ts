@@ -5,7 +5,7 @@ import { config } from "config";
 import { getTraceLogger } from "tracing";
 import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
-import { SessionEventLog } from "./event-log";
+import { SessionEventLog, type Cursor } from "./event-log";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import { getCodingAgentDir } from "./paths";
 import { startSubagentCollector } from "./subagent-collector";
@@ -140,10 +140,11 @@ export async function disposeSession(sessionId: string): Promise<void> {
 export interface SessionStatus {
   running: boolean;
 }
-export interface SessionCursor {
-  epoch: string;
-  seq: number;
-}
+/**
+ * HTTP-border cursor: same shape as the event log's `Cursor`. The session
+ * snapshot emits it; connectToSession consumes it back.
+ */
+export type SessionCursor = Cursor;
 export interface SessionSnapshot {
   messages: Array<any>;
   cursor: SessionCursor | null;
@@ -164,14 +165,10 @@ export async function getSessionSnapshot(
 
 export async function connectToSession(
   sessionId: string,
-  onEvent: (line: string) => void,
-  onError: (err: Error) => void,
-  onComplete: (() => void) | undefined,
-  afterSeq: number,
-  epoch: string,
+  cursor: Cursor,
   parentSessionId?: string,
-): Promise<() => void> {
-  return turnRunner.connectToSession(sessionId, onEvent, onError, onComplete, afterSeq, epoch, parentSessionId);
+): Promise<ReadableStream<Uint8Array>> {
+  return turnRunner.connectToSession(sessionId, cursor, parentSessionId);
 }
 
 export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

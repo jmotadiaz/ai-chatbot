@@ -7,9 +7,10 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 | File | Responsibility |
 | --- | --- |
 | `src/index.ts` | Type definitions and public exports |
-| `src/session-manager.ts` | Session lifecycle: create, run, reconnect, dispose |
+| `src/session-manager.ts` | Session lifecycle facade: create, run, reconnect, dispose |
+| `src/turn-runner.ts` | Turn orchestration: prompt runs, live/reconnect event streaming, cancel |
 | `src/pi-to-agui-translator.ts` | Pi events → AG-UI protocol events |
-| `src/event-log.ts` | In-memory event log with pub/sub for replay |
+| `src/event-log.ts` | In-memory event log with pub/sub; `replayAfter(cursor)` is the reconnect seam (prelude + compaction) |
 | `src/replay-compaction.ts` | Merges consecutive streaming deltas (chunks/args) before reconnect replay |
 | `src/transports/http.ts` | HTTP server with `/rpc` POST endpoint + read-only `GET /artifacts` |
 | `src/artifacts.ts` | Publishing generated reports into the artifacts root (names, slugs, index, URL) |
