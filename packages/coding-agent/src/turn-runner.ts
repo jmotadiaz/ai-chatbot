@@ -1,0 +1,619 @@
+import { readFileSync } from "node:fs";
+import { stripFrontmatter } from "@earendil-works/pi-coding-agent";
+import { getTraceLogger, retainTraceSink } from "tracing";
+import type { ThinkingLevel } from "models";
+import { type LoggedAguiEvent } from "./event-log";
+import { buildReconnectPrelude } from "./reconnect-prelude";
+import { compactReplayEvents } from "./replay-compaction";
+import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
+export const FILES_CHANGED_EVENT = "coding_agent_files_changed";
+import {
+  extractUserContentParts,
+  inlineAttachedFiles,
+} from "./attached-files";
+import { captureGitFileState, diffTurnFiles, type GitFileState } from "./turn-git-state";
+import type { CodingAgentEvent } from "./index";
+import {
+  type SessionEntry,
+  appendAguiEvent,
+  ensureEventLog,
+  incrementCount,
+  isTerminalAguiEvent,
+  loggedLine,
+  sessionCwd,
+} from "./session-entry";
+import { convertPiMessagesToAgui } from "./agui-messages";
+import { splitModelReference } from "./runtime-factory";
+import type { SessionRegistry } from "./session-registry";
+
+interface SnapshotMessage {
+  id?: string;
+  role: string;
+  content?: unknown;
+  toolCalls?: unknown;
+  toolCallId?: string;
+  name?: string;
+}
+
+function normalizeSnapshotMessages(messages: SnapshotMessage[] | undefined): SnapshotMessage[] {
+  return (messages ?? [])
+    .filter(
+      (message): message is SnapshotMessage =>
+        typeof message === "object" &&
+        message !== null &&
+        typeof message.role === "string",
+    )
+    .map((message, index) => ({
+      id: typeof message.id === "string" ? message.id : `snapshot-${index}`,
+      role: message.role,
+      content: message.content ?? "",
+      ...(Array.isArray(message.toolCalls) ? { toolCalls: message.toolCalls } : {}),
+      ...(typeof message.toolCallId === "string" ? { toolCallId: message.toolCallId } : {}),
+      ...(typeof message.name === "string" ? { name: message.name } : {}),
+    }));
+}
+
+const LEADING_SKILL_COMMANDS =
+  /^((?:\/skill:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:[ \t]+|(?=\r?\n|$)))+)([\s\S]*)$/;
+const SKILL_NAME = /\/skill:([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)/g;
+
+function expandLeadingSkillCommands(runtime: SessionEntry["runtime"], text: string): string {
+  const match = text.match(LEADING_SKILL_COMMANDS);
+  if (!match) return text;
+
+  const availableSkills = runtime.session.resourceLoader.getSkills().skills;
+  const names = Array.from(match[1]!.matchAll(SKILL_NAME), (command) => command[1]!);
+  const blocks = names.map((name) => {
+    const skill = availableSkills.find((candidate) => candidate.name === name);
+    if (!skill) {
+      throw new Error(`Unknown skill: ${name}`);
+    }
+    const content = readFileSync(skill.filePath, "utf8");
+    const body = stripFrontmatter(content).trim();
+    return `<skill name="${skill.name}" location="${skill.filePath}">
+References are relative to ${skill.baseDir}.
+
+${body}
+</skill>`;
+  });
+  const userText = match[2]!.replace(/^\s+/, "");
+  return userText ? `${blocks.join("\n\n")}\n\n${userText}` : blocks.join("\n\n");
+}
+
+function captureTurnBaseline(entry: SessionEntry): Promise<GitFileState | null> {
+  const cwd = sessionCwd(entry);
+  if (!cwd) return Promise.resolve(null);
+  return captureGitFileState(cwd).catch(() => null);
+}
+
+export function applyThinkingLevel(
+  session: { setThinkingLevel: (level: ThinkingLevel) => void },
+  level: ThinkingLevel | undefined,
+): void {
+  if (!level) return;
+  session.setThinkingLevel(level);
+}
+
+export class TurnRunner {
+  constructor(private readonly registry: SessionRegistry) {}
+
+  private createLoggedEventStream(
+    entry: SessionEntry,
+    afterSeq: number,
+    label: string,
+  ): ReadableStream<Uint8Array> {
+    const log = getTraceLogger("worker");
+    const { sessionId } = entry;
+    const eventLog = ensureEventLog(entry);
+    const encoder = new TextEncoder();
+    let enqueuedLineCount = 0;
+    let enqueueErrorCount = 0;
+    const eventCounts: Record<string, number> = {};
+    let cleanup: (() => void) | undefined;
+    let closed = false;
+
+    const logSummary = (reason: string) => {
+      log.info(`${label}.summary`, {
+        sessionId,
+        reason,
+        afterSeq,
+        enqueuedLineCount,
+        enqueueErrorCount,
+        eventCounts,
+        eventLogLastSeq: eventLog.lastSeq,
+      });
+    };
+
+    const shouldCloseOnTerminal = (event: BaseEvent) => {
+      if (!isTerminalAguiEvent(event)) return false;
+      const eventRunId = (event as { runId?: string }).runId;
+      return !entry.activeRun || eventRunId === entry.activeRun.runId;
+    };
+
+    return new ReadableStream<Uint8Array>({
+      start: (controller) => {
+        const close = (reason: string) => {
+          if (closed) return;
+          closed = true;
+          cleanup?.();
+          logSummary(reason);
+          try {
+            controller.close();
+          } catch {
+            // The browser may already have closed the HTTP stream.
+          }
+        };
+
+        const emit = (logged: LoggedAguiEvent, closeTerminal: boolean) => {
+          if (closed) return;
+          incrementCount(eventCounts, logged.event.type);
+          try {
+            controller.enqueue(encoder.encode(loggedLine(logged)));
+            enqueuedLineCount += 1;
+          } catch (err) {
+            enqueueErrorCount += 1;
+            log.warn(`${label}.enqueue_error`, { sessionId, error: String(err) });
+            close("enqueue_error");
+            return;
+          }
+          if (closeTerminal && shouldCloseOnTerminal(logged.event)) {
+            close("terminal");
+          }
+        };
+
+        const replay = eventLog.readAfter(afterSeq);
+        for (let i = 0; i < replay.length; i += 1) {
+          emit(replay[i]!, i === replay.length - 1);
+        }
+        if (closed) return;
+
+        cleanup = eventLog.subscribe((logged) => emit(logged, true));
+
+        if (!entry.runtime.session.isStreaming && !entry.activeRun) {
+          close("idle");
+        }
+      },
+      cancel: () => {
+        if (closed) return;
+        closed = true;
+        cleanup?.();
+        log.info(`${label}.cancelled`, { sessionId });
+        logSummary("cancelled");
+      },
+    });
+  }
+
+  private startPromptCollector(
+    entry: SessionEntry,
+    prompt: string,
+    runId: string,
+    messages: SnapshotMessage[] | undefined,
+    turnBaseline: GitFileState | null,
+  ): void {
+    const log = getTraceLogger("worker");
+    const { sessionId, runtime } = entry;
+    if (entry.activeRun || runtime.session.isStreaming) {
+      log.warn("session.prompt_already_running", { sessionId });
+      throw new Error("Session is already running");
+    }
+
+    const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
+    const preRunHistory = convertPiMessagesToAgui(runtime.session.messages);
+    const clientMessages = normalizeSnapshotMessages(messages);
+    const lastClientMessage = clientMessages[clientMessages.length - 1];
+    const userTail =
+      lastClientMessage && lastClientMessage.role === "user"
+        ? [lastClientMessage]
+        : [{ id: crypto.randomUUID(), role: "user", content: prompt }];
+    const userMessageClientId = userTail[0].id as string;
+    const snapshotMessages = [...preRunHistory, ...userTail];
+
+    const extracted = extractUserContentParts(userTail[0]?.content ?? prompt);
+    const inlinedText = inlineAttachedFiles(extracted.text, extracted.docs);
+    const unexpandedPromptText =
+      inlinedText.length > 0 ? inlinedText : extracted.images.length > 0 ? " " : prompt;
+    const promptText = expandLeadingSkillCommands(runtime, unexpandedPromptText);
+    const piImages = extracted.images.map((img) => ({
+      type: "image" as const,
+      data: img.data,
+      mimeType: img.mimeType,
+    }));
+
+    log.info("session.prompt", {
+      sessionId,
+      runId,
+      promptLength: promptText.length,
+      imageCount: piImages.length,
+      docCount: extracted.docs.length,
+      historyMessageCount: messages?.length ?? 0,
+    });
+    const startSeq = ensureEventLog(entry).lastSeq + 1;
+    const piEventCounts: Record<string, number> = {};
+    const aguiEventCounts: Record<string, number> = {};
+    let appendedAguiEventCount = 0;
+    let snapshotAppended = false;
+    let collectorClosed = false;
+    let userMessageStamped = false;
+    let terminalFlush: Promise<void> | undefined;
+
+    const finalizeTurn = (terminalEvent: BaseEvent): Promise<void> => {
+      const flush = (async () => {
+        try {
+          if (turnBaseline) {
+            const cwd = sessionCwd(entry);
+            const after = cwd ? await captureGitFileState(cwd) : null;
+            const files = diffTurnFiles(turnBaseline, after);
+            if (files.length > 0) {
+              appendAguiEvent(
+                entry,
+                {
+                  type: EventType.CUSTOM,
+                  name: FILES_CHANGED_EVENT,
+                  value: { runId, files },
+                  timestamp: Date.now(),
+                } as BaseEvent,
+                aguiEventCounts,
+              );
+              appendedAguiEventCount += 1;
+            }
+          }
+        } catch (err) {
+          log.warn("session.turn_files_failed", { sessionId, runId, error: String(err) });
+        }
+        appendAguiEvent(entry, terminalEvent, aguiEventCounts);
+        appendedAguiEventCount += 1;
+      })();
+      terminalFlush = flush;
+      return flush;
+    };
+
+    const logCollectorSummary = (reason: string) => {
+      if (collectorClosed) return;
+      collectorClosed = true;
+      log.info("session.prompt_collector_summary", {
+        sessionId,
+        runId,
+        reason,
+        piEventCounts,
+        aguiEventCounts,
+        appendedAguiEventCount,
+        eventLogLastSeq: ensureEventLog(entry).lastSeq,
+        translator: translator.getDiagnostics(),
+      });
+    };
+
+    const unsubscribe = runtime.session.subscribe((rawEvent) => {
+      const event = rawEvent as CodingAgentEvent;
+      incrementCount(piEventCounts, event.type);
+      if (event.type === "message_update") {
+        const ame = event.assistantMessageEvent as { type?: string } | undefined;
+        log.debug("pi.event", {
+          type: event.type,
+          deltaType: ame?.type,
+        });
+      } else {
+        log.debug("pi.event", { type: event.type });
+      }
+
+      if (!userMessageStamped && event.type === "message_end" && event.message?.role === "user") {
+        userMessageStamped = true;
+        (event.message as Record<string, unknown>).clientMessageId = userMessageClientId;
+        (event.message as Record<string, unknown>).clientPromptText = extracted.text;
+      }
+
+      const aguiEvents = translator.translate(event);
+      for (const aguiEvent of aguiEvents) {
+        if (isTerminalAguiEvent(aguiEvent)) {
+          void finalizeTurn(aguiEvent);
+          continue;
+        }
+        appendAguiEvent(entry, aguiEvent, aguiEventCounts);
+        appendedAguiEventCount += 1;
+        if (!snapshotAppended && aguiEvent.type === EventType.RUN_STARTED) {
+          appendAguiEvent(
+            entry,
+            {
+              type: EventType.MESSAGES_SNAPSHOT,
+              messages: snapshotMessages,
+              timestamp: Date.now(),
+            } as BaseEvent,
+            aguiEventCounts,
+          );
+          appendedAguiEventCount += 1;
+          snapshotAppended = true;
+        }
+      }
+      if (event.type === "message_end" || event.type === "tool_execution_end") {
+        entry.snapshotCursorSeq = ensureEventLog(entry).lastSeq;
+      }
+    });
+
+    entry.activeRun = {
+      runId,
+      startSeq,
+      unsubscribe,
+      sawTerminal: false,
+    };
+
+    const releaseTurnSink = retainTraceSink(runId);
+
+    const promptStop = log.startTimer("session.prompt_execution");
+    runtime.session
+      .prompt(promptText, piImages.length > 0 ? { images: piImages } : undefined)
+      .then(async () => {
+        promptStop();
+        log.info("session.prompt_complete", { sessionId, runId });
+        await terminalFlush;
+        if (!entry.activeRun?.sawTerminal) {
+          await finalizeTurn({
+            type: EventType.RUN_FINISHED,
+            threadId: sessionId,
+            runId,
+            timestamp: Date.now(),
+          } as BaseEvent);
+        }
+        unsubscribe();
+        entry.activeRun = undefined;
+        logCollectorSummary("complete");
+        await releaseTurnSink();
+      })
+      .catch(async (err) => {
+        promptStop();
+        log.error("session.prompt_error", { sessionId, runId, message: String(err) });
+        await terminalFlush;
+        if (!entry.activeRun?.sawTerminal) {
+          await finalizeTurn({
+            type: EventType.RUN_ERROR,
+            threadId: sessionId,
+            runId,
+            message: String(err),
+            timestamp: Date.now(),
+          } as BaseEvent);
+        }
+        unsubscribe();
+        entry.activeRun = undefined;
+        logCollectorSummary("error");
+        await releaseTurnSink();
+      });
+  }
+
+  async sendPrompt(
+    sessionId: string,
+    prompt: string,
+    messages?: SnapshotMessage[],
+    runId: string = crypto.randomUUID(),
+    options?: { modelId?: string; thinkingLevel?: ThinkingLevel },
+  ): Promise<ReadableStream<Uint8Array>> {
+    const log = getTraceLogger("worker");
+    const entry = this.registry.getRaw(sessionId);
+    if (!entry) {
+      log.error("session.not_found", { sessionId });
+      throw new Error("Session not found");
+    }
+
+    // b1: model + thinkingLevel are turn config — apply here, not in getOrCreateSession.
+    // Guard isStreaming lives here; only switch if different.
+    if (options?.modelId) {
+      const current = entry.runtime.session.model;
+      const currentRef = current ? `${current.provider}/${current.id}` : undefined;
+      if (currentRef !== options.modelId) {
+        if (entry.runtime.session.isStreaming || entry.activeRun) {
+          log.warn("session.model_change_blocked_streaming", { sessionId, modelId: options.modelId });
+          throw new Error("Cannot change model while the agent is running");
+        }
+        const { provider: piProvider, model: piModelId } = splitModelReference(options.modelId);
+        const services = (entry.runtime as unknown as { services?: { modelRegistry?: { find: (p: string, m: string) => unknown } } })
+          .services;
+        const model =
+          piProvider && piModelId && services?.modelRegistry
+            ? services.modelRegistry.find(piProvider, piModelId)
+            : undefined;
+        if (model) {
+          await entry.runtime.session.setModel(model as never);
+          log.info("session.model_changed", { sessionId, modelId: options.modelId });
+        } else {
+          log.warn("session.model_not_in_registry", { sessionId, modelId: options.modelId });
+        }
+      }
+    }
+    if (options?.thinkingLevel) {
+      // Only apply if different? Pi clamps anyway; cheap to always set. We check diff to avoid redundant global write.
+      const currentLevel = (entry.runtime.session as unknown as { thinkingLevel?: string }).thinkingLevel;
+      if (currentLevel !== options.thinkingLevel) {
+        applyThinkingLevel(entry.runtime.session as never, options.thinkingLevel);
+      }
+    }
+
+    const s = entry.runtime.session as unknown as {
+      thinkingLevel?: string;
+      model?: {
+        id?: string;
+        api?: string;
+        reasoning?: boolean;
+        provider?: string;
+        baseUrl?: string;
+        compat?: unknown;
+      };
+    };
+    log.info("debug.agent_state", {
+      sessionId,
+      thinkingLevel: s.thinkingLevel,
+      modelId: s.model?.id,
+      api: s.model?.api,
+      reasoning: s.model?.reasoning,
+      provider: s.model?.provider,
+      baseUrl: s.model?.baseUrl,
+      compat: s.model?.compat,
+    });
+
+    const loadedSkills = entry.runtime.services?.resourceLoader?.getSkills().skills ?? [];
+    log.info("debug.skills_state", {
+      sessionId,
+      skillCount: loadedSkills.length,
+      skillPaths: loadedSkills.map((skill) => skill.filePath),
+    });
+
+    {
+      const sysPrompt = entry.runtime.session.systemPrompt ?? "";
+      const rl = entry.runtime.services?.resourceLoader;
+      log.info("debug.prompt_bootstrap_before", {
+        sessionId,
+        runId,
+        mechanism: "context (extension, user message prepend)",
+        hasBootstrapInSystemPromptBefore: sysPrompt.includes("You have superpowers"),
+        systemPromptLengthBefore: sysPrompt.length,
+        systemPromptPreviewBefore: sysPrompt.slice(0, 300),
+        promptLength: prompt.length,
+        promptPreview: prompt.slice(0, 300),
+        skillCount: loadedSkills.length,
+        extensionCount: rl?.getExtensions().extensions.length ?? 0,
+        appendSystemPrompt: rl?.getAppendSystemPrompt() ?? [],
+      });
+    }
+
+    const afterSeq = ensureEventLog(entry).lastSeq;
+    const turnBaseline = await captureTurnBaseline(entry);
+    this.startPromptCollector(entry, prompt, runId, messages, turnBaseline);
+    return this.createLoggedEventStream(entry, afterSeq, "session.prompt_stream");
+  }
+
+  async connectToSession(
+    sessionId: string,
+    onEvent: (line: string) => void,
+    onError: (err: Error) => void,
+    onComplete: (() => void) | undefined,
+    afterSeq: number,
+    epoch: string,
+    parentSessionId?: string,
+  ): Promise<() => void> {
+    const log = getTraceLogger("worker");
+    const eventCounts: Record<string, number> = {};
+    let emittedLineCount = 0;
+    let replayLineCount = 0;
+    let connectClosed = false;
+    let eventLogLastSeq = 0;
+
+    const logConnectSummary = (reason: string) => {
+      if (connectClosed) return;
+      connectClosed = true;
+      log.info("connect.stream_summary", {
+        sessionId,
+        reason,
+        afterSeq,
+        emittedLineCount,
+        replayLineCount,
+        eventCounts,
+        eventLogLastSeq,
+      });
+    };
+
+    const entry = this.registry.get(sessionId, parentSessionId);
+    if (!entry) {
+      log.info("connect.session_not_found", { sessionId });
+      onComplete?.();
+      logConnectSummary("session_not_found");
+      return () => {};
+    }
+
+    const eventLog = ensureEventLog(entry);
+    if (epoch !== eventLog.epoch) {
+      throw new Error("Cursor epoch mismatch");
+    }
+    eventLogLastSeq = eventLog.lastSeq;
+
+    let closed = false;
+    let unsubscribe: (() => void) | undefined;
+
+    const finish = (reason: string) => {
+      if (closed) return;
+      closed = true;
+      unsubscribe?.();
+      onComplete?.();
+      eventLogLastSeq = eventLog.lastSeq;
+      logConnectSummary(reason);
+    };
+
+    const shouldCloseOnTerminal = (event: BaseEvent) => {
+      if (!isTerminalAguiEvent(event)) return false;
+      const eventRunId = (event as { runId?: string }).runId;
+      return !entry.activeRun || eventRunId === entry.activeRun.runId;
+    };
+
+    const emitLogged = (logged: LoggedAguiEvent, closeTerminal: boolean) => {
+      if (closed) return;
+      try {
+        incrementCount(eventCounts, logged.event.type);
+        emittedLineCount += 1;
+        onEvent(loggedLine(logged));
+        if (closeTerminal && shouldCloseOnTerminal(logged.event)) {
+          finish("terminal");
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        onError(error);
+        finish("error");
+      }
+    };
+
+    const prelude = buildReconnectPrelude(eventLog.readUpTo(afterSeq));
+    if (prelude.length > 0) {
+      const preludeCounts: Record<string, number> = {};
+      for (const event of prelude) incrementCount(preludeCounts, event.type);
+      log.info("connect.synthetic_prelude", {
+        sessionId,
+        afterSeq,
+        eventCounts: preludeCounts,
+      });
+      for (const event of prelude) {
+        emitLogged({ epoch: eventLog.epoch, seq: afterSeq, event }, false);
+      }
+      if (closed) return () => {};
+    }
+
+    const rawReplay = eventLog.readAfter(afterSeq);
+    const replay = compactReplayEvents(rawReplay);
+    log.info("connect.replay", {
+      sessionId,
+      afterSeq,
+      replayCount: replay.length,
+      rawReplayCount: rawReplay.length,
+      eventLogLastSeq: eventLog.lastSeq,
+      isStreaming: entry.runtime.session.isStreaming,
+      hasActiveRun: !!entry.activeRun,
+    });
+    for (let i = 0; i < replay.length; i += 1) {
+      replayLineCount += 1;
+      emitLogged(replay[i]!, i === replay.length - 1);
+    }
+
+    if (closed) return () => {};
+
+    if (!entry.runtime.session.isStreaming && !entry.activeRun) {
+      log.info("connect.idle_completed", { sessionId, afterSeq });
+      finish("idle");
+      return () => {};
+    }
+
+    unsubscribe = eventLog.subscribe((logged) => emitLogged(logged, true));
+
+    return () => {
+      if (closed) return;
+      closed = true;
+      log.info("connect.client_disconnected", { sessionId });
+      unsubscribe?.();
+      logConnectSummary("client_disconnected");
+    };
+  }
+
+  async cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {
+    const log = getTraceLogger("worker");
+    const entry = this.registry.getRaw(sessionId);
+    if (!entry) {
+      log.info("cancel.session_not_found", { sessionId });
+      return { cancelled: false };
+    }
+    log.info("cancel.requested", { sessionId });
+    await entry.runtime.session.abort();
+    return { cancelled: true };
+  }
+}

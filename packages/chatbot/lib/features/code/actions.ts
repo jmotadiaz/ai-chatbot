@@ -154,13 +154,14 @@ async function startInitialRun(args: {
     sessionId,
     project,
     modelId: modelRef,
-    thinkingLevel,
     _traceRunId: runId,
   });
 
   const stream = await client.sendPrompt({
     sessionId,
     prompt: initialPrompt,
+    modelId: modelRef,
+    thinkingLevel,
     _traceRunId: runId,
   });
   // The turn is detached from this request: closing the relay stream must not

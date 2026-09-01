@@ -16,10 +16,10 @@ vi.mock("tracing", () => ({
 }));
 
 const { handleRpc, summarizeRpcParams } = await import("../../src/transports/http");
-const { __resetSessionsForTests } = await import("../../src/session-manager");
+import { sessionRegistry } from "../../src/session-registry";
 
 beforeEach(() => {
-  __resetSessionsForTests();
+  sessionRegistry.clear();
 });
 
 async function rpcError(params: unknown) {

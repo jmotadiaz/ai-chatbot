@@ -126,7 +126,6 @@ export const POST = withAuth(async (user, req) => {
         modelId: piModelId
           ? `${piModelId.providerId}/${piModelId.modelId}`
           : undefined,
-        thinkingLevel,
         _traceRunId: runId,
       });
       initStop();
@@ -139,6 +138,10 @@ export const POST = withAuth(async (user, req) => {
         sessionId,
         prompt,
         messages: stripNonTailAttachmentData(messages),
+        modelId: piModelId
+          ? `${piModelId.providerId}/${piModelId.modelId}`
+          : undefined,
+        thinkingLevel,
         _traceRunId: runId,
       });
       sendStop();

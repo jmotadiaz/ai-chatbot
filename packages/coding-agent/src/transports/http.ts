@@ -221,7 +221,7 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "sendPrompt": {
-        const { sessionId, prompt, messages, _traceRunId } = params as {
+        const { sessionId, prompt, messages, _traceRunId, modelId, thinkingLevel } = params as {
           sessionId: string;
           prompt: string;
           messages?: Array<{
@@ -233,8 +233,10 @@ export async function handleRpc(requestBody: string): Promise<Response> {
             name?: string;
           }>;
           _traceRunId?: string;
+          modelId?: string;
+          thinkingLevel?: ThinkingLevel;
         };
-        const stream = await sendPrompt(sessionId, prompt, messages, _traceRunId);
+        const stream = await sendPrompt(sessionId, prompt, messages, _traceRunId, modelId, thinkingLevel);
         stop();
         return new Response(stream, {
           headers: { "Content-Type": "application/x-ndjson" },
@@ -424,8 +426,6 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         modelId: typeof p.modelId === "string" ? p.modelId : undefined,
-        thinkingLevel:
-          typeof p.thinkingLevel === "string" ? p.thinkingLevel : undefined,
         hasTraceRunId,
       };
     case "sendPrompt": {
@@ -440,6 +440,9 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         sessionId,
         promptLength: typeof p.prompt === "string" ? p.prompt.length : 0,
         messageCount: messages.length,
+        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+        thinkingLevel:
+          typeof p.thinkingLevel === "string" ? p.thinkingLevel : undefined,
         lastMessagePartCount: lastContent.length,
         imageCount: lastContent.filter(
           (c) => (c as { type?: unknown })?.type === "image",

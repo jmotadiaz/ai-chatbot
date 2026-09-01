@@ -115,6 +115,8 @@ describe("summarizeWorkerRpcParams", () => {
       sessionId: "s1",
       promptLength: 2,
       messageCount: 1,
+      modelId: undefined,
+      thinkingLevel: undefined,
       imageCount: 1,
       documentCount: 1,
       hasTraceRunId: false,

@@ -21,17 +21,30 @@ vi.mock("tracing", () => ({
 const piState = vi.hoisted(() => ({
   sessionFilePath: "",
   setThinkingLevel: undefined as unknown as ReturnType<typeof vi.fn>,
+  setModel: undefined as unknown as ReturnType<typeof vi.fn>,
 }));
 
 vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   createAgentSessionRuntime: async () => ({
-    session: { setThinkingLevel: piState.setThinkingLevel },
-    services: { modelRegistry: { find: () => undefined } },
+    session: {
+      thinkingLevel: "off",
+      getAvailableThinkingLevels: () => ["off", "high", "xhigh"],
+      setThinkingLevel: piState.setThinkingLevel,
+      setModel: piState.setModel,
+      model: { provider: "opencode-go", id: "deepseek-v4-pro" },
+      isStreaming: false,
+      subscribe: () => () => {},
+      prompt: async () => {},
+      resourceLoader: { getSkills: () => ({ skills: [] }), getExtensions: () => ({ extensions: [] }), getAppendSystemPrompt: () => [] },
+      systemPrompt: "",
+      messages: [],
+    },
+    services: { modelRegistry: { find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) } },
   }),
   getAgentDir: () => "/tmp/agent-dir",
   AuthStorage: { create: () => ({}) },
-  ModelRegistry: { create: () => ({ find: () => undefined }) },
+  ModelRegistry: { create: () => ({ find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) }) },
   SessionManager: {
     list: async () => [{ id: "s1", path: piState.sessionFilePath }],
     open: () => ({ getSessionId: () => "s1" }),
@@ -39,17 +52,15 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
   },
 }));
 
-const { __resetSessionsForTests, getOrCreateSession } = await import(
-  "../../src/session-manager"
-);
+const { getOrCreateSession, sendPrompt } = await import("../../src/session-manager");
+const { sessionRegistry } = await import("../../src/session-registry");
 
 /**
- * The reload-from-disk path (worker restarted between messages) forces the
- * model the prompt carries, so it must apply the level the prompt carries
- * too — otherwise the session keeps whatever level was persisted for the
- * previous model.
+ * After b1, getOrCreateSession is pure seed (modelId for create/reload), and
+ * thinkingLevel is turn config applied by TurnRunner.sendPrompt.
+ * Reload from disk still seeds the model, but thinking is applied on the turn.
  */
-describe("getOrCreateSession thinking level on the disk-reload path", () => {
+describe("getOrCreateSession + TurnRunner thinking level after reload", () => {
   let root: string;
   const savedEnv = {
     projects: process.env.CODING_AGENT_PROJECTS_ROOT,
@@ -57,23 +68,24 @@ describe("getOrCreateSession thinking level on the disk-reload path", () => {
   };
 
   beforeEach(() => {
-    __resetSessionsForTests();
+    sessionRegistry.clear();
     root = mkdtempSync(join(tmpdir(), "sm-reload-"));
     piState.sessionFilePath = join(root, "s1.jsonl");
     piState.setThinkingLevel = vi.fn();
+    piState.setModel = vi.fn();
     writeFileSync(piState.sessionFilePath, "");
     process.env.CODING_AGENT_PROJECTS_ROOT = root;
     process.env.CODING_AGENT_SESSIONS_DIR = root;
   });
 
   afterEach(() => {
-    __resetSessionsForTests();
+    sessionRegistry.clear();
     rmSync(root, { recursive: true, force: true });
     process.env.CODING_AGENT_PROJECTS_ROOT = savedEnv.projects;
     process.env.CODING_AGENT_SESSIONS_DIR = savedEnv.sessions;
   });
 
-  it("applies the level to a session rehydrated from disk", async () => {
+  it("seeds the model on reload but does not apply thinkingLevel via getOrCreate", async () => {
     const result = await getOrCreateSession({
       userId: "u1",
       project: "p",
@@ -83,6 +95,24 @@ describe("getOrCreateSession thinking level on the disk-reload path", () => {
     });
 
     expect(result).toEqual({ sessionId: "s1" });
+    // b1: thinkingLevel no longer applied in getOrCreate, only as turn config.
+    expect(piState.setThinkingLevel).not.toHaveBeenCalled();
+  });
+
+  it("applies thinkingLevel as turn config via sendPrompt (after reload)", async () => {
+    // First reload the session (seed)
+    await getOrCreateSession({
+      userId: "u1",
+      project: "p",
+      sessionId: "s1",
+      modelId: "opencode-go/deepseek-v4-pro",
+    });
+
+    // Now start a turn with thinkingLevel — TurnRunner should apply it.
+    const stream = await sendPrompt("s1", "hello", undefined, "r1", "opencode-go/deepseek-v4-pro", "xhigh");
+    await stream.cancel().catch(() => {});
+
+    // The session's setThinkingLevel should have been called with the turn's level.
     expect(piState.setThinkingLevel).toHaveBeenCalledWith("xhigh");
   });
 
@@ -92,7 +122,11 @@ describe("getOrCreateSession thinking level on the disk-reload path", () => {
       project: "p",
       sessionId: "s1",
     });
+    expect(piState.setThinkingLevel).not.toHaveBeenCalled();
 
+    // Send prompt without thinkingLevel should not call setThinkingLevel
+    const stream = await sendPrompt("s1", "hello", undefined, "r2");
+    await stream.cancel().catch(() => {});
     expect(piState.setThinkingLevel).not.toHaveBeenCalled();
   });
 });

@@ -95,22 +95,24 @@ describe("createCodingAgentSession", () => {
       sessionId: string;
       project: string;
       modelId?: string;
-      thinkingLevel?: string;
       _traceRunId?: string;
     };
     expect(init.sessionId).toBe("s1");
     expect(init.project).toBe("p");
     expect(init.modelId).toBe("opencode-go/deepseek-v4-pro");
-    expect(init.thinkingLevel).toBe("xhigh");
     expect(init._traceRunId).toBeTruthy();
 
     const send = state.sendParams[0] as {
       sessionId: string;
       prompt: string;
+      modelId?: string;
+      thinkingLevel?: string;
       _traceRunId?: string;
     };
     expect(send.sessionId).toBe("s1");
     expect(send.prompt).toBe("# Task\n\nRefactor this.");
+    expect(send.modelId).toBe("opencode-go/deepseek-v4-pro");
+    expect(send.thinkingLevel).toBe("xhigh");
     expect(send._traceRunId).toBe(init._traceRunId);
 
     // The request's stream is cancelled so the action returns immediately,

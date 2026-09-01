@@ -120,7 +120,6 @@ export class WorkerClient {
     sessionId?: string;
     project: string;
     modelId?: string;
-    thinkingLevel?: ThinkingLevel;
     _traceRunId?: string;
   }): Promise<{ sessionId: string }> {
     return this.call("initializeSession", params);
@@ -130,6 +129,8 @@ export class WorkerClient {
     sessionId: string;
     prompt: string;
     messages?: WorkerSnapshotMessage[];
+    modelId?: string;
+    thinkingLevel?: ThinkingLevel;
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");
@@ -282,8 +283,6 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         sessionId,
         project: typeof p.project === "string" ? p.project : undefined,
         modelId: typeof p.modelId === "string" ? p.modelId : undefined,
-        thinkingLevel:
-          typeof p.thinkingLevel === "string" ? p.thinkingLevel : undefined,
         hasTraceRunId,
       };
     case "sendPrompt": {
@@ -298,6 +297,9 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         sessionId,
         promptLength: typeof p.prompt === "string" ? p.prompt.length : 0,
         messageCount: messages.length,
+        modelId: typeof p.modelId === "string" ? p.modelId : undefined,
+        thinkingLevel:
+          typeof p.thinkingLevel === "string" ? p.thinkingLevel : undefined,
         imageCount: lastContent.filter(
           (c) => (c as { type?: unknown })?.type === "image",
         ).length,
