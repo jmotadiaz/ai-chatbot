@@ -11,7 +11,7 @@ import {
   resolveProjectPath,
 } from "./session-entry";
 import { loadPrompts } from "../runtime/prompts";
-import { getCodingAgentDir } from "../runtime/paths";
+import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
 import { makeCreateRuntime as defaultMakeCreateRuntime } from "../runtime/runtime-factory";
 
 export interface GetOrCreateSessionOptions {
@@ -80,7 +80,7 @@ export class SessionRegistry {
     },
   ): Promise<SessionEntry | undefined> {
     const log = getTraceLogger("worker");
-    const sessionsDir = config.codingAgentSessionsDir();
+    const sessionsDir = getSessionsDir();
     const projectsRoot = config.codingAgentProjectsRoot();
     const cwd = resolveProjectPath(projectsRoot, project);
     loadPrompts(cwd);
@@ -161,7 +161,7 @@ export class SessionRegistry {
     });
 
     const sessionManager = SessionManager.create(
-      config.codingAgentSessionsDir(),
+      getSessionsDir(),
       undefined,
       { id: sessionId },
     );

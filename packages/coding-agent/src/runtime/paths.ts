@@ -43,6 +43,21 @@ export function getArtifactsDir(): string {
 }
 
 /**
+ * Root where Pi session transcripts are written (ADR 0002 v2).
+ *
+ * Dev and test point this at their isolated `.pi-dev/sessions` / `.pi-test/sessions`
+ * (relative values anchor to the package, never the cwd). Production keeps its
+ * current absolute literal untouched — the running service depends on the session
+ * history living there and the SDK encodes the project path into that folder.
+ */
+export function getSessionsDir(): string {
+  return resolveOverride(
+    config.codingAgentSessionsDir(),
+    path.join(PACKAGE_ROOT, ".pi", "sessions"),
+  );
+}
+
+/**
  * Absolute base for artifact URLs. This is what the *user's browser* follows,
  * so it must be reachable from there, not from this process — hence the
  * explicit override, falling back to the worker URL the chatbot is already

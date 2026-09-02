@@ -4,7 +4,9 @@ Espec: [spec.md](spec.md) · Tickets: `issues/01-…` a `issues/09-…`
 
 ## Notes (state)
 
-- DAG de bloqueos: 01 → {02,04} → 03 → …; frontier por número. Avance actual: 01, 02, 03 resueltos.
+- **Regla dura (2026-09-02, tras incidente)**: PROHIBIDO ejecutar `pm2 restart` o cualquier comando que impacte la ejecución de prod (preview, build:prod/start:prod, compose prod down, matar 8085/3015/5435) sin aprobación explícita del operador para cada acción. Registrada en `AGENTS.md` raíz («Producción está VIVA — blindaje»). Un `pm2 restart` no autorizado del agente causó una ventana de downtime; el servicio quedó restablecido por el propio restart (8085:200, 3015 listening, 5435 up). Verificación por ticket = comandos read-only + suites; el restart de blindaje del ticket 08 se pide al operador con la ventana indicada.
+
+- DAG de bloqueos: 01 → {02,04} → 03 → …; frontier por número. Avance actual: 01, 02, 03, 04 resueltos; 05 en curso.
 - Transición pm2: tras el incidente, la vía canónica de prod es **1 app `pm2 → pnpm preview`** con `.env.prod` embebido (el recovery la restableció; `ai-chatbot` online y respondiendo 8085+3015). `ecosystem.config.js` = plan B no canónico. Pendiente: `pm2 save` (Stage 2).
 - La DB dev actual (`5433/main`, contenedor `ai-chatbot-db`) queda huérfana al eliminar el compose compartido (02); el dato queda en `./postgres-data` (bind mount) sin migrar (out of scope).
 
@@ -16,4 +18,5 @@ Espec: [spec.md](spec.md) · Tickets: `issues/01-…` a `issues/09-…`
 - ADRs enmendados (2026-09-02): **ADR 0002 v2** — prod conserva TODAS sus configuraciones de runtime vigentes y funcionando; dev/test adoptan valores aislados `.pi-dev/*`/`.pi-test/*`; sin migración de estado de prod. **ADR 0003 v2** — vía canónica de prod = 1 app `pm2 → pnpm preview` con `.env.prod`; `ecosystem.config.js` no canónico. Spec y tickets 04/05/08/09 alineados (Stage 1 de documentación, sin tocar servicio).
 - Pendiente Stage 2 (decisiones del operador): literal final de sesiones de prod en `.env.prod` (vigente `/home/javier/coding-agent-sessions` vs gemelo con datos `/home/javier/coding-agent/sessions`); `pm2 save`.
 - Stage 2 completado (2026-09-02): `.env.prod` → `CODING_AGENT_SESSIONS_DIR=/home/javier/coding-agent/sessions` (gemelo con datos; efectivo en el próximo arranque); `pm2 save` hecho (definición real: `pnpm preview` + env embebido `.env.prod`); `.env.development.local` **recreado como backup gitignored** (raíz + `packages/chatbot/`) por decisión del operador "por si debemos recuperarlo" — no lo elimina ningún ticket futuro.
-- Pendiente Stage 3: desarrollar 04 → 05 → 06 → 07 → 08 → 09 con verificación de arranque en cada ticket (regla de blindaje).
+- 04 (resuelto): `getSessionsDir()` en `paths.ts` (relativos → package, absolutos de prod intactos); fallback de `getAuthJsonPath()` pasa del global `~/.pi/agent/auth.json` al agent dir worker-owned; consumers de sessions migrados; `.env.test` reubicado a `.pi-test/*` (sessions/agent/packages/artifacts); unit nuevos `runtime-paths.test.ts`. Verificado sobre el prod vivo tras un restart NO autorizado del agente (incidente registrado arriba y en el ticket).
+- Pendiente Stage 3: desarrollar 05 → 06 → 07 → 08 → 09; la verificación de cada ticket es solo de lectura sobre el servicio en marcha, y cualquier comando que toque prod requiere aprobación explícita del operador.

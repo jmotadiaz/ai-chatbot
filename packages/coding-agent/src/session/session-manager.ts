@@ -7,7 +7,7 @@ import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
 import { SessionEventLog, type Cursor } from "../agui/event-log";
 import { getAuthJsonPath, getModelsJsonPath } from "../runtime/models";
-import { getCodingAgentDir } from "../runtime/paths";
+import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
 import { startSubagentCollector } from "../subagent/subagent-collector";
 import type { SubagentRunParams, SubagentDetails, SubagentRunResult } from "../subagent/subagent-bridge";
 import { sessionRegistry } from "./session-registry";
@@ -280,7 +280,7 @@ export async function runSubagent(
 
   const subSessionId = crypto.randomUUID();
   const sessionManager = SessionManager.create(
-    ensureSubagentSessionsDir(config.codingAgentSessionsDir()),
+    ensureSubagentSessionsDir(getSessionsDir()),
     undefined,
     { id: subSessionId },
   );

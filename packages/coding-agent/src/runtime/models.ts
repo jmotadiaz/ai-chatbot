@@ -1,6 +1,5 @@
 import path from "node:path";
 import { config } from "config";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { getCodingAgentDir, resolveOverride } from "./paths";
 
 export function getModelsJsonPath(): string {
@@ -10,9 +9,15 @@ export function getModelsJsonPath(): string {
   );
 }
 
+/**
+ * Per-Entorno auth.json (ADR 0002 v2). Relative overrides anchor to the
+ * package; the fallback is the worker-owned agent dir, never the global
+ * `~/.pi/agent/auth.json`, so environments cannot leak credentials into each
+ * other.
+ */
 export function getAuthJsonPath(): string {
   return resolveOverride(
     config.codingAgentAuthJson(),
-    path.join(getAgentDir(), "auth.json"),
+    path.join(getCodingAgentDir(), "auth.json"),
   );
 }
