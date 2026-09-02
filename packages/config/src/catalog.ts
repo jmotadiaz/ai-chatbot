@@ -46,6 +46,8 @@ const catalogDef = {
   PRIVATE_BEHAVIOR: { description: "Habilita features privadas cuando es 'enabled'", type: "string", required: false, secret: false },
   TRACE_RUN_ID: { description: "Identificador de corrida de tracing", type: "string", required: false, secret: false },
   TRACE_DIR: { description: "Directorio de traces", type: "string", required: false, secret: false },
+  NEXT_BUILD_DIR: { description: "distDir de Next; permite aislar la verificación del agente (.next/verify) sin pisar el .next que sirve prod", type: "string", required: false, secret: false, default: ".next" },
+  ALLOW_PROD_BUILD: { description: "Opt-in explícito del operador/CI para build:prod (escribe el .next que sirve prod); lo exige scripts/assert-prod-build-allowed.ts", type: "boolean", required: false, secret: false, truthy: "1" },
 
   // --- coding-agent ---
   CODING_AGENT_MODELS_JSON: { description: "Ruta del models.json de Pi; relativa se resuelve contra el package", type: "string", required: false, secret: false },

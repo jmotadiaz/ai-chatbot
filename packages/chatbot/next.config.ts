@@ -6,6 +6,10 @@ const disableDevIndicators = config.disableDevIndicator();
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // distDir parametrizable (ticket 06): `build:prod:verify` exporta
+  // NEXT_BUILD_DIR=.next/verify y compila aislado sin pisar el `.next`
+  // que sirve prod bajo pm2. Sin la variable, el default canónico `.next`.
+  distDir: config.nextBuildDir(),
   experimental: {
     viewTransition: true,
     authInterrupts: true,

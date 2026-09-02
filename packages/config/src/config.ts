@@ -32,6 +32,8 @@ export const config = {
   privateBehavior: stringOptional("PRIVATE_BEHAVIOR"),
   traceRunId: stringOptional("TRACE_RUN_ID"),
   traceDir: stringOptional("TRACE_DIR"),
+  nextBuildDir: stringOptional("NEXT_BUILD_DIR"),
+  allowProdBuild: bool("ALLOW_PROD_BUILD"),
 
   // --- chatbot: secretos ---
   // Guardarraíl de coherencia (ticket 05): NEXT_PUBLIC_ENV ↔ DSN aislado
