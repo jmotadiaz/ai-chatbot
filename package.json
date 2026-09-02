@@ -10,7 +10,7 @@
     "build:prod:verify": "pnpm --filter chatbot build:prod:verify && pnpm --filter coding-agent build:prod:verify",
     "build:worker": "tsc -p packages/coding-agent/tsconfig.json --noEmit",
     "start": "dotenv -e .env.dev -- pnpm --filter chatbot --filter coding-agent --parallel start",
-    "preview": "dotenv -o -e .env.prod -- pnpm --filter chatbot preview",
+    "preview": "dotenv -o -e .env.prod -- pnpm --filter chatbot --filter coding-agent --parallel preview",
     "stop:dev": "pnpm --filter chatbot stop:dev && pnpm --filter coding-agent stop:dev",
     "stop:test": "pnpm --filter chatbot stop:test && pnpm --filter coding-agent stop:test",
     "db:generate": "pnpm --filter chatbot db:generate",

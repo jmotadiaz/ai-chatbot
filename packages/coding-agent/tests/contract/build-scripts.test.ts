@@ -72,18 +72,22 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
     }
   });
 
-  it("raíz preview delega a chatbot preview", () => {
-    expect(rootPkg.scripts.preview).toContain("pnpm --filter chatbot preview");
-    expect(rootPkg.scripts.preview).toContain(".env.prod");
+  it("raíz preview delega a chatbot + coding-agent (cada package se ocupa de lo suyo)", () => {
+    const cmd = rootPkg.scripts.preview;
+    expect(cmd).toContain(".env.prod");
+    expect(cmd).toContain("--filter chatbot");
+    expect(cmd).toContain("--filter coding-agent");
+    expect(cmd).toContain("--parallel");
+    expect(cmd).toContain("preview");
   });
-  it("chatbot preview orquesta db + build chatbot y delega worker via pnpm --filter coding-agent preview", () => {
+  it("chatbot preview orquesta db + build:prod + next start (solo lo suyo)", () => {
     const cmd = chatbotPkg.scripts.preview;
     expect(cmd).toContain(".env.prod");
     expect(cmd).toContain("db:prod:start");
     expect(cmd).toContain("ALLOW_PROD_BUILD=1");
     expect(cmd).toContain("build:prod");
-    expect(cmd).toContain("pnpm --filter coding-agent preview");
-    expect(cmd).not.toContain("pnpm --filter coding-agent dev");
+    expect(cmd).toContain("npm run start");
+    expect(cmd).not.toContain("coding-agent");
   });
   it("coding-agent preview arranca el worker compilado (build:prod + node dist) bajo .env.prod", () => {
     const cmd = s.preview;

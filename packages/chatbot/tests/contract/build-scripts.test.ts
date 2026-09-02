@@ -62,20 +62,24 @@ describe("scripts de build del chatbot", () => {
 });
 
 describe("vía canónica de prod: preview no puede construir en dev", () => {
-  it("raíz: delega a pnpm --filter chatbot preview con .env.prod", () => {
+  it("raíz: delega a chatbot + coding-agent preview con .env.prod (cada package lo suyo)", () => {
     const cmd = rootPkg.scripts.preview;
     expect(cmd).toContain(".env.prod");
-    expect(cmd).toContain("pnpm --filter chatbot preview");
-    // la composición real vive en el package chatbot, no en raíz (evita el lío)
+    expect(cmd).toContain("--filter chatbot");
+    expect(cmd).toContain("--filter coding-agent");
+    expect(cmd).toContain("--parallel");
+    expect(cmd).toContain("preview");
+    // la composición real vive en cada package, no duplicada en raíz
     expect(cmd).not.toMatch(/db:prod:start/);
   });
-  it("chatbot: orquesta db:prod:start + build:prod (con gate embebido) + start, todo con .env.prod", () => {
+  it("chatbot: orquesta db:prod:start + build:prod (con gate) + next start, solo lo suyo", () => {
     const cmd = s.preview;
     expect(cmd).toContain(".env.prod");
     expect(cmd).toMatch(/db:prod:start/);
     expect(cmd).toContain("ALLOW_PROD_BUILD=1");
     expect(cmd).toContain("build:prod");
-    expect(cmd).toContain("pnpm --filter coding-agent preview");
+    expect(cmd).toContain("npm run start");
+    expect(cmd).not.toContain("coding-agent");
     // nunca el `build` genérico (ahora es build de dev)
     expect(cmd).not.toMatch(/(run |filter chatbot )build( |$|&&|')/);
   });

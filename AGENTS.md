@@ -34,7 +34,7 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts:
 - `pnpm build` — build del chatbot en dev (fuerza `.env.dev`)
 - `pnpm build:prod` — compila prod real (chatbot `.next` + worker `dist`+`.pi-prod`); **solo operador/CI con `ALLOW_PROD_BUILD=1`**, el agente nunca lo ejecuta
 - `pnpm build:prod:verify` — verificación aislada de prod (`.next/verify` + `dist/verify`+`.pi-verify`); **vía del agente para comprobar compilación sin tocar prod**
-- `pnpm preview` — vía canónica de prod (`pnpm preview` con `.env.prod`, migraciones + `ALLOW_PROD_BUILD=1 build:prod` de ambos packages + `concurrently 8085`+`3015` via `node --import tsx dist/...`); solo pm2. El worker ya no va en `tsx` directo sino **build:prod + node dist** (aislado, no pisa `dist/verify` del agente)
+- `pnpm preview` — vía canónica de prod (`dotenv -o -e .env.prod -- pnpm --filter chatbot --filter coding-agent --parallel preview`); cada package se ocupa de lo suyo (`chatbot:preview` → `db:prod:start + build:prod + next start`, `coding-agent:preview` → `build:prod + node --import tsx dist/...`); solo pm2. El worker ya no va en `tsx` directo sino **build:prod + node dist** (evita `pkill` cruzado dev vs prod)
 - `pnpm stop:dev` — mata `3000`+`3016` por puerto (`lsof -ti:PORT | xargs -r kill`); `pnpm stop:test` — mata `3001` (+ `docker compose -f docker-compose.test.yml down`). Por paquete: `pnpm --filter chatbot stop:dev` (3000) / `stop:test` (3001); `pnpm --filter coding-agent stop:dev` (3016)
 - `pnpm lint:fix` — lint all packages
 - `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
