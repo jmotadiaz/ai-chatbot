@@ -220,6 +220,51 @@ describe("TurnRunner (deep module)", () => {
     expect(expanded.indexOf('name="a"')).toBeLessThan(expanded.indexOf('name="b"'));
   });
 
+  it("emits exactly one terminal for a turn that fails, auto-retries, and fails again (regression: 'The run has already finished with RUN_FINISHED')", async () => {
+    const promptImpl = async () => {
+      mock.__emit({ type: "agent_start" });
+      mock.__emit({
+        type: "message_end",
+        message: { role: "assistant", stopReason: "error", errorMessage: "429" },
+      });
+      mock.__emit({ type: "agent_end", willRetry: true, messages: [] });
+      mock.__emit({
+        type: "auto_retry_start",
+        attempt: 1,
+        maxAttempts: 3,
+        delayMs: 1,
+        errorMessage: "429",
+      });
+      mock.__emit({ type: "agent_start" });
+      mock.__emit({
+        type: "agent_end",
+        willRetry: false,
+        messages: [{ role: "assistant", stopReason: "error", errorMessage: "429" }],
+      });
+    };
+    const mock = createMockPiSession({ messages: [], isStreaming: false, prompt: promptImpl });
+    seed("s-retry", mock);
+
+    const stream = await runner.sendPrompt("s-retry", "hello", undefined, "r-retry");
+    await stream.cancel();
+
+    const log = registry.getRaw("s-retry")!.eventLog!;
+    await vi.waitFor(() => {
+      const last = log.readAfter(0).at(-1)?.event.type;
+      expect(last).toBe(EventType.RUN_ERROR);
+    });
+
+    const types = log.readAfter(0).map((l) => l.event.type);
+    // One RUN_STARTED (no duplicate for the retry), the retry surfaced as a
+    // non-terminal CUSTOM, and exactly one terminal for the whole turn.
+    expect(types).toEqual([
+      EventType.RUN_STARTED,
+      EventType.MESSAGES_SNAPSHOT,
+      EventType.CUSTOM,
+      EventType.RUN_ERROR,
+    ]);
+  });
+
   describe("connectToSession", () => {
     async function readLines(stream: ReadableStream<Uint8Array>): Promise<Array<Record<string, unknown>>> {
       const reader = stream.getReader();

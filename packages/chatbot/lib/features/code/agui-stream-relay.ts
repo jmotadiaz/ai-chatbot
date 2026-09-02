@@ -16,6 +16,7 @@ interface RelayLogger {
 export interface RelaySummary {
   emittedAguiEventCount: number;
   emittedCursorEventCount: number;
+  droppedEventCount: number;
   malformedLineCount: number;
   terminalSeen: boolean;
   lastSeq?: number;
@@ -81,6 +82,7 @@ export async function relayLoggedAguiNdjsonToSse(options: {
   const summary: RelaySummary = {
     emittedAguiEventCount: 0,
     emittedCursorEventCount: 0,
+    droppedEventCount: 0,
     malformedLineCount: 0,
     terminalSeen: false,
     aguiEventCounts: {},
@@ -91,6 +93,14 @@ export async function relayLoggedAguiNdjsonToSse(options: {
     summary.emittedCursorEventCount += 1;
     summary.lastSeq = seq;
   };
+
+  // AG-UI's run state machine forbids every event (including CUSTOM) after
+  // RUN_ERROR, and only tolerates RUN_ERROR/RUN_STARTED after RUN_FINISHED.
+  // Between a terminal and the next RUN_STARTED the relay therefore emits
+  // nothing but the mandatory events themselves; once a RUN_STARTED re-opens
+  // the run, cursors resume. The dropped events' seqs are recovered because
+  // the RUN_STARTED's cursor jumps past them.
+  let awaitingRunRestart = false;
 
   const processLine = (line: string) => {
     if (!line.trim()) return;
@@ -111,10 +121,47 @@ export async function relayLoggedAguiNdjsonToSse(options: {
       return;
     }
 
+    const isTerminal = isTerminalEvent(envelope.event);
+
+    if (isTerminal) {
+      if (awaitingRunRestart) {
+        // A second terminal with no RUN_STARTED in between would deadlock the
+        // AG-UI client (RUN_ERROR locks the run; anything after RUN_FINISHED
+        // is rejected). Drop it; the client resyncs from a snapshot/replay.
+        summary.droppedEventCount += 1;
+        log.warn("stream.duplicate_terminal_dropped", {
+          seq: envelope.seq,
+          aguiType: envelope.event.type,
+        });
+        return;
+      }
+      incrementCount(summary.aguiEventCounts, envelope.event.type);
+      summary.emittedAguiEventCount += 1;
+      summary.terminalSeen = true;
+      awaitingRunRestart = true;
+      // AG-UI forbids every event, including CUSTOM, after a terminal event.
+      // Mark this cursor as pending; the client promotes it only after it
+      // applies RUN_FINISHED/RUN_ERROR.
+      emitCursor(envelope.seq, envelope.epoch, true);
+      emitAguiSseEvent(controller, encoder, envelope.event);
+      return;
+    }
+
+    if (envelope.event.type === EventType.RUN_STARTED) {
+      awaitingRunRestart = false;
+    } else if (awaitingRunRestart) {
+      // Non-RUN_STARTED events after a terminal are rejected by AG-UI; drop
+      // them until the run is re-opened.
+      summary.droppedEventCount += 1;
+      log.warn("stream.event_after_terminal_dropped", {
+        seq: envelope.seq,
+        aguiType: envelope.event.type,
+      });
+      return;
+    }
+
     incrementCount(summary.aguiEventCounts, envelope.event.type);
     summary.emittedAguiEventCount += 1;
-    const terminalEvent = isTerminalEvent(envelope.event);
-    summary.terminalSeen ||= terminalEvent;
     log.debug("stream.event", {
       seq: envelope.seq,
       aguiType: envelope.event.type,
@@ -122,16 +169,8 @@ export async function relayLoggedAguiNdjsonToSse(options: {
       toolCallId: (envelope.event as { rawEvent?: { toolCallId?: string } }).rawEvent?.toolCallId,
     });
 
-    if (terminalEvent) {
-      // AG-UI forbids every event, including CUSTOM, after a terminal event.
-      // Mark this cursor as pending; the client promotes it only after it
-      // applies RUN_FINISHED/RUN_ERROR.
-      emitCursor(envelope.seq, envelope.epoch, true);
-    }
     emitAguiSseEvent(controller, encoder, envelope.event);
-    if (!terminalEvent) {
-      emitCursor(envelope.seq, envelope.epoch);
-    }
+    emitCursor(envelope.seq, envelope.epoch);
   };
 
   while (true) {

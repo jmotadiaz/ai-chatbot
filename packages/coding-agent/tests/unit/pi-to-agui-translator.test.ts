@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   AguiEventType as EventType,
+  AUTO_RETRY_EVENT,
   PiToAguiTranslator,
 } from "../../src/agui/pi-to-agui-translator";
 
@@ -23,6 +24,86 @@ describe("pi-to-agui-translator (chunk-based)", () => {
     expect(types(t.translate({ type: "agent_end" }))).toEqual([
       EventType.RUN_FINISHED,
     ]);
+  });
+
+  it("keeps the run open across an auto-retry: no terminal and no duplicate RUN_STARTED (regression: 'The run has already finished with RUN_FINISHED')", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const label = (events: Array<{ type: string; name?: string }>) =>
+      events.map((e) => (e.type === EventType.CUSTOM ? `${e.type}:${e.name}` : e.type));
+
+    const seq = [
+      ...label(t.translate({ type: "agent_start" })),
+      ...label(t.translate({ type: "message_start", message: { role: "assistant" } })),
+      ...label(
+        t.translate({
+          type: "message_end",
+          message: { role: "assistant", stopReason: "error", errorMessage: "429" },
+        }),
+      ),
+      ...label(t.translate({ type: "agent_end", willRetry: true, messages: [] })),
+      ...label(
+        t.translate({
+          type: "auto_retry_start",
+          attempt: 1,
+          maxAttempts: 3,
+          delayMs: 2000,
+          errorMessage: "429",
+        }),
+      ),
+      ...label(t.translate({ type: "agent_start" })),
+      ...label(
+        t.translate({
+          type: "agent_end",
+          willRetry: false,
+          messages: [{ role: "assistant", stopReason: "error", errorMessage: "429" }],
+        }),
+      ),
+    ];
+
+    // Exactly one RUN_STARTED (no duplicate on the retry's agent_start), the
+    // retry surfaced as a non-terminal CUSTOM, and a single terminal (RUN_ERROR
+    // because the last assistant message failed). Never RUN_FINISHED→RUN_ERROR.
+    expect(seq).toEqual([
+      EventType.RUN_STARTED,
+      `CUSTOM:${AUTO_RETRY_EVENT}`,
+      EventType.RUN_ERROR,
+    ]);
+  });
+
+  it("emits RUN_ERROR on a final agent_end whose last assistant message failed (retries exhausted)", () => {
+    const t = new PiToAguiTranslator(ctx);
+    t.translate({ type: "agent_start" });
+    const out = t.translate({
+      type: "agent_end",
+      willRetry: false,
+      messages: [{ role: "assistant", stopReason: "error", errorMessage: "quota exceeded" }],
+    });
+    expect(types(out)).toEqual([EventType.RUN_ERROR]);
+    expect((out[0] as { message?: string }).message).toBe("quota exceeded");
+  });
+
+  it("emits RUN_ERROR on a final agent_end whose last assistant message was aborted", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const out = t.translate({
+      type: "agent_end",
+      willRetry: false,
+      messages: [{ role: "assistant", stopReason: "aborted" }],
+    });
+    expect(types(out)).toEqual([EventType.RUN_ERROR]);
+  });
+
+  it("emits RUN_FINISHED on a final agent_end whose last assistant message is healthy", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const out = t.translate({
+      type: "agent_end",
+      willRetry: false,
+      messages: [
+        { role: "assistant", stopReason: "toolUse" },
+        { role: "toolResult" },
+        { role: "assistant", stopReason: "stop" },
+      ],
+    });
+    expect(types(out)).toEqual([EventType.RUN_FINISHED]);
   });
 
   it("emits TEXT_MESSAGE_CHUNK for each text_delta with a stable messageId", () => {

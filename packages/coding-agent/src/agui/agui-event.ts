@@ -32,6 +32,7 @@ export type AguiEventTypeValue = typeof AguiEventType[keyof typeof AguiEventType
 
 export const FILES_CHANGED_EVENT = "coding_agent_files_changed" as const;
 export const CODING_AGENT_CURSOR_EVENT = "coding_agent_cursor" as const;
+export const AUTO_RETRY_EVENT = "coding_agent_auto_retry" as const;
 
 export interface AguiEventBase {
   timestamp: number;
@@ -124,6 +125,12 @@ export interface CursorCustomEvent extends AguiEventBase {
   value: { seq: number; epoch?: string; terminal?: boolean };
 }
 
+export interface AutoRetryCustomEvent extends AguiEventBase {
+  type: typeof AguiEventType.CUSTOM;
+  name: typeof AUTO_RETRY_EVENT;
+  value: { attempt: number; maxAttempts: number; delayMs: number; errorMessage: string };
+}
+
 export type UnknownAguiEvent = AguiEventBase & {
   type: string;
   name?: string;
@@ -145,7 +152,8 @@ export type KnownAguiEvent =
   | StepStartedEvent
   | StepFinishedEvent
   | FilesChangedCustomEvent
-  | CursorCustomEvent;
+  | CursorCustomEvent
+  | AutoRetryCustomEvent;
 
 export type AguiEvent = KnownAguiEvent | UnknownAguiEvent;
 
@@ -176,6 +184,13 @@ export function isCursorCustom(event: AguiEvent): event is CursorCustomEvent {
   return (
     event.type === AguiEventType.CUSTOM &&
     (event as { name?: unknown }).name === CODING_AGENT_CURSOR_EVENT
+  );
+}
+
+export function isAutoRetryCustom(event: AguiEvent): event is AutoRetryCustomEvent {
+  return (
+    event.type === AguiEventType.CUSTOM &&
+    (event as { name?: unknown }).name === AUTO_RETRY_EVENT
   );
 }
 

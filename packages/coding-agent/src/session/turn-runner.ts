@@ -288,8 +288,16 @@ export class TurnRunner {
     let collectorClosed = false;
     let userMessageStamped = false;
     let terminalFlush: Promise<void> | undefined;
+    let finalizeStarted = false;
 
     const finalizeTurn = (terminalEvent: AguiEvent): Promise<void> => {
+      // Idempotent and serialized: only the first terminal of a turn may be
+      // appended. Concurrent callers (e.g. a translator terminal racing the
+      // prompt-promise fallback) await the same flush instead of appending a
+      // second terminal — a double terminal in the event log poisons every
+      // later reconnect ("The run has already finished with 'RUN_FINISHED'").
+      if (finalizeStarted) return terminalFlush ?? Promise.resolve();
+      finalizeStarted = true;
       const flush = (async () => {
         try {
           if (turnBaseline) {
@@ -311,6 +319,7 @@ export class TurnRunner {
             }
           }
         } catch (err) {
+          finalizeStarted = false;
           log.warn("session.turn_files_failed", { sessionId, runId, error: String(err) });
         }
         appendAguiEvent(entry, terminalEvent, aguiEventCounts);

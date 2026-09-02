@@ -6,8 +6,8 @@ import {
   toolResultMessageId,
   IdDeduper,
 } from "./message-ids";
-import { AguiEventType, type AguiEvent } from "./agui-event";
-export { AguiEventType };
+import { AguiEventType, AUTO_RETRY_EVENT, type AguiEvent } from "./agui-event";
+export { AguiEventType, AUTO_RETRY_EVENT };
 export type { AguiEvent };
 // Deprecated alias kept for transitional tests — will be removed
 export type BaseEvent = AguiEvent;
@@ -61,6 +61,8 @@ export class PiToAguiTranslator {
   private unmappedToolCalls: Array<{ generatedId: string; name: string }> = [];
   private inputEventCounts = new Map<string, number>();
   private outputEventCounts = new Map<string, number>();
+  /** Whether this translator already emitted the run's RUN_STARTED. */
+  private runStarted = false;
 
   constructor(private readonly context: TranslatorContext) {}
 
@@ -138,6 +140,15 @@ export class PiToAguiTranslator {
 
     switch (event.type) {
       case "agent_start":
+        // Pi opens a new agent cycle per auto-retry attempt; the AG-UI run
+        // is still active, so a second RUN_STARTED would violate the run
+        // state machine ("Cannot send 'RUN_STARTED' while a run is still
+        // active"). Only the first agent_start of a turn opens the run.
+        if (this.runStarted) {
+          log.debug("translate.skip_duplicate_run_started");
+          break;
+        }
+        this.runStarted = true;
         out.push({
           type: EventType.RUN_STARTED,
           threadId,
@@ -146,7 +157,7 @@ export class PiToAguiTranslator {
         });
         break;
 
-      case "agent_end":
+      case "agent_end": {
         for (const [toolCallId, stepName] of this.stepNames.entries()) {
           out.push({
             type: EventType.STEP_FINISHED,
@@ -157,13 +168,50 @@ export class PiToAguiTranslator {
         }
         this.stepNames.clear();
 
-        out.push({
-          type: EventType.RUN_FINISHED,
-          threadId,
-          runId,
-          timestamp: this.now(),
-        });
+        // Pi closes and reopens the agent cycle around every auto-retry
+        // (agent_end willRetry:true → auto_retry_start → agent_start).
+        // A terminal here would end the AG-UI run mid-turn and, combined
+        // with the retry's events, poison the event log for reconnects
+        // ("The run has already finished with 'RUN_FINISHED'"). The
+        // terminal is only emitted for the definitive end of the turn.
+        if (event.willRetry) {
+          log.debug("translate.agent_end_will_retry", { willRetry: true });
+          break;
+        }
+        const messages = (event.messages ?? []) as Array<{
+          role?: string;
+          stopReason?: string;
+          errorMessage?: string;
+        }>;
+        const lastAssistant = [...messages]
+          .reverse()
+          .find((message) => message?.role === "assistant");
+        const failed =
+          lastAssistant !== undefined &&
+          (lastAssistant.stopReason === "error" ||
+            lastAssistant.stopReason === "aborted" ||
+            typeof lastAssistant.errorMessage === "string");
+        if (failed) {
+          out.push({
+            type: EventType.RUN_ERROR,
+            threadId,
+            runId,
+            message:
+              lastAssistant.errorMessage ??
+              `Assistant finished with ${lastAssistant.stopReason}`,
+            timestamp: this.now(),
+          });
+        } else {
+          out.push({
+            type: EventType.RUN_FINISHED,
+            threadId,
+            runId,
+            timestamp: this.now(),
+          });
+        }
+        this.runStarted = false;
         break;
+      }
 
       case "message_start": {
         const role = event.message?.role;
@@ -229,22 +277,11 @@ export class PiToAguiTranslator {
           this.activeToolCalls.clear();
         }
 
-        if (
-          event.message?.role === "assistant" &&
-          (event.message?.stopReason === "error" ||
-            event.message?.stopReason === "aborted" ||
-            event.message?.errorMessage)
-        ) {
-          out.push({
-            type: EventType.RUN_ERROR,
-            threadId,
-            runId,
-            message:
-              event.message.errorMessage ??
-              `Assistant finished with ${event.message.stopReason}`,
-            timestamp: this.now(),
-          });
-        }
+        // Note: an assistant message_end with stopReason "error"/"aborted" is
+        // deliberately NOT translated to a terminal RUN_ERROR here. Pi emits
+        // it per failed attempt and may auto-retry (agent_end willRetry:true
+        // → agent_start); the run-level terminal is owned by agent_end (see
+        // above) and the prompt-promise fallback in turn-runner.
         break;
       }
 
@@ -483,6 +520,22 @@ export class PiToAguiTranslator {
       case "turn_end":
         break;
 
+      case "auto_retry_start":
+        // Non-terminal visibility for the retry: the AG-UI run stays open,
+        // but UIs and replays can surface "retrying…" from this CUSTOM.
+        out.push({
+          type: EventType.CUSTOM,
+          name: AUTO_RETRY_EVENT,
+          value: {
+            attempt: event.attempt,
+            maxAttempts: event.maxAttempts,
+            delayMs: event.delayMs,
+            errorMessage: event.errorMessage,
+          },
+          timestamp: this.now(),
+        });
+        break;
+
       case "error":
         for (const [toolCallId, stepName] of this.stepNames.entries()) {
           out.push({
@@ -501,6 +554,7 @@ export class PiToAguiTranslator {
           message: event.message,
           timestamp: this.now(),
         });
+        this.runStarted = false;
         break;
 
       default:
