@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { config, optional } from "config";
-import { resolveEnvFile } from "@/lib/infrastructure/env";
+import { resolveEnvFile } from "@/lib/infrastructure/env-file";
 
 loadEnv({ path: resolveEnvFile() });
 

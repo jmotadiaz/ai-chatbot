@@ -1,7 +1,9 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent reconnect", () => {
-  test("status endpoint returns running: false for a fresh session", async ({ page }) => {
+  // FIXME(e2e, 2026-09-02): `/agent/code` landing was dropped in 549e8f5 in favor
+  // of the sidebar section; this spec still targets the dead route (404).
+  test.fixme("status endpoint returns running: false for a fresh session", async ({ page }) => {
     await page.goto("/agent/code");
     await page.click("text=ai-chatbot");
     await page.click("text=+ New session");

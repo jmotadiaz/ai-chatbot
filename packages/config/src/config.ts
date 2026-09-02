@@ -1,7 +1,9 @@
 import {
   bool, intOptional, secret, secretOptional, string, stringOptional,
 } from "./builders";
-import type { EnvKey } from "./catalog";
+import { assertDbMatchesEntorno } from "./guardrails";
+
+const postgresUrlRaw = secret("POSTGRES_URL");
 
 /**
  * API pública del paquete. Cada accessor lee la variable en cada llamada
@@ -32,7 +34,9 @@ export const config = {
   traceDir: stringOptional("TRACE_DIR"),
 
   // --- chatbot: secretos ---
-  postgresUrl: secret("POSTGRES_URL"),
+  // Guardarraíl de coherencia (ticket 05): NEXT_PUBLIC_ENV ↔ DSN aislado
+  // (test↔5434/test, dev↔5433/dev, prod↔5435/prod) antes de conectar.
+  postgresUrl: () => assertDbMatchesEntorno(postgresUrlRaw()),
   gatewayApiKey: secretOptional("AI_GATEWAY_API_KEY"),
   opencodeZenApiKey: secretOptional("OPENCODE_ZEN_API_KEY"),
   deepInfraApiKey: secretOptional("DEEPINFRA_API_KEY"),
@@ -66,5 +70,10 @@ export function optional<T>(get: () => T): T | undefined {
   }
 }
 
-/** Claves dinámicas que se leen vía readEnv (escape hatch documentado). */
-export const DYNAMIC_ENV_KEYS: EnvKey[] = [];
+/**
+ * Claves dinámicas que se leen vía readEnv (escape hatch documentado).
+ * NEXT_PUBLIC_ENV vive aquí a propósito: las claves NEXT_PUBLIC_* quedan fuera
+ * del catálogo tipado (Next las inlinea en build), pero el guardarraíl de
+ * coherencia Entorno↔DB lo consume en runtime (ver guardrails.ts).
+ */
+export const DYNAMIC_ENV_KEYS: string[] = ["NEXT_PUBLIC_ENV"];

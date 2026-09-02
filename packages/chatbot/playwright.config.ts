@@ -10,6 +10,9 @@ import { config } from "config";
 
 loadEnv({
   path: path.join(__dirname, "..", "..", ".env.test"),
+  // El e2e usa EXCLUSIVAMENTE la DB de Test (historia 5): el shell del
+  // operador puede arrastrar POSTGRES_URL de dev/prod y .env.test gana.
+  override: true,
 });
 
 const PORT = config.port() ?? 3000;
@@ -104,6 +107,9 @@ export default defineConfig({
     // A propósito NO usa config: aquí se plumbearn a un proceso hijo, no se leen
     // para la lógica de la app. Ver docs/superpowers/specs/2026-08-10-centralized-env-config-design.md.
     env: {
+      // El shell puede arrastrar NODE_ENV=production (p. ej. contexto pm2/prod);
+      // next dev con un NODE_ENV ajeno revienta el pipeline CSS de webpack.
+      NODE_ENV: "development",
       DISABLE_DEV_INDICATOR: "1",
       NEXT_PUBLIC_ENV: "test",
       CODING_AGENT_ENABLED: process.env.CODING_AGENT_ENABLED ?? "true",

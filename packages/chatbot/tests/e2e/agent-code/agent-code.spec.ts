@@ -1,7 +1,9 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent", () => {
-  test("user can navigate to a session and send a message", async ({ page }) => {
+  // FIXME(e2e, 2026-09-02): `/agent/code` landing was dropped in 549e8f5 in favor
+  // of the sidebar section; this spec still targets the dead route (404).
+  test.fixme("user can navigate to a session and send a message", async ({ page }) => {
     await page.goto("/agent/code");
     await expect(page.getByRole("heading", { name: "Coding Agent" })).toBeVisible();
 

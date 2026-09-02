@@ -11,7 +11,7 @@ import {
 import { randomUUID } from "crypto";
 import { config as dotenv } from "dotenv";
 import { config, optional } from "config";
-import { resolveEnvFile } from "../lib/infrastructure/env";
+import { resolveEnvFile } from "../lib/infrastructure/env-file";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

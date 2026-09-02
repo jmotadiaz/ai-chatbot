@@ -11,7 +11,7 @@ import { config, optional } from "config";
 import { generateHashedPassword } from "../lib/features/auth/utils";
 import { schema } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
-import { resolveEnvFile } from "../lib/infrastructure/env";
+import { resolveEnvFile } from "../lib/infrastructure/env-file";
 
 const TEST_USER_EMAIL = "test@test.com";
 const TEST_USER_PASSWORD = "123456";

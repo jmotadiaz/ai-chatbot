@@ -82,4 +82,29 @@ describe("config (objeto semántico)", () => {
     mockResolveSecret.mockReturnValue("postgres://x");
     expect(optional(() => config.postgresUrl())).toBe("postgres://x");
   });
+
+  it("postgresUrl() aplica el guardarraíl NEXT_PUBLIC_ENV ↔ DSN (ticket 05)", () => {
+    // Sin Entorno declarado el DSN pasa tal cual (runners sin dotenv).
+    mockReadEnv.mockReturnValue(undefined);
+    mockResolveSecret.mockReturnValue(
+      "postgres://postgres:postgres@127.0.0.1:5432/main",
+    );
+    expect(config.postgresUrl()).toBe(
+      "postgres://postgres:postgres@127.0.0.1:5432/main",
+    );
+
+    // Con Entorno declarado, solo vale el DSN de su DB aislada.
+    mockReadEnv.mockImplementation((name) =>
+      name === "NEXT_PUBLIC_ENV" ? "test" : undefined,
+    );
+    expect(() => config.postgresUrl()).toThrow(ConfigError);
+    expect(() => config.postgresUrl()).toThrow(/5434\/test/);
+
+    mockResolveSecret.mockReturnValue(
+      "postgres://postgres:postgres@127.0.0.1:5434/test",
+    );
+    expect(config.postgresUrl()).toBe(
+      "postgres://postgres:postgres@127.0.0.1:5434/test",
+    );
+  });
 });

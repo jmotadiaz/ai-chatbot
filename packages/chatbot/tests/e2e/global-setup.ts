@@ -1,7 +1,7 @@
 import path from "path";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 
 const getTestPostgresUrl = () =>
   process.env.POSTGRES_URL ??
@@ -29,6 +29,18 @@ async function waitForPostgres(postgresUrl: string) {
 
 async function globalSetup() {
   const postgresUrl = getTestPostgresUrl();
+
+  // Guardarraíl de Entorno (ticket 05, spec: test↔5434/test). Este setup solo
+  // corre para e2e, así que el Entorno es test por definición: si el shell
+  // arrastró un POSTGRES_URL de dev/prod, fallamos antes de tocar ninguna DB.
+  // La regla canónica vive en packages/config/src/guardrails.ts (ENTORNO_DB).
+  if (!postgresUrl.includes("5434/test")) {
+    throw new Error(
+      `[e2e guardrail] POSTGRES_URL="${postgresUrl}" no apunta a la DB de Test (5434/test). ` +
+        "Levanta la DB de Test (`pnpm db:test:start`) y exporta el entorno con `dotenv -o -e .env.test`.",
+    );
+  }
+
   await waitForPostgres(postgresUrl);
 
   const client = postgres(postgresUrl);

@@ -5,3 +5,4 @@ export { ConfigError } from "./errors";
 export { getAccessorRegistry } from "./builders";
 export type { AccessorKind, AccessorRecord } from "./builders";
 export { config, optional, DYNAMIC_ENV_KEYS } from "./config";
+export { assertDbMatchesEntorno, ENTORNO_DB } from "./guardrails";
