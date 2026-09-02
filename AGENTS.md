@@ -12,8 +12,14 @@ En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
   o matar procesos en 8085/3015/5435. Al pedir aprobación, indica la ventana de
   indisponibilidad (un restart de `preview` tarda ~1–2 min por el rebuild).
 - Verificación de compilación sin tocar prod: `type:check`, `lint` y suites de
-  tests por paquete (y desde los tickets 06/07: `build:prod:verify`, que escribe
-  a directorios aislados `.next/verify` / `dist/verify` / `.pi-verify`).
+  tests por paquete. Para comprobar que prod compila sin pisar los artefactos
+  que sirve pm2, el agente ejecuta **siempre `build:prod:verify`** (raíz:
+  `pnpm build:prod:verify`; o por paquete `pnpm --filter chatbot build:prod:verify`
+  + `pnpm --filter coding-agent build:prod:verify`) — escribe a directorios
+  aislados `.next/verify` / `dist/verify` / `.pi-verify` (gitignored, descartables).
+  **NUNCA `build:prod` ni `start:prod`** — pisan `.next`/`dist`/`.pi-prod/models.json`
+  de prod bajo pm2 y romperían la ejecución en curso; reservados a operador/CI
+  con `ALLOW_PROD_BUILD=1` (ver `build:prod` en cada package).
 - Verificación del servicio real: solo comandos de lectura — `pm2 ls`,
   `pm2 logs --nostream`, `curl` (GET al chatbot 8085; **NUNCA `POST /rpc` al
   worker 3015** — un body malformado tumbó el worker el 2026-09-02; para el
@@ -24,13 +30,17 @@ En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
 
 Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts:
 
-- `pnpm dev` — start all services (chatbot + coding-agent)
-- `pnpm build` — build the chatbot app
+- `pnpm dev` — start all services (chatbot + coding-agent) con `.env.dev` (dev: 3000+3016, pg 5433)
+- `pnpm build` — build del chatbot en dev (fuerza `.env.dev`)
+- `pnpm build:prod` — compila prod real (chatbot `.next` + worker `dist`+`.pi-prod`); **solo operador/CI con `ALLOW_PROD_BUILD=1`**, el agente nunca lo ejecuta
+- `pnpm build:prod:verify` — verificación aislada de prod (`.next/verify` + `dist/verify`+`.pi-verify`); **vía del agente para comprobar compilación sin tocar prod**
+- `pnpm preview` — vía canónica de prod (`pnpm preview` con `.env.prod`, migraciones + build + concurrently 8085/3015); solo pm2
 - `pnpm lint:fix` — lint all packages
 - `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
 - `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
-- `pnpm test:e2e` — Playwright E2E tests
+- `pnpm test:e2e` — Playwright E2E tests (usa `.env.test`, pg 5434, worker stub)
 - `pnpm db:generate` / `pnpm db:migrate` — Drizzle ORM migrations
+- `pnpm db:dev:*` / `db:test:*` / `db:prod:*` / `db:*:logs` — DB por Entorno (5433/dev, 5434/test, 5435/prod)
 
 Test ownership follows package ownership. Within each package, keep pure logic
 under `tests/unit`, rendered UI under `tests/component`, multi-module or

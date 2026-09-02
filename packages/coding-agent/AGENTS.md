@@ -4,7 +4,15 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 
 > ⛔ El worker de prod (`:3015`) está VIVO bajo pm2: aplica el blindaje approval-first
 > de la raíz — ver «Producción está VIVA» en `AGENTS.md` antes de cualquier comando
-> que toque pm2/prod.
+> que toque pm2/prod. Para verificar compilación, usa **siempre `build:prod:verify`**
+> (`pnpm --filter coding-agent build:prod:verify` → `dist/verify` + `.pi-verify`);
+> **nunca `build:prod`/`start:prod`** — pisan `dist`/`.pi-prod` de prod bajo pm2.
+
+## Entornos y scripts
+
+- **Dev** (`pnpm dev` con `.env.dev`): `pnpm --filter coding-agent dev` → `tsx` directo (3001 → 3016).
+- **Prod** (`pm2 preview` con `.env.prod`): 1 app `pm2 → pnpm preview` que arranca `dev` bajo `dotenv -o -e .env.prod`. `build:prod`/`start:prod` son solo operador/CI (`ALLOW_PROD_BUILD=1`).
+- **Verificación sin tocar prod**: el agente ejecuta `build:prod:verify` (escribe a `dist/verify` + `.pi-verify/models.json`, sin `dotenv -o .env.prod` — no toca estado de runtime de prod).
 
 ## Key Files
 

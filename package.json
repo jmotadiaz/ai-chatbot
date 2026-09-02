@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "dotenv -e .env.dev -- pnpm --filter chatbot --filter coding-agent --parallel dev",
     "build": "dotenv -e .env.dev -- pnpm --filter chatbot build",
+    "build:prod": "pnpm --filter chatbot build:prod && pnpm --filter coding-agent build:prod",
+    "build:prod:verify": "pnpm --filter chatbot build:prod:verify && pnpm --filter coding-agent build:prod:verify",
     "build:worker": "tsc -p packages/coding-agent/tsconfig.json --noEmit",
     "start": "dotenv -e .env.dev -- pnpm --filter chatbot --filter coding-agent --parallel start",
     "preview": "dotenv -o -e .env.prod -- sh -c 'pnpm --filter chatbot db:prod:start && ALLOW_PROD_BUILD=1 pnpm --filter chatbot build:prod && concurrently \"pnpm --filter chatbot start\" \"dotenv -o -e .env.prod -- pnpm --filter coding-agent dev\"'",
