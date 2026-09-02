@@ -1,5 +1,23 @@
 # Agent Instructions (Global — Monorepo Root)
 
+## Producción está VIVA — blindaje (approval-first)
+
+En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
+`ai-chatbot` (raíz, `pnpm preview`, `.env.prod`) → chatbot `:8085`, worker
+`:3015`, postgres-prod `:5435`.
+
+- **PROHIBIDO sin aprobación explícita del operador para cada acción**: cualquier
+  comando que impacte esa ejecución — `pm2 restart|reload|stop|delete|save`,
+  `pnpm preview`, `build:prod`/`start:prod` de prod, `docker compose … prod down`,
+  o matar procesos en 8085/3015/5435. Al pedir aprobación, indica la ventana de
+  indisponibilidad (un restart de `preview` tarda ~1–2 min por el rebuild).
+- Verificación de compilación sin tocar prod: `type:check`, `lint` y suites de
+  tests por paquete (y desde los tickets 06/07: `build:prod:verify`, que escribe
+  a directorios aislados `.next/verify` / `dist/verify` / `.pi-verify`).
+- Verificación del servicio real: solo comandos de lectura — `pm2 ls`,
+  `pm2 logs --nostream`, `curl`, `ss -tlnp`.
+- Iteración dev/test: `pnpm dev` con sus DBs (5433 dev / 5434 test), nunca con pm2.
+
 ## Package Manager
 
 Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts:

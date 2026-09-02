@@ -2,6 +2,10 @@
 
 HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent sessions, translates Pi events into AG-UI protocol events, and exposes an `/rpc` endpoint.
 
+> ⛔ El worker de prod (`:3015`) está VIVO bajo pm2: aplica el blindaje approval-first
+> de la raíz — ver «Producción está VIVA» en `AGENTS.md` antes de cualquier comando
+> que toque pm2/prod.
+
 ## Key Files
 
 | File | Responsibility |
