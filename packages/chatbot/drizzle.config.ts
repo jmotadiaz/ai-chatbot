@@ -1,13 +1,11 @@
 import { config as loadEnv } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 import { config } from "config";
+import { resolveEnvFile } from "./lib/infrastructure/env";
 
-loadEnv({
-  path:
-    process.env.NEXT_PUBLIC_ENV === "test"
-      ? ".env.test"
-      : ".env.development.local",
-});
+// Resuelve el .env del Entorno activo (NEXT_PUBLIC_ENV → .env.dev|.env.test|.env.prod)
+// antes de leer POSTGRES_URL: cada Entorno migra/empuja su propia DB.
+loadEnv({ path: resolveEnvFile() });
 
 export default defineConfig({
   schema: "./lib/infrastructure/db/schema.ts",

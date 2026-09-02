@@ -11,6 +11,7 @@ import {
 import { randomUUID } from "crypto";
 import { config as dotenv } from "dotenv";
 import { config, optional } from "config";
+import { resolveEnvFile } from "../lib/infrastructure/env";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,10 +44,9 @@ function parseArgs(): {
 }
 
 function loadEnv(runId: string, port: number): void {
-  dotenv({
-    path: resolve(PROJECT_ROOT, ".env.development.local"),
-    override: false,
-  });
+  // Dev secrets (el runner pisa después lo que necesite en modo evals);
+  // resolución centralizada por NEXT_PUBLIC_ENV, nunca .env.development.local.
+  dotenv({ path: resolveEnvFile(), override: false });
   Object.assign(process.env, {
     POSTGRES_URL: TEST_DB_URL,
     POSTGRES_PRISMA_URL: TEST_DB_URL,

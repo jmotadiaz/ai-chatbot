@@ -196,6 +196,32 @@ _Avoid_: extension, plugin
 Plantilla parametrizable de prompt para el Coding Agent (formato .prompty). Plural: Prompties.
 _Avoid_: prompt template, promptie (singular)
 
+### Entornos de ejecución
+
+**Entorno**:
+Combinación aislada de base de datos, runtime del Coding Agent y configuración que permite operar sin interferir en otro Entorno. Cada Entorno tiene sus propios valores para todas las variables de entorno.
+_Avoid_: env, environment, stage, target
+
+**Entorno de Test**:
+Entorno efímero usado exclusivamente para tests e2e, con su propia base de datos y runtime Pi efímero.
+_Avoid_: test env, e2e env
+
+**Entorno de Desarrollo**:
+Entorno persistente para desarrollo local, con su propia base de datos, su propio runtime Pi y un Usuario de Test pre-seedeado.
+_Avoid_: dev env, local env
+
+**Entorno de Producción**:
+Entorno persistente que sirve tráfico real, con su propia base de datos y su propio runtime Pi; es el único que se levanta vía pm2 (comando `preview`, ADR 0003).
+_Avoid_: prod env, live env
+
+**Runtime Pi**:
+Directorio y artefactos del SDK de Pi (agent dir, sessions, artifacts, models.json, auth.json, packages) que pertenecen a un Entorno. No se comparte entre Entornos.
+_Avoid_: pi runtime (a secas), agent dir (a secas)
+
+**Usuario de Test**:
+Identidad determinística (`test@test.com` / `123456`) que solo existe en los Entornos de Test y Desarrollo para pruebas locales y e2e.
+_Avoid_: seed user, mock user
+
 ### Identidad y acceso
 
 **User**:

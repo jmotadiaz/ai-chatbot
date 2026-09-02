@@ -40,6 +40,15 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env
 .env*.local
+.env.dev
+.env.prod
+
+# per-environment Pi runtime dirs (sibling dirs .pi-dev/.pi-test/.pi-prod, not nested .pi/<env>)
+/.pi-dev
+/.pi-test
+/.pi-prod
+/packages/coding-agent/.pi*
+/packages/coding-agent/dist*
 
 # vercel
 .vercel
@@ -52,6 +61,8 @@ next-env.d.ts
 # local PostgreSQL data
 postgres-data/
 postgres-test-data/
+postgres-data-dev/
+postgres-data-prod/
 
 # Evaluation traces (keep directory, ignore generated artifacts)
 tests/evals/traces/*.json

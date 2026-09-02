@@ -9,7 +9,7 @@ module.exports = {
     autorestart: true,
     watch: false,
     max_memory_restart: '1G',
-    env_file: '.env.development.local',
+    env_file: '.env.prod',
     env: {
       NODE_ENV: 'production',
       PATH: process.env.PATH,
@@ -25,7 +25,7 @@ module.exports = {
     autorestart: true,
     watch: false,
     max_memory_restart: '1G',
-    env_file: '.env.development.local',
+    env_file: '.env.prod',
     env: {
       NODE_ENV: 'production',
       PATH: process.env.PATH

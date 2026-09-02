@@ -2,14 +2,14 @@ import path from "path";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Read environment variables from the versioned test env file at the repo root
+ * (consistent from any cwd). https://github.com/motdotla/dotenv
  */
 import { config as loadEnv } from "dotenv";
 import { config } from "config";
 
 loadEnv({
-  path: ".env.test",
+  path: path.join(__dirname, "..", "..", ".env.test"),
 });
 
 const PORT = config.port() ?? 3000;
