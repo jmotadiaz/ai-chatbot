@@ -64,6 +64,7 @@
     "build:prod": "tsx scripts/assert-prod-build-allowed.ts && tsc -p tsconfig.json --outDir dist && dotenv -o -e ../../.env.prod -- tsx scripts/generate-models.ts",
     "build:prod:verify": "tsc -p tsconfig.json --outDir dist/verify && CODING_AGENT_MODELS_JSON=.pi-verify/models.json tsx scripts/generate-models.ts",
     "start:prod": "pnpm run build:prod && node --import tsx dist/transports/http.js",
+    "preview": "dotenv -o -e ../../.env.prod -- pnpm run start:prod",
     "stop:dev": "sh -c 'lsof -ti:3016 | xargs -r kill 2>/dev/null || true; echo \"worker dev (3016) stopped\"'",
     "stop:test": "sh -c 'echo \"test uses stub on 3001, no worker dev to stop\"'",
     "packages:install": "tsx scripts/install-packages.ts",

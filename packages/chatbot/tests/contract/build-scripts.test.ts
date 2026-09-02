@@ -62,19 +62,23 @@ describe("scripts de build del chatbot", () => {
 });
 
 describe("vía canónica de prod: preview no puede construir en dev", () => {
-  for (const [label, cmd] of [
-    ["raíz", rootPkg.scripts.preview],
-    ["chatbot", s.preview],
-  ] as const) {
-    it(`${label}: orquesta db:prod:start + build:prod (con gate embebido) + start, todo con .env.prod`, () => {
-      expect(cmd).toContain(".env.prod");
-      expect(cmd).toMatch(/db:prod:start/);
-      expect(cmd).toContain("ALLOW_PROD_BUILD=1");
-      expect(cmd).toContain("build:prod");
-      // nunca el `build` genérico (ahora es build de dev)
-      expect(cmd).not.toMatch(/(run |filter chatbot )build( |$|&&|')/);
-    });
-  }
+  it("raíz: delega a pnpm --filter chatbot preview con .env.prod", () => {
+    const cmd = rootPkg.scripts.preview;
+    expect(cmd).toContain(".env.prod");
+    expect(cmd).toContain("pnpm --filter chatbot preview");
+    // la composición real vive en el package chatbot, no en raíz (evita el lío)
+    expect(cmd).not.toMatch(/db:prod:start/);
+  });
+  it("chatbot: orquesta db:prod:start + build:prod (con gate embebido) + start, todo con .env.prod", () => {
+    const cmd = s.preview;
+    expect(cmd).toContain(".env.prod");
+    expect(cmd).toMatch(/db:prod:start/);
+    expect(cmd).toContain("ALLOW_PROD_BUILD=1");
+    expect(cmd).toContain("build:prod");
+    expect(cmd).toContain("pnpm --filter coding-agent preview");
+    // nunca el `build` genérico (ahora es build de dev)
+    expect(cmd).not.toMatch(/(run |filter chatbot )build( |$|&&|')/);
+  });
 
   it("ningún script (raíz o chatbot) referencia .env.development.local", () => {
     for (const scripts of [rootPkg.scripts, s]) {
