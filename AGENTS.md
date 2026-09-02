@@ -15,7 +15,9 @@ En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
   tests por paquete (y desde los tickets 06/07: `build:prod:verify`, que escribe
   a directorios aislados `.next/verify` / `dist/verify` / `.pi-verify`).
 - Verificación del servicio real: solo comandos de lectura — `pm2 ls`,
-  `pm2 logs --nostream`, `curl`, `ss -tlnp`.
+  `pm2 logs --nostream`, `curl` (GET al chatbot 8085; **NUNCA `POST /rpc` al
+  worker 3015** — un body malformado tumbó el worker el 2026-09-02; para el
+  worker solo `ss -tlnp`/logs), `ss -tlnp`.
 - Iteración dev/test: `pnpm dev` con sus DBs (5433 dev / 5434 test), nunca con pm2.
 
 ## Package Manager

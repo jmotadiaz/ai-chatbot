@@ -191,7 +191,29 @@ async function writeFetchResponseToNode(
 
 export async function handleRpc(requestBody: string): Promise<Response> {
   const log = getTraceLogger("worker");
-  const { method, params, id } = JSON.parse(requestBody) as {
+  // Parseo defensivo (ticket 10): un body malformado no puede tumbar el
+  // proceso. Antes JSON.parse corría fuera de try/catch y la destructuración
+  // no validaba el tipo: un POST vacío (o `null`) lanzaba un unhandledRejection
+  // que mataba al worker — y con él a la app pm2 completa, que escucha en la
+  // LAN sin auth. Contrato: siempre Response JSON-RPC, nunca throw por el body.
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(requestBody);
+  } catch {
+    log.warn("rpc.parse_error", { bytes: requestBody.length });
+    return jsonResponse(null, 0, {
+      code: -32700,
+      message: "Parse error: body is not valid JSON",
+    });
+  }
+  if (typeof parsed !== "object" || parsed === null) {
+    log.warn("rpc.invalid_request", { type: typeof parsed });
+    return jsonResponse(null, 0, {
+      code: -32700,
+      message: "Parse error: JSON-RPC body must be an object",
+    });
+  }
+  const { method, params, id } = parsed as {
     method: string;
     params: unknown;
     id: number;
