@@ -442,6 +442,9 @@ importers:
       '@types/nunjucks':
         specifier: ^3.2.6
         version: 3.2.6
+      dotenv-cli:
+        specifier: ^11.0.0
+        version: 11.0.0
       vitest:
         specifier: ^4.0.18
         version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/ui@4.0.18)(jiti@2.7.0)(jsdom@26.1.0(bufferutil@4.1.0))(lightningcss@1.30.2)(msw@2.12.10(@types/node@24.13.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)

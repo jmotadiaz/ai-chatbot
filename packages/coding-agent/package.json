@@ -58,12 +58,13 @@
     "typebox": "1.1.38"
   },
   "scripts": {
-    "dev": "pnpm run transport:http",
+    "dev": "tsx scripts/install-packages.ts && tsx scripts/generate-models.ts && tsx src/transports/http.ts",
     "lint": "eslint src scripts extensions tests --config ../../eslint.config.mjs",
     "lint:fix": "eslint --fix src scripts extensions tests --config ../../eslint.config.mjs",
-    "start": "pnpm run transport:http",
+    "build:prod": "tsx scripts/assert-prod-build-allowed.ts && tsc -p tsconfig.json --outDir dist && dotenv -o -e ../../.env.prod -- tsx scripts/generate-models.ts",
+    "build:prod:verify": "tsc -p tsconfig.json --outDir dist/verify && CODING_AGENT_MODELS_JSON=.pi-verify/models.json tsx scripts/generate-models.ts",
+    "start:prod": "pnpm run build:prod && node --import tsx dist/transports/http.js",
     "packages:install": "tsx scripts/install-packages.ts",
-    "transport:http": "tsx scripts/install-packages.ts && tsx scripts/generate-models.ts && tsx src/transports/http.ts",
     "type:check": "tsc --noEmit --pretty false",
     "test:unit": "vitest run tests/unit --passWithNoTests",
     "test:integration": "vitest run tests/integration --passWithNoTests",
@@ -73,6 +74,7 @@
   },
   "devDependencies": {
     "@types/nunjucks": "^3.2.6",
+    "dotenv-cli": "^11.0.0",
     "vitest": "^4.0.18"
   }
 }
