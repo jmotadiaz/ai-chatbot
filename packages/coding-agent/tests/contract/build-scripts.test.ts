@@ -72,13 +72,17 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
     }
   });
 
-  it("preview (raíz y chatbot) arranca el worker con dev bajo .env.prod", () => {
+  it("preview (raíz y chatbot) arranca el worker compilado (build:prod + node dist) bajo .env.prod", () => {
     for (const [label, cmd] of [
       ["raíz", rootPkg.scripts.preview],
       ["chatbot", chatbotPkg.scripts.preview],
     ]) {
-      expect(cmd, label).toContain("pnpm --filter coding-agent dev");
       expect(cmd, label).toContain(".env.prod");
+      // preview ya no usa tsx directo (dev) sino el build de prod + node dist (ticket 08/09 follow-up: evita pkill colateral dev vs prod)
+      expect(cmd, label).not.toContain("pnpm --filter coding-agent dev");
+      expect(cmd, label).toContain("ALLOW_PROD_BUILD=1");
+      expect(cmd, label).toContain("build:prod");
+      expect(cmd, label).toMatch(/node --import tsx .*dist\/transports\/http\.js/);
     }
   });
 });
