@@ -55,8 +55,8 @@ First-party Pi extension (`extensions/subagent/`) that registers a `subagent` to
 ### Artifacts (`extensions/artifacts/`)
 
 Reportes y documentos generados por el agente que el humano debe poder abrir en el
-navegador. Why: the vendored skills (Matt Pocock's `improve-codebase-architecture`
-and friends) were written for a laptop — they write a self-contained HTML report to
+navegador. Why: the vendored skills (Matt Pocock's `improve-codebase-architecture`,
+`archify`, and friends) were written for a laptop — they write a self-contained HTML report to
 the OS temp directory and `xdg-open` it. This host is headless, so the open is a
 silent no-op and the artifact ends up stranded at a path nobody can reach. Publishing
 replaces "open it" with "here's the URL".
