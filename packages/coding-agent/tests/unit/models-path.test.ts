@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getModelsJsonPath } from "../../src/models";
-import { getCodingAgentDir } from "../../src/paths";
+import { getModelsJsonPath } from "../../src/runtime/models";
+import { getCodingAgentDir } from "../../src/runtime/paths";
 
 describe("getModelsJsonPath", () => {
   const original = process.env.CODING_AGENT_MODELS_JSON;

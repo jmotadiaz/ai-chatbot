@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SessionEventLog } from "../../src/event-log";
-import { SessionRegistry } from "../../src/session-registry";
-import { SessionQueries } from "../../src/session-queries";
+import { SessionEventLog } from "../../src/agui/event-log";
+import { SessionRegistry } from "../../src/session/session-registry";
+import { SessionQueries } from "../../src/session/session-queries";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,

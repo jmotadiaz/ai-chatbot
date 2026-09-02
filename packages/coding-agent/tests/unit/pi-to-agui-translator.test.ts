@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   AguiEventType as EventType,
   PiToAguiTranslator,
-} from "../../src/pi-to-agui-translator";
+} from "../../src/agui/pi-to-agui-translator";
 
 const ctx = { threadId: "thread-1", runId: "run-1" };
 

@@ -5,17 +5,17 @@ import { config } from "config";
 import { getTraceLogger } from "tracing";
 import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
-import { SessionEventLog, type Cursor } from "./event-log";
-import { getAuthJsonPath, getModelsJsonPath } from "./models";
-import { getCodingAgentDir } from "./paths";
-import { startSubagentCollector } from "./subagent-collector";
-import type { SubagentRunParams, SubagentDetails, SubagentRunResult } from "./subagent-bridge";
+import { SessionEventLog, type Cursor } from "../agui/event-log";
+import { getAuthJsonPath, getModelsJsonPath } from "../runtime/models";
+import { getCodingAgentDir } from "../runtime/paths";
+import { startSubagentCollector } from "../subagent/subagent-collector";
+import type { SubagentRunParams, SubagentDetails, SubagentRunResult } from "../subagent/subagent-bridge";
 import { sessionRegistry } from "./session-registry";
 import { TurnRunner, applyThinkingLevel } from "./turn-runner";
 import { SessionQueries } from "./session-queries";
-import type { PromptSummary } from "./prompts";
+import type { PromptSummary } from "../runtime/prompts";
 import { resolveProjectPath } from "./session-entry";
-import { makeCreateRuntime } from "./runtime-factory";
+import { makeCreateRuntime } from "../runtime/runtime-factory";
 
 export { FILES_CHANGED_EVENT } from "./turn-runner";
 
@@ -228,7 +228,7 @@ export type {
   SubagentRunParams,
   SubagentDetails,
   SubagentRunResult,
-} from "./subagent-bridge";
+} from "../subagent/subagent-bridge";
 
 function lastAssistantText(messages: ReadonlyArray<any>): string {
   for (let i = messages.length - 1; i >= 0; i -= 1) {

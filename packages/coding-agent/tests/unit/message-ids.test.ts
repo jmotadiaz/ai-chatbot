@@ -5,8 +5,8 @@ import {
   userMessageId,
   toolResultMessageId,
   IdDeduper,
-} from "../../src/message-ids";
-import { PiToAguiTranslator, type BaseEvent } from "../../src/pi-to-agui-translator";
+} from "../../src/agui/message-ids";
+import { PiToAguiTranslator, type BaseEvent } from "../../src/agui/pi-to-agui-translator";
 
 type MessageIdEvent = BaseEvent & { messageId: string };
 

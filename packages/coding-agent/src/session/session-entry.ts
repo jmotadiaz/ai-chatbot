@@ -1,8 +1,8 @@
 import path from "node:path";
 import { config, optional } from "config";
 import type { createAgentSessionRuntime } from "@earendil-works/pi-coding-agent";
-import { SessionEventLog, type LoggedAguiEvent } from "./event-log";
-import { AguiEventType as EventType, type BaseEvent } from "./pi-to-agui-translator";
+import { SessionEventLog, type LoggedAguiEvent } from "../agui/event-log";
+import { isTerminal, type AguiEvent } from "../agui/agui-event";
 
 export interface SessionEntry {
   sessionId: string;
@@ -39,8 +39,8 @@ export function ensureEventLog(entry: SessionEntry): SessionEventLog {
   return entry.eventLog;
 }
 
-export function isTerminalAguiEvent(event: BaseEvent): boolean {
-  return event.type === EventType.RUN_FINISHED || event.type === EventType.RUN_ERROR;
+export function isTerminalAguiEvent(event: AguiEvent): boolean {
+  return isTerminal(event);
 }
 
 /**
@@ -64,7 +64,7 @@ export function incrementCount(counts: Record<string, number>, key: string | und
 
 export function appendAguiEvent(
   entry: SessionEntry,
-  event: BaseEvent,
+  event: AguiEvent,
   eventCounts?: Record<string, number>,
 ): LoggedAguiEvent {
   incrementCount(eventCounts ?? {}, event.type);

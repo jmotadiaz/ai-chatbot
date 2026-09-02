@@ -1,5 +1,5 @@
 import type { LoggedAguiEvent } from "./event-log";
-import { AguiEventType as EventType, type BaseEvent } from "./pi-to-agui-translator";
+import { deltaKey, type AguiEvent } from "./agui-event";
 
 /**
  * Streaming deltas dominate the event log: a single reasoning message or
@@ -19,45 +19,24 @@ export function compactReplayEvents(replay: LoggedAguiEvent[]): LoggedAguiEvent[
   const out: LoggedAguiEvent[] = [];
   for (const entry of replay) {
     const prev = out[out.length - 1];
-    const prevDelta = prev ? (prev.event as { delta?: unknown }).delta : undefined;
+    const prevDelta = (prev?.event as { delta?: unknown })?.delta;
     const nextDelta = (entry.event as { delta?: unknown }).delta;
     if (
       prev &&
       typeof prevDelta === "string" &&
       typeof nextDelta === "string" &&
-      deltaRunKey(prev.event) !== null &&
-      deltaRunKey(prev.event) === deltaRunKey(entry.event)
+      deltaKey(prev.event) !== null &&
+      deltaKey(prev.event) === deltaKey(entry.event)
     ) {
+      const mergedDelta = prevDelta + nextDelta;
       out[out.length - 1] = {
         epoch: entry.epoch,
         seq: entry.seq,
-        event: { ...prev.event, delta: prevDelta + nextDelta },
+        event: { ...prev.event, delta: mergedDelta } as AguiEvent,
       };
     } else {
       out.push(entry);
     }
   }
   return out;
-}
-
-/**
- * Identifies a run of mergeable deltas: same event type plus same target
- * (message or tool call), with a string delta to concatenate. Anything else
- * (structural events, malformed deltas) breaks the run and passes through.
- */
-function deltaRunKey(event: BaseEvent): string | null {
-  if (typeof (event as { delta?: unknown }).delta !== "string") return null;
-  switch (event.type) {
-    case EventType.TEXT_MESSAGE_CHUNK:
-    case EventType.REASONING_MESSAGE_CHUNK: {
-      const messageId = (event as { messageId?: unknown }).messageId;
-      return typeof messageId === "string" ? `${event.type}:${messageId}` : null;
-    }
-    case EventType.TOOL_CALL_ARGS: {
-      const toolCallId = (event as { toolCallId?: unknown }).toolCallId;
-      return typeof toolCallId === "string" ? `${event.type}:${toolCallId}` : null;
-    }
-    default:
-      return null;
-  }
 }

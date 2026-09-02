@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 
-import type { LoggedAguiEvent } from "../../src/event-log";
-import { AguiEventType as EventType } from "../../src/pi-to-agui-translator";
-import { buildReconnectPrelude } from "../../src/reconnect-prelude";
+import type { LoggedAguiEvent } from "../../src/agui/event-log";
+import { AguiEventType as EventType } from "../../src/agui/pi-to-agui-translator";
+import { buildReconnectPrelude } from "../../src/agui/reconnect-prelude";
 
 type Event = { type: string; [k: string]: unknown };
 

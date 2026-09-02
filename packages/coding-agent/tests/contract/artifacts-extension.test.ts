@@ -19,7 +19,7 @@ vi.mock("tracing", () => ({
 }));
 
 const registerExtension = (await import("../../extensions/artifacts/index")).default;
-const { getArtifactsDir } = await import("../../src/paths");
+const { getArtifactsDir } = await import("../../src/runtime/paths");
 
 /**
  * The artifacts extension's public boundary: the tool name and description the

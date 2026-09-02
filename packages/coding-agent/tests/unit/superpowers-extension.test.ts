@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { PACKAGE_ROOT } from "../../src/paths";
+import { PACKAGE_ROOT } from "../../src/runtime/paths";
 
 vi.mock("tracing", () => ({
   getTraceLogger: () => ({

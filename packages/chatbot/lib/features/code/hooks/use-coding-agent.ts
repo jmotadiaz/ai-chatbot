@@ -7,6 +7,7 @@ import {
   type InputContent,
   type Message,
 } from "@ag-ui/client";
+import { isCursorCustom, type AguiEvent } from "coding-agent/agui/event";
 import type { ThinkingLevel } from "models";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
@@ -156,19 +157,11 @@ function shouldTraceClientEvent(event: BaseEvent): boolean {
 }
 
 function cursorFromEvent(event: BaseEvent): CursorEvent | null {
-  if (
-    event.type !== EventType.CUSTOM ||
-    (event as { name?: string }).name !== "coding_agent_cursor"
-  ) {
-    return null;
-  }
-  const value = (event as { value?: unknown }).value;
+  const aguiEvent = event as unknown as AguiEvent;
+  if (!isCursorCustom(aguiEvent)) return null;
+  const value = aguiEvent.value;
   if (!value || typeof value !== "object") return null;
-  const { epoch, seq, terminal } = value as {
-    epoch?: unknown;
-    seq?: unknown;
-    terminal?: unknown;
-  };
+  const { epoch, seq, terminal } = value;
   return typeof epoch === "string" && typeof seq === "number"
     ? { cursor: { epoch, seq }, terminal: terminal === true }
     : null;

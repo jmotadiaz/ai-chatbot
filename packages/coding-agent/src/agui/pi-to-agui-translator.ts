@@ -1,33 +1,16 @@
 import { getTraceLogger } from "tracing";
-import type {
-  CodingAgentEvent,
-  ContentBlock,
-  RelaxedToolCall,
-} from "./index";
+import type { CodingAgentEvent, ContentBlock, RelaxedToolCall } from "../index";
 import {
   assistantMessageId,
   reasoningMessageId,
   toolResultMessageId,
   IdDeduper,
 } from "./message-ids";
-
-export type BaseEvent = { type: string; [key: string]: unknown };
-
-export const AguiEventType = {
-  RUN_STARTED: "RUN_STARTED",
-  RUN_FINISHED: "RUN_FINISHED",
-  RUN_ERROR: "RUN_ERROR",
-  MESSAGES_SNAPSHOT: "MESSAGES_SNAPSHOT",
-  TEXT_MESSAGE_CHUNK: "TEXT_MESSAGE_CHUNK",
-  REASONING_MESSAGE_CHUNK: "REASONING_MESSAGE_CHUNK",
-  TOOL_CALL_START: "TOOL_CALL_START",
-  TOOL_CALL_ARGS: "TOOL_CALL_ARGS",
-  TOOL_CALL_END: "TOOL_CALL_END",
-  TOOL_CALL_RESULT: "TOOL_CALL_RESULT",
-  STEP_STARTED: "STEP_STARTED",
-  STEP_FINISHED: "STEP_FINISHED",
-  CUSTOM: "CUSTOM",
-} as const;
+import { AguiEventType, type AguiEvent } from "./agui-event";
+export { AguiEventType };
+export type { AguiEvent };
+// Deprecated alias kept for transitional tests — will be removed
+export type BaseEvent = AguiEvent;
 
 const EventType = AguiEventType;
 
@@ -146,10 +129,10 @@ export class PiToAguiTranslator {
     return JSON.stringify(raw);
   }
 
-  translate(event: CodingAgentEvent): BaseEvent[] {
+  translate(event: CodingAgentEvent): AguiEvent[] {
     const log = getTraceLogger("worker");
     const { threadId, runId } = this.context;
-    const out: BaseEvent[] = [];
+    const out: AguiEvent[] = [];
     const eventType = event.type;
     this.incrementCount(this.inputEventCounts, eventType);
 
@@ -160,7 +143,7 @@ export class PiToAguiTranslator {
           threadId,
           runId,
           timestamp: this.now(),
-        } as BaseEvent);
+        });
         break;
 
       case "agent_end":
@@ -170,7 +153,7 @@ export class PiToAguiTranslator {
             stepName,
             rawEvent: { toolCallId, isError: true },
             timestamp: this.now(),
-          } as BaseEvent);
+          });
         }
         this.stepNames.clear();
 
@@ -179,7 +162,7 @@ export class PiToAguiTranslator {
           threadId,
           runId,
           timestamp: this.now(),
-        } as BaseEvent);
+        });
         break;
 
       case "message_start": {
@@ -230,7 +213,7 @@ export class PiToAguiTranslator {
               role: "tool",
               content,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
           }
           break;
         }
@@ -241,7 +224,7 @@ export class PiToAguiTranslator {
               type: EventType.TOOL_CALL_END,
               toolCallId,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
           }
           this.activeToolCalls.clear();
         }
@@ -260,7 +243,7 @@ export class PiToAguiTranslator {
               event.message.errorMessage ??
               `Assistant finished with ${event.message.stopReason}`,
             timestamp: this.now(),
-          } as BaseEvent);
+          });
         }
         break;
       }
@@ -278,9 +261,9 @@ export class PiToAguiTranslator {
               type: EventType.TEXT_MESSAGE_CHUNK,
               messageId: this.currentMessageId,
               role: "assistant",
-              delta: ame.delta,
+              delta: ame.delta as string,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
             break;
           }
           case "thinking_delta": {
@@ -291,9 +274,9 @@ export class PiToAguiTranslator {
             out.push({
               type: EventType.REASONING_MESSAGE_CHUNK,
               messageId: reasoningMessageId(this.currentMessageId),
-              delta: ame.delta,
+              delta: ame.delta as string,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
             break;
           }
           case "toolcall_start": {
@@ -310,10 +293,10 @@ export class PiToAguiTranslator {
               partial && Array.isArray(partial.content)
                 ? partial.content[contentIndex]
                 : undefined;
-            const toolCall = isToolCall(block)
-              ? block
-              : isToolCall(ame.toolCall)
-                ? ame.toolCall
+            const toolCall = isToolCall(block as ContentBlock | undefined)
+              ? (block as RelaxedToolCall)
+              : isToolCall(ame.toolCall as ContentBlock | undefined)
+                ? (ame.toolCall as RelaxedToolCall)
                 : undefined;
             const toolCallId = toolCall?.id ?? crypto.randomUUID();
             const toolCallName = toolCall?.name ?? "unknown";
@@ -348,7 +331,7 @@ export class PiToAguiTranslator {
               toolCallName,
               parentMessageId: this.currentMessageId ?? undefined,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
             break;
           }
           case "toolcall_delta": {
@@ -370,9 +353,9 @@ export class PiToAguiTranslator {
             out.push({
               type: EventType.TOOL_CALL_ARGS,
               toolCallId: active.id,
-              delta: ame.delta,
+              delta: ame.delta as string,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
             break;
           }
           case "toolcall_end": {
@@ -396,7 +379,7 @@ export class PiToAguiTranslator {
               type: EventType.TOOL_CALL_END,
               toolCallId: active.id,
               timestamp: this.now(),
-            } as BaseEvent);
+            });
             break;
           }
           case "text_start":
@@ -442,7 +425,7 @@ export class PiToAguiTranslator {
           stepName,
           rawEvent: { toolCallId: finalId },
           timestamp: this.now(),
-        } as BaseEvent);
+        });
         break;
       }
 
@@ -472,7 +455,7 @@ export class PiToAguiTranslator {
             role: "tool",
             content,
             timestamp: this.now(),
-          } as BaseEvent);
+          });
         } else {
           log.debug("translate.tool_result_already_emitted", { toolCallId: finalId });
         }
@@ -487,7 +470,7 @@ export class PiToAguiTranslator {
             stepName,
             rawEvent: { toolCallId: finalId, isError: !!event.isError },
             timestamp: this.now(),
-          } as BaseEvent);
+          });
         } else {
           log.warn("translate.step_finish_skipped", { toolCallId: finalId });
         }
@@ -507,7 +490,7 @@ export class PiToAguiTranslator {
             stepName,
             rawEvent: { toolCallId, isError: true },
             timestamp: this.now(),
-          } as BaseEvent);
+          });
         }
         this.stepNames.clear();
 
@@ -517,11 +500,11 @@ export class PiToAguiTranslator {
           runId,
           message: event.message,
           timestamp: this.now(),
-        } as BaseEvent);
+        });
         break;
 
       default:
-        log.debug("translate.unknown_type", { piType: eventType });
+        log.debug("translate.unknown_type", { piType: (event as { type: string }).type });
     }
 
     log.debug("translate", {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, it, expect } from "vitest";
-import type { LoggedAguiEvent } from "../../src/event-log";
-import { AguiEventType as EventType } from "../../src/pi-to-agui-translator";
-import { compactReplayEvents } from "../../src/replay-compaction";
+import type { LoggedAguiEvent } from "../../src/agui/event-log";
+import { AguiEventType as EventType } from "../../src/agui/pi-to-agui-translator";
+import { compactReplayEvents } from "../../src/agui/replay-compaction";
 
 let seq = 0;
 function logged(event: Record<string, unknown>): LoggedAguiEvent {

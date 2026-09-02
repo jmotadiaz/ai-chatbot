@@ -1,4 +1,4 @@
-import { extractUserContentParts } from "coding-agent/attached-files";
+import { extractUserContentParts } from "coding-agent/runtime/attached-files";
 
 export interface RequestMessage {
   id?: string;

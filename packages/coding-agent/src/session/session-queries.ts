@@ -1,9 +1,9 @@
 import type { ThinkingLevel } from "models";
 import { getTraceLogger as getWorkerLogger } from "tracing";
 import { ensureEventLog } from "./session-entry";
-import type { Cursor } from "./event-log";
-import { convertPiMessagesToAgui } from "./agui-messages";
-import { getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "./prompts";
+import type { Cursor } from "../agui/event-log";
+import { convertPiMessagesToAgui } from "../agui/agui-messages";
+import { getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "../runtime/prompts";
 import { sessionCwd } from "./session-entry";
 import type { SessionRegistry } from "./session-registry";
 

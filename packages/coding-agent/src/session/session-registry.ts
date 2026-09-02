@@ -4,15 +4,15 @@ import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-co
 import { config } from "config";
 import { getTraceLogger } from "tracing";
 import type { ThinkingLevel } from "models";
-import { SessionEventLog } from "./event-log";
+import { SessionEventLog } from "../agui/event-log";
 import {
   type SessionEntry,
   assertSessionAccess,
   resolveProjectPath,
 } from "./session-entry";
-import { loadPrompts } from "./prompts";
-import { getCodingAgentDir } from "./paths";
-import { makeCreateRuntime as defaultMakeCreateRuntime } from "./runtime-factory";
+import { loadPrompts } from "../runtime/prompts";
+import { getCodingAgentDir } from "../runtime/paths";
+import { makeCreateRuntime as defaultMakeCreateRuntime } from "../runtime/runtime-factory";
 
 export interface GetOrCreateSessionOptions {
   userId: string;

@@ -6,7 +6,7 @@ import {
   getPiPackagePath,
   getPiPackageRef,
   type PiPackage,
-} from "../src/pi-packages";
+} from "../src/runtime/pi-packages";
 
 /**
  * Clones the Pi packages the worker loads into `.pi/packages/`, pinned to the

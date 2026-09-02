@@ -6,8 +6,8 @@ import {
   listArtifacts,
   publishArtifact,
   type ArtifactRef,
-} from "../../src/artifacts";
-import { getArtifactsBaseUrl, getArtifactsDir } from "../../src/paths";
+} from "../../src/artifacts/artifacts";
+import { getArtifactsBaseUrl, getArtifactsDir } from "../../src/runtime/paths";
 
 /**
  * First-party `publish_artifact` tool + automatic publishing of temp-dir

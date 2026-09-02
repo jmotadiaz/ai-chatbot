@@ -11,8 +11,8 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { startSubagentCollector } = await import("../../src/subagent-collector");
-const { SessionEventLog } = await import("../../src/event-log");
+const { startSubagentCollector } = await import("../../src/subagent/subagent-collector");
+const { SessionEventLog } = await import("../../src/agui/event-log");
 
 function fakeChildSession() {
   const listeners = new Set<(e: unknown) => void>();

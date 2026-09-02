@@ -18,7 +18,7 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { getAvailableModels } = await import("../../src/session-manager");
+const { getAvailableModels } = await import("../../src/session/session-manager");
 
 const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 const catalog: ModelCatalogEntry[] = [

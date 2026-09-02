@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { getSubagentRunner } from "../../src/subagent-bridge";
+import { getSubagentRunner } from "../../src/subagent/subagent-bridge";
 import { buildSubagentToolDescription } from "./description";
 
 const SubagentParams = Type.Object({

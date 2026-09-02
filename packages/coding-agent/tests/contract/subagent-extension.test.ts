@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   setSubagentRunner,
   type SubagentRunner,
-} from "../../src/subagent-bridge";
+} from "../../src/subagent/subagent-bridge";
 
 const RUNNER_KEY = Symbol.for("codingAgent.subagentRunner");
 

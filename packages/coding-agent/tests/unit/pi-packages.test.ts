@@ -23,8 +23,8 @@ import {
   getPiPackageExtensionPaths,
   getPiPackagePath,
   type PiPackage,
-} from "../../src/pi-packages";
-import { PACKAGE_ROOT } from "../../src/paths";
+} from "../../src/runtime/pi-packages";
+import { PACKAGE_ROOT } from "../../src/runtime/paths";
 import { USING_SUPERPOWERS_PROMPT } from "../../extensions/superpowers/using-superpowers";
 
 describe("first-party extension and built-in skills discovery", () => {

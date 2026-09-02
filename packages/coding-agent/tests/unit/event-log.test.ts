@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { SessionEventLog, type Cursor } from "../../src/event-log";
-import { AguiEventType as EventType, type BaseEvent } from "../../src/pi-to-agui-translator";
+import { SessionEventLog, type Cursor } from "../../src/agui/event-log";
+import { AguiEventType as EventType, type BaseEvent } from "../../src/agui/pi-to-agui-translator";
 
 function append(log: SessionEventLog, event: Record<string, unknown>): void {
   log.append(event as BaseEvent);

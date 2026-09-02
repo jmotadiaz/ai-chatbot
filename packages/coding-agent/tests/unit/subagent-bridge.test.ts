@@ -3,11 +3,11 @@ import {
   setSubagentRunner,
   getSubagentRunner,
   type SubagentRunner,
-} from "../../src/subagent-bridge";
+} from "../../src/subagent/subagent-bridge";
 
 const RUNNER_KEY = Symbol.for("codingAgent.subagentRunner");
 
-type Bridge = typeof import("../../src/subagent-bridge");
+type Bridge = typeof import("../../src/subagent/subagent-bridge");
 
 /**
  * Resetting the module registry makes the next import re-evaluate the file,
@@ -16,7 +16,7 @@ type Bridge = typeof import("../../src/subagent-bridge");
  */
 const importSecondInstance = async (): Promise<Bridge> => {
   vi.resetModules();
-  return import("../../src/subagent-bridge");
+  return import("../../src/subagent/subagent-bridge");
 };
 
 const runner: SubagentRunner = async (_parentSessionId, toolCallId) => ({

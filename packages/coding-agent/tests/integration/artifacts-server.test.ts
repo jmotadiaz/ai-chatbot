@@ -21,7 +21,7 @@ vi.mock("tracing", () => ({
 }));
 
 const { startHttpTransport } = await import("../../src/transports/http");
-const { publishArtifact } = await import("../../src/artifacts");
+const { publishArtifact } = await import("../../src/artifacts/artifacts");
 
 /**
  * The artifact route over the real worker server: an agent publishes a report
@@ -172,7 +172,7 @@ function externalHosts(html: string): string[] {
 
 describe("artifact location from config", () => {
   it("reads the artifacts root and URL base from the environment", async () => {
-    const { getArtifactsBaseUrl, getArtifactsDir } = await import("../../src/paths");
+    const { getArtifactsBaseUrl, getArtifactsDir } = await import("../../src/runtime/paths");
     expect(getArtifactsDir()).toBe(rootDir);
     expect(getArtifactsBaseUrl()).toBe(baseUrl);
   });
@@ -181,7 +181,7 @@ describe("artifact location from config", () => {
     vi.stubEnv("CODING_AGENT_ARTIFACTS_URL", "");
     vi.stubEnv("CODING_AGENT_ARTIFACTS_DIR", "");
     vi.stubEnv("CODING_AGENT_WORKER_URL", "http://localhost:3999/");
-    const { getArtifactsBaseUrl, getArtifactsDir } = await import("../../src/paths");
+    const { getArtifactsBaseUrl, getArtifactsDir } = await import("../../src/runtime/paths");
     expect(getArtifactsBaseUrl()).toBe("http://localhost:3999");
     expect(getArtifactsDir().endsWith(path.join(".pi", "artifacts"))).toBe(true);
   });

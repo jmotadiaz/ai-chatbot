@@ -13,7 +13,7 @@ vi.mock("tracing", () => ({
 }));
 
 const { getExtensionPaths, getFirstPartyExtensionPaths } = await import(
-  "../../src/pi-packages"
+  "../../src/runtime/pi-packages"
 );
 
 describe("first-party extension paths", () => {

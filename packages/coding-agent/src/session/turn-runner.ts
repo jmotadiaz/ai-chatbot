@@ -2,26 +2,26 @@ import { readFileSync } from "node:fs";
 import { stripFrontmatter } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger, retainTraceSink } from "tracing";
 import type { ThinkingLevel } from "models";
-import { type Cursor, type LoggedAguiEvent, type SessionEventLog } from "./event-log";
-import { AguiEventType as EventType, PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
-export const FILES_CHANGED_EVENT = "coding_agent_files_changed";
+import { type Cursor, type LoggedAguiEvent, type SessionEventLog } from "../agui/event-log";
+import { PiToAguiTranslator } from "../agui/pi-to-agui-translator";
+import { AguiEventType as EventType, FILES_CHANGED_EVENT, isSyncPoint, isTerminal, type AguiEvent } from "../agui/agui-event";
+export { FILES_CHANGED_EVENT };
 import {
   extractUserContentParts,
   inlineAttachedFiles,
-} from "./attached-files";
+} from "../runtime/attached-files";
 import { captureGitFileState, diffTurnFiles, type GitFileState } from "./turn-git-state";
-import type { CodingAgentEvent } from "./index";
+import type { CodingAgentEvent } from "../index";
 import {
   type SessionEntry,
   appendAguiEvent,
   ensureEventLog,
   incrementCount,
-  isTerminalAguiEvent,
   loggedLine,
   sessionCwd,
 } from "./session-entry";
-import { convertPiMessagesToAgui } from "./agui-messages";
-import { splitModelReference } from "./runtime-factory";
+import { convertPiMessagesToAgui } from "../agui/agui-messages";
+import { splitModelReference } from "../runtime/runtime-factory";
 import type { SessionRegistry } from "./session-registry";
 
 interface SnapshotMessage {
@@ -166,8 +166,8 @@ export class TurnRunner {
         eventLog = state.eventLog;
         const { entry, prelude, events } = state;
 
-        const shouldCloseOnTerminal = (event: BaseEvent) => {
-          if (!isTerminalAguiEvent(event)) return false;
+        const shouldCloseOnTerminal = (event: AguiEvent) => {
+          if (!isTerminal(event)) return false;
           const eventRunId = (event as { runId?: string }).runId;
           return !entry.activeRun || eventRunId === entry.activeRun.runId;
         };
@@ -289,7 +289,7 @@ export class TurnRunner {
     let userMessageStamped = false;
     let terminalFlush: Promise<void> | undefined;
 
-    const finalizeTurn = (terminalEvent: BaseEvent): Promise<void> => {
+    const finalizeTurn = (terminalEvent: AguiEvent): Promise<void> => {
       const flush = (async () => {
         try {
           if (turnBaseline) {
@@ -304,7 +304,7 @@ export class TurnRunner {
                   name: FILES_CHANGED_EVENT,
                   value: { runId, files },
                   timestamp: Date.now(),
-                } as BaseEvent,
+                },
                 aguiEventCounts,
               );
               appendedAguiEventCount += 1;
@@ -356,7 +356,7 @@ export class TurnRunner {
 
       const aguiEvents = translator.translate(event);
       for (const aguiEvent of aguiEvents) {
-        if (isTerminalAguiEvent(aguiEvent)) {
+        if (isTerminal(aguiEvent)) {
           void finalizeTurn(aguiEvent);
           continue;
         }
@@ -369,14 +369,14 @@ export class TurnRunner {
               type: EventType.MESSAGES_SNAPSHOT,
               messages: snapshotMessages,
               timestamp: Date.now(),
-            } as BaseEvent,
+            },
             aguiEventCounts,
           );
           appendedAguiEventCount += 1;
           snapshotAppended = true;
         }
       }
-      if (event.type === "message_end" || event.type === "tool_execution_end") {
+      if (isSyncPoint(event)) {
         entry.snapshotCursorSeq = ensureEventLog(entry).lastSeq;
       }
     });
@@ -403,7 +403,7 @@ export class TurnRunner {
             threadId: sessionId,
             runId,
             timestamp: Date.now(),
-          } as BaseEvent);
+          });
         }
         unsubscribe();
         entry.activeRun = undefined;
@@ -421,7 +421,7 @@ export class TurnRunner {
             runId,
             message: String(err),
             timestamp: Date.now(),
-          } as BaseEvent);
+          });
         }
         unsubscribe();
         entry.activeRun = undefined;

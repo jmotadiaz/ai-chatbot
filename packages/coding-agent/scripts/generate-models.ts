@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { AuthStorage, ModelRegistry } from "@earendil-works/pi-coding-agent";
 import { PI_PROVIDER, generateModelsJson, type PiModelBaseline, type ThinkingLevelMap } from "models";
-import { getModelsJsonPath } from "../src/models";
+import { getModelsJsonPath } from "../src/runtime/models";
 
 /**
  * Pi's own definitions for the models it already ships. The catalog is merged

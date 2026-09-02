@@ -3,7 +3,7 @@ import {
   inlineAttachedFiles,
   splitAttachedFiles,
   extractUserContentParts,
-} from "../../src/attached-files";
+} from "../../src/runtime/attached-files";
 
 describe("inlineAttachedFiles / splitAttachedFiles round-trip", () => {
   it("returns the text unchanged when there are no docs", () => {

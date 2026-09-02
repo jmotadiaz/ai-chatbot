@@ -1,6 +1,7 @@
 import { getTraceLogger } from "tracing";
-import { SessionEventLog } from "./event-log";
-import { PiToAguiTranslator, type BaseEvent } from "./pi-to-agui-translator";
+import { SessionEventLog } from "../agui/event-log";
+import { PiToAguiTranslator } from "../agui/pi-to-agui-translator";
+import { isSyncPoint } from "../agui/agui-event";
 
 interface SubagentCollectorEntry {
   sessionId: string;
@@ -26,9 +27,9 @@ export function startSubagentCollector(
   const unsubscribe = entry.runtime.session.subscribe((rawEvent) => {
     const event = rawEvent as { type: string };
     for (const aguiEvent of translator.translate(rawEvent as never)) {
-      eventLog.append(aguiEvent as BaseEvent);
+      eventLog.append(aguiEvent);
     }
-    if (event.type === "message_end" || event.type === "tool_execution_end") {
+    if (isSyncPoint(event)) {
       entry.snapshotCursorSeq = eventLog.lastSeq;
     }
   });

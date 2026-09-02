@@ -14,7 +14,7 @@ import {
   publishArtifact,
   resolveArtifactFile,
   titleFromHtml,
-} from "../../src/artifacts";
+} from "../../src/artifacts/artifacts";
 
 const REPORT = `<!doctype html>
 <html lang="es"><head><meta charset="utf-8" />

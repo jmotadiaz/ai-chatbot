@@ -5,7 +5,7 @@ import {
   userMessageId,
   IdDeduper,
 } from "./message-ids";
-import { splitAttachedFiles } from "./attached-files";
+import { splitAttachedFiles } from "../runtime/attached-files";
 
 function extractMessageText(content: unknown): string {
   if (typeof content === "string") {

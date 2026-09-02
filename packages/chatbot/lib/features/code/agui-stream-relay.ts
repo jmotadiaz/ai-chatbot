@@ -1,6 +1,6 @@
 import { EventType, type BaseEvent } from "@ag-ui/client";
-
-export const CODING_AGENT_CURSOR_EVENT = "coding_agent_cursor";
+import { CODING_AGENT_CURSOR_EVENT as AGENT_CURSOR_EVENT } from "coding-agent/agui/event";
+export const CODING_AGENT_CURSOR_EVENT = AGENT_CURSOR_EVENT;
 
 interface LoggedAguiEnvelope {
   epoch?: string;
@@ -47,10 +47,10 @@ function parseEnvelope(value: unknown): LoggedAguiEnvelope | null {
 function cursorEvent(seq: number, epoch?: string, terminal = false): BaseEvent {
   return {
     type: EventType.CUSTOM,
-    name: CODING_AGENT_CURSOR_EVENT,
+    name: AGENT_CURSOR_EVENT,
     value: { seq, ...(epoch ? { epoch } : {}), ...(terminal ? { terminal: true } : {}) },
     timestamp: Date.now(),
-  } as BaseEvent;
+  } as unknown as BaseEvent;
 }
 
 function isTerminalEvent(event: BaseEvent): boolean {

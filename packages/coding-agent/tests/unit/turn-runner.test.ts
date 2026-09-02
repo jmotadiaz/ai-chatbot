@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { inlineAttachedFiles } from "../../src/attached-files";
-import { SessionEventLog } from "../../src/event-log";
-import { SessionRegistry } from "../../src/session-registry";
-import { TurnRunner } from "../../src/turn-runner";
-import { AguiEventType as EventType, type BaseEvent } from "../../src/pi-to-agui-translator";
+import { inlineAttachedFiles } from "../../src/runtime/attached-files";
+import { SessionEventLog } from "../../src/agui/event-log";
+import { SessionRegistry } from "../../src/session/session-registry";
+import { TurnRunner } from "../../src/session/turn-runner";
+import { AguiEventType as EventType, type BaseEvent } from "../../src/agui/pi-to-agui-translator";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

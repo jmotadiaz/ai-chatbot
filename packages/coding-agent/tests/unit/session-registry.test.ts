@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SessionEventLog } from "../../src/event-log";
-import { SessionRegistry } from "../../src/session-registry";
+import { SessionEventLog } from "../../src/agui/event-log";
+import { SessionRegistry } from "../../src/session/session-registry";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,

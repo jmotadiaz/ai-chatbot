@@ -1,11 +1,11 @@
-import type { BaseEvent } from "./pi-to-agui-translator";
+import type { AguiEvent } from "./agui-event";
 import { buildReconnectPrelude } from "./reconnect-prelude";
 import { compactReplayEvents } from "./replay-compaction";
 
 export interface LoggedAguiEvent {
   epoch: string;
   seq: number;
-  event: BaseEvent;
+  event: AguiEvent;
 }
 
 /**
@@ -31,7 +31,7 @@ export class SessionEventLog {
   private subscribers = new Set<Subscriber>();
   private nextSeq = 1;
 
-  append(event: BaseEvent): LoggedAguiEvent {
+  append(event: AguiEvent): LoggedAguiEvent {
     const entry = { epoch: this.epoch, seq: this.nextSeq, event };
     this.nextSeq += 1;
     this.events.push(entry);

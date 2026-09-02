@@ -10,8 +10,8 @@ import {
   setTraceSessionId,
 } from "tracing";
 import type { ThinkingLevel } from "models";
-import { handleArtifactRequest, matchArtifactRoute } from "../artifacts-http";
-import { getArtifactsBaseUrl, getArtifactsDir } from "../paths";
+import { handleArtifactRequest, matchArtifactRoute } from "../artifacts/artifacts-http";
+import { getArtifactsBaseUrl, getArtifactsDir } from "../runtime/paths";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -29,8 +29,8 @@ import {
   runSubagent,
   getSessionPrompts,
   resolvePrompt,
-} from "../session-manager";
-import { setSubagentRunner } from "../subagent-bridge";
+} from "../session/session-manager";
+import { setSubagentRunner } from "../subagent/subagent-bridge";
 
 export interface HttpTransportOptions {
   port: number;

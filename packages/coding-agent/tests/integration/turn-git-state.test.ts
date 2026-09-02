@@ -10,7 +10,7 @@ import {
   parsePorcelainStatusZ,
   statusFromXY,
   type GitFileState,
-} from "../../src/turn-git-state";
+} from "../../src/session/turn-git-state";
 import { clearInheritedGitRepositoryEnv } from "../helpers/git-env";
 
 const execFileAsync = promisify(execFile);

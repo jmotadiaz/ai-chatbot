@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { artifactCsp, matchArtifactRoute, renderArtifactIndex } from "../../src/artifacts-http";
-import { artifactNameFor, artifactUrl, isSafeSegment, projectSlug, type ArtifactRef } from "../../src/artifacts";
+import { artifactCsp, matchArtifactRoute, renderArtifactIndex } from "../../src/artifacts/artifacts-http";
+import { artifactNameFor, artifactUrl, isSafeSegment, projectSlug, type ArtifactRef } from "../../src/artifacts/artifacts";
 
 describe("matchArtifactRoute", () => {
   it("maps the index in either spelling", () => {

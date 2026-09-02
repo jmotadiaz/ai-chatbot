@@ -2,8 +2,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "config";
 
-/** packages/coding-agent — this file lives in its src/ directory. */
-export const PACKAGE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+/** packages/coding-agent — this file lives in its src/runtime/ directory. */
+export const PACKAGE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 /**
  * Resolves an override to an absolute path. Relative values are anchored to the

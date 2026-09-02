@@ -52,8 +52,8 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
   },
 }));
 
-const { getOrCreateSession, sendPrompt } = await import("../../src/session-manager");
-const { sessionRegistry } = await import("../../src/session-registry");
+const { getOrCreateSession, sendPrompt } = await import("../../src/session/session-manager");
+const { sessionRegistry } = await import("../../src/session/session-registry");
 
 /**
  * After b1, getOrCreateSession is pure seed (modelId for create/reload), and

@@ -3,4 +3,4 @@ export {
   type ActiveToolCall,
   type TranslatorContext,
   type TranslatorDiagnostics,
-} from "coding-agent/pi-to-agui-translator";
+} from "coding-agent/agui/pi-to-agui-translator";

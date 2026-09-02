@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadPrompts, resolveProjectPrompt } from "../../src/prompts";
+import { loadPrompts, resolveProjectPrompt } from "../../src/runtime/prompts";
 
 describe("resolveProjectPrompt", () => {
   let tmpRoot: string;

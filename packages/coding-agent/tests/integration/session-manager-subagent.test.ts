@@ -15,7 +15,7 @@ vi.mock("tracing", () => ({
 }));
 
 const { resolveSubagentCwd, resolveSubagentModelId, ensureSubagentSessionsDir } =
-  await import("../../src/session-manager");
+  await import("../../src/session/session-manager");
 
 describe("ensureSubagentSessionsDir", () => {
   it("creates the subagents dir when it is missing", () => {
