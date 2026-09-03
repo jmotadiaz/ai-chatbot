@@ -23,10 +23,46 @@ export interface SessionStatus {
  */
 export type SessionCursor = Cursor;
 
+export interface PendingQueues {
+  steering: string[];
+  followUp: string[];
+}
+
 export interface SessionSnapshot {
   messages: Array<any>;
   cursor: SessionCursor | null;
   running: boolean;
+  /**
+   * Surviving queued text, read live from the Pi session. The chip's
+   * rehydration source (ticket 04): a reload with a pending follow-up
+   * restores it from here, and queue-update events keep it in sync after.
+   * Empty when nothing is armed.
+   */
+  pending: PendingQueues;
+}
+
+/**
+ * Defensive read of the Pi queues: test doubles and older sessions may
+ * lack the getters, and a throwing getter must never fail the snapshot.
+ */
+function readPendingQueues(session: {
+  getSteeringMessages?: () => readonly unknown[];
+  getFollowUpMessages?: () => readonly unknown[];
+}): PendingQueues {
+  const read = (fn?: () => readonly unknown[]): string[] => {
+    try {
+      const value = fn?.call(session);
+      return Array.isArray(value)
+        ? value.filter((entry): entry is string => typeof entry === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  };
+  return {
+    steering: read(session.getSteeringMessages),
+    followUp: read(session.getFollowUpMessages),
+  };
 }
 
 export class SessionQueries {
@@ -159,7 +195,7 @@ export class SessionQueries {
     const messages = await this.getSessionMessages(sessionId, project, parentSessionId);
     const entry = this.registry.get(sessionId, parentSessionId);
     if (!entry) {
-      return { messages, cursor: null, running: false };
+      return { messages, cursor: null, running: false, pending: { steering: [], followUp: [] } };
     }
 
     const eventLog = ensureEventLog(entry);
@@ -168,6 +204,7 @@ export class SessionQueries {
       messages,
       cursor: { epoch: eventLog.epoch, seq },
       running: entry.runtime.session.isStreaming || !!entry.activeRun,
+      pending: readPendingQueues(entry.runtime.session),
     };
   }
 

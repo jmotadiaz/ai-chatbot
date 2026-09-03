@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
     turnFiles: new Map(),
     isRunning: false,
     isLoading: false,
-    sendMessage: vi.fn(() => Promise.resolve()),
+    sendMessage: vi.fn(() => Promise.resolve(true)),
     status: { kind: "idle" } as AgentStatus,
     error: null as string | null,
     cancel: undefined as unknown as () => Promise<void>,

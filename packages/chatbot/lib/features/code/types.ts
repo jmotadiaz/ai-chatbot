@@ -24,6 +24,13 @@ export interface SessionSnapshot {
   messages: Message[];
   cursor: SessionCursor | null;
   running: boolean;
+  /**
+   * Surviving queued text from the worker (ticket 04 rehydration source).
+   * Optional: absent when the worker predates the pending field or the
+   * fetch failed — the hook treats absence as "nothing armed" and the
+   * queue-update event stays the source of truth afterwards.
+   */
+  pending?: { steering: string[]; followUp: string[] };
 }
 
 /**

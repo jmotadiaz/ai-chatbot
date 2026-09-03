@@ -71,7 +71,13 @@ export interface UseCodingAgentResult {
   turnFiles: TurnFilesMap;
   isRunning: boolean;
   isLoading: boolean;
-  sendMessage: (content: string | InputContent[]) => Promise<void>;
+  /**
+   * Send `content`. Resolves true when the worker accepted it (a fresh turn
+   * opened idle, or plain text queued mid-turn) and false when it was
+   * rejected with the reason already in the banner — the caller keeps its
+   * draft on false instead of clearing the composer.
+   */
+  sendMessage: (content: string | InputContent[]) => Promise<boolean>;
   /** Plain-text follow-up armed on the worker (queue-update event), or null. */
   pendingFollowUp: string | null;
   /** Enqueue `text` for end-of-turn delivery; rejects (text preserved by caller) on failure. */
@@ -193,6 +199,23 @@ function pendingFollowUpFromEvent(event: BaseEvent): string | null | undefined {
   if (!value || typeof value !== "object") return undefined;
   const { followUp } = value as { followUp?: unknown };
   if (!Array.isArray(followUp)) return undefined;
+  const first = followUp.find((entry): entry is string => typeof entry === "string");
+  return first ?? null;
+}
+
+/**
+ * Chip text from a snapshot's pending queues (ticket 04 rehydration).
+ * Same derivation as the live queue-update event — follow-up first, never
+ * steering — so a reloaded chip and a live chip can never disagree: after a
+ * promotion the queue-update clears the chip, and a snapshot taken then
+ * restores no chip either. Anything malformed means "nothing armed".
+ */
+function pendingChipText(
+  pending: { steering?: unknown; followUp?: unknown } | null | undefined,
+): string | null {
+  if (!pending || typeof pending !== "object") return null;
+  const { followUp } = pending;
+  if (!Array.isArray(followUp)) return null;
   const first = followUp.find((entry): entry is string => typeof entry === "string");
   return first ?? null;
 }
@@ -334,7 +357,10 @@ export function useCodingAgent({
         { startedAt: number; finishedAt?: number }
       >(),
       turnFiles: new Map() as TurnFilesMap,
-      pendingFollowUp: null as string | null,
+      // Rehydration (ticket 04): a reload with a pending follow-up restores
+      // the chip straight from the snapshot — no queue-update needed first.
+      // Queue-update events keep it in sync from here on.
+      pendingFollowUp: pendingChipText(seed?.pending),
     };
 
     let snapshot = seeded;
@@ -464,6 +490,24 @@ export function useCodingAgent({
                   pendingTerminalCursorRef.current = null;
                 }
                 shouldReconnectRef.current = false;
+                if (event.type === EventType.RUN_ERROR) {
+                  // A failed turn ends the run with a defined, visible
+                  // state (ticket 04): the spinner stops, the failure shows
+                  // in the banner, and the chip is left exactly as the last
+                  // queue-update left it — still armed, never auto-drained,
+                  // with no reconnect storm behind it. In-band RUN_ERROR
+                  // never reaches onRunFailed (transport errors only), so
+                  // without this isRunning would stick at true forever.
+                  const message = (event as { message?: unknown }).message;
+                  update(() => ({
+                    isRunning: false,
+                    status: { kind: "idle" } as AgentStatus,
+                    error:
+                      typeof message === "string" && message.length > 0
+                        ? message
+                        : "Turn failed",
+                  }));
+                }
               }
               const eventRunId = getEventRunId(event);
               if (eventRunId) currentTraceRunId = eventRunId;
@@ -716,6 +760,10 @@ export function useCodingAgent({
           error: null,
           toolErrors: new Map(),
           toolTimings: new Map(),
+          // Rehydration (ticket 04): seed the chip from the worker's
+          // surviving queues; the connect stream's queue-updates sync it
+          // from here on.
+          pendingFollowUp: pendingChipText(snapshot.pending),
         }));
         if (snapshot.running && snapshot.cursor) {
           await connect(snapshot.cursor);
@@ -904,8 +952,12 @@ export function useCodingAgent({
           body: JSON.stringify({ sessionId, text: trimmed }),
         });
       } catch (err) {
+        // A dead worker names itself instead of surfacing the bare fetch
+        // error; the caller keeps its draft (see sendMessage/handleFollowUp).
         const message =
-          err instanceof Error ? err.message : "Failed to queue follow-up";
+          err instanceof Error
+            ? `Failed to queue follow-up: worker unreachable (${err.message})`
+            : "Failed to queue follow-up: worker unreachable";
         store.update(() => ({ error: message }));
         throw err instanceof Error ? err : new Error(message);
       }
@@ -919,35 +971,38 @@ export function useCodingAgent({
   );
 
   const sendMessage = useCallback(
-    async (content: string | InputContent[]) => {
+    async (content: string | InputContent[]): Promise<boolean> => {
       if (state.isRunning) {
         // Submit duality (ticket 03): with an active turn there is no new
         // turn to open — a second concurrent prompt would only earn the
         // worker's "Session is already running". Plain text goes through
         // the ticket-01 followUp path instead; anything else is a visible
         // error, never a silent enqueue of something the queue rejects.
+        // False keeps the caller's draft (ticket 04): the composer only
+        // clears after the worker accepted the text.
         const text = queueablePlainText(content);
         if (text === null) {
           store.update(() => ({
             error:
               "Attachments cannot be queued while a turn is running (plain text only)",
           }));
-          return;
+          return false;
         }
         try {
           await enqueueFollowUp(text);
+          return true;
         } catch {
           // Error already in the banner; the caller keeps its draft.
+          return false;
         }
-        return;
       }
       if (state.isLoading) {
         store.update(() => ({ error: "Coding agent session is still loading" }));
-        return;
+        return false;
       }
       if (!modelId) {
         store.update(() => ({ error: "No model selected" }));
-        return;
+        return false;
       }
       const runId = crypto.randomUUID();
       writeClientTrace({
@@ -1015,6 +1070,7 @@ export function useCodingAgent({
           payload: { message: err instanceof Error ? err.message : String(err) },
         });
       }
+      return true;
     },
     [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, state.isRunning, enqueueFollowUp, store],
   );
@@ -1081,7 +1137,9 @@ export function useCodingAgent({
       });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to clear queued message";
+        err instanceof Error
+          ? `Failed to clear queued message: worker unreachable (${err.message})`
+          : "Failed to clear queued message: worker unreachable";
       store.update(() => ({ error: message }));
       throw err instanceof Error ? err : new Error(message);
     }
@@ -1106,7 +1164,9 @@ export function useCodingAgent({
         });
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Failed to promote to steering";
+          err instanceof Error
+            ? `Failed to promote to steering: worker unreachable (${err.message})`
+            : "Failed to promote to steering: worker unreachable";
         store.update(() => ({ error: message }));
         throw err instanceof Error ? err : new Error(message);
       }

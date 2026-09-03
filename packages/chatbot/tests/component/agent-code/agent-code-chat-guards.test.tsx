@@ -6,7 +6,7 @@ import type { AgentStatus } from "@/lib/features/code/hooks/use-coding-agent";
 
 const mocks = vi.hoisted(() => ({
   cancel: vi.fn((): Promise<string | null> => Promise.resolve(null)),
-  sendMessage: vi.fn(() => Promise.resolve()),
+  sendMessage: vi.fn(() => Promise.resolve(true)),
   enqueueFollowUp: vi.fn(() => Promise.resolve()),
   clearComments: vi.fn(),
   hookResult: {
@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
     turnFiles: new Map(),
     isRunning: false,
     isLoading: false,
-    sendMessage: undefined as unknown as () => Promise<void>,
+    sendMessage: undefined as unknown as () => Promise<boolean>,
     pendingFollowUp: null as string | null,
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     status: { kind: "idle" } as AgentStatus,

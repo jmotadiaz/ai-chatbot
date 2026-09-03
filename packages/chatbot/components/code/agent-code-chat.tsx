@@ -185,6 +185,21 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       return;
     }
     setAttachmentError(null);
+    if (isRunning) {
+      // Mid-turn sends never open a run: the hook routes plain text through
+      // followUp and reports whether the worker accepted it. Only clear the
+      // composer on acceptance — a worker blip keeps the draft (ticket 04:
+      // error in the banner, text preserved) instead of losing it. The
+      // follow-up button (handleFollowUp) already works this way.
+      const accepted = await sendMessage(buildUserContent(message, files));
+      if (accepted !== false) {
+        setInput("");
+        setFiles([]);
+        setSelectedSkills([]);
+        fileBrowserActions.clearComments();
+      }
+      return;
+    }
     setInput("");
     setFiles([]);
     setSelectedSkills([]);

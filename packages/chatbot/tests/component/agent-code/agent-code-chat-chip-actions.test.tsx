@@ -6,7 +6,7 @@ import type { AgentStatus } from "@/lib/features/code/hooks/use-coding-agent";
 
 const mocks = vi.hoisted(() => ({
   cancel: vi.fn(() => Promise.resolve()),
-  sendMessage: vi.fn(() => Promise.resolve()),
+  sendMessage: vi.fn(() => Promise.resolve(true)),
   enqueueFollowUp: vi.fn(() => Promise.resolve()),
   clearQueue: vi.fn(() => Promise.resolve()),
   promoteToSteering: vi.fn(() => Promise.resolve()),
@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     turnFiles: new Map(),
     isRunning: false,
     isLoading: false,
-    sendMessage: undefined as unknown as () => Promise<void>,
+    sendMessage: undefined as unknown as () => Promise<boolean>,
     pendingFollowUp: null as string | null,
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     clearQueue: undefined as unknown as () => Promise<void>,
@@ -74,11 +74,12 @@ afterEach(() => {
     mocks.enqueueFollowUp,
     mocks.clearQueue,
     mocks.promoteToSteering,
-    mocks.sendMessage,
   ]) {
     fn.mockClear();
     fn.mockImplementation(() => Promise.resolve());
   }
+  mocks.sendMessage.mockClear();
+  mocks.sendMessage.mockImplementation(() => Promise.resolve(true));
   mocks.hookResult.isRunning = false;
   mocks.hookResult.isLoading = false;
   mocks.hookResult.pendingFollowUp = null;

@@ -137,4 +137,48 @@ describe("SessionQueries (deep module)", () => {
     expect(await queries.getSessionModel("s1")).toEqual({ providerId: "opencode-go", modelId: "model-a" });
     expect(await queries.getSessionThinkingLevel("s1")).toEqual({ level: "high", levels: ["off", "high"] });
   });
+
+  describe("getSessionSnapshot pending queues (ticket 04 rehydration)", () => {
+    it("reports the surviving steering and follow-up queues", async () => {
+      seed("s-pending", "p", {
+        messages: [],
+        isStreaming: true,
+        getSteeringMessages: () => ["steer now"],
+        getFollowUpMessages: () => ["after this"],
+      });
+      const snapshot = await queries.getSessionSnapshot("s-pending");
+      expect(snapshot.running).toBe(true);
+      expect(snapshot.pending).toEqual({
+        steering: ["steer now"],
+        followUp: ["after this"],
+      });
+    });
+
+    it("reports empty queues when nothing is armed", async () => {
+      seed("s-empty", "p", {
+        messages: [],
+        isStreaming: false,
+        getSteeringMessages: () => [],
+        getFollowUpMessages: () => [],
+      });
+      const snapshot = await queries.getSessionSnapshot("s-empty");
+      expect(snapshot.running).toBe(false);
+      expect(snapshot.pending).toEqual({ steering: [], followUp: [] });
+    });
+
+    it("degrades to empty queues when the session lacks queue readers", async () => {
+      seed("s-legacy", "p", makeSession());
+      const snapshot = await queries.getSessionSnapshot("s-legacy");
+      expect(snapshot.pending).toEqual({ steering: [], followUp: [] });
+    });
+
+    it("reports empty queues for an unknown session", async () => {
+      const snapshot = await queries.getSessionSnapshot("missing");
+      expect(snapshot).toMatchObject({
+        cursor: null,
+        running: false,
+        pending: { steering: [], followUp: [] },
+      });
+    });
+  });
 });

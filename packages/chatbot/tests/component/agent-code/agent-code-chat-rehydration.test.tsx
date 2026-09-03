@@ -5,26 +5,32 @@ import { AgentCodeChat } from "@/components/code/agent-code-chat";
 import type { AgentStatus } from "@/lib/features/code/hooks/use-coding-agent";
 
 const mocks = vi.hoisted(() => ({
-  cancel: vi.fn(() => Promise.resolve()),
+  cancel: vi.fn(() => Promise.resolve(null)),
   sendMessage: vi.fn(() => Promise.resolve(true)),
   enqueueFollowUp: vi.fn(() => Promise.resolve()),
+  clearQueue: vi.fn(() => Promise.resolve()),
+  promoteToSteering: vi.fn(() => Promise.resolve()),
   hookResult: {
     messages: [],
     items: [],
     toolErrors: new Map(),
     turnFiles: new Map(),
-    isRunning: false,
+    isRunning: true,
     isLoading: false,
     sendMessage: undefined as unknown as () => Promise<boolean>,
     pendingFollowUp: null as string | null,
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
-    status: { kind: "idle" } as AgentStatus,
+    clearQueue: undefined as unknown as () => Promise<void>,
+    promoteToSteering: undefined as unknown as (text: string) => Promise<void>,
+    status: { kind: "thinking" } as AgentStatus,
     error: null as string | null,
-    cancel: undefined as unknown as () => Promise<void>,
+    cancel: undefined as unknown as () => Promise<string | null>,
   },
 }));
 mocks.hookResult.sendMessage = mocks.sendMessage;
 mocks.hookResult.enqueueFollowUp = mocks.enqueueFollowUp;
+mocks.hookResult.clearQueue = mocks.clearQueue;
+mocks.hookResult.promoteToSteering = mocks.promoteToSteering;
 mocks.hookResult.cancel = mocks.cancel;
 
 vi.mock("@/lib/features/code/hooks/use-coding-agent", () => ({
@@ -64,76 +70,58 @@ vi.stubGlobal("CSS", { supports: () => true });
 
 afterEach(() => {
   cleanup();
-  mocks.enqueueFollowUp.mockClear();
   mocks.sendMessage.mockClear();
-  mocks.enqueueFollowUp.mockImplementation(() => Promise.resolve());
-  mocks.hookResult.isRunning = false;
-  mocks.hookResult.isLoading = false;
+  mocks.sendMessage.mockImplementation(() => Promise.resolve(true));
+  mocks.hookResult.isRunning = true;
   mocks.hookResult.pendingFollowUp = null;
+  mocks.hookResult.error = null;
 });
 
 const renderChat = () =>
   render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelThinking={new Map()} />);
 
-describe("AgentCodeChat follow-up", () => {
-  it("hides the follow-up button while no turn is running", () => {
-    mocks.hookResult.isRunning = false;
-    renderChat();
-    expect(screen.queryByLabelText("Queue follow-up")).toBeNull();
-  });
+const submitForm = () => {
+  const form = screen.getByTestId("chat-input").closest("form");
+  if (!form) throw new Error("composer form not found");
+  fireEvent.submit(form);
+};
 
-  it("shows the follow-up button during an active turn", () => {
-    mocks.hookResult.isRunning = true;
-    renderChat();
-    expect(screen.getByLabelText("Queue follow-up")).toBeDefined();
-  });
-
-  it("enqueues the typed text and clears the textarea on success", async () => {
-    mocks.hookResult.isRunning = true;
+describe("AgentCodeChat mid-turn submit edge cases (ticket 04)", () => {
+  it("keeps the draft and shows the banner error when the worker rejects the send", async () => {
+    mocks.sendMessage.mockImplementation(() => Promise.resolve(false));
+    mocks.hookResult.error =
+      "Failed to queue follow-up: worker unreachable (Failed to fetch)";
     renderChat();
     fireEvent.change(screen.getByTestId("chat-input"), {
-      target: { value: "also fix the typo" },
+      target: { value: "do not lose me" },
     });
-    fireEvent.click(screen.getByLabelText("Queue follow-up"));
+    submitForm();
 
     await vi.waitFor(() => {
-      expect(mocks.enqueueFollowUp).toHaveBeenCalledWith("also fix the typo");
+      expect(mocks.sendMessage).toHaveBeenCalledWith("do not lose me");
     });
-    await vi.waitFor(() => {
-      // No jest-dom in this repo; read the native property.
-      expect((screen.getByTestId("chat-input") as HTMLTextAreaElement).value).toBe("");
-    });
-  });
-
-  it("keeps the typed text when enqueueing fails", async () => {
-    mocks.hookResult.isRunning = true;
-    mocks.enqueueFollowUp.mockImplementation(() => Promise.reject(new Error("offline")));
-    renderChat();
-    fireEvent.change(screen.getByTestId("chat-input"), {
-      target: { value: "also fix the typo" },
-    });
-    fireEvent.click(screen.getByLabelText("Queue follow-up"));
-
-    await vi.waitFor(() => {
-      expect(mocks.enqueueFollowUp).toHaveBeenCalledTimes(1);
-    });
+    // The text survives in the textarea and the failure is visible.
     expect((screen.getByTestId("chat-input") as HTMLTextAreaElement).value).toBe(
-      "also fix the typo",
+      "do not lose me",
     );
+    expect(screen.getByRole("alert").textContent).toMatch(/worker unreachable/i);
   });
 
-  it("shows the pending chip above the textarea", () => {
-    mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = "also fix the typo";
+  it("clears the composer once the worker accepts the mid-turn send", async () => {
+    mocks.sendMessage.mockImplementation(() => Promise.resolve(true));
     renderChat();
-    const chip = screen.getByTestId("followup-chip");
-    expect(chip.textContent).toContain("also fix the typo");
-  });
+    fireEvent.change(screen.getByTestId("chat-input"), {
+      target: { value: "steer a bit" },
+    });
+    submitForm();
 
-  it("hides the chip when nothing is pending", () => {
-    mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = null;
-    renderChat();
-    expect(screen.queryByTestId("followup-chip")).toBeNull();
+    await vi.waitFor(() => {
+      expect(mocks.sendMessage).toHaveBeenCalledWith("steer a bit");
+    });
+    await vi.waitFor(() => {
+      expect(
+        (screen.getByTestId("chat-input") as HTMLTextAreaElement).value,
+      ).toBe("");
+    });
   });
 });

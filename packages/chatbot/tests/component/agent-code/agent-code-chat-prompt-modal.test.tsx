@@ -28,7 +28,7 @@ vi.mock("@/lib/features/code/hooks/use-coding-agent", () => ({
     turnFiles: new Map(),
     isRunning: false,
     isLoading: false,
-    sendMessage: vi.fn(() => Promise.resolve()),
+    sendMessage: vi.fn(() => Promise.resolve(true)),
     status: { kind: "idle" },
     error: null,
     cancel: undefined as unknown as () => Promise<void>,
