@@ -185,6 +185,24 @@ export async function followUp(
   return turnRunner.followUp(sessionId, text);
 }
 
+export async function clearQueue(sessionId: string): Promise<{
+  cleared: { steering: string[]; followUp: string[] };
+  pending: { steering: string[]; followUp: string[] };
+}> {
+  return turnRunner.clearQueue(sessionId);
+}
+
+export async function steer(
+  sessionId: string,
+  text: string,
+): Promise<{
+  steered: boolean;
+  cleared: { steering: string[]; followUp: string[] };
+  pending: { steering: string[]; followUp: string[] };
+}> {
+  return turnRunner.steer(sessionId, text);
+}
+
 export async function getSubagentSessionForToolCall(
   parentSessionId: string,
   toolCallId: string,

@@ -656,6 +656,102 @@ export class TurnRunner {
     return { queued: true, pending };
   }
 
+  /**
+   * Discard every queued message and report what was removed. Base of the
+   * chip's edit (clear + draft back to the textarea, never auto-reenqueue)
+   * and delete (clear + discard) actions. Clearing is idempotent: an empty
+   * queue returns empty lists, never an error.
+   */
+  async clearQueue(sessionId: string): Promise<{
+    cleared: { steering: string[]; followUp: string[] };
+    pending: { steering: string[]; followUp: string[] };
+  }> {
+    const log = getTraceLogger("worker");
+    const entry = this.registry.getRaw(sessionId);
+    if (!entry) {
+      log.error("session.not_found", { sessionId });
+      throw new Error("Session not found");
+    }
+    const clearedRaw = entry.runtime.session.clearQueue() as {
+      steering?: unknown;
+      followUp?: unknown;
+    };
+    const cleared = {
+      steering: Array.isArray(clearedRaw?.steering)
+        ? [...(clearedRaw.steering as string[])]
+        : [],
+      followUp: Array.isArray(clearedRaw?.followUp)
+        ? [...(clearedRaw.followUp as string[])]
+        : [],
+    };
+    const pending = {
+      steering: [...entry.runtime.session.getSteeringMessages()],
+      followUp: [...entry.runtime.session.getFollowUpMessages()],
+    };
+    log.info("session.queue_cleared", {
+      sessionId,
+      clearedSteeringCount: cleared.steering.length,
+      clearedFollowUpCount: cleared.followUp.length,
+    });
+    return { cleared, pending };
+  }
+
+  /**
+   * Promote the pending follow-up to steering: clear-then-enqueue in one
+   * logical worker-side operation. The SDK keeps two independent queues
+   * with no dedup, so steering without clearing first would execute the
+   * same text twice (end-of-turn AND next-request) with double LLM cost.
+   * `session.steer` never aborts running tools: it delivers after the
+   * current assistant turn, before the next LLM call. Delivery later
+   * surfaces inside the active turn via the collector (see
+   * `startPromptCollector`), under the same runId.
+   */
+  async steer(
+    sessionId: string,
+    text: string,
+  ): Promise<{
+    steered: boolean;
+    cleared: { steering: string[]; followUp: string[] };
+    pending: { steering: string[]; followUp: string[] };
+  }> {
+    const log = getTraceLogger("worker");
+    const entry = this.registry.getRaw(sessionId);
+    if (!entry) {
+      log.error("session.not_found", { sessionId });
+      throw new Error("Session not found");
+    }
+    assertPlainQueueText(text);
+    if (!entry.activeRun && !entry.runtime.session.isStreaming) {
+      throw new Error("Cannot steer while no turn is running");
+    }
+    const clearedRaw = entry.runtime.session.clearQueue() as {
+      steering?: unknown;
+      followUp?: unknown;
+    };
+    const cleared = {
+      steering: Array.isArray(clearedRaw?.steering)
+        ? [...(clearedRaw.steering as string[])]
+        : [],
+      followUp: Array.isArray(clearedRaw?.followUp)
+        ? [...(clearedRaw.followUp as string[])]
+        : [],
+    };
+    await entry.runtime.session.steer(text);
+    const pending = {
+      steering: [...entry.runtime.session.getSteeringMessages()],
+      followUp: [...entry.runtime.session.getFollowUpMessages()],
+    };
+    log.info("session.steer_queued", {
+      sessionId,
+      textLength: text.length,
+      clearedSteeringCount: cleared.steering.length,
+      clearedFollowUpCount: cleared.followUp.length,
+      steeringCount: pending.steering.length,
+      followUpCount: pending.followUp.length,
+    });
+    return { steered: true, cleared, pending };
+  }
+
   async cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);

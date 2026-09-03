@@ -76,6 +76,10 @@ export interface UseCodingAgentResult {
   pendingFollowUp: string | null;
   /** Enqueue `text` for end-of-turn delivery; rejects (text preserved by caller) on failure. */
   enqueueFollowUp: (text: string) => Promise<void>;
+  /** Discard the pending queue without executing; rejects on failure. */
+  clearQueue: () => Promise<void>;
+  /** Promote `text` to steering (clear-then-enqueue, exactly once); rejects on failure. */
+  promoteToSteering: (text: string) => Promise<void>;
   status: AgentStatus;
   error: string | null;
   cancel: () => Promise<void>;
@@ -970,6 +974,58 @@ export function useCodingAgent({
     [sessionId, store],
   );
 
+  const clearQueue = useCallback(async () => {
+    // Edit/delete share this: the textarea draft is owned by the caller
+    // (edit restores the pending text, delete drops it), so the hook only
+    // surfaces the error in the banner and rejects.
+    store.update(() => ({ error: null }));
+    let response: Response;
+    try {
+      response = await fetch("/api/agent/code/clear-queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to clear queued message";
+      store.update(() => ({ error: message }));
+      throw err instanceof Error ? err : new Error(message);
+    }
+    if (!response.ok) {
+      const message = `Failed to clear queued message: ${response.status}`;
+      store.update(() => ({ error: message }));
+      throw new Error(message);
+    }
+  }, [sessionId, store]);
+
+  const promoteToSteering = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      store.update(() => ({ error: null }));
+      let response: Response;
+      try {
+        response = await fetch("/api/agent/code/steer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, text: trimmed }),
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to promote to steering";
+        store.update(() => ({ error: message }));
+        throw err instanceof Error ? err : new Error(message);
+      }
+      if (!response.ok) {
+        const message = `Failed to promote to steering: ${response.status}`;
+        store.update(() => ({ error: message }));
+        throw new Error(message);
+      }
+    },
+    [sessionId, store],
+  );
+
   return {
     messages: state.messages,
     items,
@@ -980,6 +1036,8 @@ export function useCodingAgent({
     sendMessage,
     pendingFollowUp: state.pendingFollowUp,
     enqueueFollowUp,
+    clearQueue,
+    promoteToSteering,
     status: state.status,
     error: state.error,
     cancel: async () => {

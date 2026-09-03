@@ -503,4 +503,104 @@ describe("TurnRunner followUp (ticket 01)", () => {
     );
   });
 });
+
+describe("TurnRunner steering (ticket 02)", () => {
+  function seedSteering(sessionId: string, mock: ReturnType<typeof createMockPiSession>, opts?: { steering?: string[]; followUp?: string[] }) {
+    const steeringMessages = [...(opts?.steering ?? [])];
+    const followUpMessages = [...(opts?.followUp ?? [])];
+    const callOrder: string[] = [];
+    seed(sessionId, mock);
+    (mock.session as any).isStreaming = true;
+    (mock.session as any).abort = vi.fn(async () => {});
+    (mock.session as any).steer = vi.fn(async (text: string) => {
+      callOrder.push("steer");
+      steeringMessages.push(text);
+    });
+    (mock.session as any).followUp = vi.fn(async (text: string) => {
+      callOrder.push("followUp");
+      followUpMessages.push(text);
+    });
+    (mock.session as any).clearQueue = vi.fn(() => {
+      callOrder.push("clearQueue");
+      const cleared = { steering: [...steeringMessages], followUp: [...followUpMessages] };
+      steeringMessages.length = 0;
+      followUpMessages.length = 0;
+      return cleared;
+    });
+    (mock.session as any).getSteeringMessages = () => [...steeringMessages];
+    (mock.session as any).getFollowUpMessages = () => [...followUpMessages];
+    registry.getRaw(sessionId)!.activeRun = {
+      runId: "r-st",
+      startSeq: 1,
+      unsubscribe: () => {},
+      sawTerminal: false,
+    };
+    return { steeringMessages, followUpMessages, callOrder };
+  }
+
+  it("clears both queues and reports what was removed", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: false });
+    const { steeringMessages, followUpMessages } = seedSteering("st-clear", mock, {
+      steering: ["steer me"],
+      followUp: ["also fix the typo"],
+    });
+
+    const result = await runner.clearQueue("st-clear");
+
+    expect(mock.session.clearQueue).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      cleared: { steering: ["steer me"], followUp: ["also fix the typo"] },
+      pending: { steering: [], followUp: [] },
+    });
+    expect(steeringMessages).toEqual([]);
+    expect(followUpMessages).toEqual([]);
+  });
+
+  it("rejects unknown sessions on clear without touching Pi", async () => {
+    await expect(runner.clearQueue("missing")).rejects.toThrow("Session not found");
+  });
+
+  it("rejects empty text, commands and idle sessions without touching Pi", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: false });
+    seedSteering("st-bad", mock);
+
+    await expect(runner.steer("st-bad", "   ")).rejects.toThrow("non-empty");
+    await expect(runner.steer("st-bad", "/compact")).rejects.toThrow("plain text");
+    await expect(runner.steer("missing", "hi")).rejects.toThrow("Session not found");
+    expect(mock.session.steer).not.toHaveBeenCalled();
+
+    registry.getRaw("st-bad")!.activeRun = undefined;
+    (mock.session as any).isStreaming = false;
+    await expect(runner.steer("st-bad", "hi")).rejects.toThrow("no turn is running");
+    expect(mock.session.steer).not.toHaveBeenCalled();
+  });
+
+  it("promotes clear-then-enqueue exactly once: no duplicate across queues", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: false });
+    const { steeringMessages, followUpMessages, callOrder } = seedSteering("st-promo", mock, {
+      followUp: ["also fix the typo"],
+    });
+
+    const result = await runner.steer("st-promo", "also fix the typo");
+
+    // Regression test for the double-enqueue trap: the SDK keeps two
+    // queues with no dedup, so steer-without-clear would execute the same
+    // text twice at different loop points (double LLM cost).
+    expect(callOrder).toEqual(["clearQueue", "steer"]);
+    expect(mock.session.clearQueue).toHaveBeenCalledTimes(1);
+    expect(mock.session.steer).toHaveBeenCalledTimes(1);
+    expect(mock.session.steer).toHaveBeenCalledWith("also fix the typo");
+    // Exactly one copy survives, on the steering queue only.
+    expect(steeringMessages).toEqual(["also fix the typo"]);
+    expect(followUpMessages).toEqual([]);
+    expect(result).toEqual({
+      steered: true,
+      cleared: { steering: [], followUp: ["also fix the typo"] },
+      pending: { steering: ["also fix the typo"], followUp: [] },
+    });
+    // Promotion never aborts running tools.
+    expect(mock.session.abort).not.toHaveBeenCalled();
+    expect((mock.session as any).isStreaming).toBe(true);
+  });
+});
 });
