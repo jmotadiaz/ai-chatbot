@@ -16,6 +16,8 @@ import {
   getOrCreateSession,
   sendPrompt,
   followUp,
+  clearQueue,
+  steer,
   getAvailableModels,
   disposeSession,
   getSessionMessages,
@@ -346,6 +348,43 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         result = await followUp(sessionId, text);
         break;
       }
+      case "clearQueue": {
+        const { sessionId } = params as { sessionId?: unknown };
+        if (typeof sessionId !== "string") {
+          stop();
+          return jsonResponse(null, id, {
+            code: -32602,
+            message: "sessionId is required",
+          });
+        }
+        result = await clearQueue(sessionId);
+        break;
+      }
+      case "steer": {
+        const { sessionId, text, modelId, thinkingLevel } = params as {
+          sessionId?: unknown;
+          text?: unknown;
+          modelId?: unknown;
+          thinkingLevel?: unknown;
+        };
+        // Same guard as followUp: queue operations never carry turn config.
+        if (modelId !== undefined || thinkingLevel !== undefined) {
+          stop();
+          return jsonResponse(null, id, {
+            code: -32602,
+            message: "steer does not accept modelId or thinkingLevel; they travel with the next prompt",
+          });
+        }
+        if (typeof sessionId !== "string" || typeof text !== "string") {
+          stop();
+          return jsonResponse(null, id, {
+            code: -32602,
+            message: "sessionId and text are required",
+          });
+        }
+        result = await steer(sessionId, text);
+        break;
+      }
       case "cancelRun": {
         const { sessionId } = params as { sessionId: string };
         result = await cancelRun(sessionId);
@@ -505,6 +544,14 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
         textLength: typeof p.text === "string" ? p.text.length : 0,
         hasTraceRunId,
       };
+    case "steer":
+      return {
+        sessionId,
+        textLength: typeof p.text === "string" ? p.text.length : 0,
+        hasTraceRunId,
+      };
+    case "clearQueue":
+      return { sessionId, hasTraceRunId };
     case "connectToSession":
       return {
         sessionId,
@@ -545,6 +592,27 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
       return {
         queued: r.queued === true,
+        steeringCount: Array.isArray(pending?.steering) ? pending.steering.length : 0,
+        followUpCount: Array.isArray(pending?.followUp) ? pending.followUp.length : 0,
+      };
+    }
+    case "steer": {
+      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
+      const cleared = r.cleared as { steering?: unknown; followUp?: unknown } | undefined;
+      return {
+        steered: r.steered === true,
+        clearedSteeringCount: Array.isArray(cleared?.steering) ? cleared.steering.length : 0,
+        clearedFollowUpCount: Array.isArray(cleared?.followUp) ? cleared.followUp.length : 0,
+        steeringCount: Array.isArray(pending?.steering) ? pending.steering.length : 0,
+        followUpCount: Array.isArray(pending?.followUp) ? pending.followUp.length : 0,
+      };
+    }
+    case "clearQueue": {
+      const cleared = r.cleared as { steering?: unknown; followUp?: unknown } | undefined;
+      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
+      return {
+        clearedSteeringCount: Array.isArray(cleared?.steering) ? cleared.steering.length : 0,
+        clearedFollowUpCount: Array.isArray(cleared?.followUp) ? cleared.followUp.length : 0,
         steeringCount: Array.isArray(pending?.steering) ? pending.steering.length : 0,
         followUpCount: Array.isArray(pending?.followUp) ? pending.followUp.length : 0,
       };

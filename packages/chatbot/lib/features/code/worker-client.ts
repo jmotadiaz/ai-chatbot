@@ -240,6 +240,28 @@ export class WorkerClient {
     return this.call("followUp", params);
   }
 
+  async clearQueue(params: {
+    sessionId: string;
+    _traceRunId?: string;
+  }): Promise<{
+    cleared: { steering: string[]; followUp: string[] };
+    pending: { steering: string[]; followUp: string[] };
+  }> {
+    return this.call("clearQueue", params);
+  }
+
+  async steer(params: {
+    sessionId: string;
+    text: string;
+    _traceRunId?: string;
+  }): Promise<{
+    steered: boolean;
+    cleared: { steering: string[]; followUp: string[] };
+    pending: { steering: string[]; followUp: string[] };
+  }> {
+    return this.call("steer", params);
+  }
+
   async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean }> {
     return this.call<{ running: boolean }>("getSessionStatus", params);
   }
@@ -347,6 +369,14 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
         textLength: typeof p.text === "string" ? p.text.length : 0,
         hasTraceRunId,
       };
+    case "steer":
+      return {
+        sessionId,
+        textLength: typeof p.text === "string" ? p.text.length : 0,
+        hasTraceRunId,
+      };
+    case "clearQueue":
+      return { sessionId, hasTraceRunId };
     case "connectToSession":
       return {
         sessionId,

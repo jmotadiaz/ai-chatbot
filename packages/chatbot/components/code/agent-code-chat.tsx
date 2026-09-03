@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUp, Undo, WandSparkles } from "lucide-react";
+import { ArrowUp, Pencil, Undo, WandSparkles, X } from "lucide-react";
 import type { ModelThinking } from "./agent-code-chat-layout";
 import { AgentConversation } from "./agent-conversation";
 import { SkillChip } from "./skill-chip";
@@ -70,6 +70,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     sendMessage,
     pendingFollowUp,
     enqueueFollowUp,
+    clearQueue,
+    promoteToSteering,
     status,
     error,
     cancel,
@@ -179,6 +181,37 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     }
   };
 
+  const handleEditPending = async () => {
+    const text = pendingFollowUp;
+    if (!text) return;
+    try {
+      await clearQueue();
+      // Back to the textarea as a draft, never auto-reenqueued: the user
+      // confirms with one more explicit send.
+      setInput(text);
+    } catch {
+      // Error already stored in hook state; the chip stays armed.
+    }
+  };
+
+  const handleDiscardPending = async () => {
+    try {
+      await clearQueue();
+    } catch {
+      // Error already stored in hook state; the chip stays armed.
+    }
+  };
+
+  const handlePromotePending = async () => {
+    const text = pendingFollowUp;
+    if (!text) return;
+    try {
+      await promoteToSteering(text);
+    } catch {
+      // Error already stored in hook state; the chip stays armed.
+    }
+  };
+
   // No model yet means the session's model is still being fetched from the
   // worker (picker shows a skeleton): sending must wait for it too.
   const inputIsLoading = isRunning || isLoading || !modelId;
@@ -212,7 +245,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       >
         <PendingCommentsBar />
         {pendingFollowUp && (
-          <div className="mb-2" data-testid="followup-chip">
+          <div className="mb-2 flex items-center gap-2" data-testid="followup-chip">
             <span
               aria-label="Pending follow-up"
               title={pendingFollowUp}
@@ -220,6 +253,35 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             >
               <span className="truncate">{pendingFollowUp}</span>
             </span>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                aria-label="Edit pending follow-up"
+                title="Edit (back to textarea)"
+                onClick={() => void handleEditPending()}
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                aria-label="Discard pending follow-up"
+                title="Discard (never executes)"
+                onClick={() => void handleDiscardPending()}
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                aria-label="Promote to steering"
+                title="Send now as steering (next request)"
+                onClick={() => void handlePromotePending()}
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
         <div className="relative w-full">
