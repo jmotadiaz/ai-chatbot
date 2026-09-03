@@ -173,8 +173,16 @@ Sesión gestionada por el Coding Agent Worker y expuesta al usuario a través de
 _Avoid_: agent session, run
 
 **Turn**:
-Un user message más todas las operaciones del asistente que responde (razonamiento, tools, respuestas textuales), hasta el siguiente user message.
+Un user message inicial más todas las operaciones del asistente que responde, incluidos los Mensajes en Espera y Steerings inyectados en curso, hasta que el agente para o se aborta.
 _Avoid_: run (sinónimo protocolar: eventos RUN_* de AG-UI), step, model call
+
+**Mensaje en Espera**:
+Instrucción de texto encolada durante un Turn y visible como chip sobre el textarea. Editable, eliminable y promocionable a Steering.
+_Avoid_: borrador, cola local, followUp (término del SDK)
+
+**Steering**:
+Promoción de un Mensaje en Espera para inyectarlo en el siguiente request del Turn activo, sin abortar las tools en curso.
+_Avoid_: followUp (fase previa), interrupción, cancelación
 
 **Repository**:
 Repositorio de código sobre el que opera una Coding Agent Session.
