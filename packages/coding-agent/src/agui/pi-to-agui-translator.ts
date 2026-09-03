@@ -6,8 +6,8 @@ import {
   toolResultMessageId,
   IdDeduper,
 } from "./message-ids";
-import { AguiEventType, AUTO_RETRY_EVENT, type AguiEvent } from "./agui-event";
-export { AguiEventType, AUTO_RETRY_EVENT };
+import { AguiEventType, AUTO_RETRY_EVENT, QUEUE_UPDATE_EVENT, type AguiEvent } from "./agui-event";
+export { AguiEventType, AUTO_RETRY_EVENT, QUEUE_UPDATE_EVENT };
 export type { AguiEvent };
 // Deprecated alias kept for transitional tests — will be removed
 export type BaseEvent = AguiEvent;
@@ -536,6 +536,25 @@ export class PiToAguiTranslator {
         });
         break;
 
+      case "queue_update": {
+        // Source of truth for the pending-message chip: the worker owns both
+        // queues, so every change (enqueue, delivery, clear) is re-emitted
+        // here and the UI never tracks queue state locally.
+        const steering = Array.isArray(event.steering)
+          ? event.steering.filter((s): s is string => typeof s === "string")
+          : [];
+        const followUp = Array.isArray(event.followUp)
+          ? event.followUp.filter((s): s is string => typeof s === "string")
+          : [];
+        out.push({
+          type: EventType.CUSTOM,
+          name: QUEUE_UPDATE_EVENT,
+          value: { steering: [...steering], followUp: [...followUp] },
+          timestamp: this.now(),
+        });
+        break;
+      }
+
       case "error":
         for (const [toolCallId, stepName] of this.stepNames.entries()) {
           out.push({
@@ -565,6 +584,29 @@ export class PiToAguiTranslator {
       piType: event.type,
       aguiTypes: out.map((e) => e.type),
     });
+    for (const aguiEvent of out) {
+      this.incrementCount(this.outputEventCounts, aguiEvent.type);
+    }
+    return out;
+  }
+
+  /**
+   * Incremental triplet for a queued user message delivered mid-turn.
+   *
+   * The run stays open (same runId): START/CONTENT/END appends the message
+   * to the live transcript without clobbering the assistant deltas already
+   * applied by the client — which a MESSAGES_SNAPSHOT replacement would
+   * wipe. The id must match `convertPiMessagesToAgui` for the same Pi
+   * message (`u-<timestamp>`) so reconnect snapshots dedupe by id instead
+   * of showing the message twice.
+   */
+  userMessageEvents(messageId: string, text: string): AguiEvent[] {
+    const timestamp = this.now();
+    const out: AguiEvent[] = [
+      { type: EventType.TEXT_MESSAGE_START, messageId, role: "user", timestamp },
+      { type: EventType.TEXT_MESSAGE_CONTENT, messageId, delta: text, timestamp },
+      { type: EventType.TEXT_MESSAGE_END, messageId, timestamp },
+    ];
     for (const aguiEvent of out) {
       this.incrementCount(this.outputEventCounts, aguiEvent.type);
     }

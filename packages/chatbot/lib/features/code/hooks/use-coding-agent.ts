@@ -7,7 +7,7 @@ import {
   type InputContent,
   type Message,
 } from "@ag-ui/client";
-import { isCursorCustom, type AguiEvent } from "coding-agent/agui/event";
+import { isCursorCustom, isQueueUpdateCustom, type AguiEvent } from "coding-agent/agui/event";
 import type { ThinkingLevel } from "models";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
@@ -72,6 +72,10 @@ export interface UseCodingAgentResult {
   isRunning: boolean;
   isLoading: boolean;
   sendMessage: (content: string | InputContent[]) => Promise<void>;
+  /** Plain-text follow-up armed on the worker (queue-update event), or null. */
+  pendingFollowUp: string | null;
+  /** Enqueue `text` for end-of-turn delivery; rejects (text preserved by caller) on failure. */
+  enqueueFollowUp: (text: string) => Promise<void>;
   status: AgentStatus;
   error: string | null;
   cancel: () => Promise<void>;
@@ -165,6 +169,21 @@ function cursorFromEvent(event: BaseEvent): CursorEvent | null {
   return typeof epoch === "string" && typeof seq === "number"
     ? { cursor: { epoch, seq }, terminal: terminal === true }
     : null;
+}
+
+/**
+ * Queue-update CUSTOMs are the source of truth for the pending chip.
+ * Anything else (including malformed values) leaves the chip untouched.
+ */
+function pendingFollowUpFromEvent(event: BaseEvent): string | null | undefined {
+  const aguiEvent = event as unknown as AguiEvent;
+  if (!isQueueUpdateCustom(aguiEvent)) return undefined;
+  const value = aguiEvent.value;
+  if (!value || typeof value !== "object") return undefined;
+  const { followUp } = value as { followUp?: unknown };
+  if (!Array.isArray(followUp)) return undefined;
+  const first = followUp.find((entry): entry is string => typeof entry === "string");
+  return first ?? null;
 }
 
 /**
@@ -287,6 +306,7 @@ export function useCodingAgent({
         { startedAt: number; finishedAt?: number }
       >(),
       turnFiles: new Map() as TurnFilesMap,
+      pendingFollowUp: null as string | null,
     };
 
     let snapshot = seeded;
@@ -386,6 +406,10 @@ export function useCodingAgent({
                 } else {
                   cursorRef.current = cursor.cursor;
                 }
+              }
+              const pending = pendingFollowUpFromEvent(event);
+              if (pending !== undefined) {
+                update(() => ({ pendingFollowUp: pending }));
               }
               const changedFiles = filesChangedFromEvent(event);
               if (changedFiles && changedFiles.length > 0) {
@@ -917,6 +941,35 @@ export function useCodingAgent({
     [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, store],
   );
 
+  const enqueueFollowUp = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      // The composer keeps its draft until this resolves: on failure the
+      // text stays in the textarea and the error surfaces in the banner.
+      store.update(() => ({ error: null }));
+      let response: Response;
+      try {
+        response = await fetch("/api/agent/code/follow-up", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, text: trimmed }),
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to queue follow-up";
+        store.update(() => ({ error: message }));
+        throw err instanceof Error ? err : new Error(message);
+      }
+      if (!response.ok) {
+        const message = `Failed to queue follow-up: ${response.status}`;
+        store.update(() => ({ error: message }));
+        throw new Error(message);
+      }
+    },
+    [sessionId, store],
+  );
+
   return {
     messages: state.messages,
     items,
@@ -925,6 +978,8 @@ export function useCodingAgent({
     isRunning: state.isRunning,
     isLoading: state.isLoading,
     sendMessage,
+    pendingFollowUp: state.pendingFollowUp,
+    enqueueFollowUp,
     status: state.status,
     error: state.error,
     cancel: async () => {

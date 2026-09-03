@@ -163,3 +163,63 @@ describe("relayLoggedAguiNdjsonToSse", () => {
     expect(summary.emittedAguiEventCount).toBe(1);
   });
 });
+
+describe("relayLoggedAguiNdjsonToSse (steering)", () => {
+  it("passes queue-update CUSTOMs and injected user triplets through with cursors", async () => {
+    const lines = [
+      { epoch: "epoch-1", seq: 10, event: { type: EventType.CUSTOM, name: "coding_agent_queue_update", value: { steering: [], followUp: ["also fix the typo"] } } },
+      { epoch: "epoch-1", seq: 11, event: { type: EventType.TEXT_MESSAGE_START, messageId: "u-2000", role: "user" } },
+      { epoch: "epoch-1", seq: 12, event: { type: EventType.TEXT_MESSAGE_CONTENT, messageId: "u-2000", delta: "also fix the typo" } },
+      { epoch: "epoch-1", seq: 13, event: { type: EventType.TEXT_MESSAGE_END, messageId: "u-2000" } },
+    ];
+    const workerStream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const line of lines) {
+          controller.enqueue(encoder.encode(`${JSON.stringify(line)}\n`));
+        }
+        controller.close();
+      },
+    });
+
+    const output: Uint8Array[] = [];
+    const summary = await relayLoggedAguiNdjsonToSse({
+      workerStream,
+      controller: {
+        enqueue(value: Uint8Array) {
+          output.push(value);
+        },
+      } as unknown as ReadableStreamDefaultController<Uint8Array>,
+      encoder,
+      log: { debug() {}, warn() {} },
+    });
+
+    const events = decoder
+      .decode(Buffer.concat(output))
+      .split("\n\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line.replace(/^data: /, "")) as BaseEvent);
+
+    expect(summary.emittedAguiEventCount).toBe(4);
+    expect(summary.droppedEventCount).toBe(0);
+    expect(summary.terminalSeen).toBe(false);
+    expect(
+      events.filter((event) => event.type === EventType.CUSTOM),
+    ).toEqual([
+      expect.objectContaining({
+        name: "coding_agent_queue_update",
+        value: { steering: [], followUp: ["also fix the typo"] },
+      }),
+      expect.objectContaining({ name: CODING_AGENT_CURSOR_EVENT, value: { seq: 10, epoch: "epoch-1" } }),
+      expect.objectContaining({ name: CODING_AGENT_CURSOR_EVENT, value: { seq: 11, epoch: "epoch-1" } }),
+      expect.objectContaining({ name: CODING_AGENT_CURSOR_EVENT, value: { seq: 12, epoch: "epoch-1" } }),
+      expect.objectContaining({ name: CODING_AGENT_CURSOR_EVENT, value: { seq: 13, epoch: "epoch-1" } }),
+    ]);
+    expect(
+      events.filter((event) => event.type !== EventType.CUSTOM).map((event) => event.type),
+    ).toEqual([
+      EventType.TEXT_MESSAGE_START,
+      EventType.TEXT_MESSAGE_CONTENT,
+      EventType.TEXT_MESSAGE_END,
+    ]);
+  });
+});

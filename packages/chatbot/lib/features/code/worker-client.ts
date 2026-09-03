@@ -229,6 +229,17 @@ export class WorkerClient {
     return this.call<{ cancelled: boolean }>("cancelRun", params);
   }
 
+  async followUp(params: {
+    sessionId: string;
+    text: string;
+    _traceRunId?: string;
+  }): Promise<{
+    queued: boolean;
+    pending: { steering: string[]; followUp: string[] };
+  }> {
+    return this.call("followUp", params);
+  }
+
   async getSessionStatus(params: { sessionId: string }): Promise<{ running: boolean }> {
     return this.call<{ running: boolean }>("getSessionStatus", params);
   }
@@ -330,6 +341,12 @@ export function summarizeWorkerRpcParams(method: string, params: unknown): unkno
     case "getSessionStatus":
     case "getSessionSkills":
       return { sessionId, hasTraceRunId };
+    case "followUp":
+      return {
+        sessionId,
+        textLength: typeof p.text === "string" ? p.text.length : 0,
+        hasTraceRunId,
+      };
     case "connectToSession":
       return {
         sessionId,

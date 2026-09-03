@@ -6,6 +6,7 @@ import { type Cursor, type LoggedAguiEvent, type SessionEventLog } from "../agui
 import { PiToAguiTranslator } from "../agui/pi-to-agui-translator";
 import { AguiEventType as EventType, FILES_CHANGED_EVENT, isSyncPoint, isTerminal, type AguiEvent } from "../agui/agui-event";
 export { FILES_CHANGED_EVENT };
+import { userMessageId } from "../agui/message-ids";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -90,6 +91,40 @@ export function applyThinkingLevel(
 ): void {
   if (!level) return;
   session.setThinkingLevel(level);
+}
+
+const LEADING_SKILL_COMMAND = /(^|\s)\/skill:[a-z0-9]/i;
+
+/**
+ * Fail-fast validation for v1 queue payloads: plain text only. Images,
+ * docs, skills, prompts, comments and extension commands never reach the
+ * queues — the composer disables those sources mid-turn (ticket 03), and
+ * anything slipping through is rejected here instead of failing late
+ * inside the agent loop.
+ */
+export function assertPlainQueueText(text: unknown): asserts text is string {
+  if (typeof text !== "string" || text.trim().length === 0) {
+    throw new Error("Follow-up text must be a non-empty string");
+  }
+  const trimmed = text.trim();
+  if (trimmed.startsWith("/")) {
+    throw new Error("Commands cannot be queued as a follow-up (plain text only)");
+  }
+  if (LEADING_SKILL_COMMAND.test(trimmed)) {
+    throw new Error("Skills cannot be queued as a follow-up (plain text only)");
+  }
+}
+
+/** Plain-text extraction mirroring `convertPiMessagesToAgui` (user branch). */
+function injectedUserText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((c) => (c as { type?: string })?.type === "text")
+      .map((c) => (c as { text?: string })?.text ?? "")
+      .join("\n");
+  }
+  return "";
 }
 
 export class TurnRunner {
@@ -361,6 +396,23 @@ export class TurnRunner {
         userMessageStamped = true;
         (event.message as Record<string, unknown>).clientMessageId = userMessageClientId;
         (event.message as Record<string, unknown>).clientPromptText = extracted.text;
+      } else if (event.type === "message_end" && event.message?.role === "user") {
+        // A queued message delivered mid-turn (followUp at end-of-turn,
+        // steer before the next request). The run stays open under the same
+        // runId: surface it incrementally so the transcript shows it inside
+        // the active turn. Never a MESSAGES_SNAPSHOT here — replacing the
+        // message list would wipe the assistant deltas the client already
+        // applied from the stream.
+        const injectedText = injectedUserText(event.message?.content);
+        const timestamp = (event.message as { timestamp?: unknown }).timestamp;
+        const messageId =
+          typeof timestamp === "number" ? userMessageId(timestamp) : crypto.randomUUID();
+        if (injectedText.length > 0) {
+          for (const aguiEvent of translator.userMessageEvents(messageId, injectedText)) {
+            appendAguiEvent(entry, aguiEvent, aguiEventCounts);
+            appendedAguiEventCount += 1;
+          }
+        }
       }
 
       const aguiEvents = translator.translate(event);
@@ -561,6 +613,47 @@ export class TurnRunner {
       const { prelude, events } = eventLog.replayAfter(cursor);
       return { entry, eventLog, prelude, events };
     });
+  }
+
+  /**
+   * Enqueue a plain-text follow-up delivered at end-of-turn. The chip is
+   * driven by events, not by this return value: `session.followUp` emits
+   * Pi's `queue_update` synchronously through the collector subscription,
+   * which the translator re-emits as the AG-UI CUSTOM queue event — one
+   * single append path, so the worker queues, the agent queues and the UI
+   * event can never diverge. Delivery later removes exactly one entry
+   * (SDK `message_start`) and the injected text is surfaced inside the
+   * active turn by the collector (see `startPromptCollector`).
+   */
+  async followUp(
+    sessionId: string,
+    text: string,
+  ): Promise<{
+    queued: boolean;
+    pending: { steering: string[]; followUp: string[] };
+  }> {
+    const log = getTraceLogger("worker");
+    const entry = this.registry.getRaw(sessionId);
+    if (!entry) {
+      log.error("session.not_found", { sessionId });
+      throw new Error("Session not found");
+    }
+    assertPlainQueueText(text);
+    if (!entry.activeRun && !entry.runtime.session.isStreaming) {
+      throw new Error("Cannot queue a follow-up while no turn is running");
+    }
+    await entry.runtime.session.followUp(text);
+    const pending = {
+      steering: [...entry.runtime.session.getSteeringMessages()],
+      followUp: [...entry.runtime.session.getFollowUpMessages()],
+    };
+    log.info("session.followup_queued", {
+      sessionId,
+      textLength: text.length,
+      steeringCount: pending.steering.length,
+      followUpCount: pending.followUp.length,
+    });
+    return { queued: true, pending };
   }
 
   async cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {

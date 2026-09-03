@@ -175,6 +175,16 @@ export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean
   return turnRunner.cancelRun(sessionId);
 }
 
+export async function followUp(
+  sessionId: string,
+  text: string,
+): Promise<{
+  queued: boolean;
+  pending: { steering: string[]; followUp: string[] };
+}> {
+  return turnRunner.followUp(sessionId, text);
+}
+
 export async function getSubagentSessionForToolCall(
   parentSessionId: string,
   toolCallId: string,

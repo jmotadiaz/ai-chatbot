@@ -374,4 +374,133 @@ describe("TurnRunner (deep module)", () => {
       expect(await stream.getReader().read()).toEqual({ done: true, value: undefined });
     });
   });
+
+describe("TurnRunner followUp (ticket 01)", () => {
+  function seedRunning(sessionId: string, mock: ReturnType<typeof createMockPiSession>) {
+    seed(sessionId, mock);
+    (mock.session as any).isStreaming = true;
+    (mock.session as any).followUp = vi.fn(async () => {});
+    (mock.session as any).getSteeringMessages = () => [];
+    (mock.session as any).getFollowUpMessages = () => [];
+    registry.getRaw(sessionId)!.activeRun = {
+      runId: "r-fu",
+      startSeq: 1,
+      unsubscribe: () => {},
+      sawTerminal: false,
+    };
+  }
+
+  it("queues plain text on the live session and reports the pending queue", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: false });
+    seedRunning("fu-ok", mock);
+    (mock.session as any).getFollowUpMessages = () => ["also fix the typo"];
+
+    const result = await runner.followUp("fu-ok", "also fix the typo");
+
+    expect(mock.session.followUp).toHaveBeenCalledWith("also fix the typo");
+    expect(result).toEqual({
+      queued: true,
+      pending: { steering: [], followUp: ["also fix the typo"] },
+    });
+  });
+
+  it("rejects empty text, commands and idle sessions without touching Pi", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: false });
+    seedRunning("fu-bad", mock);
+
+    await expect(runner.followUp("fu-bad", "   ")).rejects.toThrow("non-empty");
+    await expect(runner.followUp("fu-bad", "/compact")).rejects.toThrow("plain text");
+    await expect(runner.followUp("missing", "hi")).rejects.toThrow("Session not found");
+    expect(mock.session.followUp).not.toHaveBeenCalled();
+
+    registry.getRaw("fu-bad")!.activeRun = undefined;
+    (mock.session as any).isStreaming = false;
+    await expect(runner.followUp("fu-bad", "hi")).rejects.toThrow("no turn is running");
+    expect(mock.session.followUp).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a delivered queued message inside the active turn, without opening a new run", async () => {
+    const promptImpl = async () => {
+      mock.__emit({ type: "agent_start" });
+      // The turn prompt itself: stamped, never re-emitted.
+      mock.__emit({ type: "message_end", message: { role: "user", timestamp: 1000 } });
+      // The queued follow-up delivered at end-of-turn.
+      mock.__emit({
+        type: "message_start",
+        message: { role: "user", content: [{ type: "text", text: "also fix the typo" }] },
+      });
+      mock.__emit({
+        type: "message_end",
+        message: {
+          role: "user",
+          timestamp: 2000,
+          content: [{ type: "text", text: "also fix the typo" }],
+        },
+      });
+      mock.__emit({ type: "agent_end", willRetry: false, messages: [] });
+    };
+    const mock = createMockPiSession({ messages: [], isStreaming: false, prompt: promptImpl });
+    seed("fu-turn", mock);
+
+    const stream = await runner.sendPrompt("fu-turn", "do the thing", undefined, "r-fu-turn");
+    await stream.cancel();
+
+    const log = registry.getRaw("fu-turn")!.eventLog!;
+    await vi.waitFor(() => {
+      expect(log.readAfter(0).at(-1)?.event.type).toBe(EventType.RUN_FINISHED);
+    });
+
+    const events = log.readAfter(0).map((l) => l.event);
+    // Same run identity throughout: exactly one RUN_STARTED, one terminal.
+    expect(events.filter((e) => e.type === EventType.RUN_STARTED)).toHaveLength(1);
+    expect(
+      events.filter((e) => e.type === EventType.RUN_FINISHED || e.type === EventType.RUN_ERROR),
+    ).toHaveLength(1);
+
+    const triplet = events.filter(
+      (e) =>
+        e.type === EventType.TEXT_MESSAGE_START ||
+        e.type === EventType.TEXT_MESSAGE_CONTENT ||
+        e.type === EventType.TEXT_MESSAGE_END,
+    );
+    expect(triplet.map((e) => e.type)).toEqual([
+      EventType.TEXT_MESSAGE_START,
+      EventType.TEXT_MESSAGE_CONTENT,
+      EventType.TEXT_MESSAGE_END,
+    ]);
+    expect(triplet[0]).toMatchObject({ messageId: "u-2000", role: "user" });
+    expect(triplet[1]).toMatchObject({ messageId: "u-2000", delta: "also fix the typo" });
+    expect(triplet[2]).toMatchObject({ messageId: "u-2000" });
+    // The turn prompt itself is only in the opening snapshot, never re-emitted.
+    expect(events.filter((e) => (e as { messageId?: string }).messageId === "u-1000")).toHaveLength(0);
+  });
+
+  it("re-emits Pi queue updates as CUSTOM events for the chip", async () => {
+    const promptImpl = async () => {
+      mock.__emit({ type: "agent_start" });
+      mock.__emit({ type: "queue_update", steering: [], followUp: ["also fix the typo"] });
+      mock.__emit({ type: "agent_end", willRetry: false, messages: [] });
+    };
+    const mock = createMockPiSession({ messages: [], isStreaming: false, prompt: promptImpl });
+    seed("fu-queue", mock);
+
+    const stream = await runner.sendPrompt("fu-queue", "do the thing", undefined, "r-fu-queue");
+    await stream.cancel();
+
+    const log = registry.getRaw("fu-queue")!.eventLog!;
+    await vi.waitFor(() => {
+      expect(log.readAfter(0).at(-1)?.event.type).toBe(EventType.RUN_FINISHED);
+    });
+    const customs = log
+      .readAfter(0)
+      .map((l) => l.event)
+      .filter((e) => e.type === EventType.CUSTOM);
+    expect(customs).toContainEqual(
+      expect.objectContaining({
+        name: "coding_agent_queue_update",
+        value: { steering: [], followUp: ["also fix the typo"] },
+      }),
+    );
+  });
+});
 });

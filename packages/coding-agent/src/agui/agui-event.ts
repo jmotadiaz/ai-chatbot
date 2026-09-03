@@ -17,6 +17,9 @@ export const AguiEventType = {
   RUN_FINISHED: "RUN_FINISHED",
   RUN_ERROR: "RUN_ERROR",
   MESSAGES_SNAPSHOT: "MESSAGES_SNAPSHOT",
+  TEXT_MESSAGE_START: "TEXT_MESSAGE_START",
+  TEXT_MESSAGE_CONTENT: "TEXT_MESSAGE_CONTENT",
+  TEXT_MESSAGE_END: "TEXT_MESSAGE_END",
   TEXT_MESSAGE_CHUNK: "TEXT_MESSAGE_CHUNK",
   REASONING_MESSAGE_CHUNK: "REASONING_MESSAGE_CHUNK",
   TOOL_CALL_START: "TOOL_CALL_START",
@@ -33,6 +36,7 @@ export type AguiEventTypeValue = typeof AguiEventType[keyof typeof AguiEventType
 export const FILES_CHANGED_EVENT = "coding_agent_files_changed" as const;
 export const CODING_AGENT_CURSOR_EVENT = "coding_agent_cursor" as const;
 export const AUTO_RETRY_EVENT = "coding_agent_auto_retry" as const;
+export const QUEUE_UPDATE_EVENT = "coding_agent_queue_update" as const;
 
 export interface AguiEventBase {
   timestamp: number;
@@ -60,6 +64,24 @@ export interface RunErrorEvent extends AguiEventBase {
 export interface MessagesSnapshotEvent extends AguiEventBase {
   type: typeof AguiEventType.MESSAGES_SNAPSHOT;
   messages: unknown[];
+}
+
+export interface TextMessageStartEvent extends AguiEventBase {
+  type: typeof AguiEventType.TEXT_MESSAGE_START;
+  messageId: string;
+  role: "assistant" | "user" | "system" | "developer";
+  name?: string;
+}
+
+export interface TextMessageContentEvent extends AguiEventBase {
+  type: typeof AguiEventType.TEXT_MESSAGE_CONTENT;
+  messageId: string;
+  delta: string;
+}
+
+export interface TextMessageEndEvent extends AguiEventBase {
+  type: typeof AguiEventType.TEXT_MESSAGE_END;
+  messageId: string;
 }
 
 export interface TextMessageChunkEvent extends AguiEventBase {
@@ -131,6 +153,12 @@ export interface AutoRetryCustomEvent extends AguiEventBase {
   value: { attempt: number; maxAttempts: number; delayMs: number; errorMessage: string };
 }
 
+export interface QueueUpdateCustomEvent extends AguiEventBase {
+  type: typeof AguiEventType.CUSTOM;
+  name: typeof QUEUE_UPDATE_EVENT;
+  value: { steering: string[]; followUp: string[] };
+}
+
 export type UnknownAguiEvent = AguiEventBase & {
   type: string;
   name?: string;
@@ -143,6 +171,9 @@ export type KnownAguiEvent =
   | RunFinishedEvent
   | RunErrorEvent
   | MessagesSnapshotEvent
+  | TextMessageStartEvent
+  | TextMessageContentEvent
+  | TextMessageEndEvent
   | TextMessageChunkEvent
   | ReasoningMessageChunkEvent
   | ToolCallStartEvent
@@ -153,7 +184,8 @@ export type KnownAguiEvent =
   | StepFinishedEvent
   | FilesChangedCustomEvent
   | CursorCustomEvent
-  | AutoRetryCustomEvent;
+  | AutoRetryCustomEvent
+  | QueueUpdateCustomEvent;
 
 export type AguiEvent = KnownAguiEvent | UnknownAguiEvent;
 
@@ -191,6 +223,13 @@ export function isAutoRetryCustom(event: AguiEvent): event is AutoRetryCustomEve
   return (
     event.type === AguiEventType.CUSTOM &&
     (event as { name?: unknown }).name === AUTO_RETRY_EVENT
+  );
+}
+
+export function isQueueUpdateCustom(event: AguiEvent): event is QueueUpdateCustomEvent {
+  return (
+    event.type === AguiEventType.CUSTOM &&
+    (event as { name?: unknown }).name === QUEUE_UPDATE_EVENT
   );
 }
 
