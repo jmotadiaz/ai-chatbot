@@ -225,8 +225,14 @@ export class WorkerClient {
     return res.body;
   }
 
-  async cancelRun(params: { sessionId: string; _traceRunId?: string }): Promise<{ cancelled: boolean }> {
-    return this.call<{ cancelled: boolean }>("cancelRun", params);
+  async cancelRun(params: { sessionId: string; _traceRunId?: string }): Promise<{
+    cancelled: boolean;
+    cleared: { steering: string[]; followUp: string[] };
+  }> {
+    return this.call<{
+      cancelled: boolean;
+      cleared: { steering: string[]; followUp: string[] };
+    }>("cancelRun", params);
   }
 
   async followUp(params: {

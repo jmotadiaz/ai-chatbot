@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Edit } from "lucide-react";
 import type { ThinkingLevel } from "models";
 import { AgentCodeChat } from "./agent-code-chat";
@@ -55,6 +56,10 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
       project,
       modelId: modelId ?? "",
     });
+  // Ticket 03: the model snapshot applies at turn start, so the picker
+  // locks while a turn runs (no tooltip; it simply applies next turn).
+  // The running state lives in AgentCodeChat's hook and travels up here.
+  const [isTurnRunning, setIsTurnRunning] = useState(false);
 
   return (
     <FileBrowserProvider project={project} sessionId={sessionId}>
@@ -84,6 +89,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
               setSelectedModel={setModelId as (m: chatModelId) => void}
               models={availableModels as chatModelId[]}
               dropdownVariant="responsive-bottom-right"
+              disabled={isTurnRunning}
             />
           )}
         </Header.Left>
@@ -98,6 +104,7 @@ export const AgentCodeChatLayout: React.FC<AgentCodeChatLayoutProps> = ({
           modelId={modelId ?? ""}
           modelThinking={modelThinking}
           bootstrap={bootstrap}
+          onTurnRunningChange={setIsTurnRunning}
         />
       </Main>
     </FileBrowserProvider>

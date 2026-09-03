@@ -503,4 +503,55 @@ describe("TurnRunner followUp (ticket 01)", () => {
     );
   });
 });
+
+describe("TurnRunner cancelRun drains the queue (ticket 03)", () => {
+  function seedCancellable(sessionId: string, mock: ReturnType<typeof createMockPiSession>) {
+    seed(sessionId, mock);
+    (mock.session as any).abort = vi.fn(async () => {});
+    (mock.session as any).clearQueue = vi.fn(() => ({
+      steering: [],
+      followUp: ["also fix the typo"],
+    }));
+    registry.getRaw(sessionId)!.activeRun = {
+      runId: "r-cancel",
+      startSeq: 1,
+      unsubscribe: () => {},
+      sawTerminal: false,
+    };
+  }
+
+  it("aborts the turn and returns the drained queue for the draft", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: true });
+    seedCancellable("cancel-draft", mock);
+
+    const result = await runner.cancelRun("cancel-draft");
+
+    expect(mock.session.clearQueue).toHaveBeenCalledTimes(1);
+    expect(mock.session.abort).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      cancelled: true,
+      cleared: { steering: [], followUp: ["also fix the typo"] },
+    });
+  });
+
+  it("drains even with an empty queue and reports a missing session as not cancelled", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: true });
+    seedCancellable("cancel-empty", mock);
+    (mock.session as any).clearQueue = vi.fn(() => ({ steering: [], followUp: [] }));
+
+    const result = await runner.cancelRun("cancel-empty");
+
+    expect(result).toEqual({
+      cancelled: true,
+      cleared: { steering: [], followUp: [] },
+    });
+
+    const missing = await runner.cancelRun("cancel-missing");
+    expect(missing).toEqual({
+      cancelled: false,
+      cleared: { steering: [], followUp: [] },
+    });
+    expect(mock.session.abort).toHaveBeenCalledTimes(1);
+  });
+});
 });

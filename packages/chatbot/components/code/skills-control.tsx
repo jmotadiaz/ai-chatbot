@@ -29,6 +29,11 @@ export interface SkillsControlProps {
    */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Bloqueo mid-turn (ticket 03): skills y prompts no viajan en la cola
+   * de texto plano v1.
+   */
+  disabled?: boolean;
 }
 
 export const SkillsControl: React.FC<SkillsControlProps> = ({
@@ -43,6 +48,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
   onPromptSelect,
   open,
   onOpenChange,
+  disabled = false,
 }) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open !== undefined ? open : internalOpen;
@@ -62,6 +68,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
         aria-label="Select skills"
         title="Select skills"
         isActive={selectedSkills.length > 0}
+        disabled={disabled}
         onClick={() => setOpen(!isOpen)}
       />
       <Dropdown.Popup

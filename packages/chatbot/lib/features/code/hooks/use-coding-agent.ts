@@ -78,7 +78,14 @@ export interface UseCodingAgentResult {
   enqueueFollowUp: (text: string) => Promise<void>;
   status: AgentStatus;
   error: string | null;
-  cancel: () => Promise<void>;
+  /**
+   * Abort the active turn. Drains the worker queue as part of the abort
+   * and resolves with the drained text (if any) so the caller can restore
+   * it to the textarea as an editable draft — never auto-reenqueued, never
+   * executed. Resolves null when nothing was pending or the abort failed
+   * (the error then surfaces in the banner).
+   */
+  cancel: () => Promise<string | null>;
 }
 
 interface CursorEvent {
@@ -184,6 +191,23 @@ function pendingFollowUpFromEvent(event: BaseEvent): string | null | undefined {
   if (!Array.isArray(followUp)) return undefined;
   const first = followUp.find((entry): entry is string => typeof entry === "string");
   return first ?? null;
+}
+
+/**
+ * Queueable plain text for a mid-turn send. Attachments never travel with
+ * queue operations (texto plano v1): null tells the caller to surface a
+ * visible error instead of enqueueing something the worker would reject
+ * late with a cryptic error. Skill/prompt commands stay in the text here
+ * and are rejected worker-side with a precise message.
+ */
+function queueablePlainText(content: string | InputContent[]): string | null {
+  if (typeof content === "string") return content;
+  const { imageCount, documentCount } = contentAttachmentCounts(content);
+  if (imageCount > 0 || documentCount > 0) return null;
+  return content
+    .filter((part) => part.type === "text")
+    .map((part) => (part as { text?: string }).text ?? "")
+    .join("\n");
 }
 
 /**
@@ -861,8 +885,58 @@ export function useCodingAgent({
     [state.messages, state.toolErrors, state.toolTimings],
   );
 
+  const enqueueFollowUp = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      // The composer keeps its draft until this resolves: on failure the
+      // text stays in the textarea and the error surfaces in the banner.
+      store.update(() => ({ error: null }));
+      let response: Response;
+      try {
+        response = await fetch("/api/agent/code/follow-up", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, text: trimmed }),
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to queue follow-up";
+        store.update(() => ({ error: message }));
+        throw err instanceof Error ? err : new Error(message);
+      }
+      if (!response.ok) {
+        const message = `Failed to queue follow-up: ${response.status}`;
+        store.update(() => ({ error: message }));
+        throw new Error(message);
+      }
+    },
+    [sessionId, store],
+  );
+
   const sendMessage = useCallback(
     async (content: string | InputContent[]) => {
+      if (state.isRunning) {
+        // Submit duality (ticket 03): with an active turn there is no new
+        // turn to open — a second concurrent prompt would only earn the
+        // worker's "Session is already running". Plain text goes through
+        // the ticket-01 followUp path instead; anything else is a visible
+        // error, never a silent enqueue of something the queue rejects.
+        const text = queueablePlainText(content);
+        if (text === null) {
+          store.update(() => ({
+            error:
+              "Attachments cannot be queued while a turn is running (plain text only)",
+          }));
+          return;
+        }
+        try {
+          await enqueueFollowUp(text);
+        } catch {
+          // Error already in the banner; the caller keeps its draft.
+        }
+        return;
+      }
       if (state.isLoading) {
         store.update(() => ({ error: "Coding agent session is still loading" }));
         return;
@@ -938,37 +1012,56 @@ export function useCodingAgent({
         });
       }
     },
-    [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, store],
+    [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, state.isRunning, enqueueFollowUp, store],
   );
 
-  const enqueueFollowUp = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      // The composer keeps its draft until this resolves: on failure the
-      // text stays in the textarea and the error surfaces in the banner.
-      store.update(() => ({ error: null }));
-      let response: Response;
-      try {
-        response = await fetch("/api/agent/code/follow-up", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, text: trimmed }),
-        });
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to queue follow-up";
-        store.update(() => ({ error: message }));
-        throw err instanceof Error ? err : new Error(message);
-      }
+  const cancel = useCallback(async (): Promise<string | null> => {
+    const runId = crypto.randomUUID();
+    writeClientTrace({
+      runId,
+      sessionId,
+      eventName: "client.cancel.request",
+    });
+    let cleared: { steering: string[]; followUp: string[] };
+    try {
+      const response = await fetch("/api/agent/code/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
       if (!response.ok) {
-        const message = `Failed to queue follow-up: ${response.status}`;
-        store.update(() => ({ error: message }));
-        throw new Error(message);
+        throw new Error(`Failed to cancel turn: ${response.status}`);
       }
-    },
-    [sessionId, store],
-  );
+      const result = (await response.json()) as {
+        cancelled?: unknown;
+        cleared?: { steering?: unknown; followUp?: unknown };
+      };
+      const raw = result.cleared ?? { steering: [], followUp: [] };
+      cleared = {
+        steering: Array.isArray(raw.steering)
+          ? raw.steering.filter((s): s is string => typeof s === "string")
+          : [],
+        followUp: Array.isArray(raw.followUp)
+          ? raw.followUp.filter((s): s is string => typeof s === "string")
+          : [],
+      };
+    } catch (err) {
+      store.update(() => ({
+        error: err instanceof Error ? err.message : "Failed to cancel turn",
+      }));
+      return null;
+    }
+    // The abort closed the run stream, so a queue-update for the drain may
+    // never arrive: drop the chip optimistically. The drained text returns
+    // to the caller as an editable draft — never auto-reenqueued, never
+    // executed.
+    store.update(() => ({ pendingFollowUp: null }));
+    return (
+      cleared.followUp.find((s) => s.trim().length > 0) ??
+      cleared.steering.find((s) => s.trim().length > 0) ??
+      null
+    );
+  }, [sessionId, store]);
 
   return {
     messages: state.messages,
@@ -982,18 +1075,6 @@ export function useCodingAgent({
     enqueueFollowUp,
     status: state.status,
     error: state.error,
-    cancel: async () => {
-      const runId = crypto.randomUUID();
-      writeClientTrace({
-        runId,
-        sessionId,
-        eventName: "client.cancel.request",
-      });
-      await fetch("/api/agent/code/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      });
-    },
+    cancel,
   };
 }
