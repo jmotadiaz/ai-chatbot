@@ -18,7 +18,7 @@ const NOT_BUILT_IN = new Set([
   "qwen3.8-flash",
   "glm-5.3",
   "glm-5.3-flash",
-  "muse-spark-1.2-contributor",
+  "muse-spark-1.3-contributor",
 ]);
 
 /**
@@ -317,11 +317,11 @@ describe("generateModelsJson custom providers", () => {
 
   it("describes the Muse Spark model fully", () => {
     const muse = generate().providers["opencode-go"].models.find(
-      (m) => m.name === "Muse Spark 1.2",
+      (m) => m.name === "Muse Spark 1.3",
     );
     expect(muse).toEqual({
-      id: "muse-spark-1.2-contributor",
-      name: "Muse Spark 1.2",
+      id: "muse-spark-1.3-contributor",
+      name: "Muse Spark 1.3",
       api: "openai-responses",
       baseUrl: "https://opencode.ai/zen/go/v1",
       reasoning: true,

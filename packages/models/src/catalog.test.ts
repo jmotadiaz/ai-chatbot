@@ -25,7 +25,7 @@ describe("MODEL_CATALOG integrity", () => {
   });
 
   it("custom-provider entries (gateway) fully describe their Pi model", () => {
-    // Pi no trae built-in "meta/muse-spark-1.2-contributor": la entrada del
+    // Pi no trae built-in "meta/muse-spark-1.3-contributor": la entrada del
     // catálogo debe declarar límites, coste y thinkingLevelMap propios (el
     // generador ya lanza error si faltan).
     const custom = MODEL_CATALOG.filter(
@@ -56,7 +56,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Qwen 3.8 Max",
       "MiMo V2.5",
       "MiMo V2.5 Pro",
-      "Muse Spark 1.2",
+      "Muse Spark 1.3",
       "Gemini 3.7 Flash",
       "GLM 5.3",
       "Hy3",
@@ -108,7 +108,7 @@ describe("defaultThinkingLevel", () => {
   it("resolves the catalog default for known coding-agent models", () => {
     expect(getDefaultThinkingLevel("Deepseek v4 Pro")).toBe("xhigh");
     expect(getDefaultThinkingLevel("Kimi K2.7 Code")).toBe("high");
-    expect(getDefaultThinkingLevel("Muse Spark 1.2")).toBe("xhigh");
+    expect(getDefaultThinkingLevel("Muse Spark 1.3")).toBe("xhigh");
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
     expect(getDefaultThinkingLevel("Hy3")).toBe("high");
   });

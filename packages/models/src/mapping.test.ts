@@ -56,16 +56,16 @@ describe("model mapping", () => {
   });
 
   it("maps the Muse Spark catalog id to the opencode-go Pi provider", () => {
-    expect(toPiModelId("Muse Spark 1.2")).toEqual({
+    expect(toPiModelId("Muse Spark 1.3")).toEqual({
       providerId: "opencode-go",
-      modelId: "muse-spark-1.2-contributor",
+      modelId: "muse-spark-1.3-contributor",
     });
   });
 
   it("maps the opencode-go Pi model back to the catalog id", () => {
     expect(
-      toChatModelId("opencode-go", "muse-spark-1.2-contributor"),
-    ).toBe("Muse Spark 1.2");
+      toChatModelId("opencode-go", "muse-spark-1.3-contributor"),
+    ).toBe("Muse Spark 1.3");
     expect(toChatModelId("opencode-go", "unknown-model")).toBeUndefined();
   });
 
@@ -108,11 +108,11 @@ describe("model mapping", () => {
     const result = filterAvailableChatModels([
       {
         providerId: "opencode-go",
-        modelId: "muse-spark-1.2-contributor",
+        modelId: "muse-spark-1.3-contributor",
       },
       { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
       { providerId: "opencode-go", modelId: "unknown-model" },
     ]);
-    expect(result).toEqual(["Deepseek v4 Pro", "Muse Spark 1.2"]);
+    expect(result).toEqual(["Deepseek v4 Pro", "Muse Spark 1.3"]);
   });
 });

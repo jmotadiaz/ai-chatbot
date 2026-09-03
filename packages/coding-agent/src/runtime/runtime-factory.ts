@@ -17,7 +17,7 @@ import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 
 /**
  * Split a `provider/model-id` reference. Model ids may themselves contain
- * slashes (e.g. vercel-ai-gateway routes like "meta/muse-spark-1.2-contributor"
+ * slashes (e.g. vercel-ai-gateway routes like "meta/muse-spark-1.3-contributor"
  * or openrouter ids), so only the first slash separates provider from model.
  */
 export function splitModelReference(

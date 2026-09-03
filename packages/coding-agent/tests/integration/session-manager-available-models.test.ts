@@ -23,9 +23,9 @@ const { getAvailableModels } = await import("../../src/session/session-manager")
 const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 const catalog: ModelCatalogEntry[] = [
   {
-    id: "Muse Spark 1.2",
+    id: "Muse Spark 1.3",
     userInvocable: true,
-    provider: { kind: "gateway", modelId: "meta/muse-spark-1.2-contributor" },
+    provider: { kind: "gateway", modelId: "meta/muse-spark-1.3-contributor" },
     company: "meta",
     reasoning: true,
     contextWindow: 1_048_576,
@@ -83,10 +83,10 @@ describe("getAvailableModels", () => {
     const muse = models.find(
       (m) =>
         m.providerId === "vercel-ai-gateway" &&
-        m.modelId === "meta/muse-spark-1.2-contributor",
+        m.modelId === "meta/muse-spark-1.3-contributor",
     );
     expect(muse).toBeDefined();
-    expect(muse?.label).toBe("vercel-ai-gateway/meta/muse-spark-1.2-contributor");
+    expect(muse?.label).toBe("vercel-ai-gateway/meta/muse-spark-1.3-contributor");
     expect(muse?.levels).toEqual(["minimal", "low", "medium", "high", "xhigh"]);
   });
 

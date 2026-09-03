@@ -240,13 +240,13 @@ export const MODEL_CATALOG = [
     topP: 0.95,
   },
   {
-    id: "Muse Spark 1.2",
+    id: "Muse Spark 1.3",
     userInvocable: true,
     // OpenCode Go model (contributor tier, responses API per the endpoints
     // table at https://opencode.ai/docs/es/go). Pi does not ship it built-in,
     // so it describes its own limits, cost and baseUrl; the api flavor comes
     // from the opencodeGoResponses provider kind (openai-responses).
-    provider: { kind: "opencodeGoResponses", modelId: "muse-spark-1.2-contributor" },
+    provider: { kind: "opencodeGoResponses", modelId: "muse-spark-1.3-contributor" },
     company: "meta",
     reasoning: true,
     defaultThinkingLevel: "xhigh",

@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { chatModelKeys, languageModelConfigurations } from "@/lib/features/foundation-model/config";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
-describe("Muse Spark 1.2 in the chat model configuration", () => {
+describe("Muse Spark 1.3 in the chat model configuration", () => {
   it("is selectable as a chat model", () => {
-    expect(chatModelKeys).toContain("Muse Spark 1.2");
+    expect(chatModelKeys).toContain("Muse Spark 1.3");
   });
 
   it("builds a configuration from the catalog entry", () => {
-    const cfg = languageModelConfigurations("Muse Spark 1.2");
+    const cfg = languageModelConfigurations("Muse Spark 1.3");
     expect(cfg.company).toBe("meta");
     expect(cfg.reasoning).toBe(true);
     expect(cfg.temperature).toBe(1);
@@ -19,6 +19,6 @@ describe("Muse Spark 1.2 in the chat model configuration", () => {
 
   it("exposes an opencodeGoResponses provider factory with the opencode model id (mock in test mode)", () => {
     expect(providers.opencodeGoResponses).toBeDefined();
-    expect(providers.opencodeGoResponses("muse-spark-1.2-contributor")).toBeDefined();
+    expect(providers.opencodeGoResponses("muse-spark-1.3-contributor")).toBeDefined();
   });
 });
