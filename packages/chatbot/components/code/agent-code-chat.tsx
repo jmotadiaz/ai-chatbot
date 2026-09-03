@@ -68,6 +68,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     isRunning,
     isLoading,
     sendMessage,
+    pendingFollowUp,
+    enqueueFollowUp,
     status,
     error,
     cancel,
@@ -164,6 +166,19 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     await sendMessage(buildUserContent(message, files));
   };
 
+  const handleFollowUp = async () => {
+    const text = input.trim();
+    if (!text || !isRunning) return;
+    try {
+      await enqueueFollowUp(text);
+      // Only clear on success: a network blip keeps the text as a draft
+      // and the hook surfaces the error in the banner above.
+      setInput("");
+    } catch {
+      // Error already stored in hook state; preserve the draft.
+    }
+  };
+
   // No model yet means the session's model is still being fetched from the
   // worker (picker shows a skeleton): sending must wait for it too.
   const inputIsLoading = isRunning || isLoading || !modelId;
@@ -196,6 +211,17 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
         <PendingCommentsBar />
+        {pendingFollowUp && (
+          <div className="mb-2" data-testid="followup-chip">
+            <span
+              aria-label="Pending follow-up"
+              title={pendingFollowUp}
+              className="inline-flex max-w-full items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+            >
+              <span className="truncate">{pendingFollowUp}</span>
+            </span>
+          </div>
+        )}
         <div className="relative w-full">
           <Textarea
             onChangeInput={setInput}
@@ -262,6 +288,14 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               isLoading={isLoadingRefinedPrompt}
               aria-label="Refine prompt"
             />
+            {isRunning && (
+              <ChatControl
+                Icon={ArrowUp}
+                onClick={handleFollowUp}
+                aria-label="Queue follow-up"
+                disabled={!input.trim()}
+              />
+            )}
             <ChatControl
               Icon={ArrowUp}
               type="submit"

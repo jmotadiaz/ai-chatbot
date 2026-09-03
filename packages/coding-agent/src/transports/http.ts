@@ -15,6 +15,7 @@ import { getArtifactsBaseUrl, getArtifactsDir } from "../runtime/paths";
 import {
   getOrCreateSession,
   sendPrompt,
+  followUp,
   getAvailableModels,
   disposeSession,
   getSessionMessages,
@@ -318,6 +319,33 @@ export async function handleRpc(requestBody: string): Promise<Response> {
           headers: { "Content-Type": "application/x-ndjson" },
         });
       }
+      case "followUp": {
+        const { sessionId, text, modelId, thinkingLevel } = params as {
+          sessionId?: unknown;
+          text?: unknown;
+          modelId?: unknown;
+          thinkingLevel?: unknown;
+        };
+        // Queue operations never carry turn config: a model or thinking
+        // change mid-turn would be silently ignored until the next turn,
+        // so it is rejected fail-fast instead of pretending to apply.
+        if (modelId !== undefined || thinkingLevel !== undefined) {
+          stop();
+          return jsonResponse(null, id, {
+            code: -32602,
+            message: "followUp does not accept modelId or thinkingLevel; they travel with the next prompt",
+          });
+        }
+        if (typeof sessionId !== "string" || typeof text !== "string") {
+          stop();
+          return jsonResponse(null, id, {
+            code: -32602,
+            message: "sessionId and text are required",
+          });
+        }
+        result = await followUp(sessionId, text);
+        break;
+      }
       case "cancelRun": {
         const { sessionId } = params as { sessionId: string };
         result = await cancelRun(sessionId);
@@ -471,6 +499,12 @@ export function summarizeRpcParams(method: string, params: unknown): unknown {
     case "cancelRun":
     case "getSessionStatus":
       return { sessionId, hasTraceRunId };
+    case "followUp":
+      return {
+        sessionId,
+        textLength: typeof p.text === "string" ? p.text.length : 0,
+        hasTraceRunId,
+      };
     case "connectToSession":
       return {
         sessionId,
@@ -505,6 +539,14 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
         messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
         running: r.running === true,
         cursorSeq: cursor && typeof cursor.seq === "number" ? cursor.seq : undefined,
+      };
+    }
+    case "followUp": {
+      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
+      return {
+        queued: r.queued === true,
+        steeringCount: Array.isArray(pending?.steering) ? pending.steering.length : 0,
+        followUpCount: Array.isArray(pending?.followUp) ? pending.followUp.length : 0,
       };
     }
     case "getSessionModel": {

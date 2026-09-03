@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   AguiEventType as EventType,
   AUTO_RETRY_EVENT,
+  QUEUE_UPDATE_EVENT,
   PiToAguiTranslator,
 } from "../../src/agui/pi-to-agui-translator";
 
@@ -1054,5 +1055,68 @@ describe("tool_execution step events", () => {
     expect(stepFinished).toBeDefined();
     expect((stepFinished as any).stepName).toBe(`tool:bash:${generatedId}`);
     expect((stepFinished as any).rawEvent.toolCallId).toBe(generatedId);
+  });
+});
+
+describe("pi-to-agui-translator (queue_update)", () => {
+  it("maps queue_update to the queue CUSTOM event driving the pending chip", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const out = t.translate({
+      type: "queue_update",
+      steering: [],
+      followUp: ["also fix the typo"],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      type: EventType.CUSTOM,
+      name: QUEUE_UPDATE_EVENT,
+      value: { steering: [], followUp: ["also fix the typo"] },
+    });
+  });
+
+  it("maps an emptied queue (delivery) to empty lists so the chip clears", () => {
+    const t = new PiToAguiTranslator(ctx);
+    t.translate({ type: "queue_update", steering: [], followUp: ["x"] });
+    const out = t.translate({ type: "queue_update", steering: [], followUp: [] });
+    expect(out).toMatchObject([
+      {
+        type: EventType.CUSTOM,
+        name: QUEUE_UPDATE_EVENT,
+        value: { steering: [], followUp: [] },
+      },
+    ]);
+  });
+
+  it("defaults missing queue lists to empty instead of emitting undefined", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const out = t.translate({ type: "queue_update" });
+    expect(out).toMatchObject([
+      {
+        type: EventType.CUSTOM,
+        name: QUEUE_UPDATE_EVENT,
+        value: { steering: [], followUp: [] },
+      },
+    ]);
+  });
+});
+
+describe("pi-to-agui-translator (injected user message)", () => {
+  it("emits an incremental user triplet that keeps the run open", () => {
+    const t = new PiToAguiTranslator(ctx);
+    const out = t.userMessageEvents("u-123", "also fix the typo");
+    expect(out.map((e) => e.type)).toEqual([
+      EventType.TEXT_MESSAGE_START,
+      EventType.TEXT_MESSAGE_CONTENT,
+      EventType.TEXT_MESSAGE_END,
+    ]);
+    expect(out[0]).toMatchObject({
+      messageId: "u-123",
+      role: "user",
+    });
+    expect(out[1]).toMatchObject({
+      messageId: "u-123",
+      delta: "also fix the typo",
+    });
+    expect(out[2]).toMatchObject({ messageId: "u-123" });
   });
 });
