@@ -8,18 +8,18 @@ En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
 
 - **PROHIBIDO sin aprobación explícita del operador para cada acción**: cualquier
   comando que impacte esa ejecución — `pm2 restart|reload|stop|delete|save`,
-  `pnpm preview`, `build:prod`/`start:prod` de prod, `docker compose … prod down`,
+  `pnpm preview`, `build` de prod, `docker compose … prod down`,
   o matar procesos en 8085/3015/5435. Al pedir aprobación, indica la ventana de
   indisponibilidad (un restart de `preview` tarda ~1–2 min por el rebuild).
 - Verificación de compilación sin tocar prod: `type:check`, `lint` y suites de
   tests por paquete. Para comprobar que prod compila sin pisar los artefactos
-  que sirve pm2, el agente ejecuta **siempre `build:prod:verify`** (raíz:
-  `pnpm build:prod:verify`; o por paquete `pnpm --filter chatbot build:prod:verify`
-  + `pnpm --filter coding-agent build:prod:verify`) — escribe a directorios
+  que sirve pm2, el agente ejecuta **siempre `build:verify`** (raíz:
+  `pnpm build:verify`; o por paquete `pnpm --filter chatbot build:verify`
+  + `pnpm --filter coding-agent build:verify`) — escribe a directorios
   aislados `.next/verify` / `dist/verify` / `.pi-verify` (gitignored, descartables).
-  **NUNCA `build:prod` ni `start:prod`** — pisan `.next`/`dist`/`.pi-prod/models.json`
-  de prod bajo pm2 y romperían la ejecución en curso; reservados a operador/CI
-  con `ALLOW_PROD_BUILD=1` (ver `build:prod` en cada package).
+  **NUNCA `build`** — pisa `.next`/`dist`/`.pi-prod/models.json`
+  de prod bajo pm2 y rompería la ejecución en curso; reservado a operador/CI
+  con `ALLOW_PROD_BUILD=1` (ver `build` en cada package).
 - Verificación del servicio real: solo comandos de lectura — `pm2 ls`,
   `pm2 logs --nostream`, `curl` (GET al chatbot 8085; **NUNCA `POST /rpc` al
   worker 3015** — un body malformado tumbó el worker el 2026-09-02; para el
@@ -28,20 +28,18 @@ En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
 
 ## Package Manager
 
-Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts:
+Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (para el agente):
 
 - `pnpm dev` — start all services (chatbot + coding-agent) con `.env.dev` (dev: 3000+3016, pg 5433)
-- `pnpm build` — build del chatbot en dev (fuerza `.env.dev`)
-- `pnpm build:prod` — compila prod real (chatbot `.next` + worker `dist`+`.pi-prod`); **solo operador/CI con `ALLOW_PROD_BUILD=1`**, el agente nunca lo ejecuta
-- `pnpm build:prod:verify` — verificación aislada de prod (`.next/verify` + `dist/verify`+`.pi-verify`); **vía del agente para comprobar compilación sin tocar prod**
-- `pnpm preview` — vía canónica de prod (`dotenv -o -e .env.prod -- pnpm --filter chatbot --filter coding-agent --parallel preview`); cada package se ocupa de lo suyo (`chatbot:preview` → `db:prod:start + build:prod + next start`, `coding-agent:preview` → `build:prod + node --import tsx dist/...`); solo pm2. El worker ya no va en `tsx` directo sino **build:prod + node dist** (evita `pkill` cruzado dev vs prod)
 - `pnpm stop:dev` — mata `3000`+`3016` por puerto (`lsof -ti:PORT | xargs -r kill`); `pnpm stop:test` — mata `3001` (+ `docker compose -f docker-compose.test.yml down`). Por paquete: `pnpm --filter chatbot stop:dev` (3000) / `stop:test` (3001); `pnpm --filter coding-agent stop:dev` (3016)
-- `pnpm lint:fix` — lint all packages
+- `pnpm build:verify` — verificación aislada de compilación (`.next/verify` + `dist/verify`+`.pi-verify`); **única vía del agente para comprobar compilación sin tocar prod**
 - `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
+- `pnpm lint:fix` — lint all packages
+- `pnpm type:check` — check TypeScript types across all packages
 - `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
 - `pnpm test:e2e` — Playwright E2E tests (usa `.env.test`, pg 5434, worker stub)
-- `pnpm db:generate` / `pnpm db:migrate` — Drizzle ORM migrations
-- `pnpm db:dev:*` / `db:test:*` / `db:prod:*` / `db:*:logs` — DB por Entorno (5433/dev, 5434/test, 5435/prod)
+- `pnpm db:generate` / `pnpm db:push` — Drizzle ORM schema
+- `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — gestión y seeds de DB para Entornos de Dev (5433) y Test (5434)
 
 Test ownership follows package ownership. Within each package, keep pure logic
 under `tests/unit`, rendered UI under `tests/component`, multi-module or

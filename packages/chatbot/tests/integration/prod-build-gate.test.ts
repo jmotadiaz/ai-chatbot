@@ -40,10 +40,10 @@ describe("assert-prod-build-allowed (gate de build:prod)", () => {
     expect(code).toBe(0);
   }, 60_000);
 
-  it("falla sin ALLOW_PROD_BUILD y dirige a build:prod:verify", async () => {
+  it("falla sin ALLOW_PROD_BUILD y dirige a build:verify", async () => {
     const { code, output } = await runGate({});
     expect(code).not.toBe(0);
-    expect(output).toMatch(/build:prod:verify/);
+    expect(output).toMatch(/build:verify/);
     expect(output).toMatch(/ALLOW_PROD_BUILD/);
   }, 60_000);
 

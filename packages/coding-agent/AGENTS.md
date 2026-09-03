@@ -4,16 +4,16 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 
 > ⛔ El worker de prod (`:3015`) está VIVO bajo pm2: aplica el blindaje approval-first
 > de la raíz — ver «Producción está VIVA» en `AGENTS.md` antes de cualquier comando
-> que toque pm2/prod. Para verificar compilación, usa **siempre `build:prod:verify`**
-> (`pnpm --filter coding-agent build:prod:verify` → `dist/verify` + `.pi-verify`);
-> **nunca `build:prod`/`start:prod`** — pisan `dist`/`.pi-prod` de prod bajo pm2.
+> que toque pm2/prod. Para verificar compilación, usa **siempre `build:verify`**
+> (`pnpm --filter coding-agent build:verify` → `dist/verify` + `.pi-verify`);
+> **nunca `build`** — pisa `dist`/`.pi-prod` de prod bajo pm2.
 
 ## Entornos y scripts
 
 - **Dev** (`pnpm dev` con `.env.dev` → `3000`+`3016`, `.pi-dev`): `pnpm --filter coding-agent dev` → `tsx` directo; **parada segura `pnpm --filter coding-agent stop:dev` (lsof -ti:3016 | xargs -r kill) o `pnpm stop:dev` en raíz (3000+3016). Nunca `pkill -f tsx` — `dev` y `prod` comparten `tsx src/transports/http.ts` y matarías `3015` de prod.**
-- **Prod** (`pm2 preview` con `.env.prod` → `8085`+`3015`, `.pi-prod`): 1 app `pm2 → pnpm preview` que hace `ALLOW_PROD_BUILD=1 build:prod` de ambos packages y arranca `next start` + `node --import tsx dist/transports/http.js` (worker ya **compilado**, no `tsx` directo). `build:prod`/`start:prod` solo operador/CI (`ALLOW_PROD_BUILD=1`).
+- **Prod** (`pm2 preview` con `.env.prod` → `8085`+`3015`, `.pi-prod`): 1 app `pm2 → pnpm preview` que hace `ALLOW_PROD_BUILD=1 build` de ambos packages y arranca `next start` + `node --import tsx dist/transports/http.js` (worker ya **compilado**, no `tsx` directo). `build` solo operador/CI (`ALLOW_PROD_BUILD=1`).
 - **Test** (`NEXT_PUBLIC_ENV=test` → `3001` stub + `5434`, `.pi-test`): `pnpm --filter chatbot test:e2e` + `pnpm stop:test` (mata `3001`).
-- **Verificación sin tocar prod**: el agente ejecuta `build:prod:verify` (escribe a `dist/verify` + `.pi-verify/models.json`, sin `dotenv -o .env.prod` — no toca estado de runtime de prod).
+- **Verificación sin tocar prod**: el agente ejecuta `build:verify` (escribe a `dist/verify` + `.pi-verify/models.json`, sin `dotenv -o .env.prod` — no toca estado de runtime de prod).
 
 ## Key Files
 

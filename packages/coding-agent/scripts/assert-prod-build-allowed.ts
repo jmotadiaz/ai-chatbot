@@ -11,10 +11,10 @@ import { config } from "config";
 if (!config.allowProdBuild()) {
   console.error(
     [
-      "build:prod del worker está bloqueado: escribe dist/ y .pi-prod/models.json de Producción.",
-      "Si eres el operador/CI: reejecuta con ALLOW_PROD_BUILD=1 (`pnpm build:prod` de raíz lo hace explícito).",
-      "Si eres el agente verificando compilación: usa `pnpm --filter coding-agent build:prod:verify`",
-      "(escribe a dist/verify + .pi-verify/models.json, aislado). Está prohibido build:prod/start:prod — ver AGENTS.md.",
+      "build del worker está bloqueado: escribe dist/ y .pi-prod/models.json de Producción.",
+      "Si eres el operador/CI: reejecuta con ALLOW_PROD_BUILD=1 (`pnpm build` de raíz lo hace explícito).",
+      "Si eres el agente verificando compilación: usa `pnpm --filter coding-agent build:verify`",
+      "(escribe a dist/verify + .pi-verify/models.json, aislado). Está prohibido build — ver AGENTS.md.",
     ].join("\n"),
   );
   process.exit(1);

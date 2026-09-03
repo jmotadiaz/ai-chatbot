@@ -222,6 +222,10 @@ _Avoid_: pi runtime (a secas), agent dir (a secas)
 Identidad determinística (`test@test.com` / `123456`) que solo existe en los Entornos de Test y Desarrollo para pruebas locales y e2e.
 _Avoid_: seed user, mock user
 
+**Build**:
+Fase de compilación y empaquetado de artefactos estáticos (.next para el chatbot, dist/ para el worker) que aplica exclusivamente al Entorno de Producción. Los Entornos de Desarrollo y Test carecen de fase de build (compilan JIT en memoria).
+_Avoid_: build de desarrollo, build:dev, dev bundle
+
 ### Identidad y acceso
 
 **User**:

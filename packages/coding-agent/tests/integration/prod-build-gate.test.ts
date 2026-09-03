@@ -31,10 +31,10 @@ describe("assert-prod-build-allowed del worker", () => {
     expect((await runGate({ ALLOW_PROD_BUILD: "1" })).code).toBe(0);
   }, 60_000);
 
-  it("falla sin opt-in y dirige a build:prod:verify", async () => {
+  it("falla sin opt-in y dirige a build:verify", async () => {
     const { code, output } = await runGate({});
     expect(code).not.toBe(0);
-    expect(output).toMatch(/build:prod:verify/);
+    expect(output).toMatch(/build:verify/);
     expect(output).toMatch(/ALLOW_PROD_BUILD/);
   }, 60_000);
 });

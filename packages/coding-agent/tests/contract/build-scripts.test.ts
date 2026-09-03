@@ -27,13 +27,15 @@ describe("scripts del worker (coding-agent)", () => {
     expect(s.dev).toContain("tsx src/transports/http.ts");
   });
 
-  it("ya no existen start (alias) ni transport:http", () => {
+  it("ya no existen start, start:prod, build:prod ni transport:http", () => {
     expect(s.start).toBeUndefined();
+    expect(s["start:prod"]).toBeUndefined();
+    expect(s["build:prod"]).toBeUndefined();
     expect(s["transport:http"]).toBeUndefined();
   });
 
-  it("build:prod exige el gate, compila a dist/ y genera models.json con .env.prod", () => {
-    const cmd = s["build:prod"];
+  it("build exige el gate, compila a dist/ y genera models.json con .env.prod", () => {
+    const cmd = s.build;
     expect(cmd).toContain("assert-prod-build-allowed");
     expect(cmd).toContain("tsc -p tsconfig.json --outDir dist");
     expect(cmd).toContain("dotenv -o -e ../../.env.prod");
@@ -41,24 +43,14 @@ describe("scripts del worker (coding-agent)", () => {
     expect(cmd).not.toContain("dist/verify");
   });
 
-  it("build:prod:verify compila a dist/verify y modela en .pi-verify, sin gate ni escrituras de prod", () => {
-    const cmd = s["build:prod:verify"];
+  it("build:verify compila a dist/verify y modela en .pi-verify, sin gate ni escrituras de prod", () => {
+    const cmd = s["build:verify"];
     expect(cmd).toContain("tsc -p tsconfig.json --outDir dist/verify");
     expect(cmd).toContain("CODING_AGENT_MODELS_JSON=.pi-verify/models.json");
     expect(cmd).toContain("generate-models");
     expect(cmd).not.toMatch(/ALLOW_PROD_BUILD|assert-prod-build-allowed/);
     // nada de .env.prod con -o: verificar no puede reescribir .pi-prod/models.json
     expect(cmd).not.toContain("dotenv");
-  });
-
-  it("start:prod es autosuficiente (build:prod + node del bundle) — evolución futura, no vía canónica", () => {
-    expect(s["start:prod"]).toContain("build:prod");
-    // Desviación documentada del literal del spec (`node dist/transports/http.js`):
-    // Node ESM puro no resuelve imports sin extensión — ni del propio dist (tsc
-    // los emite como en src) ni de los paquetes workspace de fuentes TS (config,
-    // tracing, models). `--import tsx` registra el resolutor sin wrapper binario
-    // ni proceso doble y mantiene node como runtime. Probado en vivo en 3999.
-    expect(s["start:prod"]).toMatch(/node --import tsx dist\/transports\/http\.js/);
   });
 });
 
@@ -80,19 +72,24 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
     expect(cmd).toContain("--parallel");
     expect(cmd).toContain("preview");
   });
-  it("chatbot preview orquesta db + build:prod + next start (solo lo suyo)", () => {
+
+  it("chatbot preview orquesta db + build + next start directo (solo lo suyo)", () => {
     const cmd = chatbotPkg.scripts.preview;
     expect(cmd).toContain(".env.prod");
     expect(cmd).toContain("db:prod:start");
     expect(cmd).toContain("ALLOW_PROD_BUILD=1");
-    expect(cmd).toContain("build:prod");
-    expect(cmd).toContain("npm run start");
+    expect(cmd).toContain("pnpm run build");
+    expect(cmd).toContain("next start -p 8085");
     expect(cmd).not.toContain("coding-agent");
   });
-  it("coding-agent preview arranca el worker compilado (build:prod + node dist) bajo .env.prod", () => {
+
+  it("coding-agent preview arranca el worker compilado (build + node dist) bajo .env.prod", () => {
     const cmd = s.preview;
     expect(cmd).toContain(".env.prod");
-    expect(cmd).toContain("start:prod");
+    expect(cmd).toContain("ALLOW_PROD_BUILD=1");
+    expect(cmd).toContain("pnpm run build");
+    expect(cmd).toContain("node --import tsx dist/transports/http.js");
+    expect(cmd).not.toContain("start:prod");
     expect(cmd).not.toContain("tsx src/transports/http.ts");
   });
 });

@@ -17,11 +17,11 @@ import { config } from "config";
 if (!config.allowProdBuild()) {
   console.error(
     [
-      "build:prod está bloqueado: escribe el .next que serve prod bajo pm2.",
+      "build está bloqueado: escribe el .next que sirve prod bajo pm2.",
       "Si eres el operador/CI: reejecuta con ALLOW_PROD_BUILD=1 (la vía canónica",
       "`pnpm preview` ya lo incorpora).",
-      "Si eres el agente verificando compilación: usa `pnpm --filter chatbot build:prod:verify`",
-      "(compila a .next/verify, aislado). Está prohibido build:prod/start:prod — ver AGENTS.md.",
+      "Si eres el agente verificando compilación: usa `pnpm --filter chatbot build:verify`",
+      "(compila a .next/verify, aislado). Está prohibido build — ver AGENTS.md.",
     ].join("\n"),
   );
   process.exit(1);
