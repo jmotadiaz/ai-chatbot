@@ -74,6 +74,8 @@ export interface WorkerSessionSnapshot {
   }>;
   cursor: WorkerSessionCursor | null;
   running: boolean;
+  /** Mirrors the worker snapshot's pending queues (ticket 04); optional for old workers. */
+  pending?: { steering: string[]; followUp: string[] };
 }
 
 export class WorkerClient {

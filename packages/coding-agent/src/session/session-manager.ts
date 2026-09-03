@@ -149,6 +149,7 @@ export interface SessionSnapshot {
   messages: Array<any>;
   cursor: SessionCursor | null;
   running: boolean;
+  pending: { steering: string[]; followUp: string[] };
 }
 
 export async function getSessionStatus(sessionId: string, parentSessionId?: string): Promise<SessionStatus> {

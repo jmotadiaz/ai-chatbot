@@ -582,10 +582,13 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       };
     case "getSessionSnapshot": {
       const cursor = r.cursor as { epoch?: unknown; seq?: unknown } | null;
+      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
       return {
         messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
         running: r.running === true,
         cursorSeq: cursor && typeof cursor.seq === "number" ? cursor.seq : undefined,
+        steeringCount: Array.isArray(pending?.steering) ? pending.steering.length : 0,
+        followUpCount: Array.isArray(pending?.followUp) ? pending.followUp.length : 0,
       };
     }
     case "followUp": {
