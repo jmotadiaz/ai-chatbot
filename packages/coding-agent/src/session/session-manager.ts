@@ -171,7 +171,10 @@ export async function connectToSession(
   return turnRunner.connectToSession(sessionId, cursor, parentSessionId);
 }
 
-export async function cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {
+export async function cancelRun(sessionId: string): Promise<{
+  cancelled: boolean;
+  cleared: { steering: string[]; followUp: string[] };
+}> {
   return turnRunner.cancelRun(sessionId);
 }
 

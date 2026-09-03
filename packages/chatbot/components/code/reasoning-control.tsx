@@ -12,12 +12,19 @@ export interface ReasoningControlProps {
   /** Niveles del modelo seleccionado en el picker. */
   levels: ThinkingLevel[];
   onSelect: (level: ThinkingLevel) => void;
+  /**
+   * Bloqueo mid-turn (ticket 03): el thinking se snapshottea al arrancar
+   * el run, así que cambiarlo en Turn activo no aplicaría hasta el
+   * próximo Turn. Sin tooltip: simplemente no aplica.
+   */
+  disabled?: boolean;
 }
 
 export const ReasoningControl: React.FC<ReasoningControlProps> = ({
   level,
   levels,
   onSelect,
+  disabled = false,
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
 
@@ -31,7 +38,7 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
         type="button"
         aria-label={`Reasoning effort: ${level ?? "…"}`}
         title={`Reasoning effort: ${level ?? "…"}`}
-        disabled={level === null}
+        disabled={disabled || level === null}
         {...getDropdownTriggerProps()}
       />
       <Dropdown.Popup

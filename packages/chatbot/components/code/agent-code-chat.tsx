@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUp, Pencil, Undo, WandSparkles, X } from "lucide-react";
 import type { ModelThinking } from "./agent-code-chat-layout";
 import { AgentConversation } from "./agent-conversation";
@@ -40,6 +40,11 @@ export interface AgentCodeChatProps {
   modelThinking: ReadonlyMap<string, ModelThinking>;
   /** What the server render resolved; each null field falls back to CSR. */
   bootstrap?: CodingAgentBootstrap;
+  /**
+   * Ticket 03: the model picker lives in the layout header, outside this
+   * component, so the running state travels up for its mid-turn lock.
+   */
+  onTurnRunningChange?: (running: boolean) => void;
 }
 
 export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
@@ -48,6 +53,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   modelId,
   modelThinking,
   bootstrap,
+  onTurnRunningChange,
 }) => {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePart[]>([]);
@@ -82,6 +88,24 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     thinkingLevel,
     initialSnapshot: bootstrap?.snapshot,
   });
+
+  // Ticket 03 guards. `hasPending` (chip armed) locks the whole composer
+  // down to chip-plus-cancel; `isRunning` (active turn) locks the
+  // turn-scoped config and non-text sources, which only apply next turn.
+  // The undefined check keeps older hook mocks (without the ticket-01
+  // field) on the unlocked path instead of a phantom lock.
+  const hasPending = pendingFollowUp !== null && pendingFollowUp !== undefined;
+
+  const handleCancel = async () => {
+    const draft = await cancel().catch(() => null);
+    // Abort drains the queue worker-side; the text survives as an editable
+    // draft, never auto-reenqueued and never executed.
+    if (draft) setInput(draft);
+  };
+
+  useEffect(() => {
+    onTurnRunningChange?.(isRunning);
+  }, [isRunning, onTurnRunningChange]);
 
   const { state: fileBrowserState, actions: fileBrowserActions } =
     useFileBrowser();
@@ -243,9 +267,11 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         onSubmit={handleSubmit}
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
-        <PendingCommentsBar />
+        <PendingCommentsBar disabled={isRunning} />
         {pendingFollowUp && (
           <div className="mb-2 flex items-center gap-2" data-testid="followup-chip">
+            {/* Ticket 02 owns the chip actions (edit/discard/promote) rendered
+                here; the guards below keep the chip itself mounted and alive. */}
             <span
               aria-label="Pending follow-up"
               title={pendingFollowUp}
@@ -294,6 +320,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
             onPasteFiles={onPasteFiles}
             files={files}
             setFiles={setFiles}
+            disabled={hasPending}
             leadingContent={
               selectedSkills.length > 0 ? (
                 <div
@@ -304,7 +331,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                     <SkillChip
                       key={skill}
                       name={skill}
-                      onRemove={() => toggleSkill(skill)}
+                      onRemove={isRunning ? undefined : () => toggleSkill(skill)}
                     />
                   ))}
                 </div>
@@ -316,10 +343,12 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               level={thinkingLevel}
               levels={thinking?.levels ?? []}
               onSelect={setThinkingLevel}
+              disabled={isRunning}
             />
             <AttachmentsControl
               handleFileChange={handleFileChange}
               supportedFiles={CODE_AGENT_SUPPORTED_FILES}
+              disabled={isRunning}
             />
             <SkillsControl
               skills={skills}
@@ -333,6 +362,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
               onPromptSelect={handlePromptSelect}
               open={promptDropdownOpen}
               onOpenChange={setPromptDropdownOpen}
+              disabled={isRunning}
             />
           </div>
           <div className="absolute right-3 bottom-2 flex items-center space-x-2">
@@ -341,12 +371,13 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                 Icon={Undo}
                 onClick={undo}
                 aria-label="Undo refined prompt"
+                disabled={hasPending}
               />
             )}
             <ChatControl
               Icon={WandSparkles}
               onClick={refinePrompt}
-              disabled={!input.length}
+              disabled={!input.length || hasPending}
               isLoading={isLoadingRefinedPrompt}
               aria-label="Refine prompt"
             />
@@ -355,7 +386,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                 Icon={ArrowUp}
                 onClick={handleFollowUp}
                 aria-label="Queue follow-up"
-                disabled={!input.trim()}
+                disabled={!input.trim() || hasPending}
               />
             )}
             <ChatControl
@@ -367,12 +398,17 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                   pendingComments.length === 0 &&
                   files.length === 0 &&
                   selectedSkills.length === 0) ||
-                inputIsLoading
+                inputIsLoading ||
+                hasPending
               }
               isLoading={inputIsLoading}
               // Only a running turn can be cancelled; while the session or
-              // model is still loading the spinner stays inert.
-              onLoadingClick={isRunning ? () => void cancel() : undefined}
+              // model is still loading the spinner stays inert. With a chip
+              // pending the spinner is the surviving cancel: ChatControl
+              // ignores `disabled` in loading mode, so abort stays alive
+              // while the rest of the composer locks. Abort drains the
+              // queue worker-side and the text returns as a draft.
+              onLoadingClick={isRunning ? () => void handleCancel() : undefined}
             />
           </div>
         </div>

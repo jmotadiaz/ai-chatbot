@@ -617,6 +617,14 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
         followUpCount: Array.isArray(pending?.followUp) ? pending.followUp.length : 0,
       };
     }
+    case "cancelRun": {
+      const cleared = r.cleared as { steering?: unknown; followUp?: unknown } | undefined;
+      return {
+        cancelled: r.cancelled === true,
+        clearedSteeringCount: Array.isArray(cleared?.steering) ? cleared.steering.length : 0,
+        clearedFollowUpCount: Array.isArray(cleared?.followUp) ? cleared.followUp.length : 0,
+      };
+    }
     case "getSessionModel": {
       const model = r.model as { providerId?: unknown; modelId?: unknown } | null;
       return {

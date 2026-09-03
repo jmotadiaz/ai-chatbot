@@ -68,6 +68,12 @@ export interface ModelPickerSelectorProps {
   id: string;
   dropdownVariant?: React.ComponentProps<typeof Select.Dropdown>["variant"];
   triggerVariant?: "select" | "button";
+  /**
+   * Bloqueo mid-turn (ticket 03, solo coding agent): el modelo se
+   * snapshottea al arrancar el run y el cambio no aplicaría hasta el
+   * próximo Turn.
+   */
+  disabled?: boolean;
 }
 
 export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
@@ -77,6 +83,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   id,
   dropdownVariant,
   triggerVariant = "select",
+  disabled = false,
 }) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
@@ -110,7 +117,11 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
           </span>
         </div>
       ) : (
-        <Select.Trigger className="text-[15px]" {...getSelectTriggerProps()} />
+        <Select.Trigger
+          className="text-[15px] disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={disabled}
+          {...getSelectTriggerProps()}
+        />
       )}
       <Select.Dropdown
         {...getSelectContentProps()}

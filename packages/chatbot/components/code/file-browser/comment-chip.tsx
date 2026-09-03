@@ -10,11 +10,14 @@ function basename(path: string): string {
 export interface CommentChipProps {
   comment: PendingComment;
   onRemove: () => void;
+  /** Bloqueo mid-turn (ticket 03): los comentarios no viajan en la cola. */
+  disabled?: boolean;
 }
 
 export const CommentChip: React.FC<CommentChipProps> = ({
   comment,
   onRemove,
+  disabled = false,
 }) => (
   <div className="flex max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 py-1 pl-3 pr-1 text-xs">
     <MessageSquare size={12} className="shrink-0 text-amber-500" />
@@ -28,7 +31,8 @@ export const CommentChip: React.FC<CommentChipProps> = ({
       type="button"
       aria-label={`Remove comment on ${comment.file} line ${comment.startLine}`}
       onClick={onRemove}
-      className="shrink-0 rounded-full p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer"
+      disabled={disabled}
+      className="shrink-0 rounded-full p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
     >
       <X size={12} />
     </button>

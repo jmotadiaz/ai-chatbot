@@ -8,11 +8,17 @@ import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 export interface AttachmentsControlProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   supportedFiles: Required<ModelConfiguration>["supportedFiles"];
+  /**
+   * Bloqueo mid-turn (ticket 03): la cola es texto plano v1, así que
+   * adjuntar en Turn activo compondría algo que el worker rechazaría.
+   */
+  disabled?: boolean;
 }
 
 export const AttachmentsControl: React.FC<AttachmentsControlProps> = ({
   handleFileChange,
   supportedFiles,
+  disabled = false,
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps, close } =
     useDropdown();
@@ -36,6 +42,7 @@ export const AttachmentsControl: React.FC<AttachmentsControlProps> = ({
       <ChatControl
         Icon={Paperclip}
         aria-label="Attach files"
+        disabled={disabled}
         {...getDropdownTriggerProps()}
       />
 

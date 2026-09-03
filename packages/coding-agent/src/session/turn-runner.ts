@@ -115,6 +115,19 @@ export function assertPlainQueueText(text: unknown): asserts text is string {
   }
 }
 
+/** Queues snapshot shared by the queue readers (followUp/cancelRun).
+ *  Named like ticket 02's `clearQueue`/`steer` results so the later merge
+ *  can reuse it instead of duplicating the defensive copies. */
+function snapshotPendingQueues(session: {
+  getSteeringMessages(): readonly string[];
+  getFollowUpMessages(): readonly string[];
+}): { steering: string[]; followUp: string[] } {
+  return {
+    steering: [...session.getSteeringMessages()],
+    followUp: [...session.getFollowUpMessages()],
+  };
+}
+
 /** Plain-text extraction mirroring `convertPiMessagesToAgui` (user branch). */
 function injectedUserText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -643,10 +656,7 @@ export class TurnRunner {
       throw new Error("Cannot queue a follow-up while no turn is running");
     }
     await entry.runtime.session.followUp(text);
-    const pending = {
-      steering: [...entry.runtime.session.getSteeringMessages()],
-      followUp: [...entry.runtime.session.getFollowUpMessages()],
-    };
+    const pending = snapshotPendingQueues(entry.runtime.session);
     log.info("session.followup_queued", {
       sessionId,
       textLength: text.length,
@@ -684,10 +694,7 @@ export class TurnRunner {
         ? [...(clearedRaw.followUp as string[])]
         : [],
     };
-    const pending = {
-      steering: [...entry.runtime.session.getSteeringMessages()],
-      followUp: [...entry.runtime.session.getFollowUpMessages()],
-    };
+    const pending = snapshotPendingQueues(entry.runtime.session);
     log.info("session.queue_cleared", {
       sessionId,
       clearedSteeringCount: cleared.steering.length,
@@ -737,10 +744,7 @@ export class TurnRunner {
         : [],
     };
     await entry.runtime.session.steer(text);
-    const pending = {
-      steering: [...entry.runtime.session.getSteeringMessages()],
-      followUp: [...entry.runtime.session.getFollowUpMessages()],
-    };
+    const pending = snapshotPendingQueues(entry.runtime.session);
     log.info("session.steer_queued", {
       sessionId,
       textLength: text.length,
@@ -752,15 +756,45 @@ export class TurnRunner {
     return { steered: true, cleared, pending };
   }
 
-  async cancelRun(sessionId: string): Promise<{ cancelled: boolean }> {
+  /**
+   * Abort the active turn and drain both SDK queues, returning what was
+   * removed so the caller can restore it as an editable draft. Clearing
+   * is unconditional: a queued follow-up left behind by an abort would
+   * otherwise execute phantom-style on the next prompt. The text is never
+   * auto-reenqueued — the client puts it back in the textarea for an
+   * explicit confirm. No new RPC: ticket 02 owns `clearQueue`/`steer` as
+   * standalone operations; abort piggybacks the drain here so both tickets
+   * share `snapshotPendingQueues` without duplicating queue reads.
+   */
+  async cancelRun(sessionId: string): Promise<{
+    cancelled: boolean;
+    cleared: { steering: string[]; followUp: string[] };
+  }> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);
     if (!entry) {
       log.info("cancel.session_not_found", { sessionId });
-      return { cancelled: false };
+      return { cancelled: false, cleared: { steering: [], followUp: [] } };
     }
     log.info("cancel.requested", { sessionId });
+    const clearedRaw = entry.runtime.session.clearQueue() as unknown as {
+      steering?: unknown;
+      followUp?: unknown;
+    };
+    const cleared = {
+      steering: Array.isArray(clearedRaw?.steering)
+        ? [...(clearedRaw.steering as string[])]
+        : [],
+      followUp: Array.isArray(clearedRaw?.followUp)
+        ? [...(clearedRaw.followUp as string[])]
+        : [],
+    };
     await entry.runtime.session.abort();
-    return { cancelled: true };
+    log.info("cancel.queue_drained", {
+      sessionId,
+      clearedSteeringCount: cleared.steering.length,
+      clearedFollowUpCount: cleared.followUp.length,
+    });
+    return { cancelled: true, cleared };
   }
 }

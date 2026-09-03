@@ -3,7 +3,9 @@
 import { CommentChip } from "./comment-chip";
 import { useFileBrowser } from "./file-browser-provider";
 
-export const PendingCommentsBar: React.FC = () => {
+export const PendingCommentsBar: React.FC<{ disabled?: boolean }> = ({
+  disabled = false,
+}) => {
   const { state, actions } = useFileBrowser();
   if (state.pendingComments.length === 0) return null;
   return (
@@ -16,6 +18,7 @@ export const PendingCommentsBar: React.FC = () => {
           key={comment.id}
           comment={comment}
           onRemove={() => actions.removeComment(comment.id)}
+          disabled={disabled}
         />
       ))}
     </div>
