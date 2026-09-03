@@ -38,7 +38,7 @@ const ATTACHMENT_CONTENT: InputContent[] = [
 ];
 
 function GuardsHarness() {
-  const { sendMessage, cancel, error, isRunning, pendingFollowUp } =
+  const { sendMessage, cancel, error, isRunning, pendingMessage } =
     useCodingAgent({ project: "p", sessionId: "s", modelId: "m" });
   const [cancelDraft, setCancelDraft] = useState<string | null | undefined>(
     undefined,
@@ -62,7 +62,7 @@ function GuardsHarness() {
       </button>
       <p data-testid="error">{error ?? ""}</p>
       <p data-testid="is-running">{String(isRunning)}</p>
-      <p data-testid="pending">{pendingFollowUp ?? ""}</p>
+      <p data-testid="pending">{pendingMessage ?? ""}</p>
       <p data-testid="cancel-draft">
         {cancelDraft === undefined ? "unset" : (cancelDraft ?? "null")}
       </p>

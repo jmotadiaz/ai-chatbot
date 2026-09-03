@@ -3,7 +3,11 @@
 import { CommentChip } from "./comment-chip";
 import { useFileBrowser } from "./file-browser-provider";
 
-export const PendingCommentsBar: React.FC<{ disabled?: boolean }> = ({
+export interface PendingCommentsBarProps {
+  disabled?: boolean;
+}
+
+export const PendingCommentsBar: React.FC<PendingCommentsBarProps> = ({
   disabled = false,
 }) => {
   const { state, actions } = useFileBrowser();

@@ -1,6 +1,7 @@
 import { getTraceLogger } from "tracing";
 import { config } from "config";
 import type { ThinkingLevel } from "models";
+import type { PendingQueues } from "./types";
 
 export interface WorkerModel {
   providerId: string;
@@ -50,6 +51,43 @@ export interface JsonRpcResponse<T = unknown> {
   id: number;
 }
 
+/**
+ * A worker-side JSON-RPC failure with its code preserved (409 = the
+ * single-pending conflict from `followUp`/`steer`). BFF routes read the
+ * code via `workerErrorDetails` to pick the matching HTTP status and
+ * surface the worker's own message verbatim — never wrapped in a generic
+ * status line (US8/US18).
+ */
+export class WorkerRpcError extends Error {
+  readonly code: number;
+  constructor(message: string, code: number) {
+    super(`Worker RPC error: ${message}`);
+    this.name = "WorkerRpcError";
+    this.code = code;
+  }
+}
+
+export function workerErrorDetails(err: unknown): {
+  code?: number;
+  message: string;
+} {
+  if (err instanceof WorkerRpcError) {
+    const prefix = "Worker RPC error: ";
+    const message = err.message.startsWith(prefix)
+      ? err.message.slice(prefix.length)
+      : err.message;
+    return { code: err.code, message };
+  }
+  if (err instanceof Error) {
+    const code = (err as { code?: unknown }).code;
+    return {
+      code: typeof code === "number" ? code : undefined,
+      message: err.message,
+    };
+  }
+  return { message: String(err) };
+}
+
 export interface WorkerSnapshotMessage {
   id?: string;
   role: string;
@@ -75,7 +113,7 @@ export interface WorkerSessionSnapshot {
   cursor: WorkerSessionCursor | null;
   running: boolean;
   /** Mirrors the worker snapshot's pending queues (ticket 04); optional for old workers. */
-  pending?: { steering: string[]; followUp: string[] };
+  pending?: PendingQueues;
 }
 
 export class WorkerClient {
@@ -110,7 +148,10 @@ export class WorkerClient {
     if (data.error) {
       log.error("rpc.error", { method, params: traceParams, code: data.error.code, message: data.error.message });
       stop();
-      throw new Error(`Worker RPC error: ${data.error.message}`);
+      // The JSON-RPC code travels with the error (409 = single-pending
+      // conflict) so BFF routes can map it to the matching HTTP status
+      // instead of collapsing everything into a generic 500.
+      throw new WorkerRpcError(data.error.message, data.error.code);
     }
 
     stop();
@@ -229,11 +270,11 @@ export class WorkerClient {
 
   async cancelRun(params: { sessionId: string; _traceRunId?: string }): Promise<{
     cancelled: boolean;
-    cleared: { steering: string[]; followUp: string[] };
+    cleared: PendingQueues;
   }> {
     return this.call<{
       cancelled: boolean;
-      cleared: { steering: string[]; followUp: string[] };
+      cleared: PendingQueues;
     }>("cancelRun", params);
   }
 
@@ -243,7 +284,7 @@ export class WorkerClient {
     _traceRunId?: string;
   }): Promise<{
     queued: boolean;
-    pending: { steering: string[]; followUp: string[] };
+    pending: PendingQueues;
   }> {
     return this.call("followUp", params);
   }
@@ -252,8 +293,8 @@ export class WorkerClient {
     sessionId: string;
     _traceRunId?: string;
   }): Promise<{
-    cleared: { steering: string[]; followUp: string[] };
-    pending: { steering: string[]; followUp: string[] };
+    cleared: PendingQueues;
+    pending: PendingQueues;
   }> {
     return this.call("clearQueue", params);
   }
@@ -264,8 +305,8 @@ export class WorkerClient {
     _traceRunId?: string;
   }): Promise<{
     steered: boolean;
-    cleared: { steering: string[]; followUp: string[] };
-    pending: { steering: string[]; followUp: string[] };
+    cleared: PendingQueues;
+    pending: PendingQueues;
   }> {
     return this.call("steer", params);
   }

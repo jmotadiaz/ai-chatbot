@@ -393,7 +393,11 @@ describe("TurnRunner followUp (ticket 01)", () => {
   it("queues plain text on the live session and reports the pending queue", async () => {
     const mock = createMockPiSession({ messages: [], isStreaming: false });
     seedRunning("fu-ok", mock);
-    (mock.session as any).getFollowUpMessages = () => ["also fix the typo"];
+    const queued: string[] = [];
+    (mock.session as any).followUp = vi.fn(async (text: string) => {
+      queued.push(text);
+    });
+    (mock.session as any).getFollowUpMessages = () => [...queued];
 
     const result = await runner.followUp("fu-ok", "also fix the typo");
 
@@ -402,6 +406,17 @@ describe("TurnRunner followUp (ticket 01)", () => {
       queued: true,
       pending: { steering: [], followUp: ["also fix the typo"] },
     });
+  });
+
+  it("rejects a second enqueue while one message is armed (single pending)", async () => {
+    const mock = createMockPiSession({ messages: [], isStreaming: false });
+    seedRunning("fu-busy", mock);
+    (mock.session as any).getFollowUpMessages = () => ["first instruction"];
+
+    await expect(runner.followUp("fu-busy", "second instruction")).rejects.toThrow(
+      "already pending",
+    );
+    expect(mock.session.followUp).not.toHaveBeenCalled();
   });
 
   it("rejects empty text, commands and idle sessions without touching Pi", async () => {

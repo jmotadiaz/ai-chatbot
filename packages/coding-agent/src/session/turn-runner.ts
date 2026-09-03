@@ -7,6 +7,14 @@ import { PiToAguiTranslator } from "../agui/pi-to-agui-translator";
 import { AguiEventType as EventType, FILES_CHANGED_EVENT, isSyncPoint, isTerminal, type AguiEvent } from "../agui/agui-event";
 export { FILES_CHANGED_EVENT };
 import { userMessageId } from "../agui/message-ids";
+import { extractUserMessageText } from "../agui/agui-messages";
+import {
+  isQueueOccupied,
+  pendingQueuesOf,
+  readPendingQueues,
+  QueueConflictError,
+  type PendingQueues,
+} from "./pending-queues";
 import {
   extractUserContentParts,
   inlineAttachedFiles,
@@ -115,29 +123,32 @@ export function assertPlainQueueText(text: unknown): asserts text is string {
   }
 }
 
-/** Queues snapshot shared by the queue readers (followUp/cancelRun).
- *  Named like ticket 02's `clearQueue`/`steer` results so the later merge
- *  can reuse it instead of duplicating the defensive copies. */
-function snapshotPendingQueues(session: {
-  getSteeringMessages(): readonly string[];
-  getFollowUpMessages(): readonly string[];
-}): { steering: string[]; followUp: string[] } {
-  return {
-    steering: [...session.getSteeringMessages()],
-    followUp: [...session.getFollowUpMessages()],
-  };
+/**
+ * Single-pending guard for `followUp`: a second enqueue while any queue
+ * is armed is a 409 conflict, never a stacked message. Direct RPC callers
+ * get the same enforcement as the locked composer (US7).
+ */
+function assertQueueFree(pending: PendingQueues): void {
+  if (isQueueOccupied(pending)) throw new QueueConflictError();
 }
 
-/** Plain-text extraction mirroring `convertPiMessagesToAgui` (user branch). */
-function injectedUserText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .filter((c) => (c as { type?: string })?.type === "text")
-      .map((c) => (c as { text?: string })?.text ?? "")
-      .join("\n");
+/**
+ * Single-pending guard for `steer`. Steering clears first, so re-steering
+ * the exact armed text is the idempotent promotion path and must proceed;
+ * steering anything else while occupied would silently discard the armed
+ * message, so it is a 409 conflict instead.
+ */
+function assertQueueFreeForSteer(pending: PendingQueues, text: string): void {
+  if (!isQueueOccupied(pending)) return;
+  const trimmed = text.trim();
+  const occupying = [...pending.steering, ...pending.followUp];
+  if (
+    occupying.length > 0 &&
+    occupying.every((entry) => entry.trim() === trimmed)
+  ) {
+    return;
   }
-  return "";
+  throw new QueueConflictError();
 }
 
 export class TurnRunner {
@@ -416,7 +427,7 @@ export class TurnRunner {
         // the active turn. Never a MESSAGES_SNAPSHOT here — replacing the
         // message list would wipe the assistant deltas the client already
         // applied from the stream.
-        const injectedText = injectedUserText(event.message?.content);
+        const injectedText = extractUserMessageText(event.message?.content);
         const timestamp = (event.message as { timestamp?: unknown }).timestamp;
         const messageId =
           typeof timestamp === "number" ? userMessageId(timestamp) : crypto.randomUUID();
@@ -637,13 +648,16 @@ export class TurnRunner {
    * event can never diverge. Delivery later removes exactly one entry
    * (SDK `message_start`) and the injected text is surfaced inside the
    * active turn by the collector (see `startPromptCollector`).
+   *
+   * Single pending message (US7): rejects with a 409 conflict when any
+   * queue is already armed, so direct RPC callers can never stack two.
    */
   async followUp(
     sessionId: string,
     text: string,
   ): Promise<{
     queued: boolean;
-    pending: { steering: string[]; followUp: string[] };
+    pending: PendingQueues;
   }> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);
@@ -655,8 +669,9 @@ export class TurnRunner {
     if (!entry.activeRun && !entry.runtime.session.isStreaming) {
       throw new Error("Cannot queue a follow-up while no turn is running");
     }
+    assertQueueFree(readPendingQueues(entry.runtime.session));
     await entry.runtime.session.followUp(text);
-    const pending = snapshotPendingQueues(entry.runtime.session);
+    const pending = readPendingQueues(entry.runtime.session);
     log.info("session.followup_queued", {
       sessionId,
       textLength: text.length,
@@ -673,8 +688,8 @@ export class TurnRunner {
    * queue returns empty lists, never an error.
    */
   async clearQueue(sessionId: string): Promise<{
-    cleared: { steering: string[]; followUp: string[] };
-    pending: { steering: string[]; followUp: string[] };
+    cleared: PendingQueues;
+    pending: PendingQueues;
   }> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);
@@ -682,19 +697,8 @@ export class TurnRunner {
       log.error("session.not_found", { sessionId });
       throw new Error("Session not found");
     }
-    const clearedRaw = entry.runtime.session.clearQueue() as {
-      steering?: unknown;
-      followUp?: unknown;
-    };
-    const cleared = {
-      steering: Array.isArray(clearedRaw?.steering)
-        ? [...(clearedRaw.steering as string[])]
-        : [],
-      followUp: Array.isArray(clearedRaw?.followUp)
-        ? [...(clearedRaw.followUp as string[])]
-        : [],
-    };
-    const pending = snapshotPendingQueues(entry.runtime.session);
+    const cleared = pendingQueuesOf(entry.runtime.session.clearQueue());
+    const pending = readPendingQueues(entry.runtime.session);
     log.info("session.queue_cleared", {
       sessionId,
       clearedSteeringCount: cleared.steering.length,
@@ -712,14 +716,18 @@ export class TurnRunner {
    * current assistant turn, before the next LLM call. Delivery later
    * surfaces inside the active turn via the collector (see
    * `startPromptCollector`), under the same runId.
+   *
+   * Single pending message (US7): rejects with a 409 conflict when the
+   * queues hold anything but the exact text being promoted — steering must
+   * never silently discard somebody else's armed message.
    */
   async steer(
     sessionId: string,
     text: string,
   ): Promise<{
     steered: boolean;
-    cleared: { steering: string[]; followUp: string[] };
-    pending: { steering: string[]; followUp: string[] };
+    cleared: PendingQueues;
+    pending: PendingQueues;
   }> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);
@@ -731,20 +739,10 @@ export class TurnRunner {
     if (!entry.activeRun && !entry.runtime.session.isStreaming) {
       throw new Error("Cannot steer while no turn is running");
     }
-    const clearedRaw = entry.runtime.session.clearQueue() as {
-      steering?: unknown;
-      followUp?: unknown;
-    };
-    const cleared = {
-      steering: Array.isArray(clearedRaw?.steering)
-        ? [...(clearedRaw.steering as string[])]
-        : [],
-      followUp: Array.isArray(clearedRaw?.followUp)
-        ? [...(clearedRaw.followUp as string[])]
-        : [],
-    };
+    assertQueueFreeForSteer(readPendingQueues(entry.runtime.session), text);
+    const cleared = pendingQueuesOf(entry.runtime.session.clearQueue());
     await entry.runtime.session.steer(text);
-    const pending = snapshotPendingQueues(entry.runtime.session);
+    const pending = readPendingQueues(entry.runtime.session);
     log.info("session.steer_queued", {
       sessionId,
       textLength: text.length,
@@ -764,11 +762,11 @@ export class TurnRunner {
    * auto-reenqueued — the client puts it back in the textarea for an
    * explicit confirm. No new RPC: ticket 02 owns `clearQueue`/`steer` as
    * standalone operations; abort piggybacks the drain here so both tickets
-   * share `snapshotPendingQueues` without duplicating queue reads.
+   * share `readPendingQueues`/`pendingQueuesOf` without duplicating queue reads.
    */
   async cancelRun(sessionId: string): Promise<{
     cancelled: boolean;
-    cleared: { steering: string[]; followUp: string[] };
+    cleared: PendingQueues;
   }> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);
@@ -777,18 +775,7 @@ export class TurnRunner {
       return { cancelled: false, cleared: { steering: [], followUp: [] } };
     }
     log.info("cancel.requested", { sessionId });
-    const clearedRaw = entry.runtime.session.clearQueue() as unknown as {
-      steering?: unknown;
-      followUp?: unknown;
-    };
-    const cleared = {
-      steering: Array.isArray(clearedRaw?.steering)
-        ? [...(clearedRaw.steering as string[])]
-        : [],
-      followUp: Array.isArray(clearedRaw?.followUp)
-        ? [...(clearedRaw.followUp as string[])]
-        : [],
-    };
+    const cleared = pendingQueuesOf(entry.runtime.session.clearQueue());
     await entry.runtime.session.abort();
     log.info("cancel.queue_drained", {
       sessionId,

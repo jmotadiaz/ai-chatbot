@@ -6,6 +6,17 @@ import type {
   WorkerSkill,
 } from "@/lib/features/code/worker-client";
 
+/**
+ * The worker's two queue lists in one value. Single pending message in
+ * v1: at most one entry across both lists is ever armed. This is the only
+ * spelling of the shape in the chatbot — snapshots, RPC results and the
+ * hook all reuse it instead of repeating the literal.
+ */
+export interface PendingQueues {
+  steering: string[];
+  followUp: string[];
+}
+
 /** Position in a session's AG-UI event log; seq is meaningful only per epoch. */
 export interface SessionCursor {
   epoch: string;
@@ -30,7 +41,7 @@ export interface SessionSnapshot {
    * fetch failed — the hook treats absence as "nothing armed" and the
    * queue-update event stays the source of truth afterwards.
    */
-  pending?: { steering: string[]; followUp: string[] };
+  pending?: PendingQueues;
 }
 
 /**

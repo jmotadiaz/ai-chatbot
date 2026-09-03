@@ -7,7 +7,7 @@ import {
   type InputContent,
   type Message,
 } from "@ag-ui/client";
-import { isCursorCustom, isQueueUpdateCustom, type AguiEvent } from "coding-agent/agui/event";
+import { isCursorCustom, type AguiEvent } from "coding-agent/agui/event";
 import type { ThinkingLevel } from "models";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
@@ -24,6 +24,12 @@ import type {
   SessionCursor,
   SessionSnapshot,
 } from "@/lib/features/code/types";
+import {
+  pendingChipText,
+  pendingMessageFromEvent,
+  pendingQueuesOf,
+  type PendingQueues,
+} from "@/lib/features/code/pending-queues";
 
 export type { SessionCursor, SessionSnapshot };
 
@@ -78,8 +84,13 @@ export interface UseCodingAgentResult {
    * draft on false instead of clearing the composer.
    */
   sendMessage: (content: string | InputContent[]) => Promise<boolean>;
-  /** Plain-text follow-up armed on the worker (queue-update event), or null. */
-  pendingFollowUp: string | null;
+  /**
+   * The armed pending text (queue-update event), or null. Derives from
+   * BOTH worker queues — follow-up first, promoted steering second — so a
+   * promoted message keeps the chip visible and the composer locked to
+   * chip-plus-cancel until delivery instead of admitting a second message.
+   */
+  pendingMessage: string | null;
   /** Enqueue `text` for end-of-turn delivery; rejects (text preserved by caller) on failure. */
   enqueueFollowUp: (text: string) => Promise<void>;
   /** Discard the pending queue without executing; rejects on failure. */
@@ -189,35 +200,47 @@ function cursorFromEvent(event: BaseEvent): CursorEvent | null {
 }
 
 /**
- * Queue-update CUSTOMs are the source of truth for the pending chip.
- * Anything else (including malformed values) leaves the chip untouched.
+ * Shared POST for the three queue operations (follow-up, clear, steer).
+ * Clears the banner first; on failure the banner shows the precise reason
+ * and the function rejects so the caller keeps its draft (ticket 04).
+ *
+ * Non-2xx answers carry the worker's own message as the body (the BFF
+ * queue routes map worker failures to status + verbatim message): it is
+ * surfaced as-is — the 409 single-pending conflict, the plain-text-only
+ * rejection — never wrapped in a generic status line (US8/US18). Only an
+ * empty body falls back to `action: status`. A dead worker names itself
+ * instead of surfacing the bare fetch error.
  */
-function pendingFollowUpFromEvent(event: BaseEvent): string | null | undefined {
-  const aguiEvent = event as unknown as AguiEvent;
-  if (!isQueueUpdateCustom(aguiEvent)) return undefined;
-  const value = aguiEvent.value;
-  if (!value || typeof value !== "object") return undefined;
-  const { followUp } = value as { followUp?: unknown };
-  if (!Array.isArray(followUp)) return undefined;
-  const first = followUp.find((entry): entry is string => typeof entry === "string");
-  return first ?? null;
-}
-
-/**
- * Chip text from a snapshot's pending queues (ticket 04 rehydration).
- * Same derivation as the live queue-update event — follow-up first, never
- * steering — so a reloaded chip and a live chip can never disagree: after a
- * promotion the queue-update clears the chip, and a snapshot taken then
- * restores no chip either. Anything malformed means "nothing armed".
- */
-function pendingChipText(
-  pending: { steering?: unknown; followUp?: unknown } | null | undefined,
-): string | null {
-  if (!pending || typeof pending !== "object") return null;
-  const { followUp } = pending;
-  if (!Array.isArray(followUp)) return null;
-  const first = followUp.find((entry): entry is string => typeof entry === "string");
-  return first ?? null;
+async function postQueue(
+  store: { update: (u: () => { error: string | null }) => void },
+  path: string,
+  body: unknown,
+  action: string,
+): Promise<void> {
+  store.update(() => ({ error: null }));
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? `${action}: worker unreachable (${err.message})`
+        : `${action}: worker unreachable`;
+    store.update(() => ({ error: message }));
+    throw err instanceof Error ? err : new Error(message);
+  }
+  if (!response.ok) {
+    const detail = await response
+      .text()
+      .then((text) => text.trim(), () => "");
+    const message = detail || `${action}: ${response.status}`;
+    store.update(() => ({ error: message }));
+    throw new Error(message);
+  }
 }
 
 /**
@@ -357,10 +380,10 @@ export function useCodingAgent({
         { startedAt: number; finishedAt?: number }
       >(),
       turnFiles: new Map() as TurnFilesMap,
-      // Rehydration (ticket 04): a reload with a pending follow-up restores
+      // Rehydration (ticket 04): a reload with an armed message restores
       // the chip straight from the snapshot — no queue-update needed first.
       // Queue-update events keep it in sync from here on.
-      pendingFollowUp: pendingChipText(seed?.pending),
+      pendingMessage: pendingChipText(seed?.pending),
     };
 
     let snapshot = seeded;
@@ -461,9 +484,9 @@ export function useCodingAgent({
                   cursorRef.current = cursor.cursor;
                 }
               }
-              const pending = pendingFollowUpFromEvent(event);
+              const pending = pendingMessageFromEvent(event);
               if (pending !== undefined) {
-                update(() => ({ pendingFollowUp: pending }));
+                update(() => ({ pendingMessage: pending }));
               }
               const changedFiles = filesChangedFromEvent(event);
               if (changedFiles && changedFiles.length > 0) {
@@ -761,9 +784,9 @@ export function useCodingAgent({
           toolErrors: new Map(),
           toolTimings: new Map(),
           // Rehydration (ticket 04): seed the chip from the worker's
-          // surviving queues; the connect stream's queue-updates sync it
-          // from here on.
-          pendingFollowUp: pendingChipText(snapshot.pending),
+          // surviving queues (follow-up or promoted steering); the connect
+          // stream's queue-updates sync it from here on.
+          pendingMessage: pendingChipText(snapshot.pending),
         }));
         if (snapshot.running && snapshot.cursor) {
           await connect(snapshot.cursor);
@@ -943,29 +966,10 @@ export function useCodingAgent({
       if (!trimmed) return;
       // The composer keeps its draft until this resolves: on failure the
       // text stays in the textarea and the error surfaces in the banner.
-      store.update(() => ({ error: null }));
-      let response: Response;
-      try {
-        response = await fetch("/api/agent/code/follow-up", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, text: trimmed }),
-        });
-      } catch (err) {
-        // A dead worker names itself instead of surfacing the bare fetch
-        // error; the caller keeps its draft (see sendMessage/handleFollowUp).
-        const message =
-          err instanceof Error
-            ? `Failed to queue follow-up: worker unreachable (${err.message})`
-            : "Failed to queue follow-up: worker unreachable";
-        store.update(() => ({ error: message }));
-        throw err instanceof Error ? err : new Error(message);
-      }
-      if (!response.ok) {
-        const message = `Failed to queue follow-up: ${response.status}`;
-        store.update(() => ({ error: message }));
-        throw new Error(message);
-      }
+      await postQueue(store, "/api/agent/code/follow-up", {
+        sessionId,
+        text: trimmed,
+      }, "Failed to queue follow-up");
     },
     [sessionId, store],
   );
@@ -1082,7 +1086,7 @@ export function useCodingAgent({
       sessionId,
       eventName: "client.cancel.request",
     });
-    let cleared: { steering: string[]; followUp: string[] };
+    let cleared: PendingQueues;
     try {
       const response = await fetch("/api/agent/code/cancel", {
         method: "POST",
@@ -1096,15 +1100,7 @@ export function useCodingAgent({
         cancelled?: unknown;
         cleared?: { steering?: unknown; followUp?: unknown };
       };
-      const raw = result.cleared ?? { steering: [], followUp: [] };
-      cleared = {
-        steering: Array.isArray(raw.steering)
-          ? raw.steering.filter((s): s is string => typeof s === "string")
-          : [],
-        followUp: Array.isArray(raw.followUp)
-          ? raw.followUp.filter((s): s is string => typeof s === "string")
-          : [],
-      };
+      cleared = pendingQueuesOf(result.cleared);
     } catch (err) {
       store.update(() => ({
         error: err instanceof Error ? err.message : "Failed to cancel turn",
@@ -1114,67 +1110,26 @@ export function useCodingAgent({
     // The abort closed the run stream, so a queue-update for the drain may
     // never arrive: drop the chip optimistically. The drained text returns
     // to the caller as an editable draft — never auto-reenqueued, never
-    // executed.
-    store.update(() => ({ pendingFollowUp: null }));
-    return (
-      cleared.followUp.find((s) => s.trim().length > 0) ??
-      cleared.steering.find((s) => s.trim().length > 0) ??
-      null
-    );
+    // executed. Same derivation as the chip, so abort and rehydration agree.
+    store.update(() => ({ pendingMessage: null }));
+    return pendingChipText(cleared);
   }, [sessionId, store]);
 
   const clearQueue = useCallback(async () => {
     // Edit/delete share this: the textarea draft is owned by the caller
     // (edit restores the pending text, delete drops it), so the hook only
     // surfaces the error in the banner and rejects.
-    store.update(() => ({ error: null }));
-    let response: Response;
-    try {
-      response = await fetch("/api/agent/code/clear-queue", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      });
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? `Failed to clear queued message: worker unreachable (${err.message})`
-          : "Failed to clear queued message: worker unreachable";
-      store.update(() => ({ error: message }));
-      throw err instanceof Error ? err : new Error(message);
-    }
-    if (!response.ok) {
-      const message = `Failed to clear queued message: ${response.status}`;
-      store.update(() => ({ error: message }));
-      throw new Error(message);
-    }
+    await postQueue(store, "/api/agent/code/clear-queue", { sessionId }, "Failed to clear queued message");
   }, [sessionId, store]);
 
   const promoteToSteering = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      store.update(() => ({ error: null }));
-      let response: Response;
-      try {
-        response = await fetch("/api/agent/code/steer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, text: trimmed }),
-        });
-      } catch (err) {
-        const message =
-          err instanceof Error
-            ? `Failed to promote to steering: worker unreachable (${err.message})`
-            : "Failed to promote to steering: worker unreachable";
-        store.update(() => ({ error: message }));
-        throw err instanceof Error ? err : new Error(message);
-      }
-      if (!response.ok) {
-        const message = `Failed to promote to steering: ${response.status}`;
-        store.update(() => ({ error: message }));
-        throw new Error(message);
-      }
+      await postQueue(store, "/api/agent/code/steer", {
+        sessionId,
+        text: trimmed,
+      }, "Failed to promote to steering");
     },
     [sessionId, store],
   );
@@ -1187,7 +1142,7 @@ export function useCodingAgent({
     isRunning: state.isRunning,
     isLoading: state.isLoading,
     sendMessage,
-    pendingFollowUp: state.pendingFollowUp,
+    pendingMessage: state.pendingMessage,
     enqueueFollowUp,
     clearQueue,
     promoteToSteering,

@@ -34,6 +34,7 @@ import {
   resolvePrompt,
 } from "../session/session-manager";
 import { setSubagentRunner } from "../subagent/subagent-bridge";
+import { QueueConflictError, type PendingQueues } from "../session/pending-queues";
 
 export interface HttpTransportOptions {
   port: number;
@@ -458,9 +459,13 @@ export async function handleRpc(requestBody: string): Promise<Response> {
     return jsonResponse(result, id);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    // Single-pending conflicts keep their 409 instead of collapsing into
+    // the generic internal error, so direct RPC callers see the same
+    // enforcement as the locked composer.
+    const code = err instanceof QueueConflictError ? err.code : -32603;
     log.error("rpc.error", { method, message, stack: err instanceof Error ? err.stack : undefined });
     stop();
-    return jsonResponse(null, id, { code: -32603, message });
+    return jsonResponse(null, id, { code, message });
   }
 }
 
@@ -582,7 +587,7 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       };
     case "getSessionSnapshot": {
       const cursor = r.cursor as { epoch?: unknown; seq?: unknown } | null;
-      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
+      const pending = r.pending as PendingQueues | undefined;
       return {
         messageCount: Array.isArray(r.messages) ? r.messages.length : 0,
         running: r.running === true,
@@ -592,7 +597,7 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       };
     }
     case "followUp": {
-      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
+      const pending = r.pending as PendingQueues | undefined;
       return {
         queued: r.queued === true,
         steeringCount: Array.isArray(pending?.steering) ? pending.steering.length : 0,
@@ -600,8 +605,8 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       };
     }
     case "steer": {
-      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
-      const cleared = r.cleared as { steering?: unknown; followUp?: unknown } | undefined;
+      const pending = r.pending as PendingQueues | undefined;
+      const cleared = r.cleared as PendingQueues | undefined;
       return {
         steered: r.steered === true,
         clearedSteeringCount: Array.isArray(cleared?.steering) ? cleared.steering.length : 0,
@@ -611,8 +616,8 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       };
     }
     case "clearQueue": {
-      const cleared = r.cleared as { steering?: unknown; followUp?: unknown } | undefined;
-      const pending = r.pending as { steering?: unknown; followUp?: unknown } | undefined;
+      const cleared = r.cleared as PendingQueues | undefined;
+      const pending = r.pending as PendingQueues | undefined;
       return {
         clearedSteeringCount: Array.isArray(cleared?.steering) ? cleared.steering.length : 0,
         clearedFollowUpCount: Array.isArray(cleared?.followUp) ? cleared.followUp.length : 0,
@@ -621,7 +626,7 @@ function summarizeRpcResult(method: string, result: unknown): unknown {
       };
     }
     case "cancelRun": {
-      const cleared = r.cleared as { steering?: unknown; followUp?: unknown } | undefined;
+      const cleared = r.cleared as PendingQueues | undefined;
       return {
         cancelled: r.cancelled === true,
         clearedSteeringCount: Array.isArray(cleared?.steering) ? cleared.steering.length : 0,
