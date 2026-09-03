@@ -32,14 +32,18 @@ async function rpc(method: string, params: unknown) {
   };
 }
 
-function seedFollowUpSession(sessionId: string, opts?: { running?: boolean }) {
-  const followUpMessages: string[] = [];
+function seedFollowUpSession(
+  sessionId: string,
+  opts?: { running?: boolean; steering?: string[]; followUp?: string[] },
+) {
+  const steeringMessages: string[] = [...(opts?.steering ?? [])];
+  const followUpMessages: string[] = [...(opts?.followUp ?? [])];
   const session = {
     isStreaming: opts?.running ?? true,
     followUp: vi.fn(async (text: string) => {
       followUpMessages.push(text);
     }),
-    getSteeringMessages: () => [],
+    getSteeringMessages: () => [...steeringMessages],
     getFollowUpMessages: () => [...followUpMessages],
   };
   sessionRegistry.set(sessionId, {
@@ -127,6 +131,36 @@ describe("followUp RPC", () => {
       queued: true,
       pending: { steering: [], followUp: ["also fix the typo"] },
     });
+  });
+});
+
+describe("followUp single pending (US7)", () => {
+  it("rejects with a 409 conflict when a follow-up is already armed", async () => {
+    const { session } = seedFollowUpSession("s-busy-fu", {
+      followUp: ["first instruction"],
+    });
+    const body = await rpc("followUp", {
+      sessionId: "s-busy-fu",
+      text: "second instruction",
+    });
+    expect(body.result).toBeUndefined();
+    expect(body.error?.code).toBe(409);
+    expect(body.error?.message).toMatch(/already pending/);
+    expect(session.followUp).not.toHaveBeenCalled();
+  });
+
+  it("rejects with a 409 conflict when steering is already armed", async () => {
+    const { session } = seedFollowUpSession("s-busy-st", {
+      steering: ["promoted instruction"],
+    });
+    const body = await rpc("followUp", {
+      sessionId: "s-busy-st",
+      text: "second instruction",
+    });
+    expect(body.result).toBeUndefined();
+    expect(body.error?.code).toBe(409);
+    expect(body.error?.message).toMatch(/already pending/);
+    expect(session.followUp).not.toHaveBeenCalled();
   });
 });
 

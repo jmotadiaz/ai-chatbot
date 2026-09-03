@@ -23,10 +23,8 @@ export interface SessionStatus {
  */
 export type SessionCursor = Cursor;
 
-export interface PendingQueues {
-  steering: string[];
-  followUp: string[];
-}
+import { readPendingQueues, type PendingQueues } from "./pending-queues";
+export type { PendingQueues };
 
 export interface SessionSnapshot {
   messages: Array<any>;
@@ -41,29 +39,6 @@ export interface SessionSnapshot {
   pending: PendingQueues;
 }
 
-/**
- * Defensive read of the Pi queues: test doubles and older sessions may
- * lack the getters, and a throwing getter must never fail the snapshot.
- */
-function readPendingQueues(session: {
-  getSteeringMessages?: () => readonly unknown[];
-  getFollowUpMessages?: () => readonly unknown[];
-}): PendingQueues {
-  const read = (fn?: () => readonly unknown[]): string[] => {
-    try {
-      const value = fn?.call(session);
-      return Array.isArray(value)
-        ? value.filter((entry): entry is string => typeof entry === "string")
-        : [];
-    } catch {
-      return [];
-    }
-  };
-  return {
-    steering: read(session.getSteeringMessages),
-    followUp: read(session.getFollowUpMessages),
-  };
-}
 
 export class SessionQueries {
   constructor(private readonly registry: SessionRegistry) {}

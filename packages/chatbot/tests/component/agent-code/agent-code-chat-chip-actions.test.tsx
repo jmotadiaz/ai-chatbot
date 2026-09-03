@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
     isRunning: false,
     isLoading: false,
     sendMessage: undefined as unknown as () => Promise<boolean>,
-    pendingFollowUp: null as string | null,
+    pendingMessage: null as string | null,
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     clearQueue: undefined as unknown as () => Promise<void>,
     promoteToSteering: undefined as unknown as (text: string) => Promise<void>,
@@ -82,7 +82,7 @@ afterEach(() => {
   mocks.sendMessage.mockImplementation(() => Promise.resolve(true));
   mocks.hookResult.isRunning = false;
   mocks.hookResult.isLoading = false;
-  mocks.hookResult.pendingFollowUp = null;
+  mocks.hookResult.pendingMessage = null;
 });
 
 const renderChat = () =>
@@ -91,7 +91,7 @@ const renderChat = () =>
 describe("AgentCodeChat chip actions (ticket 02)", () => {
   it("shows the three chip actions while a message is pending", () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = "also fix the typo";
+    mocks.hookResult.pendingMessage = "also fix the typo";
     renderChat();
     expect(screen.getByTestId("followup-chip").textContent).toContain("also fix the typo");
     expect(screen.getByLabelText("Edit pending follow-up")).toBeDefined();
@@ -101,7 +101,7 @@ describe("AgentCodeChat chip actions (ticket 02)", () => {
 
   it("hides the chip actions when nothing is pending", () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = null;
+    mocks.hookResult.pendingMessage = null;
     renderChat();
     expect(screen.queryByTestId("followup-chip")).toBeNull();
     expect(screen.queryByLabelText("Edit pending follow-up")).toBeNull();
@@ -111,7 +111,7 @@ describe("AgentCodeChat chip actions (ticket 02)", () => {
 
   it("edit returns the pending text to the textarea for rework", async () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = "also fix the typo";
+    mocks.hookResult.pendingMessage = "also fix the typo";
     renderChat();
     expect((screen.getByTestId("chat-input") as HTMLTextAreaElement).value).toBe("");
 
@@ -132,7 +132,7 @@ describe("AgentCodeChat chip actions (ticket 02)", () => {
 
   it("discard clears the queue without executing and without touching the draft", async () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = "also fix the typo";
+    mocks.hookResult.pendingMessage = "also fix the typo";
     renderChat();
     fireEvent.change(screen.getByTestId("chat-input"), {
       target: { value: "fresh idea" },
@@ -150,7 +150,7 @@ describe("AgentCodeChat chip actions (ticket 02)", () => {
 
   it("promote sends the pending text to steering exactly once", async () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingFollowUp = "also fix the typo";
+    mocks.hookResult.pendingMessage = "also fix the typo";
     renderChat();
 
     fireEvent.click(screen.getByLabelText("Promote to steering"));
@@ -160,5 +160,30 @@ describe("AgentCodeChat chip actions (ticket 02)", () => {
     });
     expect(mocks.promoteToSteering).toHaveBeenCalledWith("also fix the typo");
     expect(mocks.clearQueue).not.toHaveBeenCalled();
+  });
+});
+
+describe("AgentCodeChat steering-aware chip (review fix 07)", () => {
+  it("keeps the chip visible with the steering text and the composer locked", () => {
+    mocks.hookResult.isRunning = true;
+    mocks.hookResult.pendingMessage = "steered text";
+    renderChat();
+
+    // A promoted message stays visible until delivery: the chip shows the
+    // steering text and everything but chip-plus-cancel stays locked.
+    expect(screen.getByTestId("followup-chip").textContent).toContain(
+      "steered text",
+    );
+    expect(screen.getByLabelText("Edit pending follow-up")).toBeDefined();
+    expect(screen.getByLabelText("Discard pending follow-up")).toBeDefined();
+    expect(screen.getByLabelText("Promote to steering")).toBeDefined();
+    const input = screen.getByTestId("chat-input") as HTMLTextAreaElement;
+    expect(input.disabled).toBe(true);
+    const followUp = screen.getByLabelText("Queue follow-up");
+    expect(
+      followUp instanceof HTMLButtonElement
+        ? followUp.disabled
+        : followUp.hasAttribute("disabled"),
+    ).toBe(true);
   });
 });

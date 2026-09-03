@@ -24,6 +24,7 @@ import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-re
 import { prependSkillCommands } from "@/lib/features/code/skill-commands";
 import { handleLocalFileUpload } from "@/lib/features/attachment/utils";
 import type { FilePart } from "@/lib/features/attachment/types";
+import { midTurnBlockReason } from "@/lib/features/code/pending-queues";
 import {
   buildUserContent,
   CODE_AGENT_SUPPORTED_FILES,
@@ -74,7 +75,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     isRunning,
     isLoading,
     sendMessage,
-    pendingFollowUp,
+    pendingMessage,
     enqueueFollowUp,
     clearQueue,
     promoteToSteering,
@@ -89,12 +90,12 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     initialSnapshot: bootstrap?.snapshot,
   });
 
-  // Ticket 03 guards. `hasPending` (chip armed) locks the whole composer
-  // down to chip-plus-cancel; `isRunning` (active turn) locks the
+  // Ticket 03 guards. `hasPending` (chip armed, follow-up or promoted
+  // steering) locks the whole composer down to chip-plus-cancel; `isRunning` (active turn) locks the
   // turn-scoped config and non-text sources, which only apply next turn.
   // The undefined check keeps older hook mocks (without the ticket-01
   // field) on the unlocked path instead of a phantom lock.
-  const hasPending = pendingFollowUp !== null && pendingFollowUp !== undefined;
+  const hasPending = pendingMessage !== null && pendingMessage !== undefined;
 
   const handleCancel = async () => {
     const draft = await cancel().catch(() => null);
@@ -186,7 +187,22 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     }
     setAttachmentError(null);
     if (isRunning) {
-      // Mid-turn sends never open a run: the hook routes plain text through
+      // Mid-turn sends never open a run, and non-text selections never
+      // travel with queue operations (plain text v1): an armed skill,
+      // file comment or attachment is a precise visible error with the
+      // draft preserved — no worker call that would reject late (US8).
+      // Text-level commands stay in the text and are rejected worker-side
+      // with its own precise message, surfaced verbatim in the banner.
+      const blocked = midTurnBlockReason({
+        skillCount: selectedSkills.length,
+        commentCount: pendingComments.length,
+        fileCount: files.length,
+      });
+      if (blocked) {
+        setAttachmentError(blocked);
+        return;
+      }
+      // The hook routes plain text through
       // followUp and reports whether the worker accepted it. Only clear the
       // composer on acceptance — a worker blip keeps the draft (ticket 04:
       // error in the banner, text preserved) instead of losing it. The
@@ -210,6 +226,17 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   const handleFollowUp = async () => {
     const text = input.trim();
     if (!text || !isRunning) return;
+    // Same guard as submit: armed skills/comments/files are a visible
+    // error, never a silent enqueue of the bare text (US8).
+    const blocked = midTurnBlockReason({
+      skillCount: selectedSkills.length,
+      commentCount: pendingComments.length,
+      fileCount: files.length,
+    });
+    if (blocked) {
+      setAttachmentError(blocked);
+      return;
+    }
     try {
       await enqueueFollowUp(text);
       // Only clear on success: a network blip keeps the text as a draft
@@ -221,7 +248,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   };
 
   const handleEditPending = async () => {
-    const text = pendingFollowUp;
+    const text = pendingMessage;
     if (!text) return;
     try {
       await clearQueue();
@@ -242,7 +269,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   };
 
   const handlePromotePending = async () => {
-    const text = pendingFollowUp;
+    const text = pendingMessage;
     if (!text) return;
     try {
       await promoteToSteering(text);
@@ -283,16 +310,16 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
         <PendingCommentsBar disabled={isRunning} />
-        {pendingFollowUp && (
+        {pendingMessage && (
           <div className="mb-2 flex items-center gap-2" data-testid="followup-chip">
             {/* Ticket 02 owns the chip actions (edit/discard/promote) rendered
                 here; the guards below keep the chip itself mounted and alive. */}
             <span
               aria-label="Pending follow-up"
-              title={pendingFollowUp}
+              title={pendingMessage}
               className="inline-flex max-w-full items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
             >
-              <span className="truncate">{pendingFollowUp}</span>
+              <span className="truncate">{pendingMessage}</span>
             </span>
             <div className="flex shrink-0 items-center gap-1">
               <button

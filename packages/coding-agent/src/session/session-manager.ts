@@ -6,6 +6,7 @@ import { getTraceLogger } from "tracing";
 import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
 import { SessionEventLog, type Cursor } from "../agui/event-log";
+import type { PendingQueues } from "./pending-queues";
 import { getAuthJsonPath, getModelsJsonPath } from "../runtime/models";
 import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
 import { startSubagentCollector } from "../subagent/subagent-collector";
@@ -149,7 +150,7 @@ export interface SessionSnapshot {
   messages: Array<any>;
   cursor: SessionCursor | null;
   running: boolean;
-  pending: { steering: string[]; followUp: string[] };
+  pending: PendingQueues;
 }
 
 export async function getSessionStatus(sessionId: string, parentSessionId?: string): Promise<SessionStatus> {
@@ -174,7 +175,7 @@ export async function connectToSession(
 
 export async function cancelRun(sessionId: string): Promise<{
   cancelled: boolean;
-  cleared: { steering: string[]; followUp: string[] };
+  cleared: PendingQueues;
 }> {
   return turnRunner.cancelRun(sessionId);
 }
@@ -184,14 +185,14 @@ export async function followUp(
   text: string,
 ): Promise<{
   queued: boolean;
-  pending: { steering: string[]; followUp: string[] };
+  pending: PendingQueues;
 }> {
   return turnRunner.followUp(sessionId, text);
 }
 
 export async function clearQueue(sessionId: string): Promise<{
-  cleared: { steering: string[]; followUp: string[] };
-  pending: { steering: string[]; followUp: string[] };
+  cleared: PendingQueues;
+  pending: PendingQueues;
 }> {
   return turnRunner.clearQueue(sessionId);
 }
@@ -201,8 +202,8 @@ export async function steer(
   text: string,
 ): Promise<{
   steered: boolean;
-  cleared: { steering: string[]; followUp: string[] };
-  pending: { steering: string[]; followUp: string[] };
+  cleared: PendingQueues;
+  pending: PendingQueues;
 }> {
   return turnRunner.steer(sessionId, text);
 }

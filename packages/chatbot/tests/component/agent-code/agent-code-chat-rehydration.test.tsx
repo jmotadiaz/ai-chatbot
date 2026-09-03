@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
     isRunning: true,
     isLoading: false,
     sendMessage: undefined as unknown as () => Promise<boolean>,
-    pendingFollowUp: null as string | null,
+    pendingMessage: null as string | null,
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     clearQueue: undefined as unknown as () => Promise<void>,
     promoteToSteering: undefined as unknown as (text: string) => Promise<void>,
@@ -73,7 +73,7 @@ afterEach(() => {
   mocks.sendMessage.mockClear();
   mocks.sendMessage.mockImplementation(() => Promise.resolve(true));
   mocks.hookResult.isRunning = true;
-  mocks.hookResult.pendingFollowUp = null;
+  mocks.hookResult.pendingMessage = null;
   mocks.hookResult.error = null;
 });
 

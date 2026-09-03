@@ -9,6 +9,7 @@ import {
 import { AguiEventType, AUTO_RETRY_EVENT, QUEUE_UPDATE_EVENT, type AguiEvent } from "./agui-event";
 export { AguiEventType, AUTO_RETRY_EVENT, QUEUE_UPDATE_EVENT };
 export type { AguiEvent };
+import { stringArrayOf } from "../session/pending-queues";
 // Deprecated alias kept for transitional tests — will be removed
 export type BaseEvent = AguiEvent;
 
@@ -540,16 +541,12 @@ export class PiToAguiTranslator {
         // Source of truth for the pending-message chip: the worker owns both
         // queues, so every change (enqueue, delivery, clear) is re-emitted
         // here and the UI never tracks queue state locally.
-        const steering = Array.isArray(event.steering)
-          ? event.steering.filter((s): s is string => typeof s === "string")
-          : [];
-        const followUp = Array.isArray(event.followUp)
-          ? event.followUp.filter((s): s is string => typeof s === "string")
-          : [];
+        const steering = stringArrayOf(event.steering);
+        const followUp = stringArrayOf(event.followUp);
         out.push({
           type: EventType.CUSTOM,
           name: QUEUE_UPDATE_EVENT,
-          value: { steering: [...steering], followUp: [...followUp] },
+          value: { steering, followUp },
           timestamp: this.now(),
         });
         break;

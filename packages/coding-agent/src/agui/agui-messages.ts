@@ -7,7 +7,13 @@ import {
 } from "./message-ids";
 import { splitAttachedFiles } from "../runtime/attached-files";
 
-function extractMessageText(content: unknown): string {
+/**
+ * Plain-text extraction for a Pi user message's content. Shared by the
+ * snapshot/sync converter above and the turn-runner collector, which
+ * surfaces a delivered queued message with the same text the converter
+ * would render for it (single derivation, no mirrored branch).
+ */
+export function extractUserMessageText(content: unknown): string {
   if (typeof content === "string") {
     return content;
   }
@@ -43,7 +49,7 @@ export function convertPiMessagesToAgui(piMessages: ReadonlyArray<any>): Array<a
       const baseId =
         typeof msg.clientMessageId === "string" ? msg.clientMessageId : userMessageId(msg.timestamp);
       const id = idDeduper.dedupe(baseId);
-      const rawText = typeof msg.content === "string" ? msg.content : extractMessageText(msg.content);
+      const rawText = typeof msg.content === "string" ? msg.content : extractUserMessageText(msg.content);
       const piImages = Array.isArray(msg.content)
         ? msg.content.filter((c: any) => c && c.type === "image")
         : [];

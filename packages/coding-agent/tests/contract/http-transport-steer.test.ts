@@ -211,6 +211,52 @@ describe("steer RPC (promotion)", () => {
   });
 });
 
+describe("steer single pending (US7)", () => {
+  it("rejects with a 409 conflict when the queue holds a different text", async () => {
+    const { session, callOrder } = seedQueueSession("s-steer-busy", {
+      followUp: ["first instruction"],
+    });
+    const body = await rpc("steer", {
+      sessionId: "s-steer-busy",
+      text: "different instruction",
+    });
+    expect(body.result).toBeUndefined();
+    expect(body.error?.code).toBe(409);
+    expect(body.error?.message).toMatch(/already pending/);
+    // Nothing discarded, nothing armed: the armed message survives.
+    expect(callOrder).toEqual([]);
+    expect(session.steer).not.toHaveBeenCalled();
+    expect(session.clearQueue).not.toHaveBeenCalled();
+  });
+
+  it("rejects with a 409 conflict when steering holds a different text", async () => {
+    const { session } = seedQueueSession("s-steer-busy-st", {
+      steering: ["promoted instruction"],
+    });
+    const body = await rpc("steer", {
+      sessionId: "s-steer-busy-st",
+      text: "different instruction",
+    });
+    expect(body.error?.code).toBe(409);
+    expect(session.steer).not.toHaveBeenCalled();
+  });
+
+  it("still promotes when the queue holds the exact same text (idempotent)", async () => {
+    const { steeringMessages, followUpMessages, callOrder } =
+      seedQueueSession("s-steer-same", {
+        followUp: ["also fix the typo"],
+      });
+    const body = await rpc("steer", {
+      sessionId: "s-steer-same",
+      text: "also fix the typo",
+    });
+    expect(body.error).toBeUndefined();
+    expect(callOrder).toEqual(["clearQueue", "steer"]);
+    expect(steeringMessages).toEqual(["also fix the typo"]);
+    expect(followUpMessages).toEqual([]);
+  });
+});
+
 describe("summarizeRpcParams (steer/clearQueue)", () => {
   it("exposes only the text length for steer, never the text", () => {
     const summary = summarizeRpcParams("steer", {
