@@ -392,6 +392,35 @@ export const MODEL_CATALOG = [
     maxTokens: 32_000,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
+  {
+    // Pi does not ship this model, so it describes its own limits, cost and
+    // endpoint (openai-completions per the endpoints table at
+    // https://opencode.ai/docs/es/go). Pricing per the usage table there
+    // (input $0.20 / output $0.66 / cached read $0.04 per 1M tokens, no
+    // cached-write tier); limits mirror the opencode-go registry
+    // (500k context, 128k output). Reasoning is mandatory with low/high
+    // effort only, so off/minimal/medium are hidden and xhigh is not
+    // exposed; the highest supported level (high) is the session default.
+    id: "Omen Alpha",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "omen-alpha" },
+    company: "ai-chatbot",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+    },
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
+    supportedFiles: ["img"],
+    contextWindow: 500_000,
+    maxTokens: 128_000,
+    cost: { input: 0.2, output: 0.66, cacheRead: 0.04, cacheWrite: 0 },
+  },
   // --- internal / non-selectable models ---
   {
     id: "StepFun 3.5",

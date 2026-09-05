@@ -62,6 +62,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Hy3",
       "GLM 5.3 Flash",
       "MiniMax M3 (free)",
+      "Omen Alpha",
     ]);
   });
 

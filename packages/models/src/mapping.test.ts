@@ -104,6 +104,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the Omen Alpha catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("Omen Alpha" as never)).toEqual({
+      providerId: "opencode-go",
+      modelId: "omen-alpha",
+    });
+    expect(toChatModelId("opencode-go", "omen-alpha")).toBe(
+      "Omen Alpha",
+    );
+  });
+
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
       {
