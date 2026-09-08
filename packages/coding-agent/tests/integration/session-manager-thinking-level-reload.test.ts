@@ -40,11 +40,9 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
       systemPrompt: "",
       messages: [],
     },
-    services: { modelRegistry: { find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) } },
+    services: { modelRuntime: { getModel: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) } },
   }),
   getAgentDir: () => "/tmp/agent-dir",
-  AuthStorage: { create: () => ({}) },
-  ModelRegistry: { create: () => ({ find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) }) },
   SessionManager: {
     list: async () => [{ id: "s1", path: piState.sessionFilePath }],
     open: () => ({ getSessionId: () => "s1" }),

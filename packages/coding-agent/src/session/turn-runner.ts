@@ -540,11 +540,11 @@ export class TurnRunner {
           throw new Error("Cannot change model while the agent is running");
         }
         const { provider: piProvider, model: piModelId } = splitModelReference(options.modelId);
-        const services = (entry.runtime as unknown as { services?: { modelRegistry?: { find: (p: string, m: string) => unknown } } })
+        const services = (entry.runtime as unknown as { services?: { modelRuntime?: { getModel: (p: string, m: string) => unknown } } })
           .services;
         const model =
-          piProvider && piModelId && services?.modelRegistry
-            ? services.modelRegistry.find(piProvider, piModelId)
+          piProvider && piModelId && services?.modelRuntime
+            ? services.modelRuntime.getModel(piProvider, piModelId)
             : undefined;
         if (model) {
           await entry.runtime.session.setModel(model as never);

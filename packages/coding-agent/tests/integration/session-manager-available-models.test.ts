@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateModelsJson, type ModelCatalogEntry } from "models";
+import { resetModelRuntimeForTests } from "../../src/runtime/model-runtime";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -56,6 +57,8 @@ let tmp: string;
 const savedEnv: Record<string, string | undefined> = {};
 
 beforeEach(() => {
+  // Rebuild the ModelRuntime singleton against this test's temp paths/env.
+  resetModelRuntimeForTests();
   tmp = mkdtempSync(path.join(tmpdir(), "available-models-"));
   savedEnv.CODING_AGENT_MODELS_JSON = process.env.CODING_AGENT_MODELS_JSON;
   savedEnv.CODING_AGENT_AUTH_JSON = process.env.CODING_AGENT_AUTH_JSON;

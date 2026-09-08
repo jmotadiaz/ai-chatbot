@@ -1,13 +1,13 @@
 import path from "node:path";
 import { existsSync, mkdirSync, statSync } from "node:fs";
-import { createAgentSessionRuntime, SessionManager, AuthStorage, ModelRegistry } from "@earendil-works/pi-coding-agent";
+import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
 import { getSupportedThinkingLevels } from "models";
 import type { ThinkingLevel, ThinkingLevelMap } from "models";
 import { SessionEventLog, type Cursor } from "../agui/event-log";
 import type { PendingQueues } from "./pending-queues";
-import { getAuthJsonPath, getModelsJsonPath } from "../runtime/models";
+import { getModelRuntime } from "../runtime/model-runtime";
 import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
 import { startSubagentCollector } from "../subagent/subagent-collector";
 import type { SubagentRunParams, SubagentDetails, SubagentRunResult } from "../subagent/subagent-bridge";
@@ -104,9 +104,12 @@ export async function getAvailableModels(): Promise<
 > {
   const log = getTraceLogger("worker");
   log.info("models.fetch");
-  const authStorage = AuthStorage.create(getAuthJsonPath());
-  const registry = ModelRegistry.create(authStorage, getModelsJsonPath());
-  const available = registry.getAvailable();
+  // Availability refresh on the shared ModelRuntime: file-backed catalog
+  // (allowModelNetwork: false) filtered by configured auth — the semantic
+  // equivalent of the pre-0.80.8 `ModelRegistry.getAvailable()`. The snapshot
+  // variant is NOT used here: with `refreshOnCreate: false` it is empty until
+  // the first availability refresh, which getAvailable() performs locally.
+  const available = await (await getModelRuntime()).getAvailable();
   const filtered = available.map((model) => ({
     providerId: model.provider,
     modelId: model.id,

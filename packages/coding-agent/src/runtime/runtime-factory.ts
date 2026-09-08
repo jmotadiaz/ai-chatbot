@@ -1,12 +1,10 @@
 import {
   createAgentSessionFromServices,
   createAgentSessionServices,
-  AuthStorage,
-  ModelRegistry,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
+import { getModelRuntime } from "./model-runtime";
 import { getTraceContext, getTraceLogger } from "tracing";
-import { getAuthJsonPath, getModelsJsonPath } from "./models";
 import {
   getBuiltinSkillPaths,
   getExtensionPaths,
@@ -40,7 +38,9 @@ export function makeCreateRuntime(
   options?: { includeSubagentExtension?: boolean },
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
-    const authStorage = AuthStorage.create(getAuthJsonPath());
+    // Shared process-wide facade over credentials + model catalog (SDK ≥ 0.80.8
+    // replaced AuthStorage/ModelRegistry with a single async ModelRuntime).
+    const modelRuntime = await getModelRuntime();
     // Child subagent runtimes execute one specific task from a self-contained
     // brief: they get neither the `subagent` tool, nor the superpowers
     // bootstrap, nor the superpowers skills. All three exclusions share the
@@ -50,8 +50,7 @@ export function makeCreateRuntime(
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
       agentDir: getCodingAgentDir(),
-      authStorage,
-      modelRegistry: ModelRegistry.create(authStorage, getModelsJsonPath()),
+      modelRuntime,
       resourceLoaderOptions: {
         // FILE_REFERENCE_PROMPT is harness-owned. The superpowers bootstrap
         // (USING_SUPERPOWERS_PROMPT) is NOT appended here — the superpowers
@@ -84,7 +83,7 @@ export function makeCreateRuntime(
     });
     const { provider: piProvider, model: piModelId } = splitModelReference(modelId);
     const model =
-      piProvider && piModelId ? services.modelRegistry.find(piProvider, piModelId) : undefined;
+      piProvider && piModelId ? services.modelRuntime.getModel(piProvider, piModelId) : undefined;
     if (piProvider && piModelId && !model) {
       // The registry is authoritative; a missing entry means the session is
       // created without a model (Pi falls back to its default), which would

@@ -164,11 +164,11 @@ describe("TurnRunner (deep module)", () => {
       model: { provider: "opencode-go", id: "deepseek-v4-pro" },
     });
     seed("s3", mock);
-    // Mock services modelRegistry for TurnRunner setModel path (not needed here since model same)
+    // Mock services modelRuntime for TurnRunner setModel path (not needed here since model same)
     (mock.session as any).model = { provider: "opencode-go", id: "deepseek-v4-pro" };
-    // Inject services so find returns model (for potential model switch)
+    // Inject services so getModel returns model (for potential model switch)
     (registry.getRaw("s3") as any).runtime.services = {
-      modelRegistry: { find: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) },
+      modelRuntime: { getModel: () => ({ provider: "opencode-go", id: "deepseek-v4-pro" }) },
     };
 
     const stream = await runner.sendPrompt("s3", "hello", undefined, "r3", {
@@ -188,7 +188,7 @@ describe("TurnRunner (deep module)", () => {
     });
     seed("s4", mock);
     (registry.getRaw("s4") as any).runtime.services = {
-      modelRegistry: { find: () => ({ provider: "opencode-go", id: "pro" }) },
+      modelRuntime: { getModel: () => ({ provider: "opencode-go", id: "pro" }) },
     };
 
     await expect(

@@ -110,7 +110,7 @@ describe("SessionRegistry (deep module)", () => {
   it("allows overriding the runtime factory (seam without __seed)", async () => {
     const fakeFactory = vi.fn(async () => ({
       session: makeSession(),
-      services: { modelRegistry: { find: () => undefined } },
+      services: { modelRuntime: { getModel: () => undefined } },
       diagnostics: [],
     })) as unknown as any;
 

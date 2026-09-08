@@ -39,7 +39,9 @@ export interface ModelCost {
   cacheWrite: number;
 }
 
-export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+/** "max" es el nivel opt-in de Pi ≥ 0.80.6 (GPT-5.6, Claude adaptativos): solo se
+ * expone si el catálogo lo mapea explícitamente para el modelo. */
+export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 /**
  * Model-level thinking controls, keyed by Pi thinking level. A string value
@@ -789,7 +791,7 @@ export function getDefaultThinkingLevel(
   )?.defaultThinkingLevel;
 }
 
-export const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+export const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 
 export function isThinkingLevel(value: unknown): value is ThinkingLevel {
   return typeof value === "string" && (THINKING_LEVELS as string[]).includes(value);
@@ -804,7 +806,9 @@ export function getSupportedThinkingLevels(
   return THINKING_LEVELS.filter((level) => {
     const mapped = thinkingLevelMap?.[level];
     if (mapped === null) return false;
-    if (level === "xhigh") return mapped !== undefined;
+    // "xhigh" y "max" son opt-in: solo se exponen si el catálogo los mapea
+    // explícitamente para el modelo ("max" llegó con Pi 0.80.6).
+    if (level === "xhigh" || level === "max") return mapped !== undefined;
     return true;
   });
 }
