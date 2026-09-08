@@ -2,7 +2,7 @@ import "server-only";
 
 import { generateText } from "ai";
 import type { CompactionAiPort } from "../ports";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 export const compactionAiAdapter: CompactionAiPort = {

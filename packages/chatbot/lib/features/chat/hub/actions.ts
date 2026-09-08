@@ -6,10 +6,8 @@ import { getSession } from "@/lib/features/auth/cached-auth";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Tools, Agent } from "@/lib/features/chat/types";
 import { saveChat, saveMessages } from "@/lib/features/chat/queries";
-import {
-  chatbotMessageToDbMessage,
-  generateTitle,
-} from "@/lib/features/chat/utils";
+import { chatbotMessageToDbMessage } from "@/lib/features/chat/utils";
+import { generateTitle } from "@/lib/features/chat/title";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 import { getDb } from "@/lib/infrastructure/db/db";
 

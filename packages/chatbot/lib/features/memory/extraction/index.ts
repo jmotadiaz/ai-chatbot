@@ -6,7 +6,7 @@ import { MEMORY_EXTRACTION_SYSTEM_PROMPT } from "./prompts";
 import { upsertMemoryFact } from "./dedup";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/features/chat/utils";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 const factSchema = z.object({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chatModelKeys, languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server"; import { chatModelKeys } from "@/lib/features/foundation-model/config";
 import { providers } from "@/lib/infrastructure/ai/providers";
 
 describe("Muse Spark 1.3 in the chat model configuration", () => {

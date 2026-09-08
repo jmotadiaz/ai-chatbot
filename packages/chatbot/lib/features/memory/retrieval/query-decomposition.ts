@@ -4,7 +4,7 @@ import {
   MEMORY_DECOMPOSITION_SYSTEM_PROMPT,
   MEMORY_DECOMPOSITION_DESCRIPTION,
 } from "./prompts";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 
 const queryDecompositionSchema = z.object({
   queries: z

@@ -1,3 +1,5 @@
+import "server-only";
+import { randomUUID } from "node:crypto";
 import { groq } from "@ai-sdk/groq";
 import { gateway, rerank } from "ai";
 import { createXai } from "@ai-sdk/xai";
@@ -21,6 +23,20 @@ const lmstudio = createOpenAICompatible({
   baseURL: "http://localhost:1234/v1",
 });
 
+// OpenCode Go exige identificar cada request con una sesión estable
+// (https://opencode.ai/docs/go/#where-can-i-use-it): sin el header
+// x-opencode-session el edge devuelve AI_APICallError "Request is missing
+// x-opencode-session and cannot be routed efficiently". Es un id estable por
+// proceso: agrupa el tráfico del chatbot en una sesión que OpenCode usa para
+// routing y prompt caching. También pide un user-agent propio en vez del
+// genérico del SDK.
+const OPENCODE_SESSION_ID = randomUUID();
+
+const opencodeHeaders: Record<string, string> = {
+  "x-opencode-session": OPENCODE_SESSION_ID,
+  "user-agent": "ai-chatbot/1.0",
+};
+
 let _opencodeGo: ReturnType<typeof createOpenAICompatible> | null = null;
 
 function getOpenCodeGo() {
@@ -29,6 +45,7 @@ function getOpenCodeGo() {
       name: "opencode-zen-go",
       apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/go/v1",
+      headers: opencodeHeaders,
     });
   }
   return _opencodeGo;
@@ -42,6 +59,7 @@ function getOpenCodeGoResponses() {
       name: "opencode-zen-go-responses",
       apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/go/v1",
+      headers: opencodeHeaders,
     });
   }
   return _opencodeGoResponses;
@@ -56,6 +74,7 @@ function getOpenCodeZen() {
       name: "opencode-zen",
       apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/v1",
+      headers: opencodeHeaders,
     });
   }
   return _opencodeZen;

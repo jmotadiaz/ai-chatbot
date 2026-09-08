@@ -8,7 +8,7 @@ import {
 import { RefinePromptInput } from "./types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ragFactory } from "@/lib/features/rag/tool";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 
 export async function refinePrompt({
   input,

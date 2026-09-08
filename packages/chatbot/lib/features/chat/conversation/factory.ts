@@ -11,20 +11,18 @@ import type { ModelMessage } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { isTracingEnabled, wrapWithTracing } from "tracing";
 import { config } from "config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
 import {
-  languageModelConfigurations,
   chatModelKeys,
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import {
-  generateTitle,
-  chatbotMessageToDbMessage,
-} from "@/lib/features/chat/utils";
+import { chatbotMessageToDbMessage } from "@/lib/features/chat/utils";
+import { generateTitle } from "@/lib/features/chat/title";
 import { createAgent } from "@/lib/features/chat/agents/factory";
 import { extractMemoryFacts } from "@/lib/features/memory/extraction";
 import { compact } from "@/lib/features/compaction/orchestration";

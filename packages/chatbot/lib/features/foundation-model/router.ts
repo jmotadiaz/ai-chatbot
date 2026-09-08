@@ -1,8 +1,8 @@
 import {
-  chatModelId,
+  type chatModelId,
   chatModelKeys,
-  languageModelConfigurations,
 } from "./config";
+import { languageModelConfigurations } from "./server";
 import type {
   ModelConfiguration,
   ModelRoutingArguments,
@@ -17,44 +17,31 @@ import type { Tools, ChatbotMessage } from "@/lib/features/chat/types";
 // IT IS KEPT FOR REFERENCE ONLY AS PER INSTRUCTIONS.
 
 export async function modelRouting(
-   
-  _args: ModelRoutingArguments,
+  _modelRoutingArgs: ModelRoutingArguments
 ): Promise<ModelRoutingResult> {
-  // Deprecated implementation that throws error if called
-  throw new Error("modelRouting is deprecated and should not be used.");
+  throw new Error(
+    "modelRouting has been deprecated and should not be invoked directly."
+  );
 }
 
-// --- Configuration Calculation Helpers ---
-
-export const calculateModelConfiguration = async ({
-  selectedModel,
-  temperature,
-  topP,
-  topK,
-  tools,
-}: {
-  selectedModel: chatModelId;
-  messages: ChatbotMessage[];
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-  tools: Tools;
-}): Promise<{
-  modelConfiguration: ModelConfiguration;
-  autoModelMetadata?: ModelRoutingMetadata;
-  tools: Tools;
-}> => {
-  const modelConfig: ModelConfiguration =
+export function autoModelEvaluation(
+  selectedModel: chatModelId,
+  _messages: ChatbotMessage[],
+  tools: Tools = []
+): { modelConfiguration: ModelConfiguration; autoModelMetadata: ModelRoutingMetadata; tools: Tools } {
+  const modelConfiguration =
     languageModelConfigurations(selectedModel) ||
     languageModelConfigurations(chatModelKeys[0]);
+
+  const autoModelMetadata: ModelRoutingMetadata = {
+    category: "conversational",
+    complexity: "simple",
+    model: selectedModel,
+  };
+
   return {
-    modelConfiguration: {
-      ...modelConfig,
-      // If overrides are provided, use them; otherwise keep modelConfig values
-      temperature: temperature ?? modelConfig.temperature,
-      topP: topP ?? modelConfig.topP,
-      topK: topK ?? modelConfig.topK,
-    },
+    modelConfiguration,
+    autoModelMetadata,
     tools,
   };
-};
+}

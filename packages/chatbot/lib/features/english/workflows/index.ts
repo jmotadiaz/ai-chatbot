@@ -1,6 +1,6 @@
 import { makeCorrectGrammar, makeTranslate } from "./factory";
 import type { CorrectGrammarAiPort, TranslateAiPort } from "./ports";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 
 const grammarAiAdapter: CorrectGrammarAiPort = {
   getAudienceModelConfiguration: () =>

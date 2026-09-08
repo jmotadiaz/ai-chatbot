@@ -311,15 +311,15 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       >
         <PendingCommentsBar disabled={isRunning} />
         {pendingMessage && (
-          <div className="mb-2 flex items-center gap-2" data-testid="followup-chip">
+          <div className="mb-2 flex w-full min-w-0 items-center gap-2" data-testid="followup-chip">
             {/* Ticket 02 owns the chip actions (edit/discard/promote) rendered
                 here; the guards below keep the chip itself mounted and alive. */}
             <span
               aria-label="Pending follow-up"
               title={pendingMessage}
-              className="inline-flex max-w-full items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+              className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden rounded-full border border-blue-500/25 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300"
             >
-              <span className="truncate">{pendingMessage}</span>
+              <span className="min-w-0 flex-1 truncate">{pendingMessage}</span>
             </span>
             <div className="flex shrink-0 items-center gap-1">
               <button
@@ -327,7 +327,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                 aria-label="Edit pending follow-up"
                 title="Edit (back to textarea)"
                 onClick={() => void handleEditPending()}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-blue-500/20 dark:text-blue-300"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
@@ -336,7 +336,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                 aria-label="Discard pending follow-up"
                 title="Discard (never executes)"
                 onClick={() => void handleDiscardPending()}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-blue-500/20 dark:text-blue-300"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -345,7 +345,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
                 aria-label="Promote to steering"
                 title="Send now as steering (next request)"
                 onClick={() => void handlePromotePending()}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-blue-500/20 dark:text-blue-300"
               >
                 <ArrowUp className="h-3.5 w-3.5" />
               </button>

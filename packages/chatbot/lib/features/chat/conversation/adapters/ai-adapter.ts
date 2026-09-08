@@ -1,9 +1,9 @@
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import {
-  languageModelConfigurations,
   chatModelKeys,
   chatModelId,
 } from "@/lib/features/foundation-model/config";
+import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 
 export const chatAiAdapter = (modelId: chatModelId): ChatAgentAiPort => {
   const getConfig = () =>
