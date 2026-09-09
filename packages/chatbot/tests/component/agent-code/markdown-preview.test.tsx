@@ -16,6 +16,12 @@ describe("markdownBlocks", () => {
     );
 
     expect(blocks.map(({ lineNumber }) => lineNumber)).toEqual([1, 3, 5, 8]);
+    expect(blocks.map(({ kind }) => kind)).toEqual([
+      "other",
+      "other",
+      "list",
+      "code",
+    ]);
     expect(blocks[0]?.content).toBe("# Title\n\n");
     expect(blocks[1]?.content).toContain("A paragraph.");
     expect(blocks[2]?.content).toContain("- second");
@@ -177,6 +183,97 @@ describe("markdownBlocks", () => {
 
     expect(onSelectLine).toHaveBeenCalledTimes(1);
     expect(onSelectLine).toHaveBeenCalledWith(2);
+  });
+
+  it("renders the composer directly under the selected list item", async () => {
+    const view = render(
+      <MarkdownPreview
+        content={"Intro\n\n- first\n- second\n- third\n"}
+        commentsByLine={new Map()}
+        selectedLine={3}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    const item = await waitFor(() =>
+      view.getByRole("listitem", { name: "Comment on line 3" }),
+    );
+    const composer = view.getByTestId("composer");
+    expect(composer.textContent).toBe("3");
+    // The composer lives in a sibling `<li>` right under the item, not at
+    // the end of the `<ul>`.
+    const wrapper = composer.closest("li[data-line-composer]");
+    expect(wrapper?.tagName).toBe("LI");
+    expect(wrapper?.getAttribute("data-line-composer")).toBe("3");
+    expect(item.nextElementSibling).toBe(wrapper);
+    expect(view.queryAllByTestId("composer")).toHaveLength(1);
+  });
+
+  it("renders the composer under a middle list item instead of the end of the list", async () => {
+    const view = render(
+      <MarkdownPreview
+        content={"Intro\n\n- first\n- second\n- third\n"}
+        commentsByLine={new Map()}
+        selectedLine={4}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    const second = await waitFor(() =>
+      view.getByRole("listitem", { name: "Comment on line 4" }),
+    );
+    const third = view.getByRole("listitem", { name: "Comment on line 5" });
+    const composer = view.getByTestId("composer");
+    const wrapper = composer.closest("li[data-line-composer]");
+    expect(second.nextElementSibling).toBe(wrapper);
+    // The rest of the list still follows the composer.
+    expect(wrapper?.nextElementSibling).toBe(third);
+  });
+
+  it("renders the composer directly under the selected table row", async () => {
+    const view = render(
+      <MarkdownPreview
+        content={"Intro\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\n"}
+        commentsByLine={new Map()}
+        selectedLine={6}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    const row = await waitFor(() =>
+      view.getByRole("row", { name: "Comment on line 6" }),
+    );
+    const composer = view.getByTestId("composer");
+    expect(composer.textContent).toBe("6");
+    // The composer lives in a sibling `<tr>` right under the row, not below
+    // the whole table.
+    const wrapper = composer.closest("tr[data-line-composer]");
+    expect(wrapper?.tagName).toBe("TR");
+    expect(row.nextElementSibling).toBe(wrapper);
+    expect(view.queryAllByTestId("composer")).toHaveLength(1);
+  });
+
+  it("renders a single block-end composer when a quote opens with a list", async () => {
+    const view = render(
+      <MarkdownPreview
+        content={"> - quoted\n"}
+        commentsByLine={new Map()}
+        selectedLine={1}
+        onSelectLine={vi.fn()}
+        renderComposer={(line) => <div data-testid="composer">{line}</div>}
+      />,
+    );
+
+    await waitFor(() =>
+      view.getByRole("listitem", { name: "Comment on line 1" }),
+    );
+    // The item sits on the block's first line, so it defers to the block-end
+    // composer instead of rendering a second one inline.
+    expect(view.queryAllByTestId("composer")).toHaveLength(1);
+    expect(view.getByTestId("composer").closest("li")).toBeNull();
   });
 
   it("does not select a line when a link inside an item is clicked", async () => {

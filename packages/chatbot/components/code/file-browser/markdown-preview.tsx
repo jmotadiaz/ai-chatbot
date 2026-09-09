@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Children,
   createContext,
   useContext,
   useEffect,
@@ -31,7 +32,7 @@ const FENCE = /^\s*(?:```|~~~)/;
 /** Shared empty map, so an unhighlighted render keeps a stable identity. */
 const NO_TOKENS: Map<number, ThemedToken[]> = new Map();
 
-export type MarkdownBlockKind = "code" | "table" | "other";
+export type MarkdownBlockKind = "code" | "table" | "list" | "other";
 
 interface MarkdownBlock {
   content: string;
@@ -81,7 +82,9 @@ export function markdownBlocks(content: string): MarkdownBlock[] {
         ? "code"
         : token.type === "table"
           ? "table"
-          : "other";
+          : token.type === "list"
+            ? "list"
+            : "other";
 
     return [
       {
@@ -154,9 +157,12 @@ function useCodeBlockTokens(
 interface LineComments {
   /** Source line the surrounding block starts on. */
   blockLine: number;
+  /** Kind of the surrounding block (lists/tables own their composer inline). */
+  blockKind: MarkdownBlockKind;
   commentsByLine: Map<number, unknown>;
   selectedLine: number | null;
   onSelectLine: (line: number) => void;
+  renderComposer: (line: number) => ReactNode;
 }
 
 /**
@@ -227,29 +233,81 @@ function useLineAnchor(node: MarkdownNodeProps["node"]): LineAnchor | null {
   };
 }
 
+/**
+ * The source line whose composer an `<li>`/`<tr>` owns inline, if any. Lists
+ * and tables render the composer directly under the selected item/row, so a
+ * mid-block selection never falls through to the end of the `<ul>`/`<table>`.
+ * When the item/row sits on the first line of any other block (e.g. a quote
+ * opening with a list), the block-end composer owns that line instead, so
+ * this defers to it and the composer never appears twice.
+ */
+function inlineComposerLine(
+  comments: LineComments | null,
+  anchor: LineAnchor | null,
+): number | null {
+  if (!comments || !anchor || comments.selectedLine !== anchor.line) {
+    return null;
+  }
+  if (
+    comments.blockKind === "other" &&
+    anchor.line === comments.blockLine
+  ) {
+    return null;
+  }
+  return anchor.line;
+}
+
 const CommentableTableRow: React.FC<
   ComponentPropsWithoutRef<"tr"> & MarkdownNodeProps
 > = ({ children, className, node, ...rest }) => {
+  const comments = useContext(LineCommentsContext);
   const anchor = useLineAnchor(node);
   const base = cn("border-border border-b", className);
+  const inlineLine = inlineComposerLine(comments, anchor);
+  const colSpan = Math.max(Children.count(children), 1);
 
   return (
-    <tr className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
-      {children}
-    </tr>
+    <>
+      <tr className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
+        {children}
+      </tr>
+      {inlineLine !== null && comments !== null && (
+        <tr
+          data-line-composer={inlineLine}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <td colSpan={colSpan} className="border-0 p-0">
+            {comments.renderComposer(inlineLine)}
+          </td>
+        </tr>
+      )}
+    </>
   );
 };
 
 const CommentableListItem: React.FC<
   ComponentPropsWithoutRef<"li"> & MarkdownNodeProps
 > = ({ children, className, node, ...rest }) => {
+  const comments = useContext(LineCommentsContext);
   const anchor = useLineAnchor(node);
   const base = cn("py-1 [&>p]:inline", className);
+  const inlineLine = inlineComposerLine(comments, anchor);
 
   return (
-    <li className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
-      {children}
-    </li>
+    <>
+      <li className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
+        {children}
+      </li>
+      {inlineLine !== null && comments !== null && (
+        <li
+          data-line-composer={inlineLine}
+          className="list-none p-0 [&::marker]:content-none"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {comments.renderComposer(inlineLine)}
+        </li>
+      )}
+    </>
   );
 };
 
@@ -342,12 +400,15 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
 
         const hasComment = commentsByLine.has(block.lineNumber);
         const isSelected = selectedLine === block.lineNumber;
-        // A table row's composer cannot live inside `<tbody>`, so any selection
-        // landing within the block renders it just below the block instead.
+        // Lists and tables own their composer inline under the selected
+        // item/row (see `inlineComposerLine`), so the block itself only owns
+        // its first line — and only for blocks without inline items. A
+        // mid-block selection can only be stale state from the raw view,
+        // which resets the selection when toggling back to the preview.
         const composerLine =
-          selectedLine !== null &&
-          selectedLine >= block.lineNumber &&
-          selectedLine <= block.endLine
+          block.kind !== "list" &&
+          block.kind !== "table" &&
+          selectedLine === block.lineNumber
             ? selectedLine
             : null;
 
@@ -390,9 +451,11 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
             <LineCommentsContext.Provider
               value={{
                 blockLine: block.lineNumber,
+                blockKind: block.kind,
                 commentsByLine,
                 selectedLine,
                 onSelectLine,
+                renderComposer,
               }}
             >
               <Response
