@@ -10,7 +10,7 @@ When selecting an AI model in e2e tests, prefer **semantic capability aliases** 
 |-------|-------------|---------------------------|
 | `basicChat` | MiMo V2.5 Pro | Plain text response |
 | `basicChatAlt` | Kimi K2.7 Code | A second plain text response (hub panels) |
-| `canExecuteTools` | Deepseek v4 Flash | Tool execution (webSearch) |
+| `canExecuteTools` | Deepseek v4.1 Flash | Tool execution (webSearch) |
 | `canSeeImages` | Qwen 3.8 Flash | Multimodal (image + text) |
 | `canProduceReasoning` | Deepseek v4 Pro | Thinking/reasoning blocks |
 | `alwaysRefuses` | MiniMax M3 | Refusal response |

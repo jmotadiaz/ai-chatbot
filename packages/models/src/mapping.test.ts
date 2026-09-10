@@ -104,13 +104,13 @@ describe("model mapping", () => {
     );
   });
 
-  it("maps the Omen Alpha catalog id to the opencode-go Pi provider", () => {
-    expect(toPiModelId("Omen Alpha" as never)).toEqual({
+  it("maps the Deepseek v4.1 Flash catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("Deepseek v4.1 Flash")).toEqual({
       providerId: "opencode-go",
-      modelId: "omen-alpha",
+      modelId: "deepseek-flash",
     });
-    expect(toChatModelId("opencode-go", "omen-alpha")).toBe(
-      "Omen Alpha",
+    expect(toChatModelId("opencode-go", "deepseek-flash")).toBe(
+      "Deepseek v4.1 Flash",
     );
   });
 

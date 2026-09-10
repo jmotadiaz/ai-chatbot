@@ -13,12 +13,12 @@ const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
 const NOT_BUILT_IN = new Set([
+  "deepseek-flash",
   "kimi-k3",
   "qwen3.8-max",
   "qwen3.8-flash",
   "glm-5.3",
   "glm-5.3-flash",
-  "omen-alpha",
   "muse-spark-1.3-contributor",
 ]);
 
@@ -208,29 +208,29 @@ describe("generateModelsJson", () => {
     });
   });
 
-  it("describes Omen Alpha, which Pi does not ship yet on opencode-go", () => {
-    const entry = MODEL_CATALOG.find((e) => e.id === "Omen Alpha")!;
-    const [omen] = generateModelsJson([entry], { builtIns: new Map() })
+  it("describes Deepseek v4.1 Flash, which Pi does not ship yet on opencode-go", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Deepseek v4.1 Flash")!;
+    const [flash] = generateModelsJson([entry], { builtIns: new Map() })
       .providers["opencode-go"].models;
-    expect(omen.id).toBe("omen-alpha");
-    expect(omen.contextWindow).toBe(500_000);
-    expect(omen.maxTokens).toBe(128_000);
-    expect(omen.cost).toEqual({
-      input: 0.2,
-      output: 0.66,
-      cacheRead: 0.04,
+    expect(flash.id).toBe("deepseek-flash");
+    expect(flash.contextWindow).toBe(1_000_000);
+    expect(flash.maxTokens).toBe(384_000);
+    expect(flash.cost).toEqual({
+      input: 0.15,
+      output: 0.6,
+      cacheRead: 0.003,
       cacheWrite: 0,
     });
-    expect(omen.reasoning).toBe(true);
-    expect(omen.api).toBe("openai-completions");
-    expect(omen.baseUrl).toBe("https://opencode.ai/zen/go/v1");
-    expect(omen.input).toEqual(["text", "image"]);
-    expect(omen.thinkingLevelMap).toEqual({
-      off: null,
+    expect(flash.reasoning).toBe(true);
+    expect(flash.api).toBe("openai-completions");
+    expect(flash.baseUrl).toBe("https://opencode.ai/zen/go/v1");
+    expect(flash.input).toEqual(["text"]);
+    expect(flash.thinkingLevelMap).toEqual({
       minimal: null,
       low: "low",
       medium: null,
       high: "high",
+      xhigh: "max",
     });
   });
 
@@ -460,32 +460,5 @@ describe("generateModelsJson custom providers", () => {
     expect(providers["opencode-go"].api).toBeUndefined();
     expect(providers["opencode-go"].apiKey).toBeUndefined();
     expect(providers["opencode-go"].models.length).toBeGreaterThan(0);
-  });
-});
-
-describe("generateModelsJson opencode zen (free) model", () => {
-  it("emits deepseek-v4-flash-free under the built-in opencode provider, fully self-described", () => {
-    // Pi trae el modelo built-in (provider "opencode"), pero los baselines
-    // solo cubren opencode-go: la entrada se auto-describe y sobrevive con
-    // builtIns vacías.
-    const entry = MODEL_CATALOG.find((e) => e.id === "Deepseek v4 Flash (free)")!;
-    const [model] = generateModelsJson([entry], { builtIns: new Map() })
-      .providers["opencode"].models;
-    expect(model).toEqual({
-      id: "deepseek-v4-flash-free",
-      name: "Deepseek v4 Flash (free)",
-      reasoning: true,
-      input: ["text"],
-      contextWindow: 200_000,
-      maxTokens: 128_000,
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      thinkingLevelMap: {
-        minimal: null,
-        low: null,
-        medium: null,
-        high: "high",
-        xhigh: "max",
-      },
-    });
   });
 });

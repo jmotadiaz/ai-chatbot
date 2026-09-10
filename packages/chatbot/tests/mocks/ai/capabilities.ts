@@ -13,7 +13,7 @@ export const CAPABILITY_ALIASES = {
   // A second plain model: the hub runs without tools, so its multi-panel test
   // needs two models that just answer.
   basicChatAlt: "Kimi K2.7 Code",
-  canExecuteTools: "Deepseek v4 Flash",
+  canExecuteTools: "Deepseek v4.1 Flash",
   canSeeImages: "Qwen 3.8 Flash",
   canProduceReasoning: "Deepseek v4 Pro",
   // settings.spec asserts a temperature of 1 here.

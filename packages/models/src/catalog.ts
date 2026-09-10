@@ -97,39 +97,37 @@ export interface ModelCatalogEntry {
 export const MODEL_CATALOG = [
   // --- userInvocable (coding-agent + chat selectors) ---
   {
-    id: "Deepseek v4 Flash",
+    // Pi does not ship this model yet, so it describes its own limits, cost
+    // and endpoint (openai-completions per the endpoints table at
+    // https://opencode.ai/docs/es/go, model id "deepseek-flash"). Pricing per
+    // the usage table there (Off-Peak $0.15 in / $0.60 out / $0.003 cached
+    // read per 1M tokens, no cached-write tier; Peak is double — most hours
+    // are Off-Peak); limits mirror Pi's deepseek-v4-flash built-in (1M
+    // context, 384k output — same per-request estimates as V4 Flash in the
+    // Go docs). Thinking levels mirror that built-in too (low/high), plus
+    // xhigh mapped to max so the catalog default resolves (same pattern as
+    // the retired free variant).
+    id: "Deepseek v4.1 Flash",
     userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "deepseek-v4-flash" },
-    company: "deepseek",
-    reasoning: true,
-    defaultThinkingLevel: "xhigh",
-    temperature: 1,
-    topP: 0.95,
-    providerOptions: { gateway: { zeroDataRetention: true } },
-  },
-  {
-    // Variante free servida por OpenCode Zen (provider "opencode" built-in
-    // de Pi). Los baselines solo cubren opencode-go, así que la entrada se
-    // describe a sí misma: valores espejo de la definición built-in de
-    // Pi 0.79.3.
-    id: "Deepseek v4 Flash (free)",
-    userInvocable: true,
-    provider: { kind: "opencodeZen", modelId: "deepseek-v4-flash-free" },
+    provider: { kind: "opencodeGo", modelId: "deepseek-flash" },
     company: "deepseek",
     reasoning: true,
     defaultThinkingLevel: "xhigh",
     thinkingLevelMap: {
       minimal: null,
-      low: null,
+      low: "low",
       medium: null,
       high: "high",
       xhigh: "max",
     },
-    contextWindow: 200_000,
-    maxTokens: 128_000,
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     temperature: 1,
     topP: 0.95,
+    contextWindow: 1_000_000,
+    maxTokens: 384_000,
+    cost: { input: 0.15, output: 0.6, cacheRead: 0.003, cacheWrite: 0 },
+    providerOptions: { gateway: { zeroDataRetention: true } },
   },
   {
     id: "Deepseek v4 Pro",
@@ -250,6 +248,12 @@ export const MODEL_CATALOG = [
     // from the opencodeGoResponses provider kind (openai-responses).
     provider: { kind: "opencodeGoResponses", modelId: "muse-spark-1.3-contributor" },
     company: "meta",
+    // El upstream de OpenCode Go no soporta el Responses API stateful: con el
+    // default del AI SDK (store=true) el historial se reenvía como
+    // item_reference y el upstream falla con "No function call found for
+    // function call output". Con store:false los items viajan completos
+    // (function_call, reasoning con encrypted_content, …).
+    providerOptions: { openai: { store: false } },
     reasoning: true,
     defaultThinkingLevel: "xhigh",
     baseUrl: "https://opencode.ai/zen/go/v1",
@@ -393,35 +397,6 @@ export const MODEL_CATALOG = [
     contextWindow: 200_000,
     maxTokens: 32_000,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-  },
-  {
-    // Pi does not ship this model, so it describes its own limits, cost and
-    // endpoint (openai-completions per the endpoints table at
-    // https://opencode.ai/docs/es/go). Pricing per the usage table there
-    // (input $0.20 / output $0.66 / cached read $0.04 per 1M tokens, no
-    // cached-write tier); limits mirror the opencode-go registry
-    // (500k context, 128k output). Reasoning is mandatory with low/high
-    // effort only, so off/minimal/medium are hidden and xhigh is not
-    // exposed; the highest supported level (high) is the session default.
-    id: "Omen Alpha",
-    userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "omen-alpha" },
-    company: "ai-chatbot",
-    reasoning: true,
-    defaultThinkingLevel: "high",
-    thinkingLevelMap: {
-      off: null,
-      minimal: null,
-      low: "low",
-      medium: null,
-      high: "high",
-    },
-    api: "openai-completions",
-    baseUrl: "https://opencode.ai/zen/go/v1",
-    supportedFiles: ["img"],
-    contextWindow: 500_000,
-    maxTokens: 128_000,
-    cost: { input: 0.2, output: 0.66, cacheRead: 0.04, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
   {

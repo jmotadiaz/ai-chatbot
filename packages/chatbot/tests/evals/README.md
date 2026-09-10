@@ -39,7 +39,7 @@ pnpm eval -c compaction --no-server          # asumir next dev ya levantado
 Evalúa la calidad de la compactación de conversaciones:
 
 - **Compaction Occurred** (determinista): Verifica que la compactación se ejecutó y cumple un ratio de compresión mínimo de 10x
-- **Fact Recall** (LLM Judge): Inyecta 3 hechos ficticios en la conversación, dispara la compactación, y verifica con Deepseek v4 Flash que el modelo recuerda los hechos tras la compactación
+- **Fact Recall** (LLM Judge): Inyecta 3 hechos ficticios en la conversación, dispara la compactación, y verifica con Deepseek v4.1 Flash que el modelo recuerda los hechos tras la compactación
 
 ## Estructura
 
@@ -84,7 +84,7 @@ El route handler `/api/chat` propaga `X-Trace-Run-Id` y `X-Trace-Request-Id` en 
 Cada línea es un `TraceEvent` JSON. Ejemplo:
 
 ```json
-{"ts":"2026-06-02T10:00:00.000Z","runId":"<uuid>","requestId":"<uuid>","stepIndex":0,"mode":"stream","chatId":"<id>","userId":"<id>","agent":"context7","modelKey":"Deepseek v4 Flash","phase":"start","payload":{"prompt":[{...}],"model":{"provider":"opencode-zen-go","modelId":"deepseek-v4-flash"},"settings":{...}}}
+{"ts":"2026-06-02T10:00:00.000Z","runId":"<uuid>","requestId":"<uuid>","stepIndex":0,"mode":"stream","chatId":"<id>","userId":"<id>","agent":"context7","modelKey":"Deepseek v4.1 Flash","phase":"start","payload":{"prompt":[{...}],"model":{"provider":"opencode-zen-go","modelId":"deepseek-flash"},"settings":{...}}}
 {"ts":"2026-06-02T10:00:00.123Z","runId":"<uuid>","requestId":"<uuid>","stepIndex":0,"mode":"stream","chatId":"<id>","phase":"text-delta","blockId":"text-1","blockKind":"text","payload":{"text":"Hello"}}
 {"ts":"2026-06-02T10:00:00.456Z","runId":"<uuid>","requestId":"<uuid>","stepIndex":0,"mode":"stream","chatId":"<id>","phase":"finish","payload":{"finishReason":{"unified":"stop"},"usage":{"inputTokens":100,"outputTokens":50},"duration_ms":456}}
 ```

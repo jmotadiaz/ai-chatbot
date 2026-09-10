@@ -54,7 +54,7 @@ function createDeterministicUserMessage(content: string): TranscriptMessage {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-const judgeModel = () => providers.opencodeGo("deepseek-v4-flash")
+const judgeModel = () => providers.opencodeGo("deepseek-flash")
 
 const judgeEvaluationSchema = z.object({
   score: z
@@ -166,7 +166,7 @@ evalite("Compaction Quality", {
       userId = user.id
 
       const simulator = createSimulator({
-        modelKey: "Deepseek v4 Flash",
+        modelKey: "Deepseek v4.1 Flash",
         scenarioPrompt,
         traceWriter,
       })
@@ -174,7 +174,7 @@ evalite("Compaction Quality", {
       const client = createChatbotClient({
         baseUrl: process.env.EVAL_BASE_URL ?? "http://localhost:3000",
         cookie: user.cookie,
-        model: "Deepseek v4 Flash",
+        model: "Deepseek v4.1 Flash",
         traceWriter,
       })
 

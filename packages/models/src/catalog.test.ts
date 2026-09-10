@@ -46,8 +46,7 @@ describe("MODEL_CATALOG integrity", () => {
 
   it("exposes exactly the coding-agent models as invocable, in order", () => {
     expect([...INVOCABLE_MODEL_IDS]).toEqual([
-      "Deepseek v4 Flash",
-      "Deepseek v4 Flash (free)",
+      "Deepseek v4.1 Flash",
       "Deepseek v4 Pro",
       "Kimi K2.7 Code",
       "Kimi K3",
@@ -62,7 +61,6 @@ describe("MODEL_CATALOG integrity", () => {
       "Hy3",
       "GLM 5.3 Flash",
       "MiniMax M3 (free)",
-      "Omen Alpha",
     ]);
   });
 
@@ -75,7 +73,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Nano Banana",
       "Gemini 2.5 Flash Lite",
       "Gemini 3 Flash",
-      "Deepseek v4 Flash",
+      "Deepseek v4.1 Flash",
       "Gemini 3.1 Flash Lite",
     ]) {
       expect(ids.has(internal)).toBe(true);
