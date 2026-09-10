@@ -15,6 +15,10 @@ describe("Muse Spark 1.3 in the chat model configuration", () => {
     expect(cfg.topP).toBe(0.95);
     expect(cfg.topK).toBe(64);
     expect(cfg.supportedFiles).toEqual(["img"]);
+    // El upstream de OpenCode Go no soporta el Responses API stateful: sin
+    // store:false el AI SDK reenvía el historial como item_reference y falla
+    // con "No function call found for function call output".
+    expect(cfg.providerOptions?.openai?.store).toBe(false);
   });
 
   it("exposes an opencodeGoResponses provider factory with the opencode model id (mock in test mode)", () => {
