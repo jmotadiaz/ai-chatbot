@@ -19,44 +19,37 @@ import {
   getExtensionPaths,
   getFirstPartyExtensionPaths,
   getFirstPartySkillPaths,
-  getFirstPartySkillPathsFiltered,
   getPiPackageExtensionPaths,
   getPiPackagePath,
   type PiPackage,
 } from "../../src/runtime/pi-packages";
-import { PACKAGE_ROOT } from "../../src/runtime/paths";
-import { USING_SUPERPOWERS_PROMPT } from "../../extensions/superpowers/using-superpowers";
 
 describe("first-party extension and built-in skills discovery", () => {
-  it("discovers all first-party extensions including superpowers and subagent", () => {
+  it("discovers first-party extension entrypoints as files", () => {
     const paths = getFirstPartyExtensionPaths();
-    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
+    expect(paths.length).toBeGreaterThan(0);
     expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(true);
     // Entrypoints are files, not dirs
     expect(paths.every((p) => p.endsWith("index.ts"))).toBe(true);
+    for (const p of paths) {
+      expect(existsSync(p)).toBe(true);
+    }
   });
 
-  it("includes all first-party extensions by default in getExtensionPaths", () => {
-    const paths = getExtensionPaths();
-    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
-    expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(true);
+  it("includes every first-party extension by default in getExtensionPaths", () => {
+    expect(getExtensionPaths()).toEqual(getFirstPartyExtensionPaths());
   });
 
   it("excludes subagent when includeSubagentExtension is false", () => {
     const paths = getExtensionPaths({ includeSubagentExtension: false });
-    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(true);
     expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(false);
+    expect(paths).toEqual(
+      getFirstPartyExtensionPaths().filter((p) => !p.includes("extensions/subagent")),
+    );
   });
 
-  it("excludes superpowers when includeSuperpowersExtension is false", () => {
-    const paths = getExtensionPaths({ includeSuperpowersExtension: false });
-    expect(paths.some((p) => p.includes("extensions/superpowers"))).toBe(false);
-    expect(paths.some((p) => p.includes("extensions/subagent"))).toBe(true);
-  });
-
-  it("discovers skill dirs for first-party extensions", () => {
-    const skillPaths = getFirstPartySkillPaths();
-    expect(skillPaths.some((p) => p.includes("extensions/superpowers/skills"))).toBe(true);
+  it("has no first-party skill dirs", () => {
+    expect(getFirstPartySkillPaths()).toEqual([]);
   });
 
   it("discovers built-in skills directory and writing-prompties skill", () => {
@@ -66,11 +59,11 @@ describe("first-party extension and built-in skills discovery", () => {
   });
 });
 
-describe("superpowers first-party extension integration", () => {
+describe("subagent runtime resource loading", () => {
   let tmpRoot: string;
 
   beforeEach(() => {
-    tmpRoot = join(tmpdir(), `superpowers-ext-test-${crypto.randomUUID()}`);
+    tmpRoot = join(tmpdir(), `subagent-resources-test-${crypto.randomUUID()}`);
     mkdirSync(tmpRoot, { recursive: true });
   });
 
@@ -78,24 +71,26 @@ describe("superpowers first-party extension integration", () => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  it("binds resources_discover and loads superpowers skills including customized brainstorming", async () => {
+  it("loads exactly the built-in skills and no subagent extension", async () => {
     const agentDir = join(tmpRoot, "agent");
     const cwd = join(tmpRoot, "project");
     mkdirSync(agentDir, { recursive: true });
     mkdirSync(cwd, { recursive: true });
 
+    // Subagent runtimes are built with includeSubagentExtension: false, so the
+    // orchestrator's `subagent` tool never reaches a child. Skills come only
+    // from the built-in directory; there are no first-party skill dirs left.
+    // `noSkills: true` drops machine-global (user-installed) skills so the
+    // assertion covers the harness-owned composition, not this host's setup.
+    const extensionPaths = getExtensionPaths({ includeSubagentExtension: false });
+    const skillPaths = [...getBuiltinSkillPaths(), ...getFirstPartySkillPaths()];
+
     const resourceLoader = new DefaultResourceLoader({
       cwd,
       agentDir,
-      additionalExtensionPaths: getExtensionPaths({
-        includeSubagentExtension: false,
-      }),
-      additionalSkillPaths: [
-        ...getBuiltinSkillPaths(),
-        ...getFirstPartySkillPathsFiltered({
-          includeSubagentExtension: false,
-        }),
-      ],
+      noSkills: true,
+      additionalExtensionPaths: extensionPaths,
+      additionalSkillPaths: skillPaths,
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -108,94 +103,15 @@ describe("superpowers first-party extension integration", () => {
 
     await session.bindExtensions({ mode: "rpc" });
 
-    const loadedSkills = resourceLoader.getSkills().skills;
-    const brainstorming = loadedSkills.find((s) => s.name === "brainstorming");
-    expect(brainstorming).toBeDefined();
-    expect(brainstorming?.filePath).toMatch(
-      /packages[/\\]coding-agent[/\\]extensions[/\\]superpowers[/\\]skills[/\\]brainstorming[/\\]SKILL\.md$/,
-    );
-
-    const writingPrompties = loadedSkills.find((s) => s.name === "writing-prompties");
-    expect(writingPrompties).toBeDefined();
-    expect(writingPrompties?.filePath).toMatch(
-      /packages[/\\]coding-agent[/\\]skills[/\\]writing-prompties[/\\]SKILL\.md$/,
-    );
-
-    // Verify key skills exist
-    const skillNames = loadedSkills.map((s) => s.name);
-    expect(skillNames).toContain("writing-plans");
-    expect(skillNames).toContain("test-driven-development");
-    expect(skillNames).toContain("systematic-debugging");
-    expect(skillNames).toContain("writing-prompties");
-
-    // using-superpowers is no longer a discoverable skill: it was extracted
-    // from skills/ and is injected into the context by the extension (see
-    // extensions/superpowers/using-superpowers.ts).
-    expect(skillNames).not.toContain("using-superpowers");
+    const skillNames = resourceLoader
+      .getSkills()
+      .skills.map((s) => s.name)
+      .sort();
+    expect(skillNames).toEqual(["mobile-first-artifacts", "writing-prompties"]);
+    expect(skillPaths).toEqual(getBuiltinSkillPaths());
+    expect(extensionPaths.some((p) => p.includes("extensions/subagent"))).toBe(false);
 
     session.dispose();
-  });
-
-  it("loads no superpowers skills for subagent runtimes, but retains built-in skills", async () => {
-    const agentDir = join(tmpRoot, "agent-subagent");
-    const cwd = join(tmpRoot, "project-subagent");
-    mkdirSync(agentDir, { recursive: true });
-    mkdirSync(cwd, { recursive: true });
-
-    // Subagent runtimes are built with includeSubagentExtension: false; the
-    // superpowers extension must not be loaded at all (skills + bootstrap
-    // belong to the orchestrating agent only). Built-in skills under skills/
-    // remain available.
-    const resourceLoader = new DefaultResourceLoader({
-      cwd,
-      agentDir,
-      additionalExtensionPaths: getExtensionPaths({
-        includeSubagentExtension: false,
-        includeSuperpowersExtension: false,
-      }),
-      additionalSkillPaths: [
-        ...getBuiltinSkillPaths(),
-        ...getFirstPartySkillPathsFiltered({
-          includeSubagentExtension: false,
-          includeSuperpowersExtension: false,
-        }),
-      ],
-    });
-    await resourceLoader.reload();
-
-    const skillNames = resourceLoader.getSkills().skills.map((s) => s.name);
-    expect(skillNames).not.toContain("brainstorming");
-    expect(skillNames).not.toContain("test-driven-development");
-    expect(skillNames).not.toContain("systematic-debugging");
-    expect(skillNames).toContain("writing-prompties");
-  });
-});
-
-describe("using-superpowers embedded bootstrap", () => {
-  it("exposes the full bootstrap content without skill front matter", () => {
-    expect(USING_SUPERPOWERS_PROMPT).toContain("You have superpowers.");
-    expect(USING_SUPERPOWERS_PROMPT).toContain("<EXTREMELY-IMPORTANT>");
-    expect(USING_SUPERPOWERS_PROMPT).toContain("## The Rule");
-    expect(USING_SUPERPOWERS_PROMPT).toContain("## Red Flags");
-    expect(USING_SUPERPOWERS_PROMPT).toContain("## Platform Adaptation");
-    expect(USING_SUPERPOWERS_PROMPT).toContain("## User Instructions");
-
-    // Front matter (name/description), per-harness reference files, and the
-    // <SUBAGENT-STOP> block are not part of the embedded content: the front
-    // matter and references belong to the skill packaging, and subagent
-    // sessions are excluded structurally by the harness, not by text.
-    expect(USING_SUPERPOWERS_PROMPT).not.toContain(
-      "description: Use when starting any conversation",
-    );
-    expect(USING_SUPERPOWERS_PROMPT).not.toContain("references/codex-tools.md");
-    expect(USING_SUPERPOWERS_PROMPT).not.toContain("<SUBAGENT-STOP>");
-
-    // The skill directory must not exist anymore (extracted from skills/).
-    expect(
-      existsSync(
-        join(PACKAGE_ROOT, "extensions", "superpowers", "skills", "using-superpowers"),
-      ),
-    ).toBe(false);
   });
 });
 

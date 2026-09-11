@@ -17,30 +17,28 @@ const { getExtensionPaths, getFirstPartyExtensionPaths } = await import(
 );
 
 describe("first-party extension paths", () => {
-  it("includes subagent and superpowers extension dirs by default", () => {
+  it("includes the subagent extension by default", () => {
     const paths = getExtensionPaths();
     expect(paths.some((p: string) => p.includes("extensions/subagent"))).toBe(true);
-    expect(paths.some((p: string) => p.includes("extensions/superpowers"))).toBe(true);
+  });
+
+  it("composes the default paths from the first-party inventory", () => {
+    expect(getExtensionPaths()).toEqual(getFirstPartyExtensionPaths());
   });
 
   it("excludes the subagent extension when includeSubagentExtension is false", () => {
     const paths = getExtensionPaths({ includeSubagentExtension: false });
     expect(paths.some((p: string) => p.includes("extensions/subagent"))).toBe(false);
-    expect(paths.some((p: string) => p.includes("extensions/superpowers"))).toBe(true);
-  });
-
-  it("excludes superpowers when includeSuperpowersExtension is false (subagent runtimes)", () => {
-    const paths = getExtensionPaths({
-      includeSubagentExtension: false,
-      includeSuperpowersExtension: false,
-    });
-    expect(paths.some((p: string) => p.includes("extensions/subagent"))).toBe(false);
-    expect(paths.some((p: string) => p.includes("extensions/superpowers"))).toBe(false);
+    expect(paths).toEqual(
+      getFirstPartyExtensionPaths().filter(
+        (p: string) => !p.includes("extensions/subagent"),
+      ),
+    );
   });
 
   it("first-party paths exist on disk", () => {
     const paths = getFirstPartyExtensionPaths();
-    expect(paths.length).toBeGreaterThanOrEqual(2);
+    expect(paths.some((p: string) => p.includes("extensions/subagent"))).toBe(true);
     for (const p of paths) {
       expect(existsSync(p)).toBe(true);
     }
