@@ -71,7 +71,7 @@ export function getBuiltinSkillPaths(): string[] {
   return [BUILTIN_SKILLS_DIR];
 }
 
-/** First-party extension entrypoints (each `extensions/<name>/index.ts`), e.g. extensions/superpowers, extensions/subagent. */
+/** First-party extension entrypoints (each `extensions/<name>/index.ts`), e.g. extensions/artifacts, extensions/subagent. */
 export function getFirstPartyExtensionPaths(): string[] {
   if (!existsSync(FIRST_PARTY_EXTENSIONS_DIR)) return [];
   return readdirSync(FIRST_PARTY_EXTENSIONS_DIR, { withFileTypes: true })
@@ -101,40 +101,18 @@ export function getFirstPartySkillPaths(): string[] {
  * All extension paths handed to the Pi resource loader.
  *
  * `includeSubagentExtension: false` excludes the subagent tool — child
- * sessions must not get it (structural anti-recursion, spec §4.2).
- *
- * `includeSuperpowersExtension: false` excludes the superpowers extension —
- * child sessions must not get the superpowers skills or bootstrap either. A
- * subagent executes one specific task from a self-contained brief (see the
- * subagent-driven-development prompts upstream); skill workflows belong to
- * the orchestrating agent alone.
+ * sessions must not get it (structural anti-recursion, spec §4.2). A subagent
+ * executes one specific task from a self-contained brief, so the orchestrator
+ * keeps the delegation tool to itself.
  */
 export function getExtensionPaths(options?: {
   includeSubagentExtension?: boolean;
-  includeSuperpowersExtension?: boolean;
 }): string[] {
   const firstParty = getFirstPartyExtensionPaths().filter((p) => {
     const name = path.basename(path.dirname(p));
     if (options?.includeSubagentExtension === false && name === "subagent")
       return false;
-    if (options?.includeSuperpowersExtension === false && name === "superpowers")
-      return false;
     return true;
   });
   return [...getPiPackageExtensionPaths(), ...firstParty];
-}
-
-/** Filtered skill paths mirroring `getExtensionPaths` (for `additionalSkillPaths`). */
-export function getFirstPartySkillPathsFiltered(options?: {
-  includeSubagentExtension?: boolean;
-  includeSuperpowersExtension?: boolean;
-}): string[] {
-  return getFirstPartySkillPaths().filter((p) => {
-    const name = path.basename(path.dirname(p));
-    if (options?.includeSubagentExtension === false && name === "subagent")
-      return false;
-    if (options?.includeSuperpowersExtension === false && name === "superpowers")
-      return false;
-    return true;
-  });
 }

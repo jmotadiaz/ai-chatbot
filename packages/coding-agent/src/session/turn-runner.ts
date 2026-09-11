@@ -597,8 +597,6 @@ export class TurnRunner {
       log.info("debug.prompt_bootstrap_before", {
         sessionId,
         runId,
-        mechanism: "context (extension, user message prepend)",
-        hasBootstrapInSystemPromptBefore: sysPrompt.includes("You have superpowers"),
         systemPromptLengthBefore: sysPrompt.length,
         systemPromptPreviewBefore: sysPrompt.slice(0, 300),
         promptLength: prompt.length,

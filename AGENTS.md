@@ -88,7 +88,7 @@ Full-stack Next.js 16 app (App Router). AI chatbot with multi-model support, RAG
 
 Separate HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent sessions, translates Pi events into AG-UI protocol events, and exposes an `/rpc` HTTP endpoint. The chatbot communicates with this worker to run coding tasks.
 
-First-party extensions (including [superpowers](https://github.com/obra/superpowers) and the `subagent` tool) live under `packages/coding-agent/extensions/` and are handed to the SDK as `additionalExtensionPaths`, instead of being installed with `pi install` into the machine-wide `~/.pi/agent/settings.json`. See `packages/coding-agent/AGENTS.md`.
+First-party extensions (the `subagent` tool and the `artifacts` tool) live under `packages/coding-agent/extensions/` and are handed to the SDK as `additionalExtensionPaths`, instead of being installed with `pi install` into the machine-wide `~/.pi/agent/settings.json`. See `packages/coding-agent/AGENTS.md`.
 
 ### `models` — Shared Catalog
 
@@ -108,26 +108,6 @@ chatbot ──→ coding-agent
    ├──────────────┼──→ tracing
    └──────────────┴──→ models
 ```
-
-<!-- context7 -->
-Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service -- even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer -- your training data may not reflect recent changes. Prefer this over web search for library docs.
-
-Do not use for: refactoring, writing scripts from scratch, debugging business logic, code review, or general programming concepts.
-
-## Steps
-
-1. Resolve library: `npx ctx7@latest library <name> "<user's question>"` — use the official library name with proper punctuation (e.g., "Next.js" not "nextjs", "Customer.io" not "customerio", "Three.js" not "threejs")
-2. Pick the best match (ID format: `/org/project`) by: exact name match, description relevance, code snippet count, source reputation (High/Medium preferred), and benchmark score (higher is better). If results don't look right, try alternate names or queries (e.g., "next.js" not "nextjs", or rephrase the question)
-3. Fetch docs: `npx ctx7@latest docs <libraryId> "<user's question>"`
-4. Answer using the fetched documentation
-
-You MUST call `library` first to get a valid ID unless the user provides one directly in `/org/project` format. Use the user's full question as the query -- specific and detailed queries return better results than vague single words. Do not run more than 3 commands per question. Do not include sensitive information (API keys, passwords, credentials) in queries.
-
-For version-specific docs, use `/org/project/version` from the `library` output (e.g., `/vercel/next.js/v14.3.0`).
-
-If a command fails with a quota error, inform the user and suggest `npx ctx7@latest login` or setting `CONTEXT7_API_KEY` env var for higher limits. Do not silently fall back to training data.
-Run Context7 CLI requests outside Codex's default sandbox. If a Context7 CLI command fails with DNS or network errors such as ENOTFOUND, host resolution failures, or fetch failed, rerun it outside the sandbox instead of retrying inside the sandbox.
-<!-- context7 -->
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph
@@ -161,6 +141,16 @@ Skills under `.agents/skills/` are vendored from upstream repos and pinned by
 hash algorithm is not reproducible from this repo, so patches leave the lock
 stale on purpose — keep them minimal and recorded here:
 
+Catalog poda (2026-09-11): `.agents/skills/` went from 40 to 29 skills. Removed
+were skills that cannot apply to this repo (Claude Code hooks, the pre-commit
+bootstrapper, the shoehorn migration, course scaffolding) and unused upstream
+`in-progress` skills. `skills-lock.json` was pruned to match those removals, so
+a re-sync cannot resurrect them; the two local-only skills (`find-docs`,
+`trace-analyzer`) are intentionally absent from the lock. The 27 lock keys
+correspond one-to-one with the vendored directories.
+
 - `archify` (`SKILL.md`, `references/delivery-contract.md`): writes artifacts to the OS temp directory and publishes them via the coding agent's `publish_artifact` tool instead of `--open`/`xdg-open`, returning the artifact URL to the user.
 - `improve-codebase-architecture` (`SKILL.md` §2, `HTML-REPORT.md`): publishes its HTML report through the coding agent's `publish_artifact` tool instead of `xdg-open`, pins the CDN hosts the artifact viewer allows, and points at the first-party `mobile-first-artifacts` skill. The report still reaches users without this edit: the `artifacts` extension publishes temp-dir reports automatically. See `packages/coding-agent/AGENTS.md`.
 - `handoff` (`SKILL.md`): saves the handoff document to the project's git-ignored `.handoffs/` folder (see root `.gitignore`) instead of the OS temp directory, with a `handoff-<topic>-<date>.md` name.
+- `prototype` (`LOGIC.md`, `SKILL.md`): the logic branch writes its self-contained HTML to the OS temp directory and publishes it via the coding agent's `publish_artifact` tool instead of handing over a file to open by hand, returning the artifact URL to the user, and points at the first-party `mobile-first-artifacts` skill for authoring rules; the UI branch is untouched.
+- `ask-matt` (`SKILL.md`): dropped the `/to-questionnaire` entry because that skill was pruned from the catalog.

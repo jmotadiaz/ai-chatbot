@@ -4,8 +4,8 @@
 
 **Blocked by:** 02.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Cada skill nombrada en `ask-matt` existe en el catálogo.
-- [ ] `to-questionnaire`, la única referencia colgante actual, ya no aparece.
-- [ ] El mapa del router sigue describiendo el flujo principal y sus on-ramps sin huecos.
+- [x] Cada skill nombrada en `ask-matt` existe en el catálogo.
+- [x] `to-questionnaire`, la única referencia colgante actual, ya no aparece.
+- [x] El mapa del router sigue describiendo el flujo principal y sus on-ramps sin huecos.

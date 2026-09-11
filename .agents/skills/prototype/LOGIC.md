@@ -2,7 +2,7 @@
 
 A single, self-contained HTML file (a **shareable demo**) that lets anyone drive a state model by clicking buttons. Use this when the question is about **business logic, state transitions, or data shape**: the kind of thing that looks reasonable on paper but only feels wrong once you push it through real cases.
 
-Because it's one file with nothing to install, you can hand it to a non-developer (a designer, a PM, a domain expert) and let them feel the model for themselves. So it speaks their language, not the code's.
+Because it's one file with nothing to install, the published artifact reaches a non-developer (a designer, a PM, a domain expert) as a URL they open in the browser, and they can feel the model for themselves. So it speaks their language, not the code's.
 
 ## When this is the right shape
 
@@ -34,7 +34,7 @@ Pick whichever shape best fits the question being asked, *not* whichever is easi
 
 ### 3. Build the shareable HTML file
 
-One file, plain HTML/CSS/JS: no framework, no bundler, no server, everything inline so it opens by double-click and survives being emailed around. Anyone should be able to run it by opening it.
+One file, plain HTML/CSS/JS: no framework, no bundler, no server, everything inline so it stays self-contained wherever it is served from. Author it **mobile-first** and verify it before publishing: the first-party `mobile-first-artifacts` skill is the last gate before `publish_artifact`.
 
 Write it for a non-developer. Every label is in **domain language**, not code: buttons and state read like the business, not the reducer. Explain in plain words what's happening.
 
@@ -49,9 +49,11 @@ Choose scenarios that demonstrate the awkward cases, the ones hard to reason abo
 
 Keep it beautiful but restrained: clean typography, generous spacing, one accent colour. No animations, no gimmicks: nothing that competes with the state and the buttons.
 
-### 4. Hand it over
+### 4. Publish it
 
-Send them the file, or open it for them. They'll click through the walkthroughs and free-play whenever they get to it; the interesting moments are when they say "wait, that shouldn't be possible" or "huh, I assumed X would be different"; those are the bugs in the _idea_, which is the whole point. If they want new actions or a new scenario, add them. Prototypes evolve.
+Write the self-contained HTML to the OS temp directory — resolve it from `$TMPDIR`, falling back to `/tmp` (or `%TEMP%` on Windows) — with a fresh name, e.g. `<tmpdir>/prototype-<topic>-<timestamp>.html`, so nothing lands in the repo. Then call the `publish_artifact` tool with that path and put the URL it returns in your reply: the URL is how they see it. Do NOT try to open the file yourself (`xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see.
+
+They'll click through the walkthroughs and free-play whenever they get to it; the interesting moments are when they say "wait, that shouldn't be possible" or "huh, I assumed X would be different"; those are the bugs in the _idea_, which is the whole point. If they want new actions or a new scenario, add them. Prototypes evolve. Republishing the same name with changed content yields a new hashed URL (the old version is kept, not clobbered), so iterating is free.
 
 ### 5. Capture the answer and the prototype
 
@@ -63,5 +65,5 @@ Once the prototype has answered its question, capture the answer, then capture t
 - **Don't wire it to the real database.** Use in-memory state unless the question is specifically about persistence.
 - **Don't generalise.** No "what if we wanted to support X later." The prototype answers one question.
 - **Don't blur the logic and the page together.** If the pure module references the DOM, `document`, or button handlers, it's no longer liftable. Keep the page as a thin shell over a pure module.
-- **Don't reach for a framework, bundler, or server.** One file the recipient double-clicks; a React app or a dev server defeats "shareable".
+- **Don't reach for a framework, bundler, or server.** One self-contained file the viewer serves; a React app or a dev server defeats "shareable".
 - **Don't ship the HTML shell into production.** The page is optimised for being clicked through by hand. The logic module behind it is the bit worth keeping.
