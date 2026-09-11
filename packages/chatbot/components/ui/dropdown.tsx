@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useCallback, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import type { ClassValue } from "clsx";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils/helpers";
@@ -36,6 +36,12 @@ export interface DropdownPopupProps extends Omit<
     | "responsive-bottom-right"
     | "responsive-center";
   className?: string;
+  /**
+   * Prueba B: eleva el bottom-sheet sobre el teclado virtual vía
+   * `visualViewport`. Solo afecta a las variantes `fixed bottom-0` en
+   * mobile (<lg); en desktop el inset es 0 y no hace nada.
+   */
+  avoidKeyboard?: boolean;
 }
 
 const variants: Record<Required<DropdownPopupProps>["variant"], ClassValue> = {
@@ -66,9 +72,13 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   isShown,
   close,
   variant = "top-right",
+  avoidKeyboard = false,
   ...props
 }) => {
   const baseVariant = variant.replace("responsive-", "");
+  // Solo escucha mientras el popup está abierto para no dejar listeners
+  // colgados por cada Dropdown montado.
+  const keyboardInset = useKeyboardInset(avoidKeyboard && isShown);
 
   const initialY =
     baseVariant === "bottom-left" || baseVariant === "bottom-right"
@@ -98,6 +108,10 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
               variants[variant],
               className,
             )}
+            // `bottom-0` viene de la variante responsive; el style lo
+            // sobrescribe solo cuando el teclado está visible. No usa
+            // transform para no pelear con la animación `y` de motion.
+            style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
             initial={{ opacity: 0, y: initialY }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: initialY }}
@@ -142,6 +156,47 @@ const Dropdown = {
   Popup: DropdownPopup,
   Item: DropdownItem,
 };
+
+/**
+ * Altura del teclado virtual (px) mientras cubre el layout viewport.
+ * `window.innerHeight - visualViewport.height` es el inset; se resta
+ * `offsetTop` por pinch-zoom. Devuelve 0 en desktop (≥lg), SSR o sin
+ * `visualViewport` (navegadores antiguos).
+ */
+function useKeyboardInset(enabled: boolean): number {
+  const [inset, setInset] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    let raf = 0;
+    const update = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        if (window.innerWidth >= 1024) {
+          setInset(0);
+          return;
+        }
+        setInset(
+          Math.max(0, Math.round(window.innerHeight - vv.height - (vv.offsetTop || 0))),
+        );
+      });
+    };
+    update();
+    const vv = window.visualViewport;
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [enabled]);
+  return inset;
+}
 
 const useDropdown = () => {
   const [isShown, setIsShown] = useState(false);
