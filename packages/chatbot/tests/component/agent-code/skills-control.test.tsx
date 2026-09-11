@@ -5,6 +5,8 @@ import { SkillsControl } from "@/components/code/skills-control";
 
 afterEach(() => cleanup());
 
+const FILTER_TESTID = "skills-prompts-filter-input";
+
 function renderFullControl(overrides: Partial<Parameters<typeof SkillsControl>[0]> = {}) {
   const props = {
     skills: [
@@ -57,7 +59,7 @@ describe("SkillsControl filter", () => {
   it("filters by name only, case-insensitive substring; empty shows all", async () => {
     renderFullControl();
     await openPopup();
-    const input = screen.getByTestId("skills-filter-input");
+    const input = screen.getByTestId(FILTER_TESTID);
 
     // Vacío: todos visibles.
     expect(screen.getByRole("button", { name: /code-review/ })).toBeDefined();
@@ -79,11 +81,11 @@ describe("SkillsControl filter", () => {
   it("shows a distinct no-results state and clears with the X button", async () => {
     renderFullControl();
     await openPopup();
-    const input = screen.getByTestId("skills-filter-input") as HTMLInputElement;
+    const input = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
 
     fireEvent.change(input, { target: { value: "zzz" } });
     expect(await screen.findByText('No results for "zzz".')).toBeDefined();
-    // La X limpia solo la tab activa sin cerrar el popup.
+    // La X limpia sin cerrar el popup.
     fireEvent.click(screen.getByLabelText("Clear filter"));
     expect(input.value).toBe("");
     expect(screen.getByRole("button", { name: /code-review/ })).toBeDefined();
@@ -92,55 +94,70 @@ describe("SkillsControl filter", () => {
   it("Enter selects the first match and keeps the popup open", async () => {
     const props = renderFullControl();
     await openPopup();
-    const input = screen.getByTestId("skills-filter-input");
+    const input = screen.getByTestId(FILTER_TESTID);
 
     fireEvent.change(input, { target: { value: "pdf" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(props.onToggle).toHaveBeenCalledWith("pdf-reader");
     // Sigue abierto: el input y la tab persisten.
-    expect(screen.getByTestId("skills-filter-input")).toBeDefined();
+    expect(screen.getByTestId(FILTER_TESTID)).toBeDefined();
   });
 
   it("Enter does nothing with zero results", async () => {
     const props = renderFullControl();
     await openPopup();
-    const input = screen.getByTestId("skills-filter-input");
+    const input = screen.getByTestId(FILTER_TESTID);
 
     fireEvent.change(input, { target: { value: "zzz" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(props.onToggle).not.toHaveBeenCalled();
   });
 
-  it("does not share state between tabs: switching tab mounts an empty filter", async () => {
+  it("shares one input between tabs: switching keeps query, focus node and filters", async () => {
     renderFullControl();
     await openPopup();
 
-    fireEvent.change(screen.getByTestId("skills-filter-input"), {
-      target: { value: "pdf" },
-    });
+    const skillsInput = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
+    fireEvent.change(skillsInput, { target: { value: "pdf" } });
     expect(screen.queryByRole("button", { name: /deploy/ })).toBeNull();
 
+    // Cambiar de tab no desmonta el input: mismo nodo, misma query, el
+    // teclado virtual no se cierra y reabre.
     fireEvent.click(screen.getByRole("tab", { name: "Prompts" }));
-    const promptsInput = (await screen.findByTestId(
-      "prompts-filter-input",
-    )) as HTMLInputElement;
-    expect(promptsInput.value).toBe("");
-    expect(screen.getByRole("button", { name: /summary/ })).toBeDefined();
+    const promptsInput = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
+    expect(promptsInput).toBe(skillsInput);
+    expect(promptsInput.value).toBe("pdf");
+    expect(promptsInput.getAttribute("aria-label")).toBe("Filter prompts");
+    expect(screen.getByRole("button", { name: /pdf-export/ })).toBeDefined();
+    expect(screen.queryByRole("button", { name: /summary/ })).toBeNull();
 
-    // Volver a Skills: query limpia (estado no elevado).
+    // Volver a Skills: la query sigue ahí.
     fireEvent.click(screen.getByRole("tab", { name: "Skills" }));
-    const skillsInput = (await screen.findByTestId(
-      "skills-filter-input",
-    )) as HTMLInputElement;
-    expect(skillsInput.value).toBe("");
-    expect(screen.getByRole("button", { name: /deploy/ })).toBeDefined();
+    const backInput = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
+    expect(backInput).toBe(skillsInput);
+    expect(backInput.value).toBe("pdf");
+    expect(screen.getByRole("button", { name: /pdf-reader/ })).toBeDefined();
+  });
+
+  it("keeps focus in the filter input when switching tabs", async () => {
+    renderFullControl();
+    await openPopup();
+
+    const input = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    // Sin retención, el tap movería el foco al botón de la tab y el
+    // teclado virtual se cerraría.
+    fireEvent.click(screen.getByRole("tab", { name: "Prompts" }));
+    expect(document.activeElement).toBe(screen.getByTestId(FILTER_TESTID));
   });
 
   it("filters prompts and Enter opens the first match", async () => {
     const props = renderFullControl();
     await openPopup();
     fireEvent.click(screen.getByRole("tab", { name: "Prompts" }));
-    const input = await screen.findByTestId("prompts-filter-input");
+    const input = screen.getByTestId(FILTER_TESTID);
 
     fireEvent.change(input, { target: { value: "PDF" } });
     expect(screen.getByRole("button", { name: /pdf-export/ })).toBeDefined();
