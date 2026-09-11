@@ -43,7 +43,7 @@ beforeEach(() => {
   mockState.dbSession = {
     sessionId: "s1",
     project: "p",
-    modelId: "Deepseek v4 Pro",
+    modelId: "Deepseek v4.1 Flash",
   };
   mockState.workerModel = null;
   mockState.modelParams = [];
@@ -51,12 +51,12 @@ beforeEach(() => {
 
 describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
   it("returns the worker's model mapped to a chat model id", async () => {
-    mockState.workerModel = { providerId: "opencode-go", modelId: "kimi-k2.7-code" };
+    mockState.workerModel = { providerId: "opencode-go", modelId: "kimi-k3" };
 
     const res = await GET(makeRequest() as never);
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ modelId: "Kimi K2.7 Code" });
+    expect(await res.json()).toEqual({ modelId: "Kimi K3" });
     expect(mockState.modelParams[0]).toEqual({
       sessionId: "s1",
       project: "p",
@@ -68,7 +68,7 @@ describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
 
     const res = await GET(makeRequest() as never);
 
-    expect(await res.json()).toEqual({ modelId: "Deepseek v4 Pro" });
+    expect(await res.json()).toEqual({ modelId: "Deepseek v4.1 Flash" });
   });
 
   it("falls back to the DB model when the worker model is not a known chat model", async () => {
@@ -76,7 +76,7 @@ describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
 
     const res = await GET(makeRequest() as never);
 
-    expect(await res.json()).toEqual({ modelId: "Deepseek v4 Pro" });
+    expect(await res.json()).toEqual({ modelId: "Deepseek v4.1 Flash" });
   });
 
   it("returns null when neither the worker nor the DB know a model", async () => {

@@ -80,7 +80,7 @@ function makeRequest(messages: RequestMessage[]) {
       context: [
         { description: "project", value: "p" },
         { description: "sessionId", value: "s" },
-        { description: "modelId", value: "Deepseek v4 Pro" },
+        { description: "modelId", value: "Deepseek v4.1 Flash" },
       ],
       messages,
     }),

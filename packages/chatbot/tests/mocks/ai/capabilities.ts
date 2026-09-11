@@ -9,16 +9,16 @@ export const CAPABILITY_ALIASES = {
   // basicChat must stay out of MOCK_MODELS so it gets the generic mock, and
   // its declared temperature has to differ from alwaysRefuses' — settings.spec
   // switches between the two to check per-model settings.
-  basicChat: "MiMo V2.5 Pro",
+  basicChat: "Kimi K3",
   // A second plain model: the hub runs without tools, so its multi-panel test
   // needs two models that just answer.
-  basicChatAlt: "Kimi K2.7 Code",
+  basicChatAlt: "GLM 5.3",
   canExecuteTools: "Deepseek v4.1 Flash",
   canSeeImages: "Qwen 3.8 Flash",
-  canProduceReasoning: "Deepseek v4 Pro",
+  canProduceReasoning: "Muse Spark 1.3",
   // settings.spec asserts a temperature of 1 here.
   alwaysRefuses: "MiniMax M3",
-  failsMidStream: "MiMo V2.5",
+  failsMidStream: "Hy3",
 } as const satisfies Record<string, chatModelId>;
 
 export type CapabilityAlias = keyof typeof CAPABILITY_ALIASES;

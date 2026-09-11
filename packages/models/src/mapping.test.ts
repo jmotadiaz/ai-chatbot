@@ -13,9 +13,9 @@ const asInvocable = (id: string) => id as InvocableModelId;
 
 describe("model mapping", () => {
   it("maps an invocable model id to its Pi model", () => {
-    expect(toPiModelId("Deepseek v4 Pro")).toEqual({
+    expect(toPiModelId("Deepseek v4.1 Flash")).toEqual({
       providerId: "opencode-go",
-      modelId: "deepseek-v4-pro",
+      modelId: "deepseek-flash",
     });
   });
 
@@ -32,23 +32,23 @@ describe("model mapping", () => {
   });
 
   it("maps a Pi model back to its catalog id", () => {
-    expect(toChatModelId("opencode-go", "deepseek-v4-pro")).toBe(
-      "Deepseek v4 Pro",
+    expect(toChatModelId("opencode-go", "deepseek-flash")).toBe(
+      "Deepseek v4.1 Flash",
     );
   });
 
   it("returns undefined for other providers or unknown pi model ids", () => {
-    expect(toChatModelId("anthropic", "deepseek-v4-pro")).toBeUndefined();
+    expect(toChatModelId("anthropic", "deepseek-flash")).toBeUndefined();
     expect(toChatModelId("opencode-go", "unknown-model")).toBeUndefined();
   });
 
   it("filters Pi models to the invocable catalog intersection, sorted", () => {
     const result = filterAvailableChatModels([
-      { providerId: "opencode-go", modelId: "mimo-v2.5" },
-      { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
+      { providerId: "opencode-go", modelId: "kimi-k3" },
+      { providerId: "opencode-go", modelId: "deepseek-flash" },
       { providerId: "opencode-go", modelId: "unknown-model" },
     ]);
-    expect(result).toEqual(["Deepseek v4 Pro", "MiMo V2.5"]);
+    expect(result).toEqual(["Deepseek v4.1 Flash", "Kimi K3"]);
   });
 
   it("exposes the Pi provider id", () => {
@@ -95,7 +95,7 @@ describe("model mapping", () => {
   });
 
   it("maps the Hy3 catalog id to the opencode-go Pi provider", () => {
-    expect(toPiModelId("Hy3" as never)).toEqual({
+    expect(toPiModelId("Hy3")).toEqual({
       providerId: "opencode-go",
       modelId: "hy3",
     });
@@ -120,9 +120,9 @@ describe("model mapping", () => {
         providerId: "opencode-go",
         modelId: "muse-spark-1.3-contributor",
       },
-      { providerId: "opencode-go", modelId: "deepseek-v4-pro" },
+      { providerId: "opencode-go", modelId: "deepseek-flash" },
       { providerId: "opencode-go", modelId: "unknown-model" },
     ]);
-    expect(result).toEqual(["Deepseek v4 Pro", "Muse Spark 1.3"]);
+    expect(result).toEqual(["Deepseek v4.1 Flash", "Muse Spark 1.3"]);
   });
 });

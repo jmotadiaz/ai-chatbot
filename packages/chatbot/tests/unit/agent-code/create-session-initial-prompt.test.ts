@@ -59,7 +59,7 @@ vi.mock("@/lib/features/code/session-store", () => ({
     sessionId: "s1",
     userId: "user-1",
     project: "p",
-    modelId: "Deepseek v4 Pro",
+    modelId: "Deepseek v4.1 Flash",
     label: null,
     updatedAt: new Date(),
   })),
@@ -85,7 +85,7 @@ describe("createCodingAgentSession", () => {
   it("creates the row and starts the detached run with the initial prompt", async () => {
     const result = await createCodingAgentSession(
       "p",
-      "Deepseek v4 Pro",
+      "Deepseek v4.1 Flash",
       "# Task\n\nRefactor this.",
     );
 
@@ -99,7 +99,7 @@ describe("createCodingAgentSession", () => {
     };
     expect(init.sessionId).toBe("s1");
     expect(init.project).toBe("p");
-    expect(init.modelId).toBe("opencode-go/deepseek-v4-pro");
+    expect(init.modelId).toBe("opencode-go/deepseek-flash");
     expect(init._traceRunId).toBeTruthy();
 
     const send = state.sendParams[0] as {
@@ -111,7 +111,7 @@ describe("createCodingAgentSession", () => {
     };
     expect(send.sessionId).toBe("s1");
     expect(send.prompt).toBe("# Task\n\nRefactor this.");
-    expect(send.modelId).toBe("opencode-go/deepseek-v4-pro");
+    expect(send.modelId).toBe("opencode-go/deepseek-flash");
     expect(send.thinkingLevel).toBe("xhigh");
     expect(send._traceRunId).toBe(init._traceRunId);
 
@@ -121,7 +121,7 @@ describe("createCodingAgentSession", () => {
   });
 
   it("labels the session with the first line of the prompt", async () => {
-    await createCodingAgentSession("p", "Deepseek v4 Pro", "Fix the bug\n\nDetails here.");
+    await createCodingAgentSession("p", "Deepseek v4.1 Flash", "Fix the bug\n\nDetails here.");
     expect(state.savedLabel).toBe("Fix the bug");
   });
 
@@ -137,7 +137,7 @@ describe("createCodingAgentSession", () => {
     state.sendRejects = true;
 
     await expect(
-      createCodingAgentSession("p", "Deepseek v4 Pro", "# Fail"),
+      createCodingAgentSession("p", "Deepseek v4.1 Flash", "# Fail"),
     ).rejects.toThrow("Worker unreachable");
 
     expect(state.deleteCalls).toEqual([

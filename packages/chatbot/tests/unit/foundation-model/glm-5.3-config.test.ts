@@ -14,7 +14,7 @@ describe("GLM 5.3 in the chat model configuration", () => {
     expect(cfg.temperature).toBe(0.6);
     expect(cfg.topP).toBe(0.95);
     expect(cfg.contextWindow).toBe(1_000_000);
-    expect(cfg.supportedFiles).toBeUndefined();
+    expect(cfg.supportedFiles).toEqual(["img"]);
   });
 
   it("exposes an opencodeGo provider factory with the model id (mock in test mode)", () => {

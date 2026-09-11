@@ -47,20 +47,15 @@ describe("MODEL_CATALOG integrity", () => {
   it("exposes exactly the coding-agent models as invocable, in order", () => {
     expect([...INVOCABLE_MODEL_IDS]).toEqual([
       "Deepseek v4.1 Flash",
-      "Deepseek v4 Pro",
-      "Kimi K2.7 Code",
       "Kimi K3",
       "MiniMax M3",
       "Qwen 3.8 Flash",
       "Qwen 3.8 Max",
-      "MiMo V2.5",
-      "MiMo V2.5 Pro",
       "Muse Spark 1.3",
       "Gemini 3.7 Flash",
       "GLM 5.3",
       "Hy3",
       "GLM 5.3 Flash",
-      "MiniMax M3 (free)",
     ]);
   });
 
@@ -105,8 +100,8 @@ describe("defaultThinkingLevel", () => {
   });
 
   it("resolves the catalog default for known coding-agent models", () => {
-    expect(getDefaultThinkingLevel("Deepseek v4 Pro")).toBe("xhigh");
-    expect(getDefaultThinkingLevel("Kimi K2.7 Code")).toBe("high");
+    expect(getDefaultThinkingLevel("Deepseek v4.1 Flash")).toBe("xhigh");
+    expect(getDefaultThinkingLevel("Kimi K3")).toBe("high");
     expect(getDefaultThinkingLevel("Muse Spark 1.3")).toBe("xhigh");
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
     expect(getDefaultThinkingLevel("Hy3")).toBe("high");

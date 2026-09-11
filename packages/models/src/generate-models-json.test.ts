@@ -80,24 +80,24 @@ describe("generateModelsJson", () => {
   });
 
   it("uses the provider modelId as Pi id", () => {
-    expect(models.find((m) => m.name === "Deepseek v4 Pro")?.id).toBe(
-      "deepseek-v4-pro",
+    expect(models.find((m) => m.name === "MiniMax M3")?.id).toBe(
+      "minimax-m3",
     );
   });
 
   it("inherits Pi's limits and cost instead of falling back to its defaults", () => {
-    const pro = models.find((m) => m.name === "Deepseek v4 Pro");
-    expect(pro?.contextWindow).toBe(1_000_000);
-    expect(pro?.maxTokens).toBe(384_000);
-    expect(pro?.cost).toEqual(COST);
+    const m3 = models.find((m) => m.name === "MiniMax M3");
+    expect(m3?.contextWindow).toBe(1_000_000);
+    expect(m3?.maxTokens).toBe(384_000);
+    expect(m3?.cost).toEqual(COST);
   });
 
   it("lets the catalog override what it declares", () => {
     const entry: ModelCatalogEntry = {
-      id: "Deepseek v4 Pro",
+      id: "MiniMax M3",
       userInvocable: true,
-      provider: { kind: "opencodeGo", modelId: "deepseek-v4-pro" },
-      company: "deepseek",
+      provider: { kind: "opencodeGo", modelId: "minimax-m3" },
+      company: "minimax",
       contextWindow: 64_000,
       supportedFiles: ["pdf"],
     };
@@ -110,14 +110,14 @@ describe("generateModelsJson", () => {
   });
 
   it("inherits Pi's input when the catalog declares no supportedFiles", () => {
-    expect(models.find((m) => m.name === "Deepseek v4 Pro")?.input).toEqual([
+    expect(models.find((m) => m.name === "Hy3")?.input).toEqual([
       "text",
       "image",
     ]);
   });
 
   it("derives image input from supportedFiles", () => {
-    expect(models.find((m) => m.name === "Kimi K2.7 Code")?.input).toEqual([
+    expect(models.find((m) => m.name === "Deepseek v4.1 Flash")?.input).toEqual([
       "text",
       "image",
     ]);
@@ -224,7 +224,7 @@ describe("generateModelsJson", () => {
     expect(flash.reasoning).toBe(true);
     expect(flash.api).toBe("openai-completions");
     expect(flash.baseUrl).toBe("https://opencode.ai/zen/go/v1");
-    expect(flash.input).toEqual(["text"]);
+    expect(flash.input).toEqual(["text", "image"]);
     expect(flash.thinkingLevelMap).toEqual({
       minimal: null,
       low: "low",
@@ -260,11 +260,11 @@ describe("generateModelsJson", () => {
   });
 
   it("inherits Pi's thinkingLevelMap from the built-in baseline", () => {
-    // Without this, deepseek's built-in thinkingLevelMap ({xhigh: "max"}) is
+    // Without this, the model's built-in thinkingLevelMap ({xhigh: "max"}) is
     // lost because pi's ModelRegistry replaces the built-in wholesale with the
     // models.json entry, and getSupportedThinkingLevels then caps at "high".
-    const withMap = new Map(builtIns).set("deepseek-v4-pro", {
-      ...builtIns.get("deepseek-v4-pro")!,
+    const withMap = new Map(builtIns).set("minimax-m3", {
+      ...builtIns.get("minimax-m3")!,
       thinkingLevelMap: {
         minimal: null,
         low: null,
@@ -273,9 +273,9 @@ describe("generateModelsJson", () => {
         xhigh: "max",
       },
     });
-    const pro = generateModelsJson(undefined, { builtIns: withMap })
-      .providers["opencode-go"].models.find((m) => m.id === "deepseek-v4-pro");
-    expect(pro?.thinkingLevelMap).toEqual({
+    const model = generateModelsJson(undefined, { builtIns: withMap })
+      .providers["opencode-go"].models.find((m) => m.id === "minimax-m3");
+    expect(model?.thinkingLevelMap).toEqual({
       minimal: null,
       low: null,
       medium: null,
@@ -286,15 +286,15 @@ describe("generateModelsJson", () => {
 
   it("lets the catalog override the inherited thinkingLevelMap", () => {
     const entry: ModelCatalogEntry = {
-      id: "Deepseek v4 Pro",
+      id: "MiniMax M3",
       userInvocable: true,
-      provider: { kind: "opencodeGo", modelId: "deepseek-v4-pro" },
-      company: "deepseek",
+      provider: { kind: "opencodeGo", modelId: "minimax-m3" },
+      company: "minimax",
       reasoning: true,
       thinkingLevelMap: { high: "high", xhigh: null },
     };
-    const withMap = new Map(builtIns).set("deepseek-v4-pro", {
-      ...builtIns.get("deepseek-v4-pro")!,
+    const withMap = new Map(builtIns).set("minimax-m3", {
+      ...builtIns.get("minimax-m3")!,
       thinkingLevelMap: {
         minimal: null,
         low: null,
@@ -437,7 +437,7 @@ describe("generateModelsJson custom providers", () => {
       id: "glm-5.3",
       name: "GLM 5.3",
       reasoning: true,
-      input: ["text"],
+      input: ["text", "image"],
       contextWindow: 1_000_000,
       maxTokens: 128_000,
       cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },

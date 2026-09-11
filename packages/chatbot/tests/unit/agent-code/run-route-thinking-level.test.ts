@@ -49,7 +49,7 @@ import { POST } from "@/app/(chat)/api/agent/code/route";
 function makeRequest(
   options: { modelId?: string; thinkingLevel?: string; runId?: string } = {},
 ) {
-  const { modelId = "Deepseek v4 Pro", thinkingLevel, runId = "r1" } = options;
+  const { modelId = "Deepseek v4.1 Flash", thinkingLevel, runId = "r1" } = options;
   return new Request("http://test/api/agent/code", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -85,12 +85,12 @@ describe("POST /api/agent/code", () => {
 
     expect(res.status).toBe(200);
     const init = mockState.initParams[0] as { modelId?: string };
-    expect(init.modelId).toBe("opencode-go/deepseek-v4-pro");
+    expect(init.modelId).toBe("opencode-go/deepseek-flash");
     const promptParams = mockState.sendPromptParams[0] as {
       modelId?: string;
       thinkingLevel?: string;
     };
-    expect(promptParams.modelId).toBe("opencode-go/deepseek-v4-pro");
+    expect(promptParams.modelId).toBe("opencode-go/deepseek-flash");
     expect(promptParams.thinkingLevel).toBe("low");
   });
 

@@ -120,6 +120,7 @@ export const MODEL_CATALOG = [
       high: "high",
       xhigh: "max",
     },
+    supportedFiles: ["img"],
     api: "openai-completions",
     baseUrl: "https://opencode.ai/zen/go/v1",
     temperature: 1,
@@ -131,7 +132,7 @@ export const MODEL_CATALOG = [
   },
   {
     id: "Deepseek v4 Pro",
-    userInvocable: true,
+    userInvocable: false,
     provider: { kind: "opencodeGo", modelId: "deepseek-v4-pro" },
     company: "deepseek",
     reasoning: true,
@@ -141,7 +142,7 @@ export const MODEL_CATALOG = [
   },
   {
     id: "Kimi K2.7 Code",
-    userInvocable: true,
+    userInvocable: false,
     provider: { kind: "opencodeGo", modelId: "kimi-k2.7-code" },
     company: "moonshotai",
     reasoning: true,
@@ -220,7 +221,7 @@ export const MODEL_CATALOG = [
   },
   {
     id: "MiMo V2.5",
-    userInvocable: true,
+    userInvocable: false,
     provider: { kind: "opencodeGo", modelId: "mimo-v2.5" },
     company: "xiaomi",
     reasoning: true,
@@ -231,7 +232,7 @@ export const MODEL_CATALOG = [
   },
   {
     id: "MiMo V2.5 Pro",
-    userInvocable: true,
+    userInvocable: false,
     provider: { kind: "opencodeGo", modelId: "mimo-v2.5-pro" },
     company: "xiaomi",
     reasoning: true,
@@ -315,6 +316,7 @@ export const MODEL_CATALOG = [
       high: "high",
       xhigh: "xhigh",
     },
+    supportedFiles: ["img"],
     api: "openai-completions",
     baseUrl: "https://opencode.ai/zen/go/v1",
     temperature: 0.6,
@@ -372,31 +374,6 @@ export const MODEL_CATALOG = [
     contextWindow: 1_000_000,
     maxTokens: 131_072,
     cost: { input: 0.075, output: 0.25, cacheRead: 0.015, cacheWrite: 0 },
-  },
-  {
-    // MiniMax M3 Free servido por Vercel AI Gateway (provider "vercel-ai-gateway").
-    // Pi no lo trae built-in, así que se auto-describe. Coste 0 — variante free
-    // del M3, con límites reducidos según el registro de minimax.
-    id: "MiniMax M3 (free)",
-    userInvocable: true,
-    provider: { kind: "gateway", modelId: "minimax/minimax-m3-free" },
-    company: "minimax",
-    reasoning: true,
-    defaultThinkingLevel: "high",
-    thinkingLevelMap: {
-      off: null,
-      minimal: null,
-      low: null,
-      medium: null,
-      high: "high",
-      xhigh: "max",
-    },
-    supportedFiles: ["img"],
-    temperature: 1,
-    topP: 0.95,
-    contextWindow: 200_000,
-    maxTokens: 32_000,
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
   {
