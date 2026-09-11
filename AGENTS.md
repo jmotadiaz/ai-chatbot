@@ -141,6 +141,14 @@ Skills under `.agents/skills/` are vendored from upstream repos and pinned by
 hash algorithm is not reproducible from this repo, so patches leave the lock
 stale on purpose — keep them minimal and recorded here:
 
+Catalog poda (2026-09-11): `.agents/skills/` went from 40 to 29 skills. Removed
+were skills that cannot apply to this repo (Claude Code hooks, the pre-commit
+bootstrapper, the shoehorn migration, course scaffolding) and unused upstream
+`in-progress` skills. `skills-lock.json` was pruned to match those removals, so
+a re-sync cannot resurrect them; the two local-only skills (`find-docs`,
+`trace-analyzer`) are intentionally absent from the lock. The 27 lock keys
+correspond one-to-one with the vendored directories.
+
 - `archify` (`SKILL.md`, `references/delivery-contract.md`): writes artifacts to the OS temp directory and publishes them via the coding agent's `publish_artifact` tool instead of `--open`/`xdg-open`, returning the artifact URL to the user.
 - `improve-codebase-architecture` (`SKILL.md` §2, `HTML-REPORT.md`): publishes its HTML report through the coding agent's `publish_artifact` tool instead of `xdg-open`, pins the CDN hosts the artifact viewer allows, and points at the first-party `mobile-first-artifacts` skill. The report still reaches users without this edit: the `artifacts` extension publishes temp-dir reports automatically. See `packages/coding-agent/AGENTS.md`.
 - `handoff` (`SKILL.md`): saves the handoff document to the project's git-ignored `.handoffs/` folder (see root `.gitignore`) instead of the OS temp directory, with a `handoff-<topic>-<date>.md` name.
