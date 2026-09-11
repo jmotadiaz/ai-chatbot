@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, React (useSyncExternalStore), `@ag-ui/client`, Vitest, jsdom, Testing Library.
 
-**Spec:** `docs/superpowers/specs/2026-07-17-coding-agent-reconnect-cut-on-hide-design.md`
+**Spec:** `docs/archive/specs/2026-07-17-coding-agent-reconnect-cut-on-hide-design.md`
 
 **Test command (run after every implementation step):**
 

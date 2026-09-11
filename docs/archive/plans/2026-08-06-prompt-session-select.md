@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Spec de referencia: `docs/superpowers/specs/2026-08-06-prompt-session-select-design.md`.
+- Spec de referencia: `docs/archive/specs/2026-08-06-prompt-session-select-design.md`.
 - Todos los commits de IA deben incluir la línea `Co-Authored-By: Claude Sonnet 4.5 <noreply@example.com>`.
 - Comandos de test (desde la raíz del repo, workspace pnpm):
   - Coding-agent: `pnpm --filter coding-agent exec vitest run tests/unit/<file>.test.ts`

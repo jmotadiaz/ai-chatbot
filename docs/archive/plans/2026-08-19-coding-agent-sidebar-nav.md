@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Spec de referencia: `docs/superpowers/specs/2026-08-19-coding-agent-sidebar-nav-design.md`.
+- Spec de referencia: `docs/archive/specs/2026-08-19-coding-agent-sidebar-nav-design.md`.
 - Todos los commits de IA deben incluir la línea `Co-Authored-By: Claude <noreply@anthropic.com>` (según AGENTS.md del repo).
 - Node.js 24 + pnpm 11 (workspace). Todo el trabajo de este plan vive en `packages/chatbot`.
 - Comandos (desde la raíz del repo):

@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, pnpm workspaces, AI SDK v6 (`@ai-sdk/openai-compatible`), vitest, Pi (`@earendil-works/pi-coding-agent` 0.79.3).
 
-**Spec:** `docs/superpowers/specs/2026-08-17-deepseek-v4-flash-free-design.md`
+**Spec:** `docs/archive/specs/2026-08-17-deepseek-v4-flash-free-design.md`
 
 ## Global Constraints
 

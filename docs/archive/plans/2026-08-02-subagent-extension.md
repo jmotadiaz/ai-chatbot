@@ -6,7 +6,7 @@
 
 **Architecture:** First-party Pi extension (`packages/coding-agent/extensions/subagent/`) registers a thin `subagent` tool whose `execute` delegates to `runSubagent()` in the worker's `session-manager.ts`. Each dispatch creates a real Pi session (persisted under `<SESSIONS_DIR>/subagents/`, runtime without the subagent extension), registers it in the `sessions` Map with `parentSessionId`, and streams its events into its own `SessionEventLog` via a lightweight collector. The chatbot resolves `toolCallId → subSessionId` through a new `getSubagentSession` RPC and links to a new nested route that composes Header + conversation (no composer).
 
-**Spec:** [`docs/superpowers/specs/2026-08-02-subagent-extension-design.md`](../specs/2026-08-02-subagent-extension-design.md) — decisions D1–D7 are normative.
+**Spec:** [`docs/archive/specs/2026-08-02-subagent-extension-design.md`](../specs/2026-08-02-subagent-extension-design.md) — decisions D1–D7 are normative.
 
 **Tech Stack:** TypeScript ESM, `@earendil-works/pi-coding-agent` SDK (extensions via jiti, `Type` from `typebox`), Vitest (tests live in `packages/chatbot/tests/unit/agent-code/`), Next.js App Router, AG-UI.
 
@@ -1180,7 +1180,7 @@ Co-Authored-By: Kimi (Moonshot AI) <noreply@moonshot.cn>"
 
 **Files:**
 - Modify: `packages/coding-agent/AGENTS.md` (Key Files table + a short "Subagent extension" section: how it loads, `SESSIONS_DIR/subagents/`, guard, lookup RPC)
-- Modify: `docs/superpowers/specs/2026-08-02-subagent-extension-design.md` (status: Propuesta → Implementada, if all E2E passes)
+- Modify: `docs/archive/specs/2026-08-02-subagent-extension-design.md` (status: Propuesta → Implementada, if all E2E passes)
 
 - [ ] **Step 1: Update `packages/coding-agent/AGENTS.md`**
 
@@ -1202,7 +1202,7 @@ Expected: clean (`tsc --noEmit`)
 - [ ] **Step 4: Flip spec status + commit**
 
 ```bash
-git add packages/coding-agent/AGENTS.md docs/superpowers/specs/2026-08-02-subagent-extension-design.md
+git add packages/coding-agent/AGENTS.md docs/archive/specs/2026-08-02-subagent-extension-design.md
 git commit --no-verify -m "docs: mark subagent extension spec as implemented and document the feature
 
 Co-Authored-By: Kimi (Moonshot AI) <noreply@moonshot.cn>"

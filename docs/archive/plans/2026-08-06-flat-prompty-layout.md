@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Node `node:fs`, Vitest (coding-agent + chatbot), pnpm workspaces.
 
-**Spec:** [`docs/superpowers/specs/2026-08-06-flat-prompty-layout-design.md`](../specs/2026-08-06-flat-prompty-layout-design.md)
+**Spec:** [`docs/archive/specs/2026-08-06-flat-prompty-layout-design.md`](../specs/2026-08-06-flat-prompty-layout-design.md)
 
 ## Global Constraints
 

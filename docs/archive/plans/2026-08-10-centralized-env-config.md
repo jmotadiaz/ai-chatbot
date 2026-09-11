@@ -8,7 +8,7 @@
 
 **Tech Stack:** pnpm workspaces, TypeScript (ESM, `tsx`), Vitest 4, Next.js 16 (chatbot), `@earendil-works/pi-coding-agent` (worker).
 
-**Spec:** `docs/superpowers/specs/2026-08-10-centralized-env-config-design.md`
+**Spec:** `docs/archive/specs/2026-08-10-centralized-env-config-design.md`
 
 ## Global Constraints
 
@@ -1328,7 +1328,7 @@ El bloque `env: { ... }` (líneas 105-110) queda IGUAL, con este comentario enci
 ```ts
 // Reenvío de valores crudos al webServer (strings, defaults propios del runner).
 // A propósito NO usa config: aquí se plumbearn a un proceso hijo, no se leen
-// para la lógica de la app. Ver docs/superpowers/specs/2026-08-10-centralized-env-config-design.md.
+// para la lógica de la app. Ver docs/archive/specs/2026-08-10-centralized-env-config-design.md.
 ```
 
 Añadir `import { config } from "config";`.

@@ -65,6 +65,3 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
-
-# Superpowers brainstorming artifacts
-.superpowers/
