@@ -33,7 +33,7 @@ digraph trace_analyzer {
 
 ## Debugging Mode
 
-Read `references/debugging-workflow.md` before analyzing. It runs the five `diagnosing-bugs` phases with trace-analyzer commands and defines the gate and reporting format.
+Read `references/debugging-workflow.md` before analyzing. It runs the six `diagnosing-bugs` phases with trace-analyzer commands and defines the gate and reporting format.
 
 ## Exploration Mode
 
