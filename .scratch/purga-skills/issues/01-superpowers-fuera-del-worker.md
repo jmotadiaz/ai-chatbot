@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] La extensión superpowers y sus skills ya no existen en el paquete del worker.
-- [ ] La composición de rutas del cargador de recursos ya no tiene la opción de exclusión de superpowers y expone una única función de skills first-party.
-- [ ] La instrumentación del bootstrap (wrapper de `transformContext`, marker y logs de traza) y el chequeo residual del estado del bootstrap en el turn runner han desaparecido.
-- [ ] Los dos ficheros de test dedicados a superpowers se han eliminado; los tests de composición de rutas afirman el inventario actual: `subagent` como única extensión first-party y las skills first-party reducidas al directorio built-in.
-- [ ] Una sesión de subagente carga exactamente `mobile-first-artifacts` y `writing-prompties` y sigue sin recibir el tool `subagent`.
-- [ ] Suites rápidas del paquete en verde.
-- [ ] Verificación de compilación aislada en verde.
+- [x] La extensión superpowers y sus skills ya no existen en el paquete del worker.
+- [x] La composición de rutas del cargador de recursos ya no tiene la opción de exclusión de superpowers y expone una única función de skills first-party.
+- [x] La instrumentación del bootstrap (wrapper de `transformContext`, marker y logs de traza) y el chequeo residual del estado del bootstrap en el turn runner han desaparecido.
+- [x] Los dos ficheros de test dedicados a superpowers se han eliminado; los tests de composición de rutas afirman el inventario actual: `subagent` como única extensión first-party y las skills first-party reducidas al directorio built-in.
+- [x] Una sesión de subagente carga exactamente `mobile-first-artifacts` y `writing-prompties` y sigue sin recibir el tool `subagent`.
+- [x] Suites rápidas del paquete en verde.
+- [x] Verificación de compilación aislada en verde.

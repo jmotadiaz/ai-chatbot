@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] El bloque `context7` ha desaparecido íntegro de `AGENTS.md`.
-- [ ] El skill `find-docs` sigue presente y con su descripción intacta.
-- [ ] Ninguna otra sección de `AGENTS.md` referencia Context7 ni el CLI `ctx7`.
+- [x] El bloque `context7` ha desaparecido íntegro de `AGENTS.md`.
+- [x] El skill `find-docs` sigue presente y con su descripción intacta.
+- [x] Ninguna otra sección de `AGENTS.md` referencia Context7 ni el CLI `ctx7`.
