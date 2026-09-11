@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-Valores exactos tomados de la spec `docs/superpowers/specs/2026-08-09-muse-spark-custom-provider-design.md`:
+Valores exactos tomados de la spec `docs/archive/specs/2026-08-09-muse-spark-custom-provider-design.md`:
 
 - Catalog id: `"Muse Spark 1.2"` — el sufijo `-contributor` solo existe en `provider.modelId` (`"muse-spark-1.2-contributor"`, el id que exige la API de Meta).
 - `ProviderKind` nuevo: `"metaModelApi"`; pi provider key: `"meta"`.

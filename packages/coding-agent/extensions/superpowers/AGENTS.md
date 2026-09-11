@@ -84,7 +84,7 @@ bootstrap via `resourceLoaderOptions.appendSystemPrompt` (only
 
 Upstream Superpowers presents design sections incrementally in the chat session and commits the final design doc immediately upon drafting. In our harness, this flow was modified to use the built-in file browser as the primary review surface:
 
-1. **Uncommitted Spec Draft:** The design is written directly to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` as an uncommitted file. The agent tells the user to review the file in the file browser.
+1. **Uncommitted Spec Draft:** The design is written directly to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md` as an uncommitted file. The agent tells the user to review the file in the file browser.
 2. **Line Comment Review:** The user attaches comments directly on lines/blocks in the file browser (delivered in chat as `"Code review comments:"` blocks).
 3. **Iterative Editing:** The agent addresses each comment by modifying the uncommitted spec file and summarizing changes in chat.
 4. **Commit Gate:** The spec document is only committed to git once the user gives explicit approval. Only after committing does the agent invoke `writing-plans`.
@@ -92,8 +92,8 @@ Upstream Superpowers presents design sections incrementally in the chat session 
 #### Key Diff in `brainstorming/SKILL.md`:
 ```diff
 - 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-- 6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
-+ 5. **Write the design as an uncommitted file** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` without committing. DO NOT present design content in chat. The user reviews the file through the harness file browser by adding line comments on specific blocks. Chat stays for clarifying questions, summarising changes, and signalling approval (see The Process below).
+- 6. **Write design doc** — save to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md` and commit
++ 5. **Write the design as an uncommitted file** — save to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md` without committing. DO NOT present design content in chat. The user reviews the file through the harness file browser by adding line comments on specific blocks. Chat stays for clarifying questions, summarising changes, and signalling approval (see The Process below).
 + 6. **Iterate on comments** — when the user sends "Code review comments:" blocks referencing the spec, address every comment by editing the file. Summarise changes in chat. Repeat until the user approves.
 - 8. **User reviews written spec** — ask user to review the spec file before proceeding
 - 9. **Transition to implementation** — invoke writing-plans skill to create implementation plan

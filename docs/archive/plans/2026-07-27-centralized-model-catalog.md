@@ -8,7 +8,7 @@
 
 **Tech Stack:** pnpm workspaces, TypeScript (ESM, `tsx`), Vitest 4, Next.js 16 (chatbot), `@earendil-works/pi-coding-agent` (worker).
 
-**Spec:** `docs/superpowers/specs/2026-07-27-centralized-model-catalog-design.md`
+**Spec:** `docs/archive/specs/2026-07-27-centralized-model-catalog-design.md`
 
 **Deviations from spec (decididas durante la planificación):**
 1. El CLI generador vive en `packages/coding-agent/scripts/generate-models.ts` (no en `packages/models`): mantiene `models` 100% puro (sin `node:fs`) y deja al coding-agent resolver el path con `getAgentDir()` de Pi, que es su dependencia natural.

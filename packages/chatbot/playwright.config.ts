@@ -105,7 +105,7 @@ export default defineConfig({
     timeout: 240 * 1000,
     // Reenvío de valores crudos al webServer (strings, defaults propios del runner).
     // A propósito NO usa config: aquí se plumbearn a un proceso hijo, no se leen
-    // para la lógica de la app. Ver docs/superpowers/specs/2026-08-10-centralized-env-config-design.md.
+    // para la lógica de la app. Ver docs/archive/specs/2026-08-10-centralized-env-config-design.md.
     env: {
       // El shell puede arrastrar NODE_ENV=production (p. ej. contexto pm2/prod);
       // next dev con un NODE_ENV ajeno revienta el pipeline CSS de webpack.

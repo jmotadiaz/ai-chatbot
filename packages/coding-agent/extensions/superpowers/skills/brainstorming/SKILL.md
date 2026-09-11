@@ -25,7 +25,7 @@ You MUST create a task for each of these items and complete them in order:
 2. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Write the design as an uncommitted file** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` without committing. DO NOT present design content in chat. The user reviews the file through the harness file browser by adding line comments on specific blocks. Chat stays for clarifying questions, summarising changes, and signalling approval (see The Process below).
+5. **Write the design as an uncommitted file** — save to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md` without committing. DO NOT present design content in chat. The user reviews the file through the harness file browser by adding line comments on specific blocks. Chat stays for clarifying questions, summarising changes, and signalling approval (see The Process below).
 6. **Iterate on comments** — when the user sends "Code review comments:" blocks referencing the spec, address every comment by editing the file. Summarise changes in chat. Repeat until the user approves.
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **Commit and transition** — once the user approves, commit the spec, then invoke writing-plans skill to create the implementation plan.
@@ -82,10 +82,10 @@ digraph brainstorming {
 
 This harness's file browser lets the user attach line comments to uncommitted Markdown files and send them as "Code review comments:" blocks (file, line, snippet, comment). The file itself is the review surface — DO NOT present design content in chat.
 
-- Once you believe you understand what you're building, write the design to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` as an uncommitted file. Do NOT commit it yet.
+- Once you believe you understand what you're building, write the design to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md` as an uncommitted file. Do NOT commit it yet.
 - Structure each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced.
 - Cover: architecture, components, data flow, error handling, testing.
-- After writing, tell the user where to find it, e.g.: "Draft written (uncommitted) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`. Review it in the file browser — add comments on specific blocks and send them when ready."
+- After writing, tell the user where to find it, e.g.: "Draft written (uncommitted) to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md`. Review it in the file browser — add comments on specific blocks and send them when ready."
 - When comments arrive (as "Code review comments:" blocks), address every one by editing the spec. Summarise changes in chat. Keep the file uncommitted.
 - Only after the user approves: commit the spec, then invoke writing-plans.
 
@@ -106,7 +106,7 @@ This harness's file browser lets the user attach line comments to uncommitted Ma
 
 **Documentation:**
 
-- Write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
+- Write the validated design (spec) to `docs/archive/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
 - Keep the file uncommitted — it will be committed once the user approves the spec
