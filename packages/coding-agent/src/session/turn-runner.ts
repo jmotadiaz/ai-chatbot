@@ -594,15 +594,13 @@ export class TurnRunner {
     {
       const sysPrompt = entry.runtime.session.systemPrompt ?? "";
       const rl = entry.runtime.services?.resourceLoader;
-      log.info("debug.prompt_bootstrap_before", {
+      log.info("debug.prompt_state", {
         sessionId,
         runId,
-        mechanism: "context (extension, user message prepend)",
-        hasBootstrapInSystemPromptBefore: sysPrompt.includes("You have superpowers"),
-        systemPromptLengthBefore: sysPrompt.length,
-        systemPromptPreviewBefore: sysPrompt.slice(0, 300),
         promptLength: prompt.length,
         promptPreview: prompt.slice(0, 300),
+        systemPromptLength: sysPrompt.length,
+        systemPromptPreview: sysPrompt.slice(0, 300),
         skillCount: loadedSkills.length,
         extensionCount: rl?.getExtensions().extensions.length ?? 0,
         appendSystemPrompt: rl?.getAppendSystemPrompt() ?? [],
