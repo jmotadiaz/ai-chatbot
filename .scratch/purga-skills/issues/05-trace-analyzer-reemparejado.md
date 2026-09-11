@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] La referencia al par antiguo ha desaparecido del skill y de su documento de workflow.
-- [ ] El workflow de depuración queda descrito de principio a fin con las fases de `diagnosing-bugs`.
-- [ ] El skill sigue siendo cargable (frontmatter válido) y no queda ninguna mención a superpowers en `.agents/skills/`.
+- [x] La referencia al par antiguo ha desaparecido del skill y de su documento de workflow.
+- [x] El workflow de depuración queda descrito de principio a fin con las fases de `diagnosing-bugs`.
+- [x] El skill sigue siendo cargable (frontmatter válido) y no queda ninguna mención a superpowers en `.agents/skills/`.

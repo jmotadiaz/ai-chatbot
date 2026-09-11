@@ -4,10 +4,10 @@
 
 **Blocked by:** 06 (por conflicto de fichero: ambos editan la sección de parches locales de `AGENTS.md`).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] El skill `prototype` indica que la salida HTML de la rama de lógica se escribe en el directorio que el visor de artefactos publica y se entrega como URL al usuario.
-- [ ] El skill apunta a `mobile-first-artifacts` para las reglas de autoría.
-- [ ] La regla de capturar el prototipo como fuente primaria (rama desechable y puntero al issue de implementación) se mantiene.
-- [ ] La entrada de `prototype` está añadida a la sección de parches locales de `AGENTS.md`.
-- [ ] La rama de UI (variaciones en una ruta del proyecto) queda intacta.
+- [x] El skill `prototype` indica que la salida HTML de la rama de lógica se escribe en el directorio que el visor de artefactos publica y se entrega como URL al usuario.
+- [x] El skill apunta a `mobile-first-artifacts` para las reglas de autoría.
+- [x] La regla de capturar el prototipo como fuente primaria (rama desechable y puntero al issue de implementación) se mantiene.
+- [x] La entrada de `prototype` está añadida a la sección de parches locales de `AGENTS.md`.
+- [x] La rama de UI (variaciones en una ruta del proyecto) queda intacta.

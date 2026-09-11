@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ya no existen: `git-guardrails-claude-code`, `setup-pre-commit`, `migrate-to-shoehorn`, `scaffold-exercises`, `claude-handoff`, `loop-me`, `setup-ts-deep-modules`, `to-questionnaire`, `writing-beats`, `writing-fragments` y `writing-shape`.
-- [ ] Siguen presentes y sin cambios: `find-docs`, `retro`, `implement-spec`, `writing-for-agents` y el resto de skills conservadas del flujo principal.
-- [ ] Ninguna skill conservada referencia a una borrada, salvo el router `ask-matt`, que tiene su propio ticket.
-- [ ] El catálogo resultante tiene 29 skills.
+- [x] Ya no existen: `git-guardrails-claude-code`, `setup-pre-commit`, `migrate-to-shoehorn`, `scaffold-exercises`, `claude-handoff`, `loop-me`, `setup-ts-deep-modules`, `to-questionnaire`, `writing-beats`, `writing-fragments` y `writing-shape`.
+- [x] Siguen presentes y sin cambios: `find-docs`, `retro`, `implement-spec`, `writing-for-agents` y el resto de skills conservadas del flujo principal.
+- [x] Ninguna skill conservada referencia a una borrada, salvo el router `ask-matt`, que tiene su propio ticket.
+- [x] El catálogo resultante tiene 29 skills.
