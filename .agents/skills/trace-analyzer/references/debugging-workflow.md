@@ -1,6 +1,6 @@
 # Debugging Workflow
 
-This is the complete debugging loop for trace-analyzer. It follows the five phases of
+This is the complete debugging loop for trace-analyzer. It follows the six phases of
 the `diagnosing-bugs` skill and maps each phase to trace-analyzer commands.
 
 Read the route reference before you start:
@@ -23,6 +23,11 @@ the prediction, you are not ready to run it.
 | **Phase 3: Hypothesise** | Generate **3–5 ranked, falsifiable hypotheses** before probing. Check Route A reconnect invariants and failure patterns, or Route B compaction/eval patterns, to seed them. Each hypothesis must name the probe that would confirm or kill it: e.g. "if the snapshot was rejected before synthetic tool events, then `layer client <runId>` shows no `client.messages_snapshot_applied`". Show the ranked list to the user before testing; proceed with your ranking if they're AFK. |
 | **Phase 4: Instrument** | Run **one probe per prediction, one variable at a time**. Never stream everything and grep. Route A: `layer <worker\|bridge\|client> <runId>`, `stream <runId>`, `show <runId>`, `reconnect <sessionId>`. Route B: `model-conversation <runId>` over `lifecycle.ndjson` + `stream.ndjson`. For perf/streaming regressions, establish a baseline count or timing first, then bisect. `TRACE_RAW=1` is a last resort for full prompts/messages — it enlarges the trace and hides the signal. If you add debug logging to app code, tag it (`[DEBUG-a4f2]`) so cleanup is one grep. |
 | **Phase 5: Fix + regression test** | Fix at the source, not the symptom. The correct seam for a trace bug is a test that replays the captured trace — or exercises the translator/invariant the trace exposed — and fails before the fix. Watch it fail, apply the fix, watch it pass, then re-run the Phase 1 loop against the **original** (un-minimised) scenario and confirm the broken invariant is gone. If the only available seam is too shallow (a unit test that cannot replicate the chain the trace showed), do not settle for false confidence — see the post-mortem handoff below. |
+| **Phase 6: Cleanup** | Remove the `[DEBUG-...]` instrumentation added during Phase 4, delete throwaway scripts and prototypes, re-run the Phase 1 loop to confirm the original symptom is gone, and record the confirmed hypothesis plus the invariant that was broken in the report (below) and the commit message so the next debugger learns. |
+
+Phase 6 is required before declaring the bug fixed. A green Phase 5 proves the fix at
+its seam; cleanup proves it against the original symptom and leaves no debug scaffolding
+behind.
 
 ## Post-Mortem Handoff
 

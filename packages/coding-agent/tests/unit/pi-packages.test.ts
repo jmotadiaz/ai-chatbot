@@ -6,7 +6,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   createAgentSession,
@@ -38,6 +38,14 @@ describe("first-party extension and built-in skills discovery", () => {
 
   it("includes every first-party extension by default in getExtensionPaths", () => {
     expect(getExtensionPaths()).toEqual(getFirstPartyExtensionPaths());
+    expect(getExtensionPaths().map((p) => basename(dirname(p)))).toEqual([
+      "artifacts",
+      "subagent",
+    ]);
+    expect(getExtensionPaths()).toEqual([
+      ...getPiPackageExtensionPaths(),
+      ...getFirstPartyExtensionPaths(),
+    ]);
   });
 
   it("excludes subagent when includeSubagentExtension is false", () => {
@@ -46,9 +54,10 @@ describe("first-party extension and built-in skills discovery", () => {
     expect(paths).toEqual(
       getFirstPartyExtensionPaths().filter((p) => !p.includes("extensions/subagent")),
     );
+    expect(paths.map((p) => basename(dirname(p)))).toEqual(["artifacts"]);
   });
 
-  it("has no first-party skill dirs", () => {
+  it("first-party extensions ship no skills dirs (built-in skills only)", () => {
     expect(getFirstPartySkillPaths()).toEqual([]);
   });
 
@@ -79,7 +88,7 @@ describe("subagent runtime resource loading", () => {
 
     // Subagent runtimes are built with includeSubagentExtension: false, so the
     // orchestrator's `subagent` tool never reaches a child. Skills come only
-    // from the built-in directory; there are no first-party skill dirs left.
+    // from the built-in directory; first-party extensions ship no skills dirs.
     // `noSkills: true` drops machine-global (user-installed) skills so the
     // assertion covers the harness-owned composition, not this host's setup.
     const extensionPaths = getExtensionPaths({ includeSubagentExtension: false });
@@ -108,7 +117,7 @@ describe("subagent runtime resource loading", () => {
       .skills.map((s) => s.name)
       .sort();
     expect(skillNames).toEqual(["mobile-first-artifacts", "writing-prompties"]);
-    expect(skillPaths).toEqual(getBuiltinSkillPaths());
+    expect(skillPaths).toEqual([BUILTIN_SKILLS_DIR]);
     expect(extensionPaths.some((p) => p.includes("extensions/subagent"))).toBe(false);
 
     session.dispose();
