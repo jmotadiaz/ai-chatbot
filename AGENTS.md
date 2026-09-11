@@ -64,7 +64,6 @@ packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
 ├── config/         # Central env catalog + typed config accessors (no process.env en src/)
-├── model-registry/ # Single-source model catalog
 ├── models/         # Shared model catalog consumed by chatbot & coding-agent
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
