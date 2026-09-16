@@ -72,6 +72,7 @@ describe("model mapping", () => {
   it("maps provider kinds to pi provider ids", () => {
     expect(toPiProviderId("opencodeGo")).toBe("opencode-go");
     expect(toPiProviderId("opencodeGoResponses")).toBe("opencode-go");
+    expect(toPiProviderId("opencodeGoAnthropic")).toBe("opencode-go");
     expect(toPiProviderId("gateway")).toBe("vercel-ai-gateway");
     expect(toPiProviderId("openrouter")).toBe("openrouter");
   });
@@ -92,6 +93,16 @@ describe("model mapping", () => {
       modelId: "glm-5.3",
     });
     expect(toChatModelId("opencode-go", "glm-5.3")).toBe("GLM 5.3");
+  });
+
+  it("maps the Union Alpha Free catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("Union Alpha Free")).toEqual({
+      providerId: "opencode-go",
+      modelId: "union-alpha",
+    });
+    expect(toChatModelId("opencode-go", "union-alpha")).toBe(
+      "Union Alpha Free",
+    );
   });
 
   it("maps the Hy3 catalog id to the opencode-go Pi provider", () => {

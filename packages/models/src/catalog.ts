@@ -21,6 +21,7 @@ export type Company =
 export type ProviderKind =
   | "opencodeGo"
   | "opencodeGoResponses"
+  | "opencodeGoAnthropic"
   | "opencodeZen"
   | "gateway"
   | "openrouter"
@@ -374,6 +375,29 @@ export const MODEL_CATALOG = [
     contextWindow: 1_000_000,
     maxTokens: 131_072,
     cost: { input: 0.075, output: 0.25, cacheRead: 0.015, cacheWrite: 0 },
+  },
+  {
+    // Modelo stealth gratis de OpenCode Go ("por tiempo limitado"). Solo se
+    // sirve por el endpoint Anthropic (/zen/go/v1/messages, @ai-sdk/anthropic
+    // — tabla Endpoints de https://opencode.ai/docs/es/go);
+    // /v1/chat/completions devuelve 500, de ahí el provider kind
+    // opencodeGoAnthropic. Pi no lo trae built-in, así que se auto-describe
+    // con los límites del registry de opencode-go (256k contexto / 128k
+    // salida) y coste cero (columna "Free" de la tabla de uso). No declara
+    // thinkingLevelMap: la doc no expone niveles de esfuerzo, así que Pi
+    // aplica su escalera por defecto (off..high) y la sesión arranca en high.
+    id: "Union Alpha Free",
+    userInvocable: true,
+    provider: { kind: "opencodeGoAnthropic", modelId: "union-alpha" },
+    company: "ai chatbot",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    api: "anthropic-messages",
+    baseUrl: "https://opencode.ai/zen/go",
+    supportedFiles: ["img"],
+    contextWindow: 262_144,
+    maxTokens: 131_072,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
   {

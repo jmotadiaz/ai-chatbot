@@ -65,6 +65,7 @@ export interface Providers {
   lmstudio: (modelId: string) => LanguageModelV3;
   opencodeGo: (modelId: string) => LanguageModelV3;
   opencodeGoResponses: (modelId: string) => LanguageModelV3;
+  opencodeGoAnthropic: (modelId: string) => LanguageModelV3;
   opencodeZen: (modelId: string) => LanguageModelV3;
   embedding: () => EmbeddingModelV3;
   rerank: () => (

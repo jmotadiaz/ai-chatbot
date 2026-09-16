@@ -5,7 +5,7 @@ import { gateway, rerank } from "ai";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { anthropic } from "@ai-sdk/anthropic";
+import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
 import { deepseek } from "@ai-sdk/deepseek";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -65,6 +65,24 @@ function getOpenCodeGoResponses() {
   return _opencodeGoResponses;
 }
 
+// OpenCode Go también sirve algunos modelos (Union Alpha Free) solo por el
+// endpoint Anthropic: @ai-sdk/anthropic pide `${baseURL}/messages`, así que
+// aquí el baseURL lleva /v1 (en el catálogo, orientado a Pi, el baseUrl es
+// "https://opencode.ai/zen/go" porque Pi añade /v1/messages).
+let _opencodeGoAnthropic: ReturnType<typeof createAnthropic> | null = null;
+
+function getOpenCodeGoAnthropic() {
+  if (!_opencodeGoAnthropic) {
+    _opencodeGoAnthropic = createAnthropic({
+      name: "opencode-zen-go-anthropic",
+      apiKey: config.opencodeZenApiKey(),
+      baseURL: "https://opencode.ai/zen/go/v1",
+      headers: opencodeHeaders,
+    });
+  }
+  return _opencodeGoAnthropic;
+}
+
 
 let _opencodeZen: ReturnType<typeof createOpenAICompatible> | null = null;
 
@@ -116,6 +134,8 @@ export const providers: Providers = (() => {
       opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),
       opencodeGoResponses: (modelId: string) =>
         getOpenCodeGoResponses().responses(modelId),
+      opencodeGoAnthropic: (modelId: string) =>
+        getOpenCodeGoAnthropic().messages(modelId),
       opencodeZen: (modelId: string) => getOpenCodeZen()(modelId),
       embedding: () => google.embeddingModel("gemini-embedding-001"),
       rerank: () => async (args) => {
@@ -161,6 +181,7 @@ export const providers: Providers = (() => {
     lmstudio: lookupMock("lmstudio"),
     opencodeGo: lookupMock("opencodeGo"),
     opencodeGoResponses: lookupMock("opencodeGoResponses"),
+    opencodeGoAnthropic: lookupMock("opencodeGoAnthropic"),
     opencodeZen: lookupMock("opencodeZen"),
     embedding: () => createMockEmbeddingModel(),
     rerank: () => async () => [],

@@ -20,6 +20,7 @@ const NOT_BUILT_IN = new Set([
   "glm-5.3",
   "glm-5.3-flash",
   "muse-spark-1.3-contributor",
+  "union-alpha",
 ]);
 
 /**
@@ -378,13 +379,32 @@ describe("generateModelsJson custom providers", () => {
         e.userInvocable &&
         !builtIns.has(e.provider.modelId) &&
         (e.provider.kind === "opencodeGo" ||
-          e.provider.kind === "opencodeGoResponses"),
+          e.provider.kind === "opencodeGoResponses" ||
+          e.provider.kind === "opencodeGoAnthropic"),
     ) as ModelCatalogEntry[]) {
       expect(entry.baseUrl, `${entry.id} must pin baseUrl`).toBeTruthy();
       if (entry.provider.kind === "opencodeGo") {
         expect(entry.api, `${entry.id} must pin api`).toBeTruthy();
       }
     }
+  });
+
+  it("describes Union Alpha Free, which Pi does not ship and OpenCode Go only serves over anthropic-messages", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Union Alpha Free")!;
+    const [union] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(union).toEqual({
+      id: "union-alpha",
+      name: "Union Alpha Free",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 262_144,
+      maxTokens: 131_072,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      // /v1/chat/completions devuelve 500: el endpoint es /zen/go/v1/messages.
+      api: "anthropic-messages",
+      baseUrl: "https://opencode.ai/zen/go",
+    });
   });
 
   it("describes GLM 5.3 Flash on opencode-go, deriving image input from its supportedFiles", () => {
