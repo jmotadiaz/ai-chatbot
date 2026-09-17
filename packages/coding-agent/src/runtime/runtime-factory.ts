@@ -1,9 +1,11 @@
 import {
   createAgentSessionFromServices,
   createAgentSessionServices,
+  SettingsManager,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
 import { getModelRuntime } from "./model-runtime";
+import { applyProviderRetryDefaults } from "./provider-retry-defaults";
 import { getTraceLogger } from "tracing";
 import {
   getBuiltinSkillPaths,
@@ -41,10 +43,18 @@ export function makeCreateRuntime(
     // Shared process-wide facade over credentials + model catalog (SDK ≥ 0.80.8
     // replaced AuthStorage/ModelRegistry with a single async ModelRuntime).
     const modelRuntime = await getModelRuntime();
+    // Pi's own settings manager so the worker can set defaults (provider
+    // retries) without writing settings.json; operator values win.
+    const settingsManager = SettingsManager.create(
+      runtimeCwd,
+      getCodingAgentDir(),
+    );
+    applyProviderRetryDefaults(settingsManager);
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
       agentDir: getCodingAgentDir(),
       modelRuntime,
+      settingsManager,
       resourceLoaderOptions: {
         // FILE_REFERENCE_PROMPT is harness-owned and appended to the system
         // prompt. Extensions do not inject anything here.
