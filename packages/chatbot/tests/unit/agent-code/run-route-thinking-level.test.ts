@@ -85,12 +85,12 @@ describe("POST /api/agent/code", () => {
 
     expect(res.status).toBe(200);
     const init = mockState.initParams[0] as { modelId?: string };
-    expect(init.modelId).toBe("opencode-go/deepseek-flash");
+    expect(init.modelId).toBe("opencode-go/deepseek-v4.1-flash");
     const promptParams = mockState.sendPromptParams[0] as {
       modelId?: string;
       thinkingLevel?: string;
     };
-    expect(promptParams.modelId).toBe("opencode-go/deepseek-flash");
+    expect(promptParams.modelId).toBe("opencode-go/deepseek-v4.1-flash");
     expect(promptParams.thinkingLevel).toBe("low");
   });
 

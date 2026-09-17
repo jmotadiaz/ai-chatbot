@@ -4,7 +4,7 @@ import { z } from "zod"
 import type { EvalResult } from "../types"
 import { providers } from "@/lib/infrastructure/ai/providers"
 
-const judgeModel = () => providers.opencodeGo("deepseek-flash")
+const judgeModel = () => providers.opencodeGo("deepseek-v4.1-flash")
 
 const judgeEvaluationSchema = z.object({
   score: z

@@ -54,7 +54,7 @@ function createDeterministicUserMessage(content: string): TranscriptMessage {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-const judgeModel = () => providers.opencodeGo("deepseek-flash")
+const judgeModel = () => providers.opencodeGo("deepseek-v4.1-flash")
 
 const judgeEvaluationSchema = z.object({
   score: z

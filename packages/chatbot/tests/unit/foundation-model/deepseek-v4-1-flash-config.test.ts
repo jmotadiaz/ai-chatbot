@@ -19,6 +19,6 @@ describe("Deepseek v4.1 Flash in the chat model configuration", () => {
 
   it("exposes an opencodeGo provider factory with the model id (mock in test mode)", () => {
     expect(providers.opencodeGo).toBeDefined();
-    expect(providers.opencodeGo("deepseek-flash")).toBeDefined();
+    expect(providers.opencodeGo("deepseek-v4.1-flash")).toBeDefined();
   });
 });

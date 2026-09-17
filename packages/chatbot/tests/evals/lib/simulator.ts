@@ -32,7 +32,7 @@ export function createSimulator(options: SimulatorOptions) {
     string,
     () => ReturnType<typeof providers.openrouter | typeof providers.opencodeGo>
   > = {
-    "Deepseek v4.1 Flash": () => providers.opencodeGo("deepseek-flash"),
+    "Deepseek v4.1 Flash": () => providers.opencodeGo("deepseek-v4.1-flash"),
     "Deepseek v4 Pro": () => providers.opencodeGo("deepseek-v4-pro"),
     "Nemotron 3 Nano": () =>
       providers.openrouter("nvidia/nemotron-3-nano-30b-a3b:free"),

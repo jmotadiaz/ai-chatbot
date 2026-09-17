@@ -13,7 +13,7 @@ const COST = { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 0.2 };
 
 /** Stand-in for what Pi reports about the models it already ships. */
 const NOT_BUILT_IN = new Set([
-  "deepseek-flash",
+  "deepseek-v4.1-flash",
   "kimi-k3",
   "qwen3.8-max",
   "qwen3.8-flash",
@@ -213,7 +213,7 @@ describe("generateModelsJson", () => {
     const entry = MODEL_CATALOG.find((e) => e.id === "Deepseek v4.1 Flash")!;
     const [flash] = generateModelsJson([entry], { builtIns: new Map() })
       .providers["opencode-go"].models;
-    expect(flash.id).toBe("deepseek-flash");
+    expect(flash.id).toBe("deepseek-v4.1-flash");
     expect(flash.contextWindow).toBe(1_000_000);
     expect(flash.maxTokens).toBe(384_000);
     expect(flash.cost).toEqual({

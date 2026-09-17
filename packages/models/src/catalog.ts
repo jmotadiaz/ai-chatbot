@@ -100,7 +100,8 @@ export const MODEL_CATALOG = [
   {
     // Pi does not ship this model yet, so it describes its own limits, cost
     // and endpoint (openai-completions per the endpoints table at
-    // https://opencode.ai/docs/es/go, model id "deepseek-flash"). Pricing per
+    // https://opencode.ai/docs/es/go, model id "deepseek-v4.1-flash" per
+    // https://opencode.ai/zen/go/v1/models). Pricing per
     // the usage table there (Off-Peak $0.15 in / $0.60 out / $0.003 cached
     // read per 1M tokens, no cached-write tier; Peak is double — most hours
     // are Off-Peak); limits mirror Pi's deepseek-v4-flash built-in (1M
@@ -110,7 +111,7 @@ export const MODEL_CATALOG = [
     // the retired free variant).
     id: "Deepseek v4.1 Flash",
     userInvocable: true,
-    provider: { kind: "opencodeGo", modelId: "deepseek-flash" },
+    provider: { kind: "opencodeGo", modelId: "deepseek-v4.1-flash" },
     company: "deepseek",
     reasoning: true,
     defaultThinkingLevel: "xhigh",

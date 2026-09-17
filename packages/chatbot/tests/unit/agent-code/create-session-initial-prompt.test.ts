@@ -99,7 +99,7 @@ describe("createCodingAgentSession", () => {
     };
     expect(init.sessionId).toBe("s1");
     expect(init.project).toBe("p");
-    expect(init.modelId).toBe("opencode-go/deepseek-flash");
+    expect(init.modelId).toBe("opencode-go/deepseek-v4.1-flash");
     expect(init._traceRunId).toBeTruthy();
 
     const send = state.sendParams[0] as {
@@ -111,7 +111,7 @@ describe("createCodingAgentSession", () => {
     };
     expect(send.sessionId).toBe("s1");
     expect(send.prompt).toBe("# Task\n\nRefactor this.");
-    expect(send.modelId).toBe("opencode-go/deepseek-flash");
+    expect(send.modelId).toBe("opencode-go/deepseek-v4.1-flash");
     expect(send.thinkingLevel).toBe("xhigh");
     expect(send._traceRunId).toBe(init._traceRunId);
 
