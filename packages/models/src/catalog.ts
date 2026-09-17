@@ -382,7 +382,10 @@ export const MODEL_CATALOG = [
     // sirve por el endpoint Anthropic (/zen/go/v1/messages, @ai-sdk/anthropic
     // — tabla Endpoints de https://opencode.ai/docs/es/go);
     // /v1/chat/completions devuelve 500, de ahí el provider kind
-    // opencodeGoAnthropic. Pi no lo trae built-in, así que se auto-describe
+    // opencodeGoAnthropic. En ráfagas el edge responde 503 "Endpoint is
+    // unavailable" de forma transitoria (modelo gratis limitado por
+    // capacidad); los clientes del chatbot reintentan 5xx en el fetch
+    // (retrying-fetch.ts). Pi no lo trae built-in, así que se auto-describe
     // con los límites del registry de opencode-go (256k contexto / 128k
     // salida) y coste cero (columna "Free" de la tabla de uso). No declara
     // thinkingLevelMap: la doc no expone niveles de esfuerzo, así que Pi

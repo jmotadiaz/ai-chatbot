@@ -13,6 +13,7 @@ import { cohere } from "@ai-sdk/cohere";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { MODEL_CATALOG } from "models";
 import { config } from "config";
+import { createRetryingFetch } from "./retrying-fetch";
 import type { Providers } from "@/lib/features/foundation-model/types";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
 import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
@@ -37,6 +38,11 @@ const opencodeHeaders: Record<string, string> = {
   "user-agent": "ai-chatbot/1.0",
 };
 
+// El edge de OpenCode Go devuelve 503 transitorios ("Endpoint is
+// unavailable") en ráfagas y el AI SDK no los marca reintentables para el
+// provider anthropic, así que el fetch de los clientes de Go reintenta 5xx.
+const opencodeFetch = createRetryingFetch(fetch);
+
 let _opencodeGo: ReturnType<typeof createOpenAICompatible> | null = null;
 
 function getOpenCodeGo() {
@@ -46,6 +52,7 @@ function getOpenCodeGo() {
       apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/go/v1",
       headers: opencodeHeaders,
+      fetch: opencodeFetch,
     });
   }
   return _opencodeGo;
@@ -60,6 +67,7 @@ function getOpenCodeGoResponses() {
       apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/go/v1",
       headers: opencodeHeaders,
+      fetch: opencodeFetch,
     });
   }
   return _opencodeGoResponses;
@@ -78,6 +86,7 @@ function getOpenCodeGoAnthropic() {
       apiKey: config.opencodeZenApiKey(),
       baseURL: "https://opencode.ai/zen/go/v1",
       headers: opencodeHeaders,
+      fetch: opencodeFetch,
     });
   }
   return _opencodeGoAnthropic;
