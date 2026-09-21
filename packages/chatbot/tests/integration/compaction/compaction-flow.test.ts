@@ -75,7 +75,7 @@ describe("compaction integration flow", () => {
       userId: MOCK_USER_ID,
       projectId: MOCK_PROJECT_ID,
       title: "Chat for Compaction",
-      agent: "context7",
+      chatMode: "context7",
     });
   }
 

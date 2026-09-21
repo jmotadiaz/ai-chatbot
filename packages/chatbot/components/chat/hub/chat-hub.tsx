@@ -85,7 +85,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 key={inst.chatId}
                 instance={inst}
                 submitSubscribe={hub.submitSubscribe}
-                updateInstanceAgent={hub.updateInstanceAgent}
+                updateInstanceChatMode={hub.updateInstanceChatMode}
                 updateInstanceConfig={hub.updateInstanceConfig}
                 onRemove={hub.removeInstance}
                 persistChat={hub.persistChat}
@@ -147,7 +147,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({ className }) => {
                 <HubInstancePanel
                   instance={inst}
                   submitSubscribe={hub.submitSubscribe}
-                  updateInstanceAgent={hub.updateInstanceAgent}
+                  updateInstanceChatMode={hub.updateInstanceChatMode}
                   updateInstanceConfig={hub.updateInstanceConfig}
                   onRemove={hub.removeInstance}
                   persistChat={hub.persistChat}

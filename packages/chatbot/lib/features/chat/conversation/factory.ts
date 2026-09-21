@@ -14,7 +14,7 @@ import { config } from "config";
 import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import {
   chatModelKeys,
   defaultWebSearchNumResults,
@@ -23,7 +23,7 @@ import {
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { chatbotMessageToDbMessage } from "@/lib/features/chat/utils";
 import { generateTitle } from "@/lib/features/chat/title";
-import { createAgent } from "@/lib/features/chat/agents/factory";
+import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";
 import { extractMemoryFacts } from "@/lib/features/memory/extraction";
 import { compact } from "@/lib/features/compaction/orchestration";
 import { rebuildContext } from "@/lib/features/compaction/context-rebuild";
@@ -114,7 +114,7 @@ export const makeProcessChatResponse = (
     messageId,
     projectId,
     preventChatPersistence = false,
-    agent = "context7",
+    chatMode = "context7",
     webSearchNumResults = defaultWebSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,
@@ -130,7 +130,7 @@ export const makeProcessChatResponse = (
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
-    agent?: Agent;
+    chatMode?: ChatMode;
     webSearchNumResults?: number;
     ragMaxResources?: number;
     minRagResourcesScore?: number;
@@ -159,10 +159,10 @@ export const makeProcessChatResponse = (
 
     return createUIMessageStream({
       async execute({ writer }) {
-        const agentInstance = await createAgent({
+        const agentInstance = await createChatModeAgent({
           ai,
           projectId,
-          agent,
+          chatMode,
           messages: filteredMessages,
           userId: user.id,
           systemPrompt: augmentedSystemPrompt,
@@ -236,7 +236,7 @@ export const makeProcessChatResponse = (
                           {
                             defaultModel: selectedModel,
                             defaultTemperature: temperature,
-                            agent,
+                            chatMode,
                             webSearchNumResults,
                             ragMaxResources,
                             minRagResourcesScore,
@@ -253,7 +253,7 @@ export const makeProcessChatResponse = (
                         projectId,
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
-                        agent,
+                        chatMode,
                         webSearchNumResults,
                         ragMaxResources,
                         minRagResourcesScore,

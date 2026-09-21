@@ -10,8 +10,8 @@ import {
 } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 
-export const AGENTS = ["context7", "rag", "web"] as const;
-export type Agent = (typeof AGENTS)[number];
+export const CHAT_MODES = ["context7", "rag", "web"] as const;
+export type ChatMode = (typeof CHAT_MODES)[number];
 
 export interface TextFile {
   filename: string;

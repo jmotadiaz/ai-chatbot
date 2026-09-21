@@ -1,17 +1,17 @@
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
-import { createProjectAgent } from "@/lib/features/chat/agents/project";
-import { createContext7Agent } from "@/lib/features/chat/agents/context7";
-import { createWebSearchAgent } from "@/lib/features/chat/agents/web-search";
-import { createRagAgent } from "@/lib/features/chat/agents/rag";
+import { createProjectAgent } from "@/lib/features/chat/chat-modes/project";
+import { createContext7Agent } from "@/lib/features/chat/chat-modes/context7";
+import { createWebSearchAgent } from "@/lib/features/chat/chat-modes/web-search";
+import { createRagAgent } from "@/lib/features/chat/chat-modes/rag";
 import { getRelevantMemory } from "@/lib/features/memory/retrieval";
 import { messagePartsToText } from "@/lib/features/chat/utils";
 import { getProjectById } from "@/lib/features/project/queries";
 
-export const createAgent = async ({
+export const createChatModeAgent = async ({
   ai,
   projectId,
-  agent,
+  chatMode,
   messages,
   userId,
   systemPrompt,
@@ -21,7 +21,7 @@ export const createAgent = async ({
 }: {
   ai: ChatAgentAiPort;
   projectId?: string;
-  agent: string;
+  chatMode: string;
   systemPrompt?: string;
   messages: ChatbotMessage[];
   userId: string;
@@ -58,7 +58,7 @@ export const createAgent = async ({
       userId,
       project,
     });
-  } else if (agent === "rag") {
+  } else if (chatMode === "rag") {
     return createRagAgent({
       modelConfiguration: ai.getRagModelConfiguration(),
       messages,
@@ -68,7 +68,7 @@ export const createAgent = async ({
       minRagResourcesScore,
       memoryContext: memoryContext,
     });
-  } else if (agent === "web") {
+  } else if (chatMode === "web") {
     return createWebSearchAgent({
       modelConfiguration: ai.getWebSearchModelConfiguration(),
       messages,
@@ -76,7 +76,7 @@ export const createAgent = async ({
       memoryContext: memoryContext,
     });
   } else {
-    // Default to Context7 agent — memory injection excluded
+    // Default to the Context7 chat mode — memory injection excluded
     return createContext7Agent({
       modelConfiguration: ai.getContext7ModelConfiguration(),
       memoryContext: memoryContext,

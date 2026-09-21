@@ -5,13 +5,13 @@ import type { DataUIPart } from "ai";
 import { useState } from "react";
 import {
   type ChatConfig,
-  type ChatAgent,
+  type ChatModeState,
   type InputState,
   type SetChatConfig,
 } from "./hook-types";
 import { useAvailableModels } from "./use-available-models";
 import { useChatConfig } from "./use-chat-config";
-import { useChatAgent } from "./use-chat-agent";
+import { useChatMode } from "./use-chat-mode";
 import { useHandleFileChange } from "./use-handle-file-change";
 import { useChatInputState } from "./use-chat-input-state";
 import { useChatSendEnabled } from "./use-chat-send-enabled";
@@ -30,7 +30,7 @@ import {
 import type {
   ChatbotDataPart,
   ChatbotMessage,
-  Agent,
+  ChatMode,
 } from "@/lib/features/chat/types";
 import { useSupportedFiles } from "@/lib/features/chat/conversation/hooks/use-supported-files";
 import { FilePart } from "@/lib/features/attachment/types";
@@ -48,7 +48,7 @@ export interface UseChatArgs {
   systemPrompt?: string;
   refinePromptMode?: RefinePromptMode;
   title?: string;
-  agent?: Agent;
+  chatMode?: ChatMode;
   preventChatPersistence?: boolean;
 
   webSearchNumResults?: number;
@@ -57,13 +57,13 @@ export interface UseChatArgs {
 }
 
 export interface UseChatResult
-  extends UseChatHelpers<ChatbotMessage>, ChatConfig, ChatAgent, InputState {
+  extends UseChatHelpers<ChatbotMessage>, ChatConfig, ChatModeState, InputState {
   selectedModel: chatModelId;
   refinePromptMode?: RefinePromptMode;
   chatId?: string;
   title?: string;
   projectId?: string;
-  reload: (reloadConfig?: Partial<ChatConfig> & { agent?: Agent }) => void;
+  reload: (reloadConfig?: Partial<ChatConfig> & { chatMode?: ChatMode }) => void;
   sendEnabled: boolean;
   dataPart: DataUIPart<ChatbotDataPart> | undefined;
   setConfig: SetChatConfig;
@@ -85,7 +85,7 @@ export const useChat = ({
   projectId,
   title,
   preventChatPersistence = false,
-  agent: initialAgent = "context7",
+  chatMode: initialChatMode = "context7",
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,
@@ -101,7 +101,7 @@ export const useChat = ({
     ragMaxResources,
     minRagResourcesScore,
   });
-  const { agent, setAgent } = useChatAgent(initialAgent);
+  const { chatMode, setChatMode } = useChatMode(initialChatMode);
   const { setQueryParamChatId, validQueryParamChatId } = useChatQueryParamId();
   const { dataPart, setDataPart } = useChatDataPartState();
   const effectiveChatId = chatId || validQueryParamChatId;
@@ -124,7 +124,7 @@ export const useChat = ({
     validQueryParamChatId,
     projectId,
     preventChatPersistence,
-    agent,
+    chatMode,
     systemPrompt,
     chatConfig,
   });
@@ -166,7 +166,7 @@ export const useChat = ({
     body,
     setInput,
     setConfig,
-    setAgent,
+    setChatMode,
   });
 
   return {
@@ -190,7 +190,7 @@ export const useChat = ({
     availableModels,
     isNewChat,
     preventChatPersistence,
-    agent,
-    setAgent,
+    chatMode,
+    setChatMode,
   };
 };

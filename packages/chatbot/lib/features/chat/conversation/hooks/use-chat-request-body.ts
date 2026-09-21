@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import type { ChatBody, ChatConfig } from "./hook-types";
-import type { Agent } from "@/lib/features/chat/types";
+import type { ChatMode } from "@/lib/features/chat/types";
 
 export interface UseChatRequestBodyArgs {
   chatId?: string;
   validQueryParamChatId?: string;
   projectId?: string;
   preventChatPersistence: boolean;
-  agent: Agent;
+  chatMode: ChatMode;
   systemPrompt?: string;
   chatConfig: ChatConfig;
 }
@@ -19,7 +19,7 @@ export const useChatRequestBody = ({
   validQueryParamChatId,
   projectId,
   preventChatPersistence,
-  agent,
+  chatMode,
   systemPrompt,
   chatConfig,
 }: UseChatRequestBodyArgs): ChatBody => {
@@ -28,7 +28,7 @@ export const useChatRequestBody = ({
       chatId: chatId || validQueryParamChatId,
       projectId,
       preventChatPersistence,
-      agent,
+      chatMode,
       systemPrompt,
       ...chatConfig,
     };
@@ -37,7 +37,7 @@ export const useChatRequestBody = ({
     validQueryParamChatId,
     projectId,
     preventChatPersistence,
-    agent,
+    chatMode,
     systemPrompt,
     chatConfig,
   ]);

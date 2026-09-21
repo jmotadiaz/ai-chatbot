@@ -9,9 +9,9 @@ import {
 import {
   hasToExecuteUrlContext,
   urlContextStep,
-} from "@/lib/features/chat/agents/url-context-step";
-import { WEB_SEARCH_AGENT_PROMPT } from "@/lib/features/chat/agents/prompts";
-import { withMessageProcessing } from "@/lib/features/chat/agents/utils";
+} from "@/lib/features/chat/chat-modes/url-context-step";
+import { WEB_SEARCH_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
+import { withMessageProcessing } from "@/lib/features/chat/chat-modes/utils";
 
 interface CreateWebSearchAgentParams {
   modelConfiguration: ModelConfiguration;
