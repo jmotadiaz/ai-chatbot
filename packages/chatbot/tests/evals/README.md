@@ -41,6 +41,53 @@ Evalúa la calidad de la compactación de conversaciones:
 - **Compaction Occurred** (determinista): Verifica que la compactación se ejecutó y cumple un ratio de compresión mínimo de 10x
 - **Fact Recall** (LLM Judge): Inyecta 3 hechos ficticios en la conversación, dispara la compactación, y verifica con Deepseek v4.1 Flash que el modelo recuerda los hechos tras la compactación
 
+### `mode-routing`
+
+Mide el **router** del Chat Mode `auto`, no un turno completo de chat: llama a
+`resolveChatMode()` con el adapter real de Jev 1.13 (Decisions API de OpenRouter vía
+`@openrouter/sdk`) sobre un dataset etiquetado de 39 mensajes ES/EN
+(`tests/evals/scenarios/mode-routing-dataset.ts`). No toca `/api/chat`, ni la DB, ni ningún
+modelo de chat: una llamada al clasificador por mensaje (~$0.00002 cada una, **~$0.0008 el run
+completo**), ~5 s de evalite.
+
+```bash
+# Comando canónico (levanta next dev + DB de test aunque el caso no los use)
+pnpm eval -c mode-routing
+
+# Iteración barata: el caso no necesita servidor ni DB
+pnpm eval -c mode-routing --no-server --no-db --no-migrate
+```
+
+Scorers:
+
+- **Global accuracy**: % de mensajes resueltos al modo que etiqueta el dataset.
+- **Per-class accuracy**: ctx7 / web / neither por separado (puntuado como su media sin
+  ponderar).
+- **Confusion matrix**: etiqueta esperada × modo resuelto; se puntúa como la accuracy global
+  para no distorsionar la media.
+- **Confidence of correct calls**: distribución de la confianza cruda de Jev en los aciertos
+  que el gate dejó pasar a una tool; incluye `thresholdSweep` (accuracy que habría con cada
+  umbral) y `flatOptimum` (banda de umbrales con la mejor accuracy). El `output` de cada
+  resultado guarda el `raw` (respuesta del clasificador antes del gate) y el `resolved`
+  (`{ mode, reason, confidence, probabilities, modelId, provider, latencyMs }`).
+
+Dataset (39: ctx7 13 / web 13 / neither 13): documentación de librería, framework, SDK, CLI o
+API de lenguaje (→ ctx7); actualidad, precios, releases, disponibilidad, fuentes para
+contrastar, contenido de una URL y comparativas del mundo real (→ web); charla, preguntas
+repo-locales y transformaciones de texto (→ neither). Incluye follow-ups pronominales **con**
+contexto (heredan el referente del turno anterior) y **sin** contexto (etiquetados `neither`:
+el referente es irresoluble, no se justifica pagar una tool).
+
+Criterios v1 y umbral vigente están documentados en la cabecera de
+`tests/evals/cases/mode-routing.eval.ts`; la fuente de verdad son
+`lib/features/chat/mode-routing/questions.ts` (`CHAT_MODE_ROUTING_QUESTION_VERSION`) y
+`CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` en `mode-routing/constants.ts`. **Cualquier cambio de
+criterios o de umbral se decide con los números de este eval** (y actualiza los tests de 03/04
+en el mismo commit). Baseline medido (2026-09-21, 3 runs): 38/39 (97.4%), matriz de confusión
+diagonal salvo un `ctx7 → neutral/low_confidence`; la curva de umbral es plana entre 0 y 0.75,
+así que bajar el gate no mejora la accuracy (el único spike al 100% en 0.5 de un run no se
+reprodujo) → umbral final **0.7**.
+
 ## Estructura
 
 ```
@@ -56,11 +103,14 @@ tests/evals/
 │   ├── compaction-detector.ts   # Detector de eventos de compactación
 │   └── scorers/
 │       ├── compaction-occurred.ts
-│       └── fact-recall.ts
+│       ├── fact-recall.ts
+│       └── mode-routing.ts      # Reporte y scorers del router (accuracy, confusión, umbral)
 ├── cases/
-│   └── compaction.eval.ts
+│   ├── compaction.eval.ts
+│   └── mode-routing.eval.ts     # Eval del router auto ↔ Jev (no necesita next dev)
 └── scenarios/
-    └── compaction-recall.txt
+    ├── compaction-recall.txt
+    └── mode-routing-dataset.ts  # Dataset etiquetado ES/EN (39 mensajes)
 ```
 
 ## Requisitos
