@@ -1,31 +1,13 @@
 import {
   ChevronUpIcon,
   RefreshCcw,
-  FileSearch,
-  Globe,
-  Sparkles,
 } from "lucide-react";
+import { CHAT_MODE_ICONS, CHAT_MODE_LABELS } from "@/components/chat/chat-mode-display";
 import { useChatContext } from "@/components/chat/provider";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils/helpers";
 import { ModelItem } from "@/components/chat/model-picker";
-import { CHAT_MODES, ChatMode } from "@/lib/features/chat/types";
-import { MCPIcon } from "@/components/ui/icons";
-
-const CHAT_MODE_LABELS: Record<ChatMode, string> = {
-  auto: "Auto",
-  rag: "RAG",
-  context7: "Ctx7",
-  web: "Web",
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CHAT_MODE_ICONS: Record<ChatMode, React.ComponentType<any>> = {
-  auto: Sparkles,
-  rag: FileSearch,
-  context7: MCPIcon,
-  web: Globe,
-};
+import { CHAT_MODES } from "@/lib/features/chat/types";
 
 export interface ChatReloadProps {
   isShown?: boolean;

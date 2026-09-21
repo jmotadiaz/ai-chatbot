@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD } from "@/lib/features/chat/mode-routing/constants";
+import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import {
   decideResolvedMode,
   isRoutingDecision,
@@ -12,7 +13,7 @@ const decision = (
   mode: "context7",
   reason: "routed",
   confidence: 0.9,
-  modelId: "typesafe/jev-1.13",
+  modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
   ...overrides,
 });
 

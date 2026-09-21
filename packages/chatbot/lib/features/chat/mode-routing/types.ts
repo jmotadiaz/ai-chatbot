@@ -57,8 +57,8 @@ export interface ChatModeRouterInput {
 
 /**
  * Highest-level seam of the feature: the rest of the chat pipeline only knows
- * this port, so tests can inject a deterministic implementation and ticket 04
- * can plug the OpenRouter/Jev adapter behind it.
+ * this port, so tests can inject a deterministic implementation and the
+ * OpenRouter/Jev adapter can be swapped in behind it.
  */
 export interface ChatModeRouterPort {
   route(input: ChatModeRouterInput): Promise<RoutingDecision>;

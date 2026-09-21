@@ -1,8 +1,8 @@
 "use client";
 
 import type { ClassValue } from "clsx";
-import { FileSearch, Globe, ChevronUp, Sparkles } from "lucide-react";
-import { MCPIcon } from "@/components/ui/icons";
+import { ChevronUp } from "lucide-react";
+import { CHAT_MODE_ICONS, CHAT_MODE_LABELS } from "@/components/chat/chat-mode-display";
 import { cn } from "@/lib/utils/helpers";
 
 import { Select, useSelect } from "@/components/ui/select";
@@ -16,22 +16,6 @@ export interface ChatModeSelectorProps {
   onValueChange: (chatMode: ChatMode) => void;
   variant?: DropdownPopupProps["variant"];
 }
-
-// Ordered as `CHAT_MODES`, so Auto is always the first entry.
-const CHAT_MODE_LABELS: Record<ChatMode, string> = {
-  auto: "Auto",
-  context7: "Ctx7",
-  rag: "RAG",
-  web: "Web",
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CHAT_MODE_ICONS: Record<ChatMode, React.ComponentType<any>> = {
-  auto: Sparkles,
-  context7: MCPIcon,
-  rag: FileSearch,
-  web: Globe,
-};
 
 export const ChatModeSelector = ({
   className,

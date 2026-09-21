@@ -1,4 +1,5 @@
 import { CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD } from "@/lib/features/chat/mode-routing/constants";
+import { isOneOf } from "@/lib/features/chat/mode-routing/guards";
 import {
   ROUTING_OPTION_TO_MODE,
   type RoutingOption,
@@ -40,8 +41,7 @@ const RESOLVED_CHAT_MODES: readonly ResolvedChatMode[] = [
 ];
 
 const isResolvedChatMode = (value: unknown): value is ResolvedChatMode =>
-  typeof value === "string" &&
-  (RESOLVED_CHAT_MODES as readonly string[]).includes(value);
+  isOneOf(RESOLVED_CHAT_MODES, value);
 
 /** Question option (or resolved mode) → resolved mode. */
 const toResolvedMode = (value: unknown): ResolvedChatMode | undefined =>

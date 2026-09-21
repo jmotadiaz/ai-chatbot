@@ -16,8 +16,8 @@ export const ROUTING_OPTION_TO_MODE: Record<RoutingOption, ResolvedChatMode> = {
 
 /**
  * Version of the instructions/criteria below. Bump it whenever they change:
- * the eval dataset (ticket 05) is tagged with this value so two criteria
- * revisions stay comparable.
+ * the eval dataset is tagged with this value so two criteria revisions stay
+ * comparable.
  */
 export const CHAT_MODE_ROUTING_QUESTION_VERSION = 1;
 

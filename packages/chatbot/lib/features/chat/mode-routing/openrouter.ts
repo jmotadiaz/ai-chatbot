@@ -6,6 +6,7 @@ import type {
 import { config } from "config";
 import { getTraceContext, isTracingEnabled } from "tracing";
 import { CHAT_MODE_ROUTING_TIMEOUT_MS } from "@/lib/features/chat/mode-routing/constants";
+import { isOneOf } from "@/lib/features/chat/mode-routing/guards";
 import {
   CHAT_MODE_ROUTING_QUESTION,
   ROUTING_OPTIONS,
@@ -72,8 +73,7 @@ const getDefaultClient = (): OpenRouter => {
 };
 
 const isRoutingOption = (value: unknown): value is RoutingOption =>
-  typeof value === "string" &&
-  (ROUTING_OPTIONS as readonly string[]).includes(value);
+  isOneOf(ROUTING_OPTIONS, value);
 
 /** Session/trace ids for one routing call, taken from the current trace scope. */
 const resolveRoutingScope = (): { sessionId?: string; traceId?: string } => {

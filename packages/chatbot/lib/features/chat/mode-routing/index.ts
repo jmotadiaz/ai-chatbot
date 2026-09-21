@@ -14,6 +14,7 @@ import type {
 } from "@/lib/features/chat/mode-routing/types";
 
 export * from "@/lib/features/chat/mode-routing/constants";
+export * from "@/lib/features/chat/mode-routing/guards";
 export * from "@/lib/features/chat/mode-routing/openrouter";
 export * from "@/lib/features/chat/mode-routing/policy";
 export * from "@/lib/features/chat/mode-routing/questions";
@@ -91,6 +92,15 @@ export const buildChatModeRouterInput = (
 };
 
 /**
+ * Neutral, tool-less fallback recorded when routing could not produce a usable
+ * decision. Fresh object per call so callers never share mutable state.
+ */
+const autoFallback = (): ChatModeRoutingMetadata => ({
+  ...FALLBACK_CHAT_MODE_DECISION,
+  requested: "auto",
+});
+
+/**
  * Applies the fallback policy to the classifier answer.
  *
  * Never throws: a broken router (error, timeout, malformed answer) degrades the
@@ -105,13 +115,13 @@ export const resolveChatMode = async (
     decision = await port.route(input);
   } catch (error) {
     console.error("Chat mode routing failed:", error);
-    return { ...FALLBACK_CHAT_MODE_DECISION, requested: "auto" };
+    return autoFallback();
   }
 
   // Provenance (confidence, probabilities, latency…) is only copied when the
   // answer is a well-formed decision; anything else becomes a pure fallback.
   if (!isRoutingDecision(decision)) {
-    return { ...FALLBACK_CHAT_MODE_DECISION, requested: "auto" };
+    return autoFallback();
   }
 
   return {

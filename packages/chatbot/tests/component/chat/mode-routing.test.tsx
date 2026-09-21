@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ChatModeSelector } from "@/components/chat/controls/chat-mode-selector";
 import { Message } from "@/components/chat/message";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
+import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import type { ChatModeRoutingMetadata } from "@/lib/features/chat/mode-routing/types";
 
 const assistantMessage = (
@@ -49,7 +50,7 @@ describe("Chat mode routing badge", () => {
           mode: "web",
           reason: "routed",
           confidence: 0.98,
-          modelId: "typesafe/jev-1.13",
+          modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
         })}
       />,
     );
@@ -64,7 +65,7 @@ describe("Chat mode routing badge", () => {
           requested: "auto",
           mode: "neutral",
           reason: "neither",
-          modelId: "typesafe/jev-1.13",
+          modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
         })}
       />,
     );
@@ -85,7 +86,7 @@ describe("Chat mode routing badge", () => {
           mode: reason === "routed" ? "web" : "neutral",
           reason,
           confidence: reason === "low_confidence" ? 0.42 : undefined,
-          modelId: "typesafe/jev-1.13",
+          modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
         })}
       />,
     );

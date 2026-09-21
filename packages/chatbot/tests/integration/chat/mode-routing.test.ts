@@ -8,6 +8,7 @@ import type {
   ChatModeRouterPort,
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
+import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import {
   chat as chatTable,
   message as messageTable,
@@ -94,7 +95,7 @@ const routedDecision: RoutingDecision = {
   reason: "routed",
   confidence: 0.93,
   probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-  modelId: "typesafe/jev-1.13",
+  modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
   provider: "TypeSafe",
   latencyMs: 412,
   costUsd: 0.000017976,
@@ -188,7 +189,7 @@ describe("auto chat mode persistence", () => {
       reason: "routed",
       confidence: 0.93,
       probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
       provider: "TypeSafe",
       latencyMs: 412,
       costUsd: 0.000017976,
@@ -202,7 +203,7 @@ describe("auto chat mode persistence", () => {
       reason: "routed",
       confidence: 0.93,
       probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
       provider: "TypeSafe",
       latencyMs: 412,
       costUsd: 0.000017976,

@@ -60,35 +60,44 @@ export const createChatModeAgent = async ({
       userId,
       project,
     });
-  } else if (chatMode === "rag") {
-    return createRagAgent({
-      modelConfiguration: ai.getRagModelConfiguration(),
-      messages,
-      userId,
-      projectId,
-      ragMaxResources,
-      minRagResourcesScore,
-      memoryContext: memoryContext,
-    });
-  } else if (chatMode === "web") {
-    return createWebSearchAgent({
-      modelConfiguration: ai.getWebSearchModelConfiguration(),
-      messages,
-      webSearchNumResults,
-      memoryContext: memoryContext,
-    });
-  } else if (chatMode === "neutral" || chatMode === "auto") {
-    // `neutral` is the resolved mode of a tool-less Auto turn. A bare `auto`
-    // reaching here means no routing decision was available, which degrades to
-    // the same branch instead of silently forcing a Context7 lookup.
-    return createNeutralAgent({
-      modelConfiguration: ai.getNeutralModelConfiguration(),
-    });
-  } else {
-    // Default to the Context7 chat mode — memory injection excluded
-    return createContext7Agent({
-      modelConfiguration: ai.getContext7ModelConfiguration(),
-      memoryContext: memoryContext,
-    });
+  }
+
+  switch (chatMode) {
+    case "auto":
+    case "neutral":
+      // `neutral` is the resolved mode of a tool-less Auto turn. A bare `auto`
+      // reaching here means no routing decision was available, which degrades to
+      // the same branch instead of silently forcing a Context7 lookup.
+      return createNeutralAgent({
+        modelConfiguration: ai.getNeutralModelConfiguration(),
+      });
+    case "context7":
+      return createContext7Agent({
+        modelConfiguration: ai.getContext7ModelConfiguration(),
+        memoryContext,
+      });
+    case "rag":
+      return createRagAgent({
+        modelConfiguration: ai.getRagModelConfiguration(),
+        messages,
+        userId,
+        projectId,
+        ragMaxResources,
+        minRagResourcesScore,
+        memoryContext: memoryContext,
+      });
+    case "web":
+      return createWebSearchAgent({
+        modelConfiguration: ai.getWebSearchModelConfiguration(),
+        messages,
+        webSearchNumResults,
+        memoryContext: memoryContext,
+      });
+    default: {
+      // Exhaustiveness check: a new Chat Mode must be dispatched explicitly
+      // here instead of falling through to some other mode's agent.
+      const unhandled: never = chatMode;
+      throw new Error(`Unhandled chat mode: ${String(unhandled)}`);
+    }
   }
 };

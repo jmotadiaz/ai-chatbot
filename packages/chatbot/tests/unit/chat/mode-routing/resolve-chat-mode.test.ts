@@ -4,6 +4,7 @@ import {
   buildChatModeRouterInput,
   createDeterministicChatModeRouter,
   FALLBACK_CHAT_MODE_DECISION,
+  OPENROUTER_CHAT_MODE_ROUTING_MODEL,
   resolveChatMode,
 } from "@/lib/features/chat/mode-routing";
 import type {
@@ -29,7 +30,7 @@ describe("resolveChatMode", () => {
       mode: "web",
       reason: "routed",
       confidence: 0.98,
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
     };
 
     await expect(resolveChatMode(portReturning(decision), input)).resolves.toEqual({
@@ -43,7 +44,7 @@ describe("resolveChatMode", () => {
       mode: "context7",
       reason: "routed",
       confidence: 0.42,
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
     });
 
     await expect(resolveChatMode(port, input)).resolves.toMatchObject({
@@ -59,7 +60,7 @@ describe("resolveChatMode", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.9,
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
     });
 
     await expect(resolveChatMode(port, input)).resolves.toMatchObject({
