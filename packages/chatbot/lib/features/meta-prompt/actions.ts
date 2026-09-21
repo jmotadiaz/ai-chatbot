@@ -32,7 +32,7 @@ async function refineCodingAgentPrompt({
   input,
 }: Pick<RefinePromptInput, "input">) {
   const { text } = await generateText({
-    ...languageModelConfigurations("GPT OSS"),
+    ...languageModelConfigurations("Deepseek v4.1 Flash"),
     system: codingAgentMetaPrompt,
     prompt: input,
   });
@@ -64,7 +64,7 @@ async function refineChatPrompt({
     messages.length > 0 ? continuationMetaPrompt : initialMetaPrompt;
 
   const { text } = await generateText({
-    ...languageModelConfigurations("GPT OSS"),
+    ...languageModelConfigurations("Deepseek v4.1 Flash"),
     system: metaPrompt,
     messages: modelMessages,
   });
@@ -80,7 +80,7 @@ async function refineSystemPrompt({
   let ragCalled = false;
 
   const { text } = await generateText({
-    ...languageModelConfigurations("Gemini 3 Flash"),
+    ...languageModelConfigurations("Deepseek v4.1 Flash"),
     system: systemMetaPrompt,
     prompt: input,
     stopWhen: stepCountIs(3),
