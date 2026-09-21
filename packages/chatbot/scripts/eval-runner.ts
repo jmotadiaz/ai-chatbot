@@ -17,6 +17,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PROJECT_ROOT = resolve(__dirname, "..");
+// The compose files live at the repo root (`packages/chatbot` is two levels down).
+const REPO_ROOT = resolve(PROJECT_ROOT, "../..");
+const TEST_COMPOSE_FILE = resolve(REPO_ROOT, "docker-compose.test.yml");
 const TEST_DB_URL = "postgres://postgres:postgres@127.0.0.1:5434/test";
 const LOCK_PATH = resolve(PROJECT_ROOT, "tests/evals/.runner.lock");
 const TRACES_DIR = resolve(PROJECT_ROOT, "tests/evals/traces");
@@ -288,7 +291,7 @@ async function main(): Promise<void> {
   try {
     if (!opts.noDb) {
       console.log("[db] starting test database...");
-      runDbCmd(["-f", "docker-compose.test.yml", "up", "--wait"]);
+      runDbCmd(["-f", TEST_COMPOSE_FILE, "up", "--wait"]);
     }
     if (!opts.noMigrate) {
       console.log("[db] running migrations...");
@@ -335,7 +338,7 @@ async function main(): Promise<void> {
     if (!opts.keepDb && !opts.noDb) {
       try {
         console.log("[db] stopping test database...");
-        runDbCmd(["-f", "docker-compose.test.yml", "down"]);
+        runDbCmd(["-f", TEST_COMPOSE_FILE, "down"]);
       } catch (err) {
         console.error("[db] failed to stop:", err);
       }
