@@ -18,6 +18,10 @@ packages:
 # rather than at install time. Keep both lists in sync.
 allowBuilds:
   '@google/genai': true
+  # `false` = never run its postinstall (a type-check helper). pnpm 11 fails the
+  # install with ERR_PNPM_IGNORED_BUILDS when a dependency with a build script
+  # has no explicit entry; pnpm 10 ignores unlisted scripts silently.
+  '@openrouter/sdk': false
   bcrypt: true
   better-sqlite3: true
   bufferutil: true
