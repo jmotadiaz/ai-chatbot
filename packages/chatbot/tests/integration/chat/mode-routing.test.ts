@@ -93,7 +93,10 @@ const routedDecision: RoutingDecision = {
   mode: "context7",
   reason: "routed",
   confidence: 0.93,
+  probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
   modelId: "typesafe/jev-1.13",
+  provider: "TypeSafe",
+  latencyMs: 412,
 };
 
 const buildRouter = (decision: RoutingDecision = routedDecision) => ({
@@ -183,7 +186,10 @@ describe("auto chat mode persistence", () => {
       mode: "context7",
       reason: "routed",
       confidence: 0.93,
+      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
       modelId: "typesafe/jev-1.13",
+      provider: "TypeSafe",
+      latencyMs: 412,
     });
 
     // Round-trip through the read path used when a chat is reloaded.
@@ -193,7 +199,10 @@ describe("auto chat mode persistence", () => {
       mode: "context7",
       reason: "routed",
       confidence: 0.93,
+      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
       modelId: "typesafe/jev-1.13",
+      provider: "TypeSafe",
+      latencyMs: 412,
     });
   });
 

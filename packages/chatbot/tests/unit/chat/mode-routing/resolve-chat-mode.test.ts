@@ -5,8 +5,6 @@ import {
   createDeterministicChatModeRouter,
   FALLBACK_CHAT_MODE_DECISION,
   resolveChatMode,
-  STUB_CHAT_MODE_DECISION,
-  stubChatModeRouter,
 } from "@/lib/features/chat/mode-routing";
 import type {
   ChatModeRouterPort,
@@ -26,15 +24,6 @@ const userMessage = (text: string): ChatbotMessage => ({
 });
 
 describe("resolveChatMode", () => {
-  it("degrades the stub decision to a neutral fallback (it carries no confidence)", async () => {
-    await expect(resolveChatMode(stubChatModeRouter, input)).resolves.toEqual({
-      mode: "neutral",
-      reason: "fallback",
-      modelId: STUB_CHAT_MODE_DECISION.modelId,
-      requested: "auto",
-    });
-  });
-
   it("passes a confident tool-backed decision through unchanged", async () => {
     const decision: RoutingDecision = {
       mode: "web",
