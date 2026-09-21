@@ -9,7 +9,7 @@ export interface UseChatModeResult {
 }
 
 export const useChatMode = (
-  initialChatMode: ChatMode = "context7",
+  initialChatMode: ChatMode = "auto",
 ): UseChatModeResult => {
   const [chatMode, setChatMode] = useState<ChatMode>(initialChatMode);
 

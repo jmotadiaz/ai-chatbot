@@ -61,7 +61,7 @@ export const useChatHubInstance = ({
   topP,
   topK,
   systemPrompt,
-  chatMode = "context7",
+  chatMode = "auto",
   preventChatPersistence = false,
 
   webSearchNumResults = defaultWebSearchNumResults,

@@ -16,6 +16,14 @@ import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import {
+  buildChatModeRouterInput,
+  resolveChatMode,
+} from "@/lib/features/chat/mode-routing";
+import type {
+  ChatModeRouterPort,
+  ChatModeRoutingMetadata,
+} from "@/lib/features/chat/mode-routing";
+import {
   chatModelKeys,
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
@@ -102,6 +110,7 @@ const buildAgentAdapter = (
 
 export const makeProcessChatResponse = (
   compactionAi: CompactionAiPort,
+  modeRouter: ChatModeRouterPort,
 ) => {
   return async ({
     messages,
@@ -114,7 +123,7 @@ export const makeProcessChatResponse = (
     messageId,
     projectId,
     preventChatPersistence = false,
-    chatMode = "context7",
+    chatMode = "auto",
     webSearchNumResults = defaultWebSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,
@@ -159,6 +168,17 @@ export const makeProcessChatResponse = (
 
     return createUIMessageStream({
       async execute({ writer }) {
+        // Routing runs once per turn, only for Auto chats without a project,
+        // and must be awaited before the agent is built so the decision can be
+        // emitted synchronously in the `start` metadata part below.
+        const chatModeRouting: ChatModeRoutingMetadata | undefined =
+          chatMode === "auto" && !projectId
+            ? await resolveChatMode(
+                modeRouter,
+                buildChatModeRouterInput(filteredMessages),
+              )
+            : undefined;
+
         const agentInstance = await createChatModeAgent({
           ai,
           projectId,
@@ -186,7 +206,10 @@ export const makeProcessChatResponse = (
             messageMetadata: ({ part }) => {
               switch (part.type) {
                 case "start":
-                  return { status: "started" } as const;
+                  return {
+                    status: "started" as const,
+                    ...(chatModeRouting ? { chatModeRouting } : {}),
+                  };
                 case "text-start":
                   return { status: "streaming" } as const;
                 case "finish":

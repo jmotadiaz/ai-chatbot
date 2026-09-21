@@ -18,7 +18,7 @@ export async function processChatResponse({
   messageId,
   projectId,
   preventChatPersistence = false,
-  chatMode = "context7",
+  chatMode = "auto",
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,
