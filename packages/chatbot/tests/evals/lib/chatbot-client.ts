@@ -34,7 +34,7 @@ export function createChatbotClient(options: ChatbotClientOptions) {
         })),
         selectedModel: model,
         chatId: existingChatId,
-        agent: "context7",
+        chatMode: "context7",
       }
 
       const startTime = performance.now()

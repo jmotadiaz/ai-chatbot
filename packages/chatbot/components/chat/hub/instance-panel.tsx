@@ -2,20 +2,20 @@
 
 import React, { useCallback } from "react";
 import { Trash2, Save } from "lucide-react";
-import type { Agent } from "@/lib/features/chat/types";
+import type { ChatMode } from "@/lib/features/chat/types";
 import type { HubInstance, ChatHub } from "@/lib/features/chat/hub/types";
 import { useChatHubInstance } from "@/lib/features/chat/hub/hooks/use-chat-hub-instance";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { ChatConversation } from "@/components/chat/conversation";
-import { AgentSelector } from "@/components/chat/controls/agent-selector";
+import { ChatModeSelector } from "@/components/chat/controls/chat-mode-selector";
 import { SettingsControl } from "@/components/chat/controls/settings-control";
 
 export interface HubInstancePanelProps {
   instance: HubInstance;
   submitSubscribe: ChatHub["submitSubscribe"];
   onRemove: (id: string) => Promise<void>;
-  updateInstanceAgent: (chatId: string, agent: Agent) => void;
+  updateInstanceChatMode: (chatId: string, chatMode: ChatMode) => void;
   updateInstanceConfig: ChatHub["updateInstanceConfig"];
   persistChat: ChatHub["persistChat"];
   isPersisting: boolean;
@@ -29,7 +29,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
   instance,
   submitSubscribe,
   onRemove,
-  updateInstanceAgent,
+  updateInstanceChatMode,
   updateInstanceConfig,
   persistChat,
   isPersisting,
@@ -42,7 +42,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     chatId: instance.chatId,
     model: instance.model,
     submitSubscribe,
-    agent: instance.agent,
+    chatMode: instance.chatMode,
     preventChatPersistence: true,
     ...instance.configuration,
   });
@@ -52,7 +52,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
       chatId: instance.chatId,
       messages: chat.messages,
       model: instance.model,
-      agent: instance.agent,
+      chatMode: instance.chatMode,
       temperature: chat.temperature,
       topP: chat.topP,
       topK: chat.topK,
@@ -65,7 +65,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
     chat.messages,
     instance.chatId,
     instance.model,
-    instance.agent,
+    instance.chatMode,
     chat.temperature,
     chat.topP,
     chat.topK,
@@ -107,10 +107,10 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
             </div>
           )}
           {!isPersisted && (
-            <AgentSelector
-              value={instance.agent}
-              onValueChange={(agent) =>
-                updateInstanceAgent(instance.chatId, agent)
+            <ChatModeSelector
+              value={instance.chatMode}
+              onValueChange={(chatMode) =>
+                updateInstanceChatMode(instance.chatId, chatMode)
               }
               variant="bottom-right"
               className="shrink-0"
@@ -127,7 +127,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
               webSearchNumResults={chat.webSearchNumResults}
               ragMaxResources={chat.ragMaxResources}
               minRagResourcesScore={chat.minRagResourcesScore}
-              agent={instance.agent}
+              chatMode={instance.chatMode}
               setConfig={handleSetConfig}
               dropdownVariant="responsive-bottom-left"
               className={buttonVariants({
@@ -176,7 +176,7 @@ export const HubInstancePanel: React.FC<HubInstancePanelProps> = ({
         messages={chat.messages}
         status={chat.status}
         title={instance.model}
-        description={`Agent: ${capitalize(instance.agent)}`}
+        description={`Chat Mode: ${capitalize(instance.chatMode)}`}
         overviewSize="compact"
         className={cn(
           "flex-1 flex",

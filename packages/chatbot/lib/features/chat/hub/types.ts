@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
 import type { ChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
 
@@ -16,7 +16,7 @@ export type SubmitHandler = (message: SubmitMessage) => void | Promise<void>;
 export interface HubInstance {
   chatId: string;
   model: chatModelId;
-  agent: Agent;
+  chatMode: ChatMode;
   configuration?: Partial<ChatConfig>;
 }
 
@@ -33,9 +33,9 @@ export interface ChatHub {
   /** Which chatId is currently being persisted (for per-panel loading UI). */
   persistingChatId: string | null;
 
-  addInstance: (model: chatModelId, agent?: Agent) => void;
+  addInstance: (model: chatModelId, chatMode?: ChatMode) => void;
   removeInstance: (chatId: string) => Promise<void>;
-  updateInstanceAgent: (chatId: string, agent: Agent) => void;
+  updateInstanceChatMode: (chatId: string, chatMode: ChatMode) => void;
   updateInstanceConfig: (
     chatId: string,
     configuration: Partial<ChatConfig>,
@@ -44,7 +44,7 @@ export interface ChatHub {
     chatId: string;
     messages: ChatbotMessage[];
     model: chatModelId;
-    agent?: Agent;
+    chatMode?: ChatMode;
     projectId?: string;
     temperature?: number;
     topP?: number;
@@ -79,5 +79,5 @@ export interface UseChatHubInstanceArgs {
   chatId: string;
   model: chatModelId;
   submitSubscribe: ChatHub["submitSubscribe"];
-  agent?: Agent;
+  chatMode?: ChatMode;
 }

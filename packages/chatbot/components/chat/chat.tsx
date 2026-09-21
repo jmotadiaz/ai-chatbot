@@ -3,7 +3,7 @@
 import { ArrowUp, WandSparkles, Undo } from "lucide-react";
 import { Textarea } from "@/components/chat/textarea";
 import { ChatControl } from "@/components/chat/control";
-import { AgentSelector } from "@/components/chat/controls/agent-selector";
+import { ChatModeSelector } from "@/components/chat/controls/chat-mode-selector";
 import { SettingsControl } from "@/components/chat/controls/settings-control";
 import { cn } from "@/lib/utils/helpers";
 import { useChatContext } from "@/components/chat/provider";
@@ -34,8 +34,8 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
     handleFileChange,
     refinePromptMode,
     projectId,
-    agent,
-    setAgent,
+    chatMode,
+    setChatMode,
     temperature,
     topP,
     topK,
@@ -96,7 +96,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               supportedFiles={modelConfig.supportedFiles}
             />
             {!projectId && (
-              <AgentSelector value={agent} onValueChange={setAgent} />
+              <ChatModeSelector value={chatMode} onValueChange={setChatMode} />
             )}
           </div>
 
@@ -108,7 +108,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
               webSearchNumResults={webSearchNumResults}
               ragMaxResources={ragMaxResources}
               minRagResourcesScore={minRagResourcesScore}
-              agent={agent}
+              chatMode={chatMode}
               setConfig={setConfig}
             />
             {hasPreviousMessage && (

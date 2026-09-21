@@ -3,17 +3,17 @@ import { useChatContext } from "@/components/chat/provider";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils/helpers";
 import { ModelItem } from "@/components/chat/model-picker";
-import { AGENTS, Agent } from "@/lib/features/chat/types";
+import { CHAT_MODES, ChatMode } from "@/lib/features/chat/types";
 import { MCPIcon } from "@/components/ui/icons";
 
-const AGENT_LABELS: Record<Agent, string> = {
-  rag: "RAG Agent",
-  context7: "Ctx7 Agent",
-  web: "Web Agent",
+const CHAT_MODE_LABELS: Record<ChatMode, string> = {
+  rag: "RAG",
+  context7: "Ctx7",
+  web: "Web",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AGENT_ICONS: Record<Agent, React.ComponentType<any>> = {
+const CHAT_MODE_ICONS: Record<ChatMode, React.ComponentType<any>> = {
   rag: FileSearch,
   context7: MCPIcon,
   web: Globe,
@@ -32,7 +32,7 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
 }) => {
   const { reload, availableModels, projectId } = useChatContext();
   const modelDropdown = useDropdown();
-  const agentDropdown = useDropdown();
+  const chatModeDropdown = useDropdown();
 
   const isModelShown = controlledIsShown ?? modelDropdown.isShown;
   const closeModel = onClose ?? modelDropdown.close;
@@ -40,9 +40,9 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
     ? { onClick: onToggle }
     : modelDropdown.getDropdownTriggerProps();
 
-  const isAgentShown = agentDropdown.isShown;
-  const closeAgent = agentDropdown.close;
-  const agentTriggerProps = agentDropdown.getDropdownTriggerProps();
+  const isChatModeShown = chatModeDropdown.isShown;
+  const closeChatMode = chatModeDropdown.close;
+  const chatModeTriggerProps = chatModeDropdown.getDropdownTriggerProps();
 
   return (
     <div className="flex items-center gap-2 relative text-zinc-700 dark:text-zinc-200">
@@ -89,41 +89,41 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
         </Dropdown.Popup>
       </div>
 
-      {/* Agent Dropdown */}
+      {/* Chat Mode Dropdown */}
       {!projectId && (
         <div className="relative">
           <div
-            {...agentTriggerProps}
+            {...chatModeTriggerProps}
             className="flex items-center gap-1 font-bold text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors capitalize"
           >
-            <span className="whitespace-nowrap">Agent</span>
+            <span className="whitespace-nowrap">Chat Mode</span>
             <ChevronUpIcon
               size={16}
               className={cn(
                 "transition-transform duration-300",
-                isAgentShown ? "rotate-0" : "rotate-180",
+                isChatModeShown ? "rotate-0" : "rotate-180",
               )}
             />
           </div>
           <Dropdown.Popup
-            isShown={isAgentShown}
-            close={closeAgent}
+            isShown={isChatModeShown}
+            close={closeChatMode}
             variant="top-left"
           >
-            {AGENTS.map((agentItem) => {
-              const AgentIcon = AGENT_ICONS[agentItem];
+            {CHAT_MODES.map((chatModeItem) => {
+              const ChatModeIcon = CHAT_MODE_ICONS[chatModeItem];
               return (
                 <Dropdown.Item
-                  key={agentItem}
+                  key={chatModeItem}
                   onClick={() => {
-                    reload({ agent: agentItem });
-                    closeAgent();
+                    reload({ chatMode: chatModeItem });
+                    closeChatMode();
                   }}
                   className="flex-nowrap"
                 >
-                  <AgentIcon size={16} />
+                  <ChatModeIcon size={16} />
                   <span className="whitespace-nowrap capitalize">
-                    {AGENT_LABELS[agentItem]}
+                    {CHAT_MODE_LABELS[chatModeItem]}
                   </span>
                 </Dropdown.Item>
               );

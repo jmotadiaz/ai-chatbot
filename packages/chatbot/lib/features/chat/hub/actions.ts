@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/features/auth/cached-auth";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import type { ChatbotMessage, Tools, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, Tools, ChatMode } from "@/lib/features/chat/types";
 import { saveChat, saveMessages } from "@/lib/features/chat/queries";
 import { chatbotMessageToDbMessage } from "@/lib/features/chat/utils";
 import { generateTitle } from "@/lib/features/chat/title";
@@ -16,7 +16,7 @@ export async function persistHubChatFromTranscript({
   messages,
   model,
   tools = [],
-  agent,
+  chatMode,
   projectId,
   temperature,
   topP,
@@ -29,7 +29,7 @@ export async function persistHubChatFromTranscript({
   messages: ChatbotMessage[];
   model: chatModelId;
   tools?: Tools;
-  agent?: Agent;
+  chatMode?: ChatMode;
   projectId?: string;
   temperature?: number;
   topP?: number;
@@ -61,7 +61,7 @@ export async function persistHubChatFromTranscript({
 
       webSearchNumResults,
       tools,
-      agent,
+      chatMode,
     })(tx);
 
     await saveMessages(

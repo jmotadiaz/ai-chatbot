@@ -5,7 +5,7 @@ import { URL_CONTEXT_TOOL } from "@/lib/features/web-search/constants";
 import { URLContextTool } from "@/lib/features/web-search/tools";
 import { hasContextUrls } from "@/lib/features/web-search/utils";
 import { hasUrls } from "@/lib/utils/helpers";
-import { URL_CONTEXT_SYSTEM_PROMPT } from "@/lib/features/chat/agents/prompts";
+import { URL_CONTEXT_SYSTEM_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
 
 export const hasToExecuteUrlContext = async (
   messages: ChatbotMessage[],

@@ -62,7 +62,7 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
           topK: chat.defaultTopK ?? undefined,
           chatId: id,
           projectId: chat.projectId ?? undefined,
-          agent: project ? "rag" : chat.agent,
+          chatMode: project ? "rag" : chat.chatMode,
           systemPrompt: project ? project.systemPrompt : undefined,
           initialMessages,
           refinePromptMode,

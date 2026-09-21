@@ -11,7 +11,7 @@ import {
   useDropdown,
 } from "@/components/ui/dropdown";
 import type { SetChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
-import type { Agent } from "@/lib/features/chat/types";
+import type { ChatMode } from "@/lib/features/chat/types";
 
 export interface SettingsControlProps {
   className?: ClassValue;
@@ -22,7 +22,7 @@ export interface SettingsControlProps {
   webSearchNumResults?: number;
   ragMaxResources?: number;
   minRagResourcesScore?: number;
-  agent?: Agent;
+  chatMode?: ChatMode;
   setConfig: SetChatConfig;
 }
 
@@ -39,7 +39,7 @@ export const SettingsControl = ({
   webSearchNumResults,
   ragMaxResources,
   minRagResourcesScore,
-  agent,
+  chatMode,
   setConfig,
 }: SettingsControlProps) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
@@ -56,8 +56,8 @@ export const SettingsControl = ({
   const showModelConfig =
     showTemperatureSetting || showTopPSetting || showTopKSetting;
 
-  // Agent config fields only shown for agents with configuration
-  const showAgentConfig = agent === "web" || agent === "rag";
+  // Chat mode config fields only shown for chat modes with configuration
+  const showChatModeConfig = chatMode === "web" || chatMode === "rag";
 
   return (
     <Dropdown.Container data-testid="settings-control-dropdown">
@@ -122,15 +122,15 @@ export const SettingsControl = ({
               )}
             </div>
           )}
-          {showModelConfig && showAgentConfig && (
+          {showModelConfig && showChatModeConfig && (
             <div className="my-4 border-t border-muted"></div>
           )}
-          {showAgentConfig && (
+          {showChatModeConfig && (
             <div className="space-y-4">
               <div className="text-xs font-medium text-muted-foreground mb-2">
-                Agent Settings
+                Chat Mode Settings
               </div>
-              {agent === "web" && (
+              {chatMode === "web" && (
                 <div className="flex items-center justify-between">
                   <Label
                     className="mr-8 text-nowrap"
@@ -150,7 +150,7 @@ export const SettingsControl = ({
                   />
                 </div>
               )}
-              {agent === "rag" && (
+              {chatMode === "rag" && (
                 <>
                   <div className="flex items-center justify-between">
                     <Label

@@ -1,7 +1,7 @@
 import { Context7Agent, AGENT_PROMPT } from "@upstash/context7-tools-ai-sdk";
 import { stepCountIs } from "ai";
 import { ModelConfiguration } from "@/lib/features/foundation-model/types";
-import { withMessageProcessing } from "@/lib/features/chat/agents/utils";
+import { withMessageProcessing } from "@/lib/features/chat/chat-modes/utils";
 
 export const createContext7Agent = ({
   modelConfiguration,
