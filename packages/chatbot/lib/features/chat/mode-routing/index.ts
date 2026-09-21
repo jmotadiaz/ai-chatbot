@@ -14,27 +14,10 @@ import type {
 } from "@/lib/features/chat/mode-routing/types";
 
 export * from "@/lib/features/chat/mode-routing/constants";
+export * from "@/lib/features/chat/mode-routing/openrouter";
 export * from "@/lib/features/chat/mode-routing/policy";
 export * from "@/lib/features/chat/mode-routing/questions";
 export * from "@/lib/features/chat/mode-routing/types";
-
-/**
- * Ticket 02 shell: there is no real classifier yet, so the stub returns the
- * shape of a failed answer. `decideResolvedMode` degrades it to the neutral
- * branch (`neutral` / `fallback`) because it carries no confidence, so Auto
- * turns answer tool-lessly until ticket 04 plugs the Jev/OpenRouter adapter.
- */
-export const STUB_CHAT_MODE_DECISION: RoutingDecision = {
-  mode: "context7",
-  reason: "fallback",
-  modelId: "stub",
-};
-
-export const stubChatModeRouter: ChatModeRouterPort = {
-  async route() {
-    return { ...STUB_CHAT_MODE_DECISION };
-  },
-};
 
 const TEST_ROUTER_MODEL_ID = "test-deterministic";
 
