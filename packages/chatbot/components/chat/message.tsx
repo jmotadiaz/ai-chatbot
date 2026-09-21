@@ -13,6 +13,11 @@ import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
+import type {
+  ChatModeRoutingMetadata,
+  ChatModeRoutingReason,
+  ResolvedChatMode,
+} from "@/lib/features/chat/mode-routing/types";
 import { Response } from "@/components/chat/response";
 import {
   mergeReasoningParts,
@@ -178,6 +183,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
             ragSourceParts={ragSourceParts}
             context7Parts={context7Parts}
             routingMetadata={message.metadata.autoModel}
+            chatModeRouting={message.metadata.chatModeRouting}
           />
         )}
       </div>
@@ -191,19 +197,21 @@ const AssistantMessageActions: React.FC<{
   ragSourceParts: RagChunk[][];
   context7Parts: { libraryId: string; output: string }[];
   routingMetadata?: ModelRoutingMetadata;
+  chatModeRouting?: ChatModeRoutingMetadata;
 }> = ({
   showReload,
   sourceParts,
   ragSourceParts,
   context7Parts,
   routingMetadata,
+  chatModeRouting,
 }) => {
   const [activeSection, setActiveSection] = useState<
-    "router" | "sources" | "rag-sources" | "context7-sources" | null
+    "router" | "chat-mode" | "sources" | "rag-sources" | "context7-sources" | null
   >(null);
 
   const toggleSection = (
-    section: "router" | "sources" | "rag-sources" | "context7-sources",
+    section: "router" | "chat-mode" | "sources" | "rag-sources" | "context7-sources",
   ) => {
     setActiveSection((prev) => (prev === section ? null : section));
   };
@@ -218,6 +226,16 @@ const AssistantMessageActions: React.FC<{
             <RouterDetailsTrigger
               isExpanded={activeSection === "router"}
               onToggle={() => toggleSection("router")}
+            />
+          </>
+        )}
+        {chatModeRouting && (
+          <>
+            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+            <ChatModeRoutingTrigger
+              metadata={chatModeRouting}
+              isExpanded={activeSection === "chat-mode"}
+              onToggle={() => toggleSection("chat-mode")}
             />
           </>
         )}
@@ -271,6 +289,12 @@ const AssistantMessageActions: React.FC<{
           <RouterDetailsContent
             metadata={routingMetadata}
             isExpanded={activeSection === "router"}
+          />
+        )}
+        {chatModeRouting && (
+          <ChatModeRoutingContent
+            metadata={chatModeRouting}
+            isExpanded={activeSection === "chat-mode"}
           />
         )}
         {sourceParts.length > 0 && (
@@ -406,6 +430,84 @@ const RouterDetailsContent: React.FC<{
           </div>
           <div>
             <span className="font-semibold">Model:</span> {metadata.model}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RESOLVED_CHAT_MODE_LABELS: Record<ResolvedChatMode, string> = {
+  context7: "Ctx7",
+  web: "Web",
+  neutral: "Neutral",
+};
+
+/**
+ * Fallback reasons are rendered explicitly (raw token included) so an
+ * unexpected search or doc lookup is explainable from the message itself.
+ */
+const CHAT_MODE_ROUTING_REASON_LABELS: Record<ChatModeRoutingReason, string> = {
+  routed: "routed — classifier decision",
+  neither: "neither — no tool needed",
+  low_confidence: "low_confidence — below the confidence threshold",
+  fallback: "fallback — router error or timeout",
+};
+
+const chatModeRoutingLabel = (metadata: ChatModeRoutingMetadata): string => {
+  const resolved = RESOLVED_CHAT_MODE_LABELS[metadata.mode];
+  const confidence =
+    typeof metadata.confidence === "number"
+      ? ` · ${metadata.confidence.toFixed(2)}`
+      : "";
+  return `Chat Mode: Auto → ${resolved}${confidence}`;
+};
+
+const ChatModeRoutingTrigger: React.FC<{
+  metadata: ChatModeRoutingMetadata;
+  isExpanded: boolean;
+  onToggle: () => void;
+}> = ({ metadata, isExpanded, onToggle }) => {
+  return (
+    <div
+      className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+      onClick={onToggle}
+    >
+      {chatModeRoutingLabel(metadata)}
+      <ChevronDownIcon
+        className={cn("h-4 w-4 transition-transform duration-200", {
+          "rotate-180": isExpanded,
+        })}
+      />
+    </div>
+  );
+};
+
+const ChatModeRoutingContent: React.FC<{
+  metadata: ChatModeRoutingMetadata;
+  isExpanded: boolean;
+}> = ({ metadata, isExpanded }) => {
+  const { getCollapseProps } = useCollapse({ isExpanded });
+  return (
+    <div className="overflow-hidden" {...getCollapseProps()}>
+      <div className="py-2 pl-2">
+        <div className="flex flex-col space-y-1 text-sm pl-3 text-zinc-500 dark:text-zinc-400 py-1 border-l-4 border-secondary">
+          <div>
+            <span className="font-semibold">Mode:</span>{" "}
+            {RESOLVED_CHAT_MODE_LABELS[metadata.mode]}
+          </div>
+          <div>
+            <span className="font-semibold">Reason:</span>{" "}
+            {CHAT_MODE_ROUTING_REASON_LABELS[metadata.reason]}
+          </div>
+          {typeof metadata.confidence === "number" && (
+            <div>
+              <span className="font-semibold">Confidence:</span>{" "}
+              {metadata.confidence.toFixed(2)}
+            </div>
+          )}
+          <div>
+            <span className="font-semibold">Model:</span> {metadata.modelId}
           </div>
         </div>
       </div>

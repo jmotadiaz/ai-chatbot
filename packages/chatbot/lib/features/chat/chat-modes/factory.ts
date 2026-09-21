@@ -1,4 +1,5 @@
 import { ChatbotMessage } from "@/lib/features/chat/types";
+import type { ChatMode, ResolvedChatMode } from "@/lib/features/chat/types";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import { createProjectAgent } from "@/lib/features/chat/chat-modes/project";
 import { createContext7Agent } from "@/lib/features/chat/chat-modes/context7";
@@ -21,7 +22,7 @@ export const createChatModeAgent = async ({
 }: {
   ai: ChatAgentAiPort;
   projectId?: string;
-  chatMode: string;
+  chatMode: ChatMode | ResolvedChatMode;
   systemPrompt?: string;
   messages: ChatbotMessage[];
   userId: string;

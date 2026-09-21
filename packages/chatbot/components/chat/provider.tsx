@@ -48,7 +48,7 @@ const chatContext = createContext<UseChatResult>({
   addToolResult: async () => {},
   addToolOutput: async () => {},
   addToolApprovalResponse: async () => {},
-  chatMode: "context7",
+  chatMode: "auto",
   setChatMode: () => {},
   availableModels: CHAT_MODELS,
   dataPart: undefined,

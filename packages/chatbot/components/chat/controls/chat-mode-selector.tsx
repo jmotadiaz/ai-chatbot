@@ -1,12 +1,12 @@
 "use client";
 
 import type { ClassValue } from "clsx";
-import { FileSearch, Globe, ChevronUp } from "lucide-react";
+import { FileSearch, Globe, ChevronUp, Sparkles } from "lucide-react";
 import { MCPIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/helpers";
 
 import { Select, useSelect } from "@/components/ui/select";
-import type { ChatMode } from "@/lib/features/chat/types";
+import { CHAT_MODES, type ChatMode } from "@/lib/features/chat/types";
 
 import type { DropdownPopupProps } from "@/components/ui/dropdown";
 
@@ -17,7 +17,9 @@ export interface ChatModeSelectorProps {
   variant?: DropdownPopupProps["variant"];
 }
 
+// Ordered as `CHAT_MODES`, so Auto is always the first entry.
 const CHAT_MODE_LABELS: Record<ChatMode, string> = {
+  auto: "Auto",
   context7: "Ctx7",
   rag: "RAG",
   web: "Web",
@@ -25,6 +27,7 @@ const CHAT_MODE_LABELS: Record<ChatMode, string> = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CHAT_MODE_ICONS: Record<ChatMode, React.ComponentType<any>> = {
+  auto: Sparkles,
   context7: MCPIcon,
   rag: FileSearch,
   web: Globe,
@@ -64,14 +67,15 @@ export const ChatModeSelector = ({
         />
       </button>
       <Select.Dropdown {...getSelectContentProps()} variant={variant}>
-        {Object.entries(CHAT_MODE_LABELS).map(([key, label]) => {
-          const chatModeKey = key as ChatMode;
+        {CHAT_MODES.map((chatModeKey) => {
           const Icon = CHAT_MODE_ICONS[chatModeKey];
           return (
             <Select.Item key={chatModeKey} {...getSelectItemProps(chatModeKey)}>
               <div className="flex flex-nowrap items-center gap-2 p-2">
                 <Icon size={16} />
-                <span className={cn("text-sm whitespace-nowrap")}>{label}</span>
+                <span className={cn("text-sm whitespace-nowrap")}>
+                  {CHAT_MODE_LABELS[chatModeKey]}
+                </span>
               </div>
             </Select.Item>
           );

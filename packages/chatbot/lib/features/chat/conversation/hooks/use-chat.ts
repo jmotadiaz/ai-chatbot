@@ -85,7 +85,7 @@ export const useChat = ({
   projectId,
   title,
   preventChatPersistence = false,
-  chatMode: initialChatMode = "context7",
+  chatMode: initialChatMode = "auto",
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,
