@@ -3,7 +3,7 @@ import type { ResolvedChatMode } from "@/lib/features/chat/mode-routing/types";
 /**
  * Labelled dataset for the `mode-routing` eval (ticket 05).
  *
- * Every entry is the ground truth for the **v1 criteria** documented in
+ * Every entry is the ground truth for the **current criteria** documented in
  * `@/lib/features/chat/mode-routing/questions.ts`:
  *
  * - `ctx7`  → library/framework/SDK/CLI/language-API documentation is needed
@@ -11,9 +11,11 @@ import type { ResolvedChatMode } from "@/lib/features/chat/mode-routing/types";
  *             version-specific behavior). Resolves to `context7`.
  * - `web`   → current or externally verifiable information is needed (news,
  *             prices, releases, availability, references/sources to check a
- *             claim, the content behind a URL, real-world comparisons).
+ *             claim, the content behind a URL, real-world comparisons,
+ *             official standards/regulations and their current edition).
  * - `neither` → general reasoning, knowledge already in the repo/conversation,
- *             or plain chat. No library docs, no external search.
+ *             or plain chat. No library docs, no external search, nothing to
+ *             cite or verify.
  *
  * The `previousTurn` field feeds `recentContext`; messages that only make sense
  * with a referent (pronoun-only follow-ups) carry one. Messages without a
@@ -54,7 +56,7 @@ export interface ModeRoutingDatasetEntry {
   message: string;
   previousTurn?: ModeRoutingPreviousTurn;
   expected: ModeRoutingClass;
-  /** Why this label follows from the v1 criteria. */
+  /** Why this label follows from the current criteria. */
   rationale: string;
   lang: "es" | "en";
 }
@@ -186,7 +188,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "Frontera ctx7/neither: es un mensaje de error de un framework y la respuesta correcta depende de su semántica y de la API de React 19, no de razonamiento genérico.",
   },
 
-  // ----------------------------------------------------------------- web (13)
+  // ----------------------------------------------------------------- web (15)
   {
     id: "web-01",
     lang: "es",
@@ -302,8 +304,26 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     rationale:
       "Frontera web/ctx7: menciona una librería, pero la respuesta es un dato de release publicado (versión y fecha), no su documentación.",
   },
+  {
+    id: "web-14",
+    lang: "es",
+    message:
+      "¿Dónde puedo comprobar en la fuente oficial que esa certificación sigue vigente?",
+    expected: "web",
+    rationale:
+      "Documento/autoridad externa cuya vigencia hay que verificar en el emisor: no basta el razonamiento general.",
+  },
+  {
+    id: "web-15",
+    lang: "es",
+    message:
+      "Dame la referencia oficial y la edición actual del reglamento que regula ese procedimiento.",
+    expected: "web",
+    rationale:
+      "Pide una fuente normativa externa citable y su edición vigente: información verificable fuera del modelo.",
+  },
 
-  // ------------------------------------------------------------- neither (13)
+  // ------------------------------------------------------------- neither (14)
   {
     id: "neither-01",
     lang: "es",
@@ -407,6 +427,15 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     expected: "neither",
     rationale:
       "Frontera neither/ctx7: nombra una librería, pero la respuesta está en el código del repositorio, no en la documentación externa.",
+  },
+  {
+    id: "neither-14",
+    lang: "es",
+    message:
+      "¿Qué diferencia conceptual hay entre un requisito funcional y uno no funcional?",
+    expected: "neither",
+    rationale:
+      "Frontera neither/web: pregunta de razonamiento sobre un concepto; no pide fuentes externas ni comprobar su vigencia.",
   },
 ] as const;
 

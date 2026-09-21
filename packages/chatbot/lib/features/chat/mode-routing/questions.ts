@@ -19,7 +19,7 @@ export const ROUTING_OPTION_TO_MODE: Record<RoutingOption, ResolvedChatMode> = {
  * the eval dataset is tagged with this value so two criteria revisions stay
  * comparable.
  */
-export const CHAT_MODE_ROUTING_QUESTION_VERSION = 1;
+export const CHAT_MODE_ROUTING_QUESTION_VERSION = 2;
 
 export interface ChatModeRoutingQuestion {
   /** Decision prompt sent to Jev. */
@@ -45,7 +45,9 @@ export const CHAT_MODE_ROUTING_QUESTION: ChatModeRoutingQuestion = {
     "Treat `latest_message` as the message to classify and read " +
     "`recent_context` (the previous turn) only to resolve what a pronoun or " +
     "implicit reference in `latest_message` points to. Pick the single best " +
-    "mode and answer with exactly one of the criteria keys.",
+    "mode and answer with exactly one of the criteria keys. When answering " +
+    "well requires citing or verifying external sources, choose `web` over " +
+    "`neither`.",
   criteria: {
     ctx7:
       "The message asks for up-to-date documentation of a software library, " +
@@ -54,12 +56,16 @@ export const CHAT_MODE_ROUTING_QUESTION: ChatModeRoutingQuestion = {
     web:
       "The message asks for current or externally verifiable information: " +
       "news and current events, prices, releases, availability, " +
-      "references/sources to check a claim, the content behind a URL, or a " +
-      "comparison that depends on the real world.",
+      "references/sources to check a claim, the content behind a URL, a " +
+      "comparison that depends on the real world, or authoritative external " +
+      "documents — official standards, regulations or formal specifications, " +
+      "their current edition/status, and where to verify them at the " +
+      "issuing source.",
     neither:
       "The message can be answered with general reasoning, knowledge already " +
       "present in the repository or conversation, or plain chat. No library " +
-      "documentation and no external search are needed.",
+      "documentation is needed and the answer does not have to cite or " +
+      "verify external sources.",
   },
 };
 

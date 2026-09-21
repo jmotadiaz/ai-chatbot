@@ -71,24 +71,27 @@ Scorers:
   resultado guarda el `raw` (respuesta del clasificador antes del gate) y el `resolved`
   (`{ mode, reason, confidence, probabilities, modelId, provider, latencyMs }`).
 
-Dataset (39: ctx7 13 / web 13 / neither 13): documentación de librería, framework, SDK, CLI o
+Dataset (42: ctx7 13 / web 15 / neither 14): documentación de librería, framework, SDK, CLI o
 API de lenguaje (→ ctx7); actualidad, precios, releases, disponibilidad, fuentes para
-contrastar, contenido de una URL y comparativas del mundo real (→ web); charla, preguntas
-repo-locales y transformaciones de texto (→ neither). Incluye follow-ups pronominales **con**
-contexto (heredan el referente del turno anterior) y **sin** contexto (etiquetados `neither`:
-el referente es irresoluble, no se justifica pagar una tool).
+contrastar, contenido de una URL, comparativas del mundo real y documentos normativos u
+officiales cuya vigencia/edición hay que verificar en la fuente emisora (→ web); charla,
+preguntas repo-locales y transformaciones de texto (→ neither). Incluye follow-ups pronominales
+**con** contexto (heredan el referente del turno anterior) y **sin** contexto (etiquetados
+`neither`: el referente es irresoluble, no se justifica pagar una tool).
 
-Criterios v1 y umbral vigente están documentados en la cabecera de
+Criterios vigentes (v2) y umbral están documentados en la cabecera de
 `tests/evals/cases/mode-routing.eval.ts`; la fuente de verdad son
 `lib/features/chat/mode-routing/questions.ts` (`CHAT_MODE_ROUTING_QUESTION_VERSION`) y
 `CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` en `mode-routing/constants.ts`. **Cualquier cambio de
 criterios o de umbral se decide con los números de este eval** (y actualiza los tests de 03/04
-en el mismo commit). Baseline medido (2026-09-21, 3 runs): 38/39 (97.4%), matriz de confusión
-diagonal salvo un `ctx7 → neutral/low_confidence`; en los dos runs de 39 mensajes la accuracy
-barrida es 97.4% en toda la banda 0–0.75 y solo cae por encima de 0.75 (un run llegó al 100%
-solo en 0.5 y el otro no lo replicó), así que bajar el gate no mejora la accuracy de forma
-reproducible: umbral final **0.7**. La varianza de ±0.05 en la `confidence` de Jev es real, así
-que las decisiones de umbral se toman sobre varios runs, no sobre uno.
+en el mismo commit). Baseline v1 (39 entradas, 3 runs): 38/39 (97.4%), matriz diagonal salvo
+un `ctx7 → neutral/low_confidence`; la accuracy barrida es 97.4% en toda la banda 0–0.75 y solo
+cae por encima de 0.75 (un run llegó al 100% solo en 0.5 y el otro no lo replicó), así que
+bajar el gate no mejora de forma reproducible: umbral final **0.7**. Con los criterios v2
+(documentos oficiales/normativos y su vigencia añadidos a `web`, 42 entradas, 1 run): 41/42
+(97.6%), ctx7 12/13, web 15/15, neither 14/14, mismo único fallo de ctx7. La varianza de ±0.05
+en la `confidence` de Jev es real, así que las decisiones de umbral se toman sobre varios runs,
+no sobre uno.
 
 ## Estructura
 

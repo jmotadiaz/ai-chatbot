@@ -43,17 +43,22 @@ dotenv({ path: resolve(__dirname, "../../../.env.dev") });
  * fed with `buildChatModeRouterInput()` over the labelled dataset in
  * `tests/evals/scenarios/mode-routing-dataset.ts`. No `/api/chat` request, no
  * DB, no model tokens beyond the classifier: one Decisions call per dataset
- * entry (~$0.00002 each, ~$0.0008 for the whole run at 39 entries).
+ * entry (~$0.00002 each, ~$0.0009 for the whole run at 42 entries).
  *
- * ## Measured baseline (2026-09-21, 3 runs)
+ * ## Measured baseline (2026-09-21)
  *
- * Global accuracy 38/39 (97.4%), macro 97.4%: ctx7 12/13, web 13/13,
- * neither 13/13. Confusion matrix diagonal except one `ctx7 →
- * neutral/low_confidence` (a React error-semantics question answered with
- * `confidence` 0.51, `probabilities.ctx7` 0.68). 25 calls routed, 12 `neither`,
- * 2 gated, 0 fallbacks; latency mean ~450 ms, p95 ~720 ms.
+ * v1 criteria, 39 entries, 3 runs: 38/39 (97.4%); ctx7 12/13, web 13/13,
+ * neither 13/13; one `ctx7 → neutral/low_confidence` (a React error-semantics
+ * question answered with `confidence` 0.51).
  *
- * ## v1 criteria (source of truth: `lib/features/chat/mode-routing/questions.ts`)
+ * v2 criteria (authoritative/verifiable external documents added to `web`),
+ * 42 entries, 1 run: 41/42 (97.6%), macro 97.4%; ctx7 12/13, web 15/15,
+ * neither 14/14; the same single `ctx7 → neutral/low_confidence` miss, so `web`
+ * gained the new class (official standards/regulations and where to verify
+ * them) with no regression. 27 calls routed, 13 `neither`, 2 gated, 0
+ * fallbacks; latency mean ~440 ms, p95 ~700 ms.
+ *
+ * ## Current criteria (source of truth: `lib/features/chat/mode-routing/questions.ts`)
  *
  * `CHAT_MODE_ROUTING_QUESTION_VERSION = ${CHAT_MODE_ROUTING_QUESTION_VERSION}`
  *
@@ -62,10 +67,13 @@ dotenv({ path: resolve(__dirname, "../../../.env.dev") });
  *   configuration, or version-specific behavior.
  * - `web` → current or externally verifiable information: news and current
  *   events, prices, releases, availability, references/sources to check a
- *   claim, the content behind a URL, or a comparison that depends on the real
- *   world.
+ *   claim, the content behind a URL, a comparison that depends on the real
+ *   world, or authoritative external documents (official standards,
+ *   regulations or formal specifications, their current edition/status, and
+ *   where to verify them at the issuing source).
  * - `neither` → answerable with general reasoning, knowledge already present in
- *   the repository or the conversation, or plain chat. No docs, no search.
+ *   the repository or the conversation, or plain chat. No docs, no search, and
+ *   nothing to cite or verify.
  *
  * Classifier input: `state = { latest_message, recent_context }`, where
  * `recent_context` is the previous turn (user + assistant) truncated to 500
