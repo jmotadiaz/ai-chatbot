@@ -14,7 +14,8 @@ export type ResolvedChatMode = "context7" | "web" | "neutral";
  * - `routed`: the classifier answered with a tool-backed mode and passed the
  *   confidence gate.
  * - `neither`: the classifier decided no tool is needed → neutral branch.
- * - `low_confidence`: classifier answered below the confidence gate → neutral.
+ * - `low_confidence`: classifier answered below the confidence gate, or its
+ *   answer carried no usable score → neutral.
  * - `fallback`: timeout, transport error or invalid answer → neutral.
  */
 export type ChatModeRoutingReason =
@@ -32,6 +33,8 @@ export interface RoutingDecision {
   modelId: string;
   provider?: string;
   latencyMs?: number;
+  /** Cost of the routing call in USD, when the provider reports it. */
+  costUsd?: number;
 }
 
 /**

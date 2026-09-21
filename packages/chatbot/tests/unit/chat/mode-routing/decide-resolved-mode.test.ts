@@ -61,14 +61,14 @@ describe("decideResolvedMode", () => {
       expected: { mode: "context7", reason: "routed" },
     },
     {
-      name: "a tool-backed answer without confidence fails closed",
+      name: "a tool-backed answer without confidence gates as low_confidence",
       input: decision({ mode: "web", confidence: undefined }),
-      expected: { mode: "neutral", reason: "fallback" },
+      expected: { mode: "neutral", reason: "low_confidence" },
     },
     {
-      name: "a non-finite confidence fails closed",
+      name: "a non-finite confidence gates as low_confidence",
       input: decision({ confidence: Number.NaN }),
-      expected: { mode: "neutral", reason: "fallback" },
+      expected: { mode: "neutral", reason: "low_confidence" },
     },
     {
       name: "a thrown error is a fallback",

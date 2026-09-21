@@ -190,6 +190,7 @@ export const createOpenRouterChatModeRouter = (
       modelId: response.model,
       provider: response.provider,
       latencyMs,
+      costUsd: response.usage.cost,
     };
   },
 });

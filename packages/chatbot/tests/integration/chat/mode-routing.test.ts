@@ -97,6 +97,7 @@ const routedDecision: RoutingDecision = {
   modelId: "typesafe/jev-1.13",
   provider: "TypeSafe",
   latencyMs: 412,
+  costUsd: 0.000017976,
 };
 
 const buildRouter = (decision: RoutingDecision = routedDecision) => ({
@@ -190,6 +191,7 @@ describe("auto chat mode persistence", () => {
       modelId: "typesafe/jev-1.13",
       provider: "TypeSafe",
       latencyMs: 412,
+      costUsd: 0.000017976,
     });
 
     // Round-trip through the read path used when a chat is reloaded.
@@ -203,6 +205,7 @@ describe("auto chat mode persistence", () => {
       modelId: "typesafe/jev-1.13",
       provider: "TypeSafe",
       latencyMs: 412,
+      costUsd: 0.000017976,
     });
   });
 

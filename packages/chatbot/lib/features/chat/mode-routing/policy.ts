@@ -81,9 +81,10 @@ const hasConfidence = (value: unknown): value is number =>
  * Policy table:
  * - invalid answer (not a decision, unknown mode, no modelId) → `neutral` / `fallback`
  * - `neither` (or an already-resolved `neutral`) → `neutral` / `neither`
- * - tool-backed mode without a usable `confidence` → `neutral` / `fallback`
- *   (fail closed: an unverifiable answer is not routed)
- * - `confidence < CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` → `neutral` / `low_confidence`
+ * - `confidence` missing/non-finite, or below
+ *   `CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` → `neutral` / `low_confidence`
+ *   (a valid answer that merely lacks a usable score did not fail to route; it
+ *   just cannot pass the confidence gate)
  * - confident `ctx7`/`context7`/`web` → that mode / `routed`
  */
 export const decideResolvedMode = (decision: unknown): ResolvedChatModeDecision => {
@@ -97,11 +98,10 @@ export const decideResolvedMode = (decision: unknown): ResolvedChatModeDecision 
     return { mode, reason: "neither" };
   }
 
-  if (!hasConfidence(decision.confidence)) {
-    return { mode: "neutral", reason: "fallback" };
-  }
-
-  if (decision.confidence < CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD) {
+  if (
+    !hasConfidence(decision.confidence) ||
+    decision.confidence < CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD
+  ) {
     return { mode: "neutral", reason: "low_confidence" };
   }
 

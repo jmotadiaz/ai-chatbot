@@ -450,7 +450,7 @@ const RESOLVED_CHAT_MODE_LABELS: Record<ResolvedChatMode, string> = {
 const CHAT_MODE_ROUTING_REASON_LABELS: Record<ChatModeRoutingReason, string> = {
   routed: "routed — classifier decision",
   neither: "neither — no tool needed",
-  low_confidence: "low_confidence — below the confidence threshold",
+  low_confidence: "low_confidence — confidence missing or below the threshold",
   fallback: "fallback — router error or timeout",
 };
 

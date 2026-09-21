@@ -75,7 +75,7 @@ describe("Chat mode routing badge", () => {
   it.each([
     ["routed", /routed — classifier decision/],
     ["neither", /neither — no tool needed/],
-    ["low_confidence", /low_confidence — below the confidence threshold/],
+    ["low_confidence", /low_confidence — confidence missing or below the threshold/],
     ["fallback", /fallback — router error or timeout/],
   ] as const)("renders the %s reason", (reason, expected) => {
     render(

@@ -7,6 +7,7 @@ import type {
   ChatModeRouterPort,
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
+import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import { chatModelKeys } from "@/lib/features/foundation-model/config";
 
 vi.mock("server-only", () => ({}));
@@ -137,7 +138,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.91,
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
     });
 
     const { chunkTypes, text, routing } = await runTurn({
@@ -153,7 +154,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.91,
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
     });
 
     // The model was never offered a tool, and kept the user's parameters.
@@ -179,11 +180,6 @@ describe("neutral branch through the conversation pipeline", () => {
     {
       name: "an invalid decision",
       route: async () => ({ mode: "banana", modelId: "x" }) as any,
-    },
-    {
-      name: "a tool-backed decision without confidence",
-      route: async () =>
-        ({ mode: "web", reason: "routed", modelId: "m" }) as RoutingDecision,
     },
   ])("degrades to the neutral fallback when routing fails: $name", async ({ route }) => {
     const consoleError = vi
@@ -213,7 +209,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "web",
       reason: "routed",
       confidence: 0.42,
-      modelId: "typesafe/jev-1.13",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
     });
 
     const { routing, text } = await runTurn({ router });
@@ -223,6 +219,23 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "low_confidence",
       confidence: 0.42,
+    });
+    expect(text).toBe("Respuesta neutra");
+  });
+
+  it("gates a valid answer without confidence as low_confidence, not fallback", async () => {
+    const router = portReturning({
+      mode: "web",
+      reason: "routed",
+      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+    });
+
+    const { routing, text } = await runTurn({ router });
+
+    expect(routing).toMatchObject({
+      requested: "auto",
+      mode: "neutral",
+      reason: "low_confidence",
     });
     expect(text).toBe("Respuesta neutra");
   });

@@ -100,7 +100,8 @@ describe("OpenRouter Decisions adapter (contract)", () => {
     expect(calls[0]!.body.trace).toBeUndefined();
 
     // Fixture choice is `web`; the SDK remaps `usage.input_tokens` while
-    // parsing, which is why the response is replayed raw.
+    // parsing, which is why the response is replayed raw. `costUsd` comes from
+    // `usage.cost`, the per-turn accounting required by the spec.
     expect(decision).toEqual({
       mode: "web",
       reason: "routed",
@@ -109,7 +110,20 @@ describe("OpenRouter Decisions adapter (contract)", () => {
       modelId: "typesafe/jev-1.13-20260917",
       provider: "TypeSafe",
       latencyMs: expect.any(Number),
+      costUsd: 0.000017976,
     });
+  });
+
+  it("omits the cost when the response carries no usage cost", async () => {
+    const { router } = makeHarness({
+      ...fixture,
+      usage: { ...fixture.usage, cost: undefined },
+    });
+
+    const decision = await router.route(input);
+
+    expect(decision.costUsd).toBeUndefined();
+    expect(decision.latencyMs).toEqual(expect.any(Number));
   });
 
   it("forwards chatId as session_id and the trace run id when tracing", async () => {
