@@ -89,13 +89,14 @@ const compactionAi: CompactionAiPort = {
   generateText: vi.fn().mockResolvedValue("summary"),
 };
 
-const stubDecision: RoutingDecision = {
+const routedDecision: RoutingDecision = {
   mode: "context7",
-  reason: "fallback",
-  modelId: "stub",
+  reason: "routed",
+  confidence: 0.93,
+  modelId: "typesafe/jev-1.13",
 };
 
-const buildRouter = (decision: RoutingDecision = stubDecision) => ({
+const buildRouter = (decision: RoutingDecision = routedDecision) => ({
   route: vi.fn(async () => decision),
 });
 
@@ -180,8 +181,9 @@ describe("auto chat mode persistence", () => {
     expect(assistantRow.metadata.chatModeRouting).toEqual({
       requested: "auto",
       mode: "context7",
-      reason: "fallback",
-      modelId: "stub",
+      reason: "routed",
+      confidence: 0.93,
+      modelId: "typesafe/jev-1.13",
     });
 
     // Round-trip through the read path used when a chat is reloaded.
@@ -189,8 +191,9 @@ describe("auto chat mode persistence", () => {
     expect(reloaded.metadata?.chatModeRouting).toEqual({
       requested: "auto",
       mode: "context7",
-      reason: "fallback",
-      modelId: "stub",
+      reason: "routed",
+      confidence: 0.93,
+      modelId: "typesafe/jev-1.13",
     });
   });
 
