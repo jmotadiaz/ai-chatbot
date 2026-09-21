@@ -84,9 +84,11 @@ Criterios v1 y umbral vigente están documentados en la cabecera de
 `CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` en `mode-routing/constants.ts`. **Cualquier cambio de
 criterios o de umbral se decide con los números de este eval** (y actualiza los tests de 03/04
 en el mismo commit). Baseline medido (2026-09-21, 3 runs): 38/39 (97.4%), matriz de confusión
-diagonal salvo un `ctx7 → neutral/low_confidence`; la curva de umbral es plana entre 0 y 0.75,
-así que bajar el gate no mejora la accuracy (el único spike al 100% en 0.5 de un run no se
-reprodujo) → umbral final **0.7**.
+diagonal salvo un `ctx7 → neutral/low_confidence`; en los dos runs de 39 mensajes la accuracy
+barrida es 97.4% en toda la banda 0–0.75 y solo cae por encima de 0.75 (un run llegó al 100%
+solo en 0.5 y el otro no lo replicó), así que bajar el gate no mejora la accuracy de forma
+reproducible: umbral final **0.7**. La varianza de ±0.05 en la `confidence` de Jev es real, así
+que las decisiones de umbral se toman sobre varios runs, no sobre uno.
 
 ## Estructura
 

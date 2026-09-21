@@ -85,14 +85,15 @@ dotenv({ path: resolve(__dirname, "../../../.env.dev") });
  * raw answers of this same run and reports the accuracy/threshold curve
  * (`thresholdSweep`, `flatOptimum`).
  *
- * Why the threshold stays at 0.7: the swept curve is flat at 97.4% for every
- * threshold between 0 and 0.75 (one run spiked to 100% *only* at 0.5 because
- * the two uncertain entries happened to straddle it; the next run did not
- * reproduce it). Lowering the gate trades the one wrong-but-gated `ctx7` for
- * the one correctly-gated `neither` — the classifier gives both the same
- * answer, so no threshold separates them, and every threshold above 0.75
- * degrades correct calls. `0.7` sits inside the flat optimum band and is the
- * smallest data-justified change: none.
+ * Why the threshold stays at 0.7: in both 39-entry runs the swept accuracy is
+ * 97.4% across the whole 0–0.75 band and drops only above 0.75. One of the two
+ * runs reached 100% *only* at exactly 0.5 (its two uncertain entries happened
+ * to straddle it); the other did not improve at 0.5 at all, so the spike is
+ * sample noise, not signal. Lowering the gate trades the one wrong-but-gated
+ * `ctx7` for the one correctly-gated `neither` — Jev answers both with the
+ * same `context7`/0.68 majority, so no threshold separates them — while every
+ * threshold above 0.75 degrades correct calls. `0.7` sits inside the optimum
+ * band and is the smallest data-justified change: none.
  *
  * Any change to the constant has to come with the eval numbers in the commit
  * message and the affected unit tests from tickets 03/04 updated in the same
