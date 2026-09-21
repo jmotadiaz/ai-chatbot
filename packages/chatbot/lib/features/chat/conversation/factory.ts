@@ -105,6 +105,7 @@ const buildAgentAdapter = (
     getWebSearchModelConfiguration: getConfig,
     getContext7ModelConfiguration: getConfig,
     getProjectModelConfiguration: getConfig,
+    getNeutralModelConfiguration: getConfig,
   };
 };
 
@@ -182,7 +183,9 @@ export const makeProcessChatResponse = (
         const agentInstance = await createChatModeAgent({
           ai,
           projectId,
-          chatMode,
+          // Auto turns are answered with the mode the router resolved to;
+          // explicit modes pass through untouched.
+          chatMode: chatModeRouting?.mode ?? chatMode,
           messages: filteredMessages,
           userId: user.id,
           systemPrompt: augmentedSystemPrompt,

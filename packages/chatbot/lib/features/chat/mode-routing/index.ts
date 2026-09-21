@@ -1,6 +1,10 @@
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD } from "@/lib/features/chat/mode-routing/constants";
 import { RECENT_CONTEXT_MAX_CHARS } from "@/lib/features/chat/mode-routing/questions";
+import {
+  decideResolvedMode,
+  FALLBACK_CHAT_MODE_DECISION,
+  isRoutingDecision,
+} from "@/lib/features/chat/mode-routing/policy";
 import type {
   ChatModeRouterInput,
   ChatModeRouterPort,
@@ -10,15 +14,15 @@ import type {
 } from "@/lib/features/chat/mode-routing/types";
 
 export * from "@/lib/features/chat/mode-routing/constants";
+export * from "@/lib/features/chat/mode-routing/policy";
 export * from "@/lib/features/chat/mode-routing/questions";
 export * from "@/lib/features/chat/mode-routing/types";
 
 /**
- * Ticket 02 shell: there is no real classifier yet, so every Auto turn resolves
- * to the Context7 chat mode and records an explicit `fallback` reason.
- *
- * Ticket 03 replaces this with the neutral branch + real policy and ticket 04
- * with the Jev/OpenRouter adapter.
+ * Ticket 02 shell: there is no real classifier yet, so the stub returns the
+ * shape of a failed answer. `decideResolvedMode` degrades it to the neutral
+ * branch (`neutral` / `fallback`) because it carries no confidence, so Auto
+ * turns answer tool-lessly until ticket 04 plugs the Jev/OpenRouter adapter.
  */
 export const STUB_CHAT_MODE_DECISION: RoutingDecision = {
   mode: "context7",
@@ -106,27 +110,30 @@ export const buildChatModeRouterInput = (
 /**
  * Applies the fallback policy to the classifier answer.
  *
- * Never throws: a broken router degrades the turn instead of breaking the chat.
+ * Never throws: a broken router (error, timeout, malformed answer) degrades the
+ * turn to the neutral branch instead of breaking the chat.
  */
 export const resolveChatMode = async (
   port: ChatModeRouterPort,
   input: ChatModeRouterInput,
 ): Promise<ChatModeRoutingMetadata> => {
-  let decision: RoutingDecision;
+  let decision: unknown;
   try {
     decision = await port.route(input);
   } catch (error) {
     console.error("Chat mode routing failed:", error);
-    return { ...STUB_CHAT_MODE_DECISION, requested: "auto" };
+    return { ...FALLBACK_CHAT_MODE_DECISION, requested: "auto" };
   }
 
-  if (
-    decision.mode !== "neutral" &&
-    typeof decision.confidence === "number" &&
-    decision.confidence < CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD
-  ) {
-    return { ...decision, mode: "neutral", reason: "low_confidence", requested: "auto" };
+  // Provenance (confidence, probabilities, latency…) is only copied when the
+  // answer is a well-formed decision; anything else becomes a pure fallback.
+  if (!isRoutingDecision(decision)) {
+    return { ...FALLBACK_CHAT_MODE_DECISION, requested: "auto" };
   }
 
-  return { ...decision, requested: "auto" };
+  return {
+    ...decision,
+    ...decideResolvedMode(decision),
+    requested: "auto",
+  };
 };

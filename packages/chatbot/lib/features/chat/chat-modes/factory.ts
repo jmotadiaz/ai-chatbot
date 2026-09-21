@@ -4,6 +4,7 @@ import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import { createProjectAgent } from "@/lib/features/chat/chat-modes/project";
 import { createContext7Agent } from "@/lib/features/chat/chat-modes/context7";
 import { createWebSearchAgent } from "@/lib/features/chat/chat-modes/web-search";
+import { createNeutralAgent } from "@/lib/features/chat/chat-modes/neutral";
 import { createRagAgent } from "@/lib/features/chat/chat-modes/rag";
 import { getRelevantMemory } from "@/lib/features/memory/retrieval";
 import { messagePartsToText } from "@/lib/features/chat/utils";
@@ -75,6 +76,13 @@ export const createChatModeAgent = async ({
       messages,
       webSearchNumResults,
       memoryContext: memoryContext,
+    });
+  } else if (chatMode === "neutral" || chatMode === "auto") {
+    // `neutral` is the resolved mode of a tool-less Auto turn. A bare `auto`
+    // reaching here means no routing decision was available, which degrades to
+    // the same branch instead of silently forcing a Context7 lookup.
+    return createNeutralAgent({
+      modelConfiguration: ai.getNeutralModelConfiguration(),
     });
   } else {
     // Default to the Context7 chat mode — memory injection excluded

@@ -3,6 +3,7 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
 import {
   buildChatModeRouterInput,
   createDeterministicChatModeRouter,
+  FALLBACK_CHAT_MODE_DECISION,
   resolveChatMode,
   STUB_CHAT_MODE_DECISION,
   stubChatModeRouter,
@@ -25,9 +26,11 @@ const userMessage = (text: string): ChatbotMessage => ({
 });
 
 describe("resolveChatMode", () => {
-  it("stamps the stub decision as an Auto routing result", async () => {
+  it("degrades the stub decision to a neutral fallback (it carries no confidence)", async () => {
     await expect(resolveChatMode(stubChatModeRouter, input)).resolves.toEqual({
-      ...STUB_CHAT_MODE_DECISION,
+      mode: "neutral",
+      reason: "fallback",
+      modelId: STUB_CHAT_MODE_DECISION.modelId,
       requested: "auto",
     });
   });
@@ -76,7 +79,7 @@ describe("resolveChatMode", () => {
     });
   });
 
-  it("never throws: a failing router degrades to the stub fallback", async () => {
+  it("never throws: a failing router degrades to the neutral fallback", async () => {
     const port: ChatModeRouterPort = {
       route: vi.fn(async () => {
         throw new Error("router exploded");
@@ -85,10 +88,35 @@ describe("resolveChatMode", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(resolveChatMode(port, input)).resolves.toEqual({
-      ...STUB_CHAT_MODE_DECISION,
+      ...FALLBACK_CHAT_MODE_DECISION,
       requested: "auto",
     });
     expect(consoleError).toHaveBeenCalled();
+  });
+
+  it("never throws: an invalid answer degrades to the neutral fallback", async () => {
+    const port: ChatModeRouterPort = {
+      route: vi.fn(async () => ({ mode: "banana", modelId: "x" }) as never),
+    };
+
+    await expect(resolveChatMode(port, input)).resolves.toEqual({
+      ...FALLBACK_CHAT_MODE_DECISION,
+      requested: "auto",
+    });
+  });
+
+  it("drops provenance from an invalid answer", async () => {
+    const port: ChatModeRouterPort = {
+      route: vi.fn(
+        async () =>
+          ({ mode: "web", confidence: 0.99, probabilities: { web: 1 } }) as never,
+      ),
+    };
+
+    await expect(resolveChatMode(port, input)).resolves.toEqual({
+      ...FALLBACK_CHAT_MODE_DECISION,
+      requested: "auto",
+    });
   });
 });
 
