@@ -11,11 +11,12 @@ export type ResolvedChatMode = "context7" | "web" | "neutral";
 /**
  * Why the router settled on `mode`.
  *
- * - `routed`: the classifier answered with a tool-backed mode and passed the
- *   confidence gate.
+ * - `routed`: the classifier answered with a tool-backed mode; it is applied
+ *   as-is (no confidence gate).
  * - `neither`: the classifier decided no tool is needed → neutral branch.
- * - `low_confidence`: classifier answered below the confidence gate, or its
- *   answer carried no usable score → neutral.
+ * - `low_confidence`: legacy reason, no longer emitted since the confidence
+ *   gate was retired. Kept so messages persisted before the removal still
+ *   decode and render.
  * - `fallback`: timeout, transport error or invalid answer → neutral.
  */
 export type ChatModeRoutingReason =
@@ -40,7 +41,9 @@ export interface RoutingDecision {
 /**
  * Provenance persisted in `Message.metadata.chatModeRouting` and rendered next
  * to the assistant message. `requested` is always `"auto"` because routing only
- * happens when the chat is in Auto.
+ * happens when the chat is in Auto. There is no confidence gate: `mode` is
+ * whatever Jev decided (`neither` maps to the internal `neutral` branch) and
+ * `confidence` is informational provenance only.
  */
 export interface ChatModeRoutingMetadata extends RoutingDecision {
   requested: "auto";

@@ -1,10 +1,10 @@
 /**
- * Single source of truth for the routing confidence gate.
+ * Historical reference for the retired routing confidence gate.
  *
- * Below this value the routing decision is discarded and the turn degrades to
- * the neutral branch (`reason: "low_confidence"`). The routing policy reads
- * it on every call and the eval reports against it; tuning it is an eval
- * decision, not a per-call one.
+ * Production no longer gates on confidence — whatever Jev decides is applied
+ * as-is — so the routing policy does not read this. The mode-routing eval
+ * reports still use it as the reference point of their threshold sweep over
+ * raw classifier confidences.
  */
 export const CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD = 0.7;
 

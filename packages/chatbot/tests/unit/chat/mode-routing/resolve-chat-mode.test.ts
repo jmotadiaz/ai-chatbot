@@ -39,7 +39,7 @@ describe("resolveChatMode", () => {
     });
   });
 
-  it("degrades below the confidence threshold to neutral", async () => {
+  it("applies a low-confidence decision as-is (no gate)", async () => {
     const port = portReturning({
       mode: "context7",
       reason: "routed",
@@ -49,8 +49,8 @@ describe("resolveChatMode", () => {
 
     await expect(resolveChatMode(port, input)).resolves.toMatchObject({
       requested: "auto",
-      mode: "neutral",
-      reason: "low_confidence",
+      mode: "context7",
+      reason: "routed",
       confidence: 0.42,
     });
   });

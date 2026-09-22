@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD } from "@/lib/features/chat/mode-routing/constants";
 import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import {
   decideResolvedMode,
@@ -50,26 +49,19 @@ describe("decideResolvedMode", () => {
       expected: { mode: "neutral", reason: "neither" },
     },
     {
-      name: "confidence below the threshold degrades to low_confidence",
-      input: decision({
-        confidence: CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD - 0.01,
-      }),
-      expected: { mode: "neutral", reason: "low_confidence" },
-    },
-    {
-      name: "confidence exactly at the threshold still routes",
-      input: decision({ confidence: CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD }),
+      name: "a low confidence is applied as-is (no gate)",
+      input: decision({ confidence: 0.42 }),
       expected: { mode: "context7", reason: "routed" },
     },
     {
-      name: "a tool-backed answer without confidence gates as low_confidence",
+      name: "a tool-backed answer without confidence still routes",
       input: decision({ mode: "web", confidence: undefined }),
-      expected: { mode: "neutral", reason: "low_confidence" },
+      expected: { mode: "web", reason: "routed" },
     },
     {
-      name: "a non-finite confidence gates as low_confidence",
+      name: "a non-finite confidence still routes",
       input: decision({ confidence: Number.NaN }),
-      expected: { mode: "neutral", reason: "low_confidence" },
+      expected: { mode: "context7", reason: "routed" },
     },
     {
       name: "a thrown error is a fallback",

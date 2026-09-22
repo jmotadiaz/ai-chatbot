@@ -1,4 +1,3 @@
-import { CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD } from "@/lib/features/chat/mode-routing/constants";
 import { isOneOf } from "@/lib/features/chat/mode-routing/guards";
 import {
   ROUTING_OPTION_TO_MODE,
@@ -70,22 +69,18 @@ export const isRoutingDecision = (
   );
 };
 
-const hasConfidence = (value: unknown): value is number =>
-  typeof value === "number" && Number.isFinite(value);
-
 /**
  * Converts a classifier answer into the mode the turn is actually answered
  * with. Pure and total: it walks every branch of the fallback policy and never
  * throws, so a broken router can only degrade the turn, never break the chat.
  *
+ * There is no confidence gate: whatever Jev decides is applied as-is
+ * (`confidence` is kept as informational provenance only).
+ *
  * Policy table:
  * - invalid answer (not a decision, unknown mode, no modelId) → `neutral` / `fallback`
  * - `neither` (or an already-resolved `neutral`) → `neutral` / `neither`
- * - `confidence` missing/non-finite, or below
- *   `CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` → `neutral` / `low_confidence`
- *   (a valid answer that merely lacks a usable score did not fail to route; it
- *   just cannot pass the confidence gate)
- * - confident `ctx7`/`context7`/`web` → that mode / `routed`
+ * - `ctx7`/`context7`/`web` (any confidence, even missing) → that mode / `routed`
  */
 export const decideResolvedMode = (decision: unknown): ResolvedChatModeDecision => {
   if (!isRoutingDecision(decision)) {
@@ -96,13 +91,6 @@ export const decideResolvedMode = (decision: unknown): ResolvedChatModeDecision 
 
   if (mode === "neutral") {
     return { mode, reason: "neither" };
-  }
-
-  if (
-    !hasConfidence(decision.confidence) ||
-    decision.confidence < CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD
-  ) {
-    return { mode: "neutral", reason: "low_confidence" };
   }
 
   return { mode, reason: "routed" };

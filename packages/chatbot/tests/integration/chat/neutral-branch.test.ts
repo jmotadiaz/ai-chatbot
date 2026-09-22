@@ -204,7 +204,7 @@ describe("neutral branch through the conversation pipeline", () => {
     }
   });
 
-  it("keeps the low-confidence reason in the metadata", async () => {
+  it("applies a low-confidence classifier decision as-is (no gate)", async () => {
     const router = portReturning({
       mode: "web",
       reason: "routed",
@@ -216,14 +216,14 @@ describe("neutral branch through the conversation pipeline", () => {
 
     expect(routing).toMatchObject({
       requested: "auto",
-      mode: "neutral",
-      reason: "low_confidence",
+      mode: "web",
+      reason: "routed",
       confidence: 0.42,
     });
     expect(text).toBe("Respuesta neutra");
   });
 
-  it("gates a valid answer without confidence as low_confidence, not fallback", async () => {
+  it("routes a valid answer without confidence instead of gating it", async () => {
     const router = portReturning({
       mode: "web",
       reason: "routed",
@@ -234,8 +234,8 @@ describe("neutral branch through the conversation pipeline", () => {
 
     expect(routing).toMatchObject({
       requested: "auto",
-      mode: "neutral",
-      reason: "low_confidence",
+      mode: "web",
+      reason: "routed",
     });
     expect(text).toBe("Respuesta neutra");
   });
