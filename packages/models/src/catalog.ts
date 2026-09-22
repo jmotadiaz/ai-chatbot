@@ -222,25 +222,45 @@ export const MODEL_CATALOG = [
     cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
   },
   {
-    id: "MiMo V2.5",
-    userInvocable: false,
-    provider: { kind: "opencodeGo", modelId: "mimo-v2.5" },
+    // Pi does not ship this model, so it describes its own limits, cost and
+    // endpoint (openai-completions per the endpoints table at
+    // https://opencode.ai/docs/es/go). Context/output limits and
+    // image/pdf input come from the opencode-go registry; pricing from the
+    // usage table there ($0.14 in / $0.28 out / $0.0028 cached read per 1M
+    // tokens, no cached-write tier).
+    id: "MiMo V2.6 Flash",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "mimo-v2.6-flash" },
     company: "xiaomi",
     reasoning: true,
     defaultThinkingLevel: "high",
-    supportedFiles: ["img"],
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
+    supportedFiles: ["img", "pdf"],
     temperature: 0.6,
     topP: 0.95,
+    contextWindow: 1_048_576,
+    maxTokens: 131_072,
+    cost: { input: 0.14, output: 0.28, cacheRead: 0.0028, cacheWrite: 0 },
   },
   {
-    id: "MiMo V2.5 Pro",
-    userInvocable: false,
-    provider: { kind: "opencodeGo", modelId: "mimo-v2.5-pro" },
+    // Same as Flash, but ~3x the token price (usage table at
+    // https://opencode.ai/docs/es/go: $0.435 in / $0.87 out / $0.003625
+    // cached read per 1M tokens).
+    id: "MiMo V2.6 Pro",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "mimo-v2.6-pro" },
     company: "xiaomi",
     reasoning: true,
     defaultThinkingLevel: "high",
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
+    supportedFiles: ["img", "pdf"],
     temperature: 0.6,
     topP: 0.95,
+    contextWindow: 1_048_576,
+    maxTokens: 131_072,
+    cost: { input: 0.435, output: 0.87, cacheRead: 0.003625, cacheWrite: 0 },
   },
   {
     id: "Muse Spark 1.3",

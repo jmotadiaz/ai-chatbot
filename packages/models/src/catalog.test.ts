@@ -52,6 +52,8 @@ describe("MODEL_CATALOG integrity", () => {
       "MiniMax M3",
       "Qwen 3.8 Flash",
       "Qwen 3.8 Max",
+      "MiMo V2.6 Flash",
+      "MiMo V2.6 Pro",
       "Muse Spark 1.3",
       "Gemini 3.7 Flash",
       "GLM 5.3",
@@ -105,6 +107,8 @@ describe("defaultThinkingLevel", () => {
     expect(getDefaultThinkingLevel("Deepseek v4.1 Flash")).toBe("xhigh");
     expect(getDefaultThinkingLevel("Kimi K3")).toBe("high");
     expect(getDefaultThinkingLevel("Muse Spark 1.3")).toBe("xhigh");
+    expect(getDefaultThinkingLevel("MiMo V2.6 Flash")).toBe("high");
+    expect(getDefaultThinkingLevel("MiMo V2.6 Pro")).toBe("high");
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
     expect(getDefaultThinkingLevel("Hy3")).toBe("high");
   });

@@ -21,6 +21,8 @@ const NOT_BUILT_IN = new Set([
   "glm-5.3-flash",
   "muse-spark-1.3-contributor",
   "union-alpha",
+  "mimo-v2.6-flash",
+  "mimo-v2.6-pro",
 ]);
 
 /**
@@ -182,6 +184,46 @@ describe("generateModelsJson", () => {
     // anthropic-messages endpoint (qwen3.7-max's built-in flavor) explicitly.
     expect(max.api).toBe("anthropic-messages");
     expect(max.baseUrl).toBe("https://opencode.ai/zen/go");
+  });
+
+  it("describes MiMo V2.6 Flash, which Pi does not ship yet", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "MiMo V2.6 Flash")!;
+    const [flash] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(flash.id).toBe("mimo-v2.6-flash");
+    expect(flash.contextWindow).toBe(1_048_576);
+    expect(flash.maxTokens).toBe(131_072);
+    expect(flash.cost).toEqual({
+      input: 0.14,
+      output: 0.28,
+      cacheRead: 0.0028,
+      cacheWrite: 0,
+    });
+    expect(flash.reasoning).toBe(true);
+    expect(flash.api).toBe("openai-completions");
+    expect(flash.baseUrl).toBe("https://opencode.ai/zen/go/v1");
+    expect(flash.input).toEqual(["text", "image"]);
+    expect(flash.thinkingLevelMap).toBeUndefined();
+  });
+
+  it("describes MiMo V2.6 Pro, which Pi does not ship yet", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "MiMo V2.6 Pro")!;
+    const [pro] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(pro.id).toBe("mimo-v2.6-pro");
+    expect(pro.contextWindow).toBe(1_048_576);
+    expect(pro.maxTokens).toBe(131_072);
+    expect(pro.cost).toEqual({
+      input: 0.435,
+      output: 0.87,
+      cacheRead: 0.003625,
+      cacheWrite: 0,
+    });
+    expect(pro.reasoning).toBe(true);
+    expect(pro.api).toBe("openai-completions");
+    expect(pro.baseUrl).toBe("https://opencode.ai/zen/go/v1");
+    expect(pro.input).toEqual(["text", "image"]);
+    expect(pro.thinkingLevelMap).toBeUndefined();
   });
 
   it("describes Hy3, which Pi does not ship yet on opencode-go", () => {

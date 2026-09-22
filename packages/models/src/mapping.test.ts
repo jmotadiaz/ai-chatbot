@@ -115,6 +115,23 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the MiMo V2.6 Flash and Pro catalog ids to the opencode-go Pi provider", () => {
+    expect(toPiModelId("MiMo V2.6 Flash")).toEqual({
+      providerId: "opencode-go",
+      modelId: "mimo-v2.6-flash",
+    });
+    expect(toChatModelId("opencode-go", "mimo-v2.6-flash")).toBe(
+      "MiMo V2.6 Flash",
+    );
+    expect(toPiModelId("MiMo V2.6 Pro")).toEqual({
+      providerId: "opencode-go",
+      modelId: "mimo-v2.6-pro",
+    });
+    expect(toChatModelId("opencode-go", "mimo-v2.6-pro")).toBe(
+      "MiMo V2.6 Pro",
+    );
+  });
+
   it("maps the Deepseek v4.1 Flash catalog id to the opencode-go Pi provider", () => {
     expect(toPiModelId("Deepseek v4.1 Flash")).toEqual({
       providerId: "opencode-go",
