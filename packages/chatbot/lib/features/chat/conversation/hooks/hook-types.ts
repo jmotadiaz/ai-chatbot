@@ -1,7 +1,7 @@
 "use client";
 
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import type { Tools, Tool, Agent } from "@/lib/features/chat/types";
+import type { Tools, Tool, ChatMode } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
 
 export interface ChatConfig {
@@ -27,16 +27,16 @@ export interface ChatTools {
   hasTool: (tool: Tool) => boolean;
 }
 
-export interface ChatAgent {
-  agent: Agent;
-  setAgent: (agent: Agent) => void;
+export interface ChatModeState {
+  chatMode: ChatMode;
+  setChatMode: (chatMode: ChatMode) => void;
 }
 
 export interface ChatBody extends ChatConfig {
   chatId?: string | null;
   projectId?: string;
   preventChatPersistence?: boolean;
-  agent: Agent;
+  chatMode: ChatMode;
 }
 
 export interface InputState {

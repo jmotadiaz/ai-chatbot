@@ -7,7 +7,7 @@ import type {
   Tools,
   ChatbotMessage,
   ChatbotDataPart,
-  Agent,
+  ChatMode,
 } from "@/lib/features/chat/types";
 import {
   defaultWebSearchNumResults,
@@ -35,7 +35,7 @@ export interface UseChatHubInstanceConfig extends UseChatHubInstanceArgs {
   topK?: number;
   systemPrompt?: string;
   tools?: Tools;
-  agent?: Agent;
+  chatMode?: ChatMode;
   preventChatPersistence?: boolean;
 
   webSearchNumResults?: number;
@@ -61,7 +61,7 @@ export const useChatHubInstance = ({
   topP,
   topK,
   systemPrompt,
-  agent = "context7",
+  chatMode = "auto",
   preventChatPersistence = false,
 
   webSearchNumResults = defaultWebSearchNumResults,
@@ -104,7 +104,7 @@ export const useChatHubInstance = ({
     validQueryParamChatId: undefined,
     projectId,
     preventChatPersistence,
-    agent,
+    chatMode,
     systemPrompt,
     chatConfig,
   });

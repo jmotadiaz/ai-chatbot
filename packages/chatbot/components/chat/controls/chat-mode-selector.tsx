@@ -1,49 +1,36 @@
 "use client";
 
 import type { ClassValue } from "clsx";
-import { FileSearch, Globe, ChevronUp } from "lucide-react";
-import { MCPIcon } from "@/components/ui/icons";
+import { ChevronUp } from "lucide-react";
+import { CHAT_MODE_ICONS, CHAT_MODE_LABELS } from "@/components/chat/chat-mode-display";
 import { cn } from "@/lib/utils/helpers";
 
 import { Select, useSelect } from "@/components/ui/select";
-import type { Agent } from "@/lib/features/chat/types";
+import { CHAT_MODES, type ChatMode } from "@/lib/features/chat/types";
 
 import type { DropdownPopupProps } from "@/components/ui/dropdown";
 
-export interface AgentSelectorProps {
+export interface ChatModeSelectorProps {
   className?: ClassValue;
-  value: Agent;
-  onValueChange: (agent: Agent) => void;
+  value: ChatMode;
+  onValueChange: (chatMode: ChatMode) => void;
   variant?: DropdownPopupProps["variant"];
 }
 
-const AGENT_LABELS: Record<Agent, string> = {
-  context7: "Ctx7 Agent",
-  rag: "RAG Agent",
-  web: "Web Agent",
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AGENT_ICONS: Record<Agent, React.ComponentType<any>> = {
-  context7: MCPIcon,
-  rag: FileSearch,
-  web: Globe,
-};
-
-export const AgentSelector = ({
+export const ChatModeSelector = ({
   className,
   value,
   onValueChange,
   variant = "top-left",
-}: AgentSelectorProps) => {
+}: ChatModeSelectorProps) => {
   const { getSelectTriggerProps, getSelectContentProps, getSelectItemProps } =
     useSelect({
       value,
       onValueChange,
-      id: "agent-selector",
+      id: "chat-mode-selector",
     });
 
-  const CurrentIcon = AGENT_ICONS[value];
+  const CurrentIcon = CHAT_MODE_ICONS[value];
   const { toggle, isOpen } = getSelectTriggerProps();
 
   return (
@@ -54,7 +41,7 @@ export const AgentSelector = ({
         className="flex items-center space-x-2 font-semibold text-black dark:text-white select-none cursor-pointer text-[15px] hover:opacity-80 transition-opacity px-2"
       >
         <CurrentIcon size={18} />
-        <span className="truncate">{AGENT_LABELS[value]}</span>
+        <span className="truncate">{CHAT_MODE_LABELS[value]}</span>
         <ChevronUp
           size={16}
           className={cn(
@@ -64,14 +51,15 @@ export const AgentSelector = ({
         />
       </button>
       <Select.Dropdown {...getSelectContentProps()} variant={variant}>
-        {Object.entries(AGENT_LABELS).map(([key, label]) => {
-          const agentKey = key as Agent;
-          const Icon = AGENT_ICONS[agentKey];
+        {CHAT_MODES.map((chatModeKey) => {
+          const Icon = CHAT_MODE_ICONS[chatModeKey];
           return (
-            <Select.Item key={agentKey} {...getSelectItemProps(agentKey)}>
+            <Select.Item key={chatModeKey} {...getSelectItemProps(chatModeKey)}>
               <div className="flex flex-nowrap items-center gap-2 p-2">
                 <Icon size={16} />
-                <span className={cn("text-sm whitespace-nowrap")}>{label}</span>
+                <span className={cn("text-sm whitespace-nowrap")}>
+                  {CHAT_MODE_LABELS[chatModeKey]}
+                </span>
               </div>
             </Select.Item>
           );

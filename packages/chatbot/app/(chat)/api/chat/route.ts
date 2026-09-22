@@ -3,7 +3,7 @@ import { newRequestId, runWithTraceContext } from "tracing";
 import { config } from "config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
-import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { processChatResponse } from "@/lib/features/chat/handlers";
 
@@ -18,7 +18,7 @@ export const POST = withAuth(async (user, req) => {
     topK,
     chatId,
     systemPrompt,
-    agent,
+    chatMode,
     messageId,
     projectId,
     preventChatPersistence = false,
@@ -34,7 +34,7 @@ export const POST = withAuth(async (user, req) => {
     topK?: number;
     chatId?: string;
     systemPrompt?: string;
-    agent?: Agent;
+    chatMode?: ChatMode;
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
@@ -54,7 +54,7 @@ export const POST = withAuth(async (user, req) => {
       stepIndex: 0,
       chatId,
       userId: user.id,
-      agent,
+      agent: chatMode,
       modelKey: selectedModel,
     },
     () =>
@@ -66,7 +66,7 @@ export const POST = withAuth(async (user, req) => {
         topK,
         chatId,
         systemPrompt,
-        agent,
+        chatMode,
         messageId,
         projectId,
         preventChatPersistence,

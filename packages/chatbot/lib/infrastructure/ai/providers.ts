@@ -107,7 +107,18 @@ function getOpenCodeZen() {
   return _opencodeZen;
 }
 
-const openrouter = createOpenRouter();
+// El provider lee la key de `config` (regla del repo: nada de process.env en
+// src/). Se construye perezosamente, igual que el resto de providers, para no
+// leer configuración al importar el módulo (tests) y para no congelar la key
+// antes de que dotenv cargue.
+let _openrouter: ReturnType<typeof createOpenRouter> | null = null;
+
+function getOpenRouter() {
+  if (!_openrouter) {
+    _openrouter = createOpenRouter({ apiKey: config.openRouterApiKey() });
+  }
+  return _openrouter;
+}
 
 let _deepinfra: ReturnType<typeof createOpenAICompatible> | null = null;
 
@@ -137,7 +148,7 @@ export const providers: Providers = (() => {
       deepseek: (modelId: string) => deepseek(modelId),
       perplexity: (modelId: string) => perplexity(modelId),
       gateway: (modelId: string) => gateway(modelId),
-      openrouter: (modelId: string) => openrouter(modelId),
+      openrouter: (modelId: string) => getOpenRouter()(modelId),
       deepinfra: (modelId: string) => getDeepInfra()(modelId),
       lmstudio: (modelId: string) => lmstudio(modelId),
       opencodeGo: (modelId: string) => getOpenCodeGo()(modelId),

@@ -20,7 +20,7 @@ export const saveChat =
     id,
     userId,
     title,
-    agent,
+    chatMode,
     defaultModel,
     defaultTemperature,
     defaultTopP,
@@ -42,7 +42,7 @@ export const saveChat =
           id,
           userId,
           title,
-          agent,
+          chatMode,
           defaultModel,
           defaultTemperature,
           defaultTopP,
@@ -75,7 +75,7 @@ export const updateChat =
         Chat,
         | "defaultModel"
         | "title"
-        | "agent"
+        | "chatMode"
         | "defaultTemperature"
         | "defaultTopP"
         | "defaultTopK"

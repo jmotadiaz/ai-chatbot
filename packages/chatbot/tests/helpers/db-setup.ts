@@ -5,13 +5,24 @@ import { vector } from "@electric-sql/pglite/vector";
 import { drizzle } from "drizzle-orm/pglite";
 import { schema, setDb, type DB } from "@/lib/infrastructure/db/db";
 
-async function runMigrations(pglite: PGlite) {
+/**
+ * Applies the SQL migrations in filename order, limited to the optional
+ * inclusive `from`/`until` bounds. Bounds exist so the migration regression
+ * tests can replay an older slice of the history and then the newer one.
+ */
+export async function applySqlMigrations(
+  pglite: PGlite,
+  { from, until }: { from?: string; until?: string } = {},
+) {
   const migrationsFolder = path.resolve(process.cwd(), "./lib/infrastructure/db/migrations");
   const files = fs.readdirSync(migrationsFolder)
     .filter((file) => file.endsWith(".sql"))
     .sort();
 
   for (const file of files) {
+    if (from && file < from) continue;
+    if (until && file > until) continue;
+
     const filePath = path.join(migrationsFolder, file);
     const sqlContent = fs.readFileSync(filePath, "utf8");
     try {
@@ -32,7 +43,7 @@ export async function setupTestDb(): Promise<DB> {
   });
 
   // 2. Run migrations
-  await runMigrations(pglite);
+  await applySqlMigrations(pglite);
 
   // 3. Setup Drizzle client and set it globally
   const db = drizzle({ client: pglite, schema });

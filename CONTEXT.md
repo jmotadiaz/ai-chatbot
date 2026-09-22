@@ -15,7 +15,7 @@ Una intervención dentro de un Chat, del usuario o del modelo, con partes (texto
 _Avoid_: turn (reservado al coding agent), reply
 
 **Chat Mode**:
-Selector del comportamiento del prompt de un Chat (context7, RAG, búsqueda web).
+Selector del comportamiento del prompt de un Chat (`auto`, context7, RAG, búsqueda web). En `auto` el Chat Mode Router elige por turno el *Resolved Chat Mode* con el que se responde (`context7`, `web` o la rama *neutral*, interna y sin herramientas) y registra decisión, latencia y coste en `Message.metadata.chatModeRouting`.
 _Avoid_: agent, assistant
 
 **Model**:

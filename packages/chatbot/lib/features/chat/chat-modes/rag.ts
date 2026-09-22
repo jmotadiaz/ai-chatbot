@@ -7,9 +7,9 @@ import { ragFactory } from "@/lib/features/rag/tool";
 import {
   hasToExecuteUrlContext,
   urlContextStep,
-} from "@/lib/features/chat/agents/url-context-step";
-import { RAG_AGENT_PROMPT } from "@/lib/features/chat/agents/prompts";
-import { withMessageProcessing } from "@/lib/features/chat/agents/utils";
+} from "@/lib/features/chat/chat-modes/url-context-step";
+import { RAG_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
+import { withMessageProcessing } from "@/lib/features/chat/chat-modes/utils";
 
 interface CreateRagAgentParams {
   modelConfiguration: ModelConfiguration;

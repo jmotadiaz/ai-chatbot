@@ -8,16 +8,16 @@ import { ragFactory } from "@/lib/features/rag/tool";
 import {
   hasToExecuteUrlContext,
   urlContextStep,
-} from "@/lib/features/chat/agents/url-context-step";
+} from "@/lib/features/chat/chat-modes/url-context-step";
 import {
   hasToolCallSteps,
   withMessageProcessing,
-} from "@/lib/features/chat/agents/utils";
+} from "@/lib/features/chat/chat-modes/utils";
 import { Project } from "@/lib/infrastructure/db/schema";
 import {
   DEFAULT_PROJECT_AGENT_PROMPT,
   RAG_AGENT_PROMPT,
-} from "@/lib/features/chat/agents/prompts";
+} from "@/lib/features/chat/chat-modes/prompts";
 
 interface CreateProjectAgentParams {
   modelConfiguration: ModelConfiguration;

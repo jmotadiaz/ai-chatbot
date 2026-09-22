@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import type { ChatBody, ChatConfig, SetChatConfig } from "./hook-types";
-import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 
 export interface UseChatReloadArgs {
   regenerate: (options?: {
@@ -13,11 +13,11 @@ export interface UseChatReloadArgs {
   body: ChatBody;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   setConfig: SetChatConfig;
-  setAgent: (agent: Agent) => void;
+  setChatMode: (chatMode: ChatMode) => void;
 }
 
 export interface UseChatReloadResult {
-  reload: (reloadConfig?: Partial<ChatConfig> & { agent?: Agent }) => void;
+  reload: (reloadConfig?: Partial<ChatConfig> & { chatMode?: ChatMode }) => void;
 }
 
 export const useChatReload = ({
@@ -26,21 +26,21 @@ export const useChatReload = ({
   body,
   setInput,
   setConfig,
-  setAgent,
+  setChatMode,
 }: UseChatReloadArgs): UseChatReloadResult => {
   const reload = useCallback(
-    (reloadConfig: Partial<ChatConfig> & { agent?: Agent } = {}) => {
+    (reloadConfig: Partial<ChatConfig> & { chatMode?: ChatMode } = {}) => {
       setInput("");
 
        
-      const { agent, ...config } = reloadConfig;
+      const { chatMode, ...config } = reloadConfig;
 
       void regenerate({
         messageId: messages.at(-1)?.id,
         body: {
           ...body,
           ...config,
-          ...(agent && { agent }),
+          ...(chatMode && { chatMode }),
         },
       });
 
@@ -48,11 +48,11 @@ export const useChatReload = ({
         setConfig(config);
       }
 
-      if (agent) {
-        setAgent(agent);
+      if (chatMode) {
+        setChatMode(chatMode);
       }
     },
-    [body, messages, regenerate, setConfig, setInput, setAgent],
+    [body, messages, regenerate, setConfig, setInput, setChatMode],
   );
 
   return { reload };

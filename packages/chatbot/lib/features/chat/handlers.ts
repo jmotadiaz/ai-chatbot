@@ -3,7 +3,7 @@
 import "server-only";
 
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
-import { type ChatbotMessage, type Agent } from "@/lib/features/chat/types";
+import { type ChatbotMessage, type ChatMode } from "@/lib/features/chat/types";
 import { type chatModelId } from "@/lib/features/foundation-model/config";
 import { processChatResponse as processChatResponseFn } from "@/lib/features/chat/conversation";
 
@@ -18,7 +18,7 @@ export async function processChatResponse({
   messageId,
   projectId,
   preventChatPersistence = false,
-  agent = "context7",
+  chatMode = "auto",
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,
@@ -35,7 +35,7 @@ export async function processChatResponse({
   messageId?: string;
   projectId?: string;
   preventChatPersistence?: boolean;
-  agent?: Agent;
+  chatMode?: ChatMode;
 
   webSearchNumResults?: number;
   ragMaxResources?: number;
@@ -53,7 +53,7 @@ export async function processChatResponse({
     messageId,
     projectId,
     preventChatPersistence,
-    agent,
+    chatMode,
     webSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,

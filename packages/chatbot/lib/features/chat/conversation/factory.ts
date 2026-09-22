@@ -14,7 +14,15 @@ import { config } from "config";
 import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
-import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
+import {
+  buildChatModeRouterInput,
+  resolveChatMode,
+} from "@/lib/features/chat/mode-routing";
+import type {
+  ChatModeRouterPort,
+  ChatModeRoutingMetadata,
+} from "@/lib/features/chat/mode-routing";
 import {
   chatModelKeys,
   defaultWebSearchNumResults,
@@ -23,7 +31,7 @@ import {
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { chatbotMessageToDbMessage } from "@/lib/features/chat/utils";
 import { generateTitle } from "@/lib/features/chat/title";
-import { createAgent } from "@/lib/features/chat/agents/factory";
+import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";
 import { extractMemoryFacts } from "@/lib/features/memory/extraction";
 import { compact } from "@/lib/features/compaction/orchestration";
 import { rebuildContext } from "@/lib/features/compaction/context-rebuild";
@@ -40,6 +48,27 @@ import {
 } from "@/lib/features/chat/queries";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
+/**
+ * Deduplicates tool parts that share a toolCallId. A poisoned history with two
+ * error parts for the same call makes every provider reject the request
+ * ("Duplicate function_call_output" on /responses, 400 on /chat/completions)
+ * regardless of the selected model.
+ */
+export const dedupeToolParts = (
+  parts: ChatbotMessage["parts"],
+): ChatbotMessage["parts"] => {
+  const seenToolCallIds = new Set<string>();
+  return parts.filter((part) => {
+    if (part.type === "dynamic-tool" || part.type.startsWith("tool-")) {
+      const toolCallId = (part as { toolCallId?: string }).toolCallId;
+      if (!toolCallId) return true;
+      if (seenToolCallIds.has(toolCallId)) return false;
+      seenToolCallIds.add(toolCallId);
+    }
+    return true;
+  });
+};
+
 const processMessagesToSend = async ({
   messages,
 }: {
@@ -47,6 +76,7 @@ const processMessagesToSend = async ({
 }): Promise<ModelMessage[]> => {
   return convertToModelMessages(
     messages.map((msg) => {
+      const dedupedParts = dedupeToolParts(msg.parts);
       if (msg.role === "user" && msg.metadata?.textFiles?.length) {
         const textFileContents = msg.metadata.textFiles
           .map(
@@ -56,14 +86,14 @@ const processMessagesToSend = async ({
 
         return {
           ...msg,
-          parts: msg.parts.map((part) =>
+          parts: dedupedParts.map((part) =>
             part.type === "text"
               ? { ...part, text: part.text + textFileContents }
               : part,
           ),
         };
       }
-      return msg;
+      return { ...msg, parts: dedupedParts };
     }),
   );
 };
@@ -97,11 +127,13 @@ const buildAgentAdapter = (
     getWebSearchModelConfiguration: getConfig,
     getContext7ModelConfiguration: getConfig,
     getProjectModelConfiguration: getConfig,
+    getNeutralModelConfiguration: getConfig,
   };
 };
 
 export const makeProcessChatResponse = (
   compactionAi: CompactionAiPort,
+  modeRouter: ChatModeRouterPort,
 ) => {
   return async ({
     messages,
@@ -114,7 +146,7 @@ export const makeProcessChatResponse = (
     messageId,
     projectId,
     preventChatPersistence = false,
-    agent = "context7",
+    chatMode = "auto",
     webSearchNumResults = defaultWebSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,
@@ -130,7 +162,7 @@ export const makeProcessChatResponse = (
     messageId?: string;
     projectId?: string;
     preventChatPersistence?: boolean;
-    agent?: Agent;
+    chatMode?: ChatMode;
     webSearchNumResults?: number;
     ragMaxResources?: number;
     minRagResourcesScore?: number;
@@ -159,10 +191,23 @@ export const makeProcessChatResponse = (
 
     return createUIMessageStream({
       async execute({ writer }) {
-        const agentInstance = await createAgent({
+        // Routing runs once per turn, only for Auto chats without a project,
+        // and must be awaited before the agent is built so the decision can be
+        // emitted synchronously in the `start` metadata part below.
+        const chatModeRouting: ChatModeRoutingMetadata | undefined =
+          chatMode === "auto" && !projectId
+            ? await resolveChatMode(
+                modeRouter,
+                buildChatModeRouterInput(filteredMessages),
+              )
+            : undefined;
+
+        const agentInstance = await createChatModeAgent({
           ai,
           projectId,
-          agent,
+          // Auto turns are answered with the mode the router resolved to;
+          // explicit modes pass through untouched.
+          chatMode: chatModeRouting?.mode ?? chatMode,
           messages: filteredMessages,
           userId: user.id,
           systemPrompt: augmentedSystemPrompt,
@@ -186,7 +231,10 @@ export const makeProcessChatResponse = (
             messageMetadata: ({ part }) => {
               switch (part.type) {
                 case "start":
-                  return { status: "started" } as const;
+                  return {
+                    status: "started" as const,
+                    ...(chatModeRouting ? { chatModeRouting } : {}),
+                  };
                 case "text-start":
                   return { status: "streaming" } as const;
                 case "finish":
@@ -236,7 +284,7 @@ export const makeProcessChatResponse = (
                           {
                             defaultModel: selectedModel,
                             defaultTemperature: temperature,
-                            agent,
+                            chatMode,
                             webSearchNumResults,
                             ragMaxResources,
                             minRagResourcesScore,
@@ -253,7 +301,7 @@ export const makeProcessChatResponse = (
                         projectId,
                         defaultModel: selectedModel,
                         defaultTemperature: temperature,
-                        agent,
+                        chatMode,
                         webSearchNumResults,
                         ragMaxResources,
                         minRagResourcesScore,

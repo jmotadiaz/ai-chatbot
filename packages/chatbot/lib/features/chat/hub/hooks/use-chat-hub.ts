@@ -12,7 +12,7 @@ import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import type { ChatbotMessage, Agent } from "@/lib/features/chat/types";
+import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import { useChatInputState } from "@/lib/features/chat/conversation/hooks/use-chat-input-state";
 import { useChatSendEnabled } from "@/lib/features/chat/conversation/hooks/use-chat-send-enabled";
 import { useAvailableModels } from "@/lib/features/chat/conversation/hooks/use-available-models";
@@ -63,7 +63,7 @@ export const useChatHub = ({
   initialInstances = [],
 }: UseChatHubArgs = {}): ChatHub => {
   const [instances, setInstances] = useState<HubInstance[]>(
-    initialInstances.map((i) => ({ ...i, agent: i.agent || "context7" })),
+    initialInstances.map((i) => ({ ...i, chatMode: i.chatMode || "auto" })),
   );
   const [instancesLocked, setInstancesLocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,9 +127,9 @@ export const useChatHub = ({
     [persistedChatIds],
   );
 
-  const updateInstanceAgent = useCallback((chatId: string, agent: Agent) => {
+  const updateInstanceChatMode = useCallback((chatId: string, chatMode: ChatMode) => {
     setInstances((prev) =>
-      prev.map((i) => (i.chatId === chatId ? { ...i, agent } : i)),
+      prev.map((i) => (i.chatId === chatId ? { ...i, chatMode } : i)),
     );
   }, []);
 
@@ -147,7 +147,7 @@ export const useChatHub = ({
   );
 
   const addInstance = useCallback(
-    (model: chatModelId, agent: Agent = "context7") => {
+    (model: chatModelId, chatMode: ChatMode = "auto") => {
       if (isPersisting) return;
       if (instancesLocked) return;
       if (instances.length >= HUB_MAX_INSTANCES) return;
@@ -156,7 +156,7 @@ export const useChatHub = ({
 
       setInstances((prev) => [
         ...prev,
-        { chatId: v4(), model, agent, configuration: {} },
+        { chatId: v4(), model, chatMode, configuration: {} },
       ]);
     },
     [availableModels, instances.length, instancesLocked, isPersisting],
@@ -200,7 +200,7 @@ export const useChatHub = ({
   );
 
   const persistChat = useCallback<ChatHub["persistChat"]>(
-    async ({ chatId, messages, model, agent, ...rest }) => {
+    async ({ chatId, messages, model, chatMode, ...rest }) => {
       if (isPersisting) {
         throw new Error("Already persisting a chat");
       }
@@ -212,7 +212,7 @@ export const useChatHub = ({
           chatId,
           messages: messages as ChatbotMessage[],
           model,
-          agent: agent || "context7",
+          chatMode: chatMode || "auto",
           ...rest,
         });
 
@@ -247,7 +247,7 @@ export const useChatHub = ({
     isChatPersisted,
     addInstance,
     removeInstance,
-    updateInstanceAgent,
+    updateInstanceChatMode,
     updateInstanceConfig,
     persistChat,
 

@@ -15,5 +15,6 @@ export const chatAiAdapter = (modelId: chatModelId): ChatAgentAiPort => {
     getWebSearchModelConfiguration: getConfig,
     getContext7ModelConfiguration: getConfig,
     getProjectModelConfiguration: getConfig,
+    getNeutralModelConfiguration: getConfig,
   };
 };

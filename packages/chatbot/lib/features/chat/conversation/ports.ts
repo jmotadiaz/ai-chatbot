@@ -5,4 +5,6 @@ export interface ChatAgentAiPort {
   getWebSearchModelConfiguration(): ModelConfiguration;
   getContext7ModelConfiguration(): ModelConfiguration;
   getProjectModelConfiguration(): ModelConfiguration;
+  /** Tool-less neutral branch: same user-selected model, no tools. */
+  getNeutralModelConfiguration(): ModelConfiguration;
 }
