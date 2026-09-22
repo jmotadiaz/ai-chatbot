@@ -48,6 +48,27 @@ import {
 } from "@/lib/features/chat/queries";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
+/**
+ * Deduplicates tool parts that share a toolCallId. A poisoned history with two
+ * error parts for the same call makes every provider reject the request
+ * ("Duplicate function_call_output" on /responses, 400 on /chat/completions)
+ * regardless of the selected model.
+ */
+export const dedupeToolParts = (
+  parts: ChatbotMessage["parts"],
+): ChatbotMessage["parts"] => {
+  const seenToolCallIds = new Set<string>();
+  return parts.filter((part) => {
+    if (part.type === "dynamic-tool" || part.type.startsWith("tool-")) {
+      const toolCallId = (part as { toolCallId?: string }).toolCallId;
+      if (!toolCallId) return true;
+      if (seenToolCallIds.has(toolCallId)) return false;
+      seenToolCallIds.add(toolCallId);
+    }
+    return true;
+  });
+};
+
 const processMessagesToSend = async ({
   messages,
 }: {
@@ -55,6 +76,7 @@ const processMessagesToSend = async ({
 }): Promise<ModelMessage[]> => {
   return convertToModelMessages(
     messages.map((msg) => {
+      const dedupedParts = dedupeToolParts(msg.parts);
       if (msg.role === "user" && msg.metadata?.textFiles?.length) {
         const textFileContents = msg.metadata.textFiles
           .map(
@@ -64,14 +86,14 @@ const processMessagesToSend = async ({
 
         return {
           ...msg,
-          parts: msg.parts.map((part) =>
+          parts: dedupedParts.map((part) =>
             part.type === "text"
               ? { ...part, text: part.text + textFileContents }
               : part,
           ),
         };
       }
-      return msg;
+      return { ...msg, parts: dedupedParts };
     }),
   );
 };
