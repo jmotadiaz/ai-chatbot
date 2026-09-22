@@ -15,7 +15,26 @@ export interface ChatReloadProps {
   onClose?: () => void;
 }
 
-export const ChatReload: React.FC<ChatReloadProps> = ({
+/**
+ * Refresh icon: first column of the assistant-actions grid. It carries no
+ * margins — the grid column gap provides the spacing — so the details row
+ * below can leave its first cell empty and stay aligned with the reload text
+ * above by construction instead of with a magic padding.
+ */
+export const ChatReloadButton: React.FC = () => {
+  const { reload } = useChatContext();
+
+  return (
+    <div
+      onClick={() => reload()}
+      className="cursor-pointer text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors"
+    >
+      <RefreshCcw size={18} />
+    </div>
+  );
+};
+
+export const ChatReloadSelectors: React.FC<ChatReloadProps> = ({
   isShown: controlledIsShown,
   onToggle,
   onClose,
@@ -35,14 +54,7 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
   const chatModeTriggerProps = chatModeDropdown.getDropdownTriggerProps();
 
   return (
-    <div className="flex items-center gap-2 relative text-zinc-700 dark:text-zinc-200">
-      <div
-        onClick={() => reload()}
-        className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors mr-2"
-      >
-        <RefreshCcw size={18} />
-      </div>
-
+    <div className="flex items-center gap-2 relative min-w-0 text-zinc-700 dark:text-zinc-200">
       {/* Model Dropdown */}
       <div className="relative">
         <div
@@ -121,6 +133,19 @@ export const ChatReload: React.FC<ChatReloadProps> = ({
           </Dropdown.Popup>
         </div>
       )}
+    </div>
+  );
+};
+
+/**
+ * Backward-compatible composition: icon + selectors in one row. `gap-4`
+ * reproduces the previous spacing (row gap-2 + the icon's mr-2).
+ */
+export const ChatReload: React.FC<ChatReloadProps> = (props) => {
+  return (
+    <div className="flex items-center gap-4 text-zinc-700 dark:text-zinc-200">
+      <ChatReloadButton />
+      <ChatReloadSelectors {...props} />
     </div>
   );
 };

@@ -15,7 +15,6 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import type {
   ChatModeRoutingMetadata,
-  ChatModeRoutingReason,
   ResolvedChatMode,
 } from "@/lib/features/chat/mode-routing/types";
 import { Response } from "@/components/chat/response";
@@ -26,7 +25,10 @@ import {
 import { RagSourceMessagePart } from "@/components/chat/rag-source";
 import { Context7SourceMessagePart } from "@/components/chat/context7-source";
 import type { RagChunk } from "@/lib/features/rag/types";
-import { ChatReload } from "@/components/chat/reload";
+import {
+  ChatReloadButton,
+  ChatReloadSelectors,
+} from "@/components/chat/reload";
 import { ReasoningBlock } from "@/components/chat/reasoning";
 import { UserMessage } from "@/components/chat/user-message";
 import type { FilePart } from "@/lib/features/attachment/types";
@@ -216,75 +218,103 @@ const AssistantMessageActions: React.FC<{
     setActiveSection((prev) => (prev === section ? null : section));
   };
 
+  const hasDetails =
+    routingMetadata !== undefined ||
+    chatModeRouting !== undefined ||
+    sourceParts.length > 0 ||
+    context7Parts.length > 0 ||
+    ragSourceParts.length > 0;
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-row items-center gap-3">
-        {showReload && <ChatReload />}
-        {routingMetadata && (
-          <>
-            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
+    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-4 min-w-0">
+      {showReload && (
+        <>
+          <ChatReloadButton />
+          <ChatReloadSelectors />
+        </>
+      )}
+      {hasDetails && (
+        <>
+          {/* Empty first cell: the triggers share the icon column, so they
+              stay aligned with the reload text above by construction. */}
+          <div aria-hidden="true" />
+          <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+          {routingMetadata && (
             <RouterDetailsTrigger
               isExpanded={activeSection === "router"}
               onToggle={() => toggleSection("router")}
             />
-          </>
-        )}
-        {chatModeRouting && (
-          <>
-            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
-            <ChatModeRoutingTrigger
-              metadata={chatModeRouting}
-              isExpanded={activeSection === "chat-mode"}
-              onToggle={() => toggleSection("chat-mode")}
-            />
-          </>
-        )}
-        {sourceParts.length > 0 && (
-          <>
-            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
-            <SourceMessagePartTrigger
-              count={sourceParts.length}
-              isExpanded={activeSection === "sources"}
-              onToggle={() => toggleSection("sources")}
-            />
-          </>
-        )}
-
-        {context7Parts.length > 0 && (
-          <>
-            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
-            <div
-              className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
-              onClick={() => toggleSection("context7-sources")}
-            >
-              Documentation
-              <ChevronDownIcon
-                className={cn("h-4 w-4 transition-transform duration-200", {
-                  "rotate-180": activeSection === "context7-sources",
-                })}
+          )}
+          {chatModeRouting && (
+            <>
+              {routingMetadata && (
+                <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
+              )}
+              <ChatModeRoutingTrigger
+                isExpanded={activeSection === "chat-mode"}
+                onToggle={() => toggleSection("chat-mode")}
               />
-            </div>
-          </>
-        )}
-        {ragSourceParts.length > 0 && (
-          <>
-            <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700"></div>
-            <div
-              className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
-              onClick={() => toggleSection("rag-sources")}
-            >
-              Documentation
-              <ChevronDownIcon
-                className={cn("h-4 w-4 transition-transform duration-200", {
-                  "rotate-180": activeSection === "rag-sources",
-                })}
+            </>
+          )}
+          {sourceParts.length > 0 && (
+            <>
+              {(routingMetadata || chatModeRouting) && (
+                <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
+              )}
+              <SourceMessagePartTrigger
+                count={sourceParts.length}
+                isExpanded={activeSection === "sources"}
+                onToggle={() => toggleSection("sources")}
               />
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          )}
 
-      <div className="flex flex-col">
+          {context7Parts.length > 0 && (
+            <>
+              {(routingMetadata ||
+                chatModeRouting ||
+                sourceParts.length > 0) && (
+                <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
+              )}
+              <div
+                className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+                onClick={() => toggleSection("context7-sources")}
+              >
+                Documentation
+                <ChevronDownIcon
+                  className={cn("h-4 w-4 transition-transform duration-200", {
+                    "rotate-180": activeSection === "context7-sources",
+                  })}
+                />
+              </div>
+            </>
+          )}
+          {ragSourceParts.length > 0 && (
+            <>
+              {(routingMetadata ||
+                chatModeRouting ||
+                sourceParts.length > 0 ||
+                context7Parts.length > 0) && (
+                <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
+              )}
+              <div
+                className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+                onClick={() => toggleSection("rag-sources")}
+              >
+                Documentation
+                <ChevronDownIcon
+                  className={cn("h-4 w-4 transition-transform duration-200", {
+                    "rotate-180": activeSection === "rag-sources",
+                  })}
+                />
+              </div>
+            </>
+          )}
+          </div>
+        </>
+      )}
+
+      <div className="flex flex-col col-span-2">
         {routingMetadata && (
           <RouterDetailsContent
             metadata={routingMetadata}
@@ -443,37 +473,16 @@ const RESOLVED_CHAT_MODE_LABELS: Record<ResolvedChatMode, string> = {
   neutral: "Neutral",
 };
 
-/**
- * Fallback reasons are rendered explicitly (raw token included) so an
- * unexpected search or doc lookup is explainable from the message itself.
- */
-const CHAT_MODE_ROUTING_REASON_LABELS: Record<ChatModeRoutingReason, string> = {
-  routed: "routed — classifier decision",
-  neither: "neither — no tool needed",
-  low_confidence: "low_confidence — confidence missing or below the threshold",
-  fallback: "fallback — router error or timeout",
-};
-
-const chatModeRoutingLabel = (metadata: ChatModeRoutingMetadata): string => {
-  const resolved = RESOLVED_CHAT_MODE_LABELS[metadata.mode];
-  const confidence =
-    typeof metadata.confidence === "number"
-      ? ` · ${metadata.confidence.toFixed(2)}`
-      : "";
-  return `Chat Mode: Auto → ${resolved}${confidence}`;
-};
-
 const ChatModeRoutingTrigger: React.FC<{
-  metadata: ChatModeRoutingMetadata;
   isExpanded: boolean;
   onToggle: () => void;
-}> = ({ metadata, isExpanded, onToggle }) => {
+}> = ({ isExpanded, onToggle }) => {
   return (
     <div
-      className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
+      className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors whitespace-nowrap shrink-0"
       onClick={onToggle}
     >
-      {chatModeRoutingLabel(metadata)}
+      Mode Auto Details
       <ChevronDownIcon
         className={cn("h-4 w-4 transition-transform duration-200", {
           "rotate-180": isExpanded,
@@ -490,15 +499,11 @@ const ChatModeRoutingContent: React.FC<{
   const { getCollapseProps } = useCollapse({ isExpanded });
   return (
     <div className="overflow-hidden" {...getCollapseProps()}>
-      <div className="py-2 pl-2">
+      <div className="pt-4 pb-2 pl-2">
         <div className="flex flex-col space-y-1 text-sm pl-3 text-zinc-500 dark:text-zinc-400 py-1 border-l-4 border-secondary">
           <div>
             <span className="font-semibold">Mode:</span>{" "}
             {RESOLVED_CHAT_MODE_LABELS[metadata.mode]}
-          </div>
-          <div>
-            <span className="font-semibold">Reason:</span>{" "}
-            {CHAT_MODE_ROUTING_REASON_LABELS[metadata.reason]}
           </div>
           {typeof metadata.confidence === "number" && (
             <div>
@@ -506,9 +511,6 @@ const ChatModeRoutingContent: React.FC<{
               {metadata.confidence.toFixed(2)}
             </div>
           )}
-          <div>
-            <span className="font-semibold">Model:</span> {metadata.modelId}
-          </div>
         </div>
       </div>
     </div>

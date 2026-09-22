@@ -42,7 +42,7 @@ describe("ChatModeSelector", () => {
 });
 
 describe("Chat mode routing badge", () => {
-  it("shows the resolved mode and confidence collapsed", () => {
+  it("shows a Mode Auto Details trigger; resolved mode and confidence live in the details", () => {
     render(
       <Message
         message={assistantMessage({
@@ -55,7 +55,12 @@ describe("Chat mode routing badge", () => {
       />,
     );
 
-    expect(screen.getByText("Chat Mode: Auto → Web · 0.98")).toBeDefined();
+    expect(screen.getByText("Mode Auto Details")).toBeDefined();
+    expect(screen.queryByText(/Auto →/)).toBeNull();
+    expect(screen.getByText("Mode:")).toBeDefined();
+    expect(screen.getByText("Confidence:")).toBeDefined();
+    expect(screen.queryByText("Reason:")).toBeNull();
+    expect(screen.queryByText("Model:")).toBeNull();
   });
 
   it("shows a neutral resolution without confidence", () => {
@@ -70,29 +75,25 @@ describe("Chat mode routing badge", () => {
       />,
     );
 
-    expect(screen.getByText("Chat Mode: Auto → Neutral")).toBeDefined();
+    expect(screen.getByText("Mode Auto Details")).toBeDefined();
+    expect(screen.getByText("Mode:")).toBeDefined();
   });
 
-  it.each([
-    ["routed", /routed — classifier decision/],
-    ["neither", /neither — no tool needed/],
-    ["low_confidence", /low_confidence — confidence missing or below the threshold/],
-    ["fallback", /fallback — router error or timeout/],
-  ] as const)("renders the %s reason", (reason, expected) => {
+  it("still renders a legacy low_confidence fallback without threshold", () => {
     render(
       <Message
         message={assistantMessage({
           requested: "auto",
-          mode: reason === "routed" ? "web" : "neutral",
-          reason,
-          confidence: reason === "low_confidence" ? 0.42 : undefined,
+          mode: "neutral",
+          reason: "low_confidence",
+          confidence: 0.42,
           modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
         })}
       />,
     );
 
-    expect(screen.getByText(expected)).toBeDefined();
-    expect(screen.getByText(/typesafe\/jev-1\.13/)).toBeDefined();
+    expect(screen.getByText("Mode Auto Details")).toBeDefined();
+    expect(screen.getByText("Confidence:")).toBeDefined();
   });
 
   it("does not render the badge for explicit chat modes", () => {
@@ -107,6 +108,6 @@ describe("Chat mode routing badge", () => {
       />,
     );
 
-    expect(screen.queryByText(/Chat Mode: Auto/)).toBeNull();
+    expect(screen.queryByText("Mode Auto Details")).toBeNull();
   });
 });
