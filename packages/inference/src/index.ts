@@ -2,6 +2,12 @@ export { createInferenceKit, inferenceKit } from "./kit";
 export type {
   CreateAgentOptions,
   CreateInferenceKitOptions,
+  Decision,
+  DecideOptions,
+  DecisionQuestion,
+  DecisionScope,
+  DecisionsClient,
+  DecisionsClients,
   EmbedOptions,
   InferenceClients,
   InferenceKit,

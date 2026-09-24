@@ -3,6 +3,7 @@ import { LANGUAGE_MODEL_ROLES } from "./language-roles";
 import { SPEECH_ROLES } from "./speech-catalog";
 import { EMBEDDING_ROLES } from "./embedding-catalog";
 import { RERANK_ROLES } from "./rerank-catalog";
+import { DECISION_ROLES } from "./decision-catalog";
 import { MODEL_ROLES } from "./roles";
 
 describe("MODEL_ROLES", () => {
@@ -12,6 +13,7 @@ describe("MODEL_ROLES", () => {
       ...SPEECH_ROLES,
       ...EMBEDDING_ROLES,
       ...RERANK_ROLES,
+      ...DECISION_ROLES,
     });
   });
 
@@ -21,6 +23,7 @@ describe("MODEL_ROLES", () => {
       ...Object.keys(SPEECH_ROLES),
       ...Object.keys(EMBEDDING_ROLES),
       ...Object.keys(RERANK_ROLES),
+      ...Object.keys(DECISION_ROLES),
     ];
     expect(new Set(names).size).toBe(names.length);
   });

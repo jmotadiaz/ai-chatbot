@@ -4,7 +4,9 @@ import {
   buildRerankClients,
   buildSpeechClients,
 } from "./clients";
+import { buildDefaultDecisionsClients } from "./clients/decisions";
 import { createAgentResolver } from "./create-agent";
+import { createDecideResolver } from "./decide";
 import { createLanguageModelResolver } from "./language-model";
 import { createSpeechModelResolver } from "./speech-model";
 import { createEmbedResolver } from "./embed";
@@ -23,6 +25,10 @@ export function createInferenceKit(
   options: CreateInferenceKitOptions = {},
 ): InferenceKit {
   const clients = { ...buildDefaultClients(), ...options.clients };
+  const decisionsClients = {
+    ...buildDefaultDecisionsClients(),
+    ...options.decisionsClients,
+  };
   const languageModel = createLanguageModelResolver(
     clients,
     options.languageModel,
@@ -32,6 +38,8 @@ export function createInferenceKit(
   const embeddingClients = { ...buildEmbeddingClients(), ...options.embeddingClients };
   const rerankClients = { ...buildRerankClients(), ...options.rerankClients };
 
+  const decide = options.decide ?? createDecideResolver(decisionsClients);
+
   return {
     languageModel,
     clients,
@@ -39,6 +47,7 @@ export function createInferenceKit(
     rerank: createRerankResolver(rerankClients),
     speechModel,
     createAgent: createAgentResolver(languageModel),
+    decide,
   };
 }
 

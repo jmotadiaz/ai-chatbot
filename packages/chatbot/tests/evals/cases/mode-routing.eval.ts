@@ -19,13 +19,14 @@ import {
   CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD,
   CHAT_MODE_ROUTING_QUESTION,
   CHAT_MODE_ROUTING_QUESTION_VERSION,
-  createOpenRouterChatModeRouter,
+  createChatModeRouter,
   resolveChatMode,
 } from "@/lib/features/chat/mode-routing";
 import type {
   ChatModeRouterPort,
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 // Same precedence as the other eval cases: the runner already exports the evals
@@ -181,7 +182,10 @@ const routeEntry = async (
 };
 
 const runDataset = async (): Promise<ModeRoutingCaseResult[]> => {
-  const realRouter = createOpenRouterChatModeRouter();
+  // Same code path as production: the kit's generic `decide` composed into a
+  // Chat Mode Router (ticket 05 of the Inference Kit moved the OpenRouter
+  // Decisions client + timeout + trace scope into `inference`).
+  const realRouter = createChatModeRouter(inferenceKit.decide);
   const results = new Array<ModeRoutingCaseResult>(MODE_ROUTING_DATASET.length);
 
   for (let start = 0; start < MODE_ROUTING_DATASET.length; start += ROUTER_CONCURRENCY) {

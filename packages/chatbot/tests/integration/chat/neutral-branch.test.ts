@@ -7,8 +7,10 @@ import type {
   ChatModeRouterPort,
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
-import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import { chatModelKeys } from "@/lib/features/foundation-model/config";
+
+/** Arbitrary provenance value: these tests fake the port directly, never a real Decisions call. */
+const TEST_ROUTING_MODEL_ID = "test/routing-model";
 
 vi.mock("server-only", () => ({}));
 
@@ -136,7 +138,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.91,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     const { chunkTypes, text, routing } = await runTurn({
@@ -152,7 +154,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.91,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     // The model was never offered a tool, and kept the user's parameters.
@@ -207,7 +209,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "web",
       reason: "routed",
       confidence: 0.42,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     const { routing, text } = await runTurn({ router });
@@ -225,7 +227,7 @@ describe("neutral branch through the conversation pipeline", () => {
     const router = portReturning({
       mode: "web",
       reason: "routed",
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     const { routing, text } = await runTurn({ router });

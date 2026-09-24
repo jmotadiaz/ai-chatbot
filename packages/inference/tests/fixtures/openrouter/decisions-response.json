@@ -1,6 +1,6 @@
 {
   "answers": {
-    "mode": {
+    "decision": {
       "choice": "web",
       "confidence": 0.55,
       "probabilities": { "ctx7": 0.29, "web": 0.71, "neither": 0 },

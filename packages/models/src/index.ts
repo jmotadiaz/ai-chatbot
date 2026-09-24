@@ -57,3 +57,11 @@ export {
   type RerankProviderKind,
   type RerankRole,
 } from "./rerank-catalog";
+export {
+  DECISION_MODELS,
+  DECISION_ROLES,
+  type DecisionModelCatalogEntry,
+  type DecisionModelId,
+  type DecisionProviderKind,
+  type DecisionRole,
+} from "./decision-catalog";

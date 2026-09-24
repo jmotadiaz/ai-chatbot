@@ -107,9 +107,6 @@ importers:
       '@openrouter/ai-sdk-provider':
         specifier: 2.1.1
         version: 2.1.1(ai@6.0.287(zod@3.25.76))(zod@3.25.76)
-      '@openrouter/sdk':
-        specifier: ^1.3.11
-        version: 1.3.11
       '@opentelemetry/api-logs':
         specifier: ^0.200.0
         version: 0.200.0
@@ -508,6 +505,9 @@ importers:
       '@openrouter/ai-sdk-provider':
         specifier: 2.1.1
         version: 2.1.1(ai@6.0.287(zod@3.25.76))(zod@3.25.76)
+      '@openrouter/sdk':
+        specifier: ^1.3.11
+        version: 1.3.11
       ai:
         specifier: ^6.0.287
         version: 6.0.287(zod@3.25.76)
