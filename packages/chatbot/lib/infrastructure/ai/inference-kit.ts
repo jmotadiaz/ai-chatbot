@@ -22,11 +22,14 @@ import {
 /**
  * Single composition root for the chatbot's AI infrastructure: the one place
  * that reads `NEXT_PUBLIC_ENV` to choose between the real Inference Kit and a
- * kit backed by the mock registry. Every other module resolves models
- * through the `providers`/`languageModelConfigurations` reexports built on
- * top of this file, never by importing `inference` or checking `isTestMode`
- * itself — that keeps the test-mode switch out of `inference` entirely, per
- * the kit's own design (see `packages/inference`).
+ * kit backed by the mock registry. Every feature imports `inferenceKit` (or
+ * `speechModel`) directly from this module — the transitional
+ * `providers`/`languageModelConfigurations` reexports are gone — and never
+ * imports `inference` or checks `isTestMode` itself, which keeps the
+ * test-mode switch out of `inference` entirely, per the kit's own design
+ * (see `packages/inference`). A `"use client"` file must not import this
+ * module either (enforced by lint, see `packages/chatbot/eslint.config.mjs`):
+ * UI-safe model config lives in `@/lib/features/foundation-model/config`.
  */
 function buildTestClients(): InferenceClients {
   // Providers are called with the provider-level model id

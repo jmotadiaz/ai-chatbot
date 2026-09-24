@@ -19,8 +19,10 @@ import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
 vi.mock("server-only", () => ({}));
 
 // The AI port is built inside `makeProcessChatResponse`, so the model comes
-// from here instead of being injected.
-vi.mock("@/lib/features/foundation-model/server", async () => {
+// from here instead of being injected. This mocks the composition root
+// directly (the `foundation-model/server` shim it used to target is gone):
+// everything under test resolves models through `inferenceKit.languageModel`.
+vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream } = await import("ai");
   const model = new MockLanguageModelV3({
@@ -50,7 +52,7 @@ vi.mock("@/lib/features/foundation-model/server", async () => {
       rawCall: { rawPrompt: null, rawSettings: {} },
     }),
   });
-  return { languageModelConfigurations: () => ({ model, company: "test" }) };
+  return { inferenceKit: { languageModel: () => ({ model, company: "test" }) } };
 });
 
 // Real agent dispatch is irrelevant here; what matters is the metadata the

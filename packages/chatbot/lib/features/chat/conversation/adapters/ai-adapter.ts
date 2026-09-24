@@ -3,12 +3,12 @@ import {
   chatModelKeys,
   chatModelId,
 } from "@/lib/features/foundation-model/config";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 export const chatAiAdapter = (modelId: chatModelId): ChatAgentAiPort => {
   const getConfig = () =>
-    languageModelConfigurations(modelId) ||
-    languageModelConfigurations(chatModelKeys[0]);
+    inferenceKit.languageModel(modelId) ||
+    inferenceKit.languageModel(chatModelKeys[0]);
 
   return {
     getRagModelConfiguration: getConfig,

@@ -3,15 +3,15 @@ import "server-only";
 import { generateText } from "ai";
 import type { LanguageModelRole, ModelId } from "models";
 import type { CompactionAiPort } from "../ports";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 export const compactionAiAdapter: CompactionAiPort = {
   // `modelKey` is `CompactionAiPort`'s opaque string (the feature owns which
   // string it passes, today one of the two compaction Model Roles); cast to
-  // what `languageModelConfigurations` actually accepts.
+  // what `inferenceKit.languageModel` actually accepts.
   generateText: async (modelKey, system, prompt) => {
     const { text } = await generateText({
-      ...languageModelConfigurations(modelKey as ModelId | LanguageModelRole),
+      ...inferenceKit.languageModel(modelKey as ModelId | LanguageModelRole),
       system,
       prompt,
       temperature: 0.1,

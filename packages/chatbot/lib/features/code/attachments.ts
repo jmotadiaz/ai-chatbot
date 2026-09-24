@@ -5,7 +5,7 @@ import type {
   TextInputContent,
 } from "@ag-ui/client";
 import type { FilePart } from "@/lib/features/attachment/types";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ChatModelConfiguration } from "@/lib/features/foundation-model/config";
 
 /** Anthropic's per-image limit; kept conservative for base64 transport. */
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -14,7 +14,7 @@ export const MAX_TOTAL_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 export const MAX_ATTACHMENT_COUNT = 5;
 
 /** Pi has no PDF support; images go through natively, no model gating needed. */
-export const CODE_AGENT_SUPPORTED_FILES: Required<ModelConfiguration>["supportedFiles"] = [
+export const CODE_AGENT_SUPPORTED_FILES: ChatModelConfiguration["supportedFiles"] = [
   "img",
 ];
 

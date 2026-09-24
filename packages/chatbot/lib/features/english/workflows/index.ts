@@ -1,25 +1,25 @@
 import { makeCorrectGrammar, makeTranslate } from "./factory";
 import type { CorrectGrammarAiPort, TranslateAiPort } from "./ports";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 const grammarAiAdapter: CorrectGrammarAiPort = {
   getAudienceModelConfiguration: () =>
-    languageModelConfigurations("englishAudienceClassifier"),
+    inferenceKit.languageModel("englishAudienceClassifier"),
   getDomainModelConfiguration: () =>
-    languageModelConfigurations("englishDomainClassifier"),
+    inferenceKit.languageModel("englishDomainClassifier"),
   getGrammarModelConfiguration: () =>
-    languageModelConfigurations("englishGrammarCheck"),
+    inferenceKit.languageModel("englishGrammarCheck"),
 };
 
 const translateAiAdapter: TranslateAiPort = {
   getAudienceModelConfiguration: () =>
-    languageModelConfigurations("englishAudienceClassifier"),
+    inferenceKit.languageModel("englishAudienceClassifier"),
   getDomainModelConfiguration: () =>
-    languageModelConfigurations("englishDomainClassifier"),
+    inferenceKit.languageModel("englishDomainClassifier"),
   getDirectionModelConfiguration: () =>
-    languageModelConfigurations("englishDirectionDetector"),
+    inferenceKit.languageModel("englishDirectionDetector"),
   getTranslateModelConfiguration: () =>
-    languageModelConfigurations("englishTranslate"),
+    inferenceKit.languageModel("englishTranslate"),
 };
 
 export const correctGrammar = makeCorrectGrammar(grammarAiAdapter);

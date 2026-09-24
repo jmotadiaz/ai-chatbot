@@ -1,11 +1,11 @@
 import {
   INVOCABLE_MODEL_IDS,
   MODEL_CATALOG,
+  type Company,
   type InvocableModelId,
   type ModelCatalogEntry,
   type ModelId,
 } from "models";
-import type { Company } from "./types";
 
 export type LanguageModelKeys = ModelId;
 

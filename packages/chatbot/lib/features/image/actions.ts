@@ -1,6 +1,6 @@
 import { type GeneratedFile, convertToModelMessages, generateText } from "ai";
 import { type ChatbotMessage } from "@/lib/features/chat/types";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 export const generateImages = async (
   message: ChatbotMessage
@@ -49,7 +49,7 @@ export const generateImages = async (
       - If the composition is already adequate, only subtle improvements will be applied.
       - In low-quality images, prioritise noise reduction and focus enhancement before other adjustments.
       `,
-    ...languageModelConfigurations("imageEdit", {
+    ...inferenceKit.languageModel("imageEdit", {
       providerOptions: {
         google: { responseModalities: ["IMAGE"] },
       },
