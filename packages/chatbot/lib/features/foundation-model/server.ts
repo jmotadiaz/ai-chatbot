@@ -1,67 +1,17 @@
 import "server-only";
 
-import deepmerge from "deepmerge";
-import { wrapLanguageModel } from "ai";
-import {
-  MODEL_CATALOG,
-  type ModelCatalogEntry,
-  type ModelId,
-} from "models";
-import type { ModelConfiguration, ProviderOptions } from "./types";
-import { reasoningMw } from "./utils";
-import { providers } from "@/lib/infrastructure/ai/providers";
+import type { ModelId } from "models";
+import type { ProviderOptions } from "./types";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
-const buildModelConfiguration = (
-  entry: ModelCatalogEntry,
-): ModelConfiguration => {
-  const base = providers[entry.provider.kind](entry.provider.modelId);
-  return {
-    model: entry.wrapWithReasoningMiddleware
-      ? wrapLanguageModel({ model: base, middleware: [reasoningMw] })
-      : base,
-    company: entry.company,
-    ...(entry.reasoning !== undefined && { reasoning: entry.reasoning }),
-    ...(entry.temperature !== undefined && { temperature: entry.temperature }),
-    ...(entry.topP !== undefined && { topP: entry.topP }),
-    ...(entry.topK !== undefined && { topK: entry.topK }),
-    ...(entry.contextWindow !== undefined && {
-      contextWindow: entry.contextWindow,
-    }),
-    ...(entry.supportedFiles && {
-      supportedFiles: [...entry.supportedFiles],
-    }),
-    ...(entry.supportedOutput && {
-      supportedOutput: [...entry.supportedOutput],
-    }),
-    ...(entry.providerOptions && {
-      providerOptions: entry.providerOptions as ProviderOptions,
-    }),
-  };
-};
-
-export const LANGUAGE_MODEL_CONFIGURATIONS_CONST: Record<
-  ModelId,
-  ModelConfiguration
-> = Object.fromEntries(
-  MODEL_CATALOG.map((entry) => [entry.id, buildModelConfiguration(entry)]),
-) as Record<ModelId, ModelConfiguration>;
-
+/**
+ * Thin reexport over the composition root's `languageModel`: same signature,
+ * same Model Configuration shape as before. The eager `Record<ModelId, …>`
+ * this module used to build at import time is gone — resolution is lazy and
+ * memoized inside `packages/inference` now (one construction per id, on
+ * first use).
+ */
 export const languageModelConfigurations = (
   modelKey: ModelId,
-  { providerOptions }: { providerOptions?: ProviderOptions } = {},
-): ModelConfiguration => {
-  const baseConfig: ModelConfiguration =
-    LANGUAGE_MODEL_CONFIGURATIONS_CONST[modelKey];
-
-  if (providerOptions && baseConfig.providerOptions) {
-    return {
-      ...baseConfig,
-      providerOptions: deepmerge(baseConfig.providerOptions, providerOptions),
-    };
-  }
-
-  return {
-    ...baseConfig,
-    ...(providerOptions && { providerOptions }),
-  };
-};
+  options: { providerOptions?: ProviderOptions } = {},
+) => inferenceKit.languageModel(modelKey, options);
