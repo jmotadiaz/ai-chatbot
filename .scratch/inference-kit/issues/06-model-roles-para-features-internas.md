@@ -30,3 +30,19 @@
   - `SPEECH_ROLES` is part of the flat `MODEL_ROLES` (`packages/models/src/roles.ts`: `{ ...LANGUAGE_MODEL_ROLES, ...SPEECH_ROLES }`).
   - `ChatSummary.modelUsed` keeps recording the resolved catalog id, not the role name (commit `a625a2a0`).
   - The root `AGENTS.md` inference paragraph was touched (documents `languageModel`/`createAgent` accepting a Model Role and the new `speechModel`).
+
+### 2026-09-24 — code review: pending note resolved
+
+The "pendiente de code review" note above (checkbox 2: `createAgent` exposed but not adopted in the
+Chat Modes, `context7.ts` outside its shape) is resolved. `ChatAgentAiPort`
+(`packages/chatbot/lib/features/chat/conversation/ports.ts`) now exposes `getModelConfiguration()`
+plus `createAgent(options)`; `neutral.ts`/`project.ts`/`rag.ts`/`web-search.ts` build their agent via
+`ai.createAgent(...)` instead of `new ToolLoopAgent({...modelConfiguration, ...})`, and
+`chat-modes/factory.ts` just passes the port through instead of resolving a config per mode.
+`context7.ts` stays outside `createAgent` as anticipated (`Context7Agent` is a different, third-party
+class), but now gets its traced Model Configuration from the kit's new `createAgentModel` — a small
+operation split out of `create-agent.ts` alongside `createAgent` (`packages/inference/src/kit.ts`,
+`src/types.ts`) — instead of `conversation/factory.ts` calling `wrapWithTracing`/`isTracingEnabled`
+by hand, which was the last non-kit tracing call site in the chatbot. Commit
+`f002df6a` (`refactor(chatbot,inference): adopt createAgent in the Chat Modes`). No behavior change:
+same model, same parameters, same tracing when `TRACE_ENABLED=1`, same agent settings per mode.

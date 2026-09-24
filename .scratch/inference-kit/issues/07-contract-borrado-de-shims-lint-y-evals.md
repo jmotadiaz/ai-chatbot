@@ -42,3 +42,16 @@ Cross-checked each ticked box directly rather than trusting the diffstat:
 ### 2026-09-24 — e2e verified (ticket 08 merger)
 
 Per the orchestrator's `11-e2e-log.md`: e2e ran at `31466147` (this ticket's own tip, same code as its merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm verify:fast` / `pnpm test:e2e` / `pnpm build:verify` line accordingly (all three now confirmed green). `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.
+
+### 2026-09-24 — code review: pending note resolved
+
+The **Pending code review** note above (`foundation-model/types.ts` still bridging to `inference`) is
+resolved. The shim is deleted; server code imports `ModelConfiguration`/`ProviderOptions`/
+`RerankResult` straight from `inference` and `Company` from `models`, and the legacy
+`ModelRoutingMetadata` moved next to `MessageMetadata.autoModel` in
+`packages/chatbot/lib/features/chat/types.ts` (its doc comment came along unchanged). `foundation-model/`
+now holds only the isomorphic `config.ts`, so it is exactly what this ticket's own checklist item
+described. Commit `f83bb49b` (`refactor(chatbot): remove the foundation-model/types.ts transitional
+shim`). The client-boundary lint rule (`local/no-inference-in-client-components`) stays green with no
+exceptions — `Company` now reaches client components (e.g. `components/chat/model-picker.tsx`) from
+`models` directly, never from `inference` or the composition root.

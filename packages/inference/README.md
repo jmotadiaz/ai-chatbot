@@ -26,8 +26,12 @@ with whatever this package resolves for them.
   `decide` (the OpenRouter Decisions API, with provenance: choice,
   confidence, probabilities, modelId, provider, latency, cost) and
   `createAgent` (a `ToolLoopAgent` built from a resolved model, traced when
-  `TRACE_ENABLED=1`). These exist because they add something beyond what the
-  AI SDK already gives you (catalog-driven dimensions/taskType, a timeout and
+  `TRACE_ENABLED=1`). `createAgentModel(idOrRole, options?)` exposes that same
+  traced `ModelConfiguration` on its own, for a caller that needs the model
+  itself rather than a `ToolLoopAgent` (a consumer's own agent class — the
+  chatbot's Context7 branch is the one call site today). These exist because
+  they add something beyond what the AI SDK already gives you
+  (catalog-driven dimensions/taskType, a timeout and
   a stable provenance shape, tracing wiring) — nothing else gets a kit-level
   wrapper.
 - **Built with `createInferenceKit(options?)`.** Every call returns an
@@ -100,9 +104,11 @@ src/
 ## How to add things
 
 - **A new endpoint kind for a language model** (a new `ProviderKind` in
-  `models`): add `src/clients/<kind>.ts` exporting a `buildXClient()` that
-  returns a lazy, memoized `(modelId: string) => LanguageModelV3`, reading any
-  key it needs via `config`; wire it into `buildDefaultClients()` in
+  `models`): add `src/clients/<kind>.ts` exporting a `buildXClient()` built
+  from `buildLazyLanguageModelClient` (`src/clients/lazy-client.ts`) — pass it
+  a `() => createX({ apiKey: config.xApiKey(), ... })` factory and it returns
+  the lazy, memoized `(modelId: string) => LanguageModelV3` every client here
+  needs, reading any key via `config`; wire it into `buildDefaultClients()` in
   `src/clients/index.ts`. `ProviderKind`/`InferenceClients` stay
   language-model-only — embedding, rerank, decision and speech kinds each get
   their **own** kind union and client registry next to their catalog in
@@ -117,8 +123,11 @@ src/
   `MODEL_ROLES`/`ModelRole` in `models/src/roles.ts`), pointing at an id that
   already exists in the relevant catalog. Nothing in this package changes:
   `languageModel`/`speechModel`/`embed`/`rerank`/`decide` already accept
-  either an id or a role for their respective catalog. Roles must stay
-  disjoint across the maps.
+  either an id or a role for their respective catalog, resolved through
+  `models`'s shared `resolveCatalogEntry` (a role-or-id lookup against a
+  `Map`, throwing a descriptive error when the resolved id has no entry — see
+  `src/language-model.ts` for the reference usage). Roles must stay disjoint
+  across the maps.
 - **A new operation** (beyond `embed`/`rerank`/`decide`/`createAgent`): one
   module in `src/` exporting a `createXResolver(...)`-style factory shaped
   like `createLanguageModelResolver` (`src/language-model.ts`); wire its
