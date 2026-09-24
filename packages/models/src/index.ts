@@ -40,3 +40,20 @@ export {
   type PiModelDefinition,
   type PiModelsJson,
 } from "./generate-models-json";
+export {
+  EMBEDDING_MODELS,
+  EMBEDDING_ROLES,
+  type EmbeddingModelCatalogEntry,
+  type EmbeddingModelId,
+  type EmbeddingProviderKind,
+  type EmbeddingRole,
+  type EmbeddingTaskType,
+} from "./embedding-catalog";
+export {
+  RERANK_MODELS,
+  RERANK_ROLES,
+  type RerankModelCatalogEntry,
+  type RerankModelId,
+  type RerankProviderKind,
+  type RerankRole,
+} from "./rerank-catalog";

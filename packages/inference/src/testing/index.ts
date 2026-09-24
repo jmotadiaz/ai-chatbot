@@ -34,3 +34,4 @@ export { MOCK_VISION } from "./vision";
 export { MOCK_REASONING } from "./reasoning";
 export { MOCK_REFUSAL } from "./refusal";
 export { MOCK_MID_STREAM_ERROR } from "./mid-stream-error";
+export { createMockRerankModel } from "./rerank";

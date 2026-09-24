@@ -1,5 +1,7 @@
 import { LANGUAGE_MODEL_ROLES } from "./language-roles";
 import { SPEECH_ROLES } from "./speech-catalog";
+import { EMBEDDING_ROLES } from "./embedding-catalog";
+import { RERANK_ROLES } from "./rerank-catalog";
 
 /**
  * Flat union of every Model Role across every operation. Each ticket owns
@@ -11,6 +13,8 @@ import { SPEECH_ROLES } from "./speech-catalog";
 export const MODEL_ROLES = {
   ...LANGUAGE_MODEL_ROLES,
   ...SPEECH_ROLES,
+  ...EMBEDDING_ROLES,
+  ...RERANK_ROLES,
 } as const;
 
 export type ModelRole = keyof typeof MODEL_ROLES;

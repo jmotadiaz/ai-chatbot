@@ -1,6 +1,5 @@
-import { embedMany } from "ai";
 import { embeddingRateLimiter } from "./rate-limiter";
-import { providers } from "@/lib/infrastructure/ai/providers";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 interface EmbeddingInput {
   chunkId: string;
@@ -33,19 +32,10 @@ export async function generateEmbeddings(
     const batchContents = batch.map((item) => item.content);
 
     // Solo enviamos el texto al modelo
-    const { embeddings } = await embeddingRateLimiter.execute(
-      batchContents,
-      () =>
-        embedMany({
-          model: providers.embedding(),
-          providerOptions: {
-            google: {
-              outputDimensionality: 768,
-              taskType: "RETRIEVAL_DOCUMENT",
-            },
-          },
-          values: batch.map((item) => item.content),
-        }),
+    const embeddings = await embeddingRateLimiter.execute(batchContents, () =>
+      inferenceKit.embed("embedding", batchContents, {
+        taskType: "RETRIEVAL_DOCUMENT",
+      }),
     );
 
     // Mapeamos de vuelta usando la posición en el lote (garantizada por la API de AI SDK)

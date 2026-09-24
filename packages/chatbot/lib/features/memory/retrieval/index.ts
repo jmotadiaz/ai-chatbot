@@ -1,13 +1,12 @@
 import "server-only";
 
-import { embedMany } from "ai";
 import { formatMemoryContext } from "./format";
 import { decomposeForMemorySearch } from "./query-decomposition";
 import {
   getPreferencesByUserId,
   findSimilarMemoryFacts,
 } from "@/lib/features/memory/queries";
-import { providers } from "@/lib/infrastructure/ai/providers";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { UserMemory } from "@/lib/infrastructure/db/schema";
 
 const RETRIEVAL_SIMILARITY_THRESHOLD = 0.85;
@@ -53,15 +52,8 @@ async function getContextualFacts({
   console.dir(queries, { depth: null });
 
   // 2. Generate embeddings for all queries in batch
-  const { embeddings } = await embedMany({
-    model: providers.embedding(),
-    providerOptions: {
-      google: {
-        outputDimensionality: 768,
-        taskType: "SEMANTIC_SIMILARITY",
-      },
-    },
-    values: queries,
+  const embeddings = await inferenceKit.embed("embedding", queries, {
+    taskType: "SEMANTIC_SIMILARITY",
   });
 
   // 3. Search for facts for each embedding

@@ -1,13 +1,13 @@
 import "server-only";
 
-import { generateText, Output, embedMany } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import { MEMORY_EXTRACTION_SYSTEM_PROMPT } from "./prompts";
 import { upsertMemoryFact } from "./dedup";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/features/chat/utils";
 import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
-import { providers } from "@/lib/infrastructure/ai/providers";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 const factSchema = z.object({
   facts: z.array(
@@ -42,15 +42,8 @@ export async function extractMemoryFacts({
   if (facts.length === 0) return;
 
   const contents = facts.map((f) => f.content);
-  const { embeddings } = await embedMany({
-    model: providers.embedding(),
-    providerOptions: {
-      google: {
-        outputDimensionality: 768,
-        taskType: "SEMANTIC_SIMILARITY",
-      },
-    },
-    values: contents,
+  const embeddings = await inferenceKit.embed("embedding", contents, {
+    taskType: "SEMANTIC_SIMILARITY",
   });
 
   console.dir(facts, { depth: null });

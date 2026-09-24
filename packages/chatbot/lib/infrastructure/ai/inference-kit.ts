@@ -8,6 +8,7 @@ import {
 import {
   createMockEmbeddingModel,
   createMockModel,
+  createMockRerankModel,
   createMockSpeechModel,
 } from "inference/testing";
 import { MODEL_CATALOG } from "models";
@@ -73,30 +74,30 @@ function buildTestClients(): InferenceClients {
   };
 }
 
+/**
+ * Embedding and rerank are resolved by Model Role through the kit's `embed`/
+ * `rerank` operations. In test mode, only the underlying client per kind is
+ * swapped for a fake (same seam `clients` uses for language models) — the
+ * operation itself (catalog resolution, dimensions, taskType validation)
+ * still runs, so a bad role or taskType fails the same way it would in
+ * production. Both fakes come from `inference/testing`; `createMockRerankModel`
+ * always resolves an empty ranking, matching this composition root's
+ * pre-`embed`/`rerank` behaviour (`async () => []`).
+ */
 export const inferenceKit: InferenceKit = isTestMode()
-  ? createInferenceKit({ clients: buildTestClients() })
+  ? createInferenceKit({
+      clients: buildTestClients(),
+      embeddingClients: { google: () => createMockEmbeddingModel() },
+      rerankClients: { cohere: () => createMockRerankModel() },
+    })
   : realInferenceKit;
 
 /**
- * Embedding and rerank are not resolved through `createInferenceKit`'s
- * `clients`/`languageModel` options yet (they become full `embed`/`rerank`
- * operations in a later ticket), so this composition root switches them the
- * same way `providers.ts` did before the kit existed: same mocks, same
- * condition, just relocated.
- */
-export const embeddingClient: InferenceKit["embeddingClient"] = isTestMode()
-  ? () => createMockEmbeddingModel()
-  : inferenceKit.embeddingClient;
-
-export const rerankClient: InferenceKit["rerankClient"] = isTestMode()
-  ? () => async () => []
-  : inferenceKit.rerankClient;
-
-/**
- * Speech follows the same real-vs-mock switch as embedding/rerank above: it
- * is not part of `clients` either (see `packages/inference`'s `SpeechClients`,
- * a separate registry keyed by `SpeechProviderKind`), so it needs its own
- * line here rather than living inside `buildTestClients`.
+ * Speech follows the same real-vs-mock switch as embedding/rerank above, but
+ * `CreateInferenceKitOptions` has no per-kind override for it yet (no
+ * `speechClients` option — speech is not resolved through `clients` either),
+ * so it keeps its own line here instead of folding into the `inferenceKit`
+ * construction above.
  */
 export const speechModel: InferenceKit["speechModel"] = isTestMode()
   ? () => createMockSpeechModel()

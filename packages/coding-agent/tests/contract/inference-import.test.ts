@@ -37,8 +37,8 @@ describe("inference package import (contract)", () => {
     const kit = createInferenceKit();
 
     expect(typeof kit.languageModel).toBe("function");
-    expect(typeof kit.embeddingClient).toBe("function");
-    expect(typeof kit.rerankClient).toBe("function");
+    expect(typeof kit.embed).toBe("function");
+    expect(typeof kit.rerank).toBe("function");
     expect(typeof kit.speechModel).toBe("function");
     expect(typeof kit.createAgent).toBe("function");
 
