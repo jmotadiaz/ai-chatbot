@@ -7,6 +7,3 @@
  * raw classifier confidences.
  */
 export const CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD = 0.7;
-
-/** Budget for one classification call before degrading to `fallback`. */
-export const CHAT_MODE_ROUTING_TIMEOUT_MS = 1500;

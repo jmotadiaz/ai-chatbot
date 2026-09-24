@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import {
   decideResolvedMode,
   isRoutingDecision,
   type RoutingDecisionInput,
 } from "@/lib/features/chat/mode-routing/policy";
+
+/** Arbitrary provenance value: this suite only exercises the pure mapping, never a real Decisions call. */
+const TEST_ROUTING_MODEL_ID = "test/routing-model";
 
 const decision = (
   overrides: Partial<RoutingDecisionInput> = {},
@@ -12,7 +14,7 @@ const decision = (
   mode: "context7",
   reason: "routed",
   confidence: 0.9,
-  modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+  modelId: TEST_ROUTING_MODEL_ID,
   ...overrides,
 });
 

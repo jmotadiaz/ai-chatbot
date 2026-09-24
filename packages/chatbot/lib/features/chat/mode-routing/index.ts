@@ -15,7 +15,7 @@ import type {
 
 export * from "@/lib/features/chat/mode-routing/constants";
 export * from "@/lib/features/chat/mode-routing/guards";
-export * from "@/lib/features/chat/mode-routing/openrouter";
+export * from "@/lib/features/chat/mode-routing/router";
 export * from "@/lib/features/chat/mode-routing/policy";
 export * from "@/lib/features/chat/mode-routing/questions";
 export * from "@/lib/features/chat/mode-routing/types";
