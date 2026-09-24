@@ -7,7 +7,6 @@ import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
 import type { Company } from "models";
-import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
 // Types definitions for the models feature
 
 // --- From definition.ts ---
@@ -35,8 +34,6 @@ export interface ModelConfiguration {
   contextWindow?: number;
   company: Company;
 }
-
-// Model and Routing Types
 
 // --- From providers.ts ---
 
@@ -75,42 +72,4 @@ export interface Providers {
 
 export interface ProvidersFactory {
   (): Providers;
-}
-
-// --- From model-routing.ts ---
-
-export const CATEGORIES = [
-  "factual",
-  "analytical",
-  "technical",
-  "creative",
-  "prompt_engineering",
-  "image_generation",
-  "conversational",
-  "processing",
-  "other",
-] as const;
-
-export const COMPLEXITY_LEVELS = [
-  "simple",
-  "moderate",
-  "complex",
-  "advanced",
-] as const;
-
-export interface ModelRoutingMetadata {
-  category: (typeof CATEGORIES)[number];
-  complexity: (typeof COMPLEXITY_LEVELS)[number];
-  model: string;
-}
-
-export interface ModelRoutingArguments {
-  messages: ChatbotMessage[];
-  tools?: Tools;
-}
-
-export interface ModelRoutingResult {
-  modelConfiguration: ModelConfiguration;
-  autoModelMetadata: ModelRoutingMetadata;
-  tools: Tools;
 }
