@@ -6,8 +6,7 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
-import type { Company } from "models";
-import type { ChatbotMessage, Tools } from "@/lib/features/chat/types";
+import type { Company, ProviderKind } from "models";
 // Types definitions for the models feature
 
 // --- From definition.ts ---
@@ -36,8 +35,6 @@ export interface ModelConfiguration {
   company: Company;
 }
 
-// Model and Routing Types
-
 // --- From providers.ts ---
 
 export interface RerankArgs {
@@ -51,22 +48,12 @@ export interface RerankResult {
   score: number;
 }
 
-export interface Providers {
-  anthropic: (modelId: string) => LanguageModelV3;
-  openai: (modelId: string) => LanguageModelV3;
-  google: (modelId: string) => LanguageModelV3;
-  xai: (modelId: string) => LanguageModelV3;
-  groq: (modelId: string) => LanguageModelV3;
-  deepseek: (modelId: string) => LanguageModelV3;
-  perplexity: (modelId: string) => LanguageModelV3;
-  gateway: (modelId: string) => LanguageModelV3;
-  openrouter: (modelId: string) => LanguageModelV3;
-  deepinfra: (modelId: string) => LanguageModelV3;
-  lmstudio: (modelId: string) => LanguageModelV3;
-  opencodeGo: (modelId: string) => LanguageModelV3;
-  opencodeGoResponses: (modelId: string) => LanguageModelV3;
-  opencodeGoAnthropic: (modelId: string) => LanguageModelV3;
-  opencodeZen: (modelId: string) => LanguageModelV3;
+// Language-model clients, one per endpoint kind. `ProviderKind` is the Model
+// Catalog's key of client + API flavor (see `models`); deriving this map from
+// it means an unused or missing kind is a compile error here, not a silent
+// gap. Embedding and rerank are not endpoint kinds in the catalog, so they
+// stay as their own operations on the same registry.
+export interface Providers extends Record<ProviderKind, (modelId: string) => LanguageModelV3> {
   embedding: () => EmbeddingModelV3;
   rerank: () => (
     args: Omit<Parameters<typeof rerank>[0], "model">,
@@ -77,40 +64,27 @@ export interface ProvidersFactory {
   (): Providers;
 }
 
-// --- From model-routing.ts ---
-
-export const CATEGORIES = [
-  "factual",
-  "analytical",
-  "technical",
-  "creative",
-  "prompt_engineering",
-  "image_generation",
-  "conversational",
-  "processing",
-  "other",
-] as const;
-
-export const COMPLEXITY_LEVELS = [
-  "simple",
-  "moderate",
-  "complex",
-  "advanced",
-] as const;
-
+/**
+ * Legacy Model Router metadata.
+ *
+ * The Model Router itself (query classification into category/complexity,
+ * then a model pick) is gone: `router.ts` and its prompts were deleted, and
+ * nothing constructs this shape anymore. It is kept only so a
+ * `Message.metadata.autoModel` persisted before the removal still decodes
+ * and renders — the same treatment as `ChatModeRoutingReason`'s
+ * `low_confidence` member.
+ */
 export interface ModelRoutingMetadata {
-  category: (typeof CATEGORIES)[number];
-  complexity: (typeof COMPLEXITY_LEVELS)[number];
+  category:
+    | "factual"
+    | "analytical"
+    | "technical"
+    | "creative"
+    | "prompt_engineering"
+    | "image_generation"
+    | "conversational"
+    | "processing"
+    | "other";
+  complexity: "simple" | "moderate" | "complex" | "advanced";
   model: string;
-}
-
-export interface ModelRoutingArguments {
-  messages: ChatbotMessage[];
-  tools?: Tools;
-}
-
-export interface ModelRoutingResult {
-  modelConfiguration: ModelConfiguration;
-  autoModelMetadata: ModelRoutingMetadata;
-  tools: Tools;
 }

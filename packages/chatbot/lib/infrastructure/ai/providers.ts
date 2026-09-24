@@ -5,8 +5,7 @@ import { gateway, rerank } from "ai";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
-import { deepseek } from "@ai-sdk/deepseek";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { perplexity } from "@ai-sdk/perplexity";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cohere } from "@ai-sdk/cohere";
@@ -134,18 +133,18 @@ function getDeepInfra() {
   return _deepinfra;
 }
 
-export const google = createGoogleGenerativeAI();
-export const xai = createXai();
+// `google` has no ProviderKind (it is not a language-model provider in the
+// catalog) and only serves the embedding model below; `xai` is a ProviderKind
+// and feeds the `providers.xai` entry, built here to stay lazy like the rest.
+const google = createGoogleGenerativeAI();
+const xai = createXai();
 
 export const providers: Providers = (() => {
   if (!isTestMode()) {
     return {
-      anthropic: (modelId: string) => anthropic(modelId),
       openai: (modelId: string) => openai(modelId),
-      google: (modelId: string) => google(modelId),
       xai: (modelId: string) => xai(modelId),
       groq: (modelId: string) => groq(modelId),
-      deepseek: (modelId: string) => deepseek(modelId),
       perplexity: (modelId: string) => perplexity(modelId),
       gateway: (modelId: string) => gateway(modelId),
       openrouter: (modelId: string) => getOpenRouter()(modelId),
@@ -188,12 +187,9 @@ export const providers: Providers = (() => {
   };
 
   return {
-    anthropic: lookupMock("anthropic"),
     openai: lookupMock("openai"),
-    google: lookupMock("google"),
     xai: lookupMock("xai"),
     groq: lookupMock("groq"),
-    deepseek: lookupMock("deepseek"),
     perplexity: lookupMock("perplexity"),
     gateway: lookupMock("gateway"),
     openrouter: lookupMock("openrouter"),

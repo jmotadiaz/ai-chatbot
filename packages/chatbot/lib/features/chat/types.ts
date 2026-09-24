@@ -28,6 +28,9 @@ export interface TextFile {
 
 export interface MessageMetadata {
   status: "started" | "streaming" | "finished";
+  /** Legacy: no code path sets this anymore, kept so messages persisted
+   * before the Model Router removal still decode and render (see
+   * `ModelRoutingMetadata`). */
   autoModel?: ModelRoutingMetadata;
   chatModeRouting?: ChatModeRoutingMetadata;
   textFiles?: TextFile[];

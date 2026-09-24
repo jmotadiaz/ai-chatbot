@@ -417,6 +417,12 @@ const SourceMessagePartContent: React.FC<{
   );
 };
 
+/**
+ * Legacy: the Model Router that produced this metadata is gone (see
+ * `ModelRoutingMetadata`). Kept only so a message persisted before the
+ * removal still renders its "Router Details" section instead of silently
+ * dropping it.
+ */
 interface RouterDetailsProps {
   isExpanded: boolean;
   onToggle: () => void;
