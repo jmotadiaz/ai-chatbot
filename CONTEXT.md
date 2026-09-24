@@ -34,8 +34,8 @@ _Avoid_: workspace, repo (reservado a Repository)
 Catálogo único de modelos disponibles, con sus providers, costes y niveles de thinking. Fuente de verdad en `packages/models`.
 _Avoid_: model registry (legado), model list
 
-**Model Router**:
-Mecanismo que selecciona el modelo por mensaje cuando el usuario no fija uno.
+**Model Router** _(legado)_:
+Mecanismo, ya retirado, que seleccionaba el modelo por mensaje cuando el usuario no fijaba uno. No describe código vivo: el prefactor de Inference Kit (ticket 01) eliminó su implementación, prompts y tipos de entrada/salida. Solo sobrevive `ModelRoutingMetadata`, marcado como legado en el propio código, para que un `Message.metadata.autoModel` persistido antes de la retirada siga decodificando y renderizando.
 _Avoid_: auto model, foundation model
 
 **Compaction**:
