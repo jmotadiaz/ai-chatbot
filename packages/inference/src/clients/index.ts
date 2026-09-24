@@ -9,8 +9,8 @@ import { buildPerplexityClient } from "./perplexity";
 import { buildLmstudioClient } from "./lmstudio";
 import { buildDeepInfraClient } from "./deepinfra";
 
-export { buildEmbeddingClient } from "./embedding";
-export { buildRerankClient } from "./rerank";
+export { buildEmbeddingClients, type EmbeddingClients } from "./embedding";
+export { buildRerankClients, type RerankClients } from "./rerank";
 
 /**
  * The real `Record<ProviderKind, …>` registry: one lazy, memoized client per

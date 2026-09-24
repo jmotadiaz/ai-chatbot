@@ -1,12 +1,22 @@
-import type { LanguageModel, rerank } from "ai";
-import type { EmbeddingModelV3, LanguageModelV3 } from "@ai-sdk/provider";
+import type { LanguageModel } from "ai";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
 import type { GroqProviderOptions } from "@ai-sdk/groq";
 import type { XaiProviderOptions } from "@ai-sdk/xai";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { GatewayProviderOptions } from "@ai-sdk/gateway";
-import type { Company, ModelCatalogEntry, ModelId, ProviderKind } from "models";
+import type {
+  Company,
+  EmbeddingRole,
+  EmbeddingTaskType,
+  ModelCatalogEntry,
+  ModelId,
+  ProviderKind,
+  RerankRole,
+} from "models";
+import type { EmbeddingClients } from "./clients/embedding";
+import type { RerankClients } from "./clients/rerank";
 
 /**
  * Per-provider options the AI SDK accepts on a call, keyed by SDK. This is a
@@ -56,6 +66,16 @@ export interface LanguageModelOptions {
   providerOptions?: ProviderOptions;
 }
 
+export interface EmbedOptions {
+  taskType: EmbeddingTaskType;
+}
+
+export interface RerankArgs {
+  query: string;
+  documents: string[];
+  topN?: number;
+}
+
 export interface InferenceKit {
   /**
    * Model Configuration for a catalog id: built from the matching client and
@@ -67,16 +87,18 @@ export interface InferenceKit {
   ) => ModelConfiguration;
   /** Per-endpoint-kind clients. Most consumers want `languageModel` instead. */
   clients: InferenceClients;
-  /** Embedding client behind the current `embed` shim (moves to a full operation in a later ticket). */
-  embeddingClient: () => EmbeddingModelV3;
-  /** Rerank client behind the current `rerank` shim (moves to a full operation in a later ticket). */
-  rerankClient: () => (
-    args: Omit<Parameters<typeof rerank>[0], "model">,
-  ) => Promise<RerankResult[]>;
+  /** Embeddings for an Embedding Role, dimensions and taskType applied from `EMBEDDING_MODELS`. */
+  embed: (
+    role: EmbeddingRole,
+    values: string[],
+    options: EmbedOptions,
+  ) => Promise<number[][]>;
+  /** Reranks documents for a Rerank Role, resolved from `RERANK_MODELS`. */
+  rerank: (role: RerankRole, args: RerankArgs) => Promise<RerankResult[]>;
 }
 
 export interface CreateInferenceKitOptions {
-  /** Overrides one or more per-kind clients (e.g. a test double for a single kind). */
+  /** Overrides one or more per-kind language-model clients (e.g. a test double for a single kind). */
   clients?: Partial<InferenceClients>;
   /**
    * Overrides the model built for a catalog entry. Returning `undefined`
@@ -85,4 +107,8 @@ export interface CreateInferenceKitOptions {
    * id without touching `clients`.
    */
   languageModel?: (entry: ModelCatalogEntry) => LanguageModelV3 | undefined;
+  /** Overrides one or more per-kind embedding clients (e.g. a fake embedding model for tests). */
+  embeddingClients?: Partial<EmbeddingClients>;
+  /** Overrides one or more per-kind rerank clients (e.g. a fake reranking model for tests). */
+  rerankClients?: Partial<RerankClients>;
 }

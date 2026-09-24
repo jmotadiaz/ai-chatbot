@@ -1,30 +1,29 @@
-import { rerank } from "ai";
 import { createCohere } from "@ai-sdk/cohere";
+import type { RerankingModelV3 } from "@ai-sdk/provider";
 import { config } from "config";
-import type { RerankResult } from "../types";
+import type { RerankProviderKind } from "models";
+
+/** One reranking-model client per `RerankProviderKind` (see `models`). */
+export type RerankClients = Record<
+  RerankProviderKind,
+  (modelId: string) => RerankingModelV3
+>;
 
 /**
- * Rerank is not a `ProviderKind` either. Built explicitly so `COHERE_API_KEY`
- * is read via `config` instead of the SDK's implicit fallback. Returns the
- * same shape `Providers.rerank()` returns today (a function, not the result),
- * so the chatbot's shim can keep calling it the same way.
+ * Rerank is not a `ProviderKind` either. Its own lazy client registry, built
+ * explicitly so `COHERE_API_KEY` is read via `config` instead of the SDK's
+ * implicit fallback.
  */
-export function buildRerankClient(): () => (
-  args: Omit<Parameters<typeof rerank>[0], "model">,
-) => Promise<RerankResult[]> {
+export function buildRerankClients(): RerankClients {
   let _cohere: ReturnType<typeof createCohere> | null = null;
-  const get = () => {
+  const getCohere = () => {
     if (!_cohere) {
       _cohere = createCohere({ apiKey: config.cohereApiKey() });
     }
     return _cohere;
   };
 
-  return () => async (args) => {
-    const { ranking } = await rerank({
-      ...args,
-      model: get().rerankingModel("rerank-v4.0-pro"),
-    });
-    return ranking;
+  return {
+    cohere: (modelId) => getCohere().rerankingModel(modelId),
   };
 }
