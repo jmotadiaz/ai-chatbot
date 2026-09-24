@@ -31,7 +31,7 @@ Contenedor de configuración compartida: system prompt, defaults de modelo y Doc
 _Avoid_: workspace, repo (reservado a Repository)
 
 **Model Catalog**:
-Catálogo único de modelos disponibles, con sus providers, costes y niveles de thinking. Fuente de verdad en `packages/models`.
+Catálogo único de Models disponibles para el usuario, con sus providers, costes y niveles de thinking. Fuente de verdad en `packages/models` (`MODEL_CATALOG`), junto al que conviven, como datos independientes, un catálogo por operación no seleccionable por el usuario (embedding, rerank, decision, speech) y los mapas de Model Role que resuelven modelos internos — ver *Inferencia* más abajo.
 _Avoid_: model registry (legado), model list
 
 **Model Router** _(legado)_:
@@ -77,6 +77,28 @@ _Avoid_: hub chat, instance
 **Image Editor**:
 Feature que analiza y regenera una imagen del usuario.
 _Avoid_: photo editor, inpainting (detalle técnico)
+
+### Inferencia (Inference Kit)
+
+**Inference Kit**:
+Paquete de servidor (`packages/inference`) que actúa como fachada fina sobre el AI SDK: posee los clientes por Endpoint Kind, la resolución perezosa de un id del Model Catalog o un Model Role a una configuración lista para usar, y las operaciones que añaden valor (embeddings, rerank, Decision, agentes con trazas). No envuelve `generateText`/`streamText` ni define tipos propios de mensajes, tools o streams. Se construye con `createInferenceKit`; cada aplicación elige entre la instancia real o una de mocks desde su propio módulo de composición raíz, el único que conoce la diferencia (en el chatbot, dentro de infraestructura de IA).
+_Avoid_: AI layer, provider layer, AI SDK wrapper
+
+**Endpoint Kind**:
+Clave que identifica un endpoint y su dialecto de API (p. ej. `opencodeGo`, `openrouter`, `gateway`), no un vendor: dos Endpoint Kind distintos pueden servir el mismo proveedor bajo dos APIs diferentes. Es la semántica real de `ProviderKind` (modelos de lenguaje, en `packages/models`) y de sus equivalentes por operación (`EmbeddingProviderKind`, `RerankProviderKind`, `DecisionProviderKind`, `SpeechProviderKind`), cada uno con su propio registro de clientes en el Inference Kit.
+_Avoid_: provider (a secas), vendor
+
+**Model Role**:
+Puntero con nombre a una entrada del Model Catalog (o de un catálogo por operación) usado por una feature interna y no seleccionable por el usuario: título de chat, extracción de memoria, clasificación del English Helper, Compaction, síntesis de voz, el propio Chat Mode Router, embedding, rerank. Retargetar el modelo detrás de un rol es una edición de datos (`*_ROLES` en `packages/models`), no un cambio de código; los Models que el usuario elige siguen resolviéndose por id.
+_Avoid_: internal model, model alias (reservado a Capability Alias)
+
+**Decision**:
+Operación del Inference Kit (`decide`) que resuelve una pregunta de elección a través de la Decisions API de OpenRouter y devuelve una provenance genérica (choice, confidence, probabilities, modelId, provider, latencia, coste) separada del resultado de dominio de quien la usa. El Chat Mode Router es su primer consumidor (`createChatModeRouter`); una segunda pregunta (p. ej. enrutar un Subagent) reutilizaría el mismo cliente, timeout y scope de trazas.
+_Avoid_: routing decision, classification (resultados de dominio de un consumidor, no esta operación)
+
+**Capability Alias**:
+Nombre simbólico usado solo en los tests del chatbot que ata una capacidad necesaria en un test (puede ejecutar tools, puede ver imágenes, produce razonamiento…) a un Model seleccionable concreto y declara lo que su mock asume del Model Catalog (`requires`). Un test de invariantes falla nombrando el alias y la propiedad incumplida si el catálogo deja de cumplirlo. No forma parte del Inference Kit: los constructores de mock que consume viven en `inference/testing`, sin ningún id de modelo.
+_Avoid_: mock model, test model
 
 ### Conocimiento (RAG)
 
