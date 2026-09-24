@@ -32,7 +32,7 @@ export async function extractMemoryFacts({
   if (!conversation.trim()) return;
 
   const { output } = await generateText({
-    ...languageModelConfigurations("GPT OSS Mini"),
+    ...languageModelConfigurations("memoryExtraction"),
     system: MEMORY_EXTRACTION_SYSTEM_PROMPT,
     prompt: conversation,
     output: Output.object({ schema: factSchema }),

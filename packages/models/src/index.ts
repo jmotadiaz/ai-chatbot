@@ -21,6 +21,19 @@ export {
   toPiProviderId,
 } from "./mapping";
 export {
+  LANGUAGE_MODEL_ROLES,
+  type LanguageModelRole,
+} from "./language-roles";
+export {
+  SPEECH_MODELS,
+  SPEECH_ROLES,
+  type SpeechModelCatalogEntry,
+  type SpeechModelId,
+  type SpeechProviderKind,
+  type SpeechRole,
+} from "./speech-catalog";
+export { MODEL_ROLES, type ModelRole } from "./roles";
+export {
   generateModelsJson,
   type GenerateModelsJsonOptions,
   type PiModelBaseline,

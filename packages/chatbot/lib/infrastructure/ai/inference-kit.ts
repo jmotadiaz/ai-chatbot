@@ -7,7 +7,11 @@ import {
 } from "inference";
 import { MODEL_CATALOG } from "models";
 import { isTestMode } from "@/lib/infrastructure/env";
-import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
+import {
+  createMockEmbeddingModel,
+  createMockModel,
+  createMockSpeechModel,
+} from "@/tests/mocks/ai";
 import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
 
 /**
@@ -72,3 +76,13 @@ export const embeddingClient: InferenceKit["embeddingClient"] = isTestMode()
 export const rerankClient: InferenceKit["rerankClient"] = isTestMode()
   ? () => async () => []
   : inferenceKit.rerankClient;
+
+/**
+ * Speech follows the same real-vs-mock switch as embedding/rerank above: it
+ * is not part of `clients` either (see `packages/inference`'s `SpeechClients`,
+ * a separate registry keyed by `SpeechProviderKind`), so it needs its own
+ * line here rather than living inside `buildTestClients`.
+ */
+export const speechModel: InferenceKit["speechModel"] = isTestMode()
+  ? () => createMockSpeechModel()
+  : inferenceKit.speechModel;

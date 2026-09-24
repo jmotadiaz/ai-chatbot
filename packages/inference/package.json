@@ -31,7 +31,8 @@
     "ai": "^6.0.287",
     "config": "workspace:*",
     "deepmerge": "^4.3.1",
-    "models": "workspace:*"
+    "models": "workspace:*",
+    "tracing": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

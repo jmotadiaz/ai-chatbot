@@ -520,6 +520,9 @@ importers:
       models:
         specifier: workspace:*
         version: link:../models
+      tracing:
+        specifier: workspace:*
+        version: link:../tracing
     devDependencies:
       typescript:
         specifier: ^5.8.3

@@ -1,9 +1,16 @@
 import deepmerge from "deepmerge";
 import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
-import { MODEL_CATALOG, type ModelCatalogEntry, type ModelId } from "models";
+import {
+  LANGUAGE_MODEL_ROLES,
+  MODEL_CATALOG,
+  type LanguageModelRole,
+  type ModelCatalogEntry,
+  type ModelId,
+} from "models";
 import type {
   InferenceClients,
+  LanguageModelKey,
   LanguageModelOptions,
   ModelConfiguration,
   ProviderOptions,
@@ -22,6 +29,17 @@ const reasoningMw = extractReasoningMiddleware({
 const catalogById = new Map<ModelId, ModelCatalogEntry>(
   MODEL_CATALOG.map((entry) => [entry.id as ModelId, entry]),
 );
+
+function isLanguageModelRole(key: LanguageModelKey): key is LanguageModelRole {
+  return Object.prototype.hasOwnProperty.call(LANGUAGE_MODEL_ROLES, key);
+}
+
+/** A Model Role resolves to whatever catalog id it currently points at; a plain id passes through unchanged. */
+function resolveModelId(key: LanguageModelKey): ModelId {
+  return isLanguageModelRole(key)
+    ? (LANGUAGE_MODEL_ROLES[key] as ModelId)
+    : (key as ModelId);
+}
 
 function buildBaseConfiguration(
   entry: ModelCatalogEntry,
@@ -71,19 +89,23 @@ function mergeProviderOptions(
 }
 
 /**
- * Builds `languageModel(id, options)`: resolves a catalog id to its
- * expandable Model Configuration, constructing (and memoizing) the
- * underlying model on first use. Every call after the first for the same id
- * reuses the same constructed model, regardless of `providerOptions`
- * overrides, which are applied fresh on every call.
+ * Builds `languageModel(idOrRole, options)`: resolves a catalog id or a
+ * Model Role (`LANGUAGE_MODEL_ROLES`) to its expandable Model Configuration,
+ * constructing (and memoizing) the underlying model on first use. The cache
+ * key is the *resolved* catalog id, so addressing the same model by role or
+ * by its literal id — or by two different roles that happen to point at the
+ * same id today, like `compactionText`/`metaPromptRefiner` — reuses the same
+ * constructed model and returns an equal configuration. `providerOptions`
+ * overrides are applied fresh on every call, regardless of memoization.
  */
 export function createLanguageModelResolver(
   clients: InferenceClients,
   languageModelOverride?: LanguageModelOverride,
-): (id: ModelId, options?: LanguageModelOptions) => ModelConfiguration {
+): (key: LanguageModelKey, options?: LanguageModelOptions) => ModelConfiguration {
   const cache = new Map<ModelId, ModelConfiguration>();
 
-  return (id, options) => {
+  return (key, options) => {
+    const id = resolveModelId(key);
     let baseConfig = cache.get(id);
     if (!baseConfig) {
       const entry = catalogById.get(id);

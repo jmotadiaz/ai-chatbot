@@ -11,6 +11,7 @@ import { buildDeepInfraClient } from "./deepinfra";
 
 export { buildEmbeddingClient } from "./embedding";
 export { buildRerankClient } from "./rerank";
+export { buildSpeechClients } from "./speech";
 
 /**
  * The real `Record<ProviderKind, …>` registry: one lazy, memoized client per

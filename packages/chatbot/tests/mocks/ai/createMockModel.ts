@@ -1,10 +1,11 @@
 import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3, MockEmbeddingModelV3 } from "ai/test";
+import { MockLanguageModelV3, MockEmbeddingModelV3, MockSpeechModelV3 } from "ai/test";
 import {
   LanguageModelV3,
   EmbeddingModelV3,
   LanguageModelV3StreamPart,
   LanguageModelV3GenerateResult,
+  SpeechModelV3,
 } from "@ai-sdk/provider";
 
 export const createMockModel = (modelId: string): LanguageModelV3 => {
@@ -73,6 +74,16 @@ export const createMockEmbeddingModel = (): EmbeddingModelV3 => {
       embeddings: [[0.1, 0.2, 0.3]],
       usage: { tokens: 10 },
       warnings: [],
+    }),
+  });
+};
+
+export const createMockSpeechModel = (): SpeechModelV3 => {
+  return new MockSpeechModelV3({
+    doGenerate: async () => ({
+      audio: "",
+      warnings: [],
+      response: { timestamp: new Date(), modelId: "mock-speech-model" },
     }),
   });
 };
