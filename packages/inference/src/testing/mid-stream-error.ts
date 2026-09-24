@@ -1,6 +1,6 @@
 import { MockLanguageModelV3 } from "ai/test";
-import { errorStream } from "../streams";
-import type { MockModelEntry } from "../../types";
+import { errorStream } from "./streams";
+import type { MockModelEntry } from "./types";
 
 const STREAM_ERROR = new Error("Mock mid-stream error");
 

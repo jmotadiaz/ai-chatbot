@@ -12,9 +12,8 @@ export class HubHeaderComponent {
   }
 
   async addModel(modelNameOrCapability: string | CapabilityAlias) {
-    const modelName =
-      CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias] ??
-      modelNameOrCapability;
+    const alias = CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias];
+    const modelName = alias?.id ?? modelNameOrCapability;
     const newModelButton = this.container.getByRole("button", {
       name: "New Model",
     });

@@ -5,14 +5,18 @@ import {
   type InferenceClients,
   type InferenceKit,
 } from "inference";
-import { MODEL_CATALOG } from "models";
-import { isTestMode } from "@/lib/infrastructure/env";
 import {
   createMockEmbeddingModel,
   createMockModel,
   createMockSpeechModel,
-} from "@/tests/mocks/ai";
-import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
+} from "inference/testing";
+import { MODEL_CATALOG } from "models";
+import { isTestMode } from "@/lib/infrastructure/env";
+import {
+  ALIAS_BEHAVIOURS,
+  CAPABILITY_ALIASES,
+  type CapabilityAlias,
+} from "@/tests/mocks/ai/capabilities";
 
 /**
  * Single composition root for the chatbot's AI infrastructure: the one place
@@ -25,7 +29,7 @@ import { MOCK_MODELS } from "@/tests/mocks/ai/registry";
  */
 function buildTestClients(): InferenceClients {
   // Providers are called with the provider-level model id
-  // ("deepseek-v4.1-flash") while the mock registry is keyed by catalog id
+  // ("deepseek-v4.1-flash") while CAPABILITY_ALIASES is keyed by catalog id
   // ("Deepseek v4.1 Flash"), so the catalog translates one into the other.
   // Models without a specialised entry fall back to the generic,
   // content-driven createMockModel.
@@ -36,10 +40,21 @@ function buildTestClients(): InferenceClients {
     ]),
   );
 
+  // Reverse index built once from CAPABILITY_ALIASES: catalog id -> alias,
+  // so resolving a model is a single lookup per call (entry -> alias ->
+  // behaviour, the chain ticket 02's id-keyed registry used to do directly).
+  const aliasByModelId = new Map<string, CapabilityAlias>(
+    Object.entries(CAPABILITY_ALIASES).map(([alias, { id }]) => [
+      id,
+      alias as CapabilityAlias,
+    ]),
+  );
+
   const lookupMock = (kind: string) => (modelId: string) => {
     const catalogId = catalogIdsByProviderModel.get(`${kind}:${modelId}`);
-    const mock = catalogId ? MOCK_MODELS[catalogId] : undefined;
-    return mock ? mock.languageModel : createMockModel(modelId);
+    const alias = catalogId ? aliasByModelId.get(catalogId) : undefined;
+    const behaviour = alias ? ALIAS_BEHAVIOURS[alias] : undefined;
+    return behaviour ? behaviour.languageModel : createMockModel(modelId);
   };
 
   return {

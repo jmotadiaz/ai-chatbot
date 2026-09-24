@@ -6,7 +6,7 @@ import {
   toolCallStream,
   fileStream,
   errorStream,
-} from "@/tests/mocks/ai/helpers/streams";
+} from "../../../src/testing/streams";
 
 describe("textStream", () => {
   it("emits a complete text response with finish", async () => {

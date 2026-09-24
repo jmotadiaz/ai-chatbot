@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
+import { finishChunk, textChunks } from "inference/testing";
 import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { finishChunk, textChunks } from "@/tests/mocks/ai/helpers/chunks";
 import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";
 
 // The neutral branch is tool-less on purpose; memory retrieval would otherwise

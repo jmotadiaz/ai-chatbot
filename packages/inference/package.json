@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
   },
   "scripts": {
     "lint": "eslint . --config ../../eslint.config.mjs",

@@ -4,13 +4,13 @@ export interface MockCapabilities {
   multimodal?: boolean;
   toolExecution?: boolean;
   thinkingBlocks?: boolean;
-  streamDelays?: boolean;
-  errorScenarios?: Array<"refusal" | "rate_limit" | "timeout" | "mid_stream_error">;
+  errorScenarios?: Array<"refusal" | "mid_stream_error">;
 }
 
 /**
- * A behaviour the e2e suite can select. The model it is bound to lives in
- * CAPABILITY_ALIASES, not here.
+ * A behaviour a test composition can select. This type carries no model id
+ * of its own — binding a behaviour to a real catalog id is a consumer
+ * concern (e.g. the chatbot's capability-alias table in its own tests).
  */
 export interface MockModelEntry {
   capabilities: MockCapabilities;
