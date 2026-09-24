@@ -6,7 +6,7 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GatewayProviderOptions } from "@ai-sdk/gateway";
-import type { Company } from "models";
+import type { Company, ProviderKind } from "models";
 // Types definitions for the models feature
 
 // --- From definition.ts ---
@@ -48,22 +48,12 @@ export interface RerankResult {
   score: number;
 }
 
-export interface Providers {
-  anthropic: (modelId: string) => LanguageModelV3;
-  openai: (modelId: string) => LanguageModelV3;
-  google: (modelId: string) => LanguageModelV3;
-  xai: (modelId: string) => LanguageModelV3;
-  groq: (modelId: string) => LanguageModelV3;
-  deepseek: (modelId: string) => LanguageModelV3;
-  perplexity: (modelId: string) => LanguageModelV3;
-  gateway: (modelId: string) => LanguageModelV3;
-  openrouter: (modelId: string) => LanguageModelV3;
-  deepinfra: (modelId: string) => LanguageModelV3;
-  lmstudio: (modelId: string) => LanguageModelV3;
-  opencodeGo: (modelId: string) => LanguageModelV3;
-  opencodeGoResponses: (modelId: string) => LanguageModelV3;
-  opencodeGoAnthropic: (modelId: string) => LanguageModelV3;
-  opencodeZen: (modelId: string) => LanguageModelV3;
+// Language-model clients, one per endpoint kind. `ProviderKind` is the Model
+// Catalog's key of client + API flavor (see `models`); deriving this map from
+// it means an unused or missing kind is a compile error here, not a silent
+// gap. Embedding and rerank are not endpoint kinds in the catalog, so they
+// stay as their own operations on the same registry.
+export interface Providers extends Record<ProviderKind, (modelId: string) => LanguageModelV3> {
   embedding: () => EmbeddingModelV3;
   rerank: () => (
     args: Omit<Parameters<typeof rerank>[0], "model">,
