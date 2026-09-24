@@ -1,6 +1,6 @@
 import { MockLanguageModelV3 } from "ai/test";
-import { fileStream } from "../streams";
-import type { MockModelEntry } from "../../types";
+import { fileStream } from "./streams";
+import type { MockModelEntry } from "./types";
 
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";

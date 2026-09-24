@@ -6,7 +6,7 @@ import {
   fileChunks,
   errorChunk,
   finishChunk,
-} from "@/tests/mocks/ai/helpers/chunks";
+} from "../../../src/testing/chunks";
 
 describe("textChunks", () => {
   it("produces start, delta, end sequence", () => {

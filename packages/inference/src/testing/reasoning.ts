@@ -1,6 +1,6 @@
 import { MockLanguageModelV3 } from "ai/test";
-import { reasoningStream } from "../streams";
-import type { MockModelEntry } from "../../types";
+import { reasoningStream } from "./streams";
+import type { MockModelEntry } from "./types";
 
 const model = new MockLanguageModelV3({
   modelId: "canProduceReasoning",
