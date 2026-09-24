@@ -5,6 +5,7 @@ import {
   type InferenceClients,
   type InferenceKit,
 } from "inference";
+import { createMockRerankModel } from "inference/testing";
 import { MODEL_CATALOG } from "models";
 import { isTestMode } from "@/lib/infrastructure/env";
 import { createMockEmbeddingModel, createMockModel } from "@/tests/mocks/ai";
@@ -54,21 +55,21 @@ function buildTestClients(): InferenceClients {
   };
 }
 
-export const inferenceKit: InferenceKit = isTestMode()
-  ? createInferenceKit({ clients: buildTestClients() })
-  : realInferenceKit;
-
 /**
- * Embedding and rerank are not resolved through `createInferenceKit`'s
- * `clients`/`languageModel` options yet (they become full `embed`/`rerank`
- * operations in a later ticket), so this composition root switches them the
- * same way `providers.ts` did before the kit existed: same mocks, same
- * condition, just relocated.
+ * Embedding and rerank are resolved by Model Role through the kit's `embed`/
+ * `rerank` operations. In test mode, only the underlying client per kind is
+ * swapped for a fake (same seam `clients` uses for language models) — the
+ * operation itself (catalog resolution, dimensions, taskType validation)
+ * still runs, so a bad role or taskType fails the same way it would in
+ * production. `createMockEmbeddingModel` stays sourced from the chatbot's
+ * own test mocks (not yet moved into `inference/testing`); `createMockRerankModel`
+ * always resolves an empty ranking, matching this composition root's
+ * pre-`embed`/`rerank` behaviour (`async () => []`).
  */
-export const embeddingClient: InferenceKit["embeddingClient"] = isTestMode()
-  ? () => createMockEmbeddingModel()
-  : inferenceKit.embeddingClient;
-
-export const rerankClient: InferenceKit["rerankClient"] = isTestMode()
-  ? () => async () => []
-  : inferenceKit.rerankClient;
+export const inferenceKit: InferenceKit = isTestMode()
+  ? createInferenceKit({
+      clients: buildTestClients(),
+      embeddingClients: { google: () => createMockEmbeddingModel() },
+      rerankClients: { cohere: () => createMockRerankModel() },
+    })
+  : realInferenceKit;
