@@ -34,10 +34,6 @@ _Avoid_: workspace, repo (reservado a Repository)
 Catálogo único de Models disponibles para el usuario, con sus providers, costes y niveles de thinking. Fuente de verdad en `packages/models` (`MODEL_CATALOG`), junto al que conviven, como datos independientes, un catálogo por operación no seleccionable por el usuario (embedding, rerank, decision, speech) y los mapas de Model Role que resuelven modelos internos — ver *Inferencia* más abajo.
 _Avoid_: model registry (legado), model list
 
-**Model Router** _(legado)_:
-Mecanismo, ya retirado, que seleccionaba el modelo por mensaje cuando el usuario no fijaba uno. No describe código vivo: el prefactor de Inference Kit (ticket 01) eliminó su implementación, prompts y tipos de entrada/salida. Solo sobrevive `ModelRoutingMetadata`, marcado como legado en el propio código, para que un `Message.metadata.autoModel` persistido antes de la retirada siga decodificando y renderizando.
-_Avoid_: auto model, foundation model
-
 **Compaction**:
 Proceso que resume y descarta mensajes antiguos de un Chat cuando se llena la ventana de contexto.
 _Avoid_: summarization, trimming

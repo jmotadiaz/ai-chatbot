@@ -116,15 +116,12 @@ AI SDK** — no una capa anticorrupción:
   importa `inference` e `inference/testing` desde `tsx` puro; `coding-agent → inference` es una
   dependencia real de `package.json` hoy solo para mantener ese test en verde, no porque el worker
   llame al kit desde ningún camino real todavía.
-- **El Model Router muerto deja rastro permanente.** `ModelRoutingMetadata` y
-  `MessageMetadata.autoModel` (ambos en `packages/chatbot/lib/features/chat/types.ts` — tras la
-  revisión de código de este esfuerzo, `foundation-model/` quedó solo con el `config.ts` isomorfo, y
-  `ModelRoutingMetadata` se movió junto a `autoModel` en vez de seguir importándose desde un shim) y
-  el panel de detalle en `packages/chatbot/components/chat/message.tsx` sobreviven como decodificación
-  exclusivamente legada, para que un `Message.metadata.autoModel` persistido antes de la retirada
-  siga renderizando (`packages/chatbot/tests/component/chat/legacy-model-routing-metadata.test.tsx`).
-  No hay plan de borrarlos: no describen código vivo, pero tampoco se puede borrar el historial de
-  mensajes ya persistidos.
+- **El Model Router muerto se borra por completo.** Tras la revisión, el operador eligió el borrado
+  total que pedía el ticket 01: desaparecen `ModelRoutingMetadata`, `MessageMetadata.autoModel` y el
+  panel "Router Details" de `packages/chatbot/components/chat/message.tsx`, y la entrada *Model
+  Router* sale del glosario. Los mensajes persistidos antes de la retirada que aún lleven
+  `metadata.autoModel` se siguen cargando (el campo sobrante se ignora), pero ya no muestran esa
+  sección. `foundation-model/` queda solo con el `config.ts` isomorfo.
 - **La promesa de "cero cambios en los specs de e2e" no fue del todo literal.** Mover la tabla de
   Capability Alias de un string a `{ id, requires }` tocó 6 líneas en dos specs
   (`packages/chatbot/tests/e2e/chat/hub.spec.ts`,

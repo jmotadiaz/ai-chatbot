@@ -25,37 +25,8 @@ export interface TextFile {
   mediaType: string;
 }
 
-/**
- * Legacy Model Router metadata.
- *
- * The Model Router itself (query classification into category/complexity,
- * then a model pick) is gone: `router.ts` and its prompts were deleted, and
- * nothing constructs this shape anymore. It is kept only so a
- * `Message.metadata.autoModel` persisted before the removal still decodes
- * and renders — the same treatment as `ChatModeRoutingReason`'s
- * `low_confidence` member.
- */
-export interface ModelRoutingMetadata {
-  category:
-    | "factual"
-    | "analytical"
-    | "technical"
-    | "creative"
-    | "prompt_engineering"
-    | "image_generation"
-    | "conversational"
-    | "processing"
-    | "other";
-  complexity: "simple" | "moderate" | "complex" | "advanced";
-  model: string;
-}
-
 export interface MessageMetadata {
   status: "started" | "streaming" | "finished";
-  /** Legacy: no code path sets this anymore, kept so messages persisted
-   * before the Model Router removal still decode and render (see
-   * `ModelRoutingMetadata`). */
-  autoModel?: ModelRoutingMetadata;
   chatModeRouting?: ChatModeRoutingMetadata;
   textFiles?: TextFile[];
 }
