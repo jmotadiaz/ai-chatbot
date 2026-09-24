@@ -11,7 +11,8 @@
 - [x] El simulador de evals y los scorers que hoy llaman a proveedores directamente resuelven por id o rol a través del kit; ningún id de proveedor (`provider/model`) queda en los evals.
 - [x] README del paquete: responsabilidad (fachada fina, no anticorrupción), regla de dependencia (cliente y Pi solo ven `models`), supuestos de runtime Node, cómo añadir un endpoint kind, un rol o un comportamiento de mock.
 - [x] `AGENTS.md` raíz: `inference` en la estructura del monorepo y en el grafo de dependencias; nota de que el worker puede consumirlo pero no lo hace todavía.
-- [ ] `pnpm verify:fast`, `pnpm test:e2e` y `pnpm build:verify` en verde; arranque comprobado con `pnpm dev`. Sin tocar pm2 ni `build`.
+- [x] `pnpm verify:fast`, `pnpm test:e2e` y `pnpm build:verify` en verde. Sin tocar pm2 ni `build`.
+- [ ] Arranque comprobado con `pnpm dev` (nunca pm2 ni `build`).
 
 ## Comments
 
@@ -36,4 +37,8 @@ Cross-checked each ticked box directly rather than trusting the diffstat:
 
 **Pending code review** (not treated as a blocker on the boxes ticked above, flagging for a human pass): `lib/features/foundation-model/types.ts` still re-exports `ModelConfiguration`/`ProviderOptions`/`RerankResult` from `inference` and holds the legacy `ModelRoutingMetadata`, so the foundation-model folder is not yet *only* the isomorphic UI config — `config.ts` is isomorphic, `types.ts` still bridges to `inference`.
 
-**Left unticked on purpose** (last checkbox): `pnpm verify:fast` and `pnpm build:verify` are confirmed green above; `pnpm test:e2e` is deferred to the orchestrator (serialized run across the whole integration branch, per `00-environment.md`); `pnpm dev` arranque cannot be checked on this machine (no `.env.dev` — the same gap `11-e2e-log.md` records for ticket 02) and stays pending for the operator.
+**Left unticked on purpose** (last checkbox, split in two): `pnpm verify:fast` and `pnpm build:verify` are confirmed green above; `pnpm test:e2e` is deferred to the orchestrator (serialized run across the whole integration branch, per `00-environment.md`); `pnpm dev` arranque cannot be checked on this machine (no `.env.dev` — the same gap `11-e2e-log.md` records for ticket 02) and stays pending for the operator.
+
+### 2026-09-24 — e2e verified (ticket 08 merger)
+
+Per the orchestrator's `11-e2e-log.md`: e2e ran at `31466147` (this ticket's own tip, same code as its merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm verify:fast` / `pnpm test:e2e` / `pnpm build:verify` line accordingly (all three now confirmed green). `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.
