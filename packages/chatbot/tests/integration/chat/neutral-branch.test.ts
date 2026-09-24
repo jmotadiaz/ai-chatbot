@@ -24,9 +24,7 @@ const state = vi.hoisted(() => ({
 vi.mock("@/lib/features/foundation-model/server", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream } = await import("ai");
-  const { textChunks, finishChunk } = await import(
-    "@/tests/mocks/ai/helpers/chunks"
-  );
+  const { textChunks, finishChunk } = await import("inference/testing");
 
   const model = new MockLanguageModelV3({
     modelId: "user-selected-model",
