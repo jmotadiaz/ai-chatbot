@@ -27,3 +27,12 @@ export {
   type PiModelDefinition,
   type PiModelsJson,
 } from "./generate-models-json";
+export {
+  DECISION_MODELS,
+  DECISION_ROLES,
+  type DecisionModelCatalogEntry,
+  type DecisionModelId,
+  type DecisionProviderKind,
+  type DecisionRole,
+} from "./decision-catalog";
+export { MODEL_ROLES, type ModelRole } from "./roles";
