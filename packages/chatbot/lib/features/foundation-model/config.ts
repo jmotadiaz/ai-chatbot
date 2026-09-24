@@ -1,6 +1,7 @@
 import {
   INVOCABLE_MODEL_IDS,
   MODEL_CATALOG,
+  resolveCatalogEntry,
   type Company,
   type InvocableModelId,
   type ModelCatalogEntry,
@@ -34,13 +35,15 @@ export interface ChatModelConfiguration {
   supportedOutput: ("text" | "img")[];
 }
 
-const getCatalogEntry = (modelId: string): ModelCatalogEntry => {
-  const entry = MODEL_CATALOG.find((m) => m.id === modelId);
-  if (!entry) {
-    throw new Error(`Model ${modelId} not found in MODEL_CATALOG`);
-  }
-  return entry;
-};
+const catalogById = new Map<ModelId, ModelCatalogEntry>(
+  MODEL_CATALOG.map((entry) => [entry.id as ModelId, entry]),
+);
+
+const getCatalogEntry = (modelId: string): ModelCatalogEntry =>
+  resolveCatalogEntry<ModelId, ModelCatalogEntry>(catalogById, modelId as ModelId, {
+    kind: "Model",
+    catalogName: "MODEL_CATALOG",
+  }).entry;
 
 export const getChatConfigurationByModelId = (
   modelId: chatModelId,

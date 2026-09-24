@@ -2,25 +2,25 @@ import { rerank as sdkRerank } from "ai";
 import {
   RERANK_MODELS,
   RERANK_ROLES,
+  resolveCatalogEntry,
   type RerankModelCatalogEntry,
+  type RerankModelId,
   type RerankRole,
 } from "models";
 import type { RerankClients } from "./clients/rerank";
 import type { RerankArgs, RerankResult } from "./types";
 
-const catalogById = new Map<string, RerankModelCatalogEntry>(
+const catalogById = new Map<RerankModelId, RerankModelCatalogEntry>(
   RERANK_MODELS.map((entry) => [entry.id, entry]),
 );
 
 function resolveRerankEntry(role: RerankRole): RerankModelCatalogEntry {
-  const id: string = RERANK_ROLES[role];
-  const entry = catalogById.get(id);
-  if (!entry) {
-    throw new Error(
-      `Rerank role "${role}" points at catalog id "${id}", which is not in RERANK_MODELS`,
-    );
-  }
-  return entry;
+  return resolveCatalogEntry<RerankModelId, RerankModelCatalogEntry, RerankRole>(
+    catalogById,
+    role,
+    { kind: "Rerank role", catalogName: "RERANK_MODELS" },
+    RERANK_ROLES,
+  ).entry;
 }
 
 /**

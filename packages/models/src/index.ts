@@ -20,6 +20,7 @@ export {
   toPiModelId,
   toPiProviderId,
 } from "./mapping";
+export { resolveCatalogEntry } from "./catalog-lookup";
 export {
   LANGUAGE_MODEL_ROLES,
   type LanguageModelRole,

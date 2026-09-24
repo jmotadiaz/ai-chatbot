@@ -3,6 +3,8 @@ import { getTraceContext, isTracingEnabled } from "tracing";
 import {
   DECISION_MODELS,
   DECISION_ROLES,
+  resolveCatalogEntry,
+  type DecisionModelCatalogEntry,
   type DecisionModelId,
   type DecisionRole,
 } from "models";
@@ -21,19 +23,17 @@ const DECIDE_TIMEOUT_MS = 1500;
 /** The SDK caps `session_id` at 256 characters. */
 const SESSION_ID_MAX_CHARS = 256;
 
-const catalogById = new Map<DecisionModelId, (typeof DECISION_MODELS)[number]>(
+const catalogById = new Map<DecisionModelId, DecisionModelCatalogEntry>(
   DECISION_MODELS.map((entry) => [entry.id, entry]),
 );
 
 function resolveDecisionEntry(model: DecisionModelId | DecisionRole) {
-  const id =
-    (DECISION_ROLES as Record<string, DecisionModelId>)[model] ??
-    (model as DecisionModelId);
-  const entry = catalogById.get(id);
-  if (!entry) {
-    throw new Error(`Decision model "${model}" not found in DECISION_MODELS`);
-  }
-  return entry;
+  return resolveCatalogEntry<DecisionModelId, DecisionModelCatalogEntry, DecisionRole>(
+    catalogById,
+    model,
+    { kind: "Decision model", catalogName: "DECISION_MODELS" },
+    DECISION_ROLES,
+  ).entry;
 }
 
 /**

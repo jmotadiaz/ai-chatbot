@@ -2,25 +2,25 @@ import { embedMany } from "ai";
 import {
   EMBEDDING_MODELS,
   EMBEDDING_ROLES,
+  resolveCatalogEntry,
   type EmbeddingModelCatalogEntry,
+  type EmbeddingModelId,
   type EmbeddingRole,
 } from "models";
 import type { EmbeddingClients } from "./clients/embedding";
 import type { EmbedOptions } from "./types";
 
-const catalogById = new Map<string, EmbeddingModelCatalogEntry>(
+const catalogById = new Map<EmbeddingModelId, EmbeddingModelCatalogEntry>(
   EMBEDDING_MODELS.map((entry) => [entry.id, entry]),
 );
 
 function resolveEmbeddingEntry(role: EmbeddingRole): EmbeddingModelCatalogEntry {
-  const id: string = EMBEDDING_ROLES[role];
-  const entry = catalogById.get(id);
-  if (!entry) {
-    throw new Error(
-      `Embedding role "${role}" points at catalog id "${id}", which is not in EMBEDDING_MODELS`,
-    );
-  }
-  return entry;
+  return resolveCatalogEntry<EmbeddingModelId, EmbeddingModelCatalogEntry, EmbeddingRole>(
+    catalogById,
+    role,
+    { kind: "Embedding role", catalogName: "EMBEDDING_MODELS" },
+    EMBEDDING_ROLES,
+  ).entry;
 }
 
 /**

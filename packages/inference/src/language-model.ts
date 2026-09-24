@@ -4,6 +4,7 @@ import type { LanguageModelV3 } from "@ai-sdk/provider";
 import {
   LANGUAGE_MODEL_ROLES,
   MODEL_CATALOG,
+  resolveCatalogEntry,
   type LanguageModelRole,
   type ModelCatalogEntry,
   type ModelId,
@@ -30,15 +31,14 @@ const catalogById = new Map<ModelId, ModelCatalogEntry>(
   MODEL_CATALOG.map((entry) => [entry.id as ModelId, entry]),
 );
 
-function isLanguageModelRole(key: LanguageModelKey): key is LanguageModelRole {
-  return Object.prototype.hasOwnProperty.call(LANGUAGE_MODEL_ROLES, key);
-}
-
 /** A Model Role resolves to whatever catalog id it currently points at; a plain id passes through unchanged. */
-function resolveModelId(key: LanguageModelKey): ModelId {
-  return isLanguageModelRole(key)
-    ? (LANGUAGE_MODEL_ROLES[key] as ModelId)
-    : (key as ModelId);
+function resolveModelEntry(key: LanguageModelKey) {
+  return resolveCatalogEntry<ModelId, ModelCatalogEntry, LanguageModelRole>(
+    catalogById,
+    key,
+    { kind: "Model", catalogName: "MODEL_CATALOG" },
+    LANGUAGE_MODEL_ROLES,
+  );
 }
 
 function buildBaseConfiguration(
@@ -105,13 +105,9 @@ export function createLanguageModelResolver(
   const cache = new Map<ModelId, ModelConfiguration>();
 
   return (key, options) => {
-    const id = resolveModelId(key);
+    const { id, entry } = resolveModelEntry(key);
     let baseConfig = cache.get(id);
     if (!baseConfig) {
-      const entry = catalogById.get(id);
-      if (!entry) {
-        throw new Error(`Model ${id} not found in MODEL_CATALOG`);
-      }
       baseConfig = buildBaseConfiguration(entry, clients, languageModelOverride);
       cache.set(id, baseConfig);
     }
