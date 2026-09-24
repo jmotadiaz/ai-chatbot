@@ -11,7 +11,7 @@
 - [x] Ingesta de RAG (por lotes con el rate limiter actual), recuperación de RAG y extracción/recuperación de memoria consumen las operaciones del kit a través de sus puertos actuales; `providers.embedding` y `providers.rerank` desaparecen del chatbot.
 - [x] `inference/testing` ofrece embeddings y rerank fake; la composición de test del chatbot los inyecta.
 - [x] Unit del paquete: resolución por rol para embedding y rerank, invariantes de catálogo (cada rol apunta a un id existente en su catálogo). Integration del chatbot: recuperación de RAG con embeddings y rerank fake devuelve los chunks ordenados y filtrados como hoy.
-- [ ] `pnpm verify:fast` y `pnpm test:e2e` en verde; `pnpm build:verify` compila.
+- [x] `pnpm verify:fast` y `pnpm test:e2e` en verde; `pnpm build:verify` compila.
 
 ## Comments
 
@@ -40,3 +40,7 @@ Merge commit: `e0a5a0e8` (`merge: ticket 04 — embeddings and rerank as kit ope
 - Memory extraction/retrieval (`lib/features/memory/{extraction,retrieval}/index.ts`) call `inferenceKit.embed("embedding", …)` directly through the chatbot composition root — no port was introduced for it, per the orchestrator decision (`09-orchestrator-decisions.md`: "04 — memory has no port").
 - Memory still has no automated tests of its own (no `tests/**/memory/**` in the chatbot package) — a pre-existing gap, not introduced by this ticket or this merge.
 - `pnpm test:e2e` left unticked above on purpose: the orchestrator runs it, serialized, after ticket 05 is merged.
+
+### 2026-09-24 — e2e verified (ticket 07 merger)
+
+Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `0238a443` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the verification checkbox above accordingly (`pnpm verify:fast` and `pnpm build:verify` were already confirmed green in this ticket's own merge).

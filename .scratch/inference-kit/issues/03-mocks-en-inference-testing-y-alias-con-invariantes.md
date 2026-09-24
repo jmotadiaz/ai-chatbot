@@ -13,7 +13,7 @@
 - [ ] Los helpers de e2e (selector de modelo, cabecera del hub) siguen resolviendo alias → nombre de modelo sin cambios de API para los specs.
 - [x] `tests/AGENTS.md` del chatbot actualizado: dónde viven los constructores, cómo se añade un alias con `requires`, qué comprueba el test de invariantes.
 - [x] `pnpm verify:fast` en verde.
-- [ ] `pnpm test:e2e` en verde.
+- [x] `pnpm test:e2e` en verde.
 
 ## Comments
 
@@ -33,4 +33,8 @@ Merge commit: `ccac14e8` (`merge: ticket 03 — mocks in inference/testing and c
 **Verified in the integration worktree:** `pnpm install --frozen-lockfile` (only `packages/inference/package.json` changed, adding the `"./testing"` export entry — no dependency/lockfile changes; install was a no-op). `pnpm verify:fast` green — lint + type:check + unit/component/integration/contract across all 6 workspace projects (exit 0; this also ran automatically via the pre-commit hook before I re-ran it standalone). Both `build:verify` compile steps green: `pnpm --filter coding-agent build:verify` (`dist/verify` + `.pi-verify/models.json`) and the chatbot `next build` with `export NEXT_BUILD_DIR=.next/verify` (per the `npx`-alias footgun in `00-environment.md`); confirmed `packages/chatbot/.next/verify/BUILD_ID` exists and is fresh.
 
 **Deviation — pending operator decision** (checklist item 5 left unticked on purpose): the alias table's `{ id, requires }` shape (replacing the old plain display-name string) forced appending `.id` in 6 lines across two e2e specs that read `CAPABILITY_ALIASES` directly to build local constants for panel/tab-title assertions, not through the helpers: 5 lines in `tests/e2e/chat/hub.spec.ts` (`TOOLS_MODEL`, `FAILING_MODEL`, `VISION_MODEL`, `BASIC_MODEL`, `BASIC_ALT_MODEL`) and 1 in `tests/e2e/chat/hub-sidebar-update.spec.ts` (`TOOLS_MODEL`). This was already done by the ticket 03 implementer, not something I added. The e2e **helpers'** API is genuinely unchanged (`ModelPickerComponent.selectModel()` / `HubHeaderComponent.addModel()` keep the exact same signature, only their internal lookup adapted to read `.id` off the alias object), so checklist item 5's narrow claim about the helpers holds — but the ticket's own top-line promise ("la suite e2e pasa sin cambios en los specs") does not, hence leaving it unticked rather than silently declaring full compliance. `pnpm test:e2e` itself was not run here (orchestrator runs it, serialized, after tickets 04 and 05 are merged); left unticked as instructed.
+
+### 2026-09-24 — e2e verified (ticket 07 merger)
+
+Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `0238a443` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm test:e2e` line above accordingly.
 

@@ -13,7 +13,7 @@
 - [x] El contract test actual de mode-routing con fixture de la Decisions API se mueve al paquete como contrato de `decide` (request emitido, parseo de respuesta, error ante respuesta no `choice`). La feature conserva un unit test de mapeo `choice` → modo y reason con `decide` fake.
 - [x] Integration del chatbot: conversación en `auto` con `decide` fake inyectado por el kit de test produce la misma metadata `chatModeRouting` que hoy (mismos campos, `requested: "auto"`), y un fallo de `decide` degrada a la rama neutral con `reason: "fallback"`.
 - [x] La dependencia `@openrouter/sdk` se mueve del chatbot al paquete.
-- [ ] `pnpm verify:fast` y `pnpm test:e2e` en verde; el eval de mode-routing sigue ejecutable sin cambios de dataset.
+- [x] `pnpm verify:fast` y `pnpm test:e2e` en verde; el eval de mode-routing sigue ejecutable sin cambios de dataset.
 
 ## Comments
 
@@ -46,3 +46,7 @@ Merge commit: `ce6fff9f` (`merge: ticket 05 — generic decide operation and the
 **Notes:**
 
 - The mode-routing eval, the RAG/memory embed+rerank wiring, and the internal Model Roles all now compose on the same kit instance (`packages/chatbot/lib/infrastructure/ai/inference-kit.ts`) without further changes — ticket 05 added only its own members (`decisionsClients`/`decide`) to that composition root's dependencies via `inference`'s barrel, and test mode for the Chat Mode Router uses the separate deterministic router (`createDeterministicChatModeRouter()`) rather than a kit-level `decide` override, so no test-mode wiring was needed in `inference-kit.ts` itself for this ticket.
+
+### 2026-09-24 — e2e verified (ticket 07 merger)
+
+Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `0238a443` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the verification checkbox above accordingly (`pnpm verify:fast` was already confirmed green in this ticket's own merge; the mode-routing eval's live-API run stays unexecuted here, unchanged from that merge's note, since it needs a real `OPENROUTER_API_KEY` this environment doesn't have).
