@@ -64,6 +64,7 @@ packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
 ├── config/         # Central env catalog + typed config accessors (no process.env en src/)
+├── inference/      # Server-side AI SDK facade: provider clients, lazy model resolution
 ├── models/         # Shared model catalog consumed by chatbot & coding-agent
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
@@ -78,6 +79,10 @@ Regla: en `src/` de cualquier paquete NO se usa `process.env` directamente; se i
 `config` (o `readEnv` para claves dinámicas documentadas). Las variables `NEXT_PUBLIC_*`
 quedan fuera (Next.js las inlinea en build). El paquete deja marcada la evolución a la
 credentials API de systemd en `packages/config/src/source.ts`.
+
+### `inference` — Inference Kit
+
+Server/Node package: a thin facade over the AI SDK. Owns the language-model clients per endpoint kind (`ProviderKind`, see `models`), reading every provider API key via `config` instead of letting each SDK read `process.env` implicitly, and the lazy, memoized resolution from a catalog id to a full Model Configuration. Built with `createInferenceKit(options)`; a default instance is also exported. No `server-only` (the package boundary is convention + lint, not a runtime import guard) and no knowledge of test environments — the chatbot's own composition root (`packages/chatbot/lib/infrastructure/ai/inference-kit.ts`) is the one place that picks the real kit or a kit built with the mock registry, based on `NEXT_PUBLIC_ENV`. `packages/chatbot/lib/infrastructure/ai/providers.ts` and `packages/chatbot/lib/features/foundation-model/server.ts` are thin reexports over that composition root, kept so existing features do not have to change imports.
 
 ### `chatbot` — Main Application
 
@@ -105,8 +110,11 @@ Reusable observability library used by both `chatbot` and `coding-agent`. Provid
 chatbot ──→ coding-agent
    │              │
    ├──────────────┼──→ tracing
-   └──────────────┴──→ models
+   ├──────────────┼──→ models
+   └──────────────┴──→ inference ──→ { config, models }
 ```
+
+`coding-agent → inference` is a real `package.json` dependency (proven by a contract test importing it from a plain tsx process), not yet a real runtime consumer — the worker does not call the kit in production code.
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph

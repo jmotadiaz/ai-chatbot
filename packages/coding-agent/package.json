@@ -52,6 +52,7 @@
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.85.1",
     "config": "workspace:*",
+    "inference": "workspace:*",
     "models": "workspace:*",
     "nunjucks": "^3.2.4",
     "tracing": "workspace:*",

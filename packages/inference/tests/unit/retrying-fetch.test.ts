@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRetryingFetch } from "@/lib/infrastructure/ai/retrying-fetch";
+import { createRetryingFetch } from "../../src/retrying-fetch";
 
 const response = (status: number) => new Response("{}", { status });
 

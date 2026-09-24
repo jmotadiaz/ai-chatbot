@@ -1,5 +1,3 @@
-import "server-only";
-
 export interface RetryingFetchOptions {
   /** Reintentos extra tras el primer intento (por defecto 3). */
   retries?: number;
