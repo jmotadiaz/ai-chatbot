@@ -1,7 +1,7 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
+import type { ModelConfiguration } from "inference";
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
-import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
 import {

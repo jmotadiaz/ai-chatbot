@@ -1,4 +1,4 @@
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ModelConfiguration } from "inference";
 
 // Ports expose only model configuration providers — one per classifier/action.
 // The factory owns generateObject, streamObject, streamText.

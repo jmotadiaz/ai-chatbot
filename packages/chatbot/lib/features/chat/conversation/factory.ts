@@ -11,6 +11,7 @@ import type { ModelMessage } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { isTracingEnabled, wrapWithTracing } from "tracing";
 import { config } from "config";
+import type { ModelConfiguration } from "inference";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -28,7 +29,6 @@ import {
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import { chatbotMessageToDbMessage } from "@/lib/features/chat/utils";
 import { generateTitle } from "@/lib/features/chat/title";
 import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";

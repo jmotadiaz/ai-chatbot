@@ -1,4 +1,4 @@
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ModelConfiguration } from "inference";
 
 export interface ChatAgentAiPort {
   getRagModelConfiguration(): ModelConfiguration;

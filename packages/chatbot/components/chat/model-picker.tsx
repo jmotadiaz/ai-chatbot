@@ -1,10 +1,10 @@
 "use client";
 
 import { FileText, ImageIcon, Plus, Shield, Brain } from "lucide-react";
+import type { Company } from "models";
 import { useChatContext } from "@/components/chat/provider";
 import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
-import type { Company } from "@/lib/features/foundation-model/types";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { cn } from "@/lib/utils/helpers";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";

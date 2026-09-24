@@ -11,8 +11,7 @@ import type {
 import Image from "next/image";
 import { capitalize, cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
-import type { ChatbotMessage } from "@/lib/features/chat/types";
-import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
+import type { ChatbotMessage, ModelRoutingMetadata } from "@/lib/features/chat/types";
 import type {
   ChatModeRoutingMetadata,
   ResolvedChatMode,

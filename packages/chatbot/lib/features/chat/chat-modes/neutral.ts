@@ -1,5 +1,5 @@
 import { ToolLoopAgent } from "ai";
-import { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ModelConfiguration } from "inference";
 import { DEFAULT_PROJECT_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
 
 /**

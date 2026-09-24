@@ -1,5 +1,6 @@
 import { generateObject, streamObject, streamText } from "ai";
 import { z } from "zod";
+import type { ModelConfiguration } from "inference";
 import type { CorrectGrammarAiPort, TranslateAiPort } from "./ports";
 import {
   audienceInstructions,
@@ -10,7 +11,6 @@ import {
   targetLanguages,
 } from "./utils";
 import { grammarSchema } from "./schemas";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 // ─── Classification schemas ──────────────────────────────────────────────────
 

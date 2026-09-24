@@ -3,8 +3,8 @@ import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
 import { finishChunk, textChunks } from "inference/testing";
+import type { ModelConfiguration } from "inference";
 import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";
 
