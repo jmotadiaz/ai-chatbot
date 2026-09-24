@@ -1,5 +1,7 @@
 import { buildDefaultClients, buildEmbeddingClient, buildRerankClient } from "./clients";
+import { buildDefaultDecisionsClients } from "./clients/decisions";
 import { createLanguageModelResolver } from "./language-model";
+import { createDecideResolver } from "./decide";
 import type { CreateInferenceKitOptions, InferenceKit } from "./types";
 
 /**
@@ -13,16 +15,22 @@ export function createInferenceKit(
   options: CreateInferenceKitOptions = {},
 ): InferenceKit {
   const clients = { ...buildDefaultClients(), ...options.clients };
+  const decisionsClients = {
+    ...buildDefaultDecisionsClients(),
+    ...options.decisionsClients,
+  };
   const languageModel = createLanguageModelResolver(
     clients,
     options.languageModel,
   );
+  const decide = options.decide ?? createDecideResolver(decisionsClients);
 
   return {
     languageModel,
     clients,
     embeddingClient: buildEmbeddingClient(),
     rerankClient: buildRerankClient(),
+    decide,
   };
 }
 

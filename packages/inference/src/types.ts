@@ -6,7 +6,16 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { GatewayProviderOptions } from "@ai-sdk/gateway";
-import type { Company, ModelCatalogEntry, ModelId, ProviderKind } from "models";
+import type { OpenRouter } from "@openrouter/sdk";
+import type {
+  Company,
+  DecisionModelId,
+  DecisionProviderKind,
+  DecisionRole,
+  ModelCatalogEntry,
+  ModelId,
+  ProviderKind,
+} from "models";
 
 /**
  * Per-provider options the AI SDK accepts on a call, keyed by SDK. This is a
@@ -56,6 +65,54 @@ export interface LanguageModelOptions {
   providerOptions?: ProviderOptions;
 }
 
+/**
+ * Only the `.alpha.decisions.create` surface is used, kept structural (not a
+ * class type) so a real `OpenRouter` instance wired to a canned fetcher can
+ * stand in for tests, same seam the chat-mode-routing adapter used before
+ * this moved into the kit.
+ */
+export type DecisionsClient = Pick<OpenRouter, "alpha">;
+
+/** One Decisions-API client per decision endpoint kind (`DecisionProviderKind`, see `models`). */
+export type DecisionsClients = Record<DecisionProviderKind, () => DecisionsClient>;
+
+/** A single `type: "choice"` question sent to the Decisions API. */
+export interface DecisionQuestion {
+  instructions: string;
+  criteria: Record<string, string>;
+}
+
+/** Trace scope for one `decide` call; defaults from the ambient trace context when omitted. */
+export interface DecisionScope {
+  sessionId?: string;
+  traceId?: string;
+}
+
+export interface DecideOptions {
+  /** Decision catalog id or Model Role (see `DECISION_ROLES` in `models`). */
+  model: DecisionModelId | DecisionRole;
+  question: DecisionQuestion;
+  /** Passed through to the Decisions API as-is (text, an object, or an array of state entries). */
+  state: string | Record<string, unknown> | unknown[];
+  scope?: DecisionScope;
+}
+
+/**
+ * Generic provenance of one decision: what was chosen plus everything needed
+ * for per-turn accounting and observability. No question-specific typing
+ * (e.g. no union of a question's option keys) — that narrowing belongs to the
+ * consumer's own domain type, not this generic shape.
+ */
+export interface Decision {
+  choice: string;
+  confidence?: number;
+  probabilities?: Record<string, number>;
+  modelId: string;
+  provider?: string;
+  latencyMs: number;
+  costUsd?: number;
+}
+
 export interface InferenceKit {
   /**
    * Model Configuration for a catalog id: built from the matching client and
@@ -73,6 +130,12 @@ export interface InferenceKit {
   rerankClient: () => (
     args: Omit<Parameters<typeof rerank>[0], "model">,
   ) => Promise<RerankResult[]>;
+  /**
+   * Answers a single `choice` question through the Decisions API, bounded by
+   * a fixed timeout on both the SDK attempt and the whole call. Errors
+   * propagate: the fallback policy belongs to the caller.
+   */
+  decide: (options: DecideOptions) => Promise<Decision>;
 }
 
 export interface CreateInferenceKitOptions {
@@ -85,4 +148,12 @@ export interface CreateInferenceKitOptions {
    * id without touching `clients`.
    */
   languageModel?: (entry: ModelCatalogEntry) => LanguageModelV3 | undefined;
+  /** Overrides one or more Decisions-API clients by kind (mirrors `clients`). */
+  decisionsClients?: Partial<DecisionsClients>;
+  /**
+   * Overrides `decide` wholesale — the seam a test composition uses to inject
+   * a fake decide (no network, no Decisions client at all) without touching
+   * `decisionsClients`.
+   */
+  decide?: (options: DecideOptions) => Promise<Decision>;
 }
