@@ -1,11 +1,13 @@
 import { randomUUID } from "crypto"
 import { generateText } from "ai"
+import type { ModelId } from "models"
 import type { TranscriptMessage } from "./types"
 import type { createTraceWriter } from "./trace-writer"
-import { providers } from "@/lib/infrastructure/ai/providers"
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 
 interface SimulatorOptions {
-  modelKey: string
+  /** A Model Catalog id — resolved through the kit, never a raw provider/model pair. */
+  modelKey: ModelId
   scenarioPrompt: string
   traceWriter?: ReturnType<typeof createTraceWriter>
 }
@@ -28,24 +30,9 @@ function extractText(
 export function createSimulator(options: SimulatorOptions) {
   const { scenarioPrompt, modelKey, traceWriter } = options
 
-  const modelMap: Record<
-    string,
-    () => ReturnType<typeof providers.openrouter | typeof providers.opencodeGo>
-  > = {
-    "Deepseek v4.1 Flash": () => providers.opencodeGo("deepseek-v4.1-flash"),
-    "Deepseek v4 Pro": () => providers.opencodeGo("deepseek-v4-pro"),
-    "Nemotron 3 Nano": () =>
-      providers.openrouter("nvidia/nemotron-3-nano-30b-a3b:free"),
-    "Nemotron 3 Super": () =>
-      providers.openrouter("nvidia/nemotron-3-super-120b-a12b:free"),
-  }
-
-  const modelFactory = modelMap[modelKey]
-  if (!modelFactory) {
-    throw new Error(
-      `Unknown simulator model: ${modelKey}. Available: ${Object.keys(modelMap).join(", ")}`,
-    )
-  }
+  // Resolved by catalog id through the kit — no provider/model literal here;
+  // `languageModel` itself throws if `modelKey` is not in `MODEL_CATALOG`.
+  const modelFactory = () => inferenceKit.languageModel(modelKey).model
 
   return {
     async generateNextMessage(

@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { ChatControl } from "@/components/chat/control";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { Label } from "@/components/ui/label";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ChatModelConfiguration } from "@/lib/features/foundation-model/config";
 
 export interface AttachmentsControlProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  supportedFiles: Required<ModelConfiguration>["supportedFiles"];
+  supportedFiles: ChatModelConfiguration["supportedFiles"];
   /**
    * Bloqueo mid-turn (ticket 03): la cola es texto plano v1, así que
    * adjuntar en Turn activo compondría algo que el worker rechazaría.

@@ -11,7 +11,7 @@ import type { ModelMessage } from "ai";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { isTracingEnabled, wrapWithTracing } from "tracing";
 import { config } from "config";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
@@ -105,8 +105,8 @@ const buildAgentAdapter = (
 ): ChatAgentAiPort => {
   const getConfig = (): ModelConfiguration => {
     const base =
-      languageModelConfigurations(selectedModel) ||
-      languageModelConfigurations(chatModelKeys[0]);
+      inferenceKit.languageModel(selectedModel) ||
+      inferenceKit.languageModel(chatModelKeys[0]);
     const tracedModel = isTracingEnabled()
       ? wrapWithTracing(
           base.model as LanguageModelV3,

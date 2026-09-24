@@ -1,5 +1,4 @@
-import type { LanguageModelV3 } from "@ai-sdk/provider";
-import type { Company, ProviderKind } from "models";
+import type { Company } from "models";
 // Types definitions for the models feature
 
 // --- From definition.ts ---
@@ -11,16 +10,6 @@ export type { Company };
 // process, so it cannot depend back on chatbot feature code); reexported here
 // so nothing in the chatbot has to change its import path.
 export type { ModelConfiguration, ProviderOptions, RerankResult } from "inference";
-
-// --- From providers.ts ---
-
-// Language-model clients, one per endpoint kind. `ProviderKind` is the Model
-// Catalog's key of client + API flavor (see `models`); deriving this map from
-// it means an unused or missing kind is a compile error here, not a silent
-// gap. Embedding and rerank are resolved by Model Role now (the kit's
-// `embed`/`rerank` operations, see `@/lib/infrastructure/ai/inference-kit`),
-// not provider clients, so they no longer live on this type.
-export type Providers = Record<ProviderKind, (modelId: string) => LanguageModelV3>;
 
 /**
  * Legacy Model Router metadata.

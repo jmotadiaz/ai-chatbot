@@ -22,8 +22,11 @@ const state = vi.hoisted(() => ({
 }));
 
 // The AI port is built inside `makeProcessChatResponse`, so the user-selected
-// model + parameters reach the neutral branch from here.
-vi.mock("@/lib/features/foundation-model/server", async () => {
+// model + parameters reach the neutral branch from here. This mocks the
+// composition root directly (the `foundation-model/server` shim it used to
+// target is gone): everything under test resolves models through
+// `inferenceKit.languageModel`.
+vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream } = await import("ai");
   const { textChunks, finishChunk } = await import("inference/testing");
@@ -45,12 +48,14 @@ vi.mock("@/lib/features/foundation-model/server", async () => {
   });
 
   return {
-    languageModelConfigurations: () => ({
-      model,
-      company: "openai",
-      temperature: 0.2,
-      topP: 0.8,
-    }),
+    inferenceKit: {
+      languageModel: () => ({
+        model,
+        company: "openai",
+        temperature: 0.2,
+        topP: 0.8,
+      }),
+    },
   };
 });
 

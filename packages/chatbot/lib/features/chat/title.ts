@@ -2,7 +2,7 @@ import "server-only";
 
 import type { TextUIPart } from "ai";
 import { generateText } from "ai";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 const filterTextParts = (parts: ChatbotMessage["parts"] = []) => {
@@ -22,7 +22,7 @@ export async function generateTitle(messages: ChatbotMessage[]) {
 
   try {
     const { text: title } = await generateText({
-      ...languageModelConfigurations("chatTitle"),
+      ...inferenceKit.languageModel("chatTitle"),
       system: `\n
       You are a chat title generator. Create a concise title (≤60 characters) summarizing the first user message. Follow these rules:
       1. Extract the core topic from the user's message

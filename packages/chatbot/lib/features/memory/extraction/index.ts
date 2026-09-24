@@ -6,7 +6,6 @@ import { MEMORY_EXTRACTION_SYSTEM_PROMPT } from "./prompts";
 import { upsertMemoryFact } from "./dedup";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { messagePartsToText } from "@/lib/features/chat/utils";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 const factSchema = z.object({
@@ -32,7 +31,7 @@ export async function extractMemoryFacts({
   if (!conversation.trim()) return;
 
   const { output } = await generateText({
-    ...languageModelConfigurations("memoryExtraction"),
+    ...inferenceKit.languageModel("memoryExtraction"),
     system: MEMORY_EXTRACTION_SYSTEM_PROMPT,
     prompt: conversation,
     output: Output.object({ schema: factSchema }),
