@@ -63,3 +63,28 @@ export interface Providers extends Record<ProviderKind, (modelId: string) => Lan
 export interface ProvidersFactory {
   (): Providers;
 }
+
+/**
+ * Legacy Model Router metadata.
+ *
+ * The Model Router itself (query classification into category/complexity,
+ * then a model pick) is gone: `router.ts` and its prompts were deleted, and
+ * nothing constructs this shape anymore. It is kept only so a
+ * `Message.metadata.autoModel` persisted before the removal still decodes
+ * and renders — the same treatment as `ChatModeRoutingReason`'s
+ * `low_confidence` member.
+ */
+export interface ModelRoutingMetadata {
+  category:
+    | "factual"
+    | "analytical"
+    | "technical"
+    | "creative"
+    | "prompt_engineering"
+    | "image_generation"
+    | "conversational"
+    | "processing"
+    | "other";
+  complexity: "simple" | "moderate" | "complex" | "advanced";
+  model: string;
+}

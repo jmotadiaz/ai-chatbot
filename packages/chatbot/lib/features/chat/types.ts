@@ -1,5 +1,6 @@
 import type { InferUITools, UIMessage } from "ai";
 import { queryDocs, resolveLibraryId } from "@upstash/context7-tools-ai-sdk";
+import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import type { ChatModeRoutingMetadata } from "@/lib/features/chat/mode-routing/types";
 import { RagTool } from "@/lib/features/rag/tool";
 import { URLContextTool, WebSearchTool } from "@/lib/features/web-search/tools";
@@ -27,6 +28,10 @@ export interface TextFile {
 
 export interface MessageMetadata {
   status: "started" | "streaming" | "finished";
+  /** Legacy: no code path sets this anymore, kept so messages persisted
+   * before the Model Router removal still decode and render (see
+   * `ModelRoutingMetadata`). */
+  autoModel?: ModelRoutingMetadata;
   chatModeRouting?: ChatModeRoutingMetadata;
   textFiles?: TextFile[];
 }

@@ -45,74 +45,25 @@ export const createMockModel = (modelId: string): LanguageModelV3 => {
       }),
       rawCall: { rawPrompt: null, rawSettings: {} },
     }),
-    doGenerate: async ({ prompt }) => {
-      // Check for system prompt indicating tools decision
-      const isToolsDecision = prompt.some(
-        (p) =>
-          p.role === "system" &&
-          typeof p.content === "string" &&
-          p.content.includes(
-            "Determine if a user's request necessitates the use of the 'web search' tool"
-          )
-      );
-
-      if (isToolsDecision) {
-        return {
-          finishReason: { unified: "stop", raw: "stop" },
-          usage: {
-            inputTokens: {
-              total: 10,
-              noCache: undefined,
-              cacheRead: undefined,
-              cacheWrite: undefined,
-            },
-            outputTokens: { total: 20, text: undefined, reasoning: undefined },
-          },
-          content: [
-            {
-              type: "text",
-              text: `{ "tools": [] }`,
-            },
-          ],
-          warnings: [],
-        } as LanguageModelV3GenerateResult;
-      }
-
-      const lastPrompt = prompt[prompt.length - 1];
-      const lastMessageContent =
-        lastPrompt.role === "user"
-          ? lastPrompt.content
-              .filter((part) => part.type === "text")
-              .map((part) => part.text)
-              .join(" ")
-          : "";
-
-      const categoryMatch = lastMessageContent.match(/category=(\w+)/);
-      const complexityMatch = lastMessageContent.match(/complexity=(\w+)/);
-
-      const category = categoryMatch ? categoryMatch[1] : "other";
-      const complexity = complexityMatch ? complexityMatch[1] : "simple";
-
-      return {
-        finishReason: { unified: "stop", raw: "stop" },
-        usage: {
-          inputTokens: {
-            total: 10,
-            noCache: undefined,
-            cacheRead: undefined,
-            cacheWrite: undefined,
-          },
-          outputTokens: { total: 20, text: undefined, reasoning: undefined },
+    doGenerate: async () => ({
+      finishReason: { unified: "stop", raw: "stop" },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: undefined,
+          cacheRead: undefined,
+          cacheWrite: undefined,
         },
-        content: [
-          {
-            type: "text",
-            text: `{ "category": "${category}", "complexity": "${complexity}" }`,
-          },
-        ],
-        warnings: [],
-      } as LanguageModelV3GenerateResult;
-    },
+        outputTokens: { total: 20, text: undefined, reasoning: undefined },
+      },
+      content: [
+        {
+          type: "text",
+          text: `Mock response from ${modelId}`,
+        },
+      ],
+      warnings: [],
+    } as LanguageModelV3GenerateResult),
   });
 };
 
