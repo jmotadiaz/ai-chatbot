@@ -19,11 +19,11 @@
 
 ### 2026-09-24 — merged
 
-Merge commit: `ccac14e8` (`merge: ticket 03 — mocks in inference/testing and capability aliases with invariants`, into `feat/inference-kit`). Implementer commits merged (`git log --oneline --reverse 9726aa90..inference-kit/03-mocks-testing-alias`, oldest first):
+Merge commit: `a761fb9e` (`merge: ticket 03 — mocks in inference/testing and capability aliases with invariants`, into `feat/inference-kit`). Implementer commits merged (`git log --oneline --reverse d4c00379..inference-kit/03-mocks-testing-alias`, oldest first):
 
-- `b135aefc` feat(inference): move AI SDK mock builders to inference/testing
-- `83d233b9` refactor(chatbot): resolve capability-alias mocks through inference/testing
-- `64f6fbae` test(coding-agent): cover the inference/testing subpath from plain tsx
+- `4938147c` feat(inference): move AI SDK mock builders to inference/testing
+- `ba9166fc` refactor(chatbot): resolve capability-alias mocks through inference/testing
+- `ba4cd9dd` test(coding-agent): cover the inference/testing subpath from plain tsx
 
 **Conflicts and how they were resolved** (both against ticket 06, already merged; matched the `git merge-tree` preview exactly, no surprises):
 
@@ -36,5 +36,5 @@ Merge commit: `ccac14e8` (`merge: ticket 03 — mocks in inference/testing and c
 
 ### 2026-09-24 — e2e verified (ticket 07 merger)
 
-Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `0238a443` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm test:e2e` line above accordingly.
+Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `24d75f6c` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm test:e2e` line above accordingly.
 

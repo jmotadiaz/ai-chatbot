@@ -17,18 +17,18 @@
 
 ### 2026-09-24 — merged
 
-- Merge commit: `3fbd4c02` (`merge: ticket 06 — Model Roles for the internal features`, into `feat/inference-kit`).
-- Implementer commits merged (`git log --oneline 9726aa90..inference-kit/06-model-roles`):
-  - `3a70b9f8` feat(models): add Model Roles for internal language and speech call sites
-  - `f78c24a5` feat(inference): accept Model Roles in languageModel; add createAgent and speechModel
-  - `75a0dda2` refactor(chatbot): migrate internal features to Model Roles; move TTS behind the kit
-  - `a625a2a0` fix(chatbot): keep compaction's persisted modelUsed as a catalog id, not a role
+- Merge commit: `fa781255` (`merge: ticket 06 — Model Roles for the internal features`, into `feat/inference-kit`).
+- Implementer commits merged (`git log --oneline d4c00379..inference-kit/06-model-roles`):
+  - `d9c9b7d2` feat(models): add Model Roles for internal language and speech call sites
+  - `88a876e7` feat(inference): accept Model Roles in languageModel; add createAgent and speechModel
+  - `85890a6b` refactor(chatbot): migrate internal features to Model Roles; move TTS behind the kit
+  - `aa6b4786` fix(chatbot): keep compaction's persisted modelUsed as a catalog id, not a role
 - Verified in the integration worktree: clean `--no-ff` merge (no conflicts, as expected — 06 branched from ticket 02's tip and only ticket-closing commits landed on integration since); `pnpm install --frozen-lockfile` (lockfile already up to date); `pnpm verify:fast` green (lint + type:check + unit/component/integration/contract, all packages); both `build:verify` compile steps green — `pnpm --filter coding-agent build:verify` (`dist/verify` + `.pi-verify/models.json`) and the chatbot `next build` with `NEXT_BUILD_DIR=.next/verify` (confirmed `packages/chatbot/.next/verify` exists afterwards).
 - Judgment calls / notes for reviewers:
   - `webSearchUrlIntent` is the URL-intent classifier `hasContextUrls` in `lib/features/web-search/utils.ts` (the only model call under web-search).
   - Text-to-speech moved behind the kit via `SPEECH_MODELS`/`SPEECH_ROLES` (`packages/models/src/speech-catalog.ts`) + `speechModel(role)` on the kit — an orchestrator decision (`09-orchestrator-decisions.md`), needed for ticket 07's lint rule (no provider SDK imports/literal ids outside the kit).
   - `SPEECH_ROLES` is part of the flat `MODEL_ROLES` (`packages/models/src/roles.ts`: `{ ...LANGUAGE_MODEL_ROLES, ...SPEECH_ROLES }`).
-  - `ChatSummary.modelUsed` keeps recording the resolved catalog id, not the role name (commit `a625a2a0`).
+  - `ChatSummary.modelUsed` keeps recording the resolved catalog id, not the role name (commit `aa6b4786`).
   - The root `AGENTS.md` inference paragraph was touched (documents `languageModel`/`createAgent` accepting a Model Role and the new `speechModel`).
 
 ### 2026-09-24 — code review: pending note resolved
@@ -44,5 +44,5 @@ class), but now gets its traced Model Configuration from the kit's new `createAg
 operation split out of `create-agent.ts` alongside `createAgent` (`packages/inference/src/kit.ts`,
 `src/types.ts`) — instead of `conversation/factory.ts` calling `wrapWithTracing`/`isTracingEnabled`
 by hand, which was the last non-kit tracing call site in the chatbot. Commit
-`f002df6a` (`refactor(chatbot,inference): adopt createAgent in the Chat Modes`). No behavior change:
+`68f2b7ef` (`refactor(chatbot,inference): adopt createAgent in the Chat Modes`). No behavior change:
 same model, same parameters, same tracing when `TRACE_ENABLED=1`, same agent settings per mode.

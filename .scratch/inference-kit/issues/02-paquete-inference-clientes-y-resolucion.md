@@ -22,13 +22,13 @@
 
 ### 2026-09-24 — merged
 
-Merged into `feat/inference-kit` at `7da1cbd3` (`git merge --no-ff inference-kit/02-paquete-inference`), no conflicts (integration branch had only gained ticket 01's merge + closing commit since 02 branched, as expected). Implementer commits (`git log --oneline` of the merged range, oldest first):
+Merged into `feat/inference-kit` at `845a223c` (`git merge --no-ff inference-kit/02-paquete-inference`), no conflicts (integration branch had only gained ticket 01's merge + closing commit since 02 branched, as expected). Implementer commits (`git log --oneline` of the merged range, oldest first):
 
-- `a62ef028` feat(config): declare provider API keys the inference kit reads explicitly
-- `e0da208e` feat(inference): add the inference kit package
-- `92c655b2` refactor(chatbot): resolve language models and providers through the inference kit
-- `cf3e9115` test(coding-agent): prove the inference package imports from a plain tsx process
-- `9726aa90` docs: document the inference package and refresh .env.example
+- `27635e00` feat(config): declare provider API keys the inference kit reads explicitly
+- `69a3946f` feat(inference): add the inference kit package
+- `a4ff88f3` refactor(chatbot): resolve language models and providers through the inference kit
+- `34059abb` test(coding-agent): prove the inference package imports from a plain tsx process
+- `d4c00379` docs: document the inference package and refresh .env.example
 
 **Verified in the integration worktree:** `pnpm install --frozen-lockfile` (package.json changed in chatbot, coding-agent, and the new `inference` package) resolved cleanly against the committed lockfile. `pnpm verify:fast` green — lint + type:check + unit/component/integration/contract across all 6 workspace projects including the new `inference` package (exit 0). Both `build:verify` compile steps green: `pnpm --filter coding-agent build:verify` (tsc → `dist/verify` + `.pi-verify/models.json`) and the isolated chatbot build (`export NEXT_BUILD_DIR=.next/verify; npx next build`, using `export` per the `npx`-alias footgun in `00-environment.md`); confirmed `packages/chatbot/.next/verify` exists with a fresh `BUILD_ID` and that plain `.next` holds nothing but the `verify` subdir.
 
@@ -44,4 +44,4 @@ Noted deviations from the ticket's literal wording (pre-existing/expected, not r
 
 ### 2026-09-24 — e2e verified (ticket 06 merger)
 
-Per the orchestrator's `11-e2e-log.md`: e2e ran on `.worktrees/baseline-e2e` at commit `1803e9ef` (integration tip right after this ticket's merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures (8 × `tests/e2e/chat/navigation.spec.ts`, 1 × `tests/e2e/chat/sidebar.spec.ts` "should navigate between chats"), no new failures vs. the `main`-code baseline (`c0caffd6`). Ticking the `pnpm test:e2e` line above accordingly. `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.
+Per the orchestrator's `11-e2e-log.md`: e2e ran on `.worktrees/baseline-e2e` at commit `6cfa0a81` (integration tip right after this ticket's merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures (8 × `tests/e2e/chat/navigation.spec.ts`, 1 × `tests/e2e/chat/sidebar.spec.ts` "should navigate between chats"), no new failures vs. the `main`-code baseline (`c0caffd6`). Ticking the `pnpm test:e2e` line above accordingly. `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.

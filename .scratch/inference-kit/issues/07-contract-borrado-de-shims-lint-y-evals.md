@@ -18,13 +18,13 @@
 
 ### 2026-09-24 — merged
 
-Merge commit: `143e53c6` (`merge: ticket 07 — contract phase: shims removed, lint boundary, evals through the kit`, into `feat/inference-kit`). No conflicts — 07 branched from ticket 05's closing commit (`0238a443`), which was still the integration tip at merge time. Implementer commits merged (`git log --oneline --reverse 0238a443..inference-kit/07-contract`, oldest first):
+Merge commit: `fc0f3aee` (`merge: ticket 07 — contract phase: shims removed, lint boundary, evals through the kit`, into `feat/inference-kit`). No conflicts — 07 branched from ticket 05's closing commit (`24d75f6c`), which was still the integration tip at merge time. Implementer commits merged (`git log --oneline --reverse 24d75f6c..inference-kit/07-contract`, oldest first):
 
-- `47857989` refactor(chatbot): delete transitional inference re-exports; resolve through the composition root everywhere
-- `b32051e0` test(chatbot): resolve eval models through the inference kit instead of raw provider ids
-- `99b116e1` chore(chatbot): drop provider SDK dependencies now owned by packages/inference
-- `23732920` feat(chatbot): lint rules for the inference dependency boundary
-- `31466147` docs(inference): add the package README; refresh root AGENTS.md for the contract phase
+- `e2e3ba13` refactor(chatbot): delete transitional inference re-exports; resolve through the composition root everywhere
+- `f3483067` test(chatbot): resolve eval models through the inference kit instead of raw provider ids
+- `4d8a1b97` chore(chatbot): drop provider SDK dependencies now owned by packages/inference
+- `3e968547` feat(chatbot): lint rules for the inference dependency boundary
+- `cb39037e` docs(inference): add the package README; refresh root AGENTS.md for the contract phase
 
 **Verified in the integration worktree:** `pnpm install --frozen-lockfile` (chatbot's `package.json` dropped the provider SDK deps; 86 packages removed, lockfile already consistent). `pnpm verify:fast` green — lint + type:check + unit/component/integration/contract across all 6 workspace projects (exit 0). Both `build:verify` compile steps green: `pnpm --filter coding-agent build:verify` (`dist/verify` + `.pi-verify/models.json`) and the chatbot `next build` with `export NEXT_BUILD_DIR=.next/verify` (per the `npx`-alias footgun in `00-environment.md`); confirmed `packages/chatbot/.next/verify/BUILD_ID` exists afterwards, plain `.next` untouched, and `git status` clean (both output dirs gitignored).
 
@@ -41,7 +41,7 @@ Cross-checked each ticked box directly rather than trusting the diffstat:
 
 ### 2026-09-24 — e2e verified (ticket 08 merger)
 
-Per the orchestrator's `11-e2e-log.md`: e2e ran at `31466147` (this ticket's own tip, same code as its merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm verify:fast` / `pnpm test:e2e` / `pnpm build:verify` line accordingly (all three now confirmed green). `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.
+Per the orchestrator's `11-e2e-log.md`: e2e ran at `cb39037e` (this ticket's own tip, same code as its merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the `pnpm verify:fast` / `pnpm test:e2e` / `pnpm build:verify` line accordingly (all three now confirmed green). `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.
 
 ### 2026-09-24 — code review: pending note resolved
 
@@ -51,7 +51,7 @@ resolved. The shim is deleted; server code imports `ModelConfiguration`/`Provide
 `ModelRoutingMetadata` moved next to `MessageMetadata.autoModel` in
 `packages/chatbot/lib/features/chat/types.ts` (its doc comment came along unchanged). `foundation-model/`
 now holds only the isomorphic `config.ts`, so it is exactly what this ticket's own checklist item
-described. Commit `f83bb49b` (`refactor(chatbot): remove the foundation-model/types.ts transitional
+described. Commit `4e6da3e6` (`refactor(chatbot): remove the foundation-model/types.ts transitional
 shim`). The client-boundary lint rule (`local/no-inference-in-client-components`) stays green with no
 exceptions — `Company` now reaches client components (e.g. `components/chat/model-picker.tsx`) from
 `models` directly, never from `inference` or the composition root.

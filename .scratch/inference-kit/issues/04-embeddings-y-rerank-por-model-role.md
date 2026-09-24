@@ -17,13 +17,13 @@
 
 ### 2026-09-24 — merged
 
-Merge commit: `e0a5a0e8` (`merge: ticket 04 — embeddings and rerank as kit operations by Model Role`, into `feat/inference-kit`). Implementer commits merged (`git log --oneline --reverse 9726aa90..inference-kit/04-embeddings-rerank`, oldest first):
+Merge commit: `8847fcad` (`merge: ticket 04 — embeddings and rerank as kit operations by Model Role`, into `feat/inference-kit`). Implementer commits merged (`git log --oneline --reverse d4c00379..inference-kit/04-embeddings-rerank`, oldest first):
 
-- `56b03f12` feat(models): add embedding and rerank catalogs with Model Roles
-- `72af5dab` feat(inference): add embed and rerank kit operations resolved by Model Role
-- `2beb4086` refactor(chatbot): consume embed/rerank kit operations in RAG and memory
-- `2d29f0d4` test(coding-agent): assert the kit's embed/rerank, not the old client shim
-- `cc1ef901` test(chatbot): exercise RAG retrieve's real embed/rerank kit wiring
+- `d62d1eae` feat(models): add embedding and rerank catalogs with Model Roles
+- `a542f252` feat(inference): add embed and rerank kit operations resolved by Model Role
+- `9598acfb` refactor(chatbot): consume embed/rerank kit operations in RAG and memory
+- `b0ba3fdf` test(coding-agent): assert the kit's embed/rerank, not the old client shim
+- `1b04f835` test(chatbot): exercise RAG retrieve's real embed/rerank kit wiring
 
 **Conflicts and how they were resolved** (against tickets 03 and 06, already merged; matched the `git merge-tree` preview exactly, all additive):
 
@@ -43,4 +43,4 @@ Merge commit: `e0a5a0e8` (`merge: ticket 04 — embeddings and rerank as kit ope
 
 ### 2026-09-24 — e2e verified (ticket 07 merger)
 
-Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `0238a443` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the verification checkbox above accordingly (`pnpm verify:fast` and `pnpm build:verify` were already confirmed green in this ticket's own merge).
+Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `24d75f6c` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the verification checkbox above accordingly (`pnpm verify:fast` and `pnpm build:verify` were already confirmed green in this ticket's own merge).

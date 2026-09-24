@@ -16,12 +16,12 @@
 
 ### 2026-09-24 — merged
 
-Merged into `feat/inference-kit` at `01f7dd92` (`git merge --no-ff inference-kit/01-prefactor`), no conflicts (integration branch had not moved since the ticket branched). Implementer commits (`git log --oneline` of the merged range, oldest first):
+Merged into `feat/inference-kit` at `ef824a10` (`git merge --no-ff inference-kit/01-prefactor`), no conflicts (integration branch had not moved since the ticket branched). Implementer commits (`git log --oneline` of the merged range, oldest first):
 
-- `22b59383` refactor(chatbot): remove the dead Model Router module and its types
-- `778eeb3a` refactor(chatbot): type the language-model provider registry from ProviderKind
-- `63679100` fix(chatbot): keep legacy Model Router metadata decodable
-- `8a254eaf` docs(context): mark Model Router as legacy in the glossary
+- `a7008acb` refactor(chatbot): remove the dead Model Router module and its types
+- `626bb854` refactor(chatbot): type the language-model provider registry from ProviderKind
+- `2e9fc1ce` fix(chatbot): keep legacy Model Router metadata decodable
+- `0f2486fe` docs(context): mark Model Router as legacy in the glossary
 
 Verified in the integration worktree: no `package.json`/lockfile changes in the range, so `pnpm install` was skipped. `pnpm verify:fast` ran green (lint, type:check, and unit/component/integration/contract across all packages; exit 0). Cross-checked the three ticked boxes directly: `grep -rn "features/chat" lib/features/foundation-model/` returns nothing; `providers.ts`/`foundation-model/types.ts` show `Providers extends Record<ProviderKind, (modelId: string) => LanguageModelV3>` with no `anthropic`/`google`/`deepseek` language-provider keys; `CONTEXT.md`'s *Model Router* glossary entry is marked `_(legado)_`. Did not re-run `build:verify` myself — trusting the implementer's two green compile-step runs recorded in `00-environment.md`.
 

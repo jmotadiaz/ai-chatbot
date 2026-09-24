@@ -19,12 +19,12 @@
 
 ### 2026-09-24 — merged
 
-Merge commit: `ce6fff9f` (`merge: ticket 05 — generic decide operation and the Chat Mode Router on top of it`, into `feat/inference-kit`). Implementer commits merged (`git log --oneline --reverse 9726aa90..inference-kit/05-decide-chat-mode-router`, oldest first):
+Merge commit: `0b31c9f4` (`merge: ticket 05 — generic decide operation and the Chat Mode Router on top of it`, into `feat/inference-kit`). Implementer commits merged (`git log --oneline --reverse d4c00379..inference-kit/05-decide-chat-mode-router`, oldest first):
 
-- `0d6a0e96` feat(models): add DECISION_MODELS and the chatModeRouter Model Role
-- `6ef56692` feat(inference): add a generic decide operation over the Decisions API
-- `b38b65e1` refactor(chatbot): compose the Chat Mode Router over the kit's decide
-- `b4e19cf5` fix(inference): let decide() callers pin the question key and trace name
+- `6ed1cbe9` feat(models): add DECISION_MODELS and the chatModeRouter Model Role
+- `3e9a2ddc` feat(inference): add a generic decide operation over the Decisions API
+- `0c953107` refactor(chatbot): compose the Chat Mode Router over the kit's decide
+- `9780a2b6` fix(inference): let decide() callers pin the question key and trace name
 
 **Conflicts and how they were resolved** (against tickets 03, 04 and 06, already merged; matched the `git merge-tree` preview exactly, all additive — ticket 05 branched from ticket 02's tip, before 04/06 landed on `feat/inference-kit`):
 
@@ -49,4 +49,4 @@ Merge commit: `ce6fff9f` (`merge: ticket 05 — generic decide operation and the
 
 ### 2026-09-24 — e2e verified (ticket 07 merger)
 
-Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `0238a443` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the verification checkbox above accordingly (`pnpm verify:fast` was already confirmed green in this ticket's own merge; the mode-routing eval's live-API run stays unexecuted here, unchanged from that merge's note, since it needs a real `OPENROUTER_API_KEY` this environment doesn't have).
+Per the orchestrator's `11-e2e-log.md`: e2e ran at commit `24d75f6c` (integration tip, tickets 01–06 merged) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures, no new failures vs. the `main`-code baseline. Ticking the verification checkbox above accordingly (`pnpm verify:fast` was already confirmed green in this ticket's own merge; the mode-routing eval's live-API run stays unexecuted here, unchanged from that merge's note, since it needs a real `OPENROUTER_API_KEY` this environment doesn't have).
