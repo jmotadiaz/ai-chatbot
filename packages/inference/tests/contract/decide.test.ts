@@ -137,7 +137,7 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
     expect(decision.latencyMs).toEqual(expect.any(Number));
   });
 
-  it("forwards chatId as session_id and the trace run id when tracing", async () => {
+  it("forwards chatId as session_id and the trace run id when tracing, defaulting traceName to the model", async () => {
     vi.stubEnv("TRACE_ENABLED", "1");
     const { decide, calls } = makeHarness(fixture);
 
@@ -152,7 +152,7 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
     });
   });
 
-  it("does not set a trace scope when an explicit empty scope is passed, even while tracing", async () => {
+  it("still falls back to the ambient scope field-by-field when an explicit empty scope is passed", async () => {
     vi.stubEnv("TRACE_ENABLED", "1");
     const { decide, calls } = makeHarness(fixture);
 
@@ -160,8 +160,50 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
       decide({ ...options, scope: {} }),
     );
 
-    expect(calls[0]!.body.session_id).toBeUndefined();
-    expect(calls[0]!.body.trace).toBeUndefined();
+    // An empty `scope` is not a wholesale override: every field it leaves out
+    // still falls back to the ambient trace context, same as omitting `scope`.
+    expect(calls[0]!.body.session_id).toBe("chat-1");
+    expect(calls[0]!.body.trace).toEqual({
+      trace_id: "run-1",
+      trace_name: "Jev 1.13",
+    });
+  });
+
+  it("lets an explicit scope field override the ambient one while the rest still falls back", async () => {
+    vi.stubEnv("TRACE_ENABLED", "1");
+    const { decide, calls } = makeHarness(fixture);
+
+    await runWithTraceContext({ runId: "run-1", chatId: "chat-1" }, () =>
+      decide({
+        ...options,
+        scope: { sessionId: "explicit-session", traceName: "custom-trace-name" },
+      }),
+    );
+
+    // sessionId and traceName came from the caller; traceId still fell back
+    // to the ambient run id (the caller never set it).
+    expect(calls[0]!.body.session_id).toBe("explicit-session");
+    expect(calls[0]!.body.trace).toEqual({
+      trace_id: "run-1",
+      trace_name: "custom-trace-name",
+    });
+  });
+
+  it("lets the caller pin the question's wire-format key instead of the default", async () => {
+    const { decide, calls } = makeHarness({
+      ...fixture,
+      answers: { mode: fixture.answers.decision },
+    });
+
+    const decision = await decide({
+      ...options,
+      question: { ...options.question, name: "mode" },
+    });
+
+    expect(Object.keys(calls[0]!.body.questions ?? {})).toEqual(["mode"]);
+    expect(calls[0]!.body.questions?.mode?.type).toBe("choice");
+    // Parsed from `answers.mode`, not the default `answers.decision` key.
+    expect(decision.choice).toBe("web");
   });
 
   it("rejects on a 4xx so the caller's fallback policy owns the degradation", async () => {

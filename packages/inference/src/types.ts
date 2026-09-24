@@ -78,14 +78,28 @@ export type DecisionsClients = Record<DecisionProviderKind, () => DecisionsClien
 
 /** A single `type: "choice"` question sent to the Decisions API. */
 export interface DecisionQuestion {
+  /**
+   * Wire-format key for this question inside the Decisions API's
+   * `questions`/`answers` maps. Some question models read the key as part of
+   * the question (not just an addressing detail), so callers that must match
+   * an upstream contract can pin it explicitly. Defaults to `"decision"`.
+   */
+  name?: string;
   instructions: string;
   criteria: Record<string, string>;
 }
 
-/** Trace scope for one `decide` call; defaults from the ambient trace context when omitted. */
+/**
+ * Trace scope for one `decide` call. Each field falls back independently to
+ * the ambient trace context (`tracing`'s `getTraceContext()`) when omitted —
+ * passing `scope` never blocks the fallback for a field the caller didn't
+ * set, including passing `{}`. `traceName` has no ambient source: it defaults
+ * to `String(options.model)` when not set.
+ */
 export interface DecisionScope {
   sessionId?: string;
   traceId?: string;
+  traceName?: string;
 }
 
 export interface DecideOptions {

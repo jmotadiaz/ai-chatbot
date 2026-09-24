@@ -12,6 +12,16 @@ import type {
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
 
+/**
+ * Wire-format key of this question inside the Decisions API's
+ * `questions`/`answers` maps, and the trace name grouping router calls in
+ * OpenRouter's observability. Pinned explicitly (the kit's `decide()`
+ * defaults both otherwise) so the emitted request is byte-identical to the
+ * one the feature-owned adapter sent before `decide` moved into the kit.
+ */
+export const CHAT_MODE_ROUTING_QUESTION_KEY = "mode";
+export const CHAT_MODE_ROUTING_TRACE_NAME = "chat-mode-routing";
+
 const isRoutingOption = (value: unknown): value is RoutingOption =>
   isOneOf(ROUTING_OPTIONS, value);
 
@@ -47,7 +57,8 @@ const pickProbabilities = (
  * fallback policy and degrades the turn to the neutral branch, so nothing
  * here ever reaches the chat stream as an exception. `decide` already bounds
  * the call with a timeout and defaults `sessionId`/`traceId` from the current
- * trace scope, so this composition does not need to know about either.
+ * trace scope, so this composition only needs to pin the question's key and
+ * the trace name; it does not need to know about the rest of the scope.
  */
 export const createChatModeRouter = (
   decide: (options: DecideOptions) => Promise<Decision>,
@@ -55,11 +66,16 @@ export const createChatModeRouter = (
   async route(input: ChatModeRouterInput): Promise<RoutingDecision> {
     const decision = await decide({
       model: "chatModeRouter",
-      question: CHAT_MODE_ROUTING_QUESTION,
+      question: {
+        name: CHAT_MODE_ROUTING_QUESTION_KEY,
+        instructions: CHAT_MODE_ROUTING_QUESTION.instructions,
+        criteria: CHAT_MODE_ROUTING_QUESTION.criteria,
+      },
       state: {
         latest_message: input.latestMessage,
         recent_context: input.recentContext,
       },
+      scope: { traceName: CHAT_MODE_ROUTING_TRACE_NAME },
     });
 
     if (!isRoutingOption(decision.choice)) {

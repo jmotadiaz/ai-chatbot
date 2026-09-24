@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Decision, DecideOptions } from "inference";
-import { createChatModeRouter } from "@/lib/features/chat/mode-routing/router";
+import {
+  CHAT_MODE_ROUTING_QUESTION_KEY,
+  CHAT_MODE_ROUTING_TRACE_NAME,
+  createChatModeRouter,
+} from "@/lib/features/chat/mode-routing/router";
 import { CHAT_MODE_ROUTING_QUESTION } from "@/lib/features/chat/mode-routing/questions";
 
 const baseDecision: Decision = {
@@ -78,12 +82,28 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
 
     expect(decide).toHaveBeenCalledWith({
       model: "chatModeRouter",
-      question: CHAT_MODE_ROUTING_QUESTION,
+      question: {
+        name: CHAT_MODE_ROUTING_QUESTION_KEY,
+        instructions: CHAT_MODE_ROUTING_QUESTION.instructions,
+        criteria: CHAT_MODE_ROUTING_QUESTION.criteria,
+      },
       state: {
         latest_message: input.latestMessage,
         recent_context: input.recentContext,
       },
+      scope: { traceName: CHAT_MODE_ROUTING_TRACE_NAME },
     } satisfies DecideOptions);
+  });
+
+  it("pins the question key and trace name to the pre-kit adapter's literals (byte-identical request)", async () => {
+    const decide = vi.fn(async (_options: DecideOptions) => baseDecision);
+    const router = createChatModeRouter(decide);
+
+    await router.route(input);
+
+    const call = decide.mock.calls[0]![0];
+    expect(call.question.name).toBe("mode");
+    expect(call.scope).toEqual({ traceName: "chat-mode-routing" });
   });
 
   it("rejects an unknown choice instead of guessing a mode", async () => {
