@@ -19,6 +19,8 @@ describe("inference package import (contract)", () => {
     expect(typeof kit.languageModel).toBe("function");
     expect(typeof kit.embeddingClient).toBe("function");
     expect(typeof kit.rerankClient).toBe("function");
+    expect(typeof kit.speechModel).toBe("function");
+    expect(typeof kit.createAgent).toBe("function");
 
     const expectedKinds = [
       "opencodeGo",

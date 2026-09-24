@@ -132,3 +132,45 @@ describe("languageModel: catalog id -> Model Configuration", () => {
     expect(() => kit.languageModel("not-a-real-model" as ModelId)).toThrow();
   });
 });
+
+describe("languageModel: Model Role resolution", () => {
+  it("resolves a role to the same configuration as its underlying catalog id", () => {
+    const kit = createInferenceKit({ clients: stubClients() });
+
+    const byRole = kit.languageModel("chatTitle");
+    const byId = kit.languageModel("Llama 3.1 Instant" as ModelId);
+
+    expect(byRole).toEqual(byId);
+    expect(byRole.model).toBe(byId.model);
+  });
+
+  it("memoizes across role and id: one client construction total", () => {
+    const opencodeGo = vi.fn((modelId: string) => stubModel(modelId));
+    const kit = createInferenceKit({ clients: stubClients({ opencodeGo }) });
+
+    // compactionText and metaPromptRefiner both point at "Deepseek v4.1 Flash" today.
+    const byCompactionRole = kit.languageModel("compactionText");
+    const byMetaPromptRole = kit.languageModel("metaPromptRefiner");
+    const byId = kit.languageModel("Deepseek v4.1 Flash" as ModelId);
+
+    expect(opencodeGo).toHaveBeenCalledTimes(1);
+    expect(byCompactionRole.model).toBe(byMetaPromptRole.model);
+    expect(byCompactionRole.model).toBe(byId.model);
+  });
+
+  it("applies a providerOptions override on top of a role the same way it does for an id", () => {
+    const kit = createInferenceKit({ clients: stubClients() });
+
+    const cfg = kit.languageModel("imageEdit", {
+      providerOptions: { google: { responseModalities: ["IMAGE"] } },
+    });
+
+    expect(cfg.company).toBe("google");
+    expect(cfg.providerOptions?.google?.responseModalities).toEqual(["IMAGE"]);
+  });
+
+  it("throws for a role name that is not in LANGUAGE_MODEL_ROLES and not a catalog id either", () => {
+    const kit = createInferenceKit({ clients: stubClients() });
+    expect(() => kit.languageModel("not-a-real-role" as any)).toThrow();
+  });
+});

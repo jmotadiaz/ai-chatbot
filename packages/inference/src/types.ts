@@ -1,12 +1,21 @@
-import type { LanguageModel, rerank } from "ai";
-import type { EmbeddingModelV3, LanguageModelV3 } from "@ai-sdk/provider";
+import type { LanguageModel, rerank, ToolLoopAgent, ToolLoopAgentSettings, ToolSet } from "ai";
+import type { EmbeddingModelV3, LanguageModelV3, SpeechModelV3 } from "@ai-sdk/provider";
 import type { GroqProviderOptions } from "@ai-sdk/groq";
 import type { XaiProviderOptions } from "@ai-sdk/xai";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import type { GatewayProviderOptions } from "@ai-sdk/gateway";
-import type { Company, ModelCatalogEntry, ModelId, ProviderKind } from "models";
+import type {
+  Company,
+  LanguageModelRole,
+  ModelCatalogEntry,
+  ModelId,
+  ProviderKind,
+  SpeechModelId,
+  SpeechProviderKind,
+  SpeechRole,
+} from "models";
 
 /**
  * Per-provider options the AI SDK accepts on a call, keyed by SDK. This is a
@@ -52,17 +61,48 @@ export type InferenceClients = Record<
   (modelId: string) => LanguageModelV3
 >;
 
+/** One speech-model client per speech endpoint kind (`SpeechProviderKind`, see `models`). Not a `ProviderKind` — speech is a different endpoint. */
+export type SpeechClients = Record<
+  SpeechProviderKind,
+  (modelId: string) => SpeechModelV3
+>;
+
 export interface LanguageModelOptions {
   providerOptions?: ProviderOptions;
 }
 
+/**
+ * `languageModel`/`createAgent` accept either a raw catalog id or a Model
+ * Role (`LANGUAGE_MODEL_ROLES` in `models`) — a role resolves to whatever
+ * catalog id it currently points at.
+ */
+export type LanguageModelKey = ModelId | LanguageModelRole;
+
+/** `speechModel` accepts either a raw `SPEECH_MODELS` id or a `SPEECH_ROLES` role. */
+export type SpeechModelKey = SpeechModelId | SpeechRole;
+
+export interface CreateAgentOptions<TOOLS extends ToolSet = ToolSet> {
+  instructions?: ToolLoopAgentSettings<never, TOOLS>["instructions"];
+  tools?: TOOLS;
+  /**
+   * The rest of the `ToolLoopAgent` constructor options (`stopWhen`,
+   * `activeTools`, `prepareStep`, `maxRetries`, `experimental_telemetry`,
+   * a `temperature`/`topP`/`topK` override, …) — whatever a call site needs
+   * beyond the resolved model, `instructions` and `tools`.
+   */
+  overrides?: Partial<
+    Omit<ToolLoopAgentSettings<never, TOOLS>, "model" | "instructions" | "tools">
+  >;
+}
+
 export interface InferenceKit {
   /**
-   * Model Configuration for a catalog id: built from the matching client and
-   * memoized on this kit instance (never rebuilt for the same id).
+   * Model Configuration for a catalog id or Model Role: built from the
+   * matching client and memoized on this kit instance by resolved catalog id
+   * (never rebuilt for the same id, however it was addressed).
    */
   languageModel: (
-    id: ModelId,
+    idOrRole: LanguageModelKey,
     options?: LanguageModelOptions,
   ) => ModelConfiguration;
   /** Per-endpoint-kind clients. Most consumers want `languageModel` instead. */
@@ -73,6 +113,19 @@ export interface InferenceKit {
   rerankClient: () => (
     args: Omit<Parameters<typeof rerank>[0], "model">,
   ) => Promise<RerankResult[]>;
+  /** Speech model for a `SPEECH_MODELS` id or `SPEECH_ROLES` role (voice/speed/instructions stay call-time parameters, not part of the model). */
+  speechModel: (idOrRole: SpeechModelKey) => SpeechModelV3;
+  /**
+   * Resolves `idOrRole` via `languageModel`, wraps the model with tracing
+   * when `TRACE_ENABLED=1` (the same `wrapWithTracing` the chatbot's
+   * `conversation/factory.ts` calls today), and returns a `ToolLoopAgent` —
+   * the repeated `new ToolLoopAgent({...modelConfiguration, ...})` pattern
+   * in the Chat Modes, generalized behind the kit.
+   */
+  createAgent: <TOOLS extends ToolSet = ToolSet>(
+    idOrRole: LanguageModelKey,
+    options?: CreateAgentOptions<TOOLS>,
+  ) => ToolLoopAgent<never, TOOLS>;
 }
 
 export interface CreateInferenceKitOptions {
