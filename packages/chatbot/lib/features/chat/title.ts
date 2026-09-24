@@ -22,7 +22,7 @@ export async function generateTitle(messages: ChatbotMessage[]) {
 
   try {
     const { text: title } = await generateText({
-      ...languageModelConfigurations("Llama 3.1 Instant"),
+      ...languageModelConfigurations("chatTitle"),
       system: `\n
       You are a chat title generator. Create a concise title (≤60 characters) summarizing the first user message. Follow these rules:
       1. Extract the core topic from the user's message

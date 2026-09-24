@@ -4,22 +4,22 @@ import { languageModelConfigurations } from "@/lib/features/foundation-model/ser
 
 const grammarAiAdapter: CorrectGrammarAiPort = {
   getAudienceModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+    languageModelConfigurations("englishAudienceClassifier"),
   getDomainModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+    languageModelConfigurations("englishDomainClassifier"),
   getGrammarModelConfiguration: () =>
-    languageModelConfigurations("Gemini 3.1 Flash Lite"),
+    languageModelConfigurations("englishGrammarCheck"),
 };
 
 const translateAiAdapter: TranslateAiPort = {
   getAudienceModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+    languageModelConfigurations("englishAudienceClassifier"),
   getDomainModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+    languageModelConfigurations("englishDomainClassifier"),
   getDirectionModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+    languageModelConfigurations("englishDirectionDetector"),
   getTranslateModelConfiguration: () =>
-    languageModelConfigurations("Gemini 3.1 Flash Lite"),
+    languageModelConfigurations("englishTranslate"),
 };
 
 export const correctGrammar = makeCorrectGrammar(grammarAiAdapter);

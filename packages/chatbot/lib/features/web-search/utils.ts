@@ -4,7 +4,7 @@ import { languageModelConfigurations } from "@/lib/features/foundation-model/ser
 
 export const hasContextUrls = async (text: string): Promise<boolean> => {
   const { object } = await generateObject({
-    ...languageModelConfigurations("Gemini 2.5 Flash Lite"),
+    ...languageModelConfigurations("webSearchUrlIntent"),
     system: `
     You are acting as a highly accurate intent classification engine. Your sole task is to analyze the user's prompt and determine the primary purpose of the URLs it contains.
     You must classify the intent into one of the following three categories:

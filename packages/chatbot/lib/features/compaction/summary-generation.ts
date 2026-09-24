@@ -19,7 +19,10 @@ export async function generateSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey = hasMultimedia ? "Qwen 3.8 Flash" : "Deepseek v4.1 Flash";
+  // Model Role, not a literal catalog id — see LANGUAGE_MODEL_ROLES in
+  // `models`. Two roles because this ternary already picks between two
+  // different models at runtime; a single "compaction" role can't do that.
+  const modelKey = hasMultimedia ? "compactionMultimedia" : "compactionText";
 
   const promptText = previousSummary
     ? INCREMENTAL_UPDATE_PROMPT.replace("{previousSummary}", previousSummary)
@@ -47,7 +50,7 @@ export async function generateTurnPrefixSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey = hasMultimedia ? "Qwen 3.8 Flash" : "Deepseek v4.1 Flash";
+  const modelKey = hasMultimedia ? "compactionMultimedia" : "compactionText";
 
   const prompt = `Summarize the following turn prefix (the beginning of an assistant response that was interrupted or split):
 
