@@ -1,7 +1,7 @@
-import { ToolLoopAgent, stepCountIs } from "ai";
-import type { ModelConfiguration } from "inference";
+import { stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
+import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
 import {
@@ -12,7 +12,7 @@ import { RAG_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
 import { withMessageProcessing } from "@/lib/features/chat/chat-modes/utils";
 
 interface CreateRagAgentParams {
-  modelConfiguration: ModelConfiguration;
+  ai: ChatAgentAiPort;
   messages: ChatbotMessage[];
   userId: string;
   projectId?: string;
@@ -22,7 +22,7 @@ interface CreateRagAgentParams {
 }
 
 export const createRagAgent = ({
-  modelConfiguration,
+  ai,
   messages,
   userId,
   projectId,
@@ -44,21 +44,24 @@ export const createRagAgent = ({
     ? `${RAG_AGENT_PROMPT}\n\n${memoryContext}`
     : RAG_AGENT_PROMPT;
 
-  return new ToolLoopAgent({
-    ...modelConfiguration,
-    tools: toolSet,
-    maxRetries: 3,
-    experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(5),
+  const modelConfiguration = ai.getModelConfiguration();
+
+  return ai.createAgent({
     instructions,
-    activeTools: [RAG_TOOL],
-    prepareStep: withMessageProcessing(
-      modelConfiguration,
-      async ({ stepNumber }) => {
-        if (stepNumber === 1 && (await hasToExecuteUrlContext(messages))) {
-          return urlContextStep();
-        }
-      },
-    ),
+    tools: toolSet,
+    overrides: {
+      maxRetries: 3,
+      experimental_telemetry: { isEnabled: true },
+      stopWhen: stepCountIs(5),
+      activeTools: [RAG_TOOL],
+      prepareStep: withMessageProcessing(
+        modelConfiguration,
+        async ({ stepNumber }) => {
+          if (stepNumber === 1 && (await hasToExecuteUrlContext(messages))) {
+            return urlContextStep();
+          }
+        },
+      ),
+    },
   });
 };

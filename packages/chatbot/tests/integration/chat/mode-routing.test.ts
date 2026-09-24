@@ -21,10 +21,12 @@ vi.mock("server-only", () => ({}));
 // The AI port is built inside `makeProcessChatResponse`, so the model comes
 // from here instead of being injected. This mocks the composition root
 // directly (the `foundation-model/server` shim it used to target is gone):
-// everything under test resolves models through `inferenceKit.languageModel`.
+// everything under test resolves models through `inferenceKit.languageModel`/
+// `createAgentModel`/`createAgent` — the same three kit members
+// `buildAgentAdapter` (`conversation/factory.ts`) calls.
 vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
-  const { simulateReadableStream } = await import("ai");
+  const { simulateReadableStream, ToolLoopAgent } = await import("ai");
   const model = new MockLanguageModelV3({
     modelId: "test-model",
     doStream: async () => ({
@@ -52,7 +54,23 @@ vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
       rawCall: { rawPrompt: null, rawSettings: {} },
     }),
   });
-  return { inferenceKit: { languageModel: () => ({ model, company: "test" }) } };
+  const baseConfig = () => ({ model, company: "test" as const });
+  return {
+    inferenceKit: {
+      languageModel: baseConfig,
+      createAgentModel: baseConfig,
+      createAgent: (
+        _idOrRole: unknown,
+        { instructions, tools, overrides }: any = {},
+      ) =>
+        new ToolLoopAgent({
+          ...baseConfig(),
+          instructions,
+          tools,
+          ...overrides,
+        }),
+    },
+  };
 });
 
 // Real agent dispatch is irrelevant here; what matters is the metadata the
@@ -63,7 +81,7 @@ vi.mock("@/lib/features/chat/chat-modes/factory", async () => {
     createChatModeAgent: vi.fn(async ({ ai }: any) => ({
       stream: ({ messages }: any) =>
         streamText({
-          model: ai.getContext7ModelConfiguration().model,
+          model: ai.getModelConfiguration().model,
           messages,
         }),
     })),

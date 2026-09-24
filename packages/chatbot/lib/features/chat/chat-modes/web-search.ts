@@ -1,7 +1,7 @@
-import { ToolLoopAgent, stepCountIs } from "ai";
-import type { ModelConfiguration } from "inference";
+import { stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
+import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import {
   urlContextFactory,
   webSearchFactory,
@@ -14,14 +14,14 @@ import { WEB_SEARCH_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts"
 import { withMessageProcessing } from "@/lib/features/chat/chat-modes/utils";
 
 interface CreateWebSearchAgentParams {
-  modelConfiguration: ModelConfiguration;
+  ai: ChatAgentAiPort;
   messages: ChatbotMessage[];
   webSearchNumResults: number;
   memoryContext?: string | null;
 }
 
 export const createWebSearchAgent = ({
-  modelConfiguration,
+  ai,
   messages,
   webSearchNumResults,
   memoryContext,
@@ -37,21 +37,24 @@ export const createWebSearchAgent = ({
     ? `${WEB_SEARCH_AGENT_PROMPT}\n\n${memoryContext}`
     : WEB_SEARCH_AGENT_PROMPT;
 
-  return new ToolLoopAgent({
-    ...modelConfiguration,
+  const modelConfiguration = ai.getModelConfiguration();
+
+  return ai.createAgent({
     instructions,
     tools: toolSet,
-    maxRetries: 3,
-    experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(5),
-    activeTools: [WEB_SEARCH_TOOL],
-    prepareStep: withMessageProcessing(
-      modelConfiguration,
-      async ({ stepNumber }) => {
-        if (stepNumber === 0 && (await hasToExecuteUrlContext(messages))) {
-          return urlContextStep();
-        }
-      },
-    ),
+    overrides: {
+      maxRetries: 3,
+      experimental_telemetry: { isEnabled: true },
+      stopWhen: stepCountIs(5),
+      activeTools: [WEB_SEARCH_TOOL],
+      prepareStep: withMessageProcessing(
+        modelConfiguration,
+        async ({ stepNumber }) => {
+          if (stepNumber === 0 && (await hasToExecuteUrlContext(messages))) {
+            return urlContextStep();
+          }
+        },
+      ),
+    },
   });
 };

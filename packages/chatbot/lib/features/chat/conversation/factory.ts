@@ -8,10 +8,7 @@ import {
   InvalidArgumentError,
 } from "ai";
 import type { ModelMessage } from "ai";
-import type { LanguageModelV3 } from "@ai-sdk/provider";
-import { isTracingEnabled, wrapWithTracing } from "tracing";
 import { config } from "config";
-import type { ModelConfiguration } from "inference";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -25,7 +22,6 @@ import type {
   ChatModeRoutingMetadata,
 } from "@/lib/features/chat/mode-routing";
 import {
-  chatModelKeys,
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
@@ -98,36 +94,46 @@ const processMessagesToSend = async ({
   );
 };
 
-/** Builds a ChatAgentAiPort where all agents use the same user-selected model + overrides */
+/**
+ * Only the temperature/topP/topK keys the caller actually set, so folding
+ * them into a Model Configuration or into `createAgent`'s overrides never
+ * clobbers the resolved model's own default with `undefined` (mirrors the
+ * `overrides.temperature ?? base.temperature` fallback this replaces).
+ */
+const definedOverrides = (overrides: {
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+}) => ({
+  ...(overrides.temperature !== undefined && {
+    temperature: overrides.temperature,
+  }),
+  ...(overrides.topP !== undefined && { topP: overrides.topP }),
+  ...(overrides.topK !== undefined && { topK: overrides.topK }),
+});
+
+/**
+ * Builds a ChatAgentAiPort where every Chat Mode builds its agent from the
+ * same user-selected model plus the chat-level overrides, through the kit's
+ * `createAgent`/`createAgentModel` — tracing included: no chatbot code wraps
+ * the model with tracing itself anymore, that is entirely the kit's job.
+ */
 const buildAgentAdapter = (
   selectedModel: chatModelId,
   overrides: { temperature?: number; topP?: number; topK?: number },
 ): ChatAgentAiPort => {
-  const getConfig = (): ModelConfiguration => {
-    const base =
-      inferenceKit.languageModel(selectedModel) ||
-      inferenceKit.languageModel(chatModelKeys[0]);
-    const tracedModel = isTracingEnabled()
-      ? wrapWithTracing(
-          base.model as LanguageModelV3,
-          config.traceRunId() ?? "default",
-        )
-      : base.model;
-    return {
-      ...base,
-      model: tracedModel,
-      temperature: overrides.temperature ?? base.temperature,
-      topP: overrides.topP ?? base.topP,
-      topK: overrides.topK ?? base.topK,
-    };
-  };
+  const chatOverrides = definedOverrides(overrides);
 
   return {
-    getRagModelConfiguration: getConfig,
-    getWebSearchModelConfiguration: getConfig,
-    getContext7ModelConfiguration: getConfig,
-    getProjectModelConfiguration: getConfig,
-    getNeutralModelConfiguration: getConfig,
+    getModelConfiguration: () => ({
+      ...inferenceKit.createAgentModel(selectedModel),
+      ...chatOverrides,
+    }),
+    createAgent: (options) =>
+      inferenceKit.createAgent(selectedModel, {
+        ...options,
+        overrides: { ...chatOverrides, ...options.overrides },
+      }),
   };
 };
 

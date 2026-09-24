@@ -25,10 +25,11 @@ const state = vi.hoisted(() => ({
 // model + parameters reach the neutral branch from here. This mocks the
 // composition root directly (the `foundation-model/server` shim it used to
 // target is gone): everything under test resolves models through
-// `inferenceKit.languageModel`.
+// `inferenceKit.languageModel`/`createAgentModel`/`createAgent` — the same
+// three kit members `buildAgentAdapter` (`conversation/factory.ts`) calls.
 vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
-  const { simulateReadableStream } = await import("ai");
+  const { simulateReadableStream, ToolLoopAgent } = await import("ai");
   const { textChunks, finishChunk } = await import("inference/testing");
 
   const model = new MockLanguageModelV3({
@@ -47,14 +48,30 @@ vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
     },
   });
 
+  // No tracing wrap here (this fake stands in for the untraced base
+  // configuration): TRACE_ENABLED is unset in this suite, so the real kit's
+  // own `wrapWithTracing` would no-op identically.
+  const baseConfig = () => ({
+    model,
+    company: "openai" as const,
+    temperature: 0.2,
+    topP: 0.8,
+  });
+
   return {
     inferenceKit: {
-      languageModel: () => ({
-        model,
-        company: "openai",
-        temperature: 0.2,
-        topP: 0.8,
-      }),
+      languageModel: baseConfig,
+      createAgentModel: baseConfig,
+      createAgent: (
+        _idOrRole: unknown,
+        { instructions, tools, overrides }: any = {},
+      ) =>
+        new ToolLoopAgent({
+          ...baseConfig(),
+          instructions,
+          tools,
+          ...overrides,
+        }),
     },
   };
 });

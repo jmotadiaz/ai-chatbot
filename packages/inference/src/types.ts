@@ -201,14 +201,27 @@ export interface InferenceKit {
   /**
    * Resolves `idOrRole` via `languageModel`, wraps the model with tracing
    * when `TRACE_ENABLED=1` (the same `wrapWithTracing` the chatbot's
-   * `conversation/factory.ts` calls today), and returns a `ToolLoopAgent` —
-   * the repeated `new ToolLoopAgent({...modelConfiguration, ...})` pattern
-   * in the Chat Modes, generalized behind the kit.
+   * `conversation/factory.ts` used to call directly before this moved into
+   * the kit), and returns a `ToolLoopAgent` — the repeated
+   * `new ToolLoopAgent({...modelConfiguration, ...})` pattern in the Chat
+   * Modes, generalized behind the kit.
    */
   createAgent: <TOOLS extends ToolSet = ToolSet>(
     idOrRole: LanguageModelKey,
     options?: CreateAgentOptions<TOOLS>,
   ) => ToolLoopAgent<never, TOOLS>;
+  /**
+   * The traced Model Configuration `createAgent` builds a `ToolLoopAgent`
+   * from, exposed on its own for a caller that needs the model itself
+   * instead of a `ToolLoopAgent` — the chatbot's Context7 branch constructs a
+   * different agent class (`Context7Agent`) from the same shape, and message
+   * processing only needs the `reasoning` flag. No chatbot code calls
+   * `wrapWithTracing`/`isTracingEnabled` itself; this is the kit's own job.
+   */
+  createAgentModel: (
+    idOrRole: LanguageModelKey,
+    options?: LanguageModelOptions,
+  ) => ModelConfiguration;
   /**
    * Answers a single `choice` question through the Decisions API, bounded by
    * a fixed timeout on both the SDK attempt and the whole call. Errors

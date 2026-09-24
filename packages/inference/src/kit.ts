@@ -5,7 +5,7 @@ import {
   buildSpeechClients,
 } from "./clients";
 import { buildDefaultDecisionsClients } from "./clients/decisions";
-import { createAgentResolver } from "./create-agent";
+import { createAgentModelResolver, createAgentResolver } from "./create-agent";
 import { createDecideResolver } from "./decide";
 import { createLanguageModelResolver } from "./language-model";
 import { createSpeechModelResolver } from "./speech-model";
@@ -47,6 +47,7 @@ export function createInferenceKit(
     rerank: createRerankResolver(rerankClients),
     speechModel,
     createAgent: createAgentResolver(languageModel),
+    createAgentModel: createAgentModelResolver(languageModel),
     decide,
   };
 }

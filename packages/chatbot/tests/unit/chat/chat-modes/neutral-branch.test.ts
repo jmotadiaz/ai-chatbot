@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { simulateReadableStream } from "ai";
+import { simulateReadableStream, ToolLoopAgent } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
 import { finishChunk, textChunks } from "inference/testing";
-import type { ModelConfiguration } from "inference";
+import type { CreateAgentOptions, ModelConfiguration } from "inference";
 import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";
@@ -41,6 +41,13 @@ const configuration = (model: LanguageModelV3): ModelConfiguration => ({
   company: "openai",
 });
 
+/**
+ * Fake standing in for `buildAgentAdapter`'s port: `getModelConfiguration`
+ * returns `context7 ?? neutral` (mirroring production's single resolved
+ * config), and `createAgent` builds a real `ToolLoopAgent` from `neutral`
+ * plus whatever instructions/tools/overrides the mode passed in — same shape
+ * the kit's own `createAgent` builds, so the returned agent actually streams.
+ */
 const createFakePort = ({
   neutral,
   context7,
@@ -48,11 +55,16 @@ const createFakePort = ({
   neutral: ModelConfiguration;
   context7?: ModelConfiguration;
 }): ChatAgentAiPort => ({
-  getRagModelConfiguration: () => neutral,
-  getWebSearchModelConfiguration: () => neutral,
-  getContext7ModelConfiguration: () => context7 ?? neutral,
-  getProjectModelConfiguration: () => neutral,
-  getNeutralModelConfiguration: vi.fn(() => neutral),
+  getModelConfiguration: () => context7 ?? neutral,
+  createAgent: vi.fn(
+    ({ instructions, tools, overrides }: CreateAgentOptions) =>
+      new ToolLoopAgent({
+        ...neutral,
+        instructions,
+        tools,
+        ...overrides,
+      }),
+  ),
 });
 
 /** Types of every chunk the agent writes to its UI message stream. */
@@ -93,7 +105,7 @@ describe("neutral chat mode branch", () => {
       webSearchNumResults: 4,
     });
 
-    expect(vi.mocked(ai.getNeutralModelConfiguration)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(ai.createAgent)).toHaveBeenCalledTimes(1);
     expect(Object.keys(agent.tools ?? {})).toEqual([]);
 
     const uiPartTypes = await collectUiPartTypes(agent);
@@ -121,7 +133,7 @@ describe("neutral chat mode branch", () => {
       webSearchNumResults: 4,
     });
 
-    expect(vi.mocked(ai.getNeutralModelConfiguration)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(ai.createAgent)).toHaveBeenCalledTimes(1);
     expect(Object.keys(agent.tools ?? {})).toEqual([]);
 
     await collectUiPartTypes(agent);

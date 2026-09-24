@@ -134,3 +134,31 @@ describe("createAgent", () => {
     });
   });
 });
+
+describe("createAgentModel", () => {
+  it("resolves the same traced model createAgent would build a ToolLoopAgent from, without building one", () => {
+    const kit = createInferenceKit({ clients: stubClients() });
+    const base = kit.languageModel("chatTitle");
+
+    const tracedConfig = kit.createAgentModel("chatTitle");
+
+    expect(state.tracingCalls).toEqual([{ model: base.model, runId: "default" }]);
+    expect(state.agentSettings).toHaveLength(0);
+    expect(tracedConfig).toMatchObject({
+      company: base.company,
+      model: { wrapped: true, of: base.model },
+    });
+  });
+
+  it("applies a providerOptions override, like languageModel does", () => {
+    const kit = createInferenceKit({ clients: stubClients() });
+
+    const tracedConfig = kit.createAgentModel("chatTitle", {
+      providerOptions: { openai: { store: false } },
+    });
+
+    expect(tracedConfig.providerOptions).toMatchObject({
+      openai: { store: false },
+    });
+  });
+});
