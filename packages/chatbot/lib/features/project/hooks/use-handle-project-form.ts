@@ -10,6 +10,7 @@ import {
   CHAT_MODELS,
   defaultWebSearchNumResults,
   getChatConfigurationByModelId,
+  resolveChatModelId,
 } from "@/lib/features/foundation-model/config";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { Tool, Tools } from "@/lib/features/chat/types";
@@ -51,7 +52,7 @@ export const useHandleProjectForm = ({
   );
   const [tools, setTools] = useState<Tools>((project?.tools as Tools) || []);
   const [model, setModel] = useState<chatModelId>(
-    (project?.defaultModel as chatModelId) || models[0],
+    resolveChatModelId(project?.defaultModel),
   );
 
   // Advanced settings - collapsible state
