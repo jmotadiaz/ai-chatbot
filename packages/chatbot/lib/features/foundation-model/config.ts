@@ -18,6 +18,21 @@ export const CHAT_MODELS: chatModelId[] = [...chatModelKeys];
 // Constants
 export const defaultModel: chatModelId = chatModelKeys[0]!;
 
+/**
+ * Parses a persisted model id (`Chat.defaultModel`, `Project.defaultModel`)
+ * before it reaches the chat. Those columns are free-form and nullable: rows
+ * written without a model hold NULL, and catalog retunes retire ids that older
+ * rows still reference. `getChatConfigurationByModelId` throws for both while
+ * rendering the chat, so they fall back to the default model. Any other
+ * catalog id is kept, including models no longer offered in the picker.
+ */
+export const resolveChatModelId = (
+  modelId: string | null | undefined,
+): chatModelId =>
+  MODEL_CATALOG.some((entry) => entry.id === modelId)
+    ? (modelId as chatModelId)
+    : defaultModel;
+
 export const defaultWebSearchNumResults = 4;
 export const defaultRagMaxResources = 4;
 export const defaultMinRagScore = 0.5;
