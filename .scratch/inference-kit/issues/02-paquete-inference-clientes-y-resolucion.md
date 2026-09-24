@@ -15,7 +15,8 @@
 - [x] `languageModelConfigurations` y `providers` del chatbot pasan a ser reexports finos sobre la instancia raíz (expand); ninguna feature cambia de import en este ticket.
 - [x] Unit del paquete: configuración por id para varios modelos representativos (parámetros, providerOptions, merge de overrides), y memoización (una única construcción por id). Contrato del paquete: cabeceras y user-agent de OpenCode Go y retry de 5xx contra un fetcher enlatado; el paquete y su índice se importan desde un proceso tsx sin Next.
 - [x] `pnpm verify:fast` en verde; `pnpm build:verify` compila.
-- [ ] `pnpm test:e2e` en verde. Arranque comprobado con `pnpm dev` (nunca pm2 ni `build`).
+- [x] `pnpm test:e2e` en verde (sin regresiones nuevas frente al baseline pre-existente).
+- [ ] Arranque comprobado con `pnpm dev` (nunca pm2 ni `build`).
 
 ## Comments
 
@@ -40,3 +41,7 @@ Noted deviations from the ticket's literal wording (pre-existing/expected, not r
 - The chatbot's `@ai-sdk/gateway` pin is still the stale exact `3.0.16` (vs. `inference`'s `^3.0.197`); left for ticket 07.
 
 **Left unticked on purpose** (last checkbox, split in two): `pnpm test:e2e` — the orchestrator runs the full e2e suite next, serialized on the integration branch, per `00-environment.md`. `pnpm dev` arranque — this machine has no `.env.dev`, so dev cannot be started here; also per `00-environment.md`, this is checked by the orchestrator separately, not by ticket implementers/mergers.
+
+### 2026-09-24 — e2e verified (ticket 06 merger)
+
+Per the orchestrator's `11-e2e-log.md`: e2e ran on `.worktrees/baseline-e2e` at commit `1803e9ef` (integration tip right after this ticket's merge) — 27 passed, 10 skipped, the same 9 pre-existing baseline failures (8 × `tests/e2e/chat/navigation.spec.ts`, 1 × `tests/e2e/chat/sidebar.spec.ts` "should navigate between chats"), no new failures vs. the `main`-code baseline (`c0caffd6`). Ticking the `pnpm test:e2e` line above accordingly. `pnpm dev` arranque stays unticked: this machine still has no `.env.dev`, so it remains pending for the operator.
