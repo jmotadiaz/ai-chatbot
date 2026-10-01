@@ -3,6 +3,7 @@ export type {
   CreateAgentOptions,
   CreateInferenceKitOptions,
   Decision,
+  DecisionAnswer,
   DecideOptions,
   DecisionQuestion,
   DecisionScope,

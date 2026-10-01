@@ -15,9 +15,9 @@ import type {
 /**
  * Wire-format key of this question inside the Decisions API's
  * `questions`/`answers` maps, and the trace name grouping router calls in
- * OpenRouter's observability. Pinned explicitly (the kit's `decide()`
- * defaults both otherwise) so the emitted request is byte-identical to the
- * one the feature-owned adapter sent before `decide` moved into the kit.
+ * OpenRouter's observability. Pinned explicitly as the `questions` map key so
+ * the emitted request is byte-identical to the one the feature-owned adapter
+ * sent before `decide` moved into the kit.
  */
 export const CHAT_MODE_ROUTING_QUESTION_KEY = "mode";
 export const CHAT_MODE_ROUTING_TRACE_NAME = "chat-mode-routing";
@@ -66,10 +66,11 @@ export const createChatModeRouter = (
   async route(input: ChatModeRouterInput): Promise<RoutingDecision> {
     const decision = await decide({
       model: "chatModeRouter",
-      question: {
-        name: CHAT_MODE_ROUTING_QUESTION_KEY,
-        instructions: CHAT_MODE_ROUTING_QUESTION.instructions,
-        criteria: CHAT_MODE_ROUTING_QUESTION.criteria,
+      questions: {
+        [CHAT_MODE_ROUTING_QUESTION_KEY]: {
+          instructions: CHAT_MODE_ROUTING_QUESTION.instructions,
+          criteria: CHAT_MODE_ROUTING_QUESTION.criteria,
+        },
       },
       state: {
         latest_message: input.latestMessage,
@@ -78,15 +79,16 @@ export const createChatModeRouter = (
       scope: { traceName: CHAT_MODE_ROUTING_TRACE_NAME },
     });
 
-    if (!isRoutingOption(decision.choice)) {
-      throw new Error(`Unknown chat mode option: ${decision.choice}`);
+    const answer = decision.answers[CHAT_MODE_ROUTING_QUESTION_KEY];
+    if (!answer || !isRoutingOption(answer.choice)) {
+      throw new Error(`Unknown chat mode option: ${answer?.choice ?? "missing"}`);
     }
 
     return {
-      mode: ROUTING_OPTION_TO_MODE[decision.choice],
-      reason: decision.choice === "neither" ? "neither" : "routed",
-      confidence: decision.confidence,
-      probabilities: pickProbabilities(decision.probabilities),
+      mode: ROUTING_OPTION_TO_MODE[answer.choice],
+      reason: answer.choice === "neither" ? "neither" : "routed",
+      confidence: answer.confidence,
+      probabilities: pickProbabilities(answer.probabilities),
       modelId: decision.modelId,
       provider: decision.provider,
       latencyMs: decision.latencyMs,

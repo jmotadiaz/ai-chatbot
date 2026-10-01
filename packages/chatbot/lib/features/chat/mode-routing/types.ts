@@ -1,4 +1,4 @@
-import type { Decision } from "inference";
+import type { Decision, DecisionAnswer } from "inference";
 
 /**
  * Mode the answer is actually produced with.
@@ -27,8 +27,9 @@ export type ChatModeRoutingReason =
 
 /**
  * Raw answer of the classifier, before the fallback policy is applied: the
- * kit's generic decision provenance (`Decision`, everything but `choice` —
- * see `inference`) plus what the Chat Mode Router resolved it to. Carries no
+ * kit's generic provenance (the answered question's `DecisionAnswer` —
+ * choice, confidence, probabilities — plus the per-call `Decision` fields,
+ * see `inference`) and what the Chat Mode Router resolved it to. Carries no
  * `RoutingOption` on purpose (that would recreate the former cycle with
  * `questions.ts`, which only imports from this file, never the other way).
  *
@@ -36,7 +37,9 @@ export type ChatModeRoutingReason =
  * (`FALLBACK_CHAT_MODE_DECISION`, see `policy.ts`) never actually called a
  * provider, so it has nothing to time.
  */
-export interface RoutingDecision extends Omit<Decision, "choice" | "latencyMs"> {
+export interface RoutingDecision
+  extends Omit<DecisionAnswer, "choice">,
+    Omit<Decision, "answers" | "latencyMs"> {
   mode: ResolvedChatMode;
   reason: ChatModeRoutingReason;
   latencyMs?: number;

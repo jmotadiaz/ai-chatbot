@@ -108,11 +108,15 @@ const compactionAi: CompactionAiPort = {
   generateText: vi.fn().mockResolvedValue("summary"),
 };
 
-/** Kit-generic fake `decide` answer: `createChatModeRouter` maps `choice: "ctx7"` to `mode: "context7"`. */
+/** Kit-generic fake `decide` result: `createChatModeRouter` maps `choice: "ctx7"` to `mode: "context7"` (answer under the pinned `"mode"` question key). */
 const routedFakeDecision: Decision = {
-  choice: "ctx7",
-  confidence: 0.93,
-  probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
+  answers: {
+    mode: {
+      choice: "ctx7",
+      confidence: 0.93,
+      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
+    },
+  },
   modelId: "typesafe/jev-1.13-20260917",
   provider: "TypeSafe",
   latencyMs: 412,

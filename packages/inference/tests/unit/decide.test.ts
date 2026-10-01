@@ -1,10 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createDecideResolver } from "../../src/decide";
 import type { DecideOptions, DecisionsClient, DecisionsClients } from "../../src/types";
 
-const question: DecideOptions["question"] = {
-  instructions: "Pick one.",
-  criteria: { a: "first", b: "second" },
+const questions: DecideOptions["questions"] = {
+  decision: { instructions: "Pick one.", criteria: { a: "first", b: "second" } },
 };
 
 const stubClient = (
@@ -20,7 +19,7 @@ describe("createDecideResolver: catalog id / Model Role resolution", () => {
     await expect(
       decide({
         model: "not-a-real-decision-model" as DecideOptions["model"],
-        question,
+        questions,
         state: {},
       }),
     ).rejects.toThrow(/not found in DECISION_MODELS/);
@@ -31,8 +30,20 @@ describe("createDecideResolver: catalog id / Model Role resolution", () => {
     const decide = createDecideResolver(stubClient(create));
 
     await expect(
-      decide({ model: "nope" as DecideOptions["model"], question, state: {} }),
+      decide({ model: "nope" as DecideOptions["model"], questions, state: {} }),
     ).rejects.toThrow();
+    expect(create).not.toHaveBeenCalled();
+  });
+});
+
+describe("createDecideResolver: question map validation", () => {
+  it("throws before calling the client when no question is asked", async () => {
+    const create = vi.fn();
+    const decide = createDecideResolver(stubClient(create));
+
+    await expect(
+      decide({ model: "Jev 1.13", questions: {}, state: {} }),
+    ).rejects.toThrow(/at least one question/);
     expect(create).not.toHaveBeenCalled();
   });
 });

@@ -127,13 +127,6 @@ export type DecisionsClients = Record<DecisionProviderKind, () => DecisionsClien
 
 /** A single `type: "choice"` question sent to the Decisions API. */
 export interface DecisionQuestion {
-  /**
-   * Wire-format key for this question inside the Decisions API's
-   * `questions`/`answers` maps. Some question models read the key as part of
-   * the question (not just an addressing detail), so callers that must match
-   * an upstream contract can pin it explicitly. Defaults to `"decision"`.
-   */
-  name?: string;
   instructions: string;
   criteria: Record<string, string>;
 }
@@ -154,22 +147,41 @@ export interface DecisionScope {
 export interface DecideOptions {
   /** Decision catalog id or Model Role (see `DECISION_ROLES` in `models`). */
   model: DecisionModelId | DecisionRole;
-  question: DecisionQuestion;
+  /**
+   * The `choice` questions asked in this single call, keyed by their
+   * wire-format name inside the Decisions API's `questions`/`answers` maps.
+   * Some question models read the key as part of the question (not just an
+   * addressing detail), so callers that must match an upstream contract pin
+   * it explicitly. Several questions may travel in one request — the API
+   * answers back under the same keys.
+   */
+  questions: Record<string, DecisionQuestion>;
   /** Passed through to the Decisions API as-is (text, an object, or an array of state entries). */
   state: string | Record<string, unknown> | unknown[];
   scope?: DecisionScope;
 }
 
 /**
- * Generic provenance of one decision: what was chosen plus everything needed
- * for per-turn accounting and observability. No question-specific typing
- * (e.g. no union of a question's option keys) — that narrowing belongs to the
+ * Generic provenance of one answered question: what was chosen plus the
+ * per-question observability fields. No question-specific typing (e.g. no
+ * union of a question's option keys) — that narrowing belongs to the
  * consumer's own domain type, not this generic shape.
  */
-export interface Decision {
+export interface DecisionAnswer {
   choice: string;
   confidence?: number;
   probabilities?: Record<string, number>;
+}
+
+/**
+ * Result of one `decide` call: the answers keyed by question name, plus the
+ * per-call provenance shared by every question. A requested question whose
+ * answer is missing or not a valid `choice` is simply absent from `answers`
+ * (the caller's per-question fallback policy applies); the call only throws
+ * when NO requested question yields a valid answer.
+ */
+export interface Decision {
+  answers: Record<string, DecisionAnswer>;
   modelId: string;
   provider?: string;
   latencyMs: number;
@@ -223,9 +235,9 @@ export interface InferenceKit {
     options?: LanguageModelOptions,
   ) => ModelConfiguration;
   /**
-   * Answers a single `choice` question through the Decisions API, bounded by
-   * a fixed timeout on both the SDK attempt and the whole call. Errors
-   * propagate: the fallback policy belongs to the caller.
+   * Answers one or more `choice` questions in a single Decisions API call,
+   * bounded by a fixed timeout on both the SDK attempt and the whole call.
+   * Errors propagate: the fallback policy belongs to the caller.
    */
   decide: (options: DecideOptions) => Promise<Decision>;
 }

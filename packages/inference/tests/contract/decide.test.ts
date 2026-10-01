@@ -32,8 +32,8 @@ interface CapturedCall {
  * fetcher replaying the captured response body, so both the request the SDK
  * emits and its inbound (wire → SDK casing) parsing are exercised. This is the
  * `decide()` contract test moved from the chat-mode-routing feature (ticket 05
- * of the Inference Kit): same fixture, question key renamed from the feature's
- * own `mode` to `decide()`'s generic, caller-invisible `decision` key.
+ * of the Inference Kit): same fixture, the question key renamed from the
+ * feature's own `mode` to a caller-chosen generic one.
  */
 const makeHarness = (response: unknown, status = 200) => {
   const calls: CapturedCall[] = [];
@@ -64,12 +64,14 @@ const makeHarness = (response: unknown, status = 200) => {
 
 const options: DecideOptions = {
   model: "Jev 1.13",
-  question: {
-    instructions: "Classify how the assistant should answer.",
-    criteria: {
-      ctx7: "Needs library documentation.",
-      web: "Needs current or externally verifiable information.",
-      neither: "General reasoning is enough.",
+  questions: {
+    decision: {
+      instructions: "Classify how the assistant should answer.",
+      criteria: {
+        ctx7: "Needs library documentation.",
+        web: "Needs current or externally verifiable information.",
+        neither: "General reasoning is enough.",
+      },
     },
   },
   state: {
@@ -96,8 +98,10 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
     const question = calls[0]!.body.questions?.decision;
     expect(calls[0]!.body.model).toBe("typesafe/jev-1.13");
     expect(question?.type).toBe("choice");
-    expect(question?.instructions).toBe(options.question.instructions);
-    expect(question?.criteria).toEqual(options.question.criteria);
+    expect(question?.instructions).toBe(
+      options.questions.decision!.instructions,
+    );
+    expect(question?.criteria).toEqual(options.questions.decision!.criteria);
     expect(calls[0]!.body.state).toEqual(options.state);
     // No trace scope in a plain call: nothing to group the session with.
     expect(calls[0]!.body.session_id).toBeUndefined();
@@ -107,9 +111,13 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
     // parsing, which is why the response is replayed raw. `costUsd` comes from
     // `usage.cost`, the per-turn accounting required by the spec.
     expect(decision).toEqual({
-      choice: "web",
-      confidence: 0.55,
-      probabilities: { ctx7: 0.29, web: 0.71, neither: 0 },
+      answers: {
+        decision: {
+          choice: "web",
+          confidence: 0.55,
+          probabilities: { ctx7: 0.29, web: 0.71, neither: 0 },
+        },
+      },
       modelId: "typesafe/jev-1.13-20260917",
       provider: "TypeSafe",
       latencyMs: expect.any(Number),
@@ -189,21 +197,55 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
     });
   });
 
-  it("lets the caller pin the question's wire-format key instead of the default", async () => {
-    const { decide, calls } = makeHarness({
+  it("asks several questions in one call and answers each under its own key", async () => {
+    const multiFixture = {
       ...fixture,
-      answers: { mode: fixture.answers.decision },
-    });
+      answers: {
+        direction: {
+          type: "choice",
+          choice: "es-to-en",
+          confidence: 0.98,
+          probabilities: { "es-to-en": 0.98, "en-to-es": 0.02 },
+        },
+        audience: {
+          type: "choice",
+          choice: "internal",
+          confidence: 0.9,
+          probabilities: { internal: 0.9, general: 0.1 },
+        },
+        domain: { type: "noul", value: true },
+      },
+    };
+    const { decide, calls } = makeHarness(multiFixture);
 
     const decision = await decide({
       ...options,
-      question: { ...options.question, name: "mode" },
+      questions: {
+        direction: { instructions: "Pick a direction.", criteria: { "es-to-en": "…" } },
+        audience: { instructions: "Pick an audience.", criteria: { internal: "…" } },
+        domain: { instructions: "Pick a domain.", criteria: { none: "…" } },
+      },
     });
 
-    expect(Object.keys(calls[0]!.body.questions ?? {})).toEqual(["mode"]);
-    expect(calls[0]!.body.questions?.mode?.type).toBe("choice");
-    // Parsed from `answers.mode`, not the default `answers.decision` key.
-    expect(decision.choice).toBe("web");
+    expect(Object.keys(calls[0]!.body.questions ?? {})).toEqual([
+      "direction",
+      "audience",
+      "domain",
+    ]);
+    // The malformed `domain` answer is left out (per-question fallback is the
+    // caller's); the valid ones are parsed under their own keys.
+    expect(decision.answers).toEqual({
+      direction: {
+        choice: "es-to-en",
+        confidence: 0.98,
+        probabilities: { "es-to-en": 0.98, "en-to-es": 0.02 },
+      },
+      audience: {
+        choice: "internal",
+        confidence: 0.9,
+        probabilities: { internal: 0.9, general: 0.1 },
+      },
+    });
   });
 
   it("rejects on a 4xx so the caller's fallback policy owns the degradation", async () => {
@@ -222,5 +264,25 @@ describe("decide() over the OpenRouter Decisions API (contract)", () => {
     });
 
     await expect(decide(options)).rejects.toThrow(/Unexpected Decisions answer/);
+  });
+
+  it("rejects when every requested answer is invalid", async () => {
+    const { decide } = makeHarness({
+      ...fixture,
+      answers: {
+        direction: { type: "noul", value: true },
+        audience: { type: "noul", value: true },
+      },
+    });
+
+    await expect(
+      decide({
+        ...options,
+        questions: {
+          direction: { instructions: "Pick a direction.", criteria: { a: "…" } },
+          audience: { instructions: "Pick an audience.", criteria: { b: "…" } },
+        },
+      }),
+    ).rejects.toThrow(/Unexpected Decisions answer/);
   });
 });

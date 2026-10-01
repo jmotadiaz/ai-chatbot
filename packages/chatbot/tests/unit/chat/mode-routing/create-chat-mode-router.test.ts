@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Decision, DecideOptions } from "inference";
+import type { Decision, DecisionAnswer, DecideOptions } from "inference";
 import {
   CHAT_MODE_ROUTING_QUESTION_KEY,
   CHAT_MODE_ROUTING_TRACE_NAME,
@@ -7,15 +7,27 @@ import {
 } from "@/lib/features/chat/mode-routing/router";
 import { CHAT_MODE_ROUTING_QUESTION } from "@/lib/features/chat/mode-routing/questions";
 
-const baseDecision: Decision = {
+const baseAnswer: DecisionAnswer = {
   choice: "ctx7",
   confidence: 0.93,
   probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
+};
+
+const baseDecision: Decision = {
+  answers: { [CHAT_MODE_ROUTING_QUESTION_KEY]: baseAnswer },
   modelId: "typesafe/jev-1.13-20260917",
   provider: "TypeSafe",
   latencyMs: 412,
   costUsd: 0.000017976,
 };
+
+/** Decision whose router answer is `answer` (merged over the base answer). */
+const decisionWith = (answer: Partial<DecisionAnswer>): Decision => ({
+  ...baseDecision,
+  answers: {
+    [CHAT_MODE_ROUTING_QUESTION_KEY]: { ...baseAnswer, ...answer },
+  },
+});
 
 const input = { latestMessage: "¿Cómo uso drizzle-kit?", recentContext: "user: hola" };
 
@@ -37,7 +49,7 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
   });
 
   it("maps web to web/routed", async () => {
-    const router = createChatModeRouter(async () => ({ ...baseDecision, choice: "web" }));
+    const router = createChatModeRouter(async () => decisionWith({ choice: "web" }));
 
     await expect(router.route(input)).resolves.toMatchObject({
       mode: "web",
@@ -46,7 +58,7 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
   });
 
   it("maps neither to neutral/neither", async () => {
-    const router = createChatModeRouter(async () => ({ ...baseDecision, choice: "neither" }));
+    const router = createChatModeRouter(async () => decisionWith({ choice: "neither" }));
 
     await expect(router.route(input)).resolves.toMatchObject({
       mode: "neutral",
@@ -55,20 +67,18 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
   });
 
   it("drops probability keys outside the question's own options", async () => {
-    const router = createChatModeRouter(async () => ({
-      ...baseDecision,
-      probabilities: { ctx7: 0.9, web: 0.1, neither: 0, banana: 0.5 },
-    }));
+    const router = createChatModeRouter(async () =>
+      decisionWith({ probabilities: { ctx7: 0.9, web: 0.1, neither: 0, banana: 0.5 } }),
+    );
 
     const decision = await router.route(input);
     expect(decision.probabilities).toEqual({ ctx7: 0.9, web: 0.1, neither: 0 });
   });
 
   it("omits probabilities entirely when none of the question's options are present", async () => {
-    const router = createChatModeRouter(async () => ({
-      ...baseDecision,
-      probabilities: { banana: 0.5 },
-    }));
+    const router = createChatModeRouter(async () =>
+      decisionWith({ probabilities: { banana: 0.5 } }),
+    );
 
     const decision = await router.route(input);
     expect(decision.probabilities).toBeUndefined();
@@ -82,10 +92,11 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
 
     expect(decide).toHaveBeenCalledWith({
       model: "chatModeRouter",
-      question: {
-        name: CHAT_MODE_ROUTING_QUESTION_KEY,
-        instructions: CHAT_MODE_ROUTING_QUESTION.instructions,
-        criteria: CHAT_MODE_ROUTING_QUESTION.criteria,
+      questions: {
+        [CHAT_MODE_ROUTING_QUESTION_KEY]: {
+          instructions: CHAT_MODE_ROUTING_QUESTION.instructions,
+          criteria: CHAT_MODE_ROUTING_QUESTION.criteria,
+        },
       },
       state: {
         latest_message: input.latestMessage,
@@ -102,12 +113,21 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
     await router.route(input);
 
     const call = decide.mock.calls[0]![0];
-    expect(call.question.name).toBe("mode");
+    expect(Object.keys(call.questions)).toEqual([CHAT_MODE_ROUTING_QUESTION_KEY]);
+    expect(call.questions[CHAT_MODE_ROUTING_QUESTION_KEY]!.instructions).toBe(
+      CHAT_MODE_ROUTING_QUESTION.instructions,
+    );
     expect(call.scope).toEqual({ traceName: "chat-mode-routing" });
   });
 
   it("rejects an unknown choice instead of guessing a mode", async () => {
-    const router = createChatModeRouter(async () => ({ ...baseDecision, choice: "banana" }));
+    const router = createChatModeRouter(async () => decisionWith({ choice: "banana" }));
+
+    await expect(router.route(input)).rejects.toThrow(/Unknown chat mode option/);
+  });
+
+  it("rejects a missing answer instead of guessing a mode", async () => {
+    const router = createChatModeRouter(async () => ({ ...baseDecision, answers: {} }));
 
     await expect(router.route(input)).rejects.toThrow(/Unknown chat mode option/);
   });
