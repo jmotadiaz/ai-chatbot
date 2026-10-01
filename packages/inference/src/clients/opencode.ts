@@ -76,8 +76,8 @@ export function buildOpencodeClients(): OpencodeClients {
   let _goAnthropic: ReturnType<typeof createAnthropic> | null = null;
   const getGoAnthropic = () => {
     if (!_goAnthropic) {
-      // OpenCode Go también sirve algunos modelos (Union Alpha Free) solo por
-      // el endpoint Anthropic: @ai-sdk/anthropic pide `${baseURL}/messages`,
+      // OpenCode Go también puede servir modelos solo por el endpoint
+      // Anthropic: @ai-sdk/anthropic pide `${baseURL}/messages`,
       // así que aquí el baseURL lleva /v1 (en el catálogo, orientado a Pi, el
       // baseUrl es "https://opencode.ai/zen/go" porque Pi añade /v1/messages).
       _goAnthropic = createAnthropic({

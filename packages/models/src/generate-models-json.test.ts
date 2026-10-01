@@ -20,7 +20,7 @@ const NOT_BUILT_IN = new Set([
   "glm-5.3",
   "glm-5.3-flash",
   "muse-spark-1.3-contributor",
-  "union-alpha",
+  "space-bunny-free",
   "mimo-v2.6-flash",
   "mimo-v2.6-pro",
 ]);
@@ -421,8 +421,7 @@ describe("generateModelsJson custom providers", () => {
         e.userInvocable &&
         !builtIns.has(e.provider.modelId) &&
         (e.provider.kind === "opencodeGo" ||
-          e.provider.kind === "opencodeGoResponses" ||
-          e.provider.kind === "opencodeGoAnthropic"),
+          e.provider.kind === "opencodeGoResponses"),
     ) as ModelCatalogEntry[]) {
       expect(entry.baseUrl, `${entry.id} must pin baseUrl`).toBeTruthy();
       if (entry.provider.kind === "opencodeGo") {
@@ -431,21 +430,30 @@ describe("generateModelsJson custom providers", () => {
     }
   });
 
-  it("describes Union Alpha Free, which Pi does not ship and OpenCode Go only serves over anthropic-messages", () => {
-    const entry = MODEL_CATALOG.find((e) => e.id === "Union Alpha Free")!;
-    const [union] = generateModelsJson([entry], { builtIns: new Map() })
+  it("describes Space Bunny Free, which Pi does not ship and OpenCode Go serves over openai-completions", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Space Bunny Free")!;
+    const [bunny] = generateModelsJson([entry], { builtIns: new Map() })
       .providers["opencode-go"].models;
-    expect(union).toEqual({
-      id: "union-alpha",
-      name: "Union Alpha Free",
+    expect(bunny).toEqual({
+      id: "space-bunny-free",
+      name: "Space Bunny Free",
       reasoning: true,
       input: ["text", "image"],
-      contextWindow: 262_144,
-      maxTokens: 131_072,
+      contextWindow: 1_048_576,
+      maxTokens: 524_288,
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      // /v1/chat/completions devuelve 500: el endpoint es /zen/go/v1/messages.
-      api: "anthropic-messages",
-      baseUrl: "https://opencode.ai/zen/go",
+      // El registry de opencode-go expone effort low..max: xhigh remite a
+      // max y el modelo no acepta menos de low.
+      thinkingLevelMap: {
+        off: null,
+        minimal: null,
+        low: "low",
+        medium: "medium",
+        high: "high",
+        xhigh: "max",
+      },
+      api: "openai-completions",
+      baseUrl: "https://opencode.ai/zen/go/v1",
     });
   });
 

@@ -95,13 +95,13 @@ describe("model mapping", () => {
     expect(toChatModelId("opencode-go", "glm-5.3")).toBe("GLM 5.3");
   });
 
-  it("maps the Union Alpha Free catalog id to the opencode-go Pi provider", () => {
-    expect(toPiModelId("Union Alpha Free")).toEqual({
+  it("maps the Space Bunny Free catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("Space Bunny Free")).toEqual({
       providerId: "opencode-go",
-      modelId: "union-alpha",
+      modelId: "space-bunny-free",
     });
-    expect(toChatModelId("opencode-go", "union-alpha")).toBe(
-      "Union Alpha Free",
+    expect(toChatModelId("opencode-go", "space-bunny-free")).toBe(
+      "Space Bunny Free",
     );
   });
 
