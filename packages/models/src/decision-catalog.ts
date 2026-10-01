@@ -37,6 +37,11 @@ export type DecisionModelId = (typeof DECISION_MODELS)[number]["id"];
  */
 export const DECISION_ROLES = {
   chatModeRouter: "Jev 1.13",
+  /**
+   * `lib/features/english/workflows/classifier.ts` — the English Helper's
+   * classification trio (direction, audience, domain) asked in one call.
+   */
+  englishHelper: "Jev 1.13",
 } as const satisfies Record<string, DecisionModelId>;
 
 export type DecisionRole = keyof typeof DECISION_ROLES;

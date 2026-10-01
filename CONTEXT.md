@@ -149,11 +149,11 @@ Clasificación del destinatario previsto de un texto (público general, profesio
 _Avoid_: reader, target
 
 **Domain**:
-Clasificación del área temática de un texto.
-_Avoid_: topic, subject
+Clasificación del área temática de un texto, elegida de un conjunto cerrado: software (desarrollo, devops, datos/IA, seguridad), legal, médico, finanzas, marketing y académico. Admite "ninguno de estos", en cuyo caso el Domain no interviene.
+_Avoid_: topic, subject, subdomain
 
 **Direction**:
-Par de idiomas origen→destino de una Translation.
+Par de idiomas origen→destino de una Translation, limitado a dos rutas fijas: español→inglés (UK) e inglés→español (España).
 _Avoid_: language pair, source/target languages
 
 **Grammar Check**:
@@ -161,7 +161,7 @@ Corrección gramatical de un texto, con el texto corregido y las razones de cada
 _Avoid_: proofread, correction
 
 **Translation**:
-Traducción de un texto aplicando las clasificaciones de Audience, Domain y Direction.
+Traducción de un texto aplicando las clasificaciones de Audience, Domain (cuando aplica) y Direction.
 _Avoid_: translate (verbo), localization
 
 ### Coding Agent

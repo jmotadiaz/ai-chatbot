@@ -43,15 +43,10 @@ export const LANGUAGE_MODEL_ROLES = {
    */
   metaPromptRefiner: "Deepseek v4.1 Flash",
   /**
-   * `lib/features/english/workflows/index.ts` — shared by both
-   * `grammarAiAdapter` and `translateAiAdapter`'s `getAudienceModelConfiguration`.
+   * `lib/features/english/workflows/index.ts` — `grammarAiAdapter`'s
+   * `getGrammarModelConfiguration`. (Audience/domain/direction classification
+   * moved to the Decision API: `DECISION_ROLES.englishHelper`.)
    */
-  englishAudienceClassifier: "GPT OSS Mini",
-  /** Same adapters' `getDomainModelConfiguration`. */
-  englishDomainClassifier: "GPT OSS Mini",
-  /** `translateAiAdapter.getDirectionModelConfiguration`. */
-  englishDirectionDetector: "GPT OSS Mini",
-  /** `grammarAiAdapter.getGrammarModelConfiguration`. */
   englishGrammarCheck: "Gemini 3.1 Flash Lite",
   /** `translateAiAdapter.getTranslateModelConfiguration`. */
   englishTranslate: "Gemini 3.1 Flash Lite",

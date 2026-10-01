@@ -1,23 +1,18 @@
 import { makeCorrectGrammar, makeTranslate } from "./factory";
+import { createEnglishClassifier } from "./classifier";
 import type { CorrectGrammarAiPort, TranslateAiPort } from "./ports";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
+const classifier = createEnglishClassifier(inferenceKit.decide);
+
 const grammarAiAdapter: CorrectGrammarAiPort = {
-  getAudienceModelConfiguration: () =>
-    inferenceKit.languageModel("englishAudienceClassifier"),
-  getDomainModelConfiguration: () =>
-    inferenceKit.languageModel("englishDomainClassifier"),
+  classify: classifier.classifyForGrammar,
   getGrammarModelConfiguration: () =>
     inferenceKit.languageModel("englishGrammarCheck"),
 };
 
 const translateAiAdapter: TranslateAiPort = {
-  getAudienceModelConfiguration: () =>
-    inferenceKit.languageModel("englishAudienceClassifier"),
-  getDomainModelConfiguration: () =>
-    inferenceKit.languageModel("englishDomainClassifier"),
-  getDirectionModelConfiguration: () =>
-    inferenceKit.languageModel("englishDirectionDetector"),
+  classify: classifier.classifyForTranslation,
   getTranslateModelConfiguration: () =>
     inferenceKit.languageModel("englishTranslate"),
 };
