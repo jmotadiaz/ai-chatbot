@@ -18,8 +18,7 @@ describe("MODEL_CATALOG integrity", () => {
       .filter(
         (e) =>
           e.provider.kind === "opencodeGo" ||
-          e.provider.kind === "opencodeGoResponses" ||
-          e.provider.kind === "opencodeGoAnthropic",
+          e.provider.kind === "opencodeGoResponses",
       )
       .map((e) => e.provider.modelId);
     expect(new Set(keys).size).toBe(keys.length);
@@ -59,7 +58,7 @@ describe("MODEL_CATALOG integrity", () => {
       "GLM 5.3",
       "Hy3",
       "GLM 5.3 Flash",
-      "Union Alpha Free",
+      "Space Bunny Free",
     ]);
   });
 

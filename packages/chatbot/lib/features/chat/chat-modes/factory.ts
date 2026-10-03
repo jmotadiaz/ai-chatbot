@@ -54,7 +54,7 @@ export const createChatModeAgent = async ({
       : systemPrompt;
 
     return createProjectAgent({
-      modelConfiguration: ai.getProjectModelConfiguration(),
+      ai,
       systemPrompt: augmentedSystemPrompt,
       messages,
       userId,
@@ -68,17 +68,12 @@ export const createChatModeAgent = async ({
       // `neutral` is the resolved mode of a tool-less Auto turn. A bare `auto`
       // reaching here means no routing decision was available, which degrades to
       // the same branch instead of silently forcing a Context7 lookup.
-      return createNeutralAgent({
-        modelConfiguration: ai.getNeutralModelConfiguration(),
-      });
+      return createNeutralAgent({ ai });
     case "context7":
-      return createContext7Agent({
-        modelConfiguration: ai.getContext7ModelConfiguration(),
-        memoryContext,
-      });
+      return createContext7Agent({ ai, memoryContext });
     case "rag":
       return createRagAgent({
-        modelConfiguration: ai.getRagModelConfiguration(),
+        ai,
         messages,
         userId,
         projectId,
@@ -88,7 +83,7 @@ export const createChatModeAgent = async ({
       });
     case "web":
       return createWebSearchAgent({
-        modelConfiguration: ai.getWebSearchModelConfiguration(),
+        ai,
         messages,
         webSearchNumResults,
         memoryContext: memoryContext,

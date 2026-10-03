@@ -1,11 +1,11 @@
 "use server";
 
 import { experimental_generateSpeech as aiGenerateSpeech } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { speechModel } from "@/lib/infrastructure/ai/inference-kit";
 
 export async function generateSpeech(text: string) {
   const result = await aiGenerateSpeech({
-    model: openai.speech("gpt-4o-mini-tts-2025-03-20"),
+    model: speechModel("englishTts"),
     speed: 0.9,
     voice: "alloy",
     instructions: `

@@ -1,20 +1,8 @@
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
-import {
-  chatModelKeys,
-  chatModelId,
-} from "@/lib/features/foundation-model/config";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import type { chatModelId } from "@/lib/features/foundation-model/config";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
-export const chatAiAdapter = (modelId: chatModelId): ChatAgentAiPort => {
-  const getConfig = () =>
-    languageModelConfigurations(modelId) ||
-    languageModelConfigurations(chatModelKeys[0]);
-
-  return {
-    getRagModelConfiguration: getConfig,
-    getWebSearchModelConfiguration: getConfig,
-    getContext7ModelConfiguration: getConfig,
-    getProjectModelConfiguration: getConfig,
-    getNeutralModelConfiguration: getConfig,
-  };
-};
+export const chatAiAdapter = (modelId: chatModelId): ChatAgentAiPort => ({
+  getModelConfiguration: () => inferenceKit.languageModel(modelId),
+  createAgent: (options) => inferenceKit.createAgent(modelId, options),
+});

@@ -21,6 +21,15 @@ const catalogDef = {
   OPENCODE_ZEN_API_KEY: { description: "API key del proveedor OpenCode Zen", type: "string", required: false, secret: true },
   OPENROUTER_API_KEY: { description: "API key de OpenRouter (provider del AI SDK y Decisions API del router de Chat Mode)", type: "string", required: false, secret: true },
   DEEPINFRA_API_KEY: { description: "API key de DeepInfra", type: "string", required: false, secret: true },
+  // Las siguientes seis eran leídas implícitamente por sus SDKs (process.env)
+  // antes del paquete inference; ahora se declaran aquí y se pasan explícitas
+  // al constructor de cada cliente (ver packages/inference/src/clients).
+  OPENAI_API_KEY: { description: "API key de OpenAI", type: "string", required: false, secret: true },
+  XAI_API_KEY: { description: "API key de xAI", type: "string", required: false, secret: true },
+  GROQ_API_KEY: { description: "API key de Groq", type: "string", required: false, secret: true },
+  PERPLEXITY_API_KEY: { description: "API key de Perplexity", type: "string", required: false, secret: true },
+  GOOGLE_GENERATIVE_AI_API_KEY: { description: "API key de Google Generative AI (embeddings)", type: "string", required: false, secret: true },
+  COHERE_API_KEY: { description: "API key de Cohere (rerank)", type: "string", required: false, secret: true },
   EXASEARCH_API_KEY: { description: "API key de Exa Search (actual)", type: "string", required: false, secret: true },
   EXA_API_KEY: { description: "API key de Exa (legacy; alias de EXASEARCH_API_KEY)", type: "string", required: false, secret: true },
   MCP_API_KEY: { description: "API key de autenticación del mcp-server", type: "string", required: false, secret: true },

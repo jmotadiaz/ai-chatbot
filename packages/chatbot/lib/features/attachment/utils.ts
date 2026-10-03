@@ -1,7 +1,7 @@
 import type { PutBlobResult } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
 import type { FilePart } from "./types";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ChatModelConfiguration } from "@/lib/features/foundation-model/config";
 
 export const convertFilesToDataURLs = async (
   files: FileList
@@ -118,7 +118,7 @@ export const handleLocalFileUpload = async (
 export const handleFileUpload = async (
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>,
   fileList: FileList | null,
-  supportedFiles: Required<ModelConfiguration>["supportedFiles"]
+  supportedFiles: ChatModelConfiguration["supportedFiles"]
 ) => {
   if (fileList) {
     for (const file of fileList) {

@@ -7,8 +7,10 @@ import type {
   ChatModeRouterPort,
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
-import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import { chatModelKeys } from "@/lib/features/foundation-model/config";
+
+/** Arbitrary provenance value: these tests fake the port directly, never a real Decisions call. */
+const TEST_ROUTING_MODEL_ID = "test/routing-model";
 
 vi.mock("server-only", () => ({}));
 
@@ -20,13 +22,15 @@ const state = vi.hoisted(() => ({
 }));
 
 // The AI port is built inside `makeProcessChatResponse`, so the user-selected
-// model + parameters reach the neutral branch from here.
-vi.mock("@/lib/features/foundation-model/server", async () => {
+// model + parameters reach the neutral branch from here. This mocks the
+// composition root directly (the `foundation-model/server` shim it used to
+// target is gone): everything under test resolves models through
+// `inferenceKit.languageModel`/`createAgentModel`/`createAgent` — the same
+// three kit members `buildAgentAdapter` (`conversation/factory.ts`) calls.
+vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
-  const { simulateReadableStream } = await import("ai");
-  const { textChunks, finishChunk } = await import(
-    "@/tests/mocks/ai/helpers/chunks"
-  );
+  const { simulateReadableStream, ToolLoopAgent } = await import("ai");
+  const { textChunks, finishChunk } = await import("inference/testing");
 
   const model = new MockLanguageModelV3({
     modelId: "user-selected-model",
@@ -44,13 +48,31 @@ vi.mock("@/lib/features/foundation-model/server", async () => {
     },
   });
 
+  // No tracing wrap here (this fake stands in for the untraced base
+  // configuration): TRACE_ENABLED is unset in this suite, so the real kit's
+  // own `wrapWithTracing` would no-op identically.
+  const baseConfig = () => ({
+    model,
+    company: "openai" as const,
+    temperature: 0.2,
+    topP: 0.8,
+  });
+
   return {
-    languageModelConfigurations: () => ({
-      model,
-      company: "openai",
-      temperature: 0.2,
-      topP: 0.8,
-    }),
+    inferenceKit: {
+      languageModel: baseConfig,
+      createAgentModel: baseConfig,
+      createAgent: (
+        _idOrRole: unknown,
+        { instructions, tools, overrides }: any = {},
+      ) =>
+        new ToolLoopAgent({
+          ...baseConfig(),
+          instructions,
+          tools,
+          ...overrides,
+        }),
+    },
   };
 });
 
@@ -138,7 +160,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.91,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     const { chunkTypes, text, routing } = await runTurn({
@@ -154,7 +176,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.91,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     // The model was never offered a tool, and kept the user's parameters.
@@ -209,7 +231,7 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "web",
       reason: "routed",
       confidence: 0.42,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     const { routing, text } = await runTurn({ router });
@@ -227,7 +249,7 @@ describe("neutral branch through the conversation pipeline", () => {
     const router = portReturning({
       mode: "web",
       reason: "routed",
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     const { routing, text } = await runTurn({ router });

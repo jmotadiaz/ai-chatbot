@@ -4,7 +4,7 @@ import {
   MEMORY_DECOMPOSITION_SYSTEM_PROMPT,
   MEMORY_DECOMPOSITION_DESCRIPTION,
 } from "./prompts";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 const queryDecompositionSchema = z.object({
   queries: z
@@ -26,7 +26,7 @@ export async function decomposeForMemorySearch({
 
   try {
     const { output } = await generateText({
-      ...languageModelConfigurations("GPT OSS Mini"),
+      ...inferenceKit.languageModel("memoryQueryDecomposition"),
       system: MEMORY_DECOMPOSITION_SYSTEM_PROMPT,
       prompt: `User Message: "${message}"`,
       output: Output.object({ schema: queryDecompositionSchema }),

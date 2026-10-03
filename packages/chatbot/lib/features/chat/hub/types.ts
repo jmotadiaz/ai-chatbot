@@ -1,8 +1,10 @@
 "use client";
 
 import type { UseChatHelpers } from "@ai-sdk/react";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type {
+  ChatModelConfiguration,
+  chatModelId,
+} from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import type { FilePart } from "@/lib/features/attachment/types";
 import type { ChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
@@ -23,7 +25,7 @@ export interface HubInstance {
 export interface ChatHub {
   instances: HubInstance[];
   availableModels: chatModelId[];
-  supportedFilesForPicker: Required<ModelConfiguration>["supportedFiles"];
+  supportedFilesForPicker: ChatModelConfiguration["supportedFiles"];
   /** Once the hub has sent the first message, new instances cannot be added. */
   instancesLocked: boolean;
   /** True while all instances are processing a submitted message. */

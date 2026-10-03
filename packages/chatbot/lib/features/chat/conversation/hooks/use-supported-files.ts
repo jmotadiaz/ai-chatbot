@@ -1,14 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
+import type {
+  ChatModelConfiguration,
+  chatModelId,
+} from "@/lib/features/foundation-model/config";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 const unionSupportedFiles = (
   models: chatModelId[]
-): Required<ModelConfiguration>["supportedFiles"] => {
-  const set = new Set<Required<ModelConfiguration>["supportedFiles"][number]>();
+): ChatModelConfiguration["supportedFiles"] => {
+  const set = new Set<ChatModelConfiguration["supportedFiles"][number]>();
   for (const model of models) {
     for (const f of getChatConfigurationByModelId(model).supportedFiles) set.add(f);
   }
@@ -17,7 +19,7 @@ const unionSupportedFiles = (
 
 const intersectSupportedFiles = (
   models: chatModelId[]
-): Required<ModelConfiguration>["supportedFiles"] => {
+): ChatModelConfiguration["supportedFiles"] => {
   if (models.length === 0) return [];
   const [first, ...rest] = models;
   const base = new Set(getChatConfigurationByModelId(first).supportedFiles);
@@ -40,7 +42,7 @@ export interface UseSupportedFilesArgs {
 export const useSupportedFiles = ({
   selectedModels,
   availableModels,
-}: UseSupportedFilesArgs): Required<ModelConfiguration>["supportedFiles"] => {
+}: UseSupportedFilesArgs): ChatModelConfiguration["supportedFiles"] => {
   return useMemo(() => {
     if (selectedModels.length > 0) {
       return intersectSupportedFiles(selectedModels);

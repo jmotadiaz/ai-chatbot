@@ -2,11 +2,11 @@ import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
 import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
 
-const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools;
-const FAILING_MODEL = CAPABILITY_ALIASES.failsMidStream;
-const VISION_MODEL = CAPABILITY_ALIASES.canSeeImages;
-const BASIC_MODEL = CAPABILITY_ALIASES.basicChat;
-const BASIC_ALT_MODEL = CAPABILITY_ALIASES.basicChatAlt;
+const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools.id;
+const FAILING_MODEL = CAPABILITY_ALIASES.failsMidStream.id;
+const VISION_MODEL = CAPABILITY_ALIASES.canSeeImages.id;
+const BASIC_MODEL = CAPABILITY_ALIASES.basicChat.id;
+const BASIC_ALT_MODEL = CAPABILITY_ALIASES.basicChatAlt.id;
 
 test.describe("Chat Hub", () => {
   let hubPage: ChatHubPage;

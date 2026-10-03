@@ -2,7 +2,7 @@ import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
 import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
 
-const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools;
+const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools.id;
 
 test.describe("Chat Hub - Sidebar Integration", () => {
   let hubPage: ChatHubPage;

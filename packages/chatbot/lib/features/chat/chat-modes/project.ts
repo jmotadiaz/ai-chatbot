@@ -1,8 +1,8 @@
-import { ToolLoopAgent, stepCountIs } from "ai";
+import { stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { URL_CONTEXT_TOOL } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
-import { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
 import {
@@ -20,7 +20,7 @@ import {
 } from "@/lib/features/chat/chat-modes/prompts";
 
 interface CreateProjectAgentParams {
-  modelConfiguration: ModelConfiguration;
+  ai: ChatAgentAiPort;
   systemPrompt?: string;
   messages: ChatbotMessage[];
   userId: string;
@@ -28,7 +28,7 @@ interface CreateProjectAgentParams {
 }
 
 export const createProjectAgent = ({
-  modelConfiguration,
+  ai,
   systemPrompt = DEFAULT_PROJECT_AGENT_PROMPT,
   messages,
   userId,
@@ -47,38 +47,41 @@ export const createProjectAgent = ({
     isRagEnabled = project.tools.includes(RAG_TOOL);
   }
 
-  return new ToolLoopAgent({
-    ...modelConfiguration,
+  const modelConfiguration = ai.getModelConfiguration();
+
+  return ai.createAgent({
     tools: toolSet,
-    maxRetries: 3,
-    experimental_telemetry: { isEnabled: true },
-    stopWhen: stepCountIs(4),
-    activeTools: [],
-    prepareStep: withMessageProcessing(
-      modelConfiguration,
-      async ({ steps }) => {
-        if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
+    overrides: {
+      maxRetries: 3,
+      experimental_telemetry: { isEnabled: true },
+      stopWhen: stepCountIs(4),
+      activeTools: [],
+      prepareStep: withMessageProcessing(
+        modelConfiguration,
+        async ({ steps }) => {
+          if (isRagEnabled && !hasToolCallSteps({ steps, toolName: RAG_TOOL })) {
+            return {
+              system: RAG_AGENT_PROMPT,
+              activeTools: [RAG_TOOL],
+              ...(!hasRagToolCalled(messages) && {
+                toolChoice: { type: "tool", toolName: RAG_TOOL },
+              }),
+            };
+          }
+
+          if (
+            !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
+            (await hasToExecuteUrlContext(messages))
+          ) {
+            return urlContextStep();
+          }
+
           return {
-            system: RAG_AGENT_PROMPT,
-            activeTools: [RAG_TOOL],
-            ...(!hasRagToolCalled(messages) && {
-              toolChoice: { type: "tool", toolName: RAG_TOOL },
-            }),
+            system: systemPrompt,
           };
-        }
-
-        if (
-          !hasToolCallSteps({ steps, toolName: URL_CONTEXT_TOOL }) &&
-          (await hasToExecuteUrlContext(messages))
-        ) {
-          return urlContextStep();
-        }
-
-        return {
-          system: systemPrompt,
-        };
-      },
-    ),
+        },
+      ),
+    },
   });
 };
 

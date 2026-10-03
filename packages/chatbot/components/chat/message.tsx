@@ -9,10 +9,9 @@ import type {
   SourceUrlUIPart,
 } from "ai";
 import Image from "next/image";
-import { capitalize, cn } from "@/lib/utils/helpers";
+import { cn } from "@/lib/utils/helpers";
 import { CopyBlock } from "@/components/ui/copy-block";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import type { ModelRoutingMetadata } from "@/lib/features/foundation-model/types";
 import type {
   ChatModeRoutingMetadata,
   ResolvedChatMode,
@@ -184,7 +183,6 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
             sourceParts={sourceParts}
             ragSourceParts={ragSourceParts}
             context7Parts={context7Parts}
-            routingMetadata={message.metadata.autoModel}
             chatModeRouting={message.metadata.chatModeRouting}
           />
         )}
@@ -198,28 +196,25 @@ const AssistantMessageActions: React.FC<{
   sourceParts: Array<SourceUrlUIPart | SourceDocumentUIPart>;
   ragSourceParts: RagChunk[][];
   context7Parts: { libraryId: string; output: string }[];
-  routingMetadata?: ModelRoutingMetadata;
   chatModeRouting?: ChatModeRoutingMetadata;
 }> = ({
   showReload,
   sourceParts,
   ragSourceParts,
   context7Parts,
-  routingMetadata,
   chatModeRouting,
 }) => {
   const [activeSection, setActiveSection] = useState<
-    "router" | "chat-mode" | "sources" | "rag-sources" | "context7-sources" | null
+    "chat-mode" | "sources" | "rag-sources" | "context7-sources" | null
   >(null);
 
   const toggleSection = (
-    section: "router" | "chat-mode" | "sources" | "rag-sources" | "context7-sources",
+    section: "chat-mode" | "sources" | "rag-sources" | "context7-sources",
   ) => {
     setActiveSection((prev) => (prev === section ? null : section));
   };
 
   const hasDetails =
-    routingMetadata !== undefined ||
     chatModeRouting !== undefined ||
     sourceParts.length > 0 ||
     context7Parts.length > 0 ||
@@ -239,26 +234,15 @@ const AssistantMessageActions: React.FC<{
               stay aligned with the reload text above by construction. */}
           <div aria-hidden="true" />
           <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-          {routingMetadata && (
-            <RouterDetailsTrigger
-              isExpanded={activeSection === "router"}
-              onToggle={() => toggleSection("router")}
-            />
-          )}
           {chatModeRouting && (
-            <>
-              {routingMetadata && (
-                <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
-              )}
-              <ChatModeRoutingTrigger
-                isExpanded={activeSection === "chat-mode"}
-                onToggle={() => toggleSection("chat-mode")}
-              />
-            </>
+            <ChatModeRoutingTrigger
+              isExpanded={activeSection === "chat-mode"}
+              onToggle={() => toggleSection("chat-mode")}
+            />
           )}
           {sourceParts.length > 0 && (
             <>
-              {(routingMetadata || chatModeRouting) && (
+              {chatModeRouting && (
                 <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
               )}
               <SourceMessagePartTrigger
@@ -271,9 +255,7 @@ const AssistantMessageActions: React.FC<{
 
           {context7Parts.length > 0 && (
             <>
-              {(routingMetadata ||
-                chatModeRouting ||
-                sourceParts.length > 0) && (
+              {(chatModeRouting || sourceParts.length > 0) && (
                 <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
               )}
               <div
@@ -291,8 +273,7 @@ const AssistantMessageActions: React.FC<{
           )}
           {ragSourceParts.length > 0 && (
             <>
-              {(routingMetadata ||
-                chatModeRouting ||
+              {(chatModeRouting ||
                 sourceParts.length > 0 ||
                 context7Parts.length > 0) && (
                 <div className="w-[1px] h-4 bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
@@ -315,12 +296,6 @@ const AssistantMessageActions: React.FC<{
       )}
 
       <div className="flex flex-col col-span-2">
-        {routingMetadata && (
-          <RouterDetailsContent
-            metadata={routingMetadata}
-            isExpanded={activeSection === "router"}
-          />
-        )}
         {chatModeRouting && (
           <ChatModeRoutingContent
             metadata={chatModeRouting}
@@ -411,56 +386,6 @@ const SourceMessagePartContent: React.FC<{
               )}
             </React.Fragment>
           ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface RouterDetailsProps {
-  isExpanded: boolean;
-  onToggle: () => void;
-}
-
-const RouterDetailsTrigger: React.FC<RouterDetailsProps> = ({
-  isExpanded,
-  onToggle,
-}) => {
-  return (
-    <div
-      className="font-bold flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors break-words [overflow-wrap:anywhere]"
-      onClick={onToggle}
-    >
-      Router Details
-      <ChevronDownIcon
-        className={cn("h-4 w-4 transition-transform duration-200", {
-          "rotate-180": isExpanded,
-        })}
-      />
-    </div>
-  );
-};
-
-const RouterDetailsContent: React.FC<{
-  metadata: ModelRoutingMetadata;
-  isExpanded: boolean;
-}> = ({ metadata, isExpanded }) => {
-  const { getCollapseProps } = useCollapse({ isExpanded });
-  return (
-    <div className="overflow-hidden" {...getCollapseProps()}>
-      <div className="py-2 pl-2">
-        <div className="flex flex-col space-y-1 text-sm pl-3 text-zinc-500 dark:text-zinc-400 py-1 border-l-4 border-secondary">
-          <div>
-            <span className="font-semibold">Category:</span>{" "}
-            {capitalize(metadata.category)}
-          </div>
-          <div>
-            <span className="font-semibold">Complexity:</span>{" "}
-            {capitalize(metadata.complexity)}
-          </div>
-          <div>
-            <span className="font-semibold">Model:</span> {metadata.model}
-          </div>
         </div>
       </div>
     </div>

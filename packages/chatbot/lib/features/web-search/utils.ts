@@ -1,10 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 export const hasContextUrls = async (text: string): Promise<boolean> => {
   const { object } = await generateObject({
-    ...languageModelConfigurations("Gemini 2.5 Flash Lite"),
+    ...inferenceKit.languageModel("webSearchUrlIntent"),
     system: `
     You are acting as a highly accurate intent classification engine. Your sole task is to analyze the user's prompt and determine the primary purpose of the URLs it contains.
     You must classify the intent into one of the following three categories:

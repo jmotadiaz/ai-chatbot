@@ -1,25 +1,20 @@
 import { makeCorrectGrammar, makeTranslate } from "./factory";
+import { createEnglishClassifier } from "./classifier";
 import type { CorrectGrammarAiPort, TranslateAiPort } from "./ports";
-import { languageModelConfigurations } from "@/lib/features/foundation-model/server";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
+
+const classifier = createEnglishClassifier(inferenceKit.decide);
 
 const grammarAiAdapter: CorrectGrammarAiPort = {
-  getAudienceModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
-  getDomainModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+  classify: classifier.classifyForGrammar,
   getGrammarModelConfiguration: () =>
-    languageModelConfigurations("Gemini 3.1 Flash Lite"),
+    inferenceKit.languageModel("englishGrammarCheck"),
 };
 
 const translateAiAdapter: TranslateAiPort = {
-  getAudienceModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
-  getDomainModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
-  getDirectionModelConfiguration: () =>
-    languageModelConfigurations("GPT OSS Mini"),
+  classify: classifier.classifyForTranslation,
   getTranslateModelConfiguration: () =>
-    languageModelConfigurations("Gemini 3.1 Flash Lite"),
+    inferenceKit.languageModel("englishTranslate"),
 };
 
 export const correctGrammar = makeCorrectGrammar(grammarAiAdapter);

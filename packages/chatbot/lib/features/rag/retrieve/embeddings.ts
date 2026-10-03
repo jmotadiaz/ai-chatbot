@@ -1,5 +1,4 @@
-import { embedMany } from "ai";
-import { providers } from "@/lib/infrastructure/ai/providers";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import { QueryType } from "@/lib/features/rag/types";
 
 export const generateEmbeddings = async (
@@ -7,15 +6,5 @@ export const generateEmbeddings = async (
   queryType: QueryType,
 ): Promise<number[][]> => {
   const inputs = values.map((v) => v.replaceAll("\\n", " "));
-  const { embeddings } = await embedMany({
-    model: providers.embedding(),
-    providerOptions: {
-      google: {
-        outputDimensionality: 768,
-        taskType: queryType,
-      },
-    },
-    values: inputs,
-  });
-  return embeddings;
+  return inferenceKit.embed("embedding", inputs, { taskType: queryType });
 };

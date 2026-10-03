@@ -4,8 +4,8 @@ import {
   pruneMessages,
   type PrepareStepFunction,
 } from "ai";
+import type { ModelConfiguration } from "inference";
 import { Tool } from "@/lib/features/chat/types";
-import { ModelConfiguration } from "@/lib/features/foundation-model/types";
 
 export const hasToolCallSteps = <T extends ToolSet>({
   steps,

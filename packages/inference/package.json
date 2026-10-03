@@ -1,0 +1,43 @@
+{
+  "name": "inference",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "lint:fix": "eslint --fix . --config ../../eslint.config.mjs",
+    "test:unit": "vitest run tests/unit --passWithNoTests",
+    "test:contract": "vitest run tests/contract --passWithNoTests",
+    "type:check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "3.0.15",
+    "@ai-sdk/cohere": "^3.0.18",
+    "@ai-sdk/gateway": "^3.0.197",
+    "@ai-sdk/google": "3.0.10",
+    "@ai-sdk/groq": "3.0.10",
+    "@ai-sdk/openai": "3.0.12",
+    "@ai-sdk/openai-compatible": "^2.0.47",
+    "@ai-sdk/perplexity": "3.0.8",
+    "@ai-sdk/provider": "^3.0.4",
+    "@ai-sdk/provider-utils": "^4.0.8",
+    "@ai-sdk/xai": "3.0.26",
+    "@openrouter/ai-sdk-provider": "2.1.1",
+    "@openrouter/sdk": "^1.3.11",
+    "ai": "^6.0.287",
+    "config": "workspace:*",
+    "deepmerge": "^4.3.1",
+    "models": "workspace:*",
+    "tracing": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
+  }
+}

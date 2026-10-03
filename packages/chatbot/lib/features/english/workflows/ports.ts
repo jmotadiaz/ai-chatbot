@@ -1,17 +1,21 @@
-import type { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ModelConfiguration } from "inference";
+import type {
+  TextClassifications,
+  TranslationClassifications,
+} from "./policy";
 
-// Ports expose only model configuration providers — one per classifier/action.
-// The factory owns generateObject, streamObject, streamText.
+// Ports expose the classifier and one model configuration per workflow.
+// Classification is a Decisions-API call (not a Model Configuration), so it
+// arrives already resolved — with its per-question fallbacks applied — as
+// `TextClassifications`/`TranslationClassifications`. The factory owns
+// streamObject/streamText and the prompt building.
 
 export interface CorrectGrammarAiPort {
-  getAudienceModelConfiguration(): ModelConfiguration;
-  getDomainModelConfiguration(): ModelConfiguration;
+  classify(text: string): Promise<TextClassifications>;
   getGrammarModelConfiguration(): ModelConfiguration;
 }
 
 export interface TranslateAiPort {
-  getAudienceModelConfiguration(): ModelConfiguration;
-  getDomainModelConfiguration(): ModelConfiguration;
-  getDirectionModelConfiguration(): ModelConfiguration;
+  classify(text: string): Promise<TranslationClassifications>;
   getTranslateModelConfiguration(): ModelConfiguration;
 }

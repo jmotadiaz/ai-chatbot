@@ -4,7 +4,6 @@ import {
   buildChatModeRouterInput,
   createDeterministicChatModeRouter,
   FALLBACK_CHAT_MODE_DECISION,
-  OPENROUTER_CHAT_MODE_ROUTING_MODEL,
   resolveChatMode,
 } from "@/lib/features/chat/mode-routing";
 import type {
@@ -13,6 +12,9 @@ import type {
 } from "@/lib/features/chat/mode-routing";
 
 const input = { latestMessage: "¿Cómo uso drizzle-kit?", recentContext: "" };
+
+/** Arbitrary provenance value: these tests fake the port directly, never a real Decisions call. */
+const TEST_ROUTING_MODEL_ID = "test/routing-model";
 
 const portReturning = (decision: RoutingDecision): ChatModeRouterPort => ({
   route: vi.fn(async () => decision),
@@ -30,7 +32,7 @@ describe("resolveChatMode", () => {
       mode: "web",
       reason: "routed",
       confidence: 0.98,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     };
 
     await expect(resolveChatMode(portReturning(decision), input)).resolves.toEqual({
@@ -44,7 +46,7 @@ describe("resolveChatMode", () => {
       mode: "context7",
       reason: "routed",
       confidence: 0.42,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     await expect(resolveChatMode(port, input)).resolves.toMatchObject({
@@ -60,7 +62,7 @@ describe("resolveChatMode", () => {
       mode: "neutral",
       reason: "neither",
       confidence: 0.9,
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: TEST_ROUTING_MODEL_ID,
     });
 
     await expect(resolveChatMode(port, input)).resolves.toMatchObject({

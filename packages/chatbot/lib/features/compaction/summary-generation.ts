@@ -1,5 +1,6 @@
 import "server-only";
 
+import { LANGUAGE_MODEL_ROLES, type LanguageModelRole } from "models";
 import {
   SUMMARIZER_SYSTEM_PROMPT,
   INITIAL_SUMMARIZATION_PROMPT,
@@ -8,6 +9,17 @@ import {
 import { serializeMessages } from "./serialize";
 import type { CompactionAiPort } from "./ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
+
+/**
+ * The two roles this feature's runtime `hasMultimedia` ternary picks
+ * between — see LANGUAGE_MODEL_ROLES in `models`. Narrowing to just these
+ * two (instead of the full LanguageModelRole union) is what lets
+ * `LANGUAGE_MODEL_ROLES[modelKey]` below resolve to a literal ModelId.
+ */
+type CompactionModelRole = Extract<
+  LanguageModelRole,
+  "compactionText" | "compactionMultimedia"
+>;
 
 export async function generateSummary(
   ai: CompactionAiPort,
@@ -19,7 +31,9 @@ export async function generateSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey = hasMultimedia ? "Qwen 3.8 Flash" : "Deepseek v4.1 Flash";
+  const modelKey: CompactionModelRole = hasMultimedia
+    ? "compactionMultimedia"
+    : "compactionText";
 
   const promptText = previousSummary
     ? INCREMENTAL_UPDATE_PROMPT.replace("{previousSummary}", previousSummary)
@@ -29,13 +43,16 @@ export async function generateSummary(
         serializedMessages,
       );
 
+  // The port still resolves by role; only the persisted provenance
+  // (modelUsed, a DB column — see ChatSummary in db/schema.ts) needs the
+  // catalog id a role currently points at, not the role name itself.
   const summary = await ai.generateText(
     modelKey,
     SUMMARIZER_SYSTEM_PROMPT,
     promptText,
   );
 
-  return { summary, modelUsed: modelKey };
+  return { summary, modelUsed: LANGUAGE_MODEL_ROLES[modelKey] };
 }
 
 export async function generateTurnPrefixSummary(
@@ -47,7 +64,9 @@ export async function generateTurnPrefixSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey = hasMultimedia ? "Qwen 3.8 Flash" : "Deepseek v4.1 Flash";
+  const modelKey: CompactionModelRole = hasMultimedia
+    ? "compactionMultimedia"
+    : "compactionText";
 
   const prompt = `Summarize the following turn prefix (the beginning of an assistant response that was interrupted or split):
 
@@ -61,5 +80,5 @@ Output a concise summary of what the assistant was doing, what tools it used, an
     prompt,
   );
 
-  return { summary, modelUsed: modelKey };
+  return { summary, modelUsed: LANGUAGE_MODEL_ROLES[modelKey] };
 }

@@ -3,14 +3,14 @@
 import { useCallback } from "react";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
-import { ModelConfiguration } from "@/lib/features/foundation-model/types";
+import type { ChatModelConfiguration } from "@/lib/features/foundation-model/config";
 
 export const useHandleFileChange = ({
   setFiles,
   supportedFiles,
 }: {
   setFiles: React.Dispatch<React.SetStateAction<FilePart[]>>;
-  supportedFiles: Required<ModelConfiguration>["supportedFiles"];
+  supportedFiles: ChatModelConfiguration["supportedFiles"];
 }): {
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 } => {

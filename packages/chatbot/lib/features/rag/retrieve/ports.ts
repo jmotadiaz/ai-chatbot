@@ -1,5 +1,5 @@
+import type { RerankResult } from "inference";
 import { QueryType } from "../types";
-import { RerankResult } from "@/lib/features/foundation-model/types";
 
 export interface RagRetrieveAiPort {
   generateEmbeddings(
