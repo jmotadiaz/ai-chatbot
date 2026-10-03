@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
     isRunning: false,
     isLoading: false,
     sendMessage: undefined as unknown as () => Promise<boolean>,
-    pendingMessage: null as string | null,
+    pendingQueues: { steering: [] as string[], followUp: [] as string[] },
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     status: { kind: "idle" } as AgentStatus,
     error: null as string | null,
@@ -69,7 +69,7 @@ afterEach(() => {
   mocks.enqueueFollowUp.mockImplementation(() => Promise.resolve());
   mocks.hookResult.isRunning = false;
   mocks.hookResult.isLoading = false;
-  mocks.hookResult.pendingMessage = null;
+  mocks.hookResult.pendingQueues = { steering: [], followUp: [] };
 });
 
 const renderChat = () =>
@@ -124,7 +124,7 @@ describe("AgentCodeChat follow-up", () => {
 
   it("shows the pending chip above the textarea", () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingMessage = "also fix the typo";
+    mocks.hookResult.pendingQueues = { steering: [], followUp: ["also fix the typo"] };
     renderChat();
     const chip = screen.getByTestId("followup-chip");
     expect(chip.textContent).toContain("also fix the typo");
@@ -132,7 +132,7 @@ describe("AgentCodeChat follow-up", () => {
 
   it("hides the chip when nothing is pending", () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingMessage = null;
+    mocks.hookResult.pendingQueues = { steering: [], followUp: [] };
     renderChat();
     expect(screen.queryByTestId("followup-chip")).toBeNull();
   });

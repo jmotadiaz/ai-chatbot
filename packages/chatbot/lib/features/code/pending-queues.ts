@@ -37,6 +37,16 @@ export function pendingQueuesOf(value: unknown): PendingQueues {
 }
 
 /**
+ * The first non-blank entry of a single raw queue, or null when that queue
+ * holds nothing visible. Each surface derives its own text from its own
+ * queue (chip from `followUp`, transcript bubble from `steering`), so the
+ * dispatch rule stays exclusive without a second source of truth.
+ */
+export function firstQueueText(queue: unknown): string | null {
+  return stringArrayOf(queue).find((entry) => entry.trim().length > 0) ?? null;
+}
+
+/**
  * The armed chip text: the first follow-up entry, else the first steering
  * entry. Follow-up wins because it is the phase the user armed; a promoted
  * message (steering only) stays visible — and the composer stays locked to
@@ -48,11 +58,7 @@ export function pendingChipText(
   pending: { steering?: unknown; followUp?: unknown } | null | undefined,
 ): string | null {
   if (!pending || typeof pending !== "object") return null;
-  const first = (value: unknown): string | null => {
-    const list = stringArrayOf(value);
-    return list.find((entry) => entry.trim().length > 0) ?? null;
-  };
-  return first(pending.followUp) ?? first(pending.steering);
+  return firstQueueText(pending.followUp) ?? firstQueueText(pending.steering);
 }
 
 /**

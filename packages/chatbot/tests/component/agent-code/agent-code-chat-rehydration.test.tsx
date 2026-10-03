@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   enqueueFollowUp: vi.fn(() => Promise.resolve()),
   clearQueue: vi.fn(() => Promise.resolve()),
   promoteToSteering: vi.fn(() => Promise.resolve()),
+  conversation: vi.fn((_props: unknown) => null),
   hookResult: {
     messages: [],
     items: [],
@@ -18,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     isRunning: true,
     isLoading: false,
     sendMessage: undefined as unknown as () => Promise<boolean>,
-    pendingMessage: null as string | null,
+    pendingQueues: { steering: [] as string[], followUp: [] as string[] },
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     clearQueue: undefined as unknown as () => Promise<void>,
     promoteToSteering: undefined as unknown as (text: string) => Promise<void>,
@@ -52,7 +53,11 @@ vi.mock("@/lib/features/code/hooks/use-coding-agent-skills", () => ({
   }),
 }));
 vi.mock("@/components/code/agent-conversation", () => ({
-  AgentConversation: () => null,
+  // Spy: the steering bubble is a prop derived from the rehydrated queues.
+  AgentConversation: (props: unknown) => {
+    mocks.conversation(props);
+    return null;
+  },
 }));
 vi.mock("@/components/code/file-browser/file-browser-provider", () => ({
   useFileBrowser: () => ({
@@ -73,7 +78,8 @@ afterEach(() => {
   mocks.sendMessage.mockClear();
   mocks.sendMessage.mockImplementation(() => Promise.resolve(true));
   mocks.hookResult.isRunning = true;
-  mocks.hookResult.pendingMessage = null;
+  mocks.hookResult.pendingQueues = { steering: [], followUp: [] };
+  mocks.conversation.mockClear();
   mocks.hookResult.error = null;
 });
 
@@ -122,6 +128,43 @@ describe("AgentCodeChat mid-turn submit edge cases (ticket 04)", () => {
       expect(
         (screen.getByTestId("chat-input") as HTMLTextAreaElement).value,
       ).toBe("");
+    });
+  });
+});
+
+describe("AgentCodeChat steering bubble after a reload (ticket 03)", () => {
+  it("shows the steering rehydrated from snapshot.pending and no chip", () => {
+    // The hook already rehydrates `snapshot.pending` into the raw queues
+    // (ticket 01): a steering-only payload lands in `steering`, and the
+    // transcript bubble is rendered from there on the first paint.
+    mocks.hookResult.pendingQueues = {
+      steering: ["steered before reload"],
+      followUp: [],
+    };
+    renderChat();
+
+    expect(mocks.conversation.mock.calls.at(-1)?.[0]).toMatchObject({
+      steeringPending: "steered before reload",
+    });
+    expect(screen.queryByTestId("followup-chip")).toBeNull();
+    // The composer stays locked to cancel while the queue drains.
+    expect((screen.getByTestId("chat-input") as HTMLTextAreaElement).disabled).toBe(
+      true,
+    );
+  });
+
+  it("shows a rehydrated follow-up as the chip and no bubble", () => {
+    mocks.hookResult.pendingQueues = {
+      steering: [],
+      followUp: ["queued before reload"],
+    };
+    renderChat();
+
+    expect(screen.getByTestId("followup-chip").textContent).toContain(
+      "queued before reload",
+    );
+    expect(mocks.conversation.mock.calls.at(-1)?.[0]).toMatchObject({
+      steeringPending: null,
     });
   });
 });
