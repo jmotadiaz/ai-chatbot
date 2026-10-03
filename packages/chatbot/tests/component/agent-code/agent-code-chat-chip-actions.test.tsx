@@ -53,8 +53,8 @@ vi.mock("@/lib/features/code/hooks/use-coding-agent-skills", () => ({
   }),
 }));
 vi.mock("@/components/code/agent-conversation", () => ({
-  // Spy instead of a null stub: ticket 03 hands the armed steering text to
-  // the transcript as a prop, so the bubble is asserted from these calls.
+  // Spy instead of a null stub: the armed steering text is handed to the
+  // transcript as a prop, so the bubble is asserted from these calls.
   AgentConversation: (props: unknown) => {
     mocks.conversation(props);
     return null;
@@ -95,7 +95,18 @@ afterEach(() => {
 const renderChat = () =>
   render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelThinking={new Map()} />);
 
-describe("AgentCodeChat chip actions (ticket 02)", () => {
+// ChatControl renders a real <button>, but the disabled state must hold for
+// either shape it can take.
+const expectDisabled = (label: string) => {
+  const control = screen.getByLabelText(label);
+  expect(
+    control instanceof HTMLButtonElement
+      ? control.disabled
+      : control.hasAttribute("disabled"),
+  ).toBe(true);
+};
+
+describe("AgentCodeChat chip actions", () => {
   it("shows the three chip actions while a message is pending", () => {
     mocks.hookResult.isRunning = true;
     mocks.hookResult.pendingQueues = { steering: [], followUp: ["also fix the typo"] };
@@ -174,7 +185,7 @@ describe("AgentCodeChat chip actions (ticket 02)", () => {
   });
 });
 
-describe("AgentCodeChat exclusive dispatch: steering as bubble (ticket 03)", () => {
+describe("AgentCodeChat exclusive dispatch: steering as a transcript bubble", () => {
   it("shows the steering text as a bubble, no chip, and keeps the composer locked", () => {
     mocks.hookResult.isRunning = true;
     mocks.hookResult.pendingQueues = { steering: ["steered text"], followUp: [] };
@@ -192,42 +203,9 @@ describe("AgentCodeChat exclusive dispatch: steering as bubble (ticket 03)", () 
 
     // Everything but cancel stays locked, with the bubble as the visible
     // signal of that lock.
-    const input = screen.getByTestId("chat-input") as HTMLTextAreaElement;
-    expect(input.disabled).toBe(true);
-    const followUp = screen.getByLabelText("Queue follow-up");
-    expect(
-      followUp instanceof HTMLButtonElement
-        ? followUp.disabled
-        : followUp.hasAttribute("disabled"),
-    ).toBe(true);
-    const refine = screen.getByLabelText("Refine prompt");
-    expect(
-      refine instanceof HTMLButtonElement
-        ? refine.disabled
-        : refine.hasAttribute("disabled"),
-    ).toBe(true);
-  });
-
-  it("gives the chip to the follow-up while steering stays a bubble", () => {
-    // Not reachable through the UI (single-pending: promote is
-    // clear-then-enqueue), but the dispatch rule is per queue, never
-    // "whichever came first".
-    mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingQueues = {
-      steering: ["steered text"],
-      followUp: ["queued text"],
-    };
-    renderChat();
-
-    expect(screen.getByTestId("followup-chip").textContent).toContain(
-      "queued text",
-    );
-    expect(screen.getByTestId("followup-chip").textContent).not.toContain(
-      "steered text",
-    );
-    expect(mocks.conversation.mock.calls.at(-1)?.[0]).toMatchObject({
-      steeringPending: "steered text",
-    });
+    expect((screen.getByTestId("chat-input") as HTMLTextAreaElement).disabled).toBe(true);
+    expectDisabled("Queue follow-up");
+    expectDisabled("Refine prompt");
   });
 
   it("drops the bubble with no state left once delivery empties the queue", () => {

@@ -51,6 +51,15 @@ describe("AgentConversation steering bubble", () => {
     );
   });
 
+  it("is not a scroll anchor: it carries no user role", () => {
+    // `[data-role="user"]` is what prev/next navigation walks, so a derived
+    // bubble wearing it would hijack the anchor while the turn still runs.
+    renderConversation({ steeringPending: "no soy un ancla" });
+
+    const bubble = screen.getByTestId("steering-pending-bubble");
+    expect(bubble.getAttribute("data-role")).toBeNull();
+  });
+
   it("renders the bubble below the last item and above the running indicator", () => {
     renderConversation({
       items: [
