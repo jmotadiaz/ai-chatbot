@@ -9,9 +9,9 @@ export type { PendingQueues };
 /**
  * Shared pending-queue helpers for the steering-mid-turn flow (chatbot
  * side). Mirrors the worker's `pending-queues.ts` over the same JSON shape:
- * the queue-update event is the source of truth for chip visibility, and
- * `pendingChipText` is the single derivation shared by the live event and
- * the snapshot rehydration so both can never disagree.
+ * the queue-update event and the snapshot are the sources of truth for the
+ * raw queues, and every surface (chip, steering bubble) derives its own text
+ * from that one value.
  */
 
 /** Defensive string-list read: non-strings dropped, non-arrays read as empty. */
@@ -21,9 +21,14 @@ export function stringArrayOf(value: unknown): string[] {
     : [];
 }
 
+/** A fresh, empty pair of queues: the "nothing armed" store value. */
+export function emptyPendingQueues(): PendingQueues {
+  return { steering: [], followUp: [] };
+}
+
 /** Coerce an unknown queue-shaped payload into owned `PendingQueues`. */
 export function pendingQueuesOf(value: unknown): PendingQueues {
-  if (!value || typeof value !== "object") return { steering: [], followUp: [] };
+  if (!value || typeof value !== "object") return emptyPendingQueues();
   const raw = value as { steering?: unknown; followUp?: unknown };
   return {
     steering: stringArrayOf(raw.steering),
@@ -32,36 +37,48 @@ export function pendingQueuesOf(value: unknown): PendingQueues {
 }
 
 /**
- * The armed chip text: the first follow-up entry, else the first steering
- * entry. Follow-up wins because it is the phase the user armed; a promoted
- * message (steering only) stays visible — and the composer stays locked to
- * chip-plus-cancel — until delivery instead of dropping the chip and
- * admitting a second message. First non-blank wins; null when nothing is
- * armed, including malformed input.
+ * The first non-blank entry of a single raw queue, or null when that queue
+ * holds nothing visible. Each surface derives its own text from its own
+ * queue (chip from `followUp`, transcript bubble from `steering`), so the
+ * dispatch rule stays exclusive without a second source of truth. Callers
+ * hold typed `PendingQueues`; malformed payloads are coerced by
+ * `pendingQueuesOf` before they get here.
+ */
+export function firstQueueText(queue: readonly string[]): string | null {
+  return queue.find((entry) => entry.trim().length > 0) ?? null;
+}
+
+/**
+ * The single armed message across both worker queues: the follow-up entry
+ * first, the steering entry otherwise. Used where the worker drained the
+ * queues and the text must come back to the caller (abort returns it as an
+ * editable draft); the surfaces themselves read their own queue through
+ * `firstQueueText`. First non-blank wins; null when nothing is armed,
+ * including malformed input.
  */
 export function pendingChipText(
   pending: { steering?: unknown; followUp?: unknown } | null | undefined,
 ): string | null {
   if (!pending || typeof pending !== "object") return null;
-  const first = (value: unknown): string | null => {
-    const list = stringArrayOf(value);
-    return list.find((entry) => entry.trim().length > 0) ?? null;
-  };
-  return first(pending.followUp) ?? first(pending.steering);
+  return (
+    firstQueueText(stringArrayOf(pending.followUp)) ??
+    firstQueueText(stringArrayOf(pending.steering))
+  );
 }
 
 /**
- * Chip text from a queue-update CUSTOM event. Non-queue events (and
- * malformed values) return undefined so the caller leaves the chip
- * untouched; anything else resolves through `pendingChipText` (null clears
- * the chip when the worker reports empty queues, e.g. after delivery).
+ * The raw queues from a queue-update CUSTOM event, stored verbatim so every
+ * surface derives from the same value. Non-queue events (and malformed
+ * values) return undefined so the caller leaves its state untouched; empty
+ * queues come back as empty queues, which clears whatever was armed (e.g.
+ * after delivery).
  */
-export function pendingMessageFromEvent(event: BaseEvent): string | null | undefined {
+export function pendingQueuesFromEvent(event: BaseEvent): PendingQueues | undefined {
   const aguiEvent = event as unknown as AguiEvent;
   if (!isQueueUpdateCustom(aguiEvent)) return undefined;
   const value = aguiEvent.value;
   if (!value || typeof value !== "object") return undefined;
-  return pendingChipText(value as { steering?: unknown; followUp?: unknown });
+  return pendingQueuesOf(value);
 }
 
 export interface MidTurnSelection {

@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  emptyPendingQueues,
+  firstQueueText,
   midTurnBlockReason,
   pendingChipText,
+  pendingQueuesFromEvent,
   pendingQueuesOf,
   stringArrayOf,
 } from "@/lib/features/code/pending-queues";
@@ -19,6 +22,12 @@ describe("pending-queues helpers", () => {
     ).toEqual({ steering: ["s"], followUp: ["f"] });
     expect(pendingQueuesOf(null)).toEqual({ steering: [], followUp: [] });
     expect(pendingQueuesOf({})).toEqual({ steering: [], followUp: [] });
+  });
+
+  it("emptyPendingQueues hands out a fresh value each time", () => {
+    const first = emptyPendingQueues();
+    first.steering.push("mutated");
+    expect(emptyPendingQueues()).toEqual({ steering: [], followUp: [] });
   });
 
   it("pendingChipText prefers the follow-up entry", () => {
@@ -46,6 +55,43 @@ describe("pending-queues helpers", () => {
     expect(
       pendingChipText({ steering: [], followUp: ["   ", "real text"] }),
     ).toBe("real text");
+  });
+
+  it("firstQueueText reads one queue in isolation, skipping blanks", () => {
+    // Each surface derives from its own queue: the chip reads followUp, the
+    // transcript bubble reads steering.
+    expect(firstQueueText(["steered"])).toBe("steered");
+    expect(firstQueueText(["", "  ", "real text", "later"])).toBe("real text");
+    expect(firstQueueText([])).toBeNull();
+    expect(firstQueueText(["steered", "queued"])).toBe("steered");
+  });
+});
+
+describe("pendingQueuesFromEvent", () => {
+  const queueEvent = (value: unknown) =>
+    ({
+      type: "CUSTOM",
+      name: "coding_agent_queue_update",
+      value,
+    }) as never;
+
+  it("returns the raw queues from a queue-update event", () => {
+    expect(
+      pendingQueuesFromEvent(
+        queueEvent({ steering: ["s"], followUp: ["f", 42] }),
+      ),
+    ).toEqual({ steering: ["s"], followUp: ["f"] });
+  });
+
+  it("returns empty queues when the worker reports the drain", () => {
+    expect(pendingQueuesFromEvent(queueEvent({ steering: [], followUp: [] })))
+      .toEqual({ steering: [], followUp: [] });
+  });
+
+  it("leaves the state untouched for non-queue and malformed events", () => {
+    expect(pendingQueuesFromEvent({ type: "TEXT_MESSAGE_CONTENT" } as never))
+      .toBeUndefined();
+    expect(pendingQueuesFromEvent(queueEvent(null))).toBeUndefined();
   });
 });
 

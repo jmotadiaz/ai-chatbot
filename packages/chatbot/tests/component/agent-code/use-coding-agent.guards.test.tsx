@@ -38,7 +38,7 @@ const ATTACHMENT_CONTENT: InputContent[] = [
 ];
 
 function GuardsHarness() {
-  const { sendMessage, cancel, error, isRunning, pendingMessage } =
+  const { sendMessage, cancel, error, isRunning, pendingQueues } =
     useCodingAgent({ project: "p", sessionId: "s", modelId: "m" });
   const [cancelDraft, setCancelDraft] = useState<string | null | undefined>(
     undefined,
@@ -62,7 +62,7 @@ function GuardsHarness() {
       </button>
       <p data-testid="error">{error ?? ""}</p>
       <p data-testid="is-running">{String(isRunning)}</p>
-      <p data-testid="pending">{pendingMessage ?? ""}</p>
+      <p data-testid="pending-queues">{`${pendingQueues.steering.join("|")}//${pendingQueues.followUp.join("|")}`}</p>
       <p data-testid="cancel-draft">
         {cancelDraft === undefined ? "unset" : (cancelDraft ?? "null")}
       </p>
@@ -89,7 +89,8 @@ setupMswServer(
   http.post(runUrl, async ({ request }) => {
     runRequests.push((await request.json()) as Record<string, unknown>);
     // A turn that never ends on its own: RUN_STARTED arms isRunning, the
-    // queue-update arms the chip, and no terminal ever closes the run.
+    // queue-update arms the follow-up queue, and no terminal ever closes
+    // the run.
     return makeHangingSseResponse([
       { type: "RUN_STARTED", threadId: "s", runId: "r-hang" },
       {
@@ -178,11 +179,9 @@ describe("useCodingAgent submit duality (ticket 03)", () => {
     expect(runRequests).toHaveLength(1);
   });
 
-  it("cancel with a pending chip resolves the drained text and clears the chip", async () => {
+  it("cancel with a pending message resolves the drained text and empties the queues", async () => {
     await openHangingTurn();
-    await waitFor(() =>
-      expect(screen.getByTestId("pending").textContent).toBe("draft text"),
-    );
+    expect(screen.getByTestId("pending-queues").textContent).toBe("//draft text");
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("cancel"));
@@ -192,6 +191,7 @@ describe("useCodingAgent submit duality (ticket 03)", () => {
       expect(screen.getByTestId("cancel-draft").textContent).toBe("draft text"),
     );
     expect(cancelRequests).toHaveLength(1);
-    expect(screen.getByTestId("pending").textContent).toBe("");
+    // The drain empties the stored queues, so no surface shows anything.
+    expect(screen.getByTestId("pending-queues").textContent).toBe("//");
   });
 });
