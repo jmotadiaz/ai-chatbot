@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     isRunning: false,
     isLoading: false,
     sendMessage: vi.fn(() => Promise.resolve(true)),
+    pendingQueues: { steering: [], followUp: [] },
     status: { kind: "idle" } as AgentStatus,
     error: null as string | null,
     cancel: undefined as unknown as () => Promise<void>,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   emptyPendingQueues,
+  firstQueueText,
   midTurnBlockReason,
   pendingChipText,
   pendingQueuesFromEvent,
@@ -54,6 +55,17 @@ describe("pending-queues helpers", () => {
     expect(
       pendingChipText({ steering: [], followUp: ["   ", "real text"] }),
     ).toBe("real text");
+  });
+
+  it("firstQueueText reads one queue in isolation, skipping blanks", () => {
+    // Each surface derives from its own queue (ticket 03): the chip reads
+    // followUp, the transcript bubble reads steering.
+    expect(firstQueueText(["steered"])).toBe("steered");
+    expect(firstQueueText(["", "  ", "real text", "later"])).toBe("real text");
+    expect(firstQueueText([])).toBeNull();
+    expect(firstQueueText(undefined)).toBeNull();
+    expect(firstQueueText("not-an-array")).toBeNull();
+    expect(firstQueueText(["steered", "queued"])).toBe("steered");
   });
 });
 

@@ -29,6 +29,7 @@ vi.mock("@/lib/features/code/hooks/use-coding-agent", () => ({
     isRunning: false,
     isLoading: false,
     sendMessage: vi.fn(() => Promise.resolve(true)),
+    pendingQueues: { steering: [], followUp: [] },
     status: { kind: "idle" },
     error: null,
     cancel: undefined as unknown as () => Promise<void>,

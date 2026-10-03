@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     isRunning: false,
     isLoading: false,
     sendMessage: undefined as unknown as () => Promise<boolean>,
-    pendingMessage: null as string | null,
+    pendingQueues: { steering: [] as string[], followUp: [] as string[] },
     enqueueFollowUp: undefined as unknown as (text: string) => Promise<void>,
     status: { kind: "idle" } as AgentStatus,
     error: null as string | null,
@@ -95,7 +95,7 @@ afterEach(() => {
   mocks.cancel.mockImplementation((): Promise<string | null> => Promise.resolve(null));
   mocks.hookResult.isRunning = false;
   mocks.hookResult.isLoading = false;
-  mocks.hookResult.pendingMessage = null;
+  mocks.hookResult.pendingQueues = { steering: [], followUp: [] };
 });
 
 const modelThinking = new Map([
@@ -159,7 +159,7 @@ describe("AgentCodeChat composer guards (ticket 03)", () => {
 
   it("with a pending chip only chip-plus-cancel stay alive", () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingMessage = "also fix the typo";
+    mocks.hookResult.pendingQueues = { steering: [], followUp: ["also fix the typo"] };
     renderChat();
 
     // The chip itself survives (ticket 02 owns its actions).
@@ -193,7 +193,7 @@ describe("AgentCodeChat composer guards (ticket 03)", () => {
 
   it("aborting with a pending chip returns its text to the textarea as a draft", async () => {
     mocks.hookResult.isRunning = true;
-    mocks.hookResult.pendingMessage = "also fix the typo";
+    mocks.hookResult.pendingQueues = { steering: [], followUp: ["also fix the typo"] };
     mocks.cancel.mockImplementation(() => Promise.resolve("also fix the typo"));
     renderChat();
 
