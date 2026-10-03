@@ -29,9 +29,8 @@ export class ModelPickerComponent {
   }
 
   async selectModel(modelNameOrCapability: chatModelId | CapabilityAlias) {
-    const modelName =
-      CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias] ??
-      modelNameOrCapability;
+    const alias = CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias];
+    const modelName = alias?.id ?? modelNameOrCapability;
     await this.openSelectModelDropdown();
     await this.getModelOption(modelName).click();
     await this.modelDropdown.waitFor({ state: "detached" });

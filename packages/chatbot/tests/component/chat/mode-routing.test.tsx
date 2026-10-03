@@ -4,8 +4,10 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ChatModeSelector } from "@/components/chat/controls/chat-mode-selector";
 import { Message } from "@/components/chat/message";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
 import type { ChatModeRoutingMetadata } from "@/lib/features/chat/mode-routing/types";
+
+/** Arbitrary provenance value: this suite only renders persisted metadata, never a real Decisions call. */
+const TEST_ROUTING_MODEL_ID = "test/routing-model";
 
 const assistantMessage = (
   chatModeRouting: ChatModeRoutingMetadata,
@@ -50,7 +52,7 @@ describe("Chat mode routing badge", () => {
           mode: "web",
           reason: "routed",
           confidence: 0.98,
-          modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+          modelId: TEST_ROUTING_MODEL_ID,
         })}
       />,
     );
@@ -70,7 +72,7 @@ describe("Chat mode routing badge", () => {
           requested: "auto",
           mode: "neutral",
           reason: "neither",
-          modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+          modelId: TEST_ROUTING_MODEL_ID,
         })}
       />,
     );
@@ -87,7 +89,7 @@ describe("Chat mode routing badge", () => {
           mode: "neutral",
           reason: "low_confidence",
           confidence: 0.42,
-          modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+          modelId: TEST_ROUTING_MODEL_ID,
         })}
       />,
     );

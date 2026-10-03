@@ -1,18 +1,12 @@
 import { makeRetrieveResourceChunks } from "./factory";
 import { generateEmbeddings } from "./embeddings";
-import { providers } from "@/lib/infrastructure/ai/providers";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 export type { RetrieveResourcesInput } from "./search";
 
 const aiAdapter = {
   generateEmbeddings,
-  rerank: async (params: {
-    query: string;
-    documents: string[];
-    topN?: number;
-  }) => {
-    const reranker = providers.rerank();
-    return reranker(params);
-  },
+  rerank: (params: { query: string; documents: string[]; topN?: number }) =>
+    inferenceKit.rerank("rerank", params),
 };
 
 // Singleton export to be used by the app / tools

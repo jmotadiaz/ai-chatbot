@@ -1,4 +1,4 @@
-import type { RoutingOption } from "@/lib/features/chat/mode-routing/questions";
+import type { Decision, DecisionAnswer } from "inference";
 
 /**
  * Mode the answer is actually produced with.
@@ -25,17 +25,24 @@ export type ChatModeRoutingReason =
   | "low_confidence"
   | "fallback";
 
-/** Raw answer of the classifier, before the fallback policy is applied. */
-export interface RoutingDecision {
+/**
+ * Raw answer of the classifier, before the fallback policy is applied: the
+ * kit's generic provenance (the answered question's `DecisionAnswer` —
+ * choice, confidence, probabilities — plus the per-call `Decision` fields,
+ * see `inference`) and what the Chat Mode Router resolved it to. Carries no
+ * `RoutingOption` on purpose (that would recreate the former cycle with
+ * `questions.ts`, which only imports from this file, never the other way).
+ *
+ * `latencyMs` widens back to optional here: a synthetic fallback decision
+ * (`FALLBACK_CHAT_MODE_DECISION`, see `policy.ts`) never actually called a
+ * provider, so it has nothing to time.
+ */
+export interface RoutingDecision
+  extends Omit<DecisionAnswer, "choice">,
+    Omit<Decision, "answers" | "latencyMs"> {
   mode: ResolvedChatMode;
   reason: ChatModeRoutingReason;
-  confidence?: number;
-  probabilities?: Partial<Record<RoutingOption, number>>;
-  modelId: string;
-  provider?: string;
   latencyMs?: number;
-  /** Cost of the routing call in USD, when the provider reports it. */
-  costUsd?: number;
 }
 
 /**

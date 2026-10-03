@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import type { Decision, DecideOptions } from "inference";
 import { setupTestDb } from "../../helpers/db-setup";
 import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import type {
-  ChatModeRouterPort,
-  RoutingDecision,
-} from "@/lib/features/chat/mode-routing/types";
-import { OPENROUTER_CHAT_MODE_ROUTING_MODEL } from "@/lib/features/chat/mode-routing/openrouter";
+import type { ChatModeRouterPort } from "@/lib/features/chat/mode-routing/types";
+import { createChatModeRouter } from "@/lib/features/chat/mode-routing/router";
 import {
   chat as chatTable,
   message as messageTable,
@@ -21,10 +19,14 @@ import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
 vi.mock("server-only", () => ({}));
 
 // The AI port is built inside `makeProcessChatResponse`, so the model comes
-// from here instead of being injected.
-vi.mock("@/lib/features/foundation-model/server", async () => {
+// from here instead of being injected. This mocks the composition root
+// directly (the `foundation-model/server` shim it used to target is gone):
+// everything under test resolves models through `inferenceKit.languageModel`/
+// `createAgentModel`/`createAgent` — the same three kit members
+// `buildAgentAdapter` (`conversation/factory.ts`) calls.
+vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
-  const { simulateReadableStream } = await import("ai");
+  const { simulateReadableStream, ToolLoopAgent } = await import("ai");
   const model = new MockLanguageModelV3({
     modelId: "test-model",
     doStream: async () => ({
@@ -52,7 +54,23 @@ vi.mock("@/lib/features/foundation-model/server", async () => {
       rawCall: { rawPrompt: null, rawSettings: {} },
     }),
   });
-  return { languageModelConfigurations: () => ({ model, company: "test" }) };
+  const baseConfig = () => ({ model, company: "test" as const });
+  return {
+    inferenceKit: {
+      languageModel: baseConfig,
+      createAgentModel: baseConfig,
+      createAgent: (
+        _idOrRole: unknown,
+        { instructions, tools, overrides }: any = {},
+      ) =>
+        new ToolLoopAgent({
+          ...baseConfig(),
+          instructions,
+          tools,
+          ...overrides,
+        }),
+    },
+  };
 });
 
 // Real agent dispatch is irrelevant here; what matters is the metadata the
@@ -63,7 +81,7 @@ vi.mock("@/lib/features/chat/chat-modes/factory", async () => {
     createChatModeAgent: vi.fn(async ({ ai }: any) => ({
       stream: ({ messages }: any) =>
         streamText({
-          model: ai.getContext7ModelConfiguration().model,
+          model: ai.getModelConfiguration().model,
           messages,
         }),
     })),
@@ -90,20 +108,34 @@ const compactionAi: CompactionAiPort = {
   generateText: vi.fn().mockResolvedValue("summary"),
 };
 
-const routedDecision: RoutingDecision = {
-  mode: "context7",
-  reason: "routed",
-  confidence: 0.93,
-  probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-  modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+/** Kit-generic fake `decide` result: `createChatModeRouter` maps `choice: "ctx7"` to `mode: "context7"` (answer under the pinned `"mode"` question key). */
+const routedFakeDecision: Decision = {
+  answers: {
+    mode: {
+      choice: "ctx7",
+      confidence: 0.93,
+      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
+    },
+  },
+  modelId: "typesafe/jev-1.13-20260917",
   provider: "TypeSafe",
   latencyMs: 412,
   costUsd: 0.000017976,
 };
 
-const buildRouter = (decision: RoutingDecision = routedDecision) => ({
-  route: vi.fn(async () => decision),
-});
+/**
+ * Builds a `ChatModeRouterPort` over the real `createChatModeRouter`
+ * composition and a fake `decide`, so these tests exercise the actual
+ * choice → mode/reason mapping (and probability filtering) instead of
+ * hand-rolling a `RoutingDecision` fixture. `router.route` stays spy-able
+ * (call count/args) by wrapping the composed port's method with `vi.fn`.
+ */
+const buildRouter = (
+  decide: (options: DecideOptions) => Promise<Decision> = async () => routedFakeDecision,
+): ChatModeRouterPort => {
+  const port = createChatModeRouter(decide);
+  return { route: vi.fn(port.route) };
+};
 
 const userMessage = (text: string): ChatbotMessage => ({
   id: USER_MESSAGE_ID,
@@ -189,7 +221,7 @@ describe("auto chat mode persistence", () => {
       reason: "routed",
       confidence: 0.93,
       probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: "typesafe/jev-1.13-20260917",
       provider: "TypeSafe",
       latencyMs: 412,
       costUsd: 0.000017976,
@@ -203,7 +235,7 @@ describe("auto chat mode persistence", () => {
       reason: "routed",
       confidence: 0.93,
       probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-      modelId: OPENROUTER_CHAT_MODE_ROUTING_MODEL,
+      modelId: "typesafe/jev-1.13-20260917",
       provider: "TypeSafe",
       latencyMs: 412,
       costUsd: 0.000017976,
@@ -258,5 +290,35 @@ describe("auto chat mode persistence", () => {
       .where(eq(messageTable.chatId, chatRow.id));
     const assistantRow = rows.find((row: any) => row.role === "assistant");
     expect(assistantRow.metadata.chatModeRouting).toBeUndefined();
+  });
+
+  it("degrades to the neutral fallback and still persists when decide fails", async () => {
+    await seedUser();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const router = buildRouter(async () => {
+      throw new Error("decide exploded");
+    });
+
+    try {
+      await runTurn({ router, chatMode: "auto" });
+    } finally {
+      consoleError.mockRestore();
+    }
+
+    const [chatRow] = await db
+      .select()
+      .from(chatTable)
+      .where(eq(chatTable.userId, USER_ID));
+    const rows = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, chatRow.id));
+    const assistantRow = rows.find((row: any) => row.role === "assistant");
+    expect(assistantRow.metadata.chatModeRouting).toEqual({
+      requested: "auto",
+      mode: "neutral",
+      reason: "fallback",
+      modelId: "unavailable",
+    });
   });
 });

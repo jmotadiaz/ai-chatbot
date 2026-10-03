@@ -1,7 +1,9 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
+import {
+  defaultWebSearchNumResults,
+  resolveChatModelId,
+} from "@/lib/features/foundation-model/config";
 import { getProjectById } from "@/lib/features/project/queries";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
@@ -47,7 +49,7 @@ const Page: React.FC<ProjectPageProps> = async ({
       <ChatLayout
         chatConfig={{
           projectId: id,
-          selectedModel: (project.defaultModel as chatModelId) || undefined,
+          selectedModel: resolveChatModelId(project.defaultModel),
           temperature: project.defaultTemperature ?? undefined,
           topP: project.defaultTopP ?? undefined,
           topK: project.defaultTopK ?? undefined,

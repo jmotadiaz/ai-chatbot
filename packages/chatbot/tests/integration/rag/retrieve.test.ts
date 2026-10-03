@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { eq } from "drizzle-orm";
+import type { RerankResult } from "inference";
 import { makeRetrieveResourceChunks } from "../../../lib/features/rag/retrieve/factory";
 import type { RagRetrieveAiPort } from "../../../lib/features/rag/retrieve/ports";
-import type { RerankResult } from "../../../lib/features/foundation-model/types";
 import { setupTestDb } from "../../helpers/db-setup";
 import {
   resource as resourceTable,

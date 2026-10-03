@@ -2,9 +2,9 @@ import { createScorer } from "evalite"
 import { generateObject } from "ai"
 import { z } from "zod"
 import type { EvalResult } from "../types"
-import { providers } from "@/lib/infrastructure/ai/providers"
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 
-const judgeModel = () => providers.opencodeGo("deepseek-v4.1-flash")
+const judgeModel = () => inferenceKit.languageModel("Deepseek v4.1 Flash").model
 
 const judgeEvaluationSchema = z.object({
   score: z

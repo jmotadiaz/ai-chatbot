@@ -12,7 +12,7 @@ import { createChatbotClient } from "../lib/chatbot-client"
 import { createCompactionDetector } from "../lib/compaction-detector"
 import { createTraceWriter } from "../lib/trace-writer"
 import type { EvalResult, FactAnswer, TranscriptMessage } from "../lib/types"
-import { providers } from "@/lib/infrastructure/ai/providers"
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -54,7 +54,7 @@ function createDeterministicUserMessage(content: string): TranscriptMessage {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-const judgeModel = () => providers.opencodeGo("deepseek-v4.1-flash")
+const judgeModel = () => inferenceKit.languageModel("Deepseek v4.1 Flash").model
 
 const judgeEvaluationSchema = z.object({
   score: z

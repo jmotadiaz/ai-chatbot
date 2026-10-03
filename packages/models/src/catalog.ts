@@ -398,30 +398,39 @@ export const MODEL_CATALOG = [
     cost: { input: 0.075, output: 0.25, cacheRead: 0.015, cacheWrite: 0 },
   },
   {
-    // Modelo stealth gratis de OpenCode Go ("por tiempo limitado"). Solo se
-    // sirve por el endpoint Anthropic (/zen/go/v1/messages, @ai-sdk/anthropic
-    // — tabla Endpoints de https://opencode.ai/docs/es/go);
-    // /v1/chat/completions devuelve 500, de ahí el provider kind
-    // opencodeGoAnthropic. En ráfagas el edge responde 503 "Endpoint is
+    // Modelo stealth gratis de OpenCode Go ("por tiempo limitado"). Sustituye
+    // a Union Alpha Free, que solo existía por el endpoint Anthropic y ya no
+    // aparece en /zen/go/v1/models. Se sirve por /zen/go/v1/chat/completions
+    // (@ai-sdk/openai-compatible — tabla Endpoints de
+    // https://opencode.ai/v2/docs/console/go), de ahí el provider kind
+    // opencodeGo. En ráfagas el edge responde 503 "Endpoint is
     // unavailable" de forma transitoria (modelo gratis limitado por
     // capacidad): los clientes del chatbot reintentan 5xx en el fetch
     // (retrying-fetch.ts) y el worker de Pi a nivel de provider
     // (provider-retry-defaults.ts). Pi no lo trae built-in, así que se auto-describe
-    // con los límites del registry de opencode-go (256k contexto / 128k
-    // salida) y coste cero (columna "Free" de la tabla de uso). No declara
-    // thinkingLevelMap: la doc no expone niveles de esfuerzo, así que Pi
-    // aplica su escalera por defecto (off..high) y la sesión arranca en high.
-    id: "Union Alpha Free",
+    // con los límites del registry de opencode-go (1M contexto / 512k
+    // salida) y coste cero (columna "Free" de la tabla de uso). El registry
+    // expone effort low..max, así que el thinkingLevelMap remite xhigh a max
+    // y no mapea off/minimal (el modelo no acepta menos de low).
+    id: "Space Bunny Free",
     userInvocable: true,
-    provider: { kind: "opencodeGoAnthropic", modelId: "union-alpha" },
+    provider: { kind: "opencodeGo", modelId: "space-bunny-free" },
     company: "ai chatbot",
     reasoning: true,
     defaultThinkingLevel: "high",
-    api: "anthropic-messages",
-    baseUrl: "https://opencode.ai/zen/go",
+    thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "max",
+    },
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
     supportedFiles: ["img"],
-    contextWindow: 262_144,
-    maxTokens: 131_072,
+    contextWindow: 1_048_576,
+    maxTokens: 524_288,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
   // --- internal / non-selectable models ---
