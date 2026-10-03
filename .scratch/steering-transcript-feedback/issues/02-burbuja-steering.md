@@ -4,13 +4,13 @@
 
 **Blocked by:** 01 (El store guarda las PendingQueues crudas).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Con `steeringPending` armado, la burbuja aparece al final de los items del Turn activo
-- [ ] La burbuja muestra el badge estático "Pendiente de entrega" con estilo atenuado/borde discontinuo, distinguible de un mensaje real
-- [ ] La burbuja es read-only: sin botones, sin acciones
-- [ ] Con `steeringPending` null/undefined no se renderiza nada nuevo (sin regresión en `AgentConversation` ni en los skeletons)
-- [ ] Test de componente nuevo para el render de la burbuja (y suites rápidas del paquete en verde)
+- [x] Con `steeringPending` armado, la burbuja aparece al final de los items del Turn activo
+- [x] La burbuja muestra el badge estático "Pendiente de entrega" con estilo atenuado/borde discontinuo, distinguible de un mensaje real
+- [x] La burbuja es read-only: sin botones, sin acciones
+- [x] Con `steeringPending` null/undefined no se renderiza nada nuevo (sin regresión en `AgentConversation` ni en los skeletons)
+- [x] Test de componente nuevo para el render de la burbuja (y suites rápidas del paquete en verde)
 
 **Context pointers:**
 
@@ -21,3 +21,5 @@
 - Prior art: `packages/chatbot/tests/component/agent-code/subagent-session-view.test.tsx` (render directo de `AgentConversation`).
 
 ## Comments
+
+- `feat(chatbot): render an armed steering as a pending bubble in the conversation` en `feat/steering-02-burbuja`. `AgentConversation` acepta `steeringPending?: string | null` y pinta una burbuja read-only (div + span, imitando la forma del `UserMessage`) entre el último item y el `runningIndicator`, con badge estático "Pendiente de entrega". Sin wiring en `agent-code-chat.tsx` (ticket 03).
