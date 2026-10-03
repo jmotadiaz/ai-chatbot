@@ -25,8 +25,9 @@ import type {
   SessionSnapshot,
 } from "@/lib/features/code/types";
 import {
+  emptyPendingQueues,
   pendingChipText,
-  pendingMessageFromEvent,
+  pendingQueuesFromEvent,
   pendingQueuesOf,
   type PendingQueues,
 } from "@/lib/features/code/pending-queues";
@@ -85,10 +86,17 @@ export interface UseCodingAgentResult {
    */
   sendMessage: (content: string | InputContent[]) => Promise<boolean>;
   /**
+   * The worker's two pending queues, stored raw: the queue-update event and
+   * `snapshot.pending` feed this one value, and each surface derives what it
+   * shows from it (no second source, no reconciliation).
+   */
+  pendingQueues: PendingQueues;
+  /**
    * The armed pending text (queue-update event), or null. Derives from
-   * BOTH worker queues — follow-up first, promoted steering second — so a
-   * promoted message keeps the chip visible and the composer locked to
-   * chip-plus-cancel until delivery instead of admitting a second message.
+   * `pendingQueues` via `pendingChipText` — BOTH worker queues, follow-up
+   * first, promoted steering second — so a promoted message keeps the chip
+   * visible and the composer locked to chip-plus-cancel until delivery
+   * instead of admitting a second message.
    */
   pendingMessage: string | null;
   /** Enqueue `text` for end-of-turn delivery; rejects (text preserved by caller) on failure. */
@@ -383,7 +391,7 @@ export function useCodingAgent({
       // Rehydration (ticket 04): a reload with an armed message restores
       // the chip straight from the snapshot — no queue-update needed first.
       // Queue-update events keep it in sync from here on.
-      pendingMessage: pendingChipText(seed?.pending),
+      pendingQueues: pendingQueuesOf(seed?.pending),
     };
 
     let snapshot = seeded;
@@ -484,9 +492,9 @@ export function useCodingAgent({
                   cursorRef.current = cursor.cursor;
                 }
               }
-              const pending = pendingMessageFromEvent(event);
-              if (pending !== undefined) {
-                update(() => ({ pendingMessage: pending }));
+              const queues = pendingQueuesFromEvent(event);
+              if (queues !== undefined) {
+                update(() => ({ pendingQueues: queues }));
               }
               const changedFiles = filesChangedFromEvent(event);
               if (changedFiles && changedFiles.length > 0) {
@@ -783,10 +791,10 @@ export function useCodingAgent({
           error: null,
           toolErrors: new Map(),
           toolTimings: new Map(),
-          // Rehydration (ticket 04): seed the chip from the worker's
+          // Rehydration (ticket 04): seed the queues from the worker's
           // surviving queues (follow-up or promoted steering); the connect
-          // stream's queue-updates sync it from here on.
-          pendingMessage: pendingChipText(snapshot.pending),
+          // stream's queue-updates sync them from here on.
+          pendingQueues: pendingQueuesOf(snapshot.pending),
         }));
         if (snapshot.running && snapshot.cursor) {
           await connect(snapshot.cursor);
@@ -1108,10 +1116,10 @@ export function useCodingAgent({
       return null;
     }
     // The abort closed the run stream, so a queue-update for the drain may
-    // never arrive: drop the chip optimistically. The drained text returns
+    // never arrive: drop the queues optimistically. The drained text returns
     // to the caller as an editable draft — never auto-reenqueued, never
     // executed. Same derivation as the chip, so abort and rehydration agree.
-    store.update(() => ({ pendingMessage: null }));
+    store.update(() => ({ pendingQueues: emptyPendingQueues() }));
     return pendingChipText(cleared);
   }, [sessionId, store]);
 
@@ -1142,7 +1150,8 @@ export function useCodingAgent({
     isRunning: state.isRunning,
     isLoading: state.isLoading,
     sendMessage,
-    pendingMessage: state.pendingMessage,
+    pendingQueues: state.pendingQueues,
+    pendingMessage: pendingChipText(state.pendingQueues),
     enqueueFollowUp,
     clearQueue,
     promoteToSteering,

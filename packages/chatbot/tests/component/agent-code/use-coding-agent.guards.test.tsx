@@ -38,7 +38,7 @@ const ATTACHMENT_CONTENT: InputContent[] = [
 ];
 
 function GuardsHarness() {
-  const { sendMessage, cancel, error, isRunning, pendingMessage } =
+  const { sendMessage, cancel, error, isRunning, pendingMessage, pendingQueues } =
     useCodingAgent({ project: "p", sessionId: "s", modelId: "m" });
   const [cancelDraft, setCancelDraft] = useState<string | null | undefined>(
     undefined,
@@ -63,6 +63,7 @@ function GuardsHarness() {
       <p data-testid="error">{error ?? ""}</p>
       <p data-testid="is-running">{String(isRunning)}</p>
       <p data-testid="pending">{pendingMessage ?? ""}</p>
+      <p data-testid="pending-queues">{`${pendingQueues.steering.join("|")}//${pendingQueues.followUp.join("|")}`}</p>
       <p data-testid="cancel-draft">
         {cancelDraft === undefined ? "unset" : (cancelDraft ?? "null")}
       </p>
@@ -183,6 +184,7 @@ describe("useCodingAgent submit duality (ticket 03)", () => {
     await waitFor(() =>
       expect(screen.getByTestId("pending").textContent).toBe("draft text"),
     );
+    expect(screen.getByTestId("pending-queues").textContent).toBe("//draft text");
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("cancel"));
@@ -193,5 +195,7 @@ describe("useCodingAgent submit duality (ticket 03)", () => {
     );
     expect(cancelRequests).toHaveLength(1);
     expect(screen.getByTestId("pending").textContent).toBe("");
+    // The drain empties the stored queues, not just the derived chip text.
+    expect(screen.getByTestId("pending-queues").textContent).toBe("//");
   });
 });
