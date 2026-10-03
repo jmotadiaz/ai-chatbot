@@ -91,14 +91,6 @@ export interface UseCodingAgentResult {
    * shows from it (no second source, no reconciliation).
    */
   pendingQueues: PendingQueues;
-  /**
-   * The armed pending text (queue-update event), or null. Derives from
-   * `pendingQueues` via `pendingChipText` — BOTH worker queues, follow-up
-   * first, promoted steering second — so a promoted message keeps the chip
-   * visible and the composer locked to chip-plus-cancel until delivery
-   * instead of admitting a second message.
-   */
-  pendingMessage: string | null;
   /** Enqueue `text` for end-of-turn delivery; rejects (text preserved by caller) on failure. */
   enqueueFollowUp: (text: string) => Promise<void>;
   /** Discard the pending queue without executing; rejects on failure. */
@@ -1151,7 +1143,6 @@ export function useCodingAgent({
     isLoading: state.isLoading,
     sendMessage,
     pendingQueues: state.pendingQueues,
-    pendingMessage: pendingChipText(state.pendingQueues),
     enqueueFollowUp,
     clearQueue,
     promoteToSteering,

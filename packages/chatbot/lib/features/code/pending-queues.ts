@@ -40,25 +40,30 @@ export function pendingQueuesOf(value: unknown): PendingQueues {
  * The first non-blank entry of a single raw queue, or null when that queue
  * holds nothing visible. Each surface derives its own text from its own
  * queue (chip from `followUp`, transcript bubble from `steering`), so the
- * dispatch rule stays exclusive without a second source of truth.
+ * dispatch rule stays exclusive without a second source of truth. Callers
+ * hold typed `PendingQueues`; malformed payloads are coerced by
+ * `pendingQueuesOf` before they get here.
  */
-export function firstQueueText(queue: unknown): string | null {
-  return stringArrayOf(queue).find((entry) => entry.trim().length > 0) ?? null;
+export function firstQueueText(queue: readonly string[]): string | null {
+  return queue.find((entry) => entry.trim().length > 0) ?? null;
 }
 
 /**
- * The armed chip text: the first follow-up entry, else the first steering
- * entry. Follow-up wins because it is the phase the user armed; a promoted
- * message (steering only) stays visible — and the composer stays locked to
- * chip-plus-cancel — until delivery instead of dropping the chip and
- * admitting a second message. First non-blank wins; null when nothing is
- * armed, including malformed input.
+ * The single armed message across both worker queues: the follow-up entry
+ * first, the steering entry otherwise. Used where the worker drained the
+ * queues and the text must come back to the caller (abort returns it as an
+ * editable draft); the surfaces themselves read their own queue through
+ * `firstQueueText`. First non-blank wins; null when nothing is armed,
+ * including malformed input.
  */
 export function pendingChipText(
   pending: { steering?: unknown; followUp?: unknown } | null | undefined,
 ): string | null {
   if (!pending || typeof pending !== "object") return null;
-  return firstQueueText(pending.followUp) ?? firstQueueText(pending.steering);
+  return (
+    firstQueueText(stringArrayOf(pending.followUp)) ??
+    firstQueueText(stringArrayOf(pending.steering))
+  );
 }
 
 /**

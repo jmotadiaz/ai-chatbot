@@ -58,13 +58,11 @@ describe("pending-queues helpers", () => {
   });
 
   it("firstQueueText reads one queue in isolation, skipping blanks", () => {
-    // Each surface derives from its own queue (ticket 03): the chip reads
-    // followUp, the transcript bubble reads steering.
+    // Each surface derives from its own queue: the chip reads followUp, the
+    // transcript bubble reads steering.
     expect(firstQueueText(["steered"])).toBe("steered");
     expect(firstQueueText(["", "  ", "real text", "later"])).toBe("real text");
     expect(firstQueueText([])).toBeNull();
-    expect(firstQueueText(undefined)).toBeNull();
-    expect(firstQueueText("not-an-array")).toBeNull();
     expect(firstQueueText(["steered", "queued"])).toBe("steered");
   });
 });

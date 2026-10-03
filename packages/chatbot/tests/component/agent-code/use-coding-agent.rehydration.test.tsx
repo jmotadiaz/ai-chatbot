@@ -49,7 +49,7 @@ function Harness({
 }: {
   initialSnapshot?: SessionSnapshot | null;
 }) {
-  const { sendMessage, enqueueFollowUp, pendingMessage, pendingQueues, isRunning, error } =
+  const { sendMessage, enqueueFollowUp, pendingQueues, isRunning, error } =
     useCodingAgent({
       project: "p",
       sessionId: "s",
@@ -68,7 +68,6 @@ function Harness({
         enqueue
       </button>
       <p data-testid="is-running">{String(isRunning)}</p>
-      <p data-testid="pending">{pendingMessage ?? ""}</p>
       <p data-testid="pending-steering">{pendingQueues.steering.join("|")}</p>
       <p data-testid="pending-follow-up">{pendingQueues.followUp.join("|")}</p>
       <p data-testid="error">{error ?? ""}</p>
@@ -130,7 +129,7 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
     cleanup();
   });
 
-  it("rehydrates the chip from snapshot.pending on reload", async () => {
+  it("rehydrates the pending message from snapshot.pending on reload", async () => {
     currentSnapshot = {
       messages: [],
       cursor: { epoch: "epoch-1", seq: 7 },
@@ -139,18 +138,14 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
     };
     render(<Harness />);
 
-    // The chip appears from the snapshot alone — no queue-update event
+    // The queue appears from the snapshot alone — no queue-update event
     // has arrived over the stream yet.
     await waitFor(() =>
-      expect(screen.getByTestId("pending").textContent).toBe(
+      expect(screen.getByTestId("pending-follow-up").textContent).toBe(
         "queued before reload",
       ),
     );
-    // The raw queues are the stored value; the chip text is derived from them.
     expect(screen.getByTestId("pending-steering").textContent).toBe("");
-    expect(screen.getByTestId("pending-follow-up").textContent).toBe(
-      "queued before reload",
-    );
     expect(screen.getByTestId("is-running").textContent).toBe("true");
     // And the running session still resumes from the seeded cursor.
     await waitFor(() => expect(connectBodies.length).toBeGreaterThan(0));
@@ -160,7 +155,7 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
     });
   });
 
-  it("seeds the chip from the SSR snapshot without fetching", async () => {
+  it("seeds the pending message from the SSR snapshot without fetching", async () => {
     render(
       <Harness
         initialSnapshot={{
@@ -172,7 +167,6 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
       />,
     );
 
-    expect(screen.getByTestId("pending").textContent).toBe("seeded pending");
     expect(screen.getByTestId("pending-follow-up").textContent).toBe(
       "seeded pending",
     );
@@ -180,7 +174,7 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
     expect(snapshotCallCount).toBe(0);
   });
 
-  it("restores no chip when the snapshot carries no pending queues", async () => {
+  it("restores nothing pending when the snapshot carries no pending queues", async () => {
     currentSnapshot = {
       messages: [],
       cursor: { epoch: "epoch-1", seq: 7 },
@@ -190,12 +184,11 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
     render(<Harness />);
 
     await waitFor(() => expect(connectBodies.length).toBeGreaterThan(0));
-    expect(screen.getByTestId("pending").textContent).toBe("");
     expect(screen.getByTestId("pending-steering").textContent).toBe("");
     expect(screen.getByTestId("pending-follow-up").textContent).toBe("");
   });
 
-  it("a failed turn with a chip leaves a defined state with no phantom runs", async () => {
+  it("a failed turn with a pending message leaves a defined state with no phantom runs", async () => {
     server.use(
       http.post(runUrl, async ({ request }) => {
         runRequests.push((await request.json()) as Record<string, unknown>);
@@ -224,12 +217,12 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
     });
 
     // Defined and visible: the failure shows in the banner, the spinner
-    // stops, and the chip still reflects the armed queue entry.
+    // stops, and the queue still holds the armed entry.
     await waitFor(() =>
       expect(screen.getByTestId("error").textContent).toBe("boom"),
     );
     expect(screen.getByTestId("is-running").textContent).toBe("false");
-    expect(screen.getByTestId("pending").textContent).toBe(
+    expect(screen.getByTestId("pending-follow-up").textContent).toBe(
       "armed instruction",
     );
     // No phantom executions: exactly one run opened, no reconnect storm.
@@ -256,20 +249,20 @@ describe("useCodingAgent rehydration and edge cases (ticket 04)", () => {
       fireEvent.click(screen.getByTestId("enqueue"));
     });
 
-    // Clear error naming the dead worker; the chip stays down and the run
+    // Clear error naming the dead worker; nothing gets armed and the run
     // itself is untouched (still running, still exactly one run).
     await waitFor(() =>
       expect(screen.getByTestId("error").textContent).toMatch(
         /worker unreachable/i,
       ),
     );
-    expect(screen.getByTestId("pending").textContent).toBe("");
+    expect(screen.getByTestId("pending-follow-up").textContent).toBe("");
     expect(screen.getByTestId("is-running").textContent).toBe("true");
     expect(runRequests).toHaveLength(1);
   });
 });
 
-describe("useCodingAgent steering-aware chip (review fix 07) and precise queue errors (US8/US18)", () => {
+describe("useCodingAgent raw pending queues and precise queue errors (US8/US18)", () => {
   beforeEach(() => {
     currentSnapshot = { messages: [], cursor: null, running: false };
     snapshotCallCount = 0;
@@ -282,7 +275,7 @@ describe("useCodingAgent steering-aware chip (review fix 07) and precise queue e
     cleanup();
   });
 
-  it("a steering-only queue-update arms the chip with the steering text", async () => {
+  it("a steering-only queue-update stores the raw steering queue", async () => {
     server.use(
       http.post(runUrl, async ({ request }) => {
         runRequests.push((await request.json()) as Record<string, unknown>);
@@ -304,56 +297,18 @@ describe("useCodingAgent steering-aware chip (review fix 07) and precise queue e
       fireEvent.click(screen.getByTestId("send-idle"));
     });
 
-    // The promoted message keeps the chip visible (and the composer locked)
-    // instead of disappearing and admitting a second message.
+    // Stored raw, per queue: the transcript bubble renders the steering
+    // entry and the follow-up queue stays empty, so the chip shows nothing.
     await waitFor(() =>
-      expect(screen.getByTestId("pending").textContent).toBe("steered text"),
-    );
-    // Stored raw: the steering entry survives in the queues the future
-    // steering bubble will render from.
-    expect(screen.getByTestId("pending-steering").textContent).toBe(
-      "steered text",
+      expect(screen.getByTestId("pending-steering").textContent).toBe(
+        "steered text",
+      ),
     );
     expect(screen.getByTestId("pending-follow-up").textContent).toBe("");
     expect(screen.getByTestId("is-running").textContent).toBe("true");
   });
 
-  it("with both queues armed the chip shows the follow-up text", async () => {
-    server.use(
-      http.post(runUrl, async ({ request }) => {
-        runRequests.push((await request.json()) as Record<string, unknown>);
-        return makeHangingSseResponse([
-          { type: "RUN_STARTED", threadId: "s", runId: "r-both" },
-          {
-            type: "CUSTOM",
-            runId: "r-both",
-            name: "coding_agent_queue_update",
-            value: { steering: ["steered text"], followUp: ["queued text"] },
-          },
-        ]);
-      }),
-    );
-    render(<Harness />);
-    await waitFor(() => expect(snapshotCallCount).toBe(1));
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("send-idle"));
-    });
-
-    await waitFor(() =>
-      expect(screen.getByTestId("pending").textContent).toBe("queued text"),
-    );
-    // Both queues survive the event verbatim; only the chip picks the
-    // follow-up entry.
-    expect(screen.getByTestId("pending-steering").textContent).toBe(
-      "steered text",
-    );
-    expect(screen.getByTestId("pending-follow-up").textContent).toBe(
-      "queued text",
-    );
-  });
-
-  it("rehydrates the chip from a steering-only snapshot on reload", async () => {
+  it("rehydrates the steering queue from a steering-only snapshot on reload", async () => {
     currentSnapshot = {
       messages: [],
       cursor: { epoch: "epoch-1", seq: 7 },
@@ -363,13 +318,11 @@ describe("useCodingAgent steering-aware chip (review fix 07) and precise queue e
     render(<Harness />);
 
     await waitFor(() =>
-      expect(screen.getByTestId("pending").textContent).toBe(
+      expect(screen.getByTestId("pending-steering").textContent).toBe(
         "steered before reload",
       ),
     );
-    expect(screen.getByTestId("pending-steering").textContent).toBe(
-      "steered before reload",
-    );
+    expect(screen.getByTestId("pending-follow-up").textContent).toBe("");
     expect(screen.getByTestId("is-running").textContent).toBe("true");
   });
 
@@ -394,7 +347,7 @@ describe("useCodingAgent steering-aware chip (review fix 07) and precise queue e
         "Skills cannot be queued as a follow-up (plain text only)",
       ),
     );
-    expect(screen.getByTestId("pending").textContent).toBe("");
+    expect(screen.getByTestId("pending-follow-up").textContent).toBe("");
   });
 
   it("surfaces the single-pending conflict verbatim", async () => {
@@ -418,6 +371,6 @@ describe("useCodingAgent steering-aware chip (review fix 07) and precise queue e
         /already pending/,
       ),
     );
-    expect(screen.getByTestId("pending").textContent).toBe("");
+    expect(screen.getByTestId("pending-follow-up").textContent).toBe("");
   });
 });

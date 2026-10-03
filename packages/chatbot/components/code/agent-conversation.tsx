@@ -33,8 +33,14 @@ export interface AgentConversationProps {
  * Imitates the user message bubble shape (see `UserMessage`) but is its own
  * block: no copy button, no collapse, no actions. Static badge, no timers.
  */
-const SteeringPendingBubble: React.FC<{ text: string }> = ({ text }) => (
-  <div data-testid="steering-pending-bubble" data-role="user">
+interface SteeringPendingBubbleProps {
+  text: string;
+}
+
+const SteeringPendingBubble: React.FC<SteeringPendingBubbleProps> = ({ text }) => (
+  // No `data-role="user"`: that role marks the scroll anchors prev/next
+  // navigation walks, and a derived bubble is not one of them.
+  <div data-testid="steering-pending-bubble">
     <div className="mb-8 pt-4">
       <div className="flex gap-4 w-full ml-auto max-w-full w-fit">
         <div className="flex flex-col w-full space-y-2">
@@ -74,9 +80,8 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     scrollToNext,
   } = useAgentConversationScroll({ items });
   const hasConversationContent = items.length;
-  const steeringText = steeringPending?.trim() ? steeringPending : null;
-  const steeringBubble = steeringText ? (
-    <SteeringPendingBubble text={steeringText} />
+  const steeringBubble = steeringPending?.trim() ? (
+    <SteeringPendingBubble text={steeringPending} />
   ) : null;
 
   const runningIndicator = isRunning ? (

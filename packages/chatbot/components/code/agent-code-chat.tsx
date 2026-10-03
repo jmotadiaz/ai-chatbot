@@ -27,6 +27,7 @@ import type { FilePart } from "@/lib/features/attachment/types";
 import {
   firstQueueText,
   midTurnBlockReason,
+  pendingQueuesOf,
 } from "@/lib/features/code/pending-queues";
 import {
   buildUserContent,
@@ -45,8 +46,8 @@ export interface AgentCodeChatProps {
   /** What the server render resolved; each null field falls back to CSR. */
   bootstrap?: CodingAgentBootstrap;
   /**
-   * Ticket 03: the model picker lives in the layout header, outside this
-   * component, so the running state travels up for its mid-turn lock.
+   * The model picker lives in the layout header, outside this component, so
+   * the running state travels up for its mid-turn lock.
    */
   onTurnRunningChange?: (running: boolean) => void;
 }
@@ -93,24 +94,27 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     initialSnapshot: bootstrap?.snapshot,
   });
 
-  // Ticket 03 exclusive dispatch. The worker keeps one pending message at a
-  // time (promote is clear-then-enqueue), so each queue owns a different
-  // surface and they never coexist: `followUp` is the armed-but-unsent
-  // message, editable/discardable/promotable from the chip above the
+  // Exclusive dispatch. The worker keeps one pending message at a time
+  // (promote is clear-then-enqueue), so each queue owns a different surface
+  // and they never coexist: `followUp` is the armed-but-unsent Mensaje en
+  // Espera, editable/discardable/promotable from the chip above the
   // textarea; `steering` is already sent, so it lives read-only in the
   // transcript as a bubble until the model receives it. Both are derived
   // from the same raw queues — the worker's queues are the only source of
   // truth, and delivery is empty `queue_update`s, so no transition state
   // (and no chip-in-between) is needed.
-  const steeringPending = firstQueueText(pendingQueues.steering);
-  const followUpPending = firstQueueText(pendingQueues.followUp);
+  //
+  // Normalized once up front: the hook always hands over owned queues, but
+  // an older payload must never turn a missing field into a throw here.
+  const queues = pendingQueuesOf(pendingQueues);
+  const steeringPending = firstQueueText(queues.steering);
+  const waitingMessageText = firstQueueText(queues.followUp);
 
-  // Ticket 03 guards. `hasPending` (EITHER queue armed) locks the whole
-  // composer down to chip-plus-cancel — with steering armed the transcript
-  // bubble is the visible signal of that lock; `isRunning` (active turn)
-  // locks the turn-scoped config and non-text sources, which only apply
-  // next turn.
-  const hasPending = steeringPending !== null || followUpPending !== null;
+  // Guards. `hasPending` (EITHER queue armed) locks the whole composer down
+  // to chip-plus-cancel — with steering armed the transcript bubble is the
+  // visible signal of that lock; `isRunning` (active turn) locks the
+  // turn-scoped config and non-text sources, which only apply next turn.
+  const hasPending = steeringPending !== null || waitingMessageText !== null;
 
   const handleCancel = async () => {
     const draft = await cancel().catch(() => null);
@@ -217,11 +221,11 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         setAttachmentError(blocked);
         return;
       }
-      // The hook routes plain text through
-      // followUp and reports whether the worker accepted it. Only clear the
-      // composer on acceptance — a worker blip keeps the draft (ticket 04:
-      // error in the banner, text preserved) instead of losing it. The
-      // follow-up button (handleFollowUp) already works this way.
+      // The hook routes plain text through the follow-up queue and reports
+      // whether the worker accepted it. Only clear the composer on
+      // acceptance — a worker blip keeps the draft (error in the banner,
+      // text preserved) instead of losing it. The follow-up button
+      // (handleFollowUp) already works this way.
       const accepted = await sendMessage(buildUserContent(message, files));
       if (accepted !== false) {
         setInput("");
@@ -263,11 +267,11 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   };
 
   const handleEditPending = async () => {
-    const text = followUpPending;
+    const text = waitingMessageText;
     if (!text) return;
     try {
-      // The chip only ever renders armed follow-up, so this clears that
-      // queue and nothing else (worker semantics unchanged).
+      // The chip only ever shows the queued Mensaje en Espera, and with one
+      // pending message at a time that is the only armed queue.
       await clearQueue();
       // Back to the textarea as a draft, never auto-reenqueued: the user
       // confirms with one more explicit send.
@@ -286,7 +290,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   };
 
   const handlePromotePending = async () => {
-    const text = followUpPending;
+    const text = waitingMessageText;
     if (!text) return;
     try {
       await promoteToSteering(text);
@@ -328,18 +332,18 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
         <PendingCommentsBar disabled={isRunning} />
-        {followUpPending && (
+        {waitingMessageText && (
           <div className="mb-2 flex w-full min-w-0 items-center gap-2" data-testid="followup-chip">
-            {/* Ticket 02 owns the chip actions (edit/discard/promote) rendered
-                here; the guards below keep the chip itself mounted and alive.
-                Ticket 03: the chip is the follow-up surface only — armed
-                steering is shown as a bubble in the conversation instead. */}
+            {/* The chip owns the Mensaje en Espera actions (edit/discard/
+                promote) and keeps that message editable until it is sent;
+                an already-sent steering is shown as a bubble in the
+                conversation instead. */}
             <span
               aria-label="Pending follow-up"
-              title={followUpPending}
+              title={waitingMessageText}
               className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden rounded-full border border-blue-500/25 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300"
             >
-              <span className="min-w-0 flex-1 truncate">{followUpPending}</span>
+              <span className="min-w-0 flex-1 truncate">{waitingMessageText}</span>
             </span>
             <div className="flex shrink-0 items-center gap-1">
               <button
