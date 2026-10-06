@@ -1,9 +1,13 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { AgentResponse } from "@/components/code/agent-response";
 import { TurnFilesChanged } from "@/components/code/turn-files-changed";
 import { FileBrowserProvider } from "@/components/code/file-browser/file-browser-provider";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 afterEach(cleanup);
 

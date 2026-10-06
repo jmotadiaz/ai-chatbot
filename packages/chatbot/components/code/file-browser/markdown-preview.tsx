@@ -16,7 +16,10 @@ import { useTheme } from "next-themes";
 import { MessageSquare } from "lucide-react";
 import { marked } from "marked";
 import type { ThemedToken } from "shiki";
-import { CodingAgentMarkdownAnchor } from "../coding-agent-markdown-anchor";
+import {
+  CodingAgentMarkdownAnchor,
+  NoteLinkOriginProvider,
+} from "../coding-agent-markdown-anchor";
 import { CodeViewLine } from "./code-view-line";
 import type { LineRange } from "./types";
 import { Response } from "@/components/chat/response";
@@ -131,12 +134,10 @@ function useCodeBlockTokens(
       codeBlocks.map(async ({ range, lang }) => {
         const code = sourceLines.slice(range.start - 1, range.end).join("\n");
         const lines = await tokenize(code, lang ?? "plaintext", theme);
-        return lines.map(
-          (lineTokens, offset): [number, ThemedToken[]] => [
-            range.start + offset,
-            lineTokens,
-          ],
-        );
+        return lines.map((lineTokens, offset): [number, ThemedToken[]] => [
+          range.start + offset,
+          lineTokens,
+        ]);
       }),
     )
       .then((results) => {
@@ -248,10 +249,7 @@ function inlineComposerLine(
   if (!comments || !anchor || comments.selectedLine !== anchor.line) {
     return null;
   }
-  if (
-    comments.blockKind === "other" &&
-    anchor.line === comments.blockLine
-  ) {
+  if (comments.blockKind === "other" && anchor.line === comments.blockLine) {
     return null;
   }
   return anchor.line;
@@ -325,6 +323,12 @@ export interface MarkdownPreviewProps {
   renderComposer: (line: number) => ReactNode;
   /** Shiki tokens per source line, so code blocks match the raw view. */
   tokensByLine?: Map<number, ThemedToken[]>;
+  /**
+   * Project-relative path of the file being previewed, which Note Links
+   * resolve against. Absent renders (e.g. chat messages) keep plain
+   * external-link behaviour.
+   */
+  containerPath?: string | null;
 }
 
 export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
@@ -334,6 +338,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   onSelectLine,
   renderComposer,
   tokensByLine,
+  containerPath,
 }) => {
   const blocks = useMemo(() => markdownBlocks(content), [content]);
   const sourceLines = useMemo(() => content.split("\n"), [content]);
@@ -358,117 +363,120 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   };
 
   return (
-    <div
-      data-testid="markdown-preview"
-      className="mx-auto w-full max-w-4xl space-y-4 px-6 py-5"
-    >
-      {blocks.map((block, index) => {
-        const key = `${block.lineNumber}-${index}`;
+    <NoteLinkOriginProvider path={containerPath ?? ""}>
+      <div
+        data-testid="markdown-preview"
+        className="mx-auto w-full max-w-4xl space-y-4 px-6 py-5"
+      >
+        {blocks.map((block, index) => {
+          const key = `${block.lineNumber}-${index}`;
 
-        // Code blocks reuse the raw view's line rows, so a fenced block reads
-        // and comments exactly like the same lines do in the raw view.
-        if (block.kind === "code" && block.codeRange) {
-          const { start, end } = block.codeRange;
-          const lineNumbers = Array.from(
-            { length: Math.max(end - start + 1, 0) },
-            (_, offset) => start + offset,
-          );
+          // Code blocks reuse the raw view's line rows, so a fenced block reads
+          // and comments exactly like the same lines do in the raw view.
+          if (block.kind === "code" && block.codeRange) {
+            const { start, end } = block.codeRange;
+            const lineNumbers = Array.from(
+              { length: Math.max(end - start + 1, 0) },
+              (_, offset) => start + offset,
+            );
+
+            return (
+              <div
+                key={key}
+                data-line-number={block.lineNumber}
+                className="-mx-3 overflow-x-auto rounded-md border border-zinc-200 py-1 dark:border-zinc-800"
+              >
+                {lineNumbers.map((line) => (
+                  <div key={line} data-line-number={line}>
+                    <CodeViewLine
+                      oldLineNumber={null}
+                      newLineNumber={line}
+                      tokens={tokensFor(line)}
+                      changeKind="unchanged"
+                      hasComment={commentsByLine.has(line)}
+                      isSelected={selectedLine === line}
+                      onSelect={onSelectLine}
+                    />
+                    {selectedLine === line && renderComposer(line)}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          const hasComment = commentsByLine.has(block.lineNumber);
+          const isSelected = selectedLine === block.lineNumber;
+          // Lists and tables own their composer inline under the selected
+          // item/row (see `inlineComposerLine`), so the block itself only owns
+          // its first line — and only for blocks without inline items. A
+          // mid-block selection can only be stale state from the raw view,
+          // which resets the selection when toggling back to the preview.
+          const composerLine =
+            block.kind !== "list" &&
+            block.kind !== "table" &&
+            selectedLine === block.lineNumber
+              ? selectedLine
+              : null;
 
           return (
             <div
               key={key}
               data-line-number={block.lineNumber}
-              className="-mx-3 overflow-x-auto rounded-md border border-zinc-200 py-1 dark:border-zinc-800"
+              role="button"
+              tabIndex={0}
+              aria-label={`Comment on Markdown block starting at line ${block.lineNumber}`}
+              className={cn(
+                "group relative -mx-3 rounded-md border border-transparent px-3 transition-colors",
+                "cursor-pointer hover:bg-zinc-100/80 focus-visible:border-zinc-400 focus-visible:outline-none dark:hover:bg-zinc-800/70",
+                hasComment &&
+                  "border-amber-300 bg-amber-50/70 dark:border-amber-700 dark:bg-amber-950/20",
+                isSelected &&
+                  "border-zinc-400 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800",
+              )}
+              onClick={(event) => {
+                if (
+                  (event.target as HTMLElement).closest(
+                    "a, button, input, textarea, select",
+                  )
+                ) {
+                  return;
+                }
+                onSelectLine(block.lineNumber);
+              }}
+              onKeyDown={(event) => handleKeyDown(event, block.lineNumber)}
             >
-              {lineNumbers.map((line) => (
-                <div key={line} data-line-number={line}>
-                  <CodeViewLine
-                    oldLineNumber={null}
-                    newLineNumber={line}
-                    tokens={tokensFor(line)}
-                    changeKind="unchanged"
-                    hasComment={commentsByLine.has(line)}
-                    isSelected={selectedLine === line}
-                    onSelect={onSelectLine}
-                  />
-                  {selectedLine === line && renderComposer(line)}
-                </div>
-              ))}
+              <span
+                className={cn(
+                  "absolute -left-2 top-2 rounded-full border bg-(--background) p-1 text-zinc-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
+                  hasComment &&
+                    "text-amber-600 opacity-100 dark:text-amber-400",
+                )}
+                aria-hidden="true"
+              >
+                <MessageSquare size={13} />
+              </span>
+              <LineCommentsContext.Provider
+                value={{
+                  blockLine: block.lineNumber,
+                  blockKind: block.kind,
+                  commentsByLine,
+                  selectedLine,
+                  onSelectLine,
+                  renderComposer,
+                }}
+              >
+                <Response
+                  className="h-auto [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                  components={MARKDOWN_COMPONENTS}
+                >
+                  {block.content}
+                </Response>
+              </LineCommentsContext.Provider>
+              {composerLine !== null && renderComposer(composerLine)}
             </div>
           );
-        }
-
-        const hasComment = commentsByLine.has(block.lineNumber);
-        const isSelected = selectedLine === block.lineNumber;
-        // Lists and tables own their composer inline under the selected
-        // item/row (see `inlineComposerLine`), so the block itself only owns
-        // its first line — and only for blocks without inline items. A
-        // mid-block selection can only be stale state from the raw view,
-        // which resets the selection when toggling back to the preview.
-        const composerLine =
-          block.kind !== "list" &&
-          block.kind !== "table" &&
-          selectedLine === block.lineNumber
-            ? selectedLine
-            : null;
-
-        return (
-          <div
-            key={key}
-            data-line-number={block.lineNumber}
-            role="button"
-            tabIndex={0}
-            aria-label={`Comment on Markdown block starting at line ${block.lineNumber}`}
-            className={cn(
-              "group relative -mx-3 rounded-md border border-transparent px-3 transition-colors",
-              "cursor-pointer hover:bg-zinc-100/80 focus-visible:border-zinc-400 focus-visible:outline-none dark:hover:bg-zinc-800/70",
-              hasComment &&
-                "border-amber-300 bg-amber-50/70 dark:border-amber-700 dark:bg-amber-950/20",
-              isSelected &&
-                "border-zinc-400 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800",
-            )}
-            onClick={(event) => {
-              if (
-                (event.target as HTMLElement).closest(
-                  "a, button, input, textarea, select",
-                )
-              ) {
-                return;
-              }
-              onSelectLine(block.lineNumber);
-            }}
-            onKeyDown={(event) => handleKeyDown(event, block.lineNumber)}
-          >
-            <span
-              className={cn(
-                "absolute -left-2 top-2 rounded-full border bg-(--background) p-1 text-zinc-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
-                hasComment && "text-amber-600 opacity-100 dark:text-amber-400",
-              )}
-              aria-hidden="true"
-            >
-              <MessageSquare size={13} />
-            </span>
-            <LineCommentsContext.Provider
-              value={{
-                blockLine: block.lineNumber,
-                blockKind: block.kind,
-                commentsByLine,
-                selectedLine,
-                onSelectLine,
-                renderComposer,
-              }}
-            >
-              <Response
-                className="h-auto [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-                components={MARKDOWN_COMPONENTS}
-              >
-                {block.content}
-              </Response>
-            </LineCommentsContext.Provider>
-            {composerLine !== null && renderComposer(composerLine)}
-          </div>
-        );
-      })}
-    </div>
+        })}
+      </div>
+    </NoteLinkOriginProvider>
   );
 };

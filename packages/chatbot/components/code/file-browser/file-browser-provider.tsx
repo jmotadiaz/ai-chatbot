@@ -7,11 +7,8 @@ import {
   useMemo,
   useSyncExternalStore,
 } from "react";
-import type {
-  FileBrowserScope,
-  FileBrowserState,
-  PendingComment,
-} from "./types";
+import type { FileBrowserScope, FileBrowserState, PendingComment } from "./types";
+import type { FileBrowserInitialLocation } from "@/lib/features/code/file-browser/file-links";
 
 const INITIAL_STATE: FileBrowserState = {
   scope: "uncommitted",
@@ -20,17 +17,16 @@ const INITIAL_STATE: FileBrowserState = {
   pendingComments: [],
 };
 
-export interface FileBrowserInitialLocation {
-  scope?: FileBrowserScope;
-  file?: string;
-}
+export type { FileBrowserInitialLocation } from "@/lib/features/code/file-browser/file-links";
 
 /**
  * Build the store's initial state from a deep link. Opening a file in the
  * tree scope also seeds the breadcrumb path so "back" lands in the file's
  * containing folder instead of the project root.
  */
-function initialStateFrom(location?: FileBrowserInitialLocation): FileBrowserState {
+function initialStateFrom(
+  location?: FileBrowserInitialLocation,
+): FileBrowserState {
   const state = { ...INITIAL_STATE };
   if (!location) return state;
   if (location.scope) state.scope = location.scope;
@@ -65,7 +61,10 @@ function persistComments(sessionId: string, comments: PendingComment[]): void {
     if (comments.length === 0) {
       window.localStorage.removeItem(storageKey(sessionId));
     } else {
-      window.localStorage.setItem(storageKey(sessionId), JSON.stringify(comments));
+      window.localStorage.setItem(
+        storageKey(sessionId),
+        JSON.stringify(comments),
+      );
     }
   } catch {
     // Storage full or unavailable: comments just won't survive a refresh.
@@ -81,6 +80,7 @@ export interface FileBrowserStore {
   truncatePath: (length: number) => void;
   openFile: (path: string) => void;
   closeFile: () => void;
+  applyLocation: (location: FileBrowserInitialLocation) => void;
   upsertComment: (comment: PendingComment) => void;
   removeComment: (id: string) => void;
   clearComments: () => void;
@@ -121,11 +121,33 @@ export function createFileBrowserStore(
       set({ pathStack: state.pathStack.slice(0, length), activeFile: null }),
     openFile: (path) => set({ activeFile: path }),
     closeFile: () => set({ activeFile: null }),
+    /**
+     * Re-apply a deep link to live state. The initial location is only read
+     * on mount, so same-route navigations (note links, browser back/forward)
+     * land here; mirrors `initialStateFrom`'s semantics.
+     */
+    applyLocation(location) {
+      const next = { ...state };
+      if (location.scope) {
+        next.scope = location.scope;
+        next.pathStack = [];
+        next.activeFile = null;
+      }
+      if (location.file) {
+        next.activeFile = location.file;
+        next.pathStack =
+          next.scope === "tree" ? location.file.split("/").slice(0, -1) : [];
+      }
+      if (!location.scope && !location.file) return;
+      set(next);
+    },
     upsertComment(comment) {
       const existing = state.pendingComments.some((c) => c.id === comment.id);
       setComments(
         existing
-          ? state.pendingComments.map((c) => (c.id === comment.id ? comment : c))
+          ? state.pendingComments.map((c) =>
+              c.id === comment.id ? comment : c,
+            )
           : [...state.pendingComments, comment],
       );
     },
@@ -190,7 +212,10 @@ export const FileBrowserProvider: React.FC<FileBrowserProviderProps> = ({
  * sub-session view). Unlike useFileBrowser it never throws and does not
  * subscribe to the store.
  */
-export function useFileBrowserIds(): { project: string; sessionId: string } | null {
+export function useFileBrowserIds(): {
+  project: string;
+  sessionId: string;
+} | null {
   const ctx = useContext(FileBrowserContext);
   return ctx ? { project: ctx.project, sessionId: ctx.sessionId } : null;
 }
@@ -207,5 +232,10 @@ export function useFileBrowser() {
     ctx.store.getSnapshot,
     ctx.store.getSnapshot,
   );
-  return { state, actions: ctx.store, project: ctx.project, sessionId: ctx.sessionId };
+  return {
+    state,
+    actions: ctx.store,
+    project: ctx.project,
+    sessionId: ctx.sessionId,
+  };
 }

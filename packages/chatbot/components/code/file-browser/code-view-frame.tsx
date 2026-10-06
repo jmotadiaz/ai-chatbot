@@ -405,6 +405,7 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
                   onSelectLine={handleSelectLine}
                   renderComposer={renderCommentComposer}
                   tokensByLine={tokensByLine}
+                  containerPath={path}
                 />
               ) : (
                 load.lines.map((line) => {

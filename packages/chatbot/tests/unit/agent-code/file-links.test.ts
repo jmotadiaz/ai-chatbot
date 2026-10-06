@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   diffViewHref,
   fileViewHref,
+  initialLocationFrom,
   isSafeRelativePath,
   parseFileReferenceHref,
+  resolveNoteLink,
 } from "@/lib/features/code/file-browser/file-links";
 
 describe("isSafeRelativePath", () => {
@@ -36,6 +38,119 @@ describe("view hrefs", () => {
     expect(fileViewHref("p", "s1", "src/a.ts")).toBe(
       "/agent/code/p/s1/files?scope=tree&file=src%2Fa.ts",
     );
+  });
+});
+
+describe("resolveNoteLink", () => {
+  const FROM_PROJECT_NOTE = "proyectos/Foo/Foo.md";
+  const FROM_ISSUE_NOTE = "proyectos/Foo/issues/foo-arch.md";
+  const FROM_ROOT_NOTE = "home.md";
+
+  it("resolves relative note links against the container's directory", () => {
+    expect(resolveNoteLink("../../personas/Chus.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "navigate",
+      path: "personas/Chus.md",
+    });
+    expect(resolveNoteLink("issues/foo-arch.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "navigate",
+      path: "proyectos/Foo/issues/foo-arch.md",
+    });
+  });
+
+  it("resolves same-directory links from a root-level note", () => {
+    expect(resolveNoteLink("inbox.md", FROM_ROOT_NOTE)).toEqual({
+      kind: "navigate",
+      path: "inbox.md",
+    });
+  });
+
+  it("decodes percent-escaped paths", () => {
+    expect(
+      resolveNoteLink("../../../personas/Miguel%20Lopez.md", FROM_ISSUE_NOTE),
+    ).toEqual({ kind: "navigate", path: "personas/Miguel Lopez.md" });
+  });
+
+  it("normalizes redundant segments", () => {
+    expect(resolveNoteLink("./personas/./Chus.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "navigate",
+      path: "proyectos/Foo/personas/Chus.md",
+    });
+    expect(resolveNoteLink("personas/../personas/Chus.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "navigate",
+      path: "proyectos/Foo/personas/Chus.md",
+    });
+  });
+
+  it("drops the fragment and navigates to the top of the target", () => {
+    expect(resolveNoteLink("issues/foo-arch.md#contexto", FROM_PROJECT_NOTE)).toEqual({
+      kind: "navigate",
+      path: "proyectos/Foo/issues/foo-arch.md",
+    });
+  });
+
+  it("classifies external links and fragments as other", () => {
+    expect(resolveNoteLink("https://example.com", FROM_PROJECT_NOTE)).toEqual({
+      kind: "other",
+    });
+    expect(resolveNoteLink("mailto:x@y.z", FROM_PROJECT_NOTE)).toEqual({
+      kind: "other",
+    });
+    expect(resolveNoteLink("//example.com/a.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "other",
+    });
+    expect(resolveNoteLink("#seccion", FROM_PROJECT_NOTE)).toEqual({
+      kind: "other",
+    });
+    expect(resolveNoteLink("logo.png", FROM_PROJECT_NOTE)).toEqual({
+      kind: "other",
+    });
+    expect(resolveNoteLink("issues", FROM_PROJECT_NOTE)).toEqual({
+      kind: "other",
+    });
+  });
+
+  it("classifies escapes and malformed paths as unsafe", () => {
+    expect(resolveNoteLink("../../../outside.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "unsafe",
+    });
+    expect(resolveNoteLink("../../../personas/Chus.md", FROM_ROOT_NOTE)).toEqual({
+      kind: "unsafe",
+    });
+    expect(resolveNoteLink("/etc/passwd", FROM_PROJECT_NOTE)).toEqual({
+      kind: "unsafe",
+    });
+    expect(resolveNoteLink("a\\b.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "unsafe",
+    });
+    expect(resolveNoteLink("src/%zz.md", FROM_PROJECT_NOTE)).toEqual({
+      kind: "unsafe",
+    });
+  });
+
+  it("does not navigate without a container file", () => {
+    expect(resolveNoteLink("personas/Chus.md", null)).toEqual({ kind: "other" });
+  });
+});
+
+describe("initialLocationFrom", () => {
+  it("keeps valid scopes and safe files", () => {
+    expect(initialLocationFrom({ scope: "tree", file: "src/a.ts" })).toEqual({
+      scope: "tree",
+      file: "src/a.ts",
+    });
+    expect(initialLocationFrom({ scope: "uncommitted", file: "a.md" })).toEqual({
+      scope: "uncommitted",
+      file: "a.md",
+    });
+  });
+
+  it("drops unknown scopes and unsafe files", () => {
+    expect(initialLocationFrom({ scope: "bogus", file: "../etc/passwd" })).toEqual({});
+    expect(initialLocationFrom({})).toEqual({});
+  });
+
+  it("ignores array-valued params", () => {
+    expect(initialLocationFrom({ scope: ["tree"], file: ["a.md"] })).toEqual({});
   });
 });
 

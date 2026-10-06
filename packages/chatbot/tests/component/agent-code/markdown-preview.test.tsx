@@ -1,11 +1,19 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FileBrowserProvider } from "@/components/code/file-browser/file-browser-provider";
+import {
+  FileBrowserProvider,
+  useFileBrowser,
+} from "@/components/code/file-browser/file-browser-provider";
+import type { FileBrowserState } from "@/components/code/file-browser/types";
 import {
   MarkdownPreview,
   markdownBlocks,
 } from "@/components/code/file-browser/markdown-preview";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 afterEach(cleanup);
 
@@ -290,7 +298,9 @@ describe("markdownBlocks", () => {
       </FileBrowserProvider>,
     );
 
-    fireEvent.click(await waitFor(() => view.getByRole("link", { name: "docs" })));
+    fireEvent.click(
+      await waitFor(() => view.getByRole("link", { name: "docs" })),
+    );
 
     expect(onSelectLine).not.toHaveBeenCalled();
   });
@@ -334,5 +344,91 @@ describe("markdownBlocks", () => {
         "/agent/code/proj/s1/files?scope=tree&file=src%2Fapp.ts",
       );
     });
+  });
+
+  it("routes note links through the file browser when a file is previewed", async () => {
+    const view = render(
+      <FileBrowserProvider project="proj" sessionId="s1">
+        <MarkdownPreview
+          content="[Chus](<../../personas/Chus.md>)"
+          commentsByLine={new Map()}
+          selectedLine={null}
+          onSelectLine={vi.fn()}
+          renderComposer={() => null}
+          containerPath="proyectos/Foo/Foo.md"
+        />
+      </FileBrowserProvider>,
+    );
+
+    const link = await waitFor(() => view.getByTestId("agent-note-link"));
+    expect(link.getAttribute("href")).toBe(
+      "/agent/code/proj/s1/files?scope=tree&file=personas%2FChus.md",
+    );
+  });
+
+  it("applies the note link's location to the store on click", async () => {
+    const snapshots: FileBrowserState[] = [];
+    const Probe: React.FC = () => {
+      const { state } = useFileBrowser();
+      snapshots.push(state);
+      return null;
+    };
+    const view = render(
+      <FileBrowserProvider project="proj" sessionId="s1">
+        <Probe />
+        <MarkdownPreview
+          content="[Chus](<../../personas/Chus.md>)"
+          commentsByLine={new Map()}
+          selectedLine={null}
+          onSelectLine={vi.fn()}
+          renderComposer={() => null}
+          containerPath="proyectos/Foo/Foo.md"
+        />
+      </FileBrowserProvider>,
+    );
+
+    fireEvent.click(await waitFor(() => view.getByTestId("agent-note-link")));
+
+    const after = snapshots[snapshots.length - 1];
+    expect(after?.scope).toBe("tree");
+    expect(after?.activeFile).toBe("personas/Chus.md");
+    expect(after?.pathStack).toEqual(["personas"]);
+  });
+
+  it("renders unsafe note links as text", async () => {
+    const view = render(
+      <FileBrowserProvider project="proj" sessionId="s1">
+        <MarkdownPreview
+          content="[Escape](<../../../outside.md>)"
+          commentsByLine={new Map()}
+          selectedLine={null}
+          onSelectLine={vi.fn()}
+          renderComposer={() => null}
+          containerPath="proyectos/Foo/Foo.md"
+        />
+      </FileBrowserProvider>,
+    );
+
+    await waitFor(() => view.getByText("Escape"));
+    expect(view.queryByTestId("agent-note-link")).toBeNull();
+    expect(view.queryByRole("link", { name: "Escape" })).toBeNull();
+  });
+
+  it("keeps note links external outside the file browser preview", async () => {
+    const view = render(
+      <FileBrowserProvider project="proj" sessionId="s1">
+        <MarkdownPreview
+          content="[Chus](<../../../personas/Chus.md>)"
+          commentsByLine={new Map()}
+          selectedLine={null}
+          onSelectLine={vi.fn()}
+          renderComposer={() => null}
+        />
+      </FileBrowserProvider>,
+    );
+
+    const link = await waitFor(() => view.getByRole("link", { name: "Chus" }));
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(view.queryByTestId("agent-note-link")).toBeNull();
   });
 });
