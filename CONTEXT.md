@@ -202,6 +202,18 @@ _Avoid_: borrador, cola local, followUp (término del SDK)
 Promoción de un Mensaje en Espera para inyectarlo en el siguiente request del Turn activo, sin abortar las tools en curso.
 _Avoid_: followUp (fase previa), interrupción, cancelación
 
+**File Browser**:
+Vista del Coding Agent UI que lista y previsualiza los ficheros de un Repository: árbol, cambios sin commit y diff por fichero, con comentarios por línea.
+_Avoid_: explorador, file explorer
+
+**File Reference**:
+Enlace Markdown `file:ruta` que emite el Coding Agent para señalar un fichero del Repository; el File Browser lo convierte en navegación.
+_Avoid_: file link, referencia de fichero
+
+**Note Link**:
+Enlace Markdown relativo a un fichero `.md` del Repository (ej. `[X](<../personas/Chus.md>)`), resuelto contra el directorio del fichero que lo contiene; el File Browser lo convierte en navegación. Los wikilinks `[[...]]` no son Note Links.
+_Avoid_: wikilink, relative link (a secas)
+
 **Repository**:
 Repositorio de código sobre el que opera una Coding Agent Session.
 _Avoid_: project (reservado), repo path
