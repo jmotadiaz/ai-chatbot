@@ -23,7 +23,9 @@ export const Response = memo(
           addClasses,
           {
             "h1,h2,h3,h4,h5,h6,p,li,span.line": "animate-fade",
-            td: "wrap-break-word",
+            // Cell wrapping is governed by the `[data-streamdown="table"]`
+            // rule in globals.css: words stay whole so content-heavy cells
+            // widen their column instead of splitting words into narrow ones.
           },
         ],
       ]}

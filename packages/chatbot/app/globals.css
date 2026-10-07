@@ -81,6 +81,18 @@ html, body {
   display: none;  /* Chrome, Safari y Opera */
 }
 
+/* Markdown table cells keep words whole. Anchors render with `wrap-anywhere`
+   (`overflow-wrap: anywhere`), whose min-content width is a single character,
+   so auto table layout crushes a column to a few characters and splits words
+   mid-word. Long cell content widens its column instead — the table wrapper
+   already scrolls horizontally. Unlayered, so it beats the layered Tailwind
+   utilities on the cell and its inline content. */
+[data-streamdown="table"] :is(th, td),
+[data-streamdown="table"] :is(th, td) * {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 /* Hide native number input spinners for consistent UX */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
