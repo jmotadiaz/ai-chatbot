@@ -32,7 +32,15 @@ import type { RerankClients } from "./clients/rerank";
  * consumidores"), not a new message/tool/stream type.
  */
 export type ProviderOptions = {
-  anthropic?: AnthropicProviderOptions;
+  /**
+   * `AnthropicProviderOptions` sin los dos pasajes no-JSON que trae
+   * @ai-sdk/anthropic ≥ 3.0.128 (`fallbacks` y `safeguards` llevan
+   * `Record<string, unknown>`), que rompen la asignabilidad a
+   * `SharedV3ProviderOptions` —el JSONObject que aceptan todas las llamadas
+   * del AI SDK. El resto de la superficie (sendReasoning, thinking, effort,
+   * …) conserva el tipado del SDK.
+   */
+  anthropic?: Omit<AnthropicProviderOptions, "fallbacks" | "safeguards">;
   groq?: GroqProviderOptions;
   google?: GoogleGenerativeAIProviderOptions;
   openai?: OpenAIResponsesProviderOptions;

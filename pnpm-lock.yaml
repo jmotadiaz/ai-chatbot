@@ -425,8 +425,8 @@ importers:
   packages/inference:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: 3.0.15
-        version: 3.0.15(zod@3.25.76)
+        specifier: 3.0.128
+        version: 3.0.128(zod@3.25.76)
       '@ai-sdk/cohere':
         specifier: ^3.0.18
         version: 3.0.18(zod@3.25.76)
@@ -525,8 +525,8 @@ packages:
   '@ag-ui/proto@0.0.57':
     resolution: {integrity: sha512-pPENOZt0P6ibH8sCTgq05wLYXi5t3P9B5r/1bWYehXjUxtyOdnukSlWM++SsCIwUXsQdm/b3aBgGjEeTF7RenA==}
 
-  '@ai-sdk/anthropic@3.0.15':
-    resolution: {integrity: sha512-FCNy6pABPe5Qb1VPbdLLIi/XkQN2g/fKUcl1GcXxIU3Ofr+vOND8cyZfH20cMODR523FSGfwswJoJic8skr8qg==}
+  '@ai-sdk/anthropic@3.0.128':
+    resolution: {integrity: sha512-xCEEoZrEi6hnTbZgIO8A3rqXvSUkdx9oOfKLrHQrmaGhekxb+DauyekkDExyMFRm9Qr8Azaq43wLie1FTnQc5A==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -597,6 +597,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@4.0.57':
+    resolution: {integrity: sha512-89a7sPvZqXsP3PigcAQLWntu/duIVEcN/RyChAB+j6p3C7NwW767sVttvL8r0+BetTg63uAXQoYHCZZueQKBSw==}
+    engines: {node: '>=18.17'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@4.0.8':
     resolution: {integrity: sha512-ns9gN7MmpI8vTRandzgz+KK/zNMLzhrriiKECMt4euLtQFSBgNfydtagPOX4j4pS1/3KvHF6RivhT3gNQgBZsg==}
     engines: {node: '>=18'}
@@ -613,6 +619,10 @@ packages:
 
   '@ai-sdk/provider@3.0.16':
     resolution: {integrity: sha512-9Av6kg0t/IN/dcYAAmEJ4B9OPhcEJqwSR+GfHEA8olRkindXpUHadc3p3cyvgFUQFTVm1G5thtsmgZ9yVb2w3A==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@3.0.18':
+    resolution: {integrity: sha512-IpefF5ssZVOZCD4Wu7zxt6PwZoGT2HLVjxpJ10Bjx6EAmRfLYJPjyrfxb0RYDlwvXnDb9nkQ7Do/oJVDuRFzew==}
     engines: {node: '>=18'}
 
   '@ai-sdk/provider@3.0.4':
@@ -7519,10 +7529,10 @@ snapshots:
       '@bufbuild/protobuf': 2.12.0
       '@protobuf-ts/protoc': 2.11.1
 
-  '@ai-sdk/anthropic@3.0.15(zod@3.25.76)':
+  '@ai-sdk/anthropic@3.0.128(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 3.0.4
-      '@ai-sdk/provider-utils': 4.0.8(zod@3.25.76)
+      '@ai-sdk/provider': 3.0.18
+      '@ai-sdk/provider-utils': 4.0.57(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/cohere@3.0.18(zod@3.25.76)':
@@ -7596,6 +7606,14 @@ snapshots:
       undici: 6.28.1
       zod: 3.25.76
 
+  '@ai-sdk/provider-utils@4.0.57(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.18
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.1
+      undici: 6.28.1
+      zod: 3.25.76
+
   '@ai-sdk/provider-utils@4.0.8(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.4
@@ -7612,6 +7630,10 @@ snapshots:
       json-schema: 0.4.0
 
   '@ai-sdk/provider@3.0.16':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@3.0.18':
     dependencies:
       json-schema: 0.4.0
 
@@ -9940,7 +9962,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/ui@4.0.18)(jiti@2.7.0)(jsdom@26.1.0(bufferutil@4.1.0))(lightningcss@1.30.2)(msw@2.12.10(@types/node@24.13.3)(typescript@5.9.3))(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
+      vitest: 4.0.18(@opentelemetry/api@1.9.1)(@types/node@24.13.6)(@vitest/ui@4.0.18)(jiti@2.7.0)(jsdom@26.1.0(bufferutil@4.1.0))(lightningcss@1.30.2)(msw@2.12.10(@types/node@24.13.6)(typescript@5.9.3))(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitest/utils@4.0.18':
     dependencies:
