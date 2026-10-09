@@ -67,6 +67,16 @@ export interface ModelCatalogEntry {
   api?: string;
   /** Required with `api` when Pi does not ship the model (opencode-go: https://opencode.ai/zen/go for anthropic-messages, /v1 for openai-completions). */
   baseUrl?: string;
+  /**
+   * Flags que generateModelsJson emite en `compat` del models.json de Pi (Pi
+   * los lee del ModelDefinition, no del catálogo). El chatbot (AI SDK) no los
+   * usa. Solo hace falta cuando Pi no trae el modelo built-in: los built-ins
+   * ya declaran su propio compat.
+   */
+  compat?: {
+    /** Pi manda thinking adaptativo + output_config.effort en vez del thinking legacy enabled/budget_tokens (obligatorio en los modelos Claude ≥ 4.6, que rechazan `thinking.type.enabled`). */
+    forceAdaptiveThinking?: boolean;
+  };
   reasoning?: boolean;
   /**
    * Nivel de razonamiento aplicado por defecto al crear una sesión de coding
@@ -432,6 +442,50 @@ export const MODEL_CATALOG = [
     contextWindow: 1_048_576,
     maxTokens: 524_288,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  },
+  {
+    // Claude Haiku 5.5 servido por OpenCode Go. El id visible es "Haiku"
+    // (no "Claude Haiku 5.5") para que no ordene el primero en el selector
+    // del coding agent, que ordena alfabéticamente. Solo se sirve por el
+    // endpoint Anthropic (/zen/go/v1/messages, @ai-sdk/anthropic — tabla
+    // Endpoints de https://opencode.ai/v2/docs/console/go), de ahí el provider
+    // kind opencodeGoAnthropic. Pi no lo trae built-in, así que la entrada se
+    // auto-describe: límites del registry de opencode-go (1M contexto / 128k
+    // salida) y coste del tramo ≤100k de la tabla de uso (el catálogo no
+    // modela tiers de contexto, igual que Claude Haiku 4.5 vía gateway).
+    //
+    // El upstream rechaza el thinking legacy ("thinking.type.enabled" is not
+    // supported for this model: use adaptive + output_config.effort), así que
+    // el coding agent necesita compat.forceAdaptiveThinking —Pi manda
+    // thinking adaptive + effort— y el chatbot manda thinking adaptive con
+    // display summarized (@ai-sdk/anthropic ≥ 3.0.128; el display por defecto
+    // de adaptive es "omitted", que devuelve bloques vacíos) más effort, que
+    // es lo que activa el thinking adaptativo. El modelo sí acepta thinking
+    // deshabilitado, así que off sigue disponible en la escalera.
+    id: "Haiku",
+    userInvocable: true,
+    provider: { kind: "opencodeGoAnthropic", modelId: "claude-haiku-5-5" },
+    company: "anthropic",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    api: "anthropic-messages",
+    baseUrl: "https://opencode.ai/zen/go",
+    compat: { forceAdaptiveThinking: true },
+    thinkingLevelMap: {
+      xhigh: "xhigh",
+      max: "max",
+    },
+    supportedFiles: ["img", "pdf"],
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    cost: { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 },
+    providerOptions: {
+      anthropic: {
+        sendReasoning: true,
+        thinking: { type: "adaptive", display: "summarized" },
+        effort: "high",
+      },
+    },
   },
   // --- internal / non-selectable models ---
   {

@@ -18,7 +18,8 @@ describe("MODEL_CATALOG integrity", () => {
       .filter(
         (e) =>
           e.provider.kind === "opencodeGo" ||
-          e.provider.kind === "opencodeGoResponses",
+          e.provider.kind === "opencodeGoResponses" ||
+          e.provider.kind === "opencodeGoAnthropic",
       )
       .map((e) => e.provider.modelId);
     expect(new Set(keys).size).toBe(keys.length);
@@ -59,6 +60,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Hy3",
       "GLM 5.3 Flash",
       "Space Bunny Free",
+      "Haiku",
     ]);
   });
 
@@ -110,6 +112,7 @@ describe("defaultThinkingLevel", () => {
     expect(getDefaultThinkingLevel("MiMo V2.6 Pro")).toBe("high");
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
     expect(getDefaultThinkingLevel("Hy3")).toBe("high");
+    expect(getDefaultThinkingLevel("Haiku")).toBe("high");
   });
 
   it("returns undefined for models without a declared default", () => {

@@ -23,6 +23,7 @@ const NOT_BUILT_IN = new Set([
   "space-bunny-free",
   "mimo-v2.6-flash",
   "mimo-v2.6-pro",
+  "claude-haiku-5-5",
 ]);
 
 /**
@@ -421,13 +422,39 @@ describe("generateModelsJson custom providers", () => {
         e.userInvocable &&
         !builtIns.has(e.provider.modelId) &&
         (e.provider.kind === "opencodeGo" ||
-          e.provider.kind === "opencodeGoResponses"),
+          e.provider.kind === "opencodeGoResponses" ||
+          e.provider.kind === "opencodeGoAnthropic"),
     ) as ModelCatalogEntry[]) {
       expect(entry.baseUrl, `${entry.id} must pin baseUrl`).toBeTruthy();
-      if (entry.provider.kind === "opencodeGo") {
+      if (
+        entry.provider.kind === "opencodeGo" ||
+        entry.provider.kind === "opencodeGoAnthropic"
+      ) {
         expect(entry.api, `${entry.id} must pin api`).toBeTruthy();
       }
     }
+  });
+
+  it("describes Haiku, which Pi does not ship and OpenCode Go only serves over anthropic-messages", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Haiku")!;
+    const [haiku] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(haiku).toEqual({
+      id: "claude-haiku-5-5",
+      name: "Haiku",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_000_000,
+      maxTokens: 128_000,
+      cost: { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 },
+      api: "anthropic-messages",
+      baseUrl: "https://opencode.ai/zen/go",
+      // El upstream rechaza thinking legacy ("thinking.type.enabled" is not
+      // supported for this model): sin forceAdaptiveThinking, Pi manda
+      // enabled/budget_tokens y la API responde 400.
+      compat: { forceAdaptiveThinking: true },
+      thinkingLevelMap: { xhigh: "xhigh", max: "max" },
+    });
   });
 
   it("describes Space Bunny Free, which Pi does not ship and OpenCode Go serves over openai-completions", () => {

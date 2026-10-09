@@ -36,12 +36,13 @@ export interface PiModelDefinition {
   baseUrl?: string;
   /** Emitted so pi's ModelRegistry keeps the built-in thinking level map; without it, getSupportedThinkingLevels caps at "high". */
   thinkingLevelMap?: ThinkingLevelMap;
-  /** Vercel AI Gateway routing — Pi lee compat.vercelGatewayRouting para fijar provider priority. */
+  /** Pi's ModelDefinition.compat flags (gateway routing, anthropic adaptive thinking, …). */
   compat?: {
     vercelGatewayRouting?: {
       order?: string[];
       only?: string[];
     };
+    forceAdaptiveThinking?: boolean;
   };
 }
 
@@ -93,7 +94,9 @@ function buildModelDefinition(
   // Vercel AI Gateway routing para Pi: el catálogo lo expresa como
   // providerOptions.gateway.{order,only} (AI SDK), y aquí se traduce a
   // compat.vercelGatewayRouting para que Pi lo aplique al generar
-  // providerOptions: { gateway: { order } } en runtime.
+  // providerOptions: { gateway: { order } } en runtime. El compat declarado
+  // por la propia entrada (p.ej. forceAdaptiveThinking en Claude ≥ 4.6) se
+  // emite tal cual, sin pasar por providerOptions.
   const gatewayRouting = (() => {
     const gw = (
       entry.providerOptions as
@@ -107,6 +110,11 @@ function buildModelDefinition(
     if (Object.keys(routing).length === 0) return undefined;
     return routing;
   })();
+
+  const compat: NonNullable<PiModelDefinition["compat"]> = {
+    ...(gatewayRouting ? { vercelGatewayRouting: gatewayRouting } : {}),
+    ...entry.compat,
+  };
 
   return {
     id: entry.provider.modelId,
@@ -137,9 +145,7 @@ function buildModelDefinition(
     // the model's supported levels at "high" (xhigh needs an explicit
     // mapping). Inherit it from the built-in unless the catalog overrides.
     thinkingLevelMap: entry.thinkingLevelMap ?? baseline?.thinkingLevelMap,
-    ...(gatewayRouting
-      ? { compat: { vercelGatewayRouting: gatewayRouting } }
-      : {}),
+    ...(Object.keys(compat).length > 0 ? { compat } : {}),
   };
 }
 

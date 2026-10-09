@@ -115,6 +115,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the Haiku catalog id to the opencode-go Pi provider (anthropic endpoint)", () => {
+    expect(toPiModelId("Haiku")).toEqual({
+      providerId: "opencode-go",
+      modelId: "claude-haiku-5-5",
+    });
+    expect(toChatModelId("opencode-go", "claude-haiku-5-5")).toBe(
+      "Haiku",
+    );
+  });
+
   it("maps the MiMo V2.6 Flash and Pro catalog ids to the opencode-go Pi provider", () => {
     expect(toPiModelId("MiMo V2.6 Flash")).toEqual({
       providerId: "opencode-go",
