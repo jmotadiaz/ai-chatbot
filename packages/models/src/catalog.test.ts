@@ -60,6 +60,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Hy3",
       "GLM 5.3 Flash",
       "Space Bunny Free",
+      "Step 5 Preview Free",
       "Haiku",
     ]);
   });

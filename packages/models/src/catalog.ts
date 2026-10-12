@@ -444,6 +444,45 @@ export const MODEL_CATALOG = [
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   },
   {
+    // Step 5 Preview Free — flagship de StepFun, servido por OpenCode Go "por
+    // tiempo limitado": gratis y con límite mensual ilimitado (columnas
+    // Input/Output/Cached Read "Free" y Monthly limit "Unlimited" de la tabla
+    // de uso de https://opencode.ai/v2/docs/console/go), de ahí el coste a
+    // cero. Se sirve por /zen/go/v1/chat/completions (@ai-sdk/openai-compatible
+    // — tabla Endpoints del mismo doc), de ahí el provider kind opencodeGo y
+    // api openai-completions con baseUrl /v1. Pi no lo trae built-in, así que
+    // la entrada se auto-describe con los límites del registry de opencode-go
+    // (1M contexto / 65_536 salida). El reasoning es obligatorio —el upstream
+    // rechaza desactivarlo ("Reasoning is mandatory for this endpoint and
+    // cannot be disabled")—, así que off queda null; el effort aceptado es
+    // minimal..max (validado contra el endpoint: banana → 400 "expected one of
+    // max|xhigh|high|medium|low|minimal"), por eso xhigh y max se mapean
+    // explícitos (son opt-in en getSupportedThinkingLevels). Entrada de imagen
+    // confirmada contra el endpoint (image_url responde); el vídeo que declara
+    // el registry no tiene flag en el catálogo.
+    id: "Step 5 Preview Free",
+    userInvocable: true,
+    provider: { kind: "opencodeGo", modelId: "step-5-preview-free" },
+    company: "stepfun",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: null,
+      minimal: "minimal",
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "xhigh",
+      max: "max",
+    },
+    api: "openai-completions",
+    baseUrl: "https://opencode.ai/zen/go/v1",
+    supportedFiles: ["img"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  },
+  {
     // Claude Haiku 5.5 servido por OpenCode Go. El id visible es "Haiku"
     // (no "Claude Haiku 5.5") para que no ordene el primero en el selector
     // del coding agent, que ordena alfabéticamente. Solo se sirve por el

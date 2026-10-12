@@ -24,6 +24,7 @@ const NOT_BUILT_IN = new Set([
   "mimo-v2.6-flash",
   "mimo-v2.6-pro",
   "claude-haiku-5-5",
+  "step-5-preview-free",
 ]);
 
 /**
@@ -478,6 +479,35 @@ describe("generateModelsJson custom providers", () => {
         medium: "medium",
         high: "high",
         xhigh: "max",
+      },
+      api: "openai-completions",
+      baseUrl: "https://opencode.ai/zen/go/v1",
+    });
+  });
+
+  it("describes Step 5 Preview Free, which Pi does not ship and OpenCode Go serves over openai-completions for free", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Step 5 Preview Free")!;
+    const [step5] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(step5).toEqual({
+      id: "step-5-preview-free",
+      name: "Step 5 Preview Free",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_000_000,
+      maxTokens: 65_536,
+      // "Free" por tiempo limitado en la tabla de uso de Go.
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      // Reasoning obligatorio (el upstream rechaza desactivarlo) y effort
+      // validado contra el endpoint de minimal a max.
+      thinkingLevelMap: {
+        off: null,
+        minimal: "minimal",
+        low: "low",
+        medium: "medium",
+        high: "high",
+        xhigh: "xhigh",
+        max: "max",
       },
       api: "openai-completions",
       baseUrl: "https://opencode.ai/zen/go/v1",

@@ -105,6 +105,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the Step 5 Preview Free catalog id to the opencode-go Pi provider", () => {
+    expect(toPiModelId("Step 5 Preview Free")).toEqual({
+      providerId: "opencode-go",
+      modelId: "step-5-preview-free",
+    });
+    expect(toChatModelId("opencode-go", "step-5-preview-free")).toBe(
+      "Step 5 Preview Free",
+    );
+  });
+
   it("maps the Hy3 catalog id to the opencode-go Pi provider", () => {
     expect(toPiModelId("Hy3")).toEqual({
       providerId: "opencode-go",
