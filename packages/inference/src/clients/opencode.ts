@@ -2,11 +2,18 @@ import { randomUUID } from "node:crypto";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { config } from "config";
 import { createRetryingFetch } from "../retrying-fetch";
 
 const OPENCODE_GO_BASE_URL = "https://opencode.ai/zen/go/v1";
+// Gemini 4 Argon solo se sirve por el endpoint Google de Go, que cuelga del
+// host /inference/go (la tabla Endpoints de
+// https://opencode.ai/v2/docs/console/go): en zen/go ese método responde el
+// HTML de un 404. @ai-sdk/google pide `${baseURL}/models/${id}:generateContent`,
+// así que el baseURL lleva /v1 igual que el endpoint documentado.
+const OPENCODE_GO_GOOGLE_BASE_URL = "https://opencode.ai/inference/go/v1";
 const OPENCODE_ZEN_BASE_URL = "https://opencode.ai/zen/v1";
 
 /**
@@ -29,13 +36,14 @@ export interface OpencodeClients {
   opencodeGo: (modelId: string) => LanguageModelV3;
   opencodeGoResponses: (modelId: string) => LanguageModelV3;
   opencodeGoAnthropic: (modelId: string) => LanguageModelV3;
+  opencodeGoGoogle: (modelId: string) => LanguageModelV3;
   opencodeZen: (modelId: string) => LanguageModelV3;
 }
 
 /**
- * The four OpenCode-flavored endpoint kinds share one session id, one set of
+ * The five OpenCode-flavored endpoint kinds share one session id, one set of
  * headers and (except Zen) one retrying fetch, so they are built together
- * instead of duplicating that setup across four modules. Each client is
+ * instead of duplicating that setup across five modules. Each client is
  * still its own lazy, memoized getter.
  */
 export function buildOpencodeClients(): OpencodeClients {
@@ -91,6 +99,23 @@ export function buildOpencodeClients(): OpencodeClients {
     return _goAnthropic;
   };
 
+  let _goGoogle: ReturnType<typeof createGoogleGenerativeAI> | null = null;
+  const getGoGoogle = () => {
+    if (!_goGoogle) {
+      // @ai-sdk/google manda la key en `x-goog-api-key` (no en
+      // Authorization), que es lo que acepta el endpoint Google de Go
+      // (verificado con llamadas reales a :generateContent/:streamGenerateContent).
+      _goGoogle = createGoogleGenerativeAI({
+        name: "opencode-zen-go-google",
+        apiKey: config.opencodeZenApiKey(),
+        baseURL: OPENCODE_GO_GOOGLE_BASE_URL,
+        headers,
+        fetch: opencodeFetch,
+      });
+    }
+    return _goGoogle;
+  };
+
   let _zen: ReturnType<typeof createOpenAICompatible> | null = null;
   const getZen = () => {
     if (!_zen) {
@@ -110,6 +135,7 @@ export function buildOpencodeClients(): OpencodeClients {
     opencodeGo: (modelId) => getGo()(modelId),
     opencodeGoResponses: (modelId) => getGoResponses().responses(modelId),
     opencodeGoAnthropic: (modelId) => getGoAnthropic().messages(modelId),
+    opencodeGoGoogle: (modelId) => getGoGoogle()(modelId),
     opencodeZen: (modelId) => getZen()(modelId),
   };
 }

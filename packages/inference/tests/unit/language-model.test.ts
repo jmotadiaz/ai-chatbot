@@ -13,6 +13,7 @@ function stubClients(overrides: Partial<InferenceClients> = {}): InferenceClient
     "opencodeGo",
     "opencodeGoResponses",
     "opencodeGoAnthropic",
+    "opencodeGoGoogle",
     "opencodeZen",
     "gateway",
     "openrouter",

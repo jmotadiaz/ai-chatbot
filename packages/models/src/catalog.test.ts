@@ -19,7 +19,8 @@ describe("MODEL_CATALOG integrity", () => {
         (e) =>
           e.provider.kind === "opencodeGo" ||
           e.provider.kind === "opencodeGoResponses" ||
-          e.provider.kind === "opencodeGoAnthropic",
+          e.provider.kind === "opencodeGoAnthropic" ||
+          e.provider.kind === "opencodeGoGoogle",
       )
       .map((e) => e.provider.modelId);
     expect(new Set(keys).size).toBe(keys.length);
@@ -62,6 +63,7 @@ describe("MODEL_CATALOG integrity", () => {
       "Space Bunny Free",
       "Step 5 Preview Free",
       "Haiku",
+      "Gemini 4 Argon",
     ]);
   });
 
@@ -114,6 +116,7 @@ describe("defaultThinkingLevel", () => {
     expect(getDefaultThinkingLevel("GLM 5.3")).toBe("high");
     expect(getDefaultThinkingLevel("Hy3")).toBe("high");
     expect(getDefaultThinkingLevel("Haiku")).toBe("high");
+    expect(getDefaultThinkingLevel("Gemini 4 Argon")).toBe("high");
   });
 
   it("returns undefined for models without a declared default", () => {

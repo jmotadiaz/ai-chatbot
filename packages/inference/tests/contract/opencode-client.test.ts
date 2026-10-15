@@ -15,6 +15,14 @@ const okChatCompletionsBody = JSON.stringify({
 // format (`response.output`, not `choices`).
 const okResponsesApiBody = JSON.stringify({ output: [] });
 
+// The Google-flavored client (opencodeGoGoogle) speaks
+// `generateContent`/`GenerateContentResponse`.
+const okGoogleBody = JSON.stringify({
+  candidates: [
+    { content: { parts: [{ text: "ok" }], role: "model" }, finishReason: "STOP" },
+  ],
+});
+
 const callOptions = {
   prompt: [
     { role: "user" as const, content: [{ type: "text" as const, text: "ping" }] },
@@ -31,7 +39,11 @@ function makeFetchDouble(statuses: number[]) {
     const status = statuses[Math.min(attempt, statuses.length - 1)];
     attempt += 1;
     if (status === 200) {
-      const body = url.endsWith("/responses") ? okResponsesApiBody : okChatCompletionsBody;
+      const body = url.endsWith("/responses")
+        ? okResponsesApiBody
+        : url.includes(":generateContent")
+          ? okGoogleBody
+          : okChatCompletionsBody;
       return new Response(body, { status, headers: { "content-type": "application/json" } });
     }
     return new Response("boom", { status });
@@ -65,6 +77,28 @@ describe("OpenCode Go client (contract)", () => {
     expect(second!.headers.get("x-opencode-session")).toBe(
       first!.headers.get("x-opencode-session"),
     );
+  });
+
+  it("routes the google-generative-ai client to Go's /inference endpoint with the goog key header", async () => {
+    // Gemini 4 Argon solo existe en /inference/go: en zen/go ese método
+    // responde el HTML de un 404.
+    vi.stubEnv("OPENCODE_ZEN_API_KEY", "test-key");
+    const { fetchDouble, calls } = makeFetchDouble([200]);
+    vi.stubGlobal("fetch", fetchDouble);
+
+    const { opencodeGoGoogle } = buildOpencodeClients();
+    const result = await opencodeGoGoogle("gemini-4-argon-contributor").doGenerate(
+      callOptions,
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe(
+      "https://opencode.ai/inference/go/v1/models/gemini-4-argon-contributor:generateContent",
+    );
+    expect(calls[0]!.headers.get("x-goog-api-key")).toBe("test-key");
+    expect(calls[0]!.headers.get("user-agent")).toMatch(/^ai-chatbot\/1\.0/);
+    expect(calls[0]!.headers.get("x-opencode-session")).toBeTruthy();
+    expect(result.content[0]).toEqual({ type: "text", text: "ok" });
   });
 
   it("retries a transient 5xx with backoff before succeeding", async () => {

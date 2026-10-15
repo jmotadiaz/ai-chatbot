@@ -25,6 +25,7 @@ const NOT_BUILT_IN = new Set([
   "mimo-v2.6-pro",
   "claude-haiku-5-5",
   "step-5-preview-free",
+  "gemini-4-argon-contributor",
 ]);
 
 /**
@@ -424,12 +425,14 @@ describe("generateModelsJson custom providers", () => {
         !builtIns.has(e.provider.modelId) &&
         (e.provider.kind === "opencodeGo" ||
           e.provider.kind === "opencodeGoResponses" ||
-          e.provider.kind === "opencodeGoAnthropic"),
+          e.provider.kind === "opencodeGoAnthropic" ||
+          e.provider.kind === "opencodeGoGoogle"),
     ) as ModelCatalogEntry[]) {
       expect(entry.baseUrl, `${entry.id} must pin baseUrl`).toBeTruthy();
       if (
         entry.provider.kind === "opencodeGo" ||
-        entry.provider.kind === "opencodeGoAnthropic"
+        entry.provider.kind === "opencodeGoAnthropic" ||
+        entry.provider.kind === "opencodeGoGoogle"
       ) {
         expect(entry.api, `${entry.id} must pin api`).toBeTruthy();
       }
@@ -455,6 +458,35 @@ describe("generateModelsJson custom providers", () => {
       // enabled/budget_tokens y la API responde 400.
       compat: { forceAdaptiveThinking: true },
       thinkingLevelMap: { xhigh: "xhigh", max: "max" },
+    });
+  });
+
+  it("describes Gemini 4 Argon, which Pi does not ship and OpenCode Go only serves over google-generative-ai", () => {
+    const entry = MODEL_CATALOG.find((e) => e.id === "Gemini 4 Argon")!;
+    const [argon] = generateModelsJson([entry], { builtIns: new Map() })
+      .providers["opencode-go"].models;
+    expect(argon).toEqual({
+      id: "gemini-4-argon-contributor",
+      name: "Gemini 4 Argon",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_048_576,
+      maxTokens: 65_536,
+      cost: { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 0 },
+      // El provider opencode-go de Pi no trae google-generative-ai: el
+      // ModelDefinition lo declara por modelo y provider-composer cae al
+      // api-registry global de pi-ai.
+      api: "google-generative-ai",
+      baseUrl: "https://opencode.ai/inference/go/v1",
+      // La escalera aceptada es low..high (minimal responde 400 y off no se
+      // anuncia); high es el default de sesión.
+      thinkingLevelMap: {
+        off: null,
+        minimal: null,
+        low: "low",
+        medium: "medium",
+        high: "high",
+      },
     });
   });
 

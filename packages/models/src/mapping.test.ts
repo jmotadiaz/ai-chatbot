@@ -135,6 +135,16 @@ describe("model mapping", () => {
     );
   });
 
+  it("maps the Gemini 4 Argon catalog id to the opencode-go Pi provider (google endpoint)", () => {
+    expect(toPiModelId("Gemini 4 Argon")).toEqual({
+      providerId: "opencode-go",
+      modelId: "gemini-4-argon-contributor",
+    });
+    expect(toChatModelId("opencode-go", "gemini-4-argon-contributor")).toBe(
+      "Gemini 4 Argon",
+    );
+  });
+
   it("maps the MiMo V2.6 Flash and Pro catalog ids to the opencode-go Pi provider", () => {
     expect(toPiModelId("MiMo V2.6 Flash")).toEqual({
       providerId: "opencode-go",

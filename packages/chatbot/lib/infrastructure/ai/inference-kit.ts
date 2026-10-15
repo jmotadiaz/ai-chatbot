@@ -73,6 +73,7 @@ function buildTestClients(): InferenceClients {
     opencodeGo: lookupMock("opencodeGo"),
     opencodeGoResponses: lookupMock("opencodeGoResponses"),
     opencodeGoAnthropic: lookupMock("opencodeGoAnthropic"),
+    opencodeGoGoogle: lookupMock("opencodeGoGoogle"),
     opencodeZen: lookupMock("opencodeZen"),
   };
 }

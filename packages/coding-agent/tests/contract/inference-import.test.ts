@@ -46,6 +46,7 @@ describe("inference package import (contract)", () => {
       "opencodeGo",
       "opencodeGoResponses",
       "opencodeGoAnthropic",
+      "opencodeGoGoogle",
       "opencodeZen",
       "gateway",
       "openrouter",

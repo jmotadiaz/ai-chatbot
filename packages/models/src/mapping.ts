@@ -8,6 +8,7 @@ export function toPiProviderId(kind: ProviderKind): string {
     case "opencodeGo":
     case "opencodeGoResponses":
     case "opencodeGoAnthropic":
+    case "opencodeGoGoogle":
       return PI_PROVIDER;
     // Pi trae OpenCode Zen como provider built-in "opencode" (env
     // OPENCODE_API_KEY, la misma que opencode-go).

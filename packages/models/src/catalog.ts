@@ -22,6 +22,7 @@ export type ProviderKind =
   | "opencodeGo"
   | "opencodeGoResponses"
   | "opencodeGoAnthropic"
+  | "opencodeGoGoogle"
   | "opencodeZen"
   | "gateway"
   | "openrouter"
@@ -524,6 +525,57 @@ export const MODEL_CATALOG = [
         thinking: { type: "adaptive", display: "summarized" },
         effort: "high",
       },
+    },
+  },
+  {
+    // Gemini 4 Argon servido por OpenCode Go. El id visible omite
+    // "Contributor" (solo el modelId de la API lo conserva); el tier
+    // contributor implica que OpenCode usa prompts y completions para
+    // entrenar modelos de Google (tabla Privacy de
+    // https://opencode.ai/v2/docs/console/go).
+    //
+    // Solo se sirve por el endpoint Google
+    // (/inference/go/v1/models/gemini-4-argon-contributor:generateContent,
+    // @ai-sdk/google — tabla Endpoints del mismo doc): no cuelga del host
+    // zen/go que usan los demás modelos de Go (ahí ese método responde HTML
+    // de 404), de ahí el provider kind opencodeGoGoogle y su baseUrl propio.
+    //
+    // Pi no trae el modelo built-in y su provider opencode-go no mapea el api
+    // google-generative-ai, pero el ModelDefinition del models.json lo
+    // declara por modelo (api + baseUrl) y el provider-composer de Pi
+    // despacha al api-registry global de pi-ai, que sí trae
+    // google-generative-ai.
+    //
+    // La escalera aceptada es low|medium|high (validado contra el endpoint:
+    // minimal responde 400 "Thinking level MINIMAL is not supported";
+    // thinkingBudget 0 sí desactiva el thinking, pero la ficha canónica del
+    // modelo solo anuncia low..high y off se oculta, igual que en los Gemini 3
+    // built-in de Pi). El chatbot fija thinkingLevel high con
+    // includeThoughts para que el reasoning llegue como partes de thinking.
+    // temperature se omite: la ficha canónica del modelo la marca como no
+    // soportada. Límites y coste del registry de opencode-go y de la tabla de
+    // uso ($4 in / $20 out / $0.20 cached read; sin tramo cached write).
+    id: "Gemini 4 Argon",
+    userInvocable: true,
+    provider: { kind: "opencodeGoGoogle", modelId: "gemini-4-argon-contributor" },
+    company: "google",
+    reasoning: true,
+    defaultThinkingLevel: "high",
+    thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: "medium",
+      high: "high",
+    },
+    supportedFiles: ["img", "pdf"],
+    api: "google-generative-ai",
+    baseUrl: "https://opencode.ai/inference/go/v1",
+    contextWindow: 1_048_576,
+    maxTokens: 65_536,
+    cost: { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 0 },
+    providerOptions: {
+      google: { thinkingConfig: { includeThoughts: true, thinkingLevel: "high" } },
     },
   },
   // --- internal / non-selectable models ---
