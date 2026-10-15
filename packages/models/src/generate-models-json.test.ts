@@ -378,14 +378,18 @@ describe("generateModelsJson", () => {
 });
 
 describe("generateModelsJson custom providers", () => {
-  it("emits the vercel-ai-gateway provider with models only (built-in in Pi)", () => {
+  it("emits every provider with models only (all are built-in in Pi)", () => {
     const providers = generate().providers;
-    expect(providers["vercel-ai-gateway"]).toBeDefined();
-    // Pi conoce el provider (baseUrl/api/apiKey heredados de sus built-ins;
-    // el apiKey llega vía env AI_GATEWAY_API_KEY), así que no se emite config.
-    expect(providers["vercel-ai-gateway"].baseUrl).toBeUndefined();
-    expect(providers["vercel-ai-gateway"].api).toBeUndefined();
-    expect(providers["vercel-ai-gateway"].apiKey).toBeUndefined();
+    // Pi conoce los providers del catálogo (baseUrl/api/apiKey heredados de
+    // sus built-ins; el apiKey llega vía env), así que no se emite config.
+    // Gemini 3.7 Flash quedó interno, así que hoy solo se emite opencode-go.
+    expect(Object.keys(providers)).toEqual(["opencode-go"]);
+    for (const [providerId, provider] of Object.entries(providers)) {
+      expect(provider.baseUrl, providerId).toBeUndefined();
+      expect(provider.api, providerId).toBeUndefined();
+      expect(provider.apiKey, providerId).toBeUndefined();
+      expect(provider.models.length, providerId).toBeGreaterThan(0);
+    }
   });
 
   it("describes the Muse Spark model fully", () => {
@@ -565,27 +569,12 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
-  it("describes Gemini 3.7 Flash, which Pi does not ship on vercel-ai-gateway", () => {
+  it("skips non-invocable entries (Gemini 3.7 Flash is internal now)", () => {
     const entry = MODEL_CATALOG.find((e) => e.id === "Gemini 3.7 Flash")!;
-    const [flash] = generateModelsJson([entry], { builtIns: new Map() })
-      .providers["vercel-ai-gateway"].models;
-    expect(flash).toEqual({
-      id: "google/gemini-3.7-flash",
-      name: "Gemini 3.7 Flash",
-      reasoning: true,
-      input: ["text", "image"],
-      contextWindow: 1_048_576,
-      maxTokens: 65_536,
-      cost: { input: 0.375, output: 1.875, cacheRead: 0.0375, cacheWrite: 0.020833 },
-      // Reasoning es obligatorio y el provider solo soporta low/medium/high.
-      thinkingLevelMap: {
-        off: null,
-        minimal: null,
-        low: "low",
-        medium: "medium",
-        high: "high",
-      },
-    });
+    expect(entry.userInvocable).toBe(false);
+    expect(
+      generateModelsJson([entry], { builtIns: new Map() }).providers,
+    ).toEqual({});
   });
 
   it("describes GLM 5.3 on opencode-go, which Pi does not ship yet", () => {

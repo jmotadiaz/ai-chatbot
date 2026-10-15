@@ -312,8 +312,10 @@ export const MODEL_CATALOG = [
     // cost. Reasoning is mandatory and the provider only supports
     // low/medium/high effort, so off/minimal are hidden and xhigh is not
     // exposed; the highest supported level (high) is the session default.
+    // Ya no es userInvocable (fuera del selector); la entrada se conserva
+    // como modelo interno del catálogo, así que no se emite al models.json.
     id: "Gemini 3.7 Flash",
-    userInvocable: true,
+    userInvocable: false,
     provider: { kind: "gateway", modelId: "google/gemini-3.7-flash" },
     company: "google",
     reasoning: true,

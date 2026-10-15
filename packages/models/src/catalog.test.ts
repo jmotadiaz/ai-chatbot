@@ -4,6 +4,7 @@ import {
   MODEL_CATALOG,
   getDefaultThinkingLevel,
   getSupportedThinkingLevels,
+  type ModelCatalogEntry,
   type ThinkingLevel,
 } from "./catalog";
 
@@ -27,14 +28,14 @@ describe("MODEL_CATALOG integrity", () => {
   });
 
   it("custom-provider entries (gateway) fully describe their Pi model", () => {
-    // Pi no trae built-in "meta/muse-spark-1.3-contributor": la entrada del
-    // catálogo debe declarar límites, coste y thinkingLevelMap propios (el
-    // generador ya lanza error si faltan).
-    const custom = MODEL_CATALOG.filter(
-      (e): e is Extract<(typeof MODEL_CATALOG)[number], { userInvocable: true; provider: { kind: "gateway" } }> =>
-        e.userInvocable && e.provider.kind === "gateway",
+    // Hoy no hay modelos gateway invocables (Gemini 3.7 Flash quedó interno),
+    // pero el invariante sigue armado por si vuelve uno: Pi no trae built-in
+    // del provider, así que la entrada debe declarar límites, coste y
+    // thinkingLevelMap propios (el generador ya lanza error si faltan).
+    const entries: readonly ModelCatalogEntry[] = MODEL_CATALOG;
+    const custom = entries.filter(
+      (e) => e.userInvocable && e.provider.kind === "gateway",
     );
-    expect(custom.length).toBeGreaterThan(0);
     for (const entry of custom) {
       expect(entry.reasoning).toBe(true);
       expect(entry.defaultThinkingLevel).toBeDefined();
@@ -56,7 +57,6 @@ describe("MODEL_CATALOG integrity", () => {
       "MiMo V2.6 Flash",
       "MiMo V2.6 Pro",
       "Muse Spark 1.3",
-      "Gemini 3.7 Flash",
       "GLM 5.3",
       "Hy3",
       "GLM 5.3 Flash",

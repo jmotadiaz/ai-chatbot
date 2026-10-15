@@ -77,14 +77,13 @@ describe("model mapping", () => {
     expect(toPiProviderId("openrouter")).toBe("openrouter");
   });
 
-  it("maps the Gemini 3.7 Flash catalog id to the vercel-ai-gateway Pi provider", () => {
-    expect(toPiModelId("Gemini 3.7 Flash")).toEqual({
-      providerId: "vercel-ai-gateway",
-      modelId: "google/gemini-3.7-flash",
-    });
-    expect(toChatModelId("vercel-ai-gateway", "google/gemini-3.7-flash")).toBe(
-      "Gemini 3.7 Flash",
+  it("no longer maps Gemini 3.7 Flash, which is non-invocable again", () => {
+    expect(() => toPiModelId(asInvocable("Gemini 3.7 Flash"))).toThrow(
+      "Unsupported coding agent model: Gemini 3.7 Flash",
     );
+    expect(
+      toChatModelId("vercel-ai-gateway", "google/gemini-3.7-flash"),
+    ).toBeUndefined();
   });
 
   it("maps the GLM 5.3 catalog id to the opencode-go Pi provider", () => {
