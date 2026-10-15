@@ -425,8 +425,10 @@ export const MODEL_CATALOG = [
     // salida) y coste cero (columna "Free" de la tabla de uso). El registry
     // expone effort low..max, así que el thinkingLevelMap remite xhigh a max
     // y no mapea off/minimal (el modelo no acepta menos de low).
+    // Ya no es userInvocable (fuera del selector); la entrada se conserva
+    // como modelo interno del catálogo, así que no se emite al models.json.
     id: "Space Bunny Free",
-    userInvocable: true,
+    userInvocable: false,
     provider: { kind: "opencodeGo", modelId: "space-bunny-free" },
     company: "ai chatbot",
     reasoning: true,

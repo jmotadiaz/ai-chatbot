@@ -94,14 +94,11 @@ describe("model mapping", () => {
     expect(toChatModelId("opencode-go", "glm-5.3")).toBe("GLM 5.3");
   });
 
-  it("maps the Space Bunny Free catalog id to the opencode-go Pi provider", () => {
-    expect(toPiModelId("Space Bunny Free")).toEqual({
-      providerId: "opencode-go",
-      modelId: "space-bunny-free",
-    });
-    expect(toChatModelId("opencode-go", "space-bunny-free")).toBe(
-      "Space Bunny Free",
+  it("no longer maps Space Bunny Free, which is non-invocable again", () => {
+    expect(() => toPiModelId(asInvocable("Space Bunny Free"))).toThrow(
+      "Unsupported coding agent model: Space Bunny Free",
     );
+    expect(toChatModelId("opencode-go", "space-bunny-free")).toBeUndefined();
   });
 
   it("maps the Step 5 Preview Free catalog id to the opencode-go Pi provider", () => {

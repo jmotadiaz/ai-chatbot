@@ -60,7 +60,6 @@ describe("MODEL_CATALOG integrity", () => {
       "GLM 5.3",
       "Hy3",
       "GLM 5.3 Flash",
-      "Space Bunny Free",
       "Step 5 Preview Free",
       "Haiku",
       "Gemini 4 Argon",

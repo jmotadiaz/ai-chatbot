@@ -20,7 +20,6 @@ const NOT_BUILT_IN = new Set([
   "glm-5.3",
   "glm-5.3-flash",
   "muse-spark-1.3-contributor",
-  "space-bunny-free",
   "mimo-v2.6-flash",
   "mimo-v2.6-pro",
   "claude-haiku-5-5",
@@ -494,33 +493,6 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
-  it("describes Space Bunny Free, which Pi does not ship and OpenCode Go serves over openai-completions", () => {
-    const entry = MODEL_CATALOG.find((e) => e.id === "Space Bunny Free")!;
-    const [bunny] = generateModelsJson([entry], { builtIns: new Map() })
-      .providers["opencode-go"].models;
-    expect(bunny).toEqual({
-      id: "space-bunny-free",
-      name: "Space Bunny Free",
-      reasoning: true,
-      input: ["text", "image"],
-      contextWindow: 1_048_576,
-      maxTokens: 524_288,
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      // El registry de opencode-go expone effort low..max: xhigh remite a
-      // max y el modelo no acepta menos de low.
-      thinkingLevelMap: {
-        off: null,
-        minimal: null,
-        low: "low",
-        medium: "medium",
-        high: "high",
-        xhigh: "max",
-      },
-      api: "openai-completions",
-      baseUrl: "https://opencode.ai/zen/go/v1",
-    });
-  });
-
   it("describes Step 5 Preview Free, which Pi does not ship and OpenCode Go serves over openai-completions for free", () => {
     const entry = MODEL_CATALOG.find((e) => e.id === "Step 5 Preview Free")!;
     const [step5] = generateModelsJson([entry], { builtIns: new Map() })
@@ -569,12 +541,15 @@ describe("generateModelsJson custom providers", () => {
     });
   });
 
-  it("skips non-invocable entries (Gemini 3.7 Flash is internal now)", () => {
-    const entry = MODEL_CATALOG.find((e) => e.id === "Gemini 3.7 Flash")!;
-    expect(entry.userInvocable).toBe(false);
-    expect(
-      generateModelsJson([entry], { builtIns: new Map() }).providers,
-    ).toEqual({});
+  it("skips non-invocable entries (retired models stay internal)", () => {
+    for (const id of ["Gemini 3.7 Flash", "Space Bunny Free"]) {
+      const entry = MODEL_CATALOG.find((e) => e.id === id)!;
+      expect(entry.userInvocable, id).toBe(false);
+      expect(
+        generateModelsJson([entry], { builtIns: new Map() }).providers,
+        id,
+      ).toEqual({});
+    }
   });
 
   it("describes GLM 5.3 on opencode-go, which Pi does not ship yet", () => {
