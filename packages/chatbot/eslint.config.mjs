@@ -16,19 +16,15 @@ const compat = new FlatCompat({
 const gitignorePath = fileURLToPath(new URL(".gitignore", import.meta.url));
 
 /**
- * Specifiers a `"use client"` file may never import: the `inference` kit
- * (including its `/testing` subpath) and the chatbot's AI composition root.
- * Client components get UI-safe model config from
- * `@/lib/features/foundation-model/config` instead — isomorphic, depends
- * only on `models`. Checked for both value and type-only imports: a client
- * component has no legitimate use for a kit type either, so there is no
- * `allowTypeImports`-style escape hatch here (see the ticket-07 report for
- * why every current client-side `supportedFiles` usage could just move to
- * `ChatModelConfiguration` instead of needing an exception).
+ * Specifiers a `"use client"` file may never import: the AI infrastructure
+ * composition root (and with it, the whole Model Gateway client). Client
+ * components get UI-safe model config from
+ * `@/lib/features/foundation-model/config` and the runtime catalog from
+ * `<ModelCatalogProvider>` instead. Checked for both value and type-only
+ * imports: a client component has no legitimate use for an infrastructure
+ * type either, so there is no `allowTypeImports`-style escape hatch here.
  */
 const FORBIDDEN_CLIENT_SPECIFIERS = [
-  "inference",
-  "inference/testing",
   "@/lib/infrastructure/ai/inference-kit",
 ];
 
@@ -44,12 +40,12 @@ const noInferenceInClientComponents = {
     type: "problem",
     docs: {
       description:
-        'Forbid "use client" files from importing the inference kit or the chatbot\'s AI composition root.',
+        'Forbid "use client" files from importing the chatbot\'s AI composition root (the Model Gateway client).',
     },
     schema: [],
     messages: {
       forbidden:
-        '"use client" files cannot import "{{source}}". Source UI-safe model config from "@/lib/features/foundation-model/config" instead (isomorphic, depends only on "models").',
+        'Forbid "use client" files from importing "{{source}}". Source UI-safe model config from "@/lib/features/foundation-model/config" and the catalog from <ModelCatalogProvider> instead.',
     },
   },
   create(context) {
@@ -115,15 +111,14 @@ const eslintConfig = [
     },
     rules: {
       "local/no-inference-in-client-components": "error",
-      // Provider SDKs are `packages/inference`'s exclusive concern (spec: "fuera
-      // de packages/inference nadie importa @ai-sdk/* de proveedor,
-      // @openrouter/ai-sdk-provider ni @openrouter/sdk"). `ai`, `@ai-sdk/react`
-      // and `@ai-sdk/provider` are not vendor-specific and stay allowed. An
-      // explicit list is used instead of a `@ai-sdk/*` wildcard so it does not
-      // have to also negate those three. Scoped to this package only: chatbot's
-      // `eslint .` never resolves `packages/inference/**` at all, and no sibling
-      // package declares any of these as a dependency, so this is the one place
-      // in the repo where the invariant needs enforcing.
+      // Vendor provider SDKs remain forbidden: with the Model Gateway (ADR
+      // 0010) the ONLY AI transports the chatbot needs are
+      // `@ai-sdk/openai-compatible` and `@ai-sdk/openai` (speech), used
+      // exclusively by `lib/infrastructure/ai/`. Vendor SDKs (@ai-sdk/google,
+      // @ai-sdk/anthropic, @openrouter/*, …) have no legitimate chatbot
+      // import. `ai`, `@ai-sdk/react` and `@ai-sdk/provider` are not
+      // vendor-specific and stay allowed. An explicit list is used instead of
+      // a `@ai-sdk/*` wildcard so it does not have to also negate those three.
       "no-restricted-imports": [
         "error",
         {
@@ -137,15 +132,13 @@ const eslintConfig = [
                 "@ai-sdk/gateway",
                 "@ai-sdk/google",
                 "@ai-sdk/groq",
-                "@ai-sdk/openai",
-                "@ai-sdk/openai-compatible",
                 "@ai-sdk/perplexity",
                 "@ai-sdk/xai",
                 "@openrouter/ai-sdk-provider",
                 "@openrouter/sdk",
               ],
               message:
-                "Provider SDKs are packages/inference's exclusive concern. Resolve a Model Configuration through the chatbot's composition root (@/lib/infrastructure/ai/inference-kit) instead of importing a provider SDK directly.",
+                "Vendor provider SDKs are forbidden: everything goes through the Model Gateway via the chatbot's composition root (@/lib/infrastructure/ai/inference-kit), whose only transports are @ai-sdk/openai-compatible and @ai-sdk/openai.",
             },
           ],
         },
