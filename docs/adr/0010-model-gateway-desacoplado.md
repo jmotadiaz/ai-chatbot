@@ -17,7 +17,7 @@ Extraemos toda la gestión de proveedores de IA, sus credenciales de terceros y 
    - Expone todos los modelos de lenguaje bajo un único dialecto (`openai-completions`) hacia los consumidores (`chatbot`, `coding-agent` y el resto de aplicaciones de la máquina).
 
 2. **Custodia de API keys de terceros con `systemd-creds` en el Gateway, variables estándar en las apps**:
-   - Todas las API keys de proveedores externos desaparecen de `.env.dev`, `.env.prod`, `~/.pi/agent/auth.json` y del resto de proyectos del host; se almacenan exclusivamente cifradas con `systemd-creds encrypt` (`/etc/model-gateway/creds/*.cred`) mediante un asistente interactivo que recorre todos los secretos requeridos uno a uno, y se inyectan vía `LoadCredentialEncrypted=` en `model-gateway.service`.
+   - Todas las API keys de proveedores externos desaparecen de `.env.dev`, `.env.prod`, `~/.pi/agent/auth.json` y del resto de proyectos del host; se almacenan exclusivamente cifradas con `systemd-creds encrypt` (`/etc/model-gateway/creds/*.cred`) mediante un asistente interactivo que recorre todos los secretos requeridos uno a uno, y se inyectan vía `LoadCredentialEncrypted=` en `model-gateway.service`, que corre con `DynamicUser=yes` (UID transitorio por arranque) y `ProtectHome=yes` sobre un artefacto en `/opt/model-gateway`: ni siquiera otro proceso del mismo usuario del operador puede leer `$CREDENTIALS_DIRECTORY`.
    - En `ai-chatbot` (`packages/config`), las variables de entorno propias (`POSTGRES_URL`, `AUTH_SECRET`, `MODEL_GATEWAY_URL`, `MODEL_GATEWAY_API_KEY`, etc.) se mantienen como variables de entorno estándar en `.env.{dev,prod,test}` (no requieren `systemd-creds`).
 
 3. **Consumo dual de modelos y fin del tipado estático (`packages/models` eliminado)**:

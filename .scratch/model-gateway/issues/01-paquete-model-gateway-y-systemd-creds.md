@@ -27,3 +27,7 @@
 ## Result
 
 Hecho tal cual: `config.yaml` con los 14 user-invocable + 10 contratos, `server.py` (FastAPI + `GET /v1/models/catalog` filtrado en servidor), `manage-creds.sh` (setup/set/list), unidad systemd con `LoadCredentialEncrypted=` y tests de pytest (15). El schema del catálogo quedó documentado y versionado en `packages/model-gateway/CONTRACT.md`.
+
+## Follow-up (DynamicUser)
+
+La unidad se endureció para que los secretos no sean legibles por otros procesos del usuario del operador: `DynamicUser=yes` + `ProtectHome=yes`, despliegue a `/opt/model-gateway` (`scripts/install-service.sh`, venv gestionado con `uv`) y `CONFIG_FILE_PATH` explícito. Guardado por `tests/test_service_unit.py` (6 asserts sobre la unidad y los scripts).

@@ -13,6 +13,11 @@ if [[ -z "${CREDENTIALS_DIRECTORY:-}" ]]; then
   exit 1
 fi
 
+# LiteLLM lee el YAML de esta variable al importar proxy_server. Sin ella el
+# proxy arranca sin model_list ni master_key (GET /v1/models/catalog seguiría
+# funcionando porque lo lee catalog.py, de ahí que el fallo pase desapercibido).
+export CONFIG_FILE_PATH="${CONFIG_FILE_PATH:-$PWD/config.yaml}"
+
 shopt -s nullglob
 for cred in "$CREDENTIALS_DIRECTORY"/*; do
   name="$(basename "$cred")"
@@ -22,4 +27,15 @@ for cred in "$CREDENTIALS_DIRECTORY"/*; do
 done
 shopt -u nullglob
 
-exec uvicorn server:app --host 127.0.0.1 --port 4000
+# El despliegue instala un venv propio en /opt/model-gateway/.venv; en el
+# checkout del repo (arranque manual) se usa el uvicorn del entorno activo.
+UVICORN="$PWD/.venv/bin/uvicorn"
+if [[ ! -x "$UVICORN" ]]; then
+  UVICORN="$(command -v uvicorn || true)"
+fi
+if [[ -z "$UVICORN" ]]; then
+  echo "error: no se encontró uvicorn (crea .venv con scripts/install-service.sh o activa el entorno)" >&2
+  exit 1
+fi
+
+exec "$UVICORN" server:app --host 127.0.0.1 --port 4000

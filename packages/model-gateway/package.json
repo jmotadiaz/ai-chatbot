@@ -8,7 +8,7 @@
     "start": "bash scripts/run-gateway.sh",
     "creds:set": "bash scripts/manage-creds.sh set",
     "creds:list": "bash scripts/manage-creds.sh list",
-    "systemd:install": "sudo cp systemd/model-gateway.service /etc/systemd/system/model-gateway.service && sudo systemctl daemon-reload && sudo systemctl enable --now model-gateway",
+    "systemd:install": "bash scripts/install-service.sh",
     "test": "python3 -m pytest tests -q"
   }
 }

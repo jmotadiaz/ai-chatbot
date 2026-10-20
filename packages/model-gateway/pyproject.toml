@@ -11,6 +11,17 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# El despliegue instala este proyecto en el venv de /opt/model-gateway para
+# resolver sus dependencias; los módulos de runtime se importan desde el
+# WorkingDirectory de la unidad (`uvicorn server:app`), no de site-packages.
+[tool.setuptools]
+py-modules = ["server", "catalog"]
+
+
 [project.optional-dependencies]
 test = [
     "pytest>=8.0",

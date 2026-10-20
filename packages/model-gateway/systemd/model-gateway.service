@@ -5,10 +5,26 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=javier
-Group=javier
-WorkingDirectory=/home/javier/projects/ai-chatbot/packages/model-gateway
-ExecStart=/usr/bin/env bash /home/javier/projects/ai-chatbot/packages/model-gateway/scripts/run-gateway.sh
+# UID transitorio por arranque: ningún otro proceso del host (incluidos los
+# agentes que corren como el usuario operador) puede leer el
+# $CREDENTIALS_DIRECTORY de esta unidad, aunque comparta "usuario lógico".
+# Consecuencia: el servicio NO puede leer /home/<operador>, por eso el
+# instalador copia el paquete a /opt/model-gateway (ver scripts/install-service.sh).
+DynamicUser=yes
+WorkingDirectory=/opt/model-gateway
+
+# LiteLLM carga config.yaml de esta variable (litellm.proxy.proxy_server lee
+# CONFIG_FILE_PATH); sin ella el proxy montaría sin model_list ni master_key.
+Environment=CONFIG_FILE_PATH=/opt/model-gateway/config.yaml
+# HOME escribible para cachés/logs de LiteLLM; %S lo crea StateDirectory ya
+# con el UID transitorio como dueño.
+Environment=HOME=%S/model-gateway
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+StateDirectory=model-gateway
+CacheDirectory=model-gateway
+
+ExecStart=/usr/bin/env bash /opt/model-gateway/scripts/run-gateway.sh
 Restart=on-failure
 RestartSec=5
 
@@ -22,12 +38,17 @@ LoadCredentialEncrypted=google_generative_ai_api_key:/etc/model-gateway/creds/go
 LoadCredentialEncrypted=cohere_api_key:/etc/model-gateway/creds/cohere_api_key.cred
 LoadCredentialEncrypted=openai_api_key:/etc/model-gateway/creds/openai_api_key.cred
 
-# Endurecido: sin elevation, sin escritura salvo donde toca, sin caps.
+# Endurecido: sin elevation, sin escritura salvo en su estado/caché, sin caps,
+# /home invisible para el UID transitorio.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=read-only
-ReadWritePaths=/home/javier/projects/ai-chatbot/packages/model-gateway
+ProtectHome=yes
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
 
 [Install]
 WantedBy=multi-user.target
