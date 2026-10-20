@@ -31,10 +31,12 @@ async function waitForPostgres(postgresUrl: string) {
 async function globalSetup() {
   const postgresUrl = getTestPostgresUrl();
 
-  // Guardarraíl de Entorno (ticket 05, spec: test↔5434/test). Este setup solo
-  // corre para e2e, así que el Entorno es test por definición: si el shell
-  // arrastró un POSTGRES_URL de dev/prod, fallamos antes de tocar ninguna DB.
-  // La regla canónica vive en packages/config/src/guardrails.ts (ENTORNO_DB).
+  // Guardarraíl de Entorno (ticket 05). Este setup solo corre para e2e, así
+  // que el Entorno es test por definición: si el shell arrastró un
+  // POSTGRES_URL de dev/prod, fallamos antes de tocar ninguna DB. La regla
+  // canónica vive en packages/config/src/guardrails.ts (ENTORNO_DB, ADR 0001);
+  // el arranque de Playwright replica aquí el check porque global-setup corre
+  // antes de que cualquier código de la app haya podido importar config.
   if (!postgresUrl.includes("5434/test")) {
     throw new Error(
       `[e2e guardrail] POSTGRES_URL="${postgresUrl}" no apunta a la DB de Test (5434/test). ` +
