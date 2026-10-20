@@ -63,9 +63,8 @@ Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
 packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
+├── model-gateway/  # Model Gateway (LiteLLM Proxy stateless); único proveedor de IA
 ├── config/         # Central env catalog + typed config accessors (no process.env en src/)
-├── inference/      # Server-side AI SDK facade: provider clients, lazy model resolution
-├── models/         # Shared model catalog consumed by chatbot & coding-agent
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
 ```
@@ -80,11 +79,42 @@ Regla: en `src/` de cualquier paquete NO se usa `process.env` directamente; se i
 quedan fuera (Next.js las inlinea en build). El paquete deja marcada la evolución a la
 credentials API de systemd en `packages/config/src/source.ts`.
 
-### `inference` — Inference Kit
+### `model-gateway` — Model Gateway (único proveedor de IA)
 
-Server/Node package: a thin facade over the AI SDK. Owns the language-model clients per endpoint kind (`ProviderKind`, see `models`), reading every provider API key via `config` instead of letting each SDK read `process.env` implicitly, and the lazy, memoized resolution from a catalog id to a full Model Configuration. Built with `createInferenceKit(options)`; a default instance is also exported. No `server-only` (the package boundary is convention + lint, not a runtime import guard) and no knowledge of test environments — the chatbot's own composition root (`packages/chatbot/lib/infrastructure/ai/inference-kit.ts`) is the **only** chatbot module that picks the real kit or a kit built with the mock registry, based on `NEXT_PUBLIC_ENV`, and every feature imports `inferenceKit`/`speechModel` from it directly. The transitional reexports that used to sit on top of it while features migrated (`packages/chatbot/lib/infrastructure/ai/providers.ts` and `packages/chatbot/lib/features/foundation-model/server.ts`) are gone. Lint enforces the two dependency rules the package doc (`packages/inference/README.md`) describes: a `"use client"` file cannot import `inference` (or the composition root), and outside `packages/inference` nobody imports a provider SDK directly — both in `packages/chatbot/eslint.config.mjs`, since chatbot is the only package with these dependencies today.
+Servicio `packages/model-gateway` desacoplado del monorepo (sin dependencias de workspace;
+extraíble con `mv` + `git init`): **LiteLLM Proxy stateless** (`config.yaml`, sin DB)
+envuelto en un micro-entrypoint FastAPI (`server.py`), desplegado como unidad systemd
+(`model-gateway.service`, `:4000`). Véase `packages/model-gateway/README.md`.
 
-`languageModel`/`createAgent` accept either a raw catalog id or a Model Role (`LANGUAGE_MODEL_ROLES` in `models`) — a named pointer to the id an internal, non-selectable feature (chat title, memory, meta-prompt, english workflows, compaction, …) currently uses, so retargeting one is a catalog edit, not a feature change; the user-selected Chat Modes keep resolving by id. `createAgent(idOrRole, { instructions, tools, overrides })` resolves through `languageModel`, wraps the model with tracing when `TRACE_ENABLED=1`, and returns a `ToolLoopAgent`; the chatbot's Chat Modes (`lib/features/chat/conversation/ports.ts`'s `ChatAgentAiPort`) build their agent through it too, so no chatbot code wraps a model with tracing by hand — the one branch that needs the model itself instead of a `ToolLoopAgent` (Context7, a different third-party agent class) gets it from the kit's `createAgentModel`, the traced configuration `createAgent` itself builds a `ToolLoopAgent` from. Speech is a separate small catalog (`SPEECH_MODELS`/`SPEECH_ROLES` in `models`, its own `SpeechProviderKind`) resolved via `speechModel(idOrRole)`; voice/speed/instructions stay call-time parameters in the feature (`lib/features/english/actions.ts`). The UI's own model config (invocable ids, per-model capabilities, the default model) is a separate, isomorphic module that depends only on `models` — `packages/chatbot/lib/features/foundation-model/config.ts` — so a client component never needs the kit at all.
+- **Único proveedor de IA** de chatbot y coding-agent: no hay claves de proveedores
+  externos (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, …) en los `.env.*` del repo — se
+  custodian cifradas en el host con **`systemd-creds`** (`LoadCredentialEncrypted=`),
+  gestionadas con `packages/model-gateway/scripts/manage-creds.sh`.
+- **Catálogo en runtime**: `GET ${MODEL_GATEWAY_URL}/v1/models/catalog` (bearer
+  `MODEL_GATEWAY_API_KEY`) filtra en el servidor las entradas `user_invocable: true` y
+  devuelve el esquema limpio de metadatos. `chatbot` lo consume para el Model Picker y
+  `<ModelCatalogProvider>`; `coding-agent` lo consume al arrancar para escribir el
+  `models.json` de Pi con un único provider `model-gateway`.
+- **Default Model Contracts**: los usos internos no seleccionables invocan directamente
+  los nombres estables garantizados por el Gateway — `fast-default`, `flash-default`,
+  `vision-default`, `reasoning-default`, `free-default`, `image-default`,
+  `embedding-default`, `rerank-default`, `decision-default`, `tts-default` — sin catálogo
+  tipado estático.
+- **Mock Model Gateway** (test): en `.env.test` `MODEL_GATEWAY_URL` apunta a
+  `http://127.0.0.1:4001`, el mock HTTP de `packages/chatbot/tests/mocks/gateway/` que
+  sirve el catálogo de capacidades de test y respuestas deterministas.
+- **Fachada en el chatbot**: `packages/chatbot/lib/infrastructure/ai/inference-kit.ts` es
+  el composition root (`inferenceKit`, `speechModel`), un cliente único OpenAI-compatible
+  contra `${MODEL_GATEWAY_URL}/v1`. Sin `isTestMode()`: en test también se habla HTTP
+  contra el `:4001`. Tipos isomorfos y helpers puros del catálogo en
+  `packages/chatbot/lib/features/foundation-model/config.ts`, hidratado a cliente vía
+  `<ModelCatalogProvider>` (`app/(chat)/layout.tsx`) — los `"use client"` nunca
+  importan el kit.
+- **Fronteras de lint** (`packages/chatbot/eslint.config.mjs`): un fichero con
+  `"use client"` no puede importar `@/lib/infrastructure/ai` (exacto o cualquier subpath),
+  y ningún fichero fuera de `packages/chatbot/lib/infrastructure/ai/` puede importar
+  `@ai-sdk/*` salvo `@ai-sdk/react` (UI). Ambas reglas tienen contrato en
+  `packages/chatbot/tests/contract/eslint-boundaries.test.ts`.
 
 ### `chatbot` — Main Application
 
@@ -96,12 +126,6 @@ Separate HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages codin
 
 First-party extensions (the `subagent` tool and the `artifacts` tool) live under `packages/coding-agent/extensions/` and are handed to the SDK as `additionalExtensionPaths`, instead of being installed with `pi install` into the machine-wide `~/.pi/agent/settings.json`. See `packages/coding-agent/AGENTS.md`.
 
-### `models` — Shared Catalog
-
-Single source of truth for model definitions. `MODEL_CATALOG` drives the chatbot's model configurations, the chat/coding-agent model mapping, and the `models.json` the worker generates for Pi at startup. Adding a model means editing this catalog only.
-
-The generated file is written to `CODING_AGENT_MODELS_JSON` (relative values resolve against `packages/coding-agent`, not the cwd). When unset it defaults to the worker-owned `.pi/agent/models.json`, never the machine-wide Pi config. `auth.json` stays global on purpose, so credentials are not duplicated per project.
-
 ### `tracing` — Shared Library
 
 Reusable observability library used by both `chatbot` and `coding-agent`. Provides AI SDK middleware to capture LLM call traces (prompts, responses, tool calls, token usage) and writes them to disk as JSONL. Enabled via `TRACE_ENABLED=1`.
@@ -112,11 +136,16 @@ Reusable observability library used by both `chatbot` and `coding-agent`. Provid
 chatbot ──→ coding-agent
    │              │
    ├──────────────┼──→ tracing
-   ├──────────────┼──→ models
-   └──────────────┴──→ inference ──→ { config, models }
+   ├──────────────┼──→ model-gateway (HTTP: Model Gateway / Mock Gateway en test)
+   └──────────────┼──→ config
+                  └
 ```
 
-`coding-agent → inference` is a real `package.json` dependency, but today it exists **only** to keep `packages/coding-agent/tests/contract/inference-import.test.ts` green (proof that the kit and `inference/testing` resolve and run from a plain tsx process, no Next.js involved) — the worker does not call the kit from any real code path yet.
+Los paquetes Node del workspace son `chatbot`, `coding-agent`, `config` y `tracing`; el
+Model Gateway reside en `packages/model-gateway` a efectos de co-location del código, pero
+es deliberadamente **independiente del workspace** (sin `workspace:*`): el único iface entre
+los paquetes TS y él es HTTP (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY` de `config`).
+Los `*-default` son contratos de texto plano, no imports.
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph
