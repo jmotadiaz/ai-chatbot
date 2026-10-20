@@ -21,10 +21,12 @@ const chatbotPkg = JSON.parse(
 const s = workerPkg.scripts;
 
 describe("scripts del worker (coding-agent)", () => {
-  it("dev es la cadena explícita que hoy corre prod (install + models + tsx http)", () => {
+  it("dev es la cadena explícita que hoy corre prod (install + tsx http; el catálogo se sincroniza en arranque)", () => {
     expect(s.dev).toContain("tsx scripts/install-packages.ts");
-    expect(s.dev).toContain("tsx scripts/generate-models.ts");
     expect(s.dev).toContain("tsx src/transports/http.ts");
+    // El models.json ya no se genera en dev: lo sincroniza el arranque del
+    // worker contra el Model Gateway (ensureGatewayModelsJson).
+    expect(s.dev).not.toContain("generate-models");
   });
 
   it("ya no existen start, start:prod, build:prod ni transport:http", () => {
@@ -34,22 +36,22 @@ describe("scripts del worker (coding-agent)", () => {
     expect(s["transport:http"]).toBeUndefined();
   });
 
-  it("build exige el gate, compila a dist/ y genera models.json con .env.prod", () => {
+  it("build exige el gate y compila a dist/, sin generación estática de modelos", () => {
     const cmd = s.build;
     expect(cmd).toContain("assert-prod-build-allowed");
     expect(cmd).toContain("tsc -p tsconfig.json --outDir dist");
-    expect(cmd).toContain("dotenv -o -e ../../.env.prod");
-    expect(cmd).toContain("generate-models");
+    // El models.json lo sincroniza el arranque del worker contra el Gateway,
+    // no el build (el build de prod no necesita el Gateway vivo).
+    expect(cmd).not.toContain("generate-models");
+    expect(cmd).not.toContain("MODEL_GATEWAY");
     expect(cmd).not.toContain("dist/verify");
   });
 
-  it("build:verify compila a dist/verify y modela en .pi-verify, sin gate ni escrituras de prod", () => {
+  it("build:verify solo compila a dist/verify, sin gate ni generación de modelos", () => {
     const cmd = s["build:verify"];
     expect(cmd).toContain("tsc -p tsconfig.json --outDir dist/verify");
-    expect(cmd).toContain("CODING_AGENT_MODELS_JSON=.pi-verify/models.json");
-    expect(cmd).toContain("generate-models");
     expect(cmd).not.toMatch(/ALLOW_PROD_BUILD|assert-prod-build-allowed/);
-    // nada de .env.prod con -o: verificar no puede reescribir .pi-prod/models.json
+    expect(cmd).not.toContain("generate-models");
     expect(cmd).not.toContain("dotenv");
   });
 });
