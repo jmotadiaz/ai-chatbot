@@ -47,7 +47,7 @@ import { TEST_MODELS } from "@/tests/mocks/gateway/catalog";
 // La página resuelve el modelo contra el catálogo del Gateway; la fixture
 // del Mock Model Gateway hace el papel de catálogo aquí.
 vi.mock("@/lib/infrastructure/ai/catalog", () => ({
-  fetchModelCatalog: async () => TEST_MODELS,
+  fetchPublicModelCatalog: async () => TEST_MODELS,
 }));
 
 const chatRow = (defaultModelColumn: string | null) => ({

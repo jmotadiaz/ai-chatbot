@@ -1,5 +1,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import {
+  GATEWAY_THINKING_LEVELS,
+  type GatewayModelCost,
+  type GatewayModelEntry,
+  type ThinkingLevel,
+} from "config";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
@@ -7,7 +13,7 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
 /**
  * Runtime model catalog, synced from the Model Gateway (ADR 0010).
  *
- * The worker no longer ships a static catalog (`packages/models` is gone):
+ * The worker no longer ships a static catalog:
  * on startup it fetches `GET ${MODEL_GATEWAY_URL}/v1/models/catalog` and
  * materializes the Pi `models.json` with a single provider (`model-gateway`),
  * so every model Pi streams through the Gateway's OpenAI-compatible endpoint.
@@ -21,12 +27,10 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
 
 export const GATEWAY_PROVIDER_ID = "model-gateway";
 
-/** Same vocabulary the chatbot uses (Model Gateway contracts, §1). */
-export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+// Tipos del contrato del Gateway (única copia TS en packages/config).
+export type { GatewayModelCost, GatewayModelEntry, ThinkingLevel };
 
-export const THINKING_LEVELS: readonly ThinkingLevel[] = [
-  "off", "minimal", "low", "medium", "high", "xhigh", "max",
-];
+export const THINKING_LEVELS: readonly ThinkingLevel[] = GATEWAY_THINKING_LEVELS;
 
 /**
  * Model-level thinking controls, keyed by Pi thinking level. A string value is
@@ -35,32 +39,7 @@ export const THINKING_LEVELS: readonly ThinkingLevel[] = [
  */
 export type ThinkingLevelMap = Partial<Record<ThinkingLevel, string | null>>;
 
-/** Price per million tokens, in the same units Pi uses. */
-export interface GatewayModelCost {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-}
-
-/** Entry of `GET /v1/models/catalog` (Model Gateway contracts, §1). */
-export interface GatewayModelEntry {
-  id: string;
-  company: string;
-  isDefault: boolean;
-  contextWindow: number;
-  maxTokens: number;
-  cost: GatewayModelCost;
-  reasoning: boolean;
-  thinkingLevels: ThinkingLevel[];
-  defaultThinkingLevel: ThinkingLevel | null;
-  supportedFiles: Array<"img" | "pdf">;
-  supportedOutput: Array<"text" | "img">;
-  zeroDataRetention: boolean;
-  temperature: number | null;
-  topP: number | null;
-  topK: number | null;
-}
+/** Entry of `GET /v1/models/catalog` (see CONTRACT.md in model-gateway). */
 
 /**
  * Pi model definition for a model Pi does not ship built-in (the
@@ -111,6 +90,10 @@ export function buildThinkingLevelMap(entry: GatewayModelEntry): ThinkingLevelMa
   return map;
 }
 
+/** Fallbacks when the catalog entry is sparse (null), matching Pi's own generic defaults. */
+const FALLBACK_CONTEXT_WINDOW = 128_000;
+const FALLBACK_MAX_TOKENS = 16_384;
+
 /** Translate a catalog entry 1:1 into a Pi model definition (id = id). */
 export function toPiModelDefinition(entry: GatewayModelEntry): GatewayPiModelDefinition {
   return {
@@ -118,8 +101,8 @@ export function toPiModelDefinition(entry: GatewayModelEntry): GatewayPiModelDef
     name: entry.id,
     reasoning: entry.reasoning,
     input: entry.supportedFiles.includes("img") ? ["text", "image"] : ["text"],
-    contextWindow: entry.contextWindow,
-    maxTokens: entry.maxTokens,
+    contextWindow: entry.contextWindow ?? FALLBACK_CONTEXT_WINDOW,
+    maxTokens: entry.maxTokens ?? FALLBACK_MAX_TOKENS,
     cost: entry.cost,
     thinkingLevelMap: buildThinkingLevelMap(entry),
   };
@@ -182,12 +165,15 @@ function assertCatalog(payload: unknown, url: string): GatewayModelEntry[] {
     );
   }
   return models.map((entry, index) => {
+    // contextWindow/maxTokens pueden ser null (entradas sparse del contrato
+    // compartido); lo que NO puede faltar es id y cost.
+    const candidate = entry as GatewayModelEntry;
     if (
       typeof entry !== "object" || entry === null ||
-      typeof (entry as GatewayModelEntry).id !== "string" ||
-      typeof (entry as GatewayModelEntry).contextWindow !== "number" ||
-      typeof (entry as GatewayModelEntry).maxTokens !== "number" ||
-      typeof (entry as GatewayModelEntry).cost !== "object"
+      typeof candidate.id !== "string" ||
+      !(candidate.contextWindow === null || typeof candidate.contextWindow === "number") ||
+      !(candidate.maxTokens === null || typeof candidate.maxTokens === "number") ||
+      typeof candidate.cost !== "object"
     ) {
       throw new Error(
         `Model Gateway catalog entry #${index} from ${url} is malformed ` +

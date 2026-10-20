@@ -37,6 +37,7 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (para e
 - `pnpm lint:fix` — lint all packages
 - `pnpm type:check` — check TypeScript types across all packages
 - `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
+- `pnpm test:gateway` — tests del Model Gateway (`python3 -m pytest packages/model-gateway/tests -q`)
 - `pnpm test:e2e` — Playwright E2E tests (usa `.env.test`, pg 5434, worker stub)
 - `pnpm db:generate` / `pnpm db:push` — Drizzle ORM schema
 - `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — gestión y seeds de DB para Entornos de Dev (5433) y Test (5434)

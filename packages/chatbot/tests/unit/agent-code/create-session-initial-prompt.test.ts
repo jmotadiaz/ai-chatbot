@@ -20,20 +20,24 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-vi.mock("config", () => ({
-  config: {
-    codingAgentEnabled: () => true,
-    modelGatewayUrl: () => "http://127.0.0.1:4001",
-    modelGatewayApiKey: () => "test-gateway-key",
-  },
-  optional: <T>(fn: () => T) => fn(),
-}));
+vi.mock("config", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("config")>();
+  return {
+    ...actual,
+    config: {
+      codingAgentEnabled: () => true,
+      modelGatewayUrl: () => "http://127.0.0.1:4001",
+      modelGatewayApiKey: () => "test-gateway-key",
+    },
+    optional: <T>(fn: () => T) => fn(),
+  };
+});
 
 // El catálogo no se descarga por red en este test: fixture del Mock Gateway.
 vi.mock("@/lib/infrastructure/ai/catalog", async () => {
   const { TEST_MODELS } = await import("@/tests/mocks/gateway/catalog");
   return {
-    fetchModelCatalog: async () => TEST_MODELS,
+    fetchPublicModelCatalog: async () => TEST_MODELS,
     warmModelCatalog: async () => {},
     getModelCatalogSnapshot: () => TEST_MODELS,
   };

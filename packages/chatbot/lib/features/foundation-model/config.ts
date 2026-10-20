@@ -1,20 +1,19 @@
 /**
- * Tipos isomorfos y helpers PUROS del catálogo de modelos (antes
- * `packages/models`, ADR 0010). Sin ningún import de `models`: el catálogo
- * llega en runtime del Model Gateway (`GET /v1/models/catalog`) y se pasa
- * explícito a cada helper. Es el único módulo de configuración de modelos
- * que pueden importar los `"use client"` (el kit de infraestructura está
- * prohibido para ellos por lint).
+ * Tipos isomorfos y helpers PUROS del catálogo de modelos (ADR 0010). Sin
+ * ningún import de `models`: el catálogo llega en runtime del Model Gateway
+ * (`GET /v1/models/catalog`) y se pasa explícito a cada helper. Es el único
+ * módulo de configuración de modelos que pueden importar los `"use client"`
+ * (el kit de infraestructura está prohibido para ellos por lint).
+ *
+ * El tipo compartido `GatewayModelEntry`/`ThinkingLevel` vive en
+ * `packages/config/src/gateway-contract.ts` (única copia TS del contrato;
+ * ver `packages/model-gateway/CONTRACT.md`); aquí solo se re-exporta para no
+ * romper los imports del chatbot.
  */
 
-export type ThinkingLevel =
-  | "off"
-  | "minimal"
-  | "low"
-  | "medium"
-  | "high"
-  | "xhigh"
-  | "max";
+import { GATEWAY_THINKING_LEVELS, type GatewayModelEntry, type ThinkingLevel } from "config";
+
+export type { GatewayModelEntry, ThinkingLevel } from "config";
 
 /** Libre desde el Gateway: la compañía ya no es una unión tipada. */
 export type Company = string;
@@ -30,27 +29,7 @@ export const defaultWebSearchNumResults = 4;
 export const defaultRagMaxResources = 4;
 export const defaultMinRagScore = 0.5;
 
-/** Entrada del catálogo tal como la sirve el Gateway (contrato compartido §1). */
-export interface GatewayModelEntry {
-  id: string;
-  company: string;
-  isDefault: boolean;
-  contextWindow: number;
-  maxTokens: number;
-  cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
-  reasoning: boolean;
-  thinkingLevels: string[];
-  defaultThinkingLevel: string | null;
-  supportedFiles: ("img" | "pdf")[];
-  supportedOutput: ("text" | "img")[];
-  zeroDataRetention: boolean;
-  temperature: number | null;
-  topP: number | null;
-  topK: number | null;
-}
-
-/**
- * Los 10 Default Model Contracts (`user_invocable: false` en el Gateway):
+/** Los 10 Default Model Contracts (`user_invocable: false` en el Gateway):
  * nombres estables que las features internas invocan directamente. Nunca
  * aparecen en el Model Picker (`chatModelKeys` los excluye).
  */
@@ -73,15 +52,7 @@ const CONTRACT_IDS: readonly string[] = DEFAULT_MODEL_CONTRACTS;
 
 const isContractId = (id: string): boolean => CONTRACT_IDS.includes(id);
 
-export const THINKING_LEVELS: ThinkingLevel[] = [
-  "off",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-  "max",
-];
+export const THINKING_LEVELS: ThinkingLevel[] = [...GATEWAY_THINKING_LEVELS];
 
 export function isThinkingLevel(value: unknown): value is ThinkingLevel {
   return typeof value === "string" && (THINKING_LEVELS as string[]).includes(value);
@@ -146,7 +117,9 @@ export const getChatConfigurationByModelId = (
     temperature: entry.temperature ?? undefined,
     topP: entry.topP ?? undefined,
     topK: entry.topK ?? undefined,
-    contextWindow: entry.contextWindow,
+    // null (entradas sparse) → undefined: los consumidores caen a
+    // `config.contextWindow()` (p. ej. factory.ts, orchestration.ts).
+    contextWindow: entry.contextWindow ?? undefined,
     reasoning: entry.reasoning,
     zeroDataRetention: entry.zeroDataRetention,
     supportedFiles: [...entry.supportedFiles],

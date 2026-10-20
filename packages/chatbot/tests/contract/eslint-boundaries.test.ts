@@ -1,5 +1,5 @@
-import { ESLint } from "eslint";
 import path from "node:path";
+import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
 /**

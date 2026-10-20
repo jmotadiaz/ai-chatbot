@@ -2,8 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { simulateReadableStream, ToolLoopAgent } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { finishChunk, textChunks } from "../../../helpers/stream-chunks";
-import type { LanguageModelV3, LanguageModelV3CallOptions } from "@/lib/infrastructure/ai/types";
-import type { CreateAgentOptions, ModelConfiguration } from "@/lib/infrastructure/ai/types";
+import type {
+  CreateAgentOptions,
+  LanguageModelV3,
+  LanguageModelV3CallOptions,
+  ModelConfiguration,
+} from "@/lib/infrastructure/ai/types";
 import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { createChatModeAgent } from "@/lib/features/chat/chat-modes/factory";

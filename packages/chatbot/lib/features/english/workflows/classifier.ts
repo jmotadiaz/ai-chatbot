@@ -22,7 +22,7 @@ export type DecideFn = (options: DecideOptions) => Promise<Decision>;
 /**
  * The English Helper's classifier: one Decisions call per workflow, asking
  * all its questions at once (translation: direction + audience + domain;
- * grammar: audience + domain), by `Model Role` so a catalog change never
+ * grammar: audience + domain), via the `decision-default` contract, so a catalog change never
  * touches this feature. The raw text travels as `state.text`.
  *
  * No confidence gate: whatever Jev decides is applied as-is. The per-question

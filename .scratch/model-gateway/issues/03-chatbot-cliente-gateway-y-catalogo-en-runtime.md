@@ -4,24 +4,28 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `packages/chatbot/lib/infrastructure/ai/` implementa el cliente único contra `${config.modelGatewayUrl()}/v1` (autenticado con `config.modelGatewayApiKey()`), sin `isTestMode()` ni `buildTestClients()`:
+- [x] `packages/chatbot/lib/infrastructure/ai/` implementa el cliente único contra `${config.modelGatewayUrl()}/v1` (autenticado con `config.modelGatewayApiKey()`), sin `isTestMode()` ni `buildTestClients()`:
   - `fetchModelCatalog()` con caché TTL en memoria de servidor contra `GET /v1/models/catalog`.
   - `languageModel(idOrContract, options)`, `createAgent(idOrContract, options)` y `createAgentModel(idOrContract, options)` (integrando `wrapWithTracing` de `packages/tracing`).
   - `embed(values, { taskType })` invocando `"embedding-default"` (`outputDimensionality: 768`).
   - `rerank({ query, documents, topN })` invocando `"rerank-default"`.
   - `decide(options)` invocando `"decision-default"` contra el endpoint nativo de decisiones del Gateway.
   - `speechModel()` invocando `"tts-default"`.
-- [ ] Todas las llamadas internas hardcoded de `packages/chatbot` usan los `Default Model Contracts` acordados:
+- [x] Todas las llamadas internas hardcoded de `packages/chatbot` usan los `Default Model Contracts` acordados:
   - `chatTitle`, `memoryExtraction`, `memoryQueryDecomposition`, `webSearchUrlIntent` $\rightarrow$ `"fast-default"`
   - `englishGrammarCheck`, `englishTranslate` $\rightarrow$ `"flash-default"`
   - `compactionMultimedia` $\rightarrow$ `"vision-default"`
   - `metaPromptRefiner`, `compactionText` $\rightarrow$ `"reasoning-default"`
   - `imageEdit` $\rightarrow$ `"image-default"`
   - Evals / simulador $\rightarrow$ `"free-default"`
-- [ ] `packages/chatbot/lib/features/foundation-model/config.ts` elimina todo import de `packages/models`, define `chatModelId` como `string`, y expone los tipos isomorfos (`GatewayModelEntry`, `ChatModelConfiguration`, `ThinkingLevel`, `Company`) junto al `<ModelCatalogProvider>` y el hook `useModelCatalog()`.
-- [ ] `app/(chat)/layout.tsx` obtiene el catálogo en el servidor y envuelve el árbol cliente con `<ModelCatalogProvider>`, actualizando `ModelPicker`, `Hub`, `ProjectForm`, `useAvailableModels`, `useChatConfig` y `useSupportedFiles`.
-- [ ] Ningún archivo de `packages/chatbot` importa ya `models` ni `inference`.
+- [x] `packages/chatbot/lib/features/foundation-model/config.ts` elimina todo import de `packages/models`, define `chatModelId` como `string`, y expone los tipos isomorfos (`GatewayModelEntry`, `ChatModelConfiguration`, `ThinkingLevel`, `Company`) junto al `<ModelCatalogProvider>` y el hook `useModelCatalog()`.
+- [x] `app/(chat)/layout.tsx` obtiene el catálogo en el servidor y envuelve el árbol cliente con `<ModelCatalogProvider>`, actualizando `ModelPicker`, `Hub`, `ProjectForm`, `useAvailableModels`, `useChatConfig` y `useSupportedFiles`.
+- [x] Ningún archivo de `packages/chatbot` importa ya `models` ni `inference`.
 
 ## Comments
+
+## Result
+
+Hecho con dos desviaciones al alza surgidas del code review: (1) el catálogo se sirvió en dos vistas — `fetchPublicModelCatalog()` (la que se hidrata al `<ModelCatalogProvider>`) y `fetchInternalModelCatalog()` solo servidor para los contratos, porque el snapshot único con `include_internal=true` exponía los 10 contratos al browser; (2) `image-default` usa un transport propio (`gateway-image-model.ts`) porque el `openai-compatible` no parseaba las partes de imagen e `imageEdit` devolvía `files: []`. Los tipos isomorfos viven en `packages/config/src/gateway-contract.ts` (única copia TS).

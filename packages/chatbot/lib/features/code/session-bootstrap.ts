@@ -2,7 +2,7 @@ import "server-only";
 import { getTraceLogger } from "tracing";
 import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import { isKnownModelId } from "@/lib/features/foundation-model/config";
-import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import {
   getSession,
   listSessions,
@@ -140,7 +140,7 @@ export async function loadCodingAgentBootstrap(params: {
         sessionId,
         project,
       });
-      const catalog = await fetchModelCatalog();
+      const catalog = await fetchPublicModelCatalog();
       // Con el proveedor único Gateway el id de Pi es el id del catálogo: se
       // acepta tal cual si el catálogo lo conoce; si no (worker sin migrar,
       // modelo retirado), cae al modelId persistido de la sesión.

@@ -63,8 +63,8 @@ export interface EmbedOptions {
 
 /**
  * Google's embedding task hint, applied per call (contrato compartido §4:
- * campo `task_type` del body de `POST /v1/embeddings`). Antes vivía en
- * `packages/models/src/embedding-catalog.ts`.
+ * campo `task_type` del body de `POST /v1/embeddings`), con fallback del
+ * Gateway a `embedding-default` (`gemini-embedding-001`, 768 dimensiones).
  */
 export type EmbeddingTaskType =
   | "SEMANTIC_SIMILARITY"
@@ -208,6 +208,6 @@ export interface InferenceKit {
    * fallback policy belongs to the caller.
    */
   decide: (options: DecideOptions) => Promise<Decision>;
-  /** Catálogo completo (contratos incluidos) con caché TTL de 60 s. */
-  fetchModelCatalog: () => Promise<GatewayModelEntry[]>;
+  /** Catálogo público (modelos user-invocable, sin contratos) con caché TTL de 60 s. */
+  fetchPublicModelCatalog: () => Promise<GatewayModelEntry[]>;
 }

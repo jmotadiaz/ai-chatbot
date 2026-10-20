@@ -4,10 +4,11 @@ import { ToolLoopAgent, type ToolSet, type LanguageModel } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModelV3, SpeechModelV3 } from "@ai-sdk/provider";
-import { config } from "config";
+import { config, EMBEDDING_DIMENSIONS } from "config";
 import { getTraceContext, isTracingEnabled, wrapWithTracing } from "tracing";
-import { fetchModelCatalog, getModelCatalogSnapshot } from "./catalog";
+import { fetchPublicModelCatalog, getModelCatalogSnapshot } from "./catalog";
 import { gatewayBaseUrl, gatewayHeaders } from "./gateway";
+import { IMAGE_CONTRACT, createGatewayImageModel } from "./gateway-image-model";
 import type {
   CreateAgentOptions,
   Decision,
@@ -54,6 +55,13 @@ const buildGatewayProvider = () =>
 
 const modelCache = new Map<string, ModelConfiguration>();
 
+/**
+ * Transport propio del contrato de imagen (`image-default`), memoizado: el
+ * `openai-compatible` genérico no parsea partes de imagen ni admite
+ * `modalities` en el body (ver `gateway-image-model.ts`).
+ */
+let gatewayImageModel: LanguageModelV3 | undefined;
+
 const mergeProviderOptions = (
   base: ModelConfiguration,
   providerOptions: ProviderOptions | undefined,
@@ -79,7 +87,10 @@ function languageModel(
 
   let base = modelCache.get(idOrContract);
   if (!base) {
-    const model: LanguageModelV3 = buildGatewayProvider().chatModel(idOrContract);
+    const model: LanguageModelV3 =
+      idOrContract === IMAGE_CONTRACT
+        ? (gatewayImageModel ??= createGatewayImageModel())
+        : buildGatewayProvider().chatModel(idOrContract);
     base = {
       model: model as LanguageModel,
       company: entry?.company ?? "model-gateway",
@@ -145,7 +156,6 @@ function createAgent<TOOLS extends ToolSet = ToolSet>(
 // ---------------------------------------------------------------------------
 
 const EMBEDDING_CONTRACT = "embedding-default";
-const EMBEDDING_DIMENSIONS = 768;
 
 /**
  * `embed(values, { taskType })`: `POST /v1/embeddings` con
@@ -378,5 +388,5 @@ export const inferenceKit: InferenceKit = {
   createAgent,
   createAgentModel,
   decide,
-  fetchModelCatalog,
+  fetchPublicModelCatalog,
 };

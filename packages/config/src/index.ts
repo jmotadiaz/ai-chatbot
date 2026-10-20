@@ -1,5 +1,14 @@
 export { ENV_CATALOG, getSpec } from "./catalog";
 export type { EnvKey, EnvVarSpec } from "./catalog";
+export {
+  EMBEDDING_DIMENSIONS,
+  GATEWAY_THINKING_LEVELS,
+} from "./gateway-contract";
+export type {
+  GatewayModelCost,
+  GatewayModelEntry,
+  ThinkingLevel,
+} from "./gateway-contract";
 export { readEnv, resolveSecret } from "./source";
 export { ConfigError } from "./errors";
 export { getAccessorRegistry } from "./builders";

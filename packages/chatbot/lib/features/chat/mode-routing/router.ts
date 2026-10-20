@@ -49,7 +49,7 @@ const pickProbabilities = (
 
 /**
  * Real `ChatModeRouterPort`, a thin composition over the kit's generic
- * `decide`: asks the Chat Mode Routing question (by `Model Role`, so a
+ * `decide`: asks the Chat Mode Routing question (via the `decision-default` contract, so a
  * catalog change never touches this feature), maps the answered `choice` to a
  * Resolved Chat Mode, and copies the rest of the provenance as-is.
  *
