@@ -83,9 +83,6 @@ beforeEach(() => {
     "CODING_AGENT_AUTH_JSON",
     "MODEL_GATEWAY_URL",
     "MODEL_GATEWAY_API_KEY",
-    "AI_GATEWAY_API_KEY",
-    "OPENROUTER_API_KEY",
-    "OPENCODE_ZEN_API_KEY",
   ]) {
     savedEnv[key] = process.env[key];
   }
