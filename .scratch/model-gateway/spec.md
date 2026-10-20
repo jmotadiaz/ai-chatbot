@@ -114,6 +114,37 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
   - Corre con `DynamicUser=yes` (UID transitorio por arranque) y `ProtectHome=yes`, y ejecuta un artefacto copiado a `/opt/model-gateway` (`scripts/deploy.sh`: sello del commit desplegado, guarda de árbol limpio, health check y `--ref` para volver atrás): así ningún otro proceso del host — incluidos los agentes que corren como el usuario operador — puede leer `$CREDENTIALS_DIRECTORY`. La unidad fija además `CONFIG_FILE_PATH=/opt/model-gateway/config.yaml` (LiteLLM carga el YAML de esa variable) y usa `StateDirectory=`/`CacheDirectory=` como `HOME` escribible del UID transitorio.
   - `run-gateway.sh` exporta en memoria cada fichero de `$CREDENTIALS_DIRECTORY` a su variable de entorno en mayúsculas antes de hacer `exec uvicorn`.
 
+### 2.6 Aliases estables de familia/tier (solo enrutado)
+
+`config.yaml` declara `router_settings.model_group_alias` (mecanismo nativo de
+LiteLLM) con nombres de familia/tier que no cambian entre versiones:
+
+| Alias | Destino (id canónico del catálogo) |
+| :--- | :--- |
+| `deepseek-flash` | `Deepseek v4.1 Flash` |
+| `glm-flash` | `GLM 5.3 Flash` |
+| `glm-pro` | `GLM 5.3` |
+| `mimo-flash` | `MiMo V2.6 Flash` |
+| `mimo-pro` | `MiMo V2.6 Pro` |
+| `meta-muse-spark` | `Muse Spark 1.3` |
+
+- Son **solo de enrutado**: LiteLLM resuelve el alias al `model_name` canónico
+  antes de elegir deployment, así que funcionan como `model` en
+  `/v1/chat/completions` (y cualquier ruta de LiteLLM que acepte `model`), pero
+  **no** forman parte del catálogo: `GET /v1/models/catalog` sigue publicando
+  únicamente los ids canónicos, ni siquiera con `?include_internal=true`. El
+  picker no los muestra.
+- Cada entrada usa la forma `{model: <model_name>, hidden: true}` de
+  `RouterModelGroupAliasItem`; `hidden` evita que el `/v1/models` nativo de
+  LiteLLM los duplique en el listado.
+- Un bump de versión se hace en `config.yaml`: se añade/actualiza el modelo en
+  `model_list` y se reapunta el alias. Los consumidores que invocan el alias no
+  cambian. `tests/test_catalog.py` valida que todo alias apunte a un
+  `model_name` existente y que no colisione con ningún id.
+- No hay alias `deepseek-pro`: el Gateway no declara un tier Pro de Deepseek
+  (solo `deepseek-v4.1-flash`); si se añade `Deepseek v4 Pro`, se registra
+  también su alias.
+
 ---
 
 ## 3. Cambios en `packages/config`

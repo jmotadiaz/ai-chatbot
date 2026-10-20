@@ -18,6 +18,29 @@ verdad, sin base de datos), envuelto en un micro-entrypoint FastAPI
   (montado bajo FastAPI en `server.py`), autenticados con el mismo bearer
   (`master_key` en `config.yaml`).
 
+## Aliases de modelo (nombres estables)
+
+Además de los ids canónicos, el Gateway acepta aliases de familia/tier que no
+cambian entre versiones de modelo (`router_settings.model_group_alias`; ver
+`CONTRACT.md` y spec §2.6):
+
+| Alias | Modelo canónico |
+| :--- | :--- |
+| `deepseek-flash` | `Deepseek v4.1 Flash` |
+| `glm-flash` | `GLM 5.3 Flash` |
+| `glm-pro` | `GLM 5.3` |
+| `mimo-flash` | `MiMo V2.6 Flash` |
+| `mimo-pro` | `MiMo V2.6 Pro` |
+| `meta-muse-spark` | `Muse Spark 1.3` |
+
+- Se aceptan como `model` en `/v1/chat/completions` y el resto de rutas de
+  LiteLLM, pero **no** aparecen en `GET /v1/models/catalog` (ni en el picker);
+  `hidden: true` los excluye también del `/v1/models` nativo.
+- Un bump de versión se hace reapuntando el alias en `config.yaml`: los
+  consumidores que invocan el alias no cambian.
+- No hay `deepseek-pro`: el Gateway no declara un tier Pro de Deepseek (solo
+  `deepseek-v4.1-flash`).
+
 ## Cómo arrancarlo
 
 ```bash

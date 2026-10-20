@@ -14,6 +14,11 @@
 #   soportado más cercano.
 # - Las API keys NUNCA van en este fichero: os.environ/<VAR>, inyectadas por
 #   scripts/run-gateway.sh desde systemd-creds ($CREDENTIALS_DIRECTORY).
+# - `router_settings.model_group_alias` publica aliases estables de familia/tier
+#   (p. ej. deepseek-flash): los consumidores invocan el alias y aquí se
+#   reapunta la versión concreta sin tocarles el código. Son SOLO de enrutado:
+#   no entran en GET /v1/models/catalog ni en el picker, y `hidden: true` evita
+#   que el /v1/models nativo de LiteLLM los duplique.
 
 general_settings:
   # Misma credencial que el endpoint /v1/models/catalog de server.py.
@@ -26,6 +31,36 @@ general_settings:
 litellm_settings:
   drop_params: true
   num_retries: 3
+
+# ------------------- Aliases estables de familia/tier --------------------
+# Solo resuelven el `model` de la petición al modelo canónico de abajo; el
+# catálogo (y por tanto el picker) sigue publicando los ids canónicos.
+# `hidden: true` los saca del listado nativo de LiteLLM (/v1/models).
+#
+# Un bump de versión se hace en este fichero: se añade/actualiza la entrada del
+# modelo en `model_list` y se reapunta su alias aquí. Los consumidores que
+# invocan el alias no cambian. No hay alias `deepseek-pro` porque el gateway no
+# tiene (ni necesita hoy) un tier Pro de Deepseek: solo v4.1 Flash.
+router_settings:
+  model_group_alias:
+    deepseek-flash:
+      model: Deepseek v4.1 Flash
+      hidden: true
+    glm-flash:
+      model: GLM 5.3 Flash
+      hidden: true
+    glm-pro:
+      model: GLM 5.3
+      hidden: true
+    mimo-flash:
+      model: MiMo V2.6 Flash
+      hidden: true
+    mimo-pro:
+      model: MiMo V2.6 Pro
+      hidden: true
+    meta-muse-spark:
+      model: Muse Spark 1.3
+      hidden: true
 
 model_list:
   # ---------- 14 modelos user_invocable: true (selector de modelos) ----------

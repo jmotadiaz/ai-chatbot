@@ -51,6 +51,16 @@ DEFAULT_CONTRACTS = [
     "tts-default",
 ]
 
+# Alias estable -> id canónico del catálogo. Solo enrutado: no son ids.
+MODEL_ALIASES = {
+    "deepseek-flash": "Deepseek v4.1 Flash",
+    "glm-flash": "GLM 5.3 Flash",
+    "glm-pro": "GLM 5.3",
+    "mimo-flash": "MiMo V2.6 Flash",
+    "mimo-pro": "MiMo V2.6 Pro",
+    "meta-muse-spark": "Muse Spark 1.3",
+}
+
 ENTRY_KEYS = {
     "id",
     "company",
@@ -179,6 +189,42 @@ def test_config_model_names_are_the_catalog_ids(config):
         assert "api_key" in params
         assert params["api_key"].startswith("os.environ/")
         assert "sk-" not in str(model)
+
+
+# --- aliases estables de familia/tier (solo enrutado) ---------------------
+
+
+def _model_group_alias(config):
+    return config["router_settings"]["model_group_alias"]
+
+
+def test_model_aliases_are_the_stable_family_tier_names(config):
+    aliases = _model_group_alias(config)
+    assert {alias: entry["model"] for alias, entry in aliases.items()} == MODEL_ALIASES
+    # Sin tier Pro de Deepseek en el gateway: el alias no debe existir.
+    assert "deepseek-pro" not in aliases
+
+
+def test_model_aliases_are_hidden_router_items(config):
+    for alias, entry in _model_group_alias(config).items():
+        # RouterModelGroupAliasItem: dict {model, hidden}, sin claves raras.
+        assert set(entry) == {"model", "hidden"}, alias
+        assert entry["hidden"] is True, alias
+
+
+def test_model_aliases_target_existing_model_names_without_colliding(config):
+    names = {m["model_name"] for m in config["model_list"]}
+    for alias, entry in _model_group_alias(config).items():
+        assert alias not in names, f"{alias}: colisiona con un model_name"
+        assert entry["model"] in names, f"{alias}: destino inexistente {entry['model']!r}"
+
+
+def test_model_aliases_never_leak_into_the_catalog(config):
+    # El catálogo se construye solo desde model_list: los aliases no son ids
+    # ni siquiera con include_internal=true (el picker no debe duplicarlos).
+    for include_internal in (False, True):
+        ids = {m["id"] for m in build_catalog(config, include_internal=include_internal)["models"]}
+        assert not ids & set(_model_group_alias(config))
 
 
 # --- autorización del endpoint --------------------------------------------

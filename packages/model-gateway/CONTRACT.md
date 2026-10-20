@@ -76,3 +76,24 @@ con `modalities: ["image", "text"]` fijadas en `config.yaml` y responde con
 un mensaje multipart (`{type:"text"}` + `{type:"image_url", image_url:{url:"data:…;base64,…"}}`);
 lo consume el transport propio
 `packages/chatbot/lib/infrastructure/ai/gateway-image-model.ts`.
+
+## Aliases de modelo (solo enrutado)
+
+`config.yaml` → `router_settings.model_group_alias` declara nombres estables de
+familia/tier (semántica completa en la spec §2.6). No son parte del schema del
+catálogo: `GET /v1/models/catalog` no los devuelve ni con
+`?include_internal=true`; los consumidores de catálogo siguen usando el `id`
+canónico. Se aceptan como `model` en las rutas de LiteLLM y se reapuntan en
+`config.yaml` cuando cambia la versión del modelo.
+
+| Alias | Destino (id canónico) |
+| :--- | :--- |
+| `deepseek-flash` | `Deepseek v4.1 Flash` |
+| `glm-flash` | `GLM 5.3 Flash` |
+| `glm-pro` | `GLM 5.3` |
+| `mimo-flash` | `MiMo V2.6 Flash` |
+| `mimo-pro` | `MiMo V2.6 Pro` |
+| `meta-muse-spark` | `Muse Spark 1.3` |
+
+No hay alias `deepseek-pro` porque el Gateway no declara un tier Pro de
+Deepseek (solo `deepseek-v4.1-flash`).
