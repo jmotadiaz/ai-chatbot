@@ -1,0 +1,33 @@
+[Unit]
+Description=Model Gateway (LiteLLM Proxy stateless + FastAPI catalog)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=javier
+Group=javier
+WorkingDirectory=/home/javier/projects/ai-chatbot/packages/model-gateway
+ExecStart=/usr/bin/env bash /home/javier/projects/ai-chatbot/packages/model-gateway/scripts/run-gateway.sh
+Restart=on-failure
+RestartSec=5
+
+# Credenciales cifradas (systemd-creds), desencriptadas a $CREDENTIALS_DIRECTORY.
+# run-gateway.sh las exporta como variables de entorno efímeras del proceso.
+LoadCredentialEncrypted=model_gateway_api_key:/etc/model-gateway/creds/model_gateway_api_key.cred
+LoadCredentialEncrypted=opencode_zen_api_key:/etc/model-gateway/creds/opencode_zen_api_key.cred
+LoadCredentialEncrypted=ai_gateway_api_key:/etc/model-gateway/creds/ai_gateway_api_key.cred
+LoadCredentialEncrypted=openrouter_api_key:/etc/model-gateway/creds/openrouter_api_key.cred
+LoadCredentialEncrypted=google_generative_ai_api_key:/etc/model-gateway/creds/google_generative_ai_api_key.cred
+LoadCredentialEncrypted=cohere_api_key:/etc/model-gateway/creds/cohere_api_key.cred
+LoadCredentialEncrypted=openai_api_key:/etc/model-gateway/creds/openai_api_key.cred
+
+# Endurecido: sin elevation, sin escritura salvo donde toca, sin caps.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/javier/projects/ai-chatbot/packages/model-gateway
+
+[Install]
+WantedBy=multi-user.target

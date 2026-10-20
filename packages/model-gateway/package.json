@@ -1,0 +1,14 @@
+{
+  "name": "@ai-chatbot/model-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Model Gateway: LiteLLM Proxy stateless + FastAPI /v1/models/catalog + systemd-creds. Sin dependencias del workspace (extraíble con mv + git init).",
+  "scripts": {
+    "dev": "bash scripts/run-gateway.sh",
+    "start": "bash scripts/run-gateway.sh",
+    "creds:set": "bash scripts/manage-creds.sh set",
+    "creds:list": "bash scripts/manage-creds.sh list",
+    "systemd:install": "sudo cp systemd/model-gateway.service /etc/systemd/system/model-gateway.service && sudo systemctl daemon-reload && sudo systemctl enable --now model-gateway",
+    "test": "python3 -m pytest tests -q"
+  }
+}
