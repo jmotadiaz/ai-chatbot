@@ -30,6 +30,8 @@ const catalogDef = {
   PERPLEXITY_API_KEY: { description: "API key de Perplexity", type: "string", required: false, secret: true },
   GOOGLE_GENERATIVE_AI_API_KEY: { description: "API key de Google Generative AI (embeddings)", type: "string", required: false, secret: true },
   COHERE_API_KEY: { description: "API key de Cohere (rerank)", type: "string", required: false, secret: true },
+  MODEL_GATEWAY_URL: { description: "URL base del Model Gateway (http://127.0.0.1:4000 en dev/prod; el Mock Model Gateway de test escucha en http://127.0.0.1:4001)", type: "string", required: false, secret: false, default: "http://127.0.0.1:4000" },
+  MODEL_GATEWAY_API_KEY: { description: "API key del Model Gateway (bearer de /v1/*)", type: "string", required: false, secret: true },
   EXASEARCH_API_KEY: { description: "API key de Exa Search (actual)", type: "string", required: false, secret: true },
   EXA_API_KEY: { description: "API key de Exa (legacy; alias de EXASEARCH_API_KEY)", type: "string", required: false, secret: true },
   MCP_API_KEY: { description: "API key de autenticación del mcp-server", type: "string", required: false, secret: true },

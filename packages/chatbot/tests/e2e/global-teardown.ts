@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import { reset } from "drizzle-seed";
+import postgres from "postgres";
+import { stopMockGateway } from "../mocks/gateway/server";
 import { schema } from "@/lib/infrastructure/db/db";
 
 const getTestPostgresUrl = () =>
@@ -16,6 +17,8 @@ async function globalTeardown() {
     console.warn("[global-teardown] Skipping DB reset due to error:", error);
   } finally {
     await client.end({ timeout: 0 }).catch(() => {});
+    // El mock es de este proceso (el global setup lo arrancó): bajarlo aquí.
+    await stopMockGateway();
   }
 }
 

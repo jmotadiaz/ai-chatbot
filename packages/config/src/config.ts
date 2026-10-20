@@ -1,9 +1,10 @@
 import {
   bool, intOptional, secret, secretOptional, string, stringOptional,
 } from "./builders";
-import { assertDbMatchesEntorno } from "./guardrails";
+import { assertDbMatchesEntorno, assertGatewayMatchesEntorno } from "./guardrails";
 
 const postgresUrlRaw = secret("POSTGRES_URL");
+const modelGatewayUrlRaw = string("MODEL_GATEWAY_URL");
 
 /**
  * API pública del paquete. Cada accessor lee la variable en cada llamada
@@ -39,6 +40,12 @@ export const config = {
   // Guardarraíl de coherencia (ticket 05): NEXT_PUBLIC_ENV ↔ DSN aislado
   // (test↔5434/test, dev↔5433/dev, prod↔5435/prod) antes de conectar.
   postgresUrl: () => assertDbMatchesEntorno(postgresUrlRaw()),
+
+  // --- Model Gateway (spec ADR 0010) ---
+  // Igual patrón que la DB: el accessor aplica el guardarraíl de coherencia
+  // Entorno↔puerto (test↔4001, el Mock Model Gateway) antes de devolver la URL.
+  modelGatewayUrl: () => assertGatewayMatchesEntorno(modelGatewayUrlRaw()),
+  modelGatewayApiKey: secretOptional("MODEL_GATEWAY_API_KEY"),
   gatewayApiKey: secretOptional("AI_GATEWAY_API_KEY"),
   opencodeZenApiKey: secretOptional("OPENCODE_ZEN_API_KEY"),
   openRouterApiKey: secretOptional("OPENROUTER_API_KEY"),
