@@ -7,7 +7,7 @@
 **Status:** done
 
 - [x] Eliminados por completo los directorios `packages/models` y `packages/inference` y actualizados `pnpm-lock.yaml` y los scripts raíz que los referenciaban.
-- [x] Eliminadas de `packages/config/src/catalog.ts` y `packages/config/src/config.ts` las 10 variables de proveedores externos (`AI_GATEWAY_API_KEY`, `OPENCODE_ZEN_API_KEY`, `OPENROUTER_API_KEY`, `DEEPINFRA_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY`, `GROQ_API_KEY`, `PERPLEXITY_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `COHERE_API_KEY`), quedando únicamente `MODEL_GATEWAY_URL` y `MODEL_GATEWAY_API_KEY`.
+- [x] Eliminadas de `packages/config/src/catalog.ts` y `packages/config/src/config.ts` las 10 variables de proveedores externos (`AI_GATEWAY_API_KEY`, `OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `DEEPINFRA_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY`, `GROQ_API_KEY`, `PERPLEXITY_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `COHERE_API_KEY`), quedando únicamente `MODEL_GATEWAY_URL` y `MODEL_GATEWAY_API_KEY`.
 - [x] Actualizado `packages/chatbot/eslint.config.mjs`: ningún archivo `"use client"` puede importar `@/lib/infrastructure/ai`, y ningún archivo fuera de `packages/chatbot/lib/infrastructure/ai/` puede importar `@ai-sdk/*`.
 - [x] Actualizados los specs E2E (`packages/chatbot/tests/e2e/`) para trabajar contra el catálogo de capacidades servido por el Mock Model Gateway (`:4001`), eliminando `packages/chatbot/tests/mocks/ai/capabilities.ts` y `packages/chatbot/tests/unit/mocks/ai/capabilities.test.ts`.
 - [x] Actualizado `AGENTS.md` de la raíz para reflejar la nueva estructura de paquetes (`chatbot`, `coding-agent`, `model-gateway`, `config`, `tracing`).

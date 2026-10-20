@@ -16,7 +16,7 @@ CREDS_DIR="/etc/model-gateway/creds"
 # 1 propia (MODEL_GATEWAY_API_KEY) + 6 proveedores activos (spec §2.5).
 REQUIRED_KEYS=(
   model_gateway_api_key
-  opencode_zen_api_key
+  opencode_api_key
   ai_gateway_api_key
   openrouter_api_key
   google_generative_ai_api_key

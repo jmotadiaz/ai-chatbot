@@ -11,7 +11,7 @@ Referencias de dominio y decisiones: [`CONTEXT.md`](../../CONTEXT.md), [ADR 0010
    - Desacoplado desde el día 1: vive temporalmente en `packages/model-gateway` sin ninguna dependencia del workspace para poder extraerse a un repositorio independiente con un simple `mv` + `git init`.
    - Desplegado como unidad de sistema **systemd** (`model-gateway.service` en `:4000`) que custodia todas las API keys de proveedores terceros cifradas con **`systemd-creds`** (`LoadCredentialEncrypted=`).
 2. **Un único proveedor en `ai-chatbot` (`chatbot` + `coding-agent`)**:
-   - Se eliminan de `packages/config` y de los `.env.*` las 10 API keys de proveedores externos (`OPENCODE_ZEN_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `COHERE_API_KEY`, `AI_GATEWAY_API_KEY`, `DEEPINFRA_API_KEY`, `GROQ_API_KEY`, `PERPLEXITY_API_KEY`, `XAI_API_KEY`).
+   - Se eliminan de `packages/config` y de los `.env.*` las 10 API keys de proveedores externos (`OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `COHERE_API_KEY`, `AI_GATEWAY_API_KEY`, `DEEPINFRA_API_KEY`, `GROQ_API_KEY`, `PERPLEXITY_API_KEY`, `XAI_API_KEY`).
    - Se añaden únicamente `MODEL_GATEWAY_URL` y `MODEL_GATEWAY_API_KEY` como variables de entorno estándar en `.env.{dev,prod,test}` (el resto de variables de `ai-chatbot` como `POSTGRES_URL` o `AUTH_SECRET` permanecen exactamente igual que hoy).
 3. **Fin del catálogo tipado estático — Consumo dual de modelos**:
    - **En runtime (`GET /v1/models/catalog`)**: el propio Gateway filtra en servidor (`user_invocable: true`) y devuelve el esquema limpio de metadatos. `chatbot` lo consume para alimentar el Model Picker y la configuración por modelo (hidratado a `"use client"` vía `<ModelCatalogProvider>` en `app/(chat)/layout.tsx`), y `coding-agent` lo consume al arrancar su worker para escribir el `models.json` de Pi con un único provider (`model-gateway`).
@@ -85,8 +85,8 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
 | :--- | :--- | :--- | :--- |
 | `fast-default` | `chatTitle`, `memoryExtraction`, `memoryQueryDecomposition`, `webSearchUrlIntent` | **GPT OSS Mini** (`openai/gpt-oss-20b`, `order: ["groq"]`, ZDR) | Vercel AI Gateway (`AI_GATEWAY_API_KEY`) |
 | `flash-default` | `englishGrammarCheck`, `englishTranslate` | **Gemini 3.1 Flash Lite** (`google/gemini-3.1-flash-lite`, reasoning `minimal`, ZDR) | Vercel AI Gateway (`AI_GATEWAY_API_KEY`) |
-| `vision-default` | `compactionMultimedia` | **MiMo V2.6 Flash** (`mimo-v2.6-flash`, soporta `img` + `pdf`) | OpenCode Go (`OPENCODE_ZEN_API_KEY`) |
-| `reasoning-default` | `metaPromptRefiner`, `compactionText` | **Deepseek v4.1 Flash** (`deepseek-v4.1-flash`, reasoning `max`, ZDR) | OpenCode Go (`OPENCODE_ZEN_API_KEY`) |
+| `vision-default` | `compactionMultimedia` | **MiMo V2.6 Flash** (`mimo-v2.6-flash`, soporta `img` + `pdf`) | OpenCode Go (`OPENCODE_API_KEY`) |
+| `reasoning-default` | `metaPromptRefiner`, `compactionText` | **Deepseek v4.1 Flash** (`deepseek-v4.1-flash`, reasoning `max`, ZDR) | OpenCode Go (`OPENCODE_API_KEY`) |
 | `free-default` | Suites de `evals`, pruebas de humo con LLM real | **Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b:free`) | OpenRouter (`OPENROUTER_API_KEY`) |
 | `image-default` | `imageEdit` (`responseModalities: ["IMAGE"]`) | **Nano Banana** (`google/gemini-2.5-flash-image`) | OpenRouter (`OPENROUTER_API_KEY`) |
 | `embedding-default` | `embed` en RAG y memoria (768 dimensiones + `taskType`) | **Gemini Embedding 001** (`gemini-embedding-001`) | Google (`GOOGLE_GENERATIVE_AI_API_KEY`) |
@@ -99,7 +99,7 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
 - Directorio de credenciales cifradas en el host: `/etc/model-gateway/creds/*.cred`.
 - Los secretos requeridos por el Gateway se reducen a **7 credenciales** (1 propia + 6 proveedores activos):
   1. `model_gateway_api_key` (`MODEL_GATEWAY_API_KEY`)
-  2. `opencode_zen_api_key` (`OPENCODE_ZEN_API_KEY`)
+  2. `opencode_api_key` (`OPENCODE_API_KEY`)
   3. `ai_gateway_api_key` (`AI_GATEWAY_API_KEY`)
   4. `openrouter_api_key` (`OPENROUTER_API_KEY`)
   5. `google_generative_ai_api_key` (`GOOGLE_GENERATIVE_AI_API_KEY`)
@@ -119,7 +119,7 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
 ## 3. Cambios en `packages/config`
 
 1. En `packages/config/src/catalog.ts` y `config.ts`:
-   - Eliminar `AI_GATEWAY_API_KEY`, `OPENCODE_ZEN_API_KEY`, `OPENROUTER_API_KEY`, `DEEPINFRA_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY`, `GROQ_API_KEY`, `PERPLEXITY_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `COHERE_API_KEY`.
+   - Eliminar `AI_GATEWAY_API_KEY`, `OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `DEEPINFRA_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY`, `GROQ_API_KEY`, `PERPLEXITY_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `COHERE_API_KEY`.
    - Añadir:
      - `MODEL_GATEWAY_URL` (`config.modelGatewayUrl()`, ej. `http://127.0.0.1:4000` en dev/prod y `http://127.0.0.1:4001` en test).
      - `MODEL_GATEWAY_API_KEY` (`config.modelGatewayApiKey()`, variable de entorno estándar).

@@ -30,7 +30,7 @@ model_list:
     litellm_params:
       model: openai/deepseek-v4.1-flash
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: true
@@ -55,7 +55,7 @@ model_list:
     litellm_params:
       model: openai/kimi-k3
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -83,7 +83,7 @@ model_list:
     litellm_params:
       model: anthropic/minimax-m3
       api_base: https://opencode.ai/zen/go
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -108,7 +108,7 @@ model_list:
     litellm_params:
       model: anthropic/qwen3.8-flash
       api_base: https://opencode.ai/zen/go
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -133,7 +133,7 @@ model_list:
     litellm_params:
       model: anthropic/qwen3.8-max
       api_base: https://opencode.ai/zen/go
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -160,7 +160,7 @@ model_list:
     litellm_params:
       model: openai/mimo-v2.6-flash
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -185,7 +185,7 @@ model_list:
     litellm_params:
       model: openai/mimo-v2.6-pro
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -210,7 +210,7 @@ model_list:
     litellm_params:
       model: openai/muse-spark-1.3-contributor
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -235,7 +235,7 @@ model_list:
     litellm_params:
       model: openai/glm-5.3
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -260,7 +260,7 @@ model_list:
     litellm_params:
       model: openai/hy3
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -285,7 +285,7 @@ model_list:
     litellm_params:
       model: openai/glm-5.3-flash
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -310,7 +310,7 @@ model_list:
     litellm_params:
       model: openai/step-5-preview-free
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -335,7 +335,7 @@ model_list:
     litellm_params:
       model: anthropic/claude-haiku-5-5
       api_base: https://opencode.ai/zen/go
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -363,7 +363,7 @@ model_list:
     litellm_params:
       model: gemini/gemini-4-argon-contributor
       api_base: https://opencode.ai/inference/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -423,7 +423,7 @@ model_list:
     litellm_params:
       model: openai/mimo-v2.6-flash
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: false
       company: xiaomi
@@ -437,7 +437,7 @@ model_list:
     litellm_params:
       model: openai/deepseek-v4.1-flash
       api_base: https://opencode.ai/zen/go/v1
-      api_key: os.environ/OPENCODE_ZEN_API_KEY
+      api_key: os.environ/OPENCODE_API_KEY
       reasoning_effort: "max"
     model_info:
       user_invocable: false

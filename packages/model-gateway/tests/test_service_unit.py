@@ -20,7 +20,7 @@ DEPLOY_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "deploy.sh"
 
 EXPECTED_CREDENTIALS = [
     "model_gateway_api_key",
-    "opencode_zen_api_key",
+    "opencode_api_key",
     "ai_gateway_api_key",
     "openrouter_api_key",
     "google_generative_ai_api_key",

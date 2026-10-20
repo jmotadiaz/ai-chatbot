@@ -31,7 +31,7 @@ RestartSec=5
 # Credenciales cifradas (systemd-creds), desencriptadas a $CREDENTIALS_DIRECTORY.
 # run-gateway.sh las exporta como variables de entorno efímeras del proceso.
 LoadCredentialEncrypted=model_gateway_api_key:/etc/model-gateway/creds/model_gateway_api_key.cred
-LoadCredentialEncrypted=opencode_zen_api_key:/etc/model-gateway/creds/opencode_zen_api_key.cred
+LoadCredentialEncrypted=opencode_api_key:/etc/model-gateway/creds/opencode_api_key.cred
 LoadCredentialEncrypted=ai_gateway_api_key:/etc/model-gateway/creds/ai_gateway_api_key.cred
 LoadCredentialEncrypted=openrouter_api_key:/etc/model-gateway/creds/openrouter_api_key.cred
 LoadCredentialEncrypted=google_generative_ai_api_key:/etc/model-gateway/creds/google_generative_ai_api_key.cred
