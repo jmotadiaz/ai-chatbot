@@ -211,7 +211,7 @@ export async function getSubagentSessionAction(input: {
 
 export interface CodingAgentModel {
   id: string;
-  /** Niveles de razonamiento del modelo, según el registry de Pi en el worker. */
+  /** Niveles de razonamiento del modelo, según el catálogo del Gateway sincronizado en el worker. */
   levels: ThinkingLevel[];
   /** Nivel que se aplica al elegir este modelo, del catálogo. */
   defaultLevel: ThinkingLevel | undefined;
@@ -219,8 +219,9 @@ export interface CodingAgentModel {
 
 /**
  * Modelos disponibles con todo lo que la UI necesita saber de razonamiento.
- * Los niveles solo los conoce el worker (el `thinkingLevelMap` vive en el
- * registry de Pi, no en el catálogo), así que este es el único canal.
+ * El catálogo sincronizado del Gateway vive en el worker (sesiones de Pi),
+ * y es de donde salen tanto los niveles soportados como el default
+ * (`session-manager.ts`), así que este es el único canal.
  *
  * Con el proveedor único Gateway el id de Pi es el id del catálogo: se pasa
  * tal cual y se valida en runtime para derivar el default level.

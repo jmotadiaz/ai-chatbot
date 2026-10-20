@@ -13,7 +13,7 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
 /**
  * Runtime model catalog, synced from the Model Gateway (ADR 0010).
  *
- * The worker no longer ships a static catalog (`packages/models` is gone):
+ * The worker no longer ships a static catalog:
  * on startup it fetches `GET ${MODEL_GATEWAY_URL}/v1/models/catalog` and
  * materializes the Pi `models.json` with a single provider (`model-gateway`),
  * so every model Pi streams through the Gateway's OpenAI-compatible endpoint.
