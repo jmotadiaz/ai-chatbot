@@ -18,6 +18,10 @@
 general_settings:
   # Misma credencial que el endpoint /v1/models/catalog de server.py.
   master_key: os.environ/MODEL_GATEWAY_API_KEY
+  # Sin refresco periódico de metadatos contra los /models de los upstreams:
+  # config.yaml es la única fuente de verdad (stateless) y así el servicio no
+  # hace llamadas salientes cada 5 min (coste y ruido).
+  disable_model_info_refresh: true
 
 litellm_settings:
   drop_params: true

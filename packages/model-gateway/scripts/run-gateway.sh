@@ -8,6 +8,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# El Gateway es stateless por diseño (ADR 0010): sin DB. Si el shell del
+# operador arrastra un DATABASE_URL (p. ej. el de prod en :5435), LiteLLM
+# intentaría montar Prisma contra esa base en el arranque — nunca debe pasar.
+unset DATABASE_URL DATABASE_URL_UNPOOLED POSTGRES_URL POSTGRES_URL_NON_POOLING POSTGRES_URL_NO_SSL
+
 if [[ -z "${CREDENTIALS_DIRECTORY:-}" ]]; then
   echo "error: CREDENTIALS_DIRECTORY no está definido (ejecuta bajo systemd con LoadCredentialEncrypted=)" >&2
   exit 1
