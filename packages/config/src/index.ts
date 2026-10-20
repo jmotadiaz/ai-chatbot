@@ -1,6 +1,7 @@
 export { ENV_CATALOG, getSpec } from "./catalog";
 export type { EnvKey, EnvVarSpec } from "./catalog";
 export {
+  EMBEDDING_DIMENSIONS,
   GATEWAY_THINKING_LEVELS,
 } from "./gateway-contract";
 export type {

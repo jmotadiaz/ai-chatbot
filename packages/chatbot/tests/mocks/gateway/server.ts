@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { EMBEDDING_DIMENSIONS } from "config";
 import { TEST_INTERNAL_MODELS, TEST_MODELS, type MockCatalogEntry } from "./catalog";
 
 /**
@@ -57,11 +58,15 @@ function parseJson(body: string): Record<string, unknown> | undefined {
 }
 
 /** Bearer requerido en todas las rutas: 401 sin header (detecta misconfiguración). */
-function isAuthenticated(req: IncomingMessage): boolean {
-  return typeof req.headers.authorization === "string" && req.headers.authorization.length > 0;
+function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
+  if (typeof req.headers.authorization === "string" && req.headers.authorization.length > 0) {
+    return true;
+  }
+  sendJson(res, 401, {
+    error: { message: "Missing Authorization header", type: "auth_error", code: "unauthorized" },
+  });
+  return false;
 }
-
-const unauthorized = (res: ServerResponse, body: unknown) => sendJson(res, 401, body);
 
 // ---------------------------------------------------------------------------
 // Chat completions (OpenAI-compatible)
@@ -177,144 +182,163 @@ const MID_STREAM_ERROR = {
 };
 
 /**
- * Emite un trozo de texto y CORTA el stream con un evento `data: {"error": ...}`:
- * el provider openai-compatible parsea ese chunk vía su errorSchema y lo
- * traduce a una parte `{ type: "error" }` de stream (finishReason "error"),
- * la misma forma que hoy produce el `MOCK_MID_STREAM_ERROR` en memoria y la
- * que `packages/chatbot/lib/features/chat` propaga a la UI como `onError`.
- * Sin `[DONE]`: el stream termina abruptamente tras el error.
+ * `failsMidStream` ya no necesita helper propio: su guion vive en
+ * `chatScript` (emite texto y corta con un evento `data: {"error": …}` sin
+ * `[DONE]`; el provider openai-compatible lo parsea a una parte
+ * `{ type: "error" }` con finishReason "error").
  */
-function streamFailsMidStream(res: ServerResponse, model: string): void {
-  res.write(sseChunk({ role: "assistant", content: MID_STREAM_TEXT }, undefined, model));
-  res.write(`data: ${JSON.stringify(MID_STREAM_ERROR)}\n\n`);
-  res.end();
+
+/**
+ * Un paso del guion de chat: un delta SSE (con su finish_reason opcional) o,
+ * en el caso `failsMidStream`, el error que corta el stream sin `[DONE]`.
+ */
+interface ChatStep {
+  delta?: ChatChunkDelta;
+  finishReason?: string;
+  abortWithError?: unknown;
 }
 
-function streamChat(res: ServerResponse, body: ChatRequest): void {
-  startSse(res);
+/**
+ * Guion de un chat completion por id de modelo — la cascada sobre el id vive
+ * AQUÍ, una sola vez; los caminos streaming y no-streaming son solo dos
+ * renderizados del mismo guion (ver `streamScript`/`jsonScript`).
+ */
+function chatScript(body: ChatRequest): {
+  model: string;
+  steps: ChatStep[];
+  /** Contenido completo del mensaje para el camino no-streaming (JSON). */
+  jsonContent: string | unknown[];
+} {
   const model = body.model ?? "basicChat";
   const last = body.messages?.at(-1);
 
-  // --- failsMidStream: error tras el primer trozo ---
-  if (model === "failsMidStream") {
-    streamFailsMidStream(res, model);
-    return;
-  }
+  switch (model) {
+    case "failsMidStream":
+      return {
+        model,
+        steps: [
+          { delta: { role: "assistant", content: MID_STREAM_TEXT } },
+          { delta: {}, abortWithError: MID_STREAM_ERROR },
+        ],
+        // El camino JSON nunca aborta: texto de contrato genérico.
+        jsonContent: contractText(model),
+      };
 
-  // --- canExecuteTools: dos turnos ---
-  if (model === "canExecuteTools") {
-    if (!isToolResult(last)) {
-      res.write(sseChunk({ role: "assistant" }, undefined, model));
-      res.write(
-        sseChunk(
-          {
-            tool_calls: [
-              {
-                index: 0,
-                id: "call-1",
-                type: "function",
-                function: { name: TOOL_NAME, arguments: TOOL_ARGS },
-              },
+    case "canExecuteTools":
+      // Dos turnos: sin resultado de tool → tool_calls; con él → texto final.
+      return isToolResult(last)
+        ? {
+            model,
+            steps: [
+              { delta: { role: "assistant", content: TOOL_ANSWER } },
+              { delta: {}, finishReason: "stop" },
             ],
-          },
-          undefined,
-          model,
-        ),
-      );
-      res.write(sseChunk({}, "tool_calls", model));
-      res.write(SSE_DONE);
+            jsonContent: TOOL_ANSWER,
+          }
+        : {
+            model,
+            steps: [
+              { delta: { role: "assistant" } },
+              {
+                delta: {
+                  tool_calls: [
+                    {
+                      index: 0,
+                      id: "call-1",
+                      type: "function",
+                      function: { name: TOOL_NAME, arguments: TOOL_ARGS },
+                    },
+                  ],
+                },
+              },
+              { delta: {}, finishReason: "tool_calls" },
+            ],
+            // Sin streaming el mock responde directo el texto final.
+            jsonContent: TOOL_ANSWER,
+          };
+
+    case "canProduceReasoning":
+      return {
+        model,
+        steps: [
+          { delta: { role: "assistant" } },
+          { delta: { reasoning_content: REASONING_TEXT } },
+          { delta: { content: REASONING_ANSWER } },
+          { delta: {}, finishReason: "stop" },
+        ],
+        jsonContent: REASONING_ANSWER,
+      };
+
+    case "image-default":
+      return {
+        model,
+        steps: [
+          { delta: { role: "assistant", content: imageContentParts() } },
+          { delta: {}, finishReason: "stop" },
+        ],
+        jsonContent: imageContentParts(),
+      };
+
+    default: {
+      const text =
+        model === "basicChat" || model === "basicChatAlt"
+          ? basicText(model, body.temperature)
+          : model === "canSeeImages"
+            ? VISION_TEXT
+            : model === "alwaysRefuses"
+              ? REFUSAL_TEXT
+              : contractText(model);
+      return {
+        model,
+        steps: [
+          { delta: { role: "assistant", content: text } },
+          { delta: {}, finishReason: "stop" },
+        ],
+        jsonContent: text,
+      };
+    }
+  }
+}
+
+/** Renderiza el guion como SSE OpenAI. */
+function streamScript(res: ServerResponse, body: ChatRequest): void {
+  startSse(res);
+  const script = chatScript(body);
+  for (const step of script.steps) {
+    if (step.abortWithError !== undefined) {
+      res.write(`data: ${JSON.stringify(step.abortWithError)}\n\n`);
       res.end();
       return;
     }
-    res.write(sseChunk({ role: "assistant", content: TOOL_ANSWER }, undefined, model));
-    res.write(sseChunk({}, "stop", model));
-    res.write(SSE_DONE);
-    res.end();
-    return;
+    res.write(sseChunk(step.delta ?? {}, step.finishReason, script.model));
   }
-
-  // --- canProduceReasoning: reasoning_content + texto ---
-  if (model === "canProduceReasoning") {
-    res.write(sseChunk({ role: "assistant" }, undefined, model));
-    res.write(sseChunk({ reasoning_content: REASONING_TEXT }, undefined, model));
-    res.write(sseChunk({ content: REASONING_ANSWER }, undefined, model));
-    res.write(sseChunk({}, "stop", model));
-    res.write(SSE_DONE);
-    res.end();
-    return;
-  }
-
-  // --- image-default: contenido multipart (texto + imagen) ---
-  if (model === "image-default") {
-    res.write(
-      sseChunk(
-        { role: "assistant", content: imageContentParts() },
-        undefined,
-        model,
-      ),
-    );
-    res.write(sseChunk({}, "stop", model));
-    res.write(SSE_DONE);
-    res.end();
-    return;
-  }
-
-  // --- Resto: texto determinista ---
-  const text =
-    model === "basicChat" || model === "basicChatAlt"
-      ? basicText(model, body.temperature)
-      : model === "canSeeImages"
-        ? VISION_TEXT
-        : model === "alwaysRefuses"
-          ? REFUSAL_TEXT
-          : contractText(model);
-  res.write(sseChunk({ role: "assistant", content: text }, undefined, model));
-  res.write(sseChunk({}, "stop", model));
   res.write(SSE_DONE);
   res.end();
+}
+
+/** Renderiza el guion como JSON no-streaming. */
+function jsonScript(res: ServerResponse, body: ChatRequest): void {
+  const script = chatScript(body);
+  sendJson(res, 200, completionJson("", script.model, script.jsonContent));
 }
 
 /** Respuesta determinista simple para los contratos `*-default` (incluye el nombre). */
 const contractText = (model: string) => `Mock response from ${model} (contract).`;
 
 async function handleChatCompletions(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!isAuthenticated(req)) {
-    unauthorized(res, {
-      error: { message: "Missing Authorization header", type: "auth_error", code: "unauthorized" },
-    });
-    return;
-  }
+  if (!requireAuth(req, res)) return;
   const body = (parseJson(await readBody(req)) ?? {}) as ChatRequest;
   if (body.stream) {
-    streamChat(res, body);
+    streamScript(res, body);
     return;
   }
-  const model = body.model ?? "basicChat";
-  const last = body.messages?.at(-1);
-  if (model === "image-default") {
-    sendJson(res, 200, completionJson("", model, imageContentParts()));
-    return;
-  }
-  const text =
-    model === "canExecuteTools" && !isToolResult(last)
-      ? TOOL_ANSWER
-      : model === "canSeeImages"
-        ? VISION_TEXT
-        : model === "alwaysRefuses"
-          ? REFUSAL_TEXT
-          : model === "canProduceReasoning"
-            ? REASONING_ANSWER
-            : model === "basicChat" || model === "basicChatAlt"
-              ? basicText(model, body.temperature)
-              : contractText(model);
-  sendJson(res, 200, completionJson(text, model));
+  jsonScript(res, body);
 }
 
 // ---------------------------------------------------------------------------
 // Embeddings / Rerank / Decisions / Speech
 // ---------------------------------------------------------------------------
 
-const EMBEDDING_DIMENSIONS = 768;
 
 /**
  * Vector determinista derivado del texto (FNV-1a por posición): mismos inputs
@@ -336,12 +360,7 @@ function deterministicEmbedding(text: string): number[] {
 }
 
 async function handleEmbeddings(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!isAuthenticated(req)) {
-    unauthorized(res, {
-      error: { message: "Missing Authorization header", type: "auth_error", code: "unauthorized" },
-    });
-    return;
-  }
+  if (!requireAuth(req, res)) return;
   const body = (parseJson(await readBody(req)) ?? {}) as {
     input?: string | string[];
     model?: string;
@@ -367,12 +386,7 @@ async function handleEmbeddings(req: IncomingMessage, res: ServerResponse): Prom
  * test como vector-puro sin rerank y ningún test cambia de resultado.
  */
 async function handleRerank(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!isAuthenticated(req)) {
-    unauthorized(res, {
-      error: { message: "Missing Authorization header", type: "auth_error", code: "unauthorized" },
-    });
-    return;
-  }
+  if (!requireAuth(req, res)) return;
   const body = (parseJson(await readBody(req)) ?? {}) as { model?: string };
   sendJson(res, 200, { model: body.model ?? "rerank-default", results: [] });
 }
@@ -383,12 +397,7 @@ async function handleRerank(req: IncomingMessage, res: ServerResponse): Promise<
  * uniformes entre los criterios. Alias `/v1/systemone` → mismo handler.
  */
 async function handleDecisions(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!isAuthenticated(req)) {
-    unauthorized(res, {
-      error: { message: "Missing Authorization header", type: "auth_error", code: "unauthorized" },
-    });
-    return;
-  }
+  if (!requireAuth(req, res)) return;
   const body = (parseJson(await readBody(req)) ?? {}) as {
     model?: string;
     questions?: Record<string, { type?: string; criteria?: Record<string, unknown> }>;
@@ -448,12 +457,7 @@ function deterministicWav(input: string): Buffer {
 }
 
 async function handleSpeech(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!isAuthenticated(req)) {
-    unauthorized(res, {
-      error: { message: "Missing Authorization header", type: "auth_error", code: "unauthorized" },
-    });
-    return;
-  }
+  if (!requireAuth(req, res)) return;
   const body = (parseJson(await readBody(req)) ?? {}) as { input?: string };
   const audio = deterministicWav(body.input ?? "");
   res.writeHead(200, { "Content-Type": "audio/mpeg", "Content-Length": audio.length });
@@ -465,10 +469,7 @@ async function handleSpeech(req: IncomingMessage, res: ServerResponse): Promise<
 // ---------------------------------------------------------------------------
 
 function handleCatalog(req: IncomingMessage, res: ServerResponse): void {
-  if (!isAuthenticated(req)) {
-    unauthorized(res, { error: "unauthorized" });
-    return;
-  }
+  if (!requireAuth(req, res)) return;
   // Solo el valor literal "true" activa la vista interna: `has("include_internal")`
   // trataba ?include_internal=false como true (bug de la revisión).
   const includeInternal =

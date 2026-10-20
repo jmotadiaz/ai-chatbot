@@ -4,7 +4,7 @@ import { ToolLoopAgent, type ToolSet, type LanguageModel } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModelV3, SpeechModelV3 } from "@ai-sdk/provider";
-import { config } from "config";
+import { config, EMBEDDING_DIMENSIONS } from "config";
 import { getTraceContext, isTracingEnabled, wrapWithTracing } from "tracing";
 import { fetchPublicModelCatalog, getModelCatalogSnapshot } from "./catalog";
 import { gatewayBaseUrl, gatewayHeaders } from "./gateway";
@@ -156,7 +156,6 @@ function createAgent<TOOLS extends ToolSet = ToolSet>(
 // ---------------------------------------------------------------------------
 
 const EMBEDDING_CONTRACT = "embedding-default";
-const EMBEDDING_DIMENSIONS = 768;
 
 /**
  * `embed(values, { taskType })`: `POST /v1/embeddings` con

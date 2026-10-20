@@ -31,6 +31,14 @@ export const GATEWAY_THINKING_LEVELS: readonly ThinkingLevel[] = [
   "max",
 ];
 
+/**
+ * Dimensiones de salida del contrato `embedding-default` (spec §2.4: Gemini
+ * Embedding 001 recortado a 768). Única fuente del valor: lo consumen el
+ * `inference-kit` del chatbot (`POST /v1/embeddings` con `dimensions`) y el
+ * Mock Model Gateway (vectores deterministas de test).
+ */
+export const EMBEDDING_DIMENSIONS = 768;
+
 /** Price per million tokens (USD), en las unidades del catálogo original. */
 export interface GatewayModelCost {
   input: number;
