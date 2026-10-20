@@ -2,6 +2,7 @@ import path from "path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { ensureMockGateway, MOCK_GATEWAY_PORT } from "../mocks/gateway/server";
 
 const getTestPostgresUrl = () =>
   process.env.POSTGRES_URL ??
@@ -42,6 +43,14 @@ async function globalSetup() {
   }
 
   await waitForPostgres(postgresUrl);
+
+  // Mock Model Gateway (ADR 0010, ticket 02): .env.test apunta
+  // MODEL_GATEWAY_URL a http://127.0.0.1:4001; asegurar el mock antes de la
+  // suite (idempotente: reutiliza el puerto si otro proceso ya lo sirve).
+  const gateway = await ensureMockGateway({ port: MOCK_GATEWAY_PORT });
+  console.log(
+    `[global-setup] Mock Model Gateway ${gateway.started ? "started" : "reused"} on :${gateway.port}`,
+  );
 
   const client = postgres(postgresUrl);
   const db = drizzle(client);
