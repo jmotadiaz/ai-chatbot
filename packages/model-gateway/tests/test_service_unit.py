@@ -109,15 +109,23 @@ def test_deploy_script_deploys_the_artifact_and_builds_the_venv():
     assert "venv --python" in script
     assert "config.yaml" in script
     assert "/etc/systemd/system/model-gateway.service" in script
-    # Un redeploy tiene que poder volver atrás y verificar que arrancó.
-    assert "BACKUP_ROOT=\"/var/backups/model-gateway\"" in script
-    assert "--rollback" in script
-    assert "restore_backup" in script
-    assert "wait_http" in script and "401" in script
+    # Identificabilidad: sello con el commit desplegado + guarda de árbol limpio.
     assert "DEPLOYED" in script
+    assert "--allow-dirty" in script
+    # Rollback por revisión (sin backups: la versión mínima no los tiene).
     assert "git archive" in script
-    # Nunca debe desplegarse desde el home del operador.
+    assert "BACKUP_ROOT" not in script and "restore_backup" not in script
+    # Health check real (401 sin bearer) y sin desplegar desde el home.
+    assert "wait_http" in script and "401" in script
     assert "protecthome" in script.lower()
+
+
+def test_dependencies_are_installed_before_the_artifact_is_replaced():
+    """Si fallan las deps, el servicio debe seguir corriendo el código anterior."""
+    script = DEPLOY_SCRIPT.read_text()
+    deps = script.index("\ninstall_dependencies\n")
+    publish = script.index("\npublish_artifact\n")
+    assert deps < publish
 
 
 def test_package_scripts_point_at_the_deploy_script():
@@ -125,5 +133,4 @@ def test_package_scripts_point_at_the_deploy_script():
 
     scripts = json.loads((Path(__file__).resolve().parents[1] / "package.json").read_text())["scripts"]
     assert scripts["deploy"] == "bash scripts/deploy.sh"
-    assert scripts["rollback"] == "bash scripts/deploy.sh --rollback"
     assert scripts["systemd:install"] == "bash scripts/deploy.sh"

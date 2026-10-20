@@ -51,32 +51,34 @@ redeploys) y es idempotente:
 
 1. **Precondiciones**: los 7 `.cred` presentes, `uv` en el PATH y el árbol de
    `packages/model-gateway` sin cambios sin commitear (si los hay, aborta para
-   que lo desplegado sea siempre identificable; `--allow-dirty` lo permite y
-   queda estampado como `dirty=yes`).
+   que lo desplegado sea identificable; `--allow-dirty` lo permite y queda
+   estampado).
 2. **Fuente**: el checkout actual, o una revisión concreta con
    `--ref <commit|tag>` (`git archive`, no toca el worktree).
-3. **Backup** del artefacto anterior en
-   `/var/backups/model-gateway/<UTC>-<sha>/` (se conservan los 5 últimos).
-4. **Copia** de `server.py`, `catalog.py`, `config.yaml`, `pyproject.toml`,
-   `CONTRACT.md`, `README.md` y `scripts/run-gateway.sh` a `/opt/model-gateway`,
-   más un fichero `DEPLOYED` con `commit`, `branch`, `deployed_at` y `dirty`
-   (también se imprime al arrancar, así que `journalctl -u model-gateway` dice
-   qué versión corre).
-5. **Dependencias**: crea `/opt/model-gateway/.venv` si falta (CPython 3.12
-   gestionado por `uv`) e instala `litellm[proxy]`, `fastapi`, `uvicorn`,
-   `httpx` y `pyyaml` — sin tocar el intérprete del sistema.
-6. **Unidad** + `daemon-reload` + `restart` (o `enable --now` la primera vez).
-7. **Health check**: `GET /v1/models/catalog` sin bearer debe dar `401`
-   (app viva y auth enforced); con `MODEL_GATEWAY_API_KEY` exportada en el
-   entorno, además exige modelos en el catálogo.
-8. **Si falla**: vuelca el journal, restaura el backup, rearranca y sale `!= 0`.
+3. **Dependencias primero**: solo `pyproject.toml` viaja a `/opt/model-gateway`
+   y se resuelven las deps en el venv. Si esto falla, el servicio sigue
+   corriendo el artefacto anterior **intacto**.
+4. **Artefacto**: `server.py`, `catalog.py`, `config.yaml`, `CONTRACT.md`,
+   `README.md` y `scripts/run-gateway.sh` a `/opt/model-gateway`, más un
+   `DEPLOYED` con `commit`, `branch`, `deployed_at` y `dirty` (también se
+   imprime al arrancar, así que `journalctl -u model-gateway` dice qué versión
+   corre).
+5. **Unidad** + `daemon-reload` + `restart` (o `enable --now` la primera vez).
+6. **Health check**: `GET /v1/models/catalog` sin bearer debe dar `401` (app
+   viva y auth enforced); con `MODEL_GATEWAY_API_KEY` exportada en el entorno,
+   además exige modelos en el catálogo. Si falla, imprime el journal y el
+   comando exacto para volver a la revisión anterior.
 
 ### Volver atrás
 
+No hay backups: el artefacto se regenera desde git.
+
 ```bash
-pnpm run rollback                        # restaura el último backup y verifica
-pnpm run deploy -- --ref <sha-anterior>  # redeploy de esa revisión (sin tocar el worktree)
+pnpm run deploy -- --ref <sha-anterior>
 ```
+
+El sha de lo que está corriendo vive en `/opt/model-gateway/DEPLOYED` (y en el
+journal). Si el health check falla, el propio script te lo imprime.
 
 ### Qué NO hay que reiniciar
 
@@ -87,10 +89,10 @@ contratos viven ahí, no en el proceso).
 
 ### Primera instalación
 
-`pnpm run deploy` también sirve para la primera vez: si no hay credenciales, aborta
-antes de tocar nada y te dice qué ejecutar (`scripts/manage-creds.sh`). No hay
-un script de instalación aparte a propósito: dos caminos con la misma lógica
-acaban divergiendo.
+`pnpm run deploy` también sirve para la primera vez: si no hay credenciales,
+aborta antes de tocar nada y te dice qué ejecutar (`scripts/manage-creds.sh`).
+No hay un script de instalación aparte a propósito: dos caminos con la misma
+lógica acaban divergiendo.
 
 ### Por qué `DynamicUser=yes`
 

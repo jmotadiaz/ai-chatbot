@@ -7,7 +7,6 @@
     "dev": "bash scripts/run-gateway.sh",
     "start": "bash scripts/run-gateway.sh",
     "deploy": "bash scripts/deploy.sh",
-    "rollback": "bash scripts/deploy.sh --rollback",
     "systemd:install": "bash scripts/deploy.sh",
     "creds:set": "bash scripts/manage-creds.sh set",
     "creds:list": "bash scripts/manage-creds.sh list",

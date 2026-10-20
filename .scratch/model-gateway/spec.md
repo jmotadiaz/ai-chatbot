@@ -111,7 +111,7 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
   - `list`: lista los `.cred` presentes en `/etc/model-gateway/creds/`.
 - Unidad `/etc/systemd/system/model-gateway.service`:
   - Declara `LoadCredentialEncrypted=<key_name>:/etc/model-gateway/creds/<key_name>.cred` para cada proveedor upstream y para `model_gateway_api_key`.
-  - Corre con `DynamicUser=yes` (UID transitorio por arranque) y `ProtectHome=yes`, y ejecuta un artefacto copiado a `/opt/model-gateway` (`scripts/deploy.sh`): así ningún otro proceso del host — incluidos los agentes que corren como el usuario operador — puede leer `$CREDENTIALS_DIRECTORY`. La unidad fija además `CONFIG_FILE_PATH=/opt/model-gateway/config.yaml` (LiteLLM carga el YAML de esa variable) y usa `StateDirectory=`/`CacheDirectory=` como `HOME` escribible del UID transitorio.
+  - Corre con `DynamicUser=yes` (UID transitorio por arranque) y `ProtectHome=yes`, y ejecuta un artefacto copiado a `/opt/model-gateway` (`scripts/deploy.sh`: sello del commit desplegado, guarda de árbol limpio, health check y `--ref` para volver atrás): así ningún otro proceso del host — incluidos los agentes que corren como el usuario operador — puede leer `$CREDENTIALS_DIRECTORY`. La unidad fija además `CONFIG_FILE_PATH=/opt/model-gateway/config.yaml` (LiteLLM carga el YAML de esa variable) y usa `StateDirectory=`/`CacheDirectory=` como `HOME` escribible del UID transitorio.
   - `run-gateway.sh` exporta en memoria cada fichero de `$CREDENTIALS_DIRECTORY` a su variable de entorno en mayúsculas antes de hacer `exec uvicorn`.
 
 ---
