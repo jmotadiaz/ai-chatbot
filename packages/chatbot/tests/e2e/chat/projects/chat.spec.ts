@@ -14,13 +14,17 @@ test.describe("Project Chat", () => {
 
   test("3.1 Standard Project Chat", async ({ db, page }) => {
     const title = "Research Assistant";
-    const expectedResponse = "Hello, I'm meta-llama/llama-4-scout";
+    // Id de capacidad del catálogo del Mock Model Gateway (ADR 0010): los
+    // specs E2E ya no usan ids comerciales del catálogo estático (borrado).
+    // El mock ecía el id pedido en la respuesta "Hello, I'm <model>",
+    // así que el aserto verifica el eco del id seleccionado.
+    const expectedResponse = "Hello, I'm basicChat";
 
     await db.addProjects([
       {
         name: title,
         systemPrompt: "Special prompt",
-        defaultModel: "Llama 4 Scout",
+        defaultModel: "basicChat",
       },
     ]);
 
