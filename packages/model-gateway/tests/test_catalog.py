@@ -10,7 +10,13 @@ from pathlib import Path
 
 import pytest
 
-from catalog import authorize, build_catalog, build_entry, load_config
+from catalog import (
+    authorize,
+    build_catalog,
+    build_entry,
+    load_config,
+    prepare_opencode_deployment_kwargs,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.yaml"
@@ -222,3 +228,46 @@ def test_load_config_rejects_yaml_sin_model_list(tmp_path):
     bad.write_text("litellm_settings: {}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="model_list"):
         load_config(bad)
+
+
+# --- adaptación para upstreams de OpenCode Go ------------------------------
+
+
+def test_prepare_opencode_deployment_kwargs_injects_headers_and_adapts_deepseek():
+    kwargs = {
+        "model": "openai/deepseek-v4.1-flash",
+        "api_base": "https://opencode.ai/zen/go/v1",
+        "reasoning_effort": "xhigh",
+        "store": False,
+        "max_completion_tokens": 4096,
+        "messages": [
+            {"role": "developer", "content": "sys"},
+            {"role": "user", "content": "hola"},
+            {"role": "assistant", "content": None, "tool_calls": [{"id": "c1"}]},
+            {"role": "assistant", "content": "prev", "reasoning": "thought"},
+        ],
+    }
+    res = prepare_opencode_deployment_kwargs(kwargs, "sess-123")
+    assert res["extra_headers"] == {
+        "x-opencode-session": "sess-123",
+        "user-agent": "ai-chatbot/1.0",
+    }
+    assert "store" not in res
+    assert "max_completion_tokens" not in res
+    assert res["max_tokens"] == 4096
+    assert res["reasoning_effort"] == "max"
+    assert res["messages"][0] == {"role": "system", "content": "sys"}
+    assert res["messages"][2]["reasoning_content"] == ""
+    assert res["messages"][3]["reasoning_content"] == "thought"
+    assert "reasoning" not in res["messages"][3]
+
+
+def test_prepare_opencode_deployment_kwargs_leaves_non_opencode_untouched():
+    kwargs = {
+        "model": "openai/gpt-4o-mini-tts-2025-03-20",
+        "api_base": "https://api.openai.com/v1",
+        "store": False,
+    }
+    res = prepare_opencode_deployment_kwargs(dict(kwargs), "sess-123")
+    assert res == kwargs
+

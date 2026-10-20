@@ -3,7 +3,11 @@ import { existsSync, mkdirSync, statSync } from "node:fs";
 import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
-import { getSyncedGatewayCatalog, type ThinkingLevel } from "../runtime/gateway-catalog";
+import {
+  GATEWAY_PROVIDER_ID,
+  getSyncedGatewayCatalog,
+  type ThinkingLevel,
+} from "../runtime/gateway-catalog";
 import { SessionEventLog, type Cursor } from "../agui/event-log";
 import type { PendingQueues } from "./pending-queues";
 import { getModelRuntime } from "../runtime/model-runtime";
@@ -133,12 +137,14 @@ export async function getAvailableModels(): Promise<
   const catalogById = new Map(
     getSyncedGatewayCatalog().map((entry) => [entry.id, entry]),
   );
-  const filtered = available.map((model) => ({
-    providerId: model.provider,
-    modelId: model.id,
-    label: `${model.provider}/${model.id}`,
-    levels: levelsFor(catalogById.get(model.id), model.reasoning),
-  }));
+  const filtered = available
+    .filter((model) => model.provider === GATEWAY_PROVIDER_ID)
+    .map((model) => ({
+      providerId: model.provider,
+      modelId: model.id,
+      label: `${model.provider}/${model.id}`,
+      levels: levelsFor(catalogById.get(model.id), model.reasoning),
+    }));
   log.info("models.result", { count: filtered.length });
   return filtered;
 }

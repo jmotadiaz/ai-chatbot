@@ -111,8 +111,16 @@ afterEach(() => {
 
 describe("getAvailableModels", () => {
   it("lists the single model-gateway provider with catalog ids and their thinking levels", async () => {
+    // Even if auth.json or process.env holds legacy credentials for Pi's
+    // built-in providers (e.g. opencode-go, openrouter), only model-gateway
+    // entries may surface.
+    writeFileSync(
+      process.env.CODING_AGENT_AUTH_JSON!,
+      JSON.stringify({ "opencode-go": { type: "api_key", key: "legacy-key" } }),
+    );
     const models = await getAvailableModels();
-    const muse = models.find((m) => m.providerId === "model-gateway");
+    expect(models.map((m) => m.providerId)).toEqual(["model-gateway", "model-gateway"]);
+    const muse = models.find((m) => m.modelId === "Muse Spark 1.3");
     expect(muse?.modelId).toBe("Muse Spark 1.3");
     expect(muse?.label).toBe("model-gateway/Muse Spark 1.3");
     // From the synced Gateway catalog ("off" always available), not Pi's

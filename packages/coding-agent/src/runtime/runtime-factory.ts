@@ -4,6 +4,7 @@ import {
   SettingsManager,
   type CreateAgentSessionRuntimeFactory,
 } from "@earendil-works/pi-coding-agent";
+import { GATEWAY_PROVIDER_ID } from "./gateway-catalog";
 import { getModelRuntime } from "./model-runtime";
 import { applyProviderRetryDefaults } from "./provider-retry-defaults";
 import { getTraceLogger } from "tracing";
@@ -16,16 +17,17 @@ import { getCodingAgentDir } from "./paths";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 
 /**
- * Split a `provider/model-id` reference. Model ids may themselves contain
- * slashes (e.g. vercel-ai-gateway routes like "meta/muse-spark-1.3-contributor"
- * or openrouter ids), so only the first slash separates provider from model.
+ * Split a `provider/model-id` reference. Bare catalog ids (no slash, as sent by
+ * the chatbot BFF against the single `model-gateway` provider) resolve to
+ * `GATEWAY_PROVIDER_ID`; qualified `provider/model-id` strings (subagents,
+ * tests, or ids with slashes after the provider prefix) split on the first slash.
  */
 export function splitModelReference(
   modelId: string | undefined,
 ): { provider: string | undefined; model: string | undefined } {
   if (!modelId) return { provider: undefined, model: undefined };
   const slashIndex = modelId.indexOf("/");
-  if (slashIndex === -1) return { provider: modelId, model: undefined };
+  if (slashIndex === -1) return { provider: GATEWAY_PROVIDER_ID, model: modelId };
   return {
     provider: modelId.slice(0, slashIndex),
     model: modelId.slice(slashIndex + 1),

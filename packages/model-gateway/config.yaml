@@ -25,6 +25,7 @@ general_settings:
 
 litellm_settings:
   drop_params: true
+  num_retries: 3
 
 model_list:
   # ---------- 14 modelos user_invocable: true (selector de modelos) ----------

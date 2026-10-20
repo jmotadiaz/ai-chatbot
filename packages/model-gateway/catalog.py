@@ -127,3 +127,82 @@ def authorize(header: str | None, expected_api_key: str | None) -> bool:
     if scheme.lower() != "bearer" or not token:
         return False
     return hmac.compare_digest(token, expected_api_key)
+
+
+OPENCODE_HOST = "opencode.ai"
+OPENCODE_USER_AGENT = "ai-chatbot/1.0"
+
+
+def prepare_opencode_deployment_kwargs(
+    kwargs: dict[str, Any],
+    session_id: str,
+) -> dict[str, Any]:
+    """Adapta una llamada de LiteLLM para los upstreams de OpenCode Go.
+
+    - OpenCode Go exige `x-opencode-session` (estable por proceso para routing y
+      prompt caching, https://opencode.ai/docs/go/#where-can-i-use-it) y un
+      `user-agent` propio en lugar del genérico del SDK.
+    - Los modelos OpenAI-compatible de OpenCode Go no soportan `store` ni el rol
+      `developer`.
+    - `deepseek-v4.1-flash` expone el nivel `xhigh` en el catálogo pero su
+      upstream espera `reasoning_effort: "max"`, y exige `reasoning_content` en
+      todos los mensajes `assistant` del historial (p. ej. tras tool calls).
+    """
+    api_base = str(kwargs.get("api_base") or "")
+    if OPENCODE_HOST not in api_base:
+        return kwargs
+
+    existing_headers = kwargs.get("extra_headers")
+    extra_headers: dict[str, Any] = (
+        dict(existing_headers) if isinstance(existing_headers, dict) else {}
+    )
+    lower_keys = {k.lower() for k in extra_headers}
+    if "x-opencode-session" not in lower_keys:
+        extra_headers["x-opencode-session"] = session_id
+    if "user-agent" not in lower_keys:
+        extra_headers["user-agent"] = OPENCODE_USER_AGENT
+    kwargs["extra_headers"] = extra_headers
+
+    # Los endpoints OpenAI-compatible de OpenCode Go tienen supportsStore=false
+    # y maxTokensField="max_tokens".
+    kwargs.pop("store", None)
+    if "max_completion_tokens" in kwargs:
+        max_comp = kwargs.pop("max_completion_tokens")
+        if kwargs.get("max_tokens") is None and max_comp is not None:
+            kwargs["max_tokens"] = max_comp
+
+    model = str(kwargs.get("model") or "").lower()
+    is_deepseek = "deepseek" in model
+
+    if (is_deepseek or "glm-5.3-flash" in model) and kwargs.get("reasoning_effort") == "xhigh":
+        kwargs["reasoning_effort"] = "max"
+
+    messages = kwargs.get("messages")
+    if isinstance(messages, list):
+        patched_messages: list[Any] = []
+        changed = False
+        for msg in messages:
+            if not isinstance(msg, dict):
+                patched_messages.append(msg)
+                continue
+            role = msg.get("role")
+            if role == "developer":
+                patched = dict(msg)
+                patched["role"] = "system"
+                patched_messages.append(patched)
+                changed = True
+            elif is_deepseek and role == "assistant" and msg.get("reasoning_content") is None:
+                patched = dict(msg)
+                reasoning_fallback = patched.pop("reasoning", None)
+                patched["reasoning_content"] = (
+                    reasoning_fallback if isinstance(reasoning_fallback, str) else ""
+                )
+                patched_messages.append(patched)
+                changed = True
+            else:
+                patched_messages.append(msg)
+        if changed:
+            kwargs["messages"] = patched_messages
+
+    return kwargs
+

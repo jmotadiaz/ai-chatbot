@@ -532,14 +532,17 @@ export class TurnRunner {
     // b1: model + thinkingLevel are turn config — apply here, not in getOrCreateSession.
     // Guard isStreaming lives here; only switch if different.
     if (options?.modelId) {
+      const { provider: piProvider, model: piModelId } = splitModelReference(options.modelId);
       const current = entry.runtime.session.model;
-      const currentRef = current ? `${current.provider}/${current.id}` : undefined;
-      if (currentRef !== options.modelId) {
+      const isSameModel =
+        current !== undefined &&
+        current.provider === piProvider &&
+        current.id === piModelId;
+      if (!isSameModel) {
         if (entry.runtime.session.isStreaming || entry.activeRun) {
           log.warn("session.model_change_blocked_streaming", { sessionId, modelId: options.modelId });
           throw new Error("Cannot change model while the agent is running");
         }
-        const { provider: piProvider, model: piModelId } = splitModelReference(options.modelId);
         const services = (entry.runtime as unknown as { services?: { modelRuntime?: { getModel: (p: string, m: string) => unknown } } })
           .services;
         const model =

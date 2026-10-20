@@ -181,6 +181,33 @@ describe("TurnRunner (deep module)", () => {
     expect(mock.session.setModel).not.toHaveBeenCalled();
   });
 
+  it("resolves bare Gateway catalog modelIds against model-gateway provider", async () => {
+    const mock = createMockPiSession({
+      thinkingLevel: "off",
+      model: { provider: "opencode-go", id: "glm-5.3-flash" },
+    });
+    seed("s3b", mock);
+    const getModel = vi.fn((provider: string, id: string) =>
+      provider === "model-gateway" && id === "Kimi K3"
+        ? { provider: "model-gateway", id: "Kimi K3" }
+        : undefined,
+    );
+    (registry.getRaw("s3b") as any).runtime.services = {
+      modelRuntime: { getModel },
+    };
+
+    const stream = await runner.sendPrompt("s3b", "hello", undefined, "r3b", {
+      modelId: "Kimi K3",
+    });
+    await stream.cancel();
+
+    expect(getModel).toHaveBeenCalledWith("model-gateway", "Kimi K3");
+    expect(mock.session.setModel).toHaveBeenCalledWith({
+      provider: "model-gateway",
+      id: "Kimi K3",
+    });
+  });
+
   it("rejects model change while streaming", async () => {
     const mock = createMockPiSession({
       isStreaming: true,

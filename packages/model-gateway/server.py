@@ -25,20 +25,45 @@ como variables de entorno).
 """
 
 import os
+import uuid
 from pathlib import Path
 
-from catalog import CONFIG_PATH, authorize, build_catalog, load_config
+from catalog import (
+    CONFIG_PATH,
+    authorize,
+    build_catalog,
+    load_config,
+    prepare_opencode_deployment_kwargs,
+)
 
 # El consumidor autentica con `Authorization: Bearer $MODEL_GATEWAY_API_KEY`;
 # la misma variable alimenta el master_key de LiteLLM en config.yaml.
 API_KEY_ENV = "MODEL_GATEWAY_API_KEY"
+
+# OpenCode Go exige identificar cada request con una sesión estable por proceso
+# (https://opencode.ai/docs/go/#where-can-i-use-it) para routing y prompt caching.
+OPENCODE_SESSION_ID = str(uuid.uuid4())
 
 
 def create_app(config_path: str | Path = CONFIG_PATH):
     """Fábrica de la app (imports pesados aquí dentro)."""
     from fastapi import HTTPException, Request
 
+    import litellm
+    from litellm.integrations.custom_logger import CustomLogger
     import litellm.proxy.proxy_server as proxy_server
+
+    class _OpenCodeDeploymentHook(CustomLogger):
+        async def async_pre_call_deployment_hook(self, kwargs, call_type):
+            return prepare_opencode_deployment_kwargs(kwargs, OPENCODE_SESSION_ID)
+
+    if not any(
+        getattr(cb, "_is_opencode_deployment_hook", False)
+        for cb in litellm.callbacks
+    ):
+        hook = _OpenCodeDeploymentHook()
+        hook._is_opencode_deployment_hook = True
+        litellm.callbacks.append(hook)
 
     app = proxy_server.app
     config = load_config(config_path)

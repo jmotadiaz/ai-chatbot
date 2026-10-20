@@ -233,12 +233,11 @@ export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
     const { models } = await client.getAvailableModels();
     const catalog = await fetchPublicModelCatalog();
     const result = models
+      .filter((model) => isKnownModelId(catalog, model.modelId))
       .map((model) => ({
         id: model.modelId,
         levels: model.levels,
-        defaultLevel: isKnownModelId(catalog, model.modelId)
-          ? getDefaultThinkingLevel(catalog, model.modelId)
-          : undefined,
+        defaultLevel: getDefaultThinkingLevel(catalog, model.modelId),
       }))
       .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     log.info("action.result", { count: result.length });
