@@ -40,8 +40,11 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 
 ```bash
 cd packages/model-gateway
-pnpm deploy                  # = bash scripts/deploy.sh
+pnpm run deploy              # = bash scripts/deploy.sh
 ```
+
+> Usa `pnpm run deploy`, no `pnpm deploy` a secas: `deploy` es también un
+> comando nativo de pnpm y el enrutado de argumentos se vuelve confuso.
 
 `scripts/deploy.sh` es el **único** camino de despliegue (primera instalación y
 redeploys) y es idempotente:
@@ -71,8 +74,8 @@ redeploys) y es idempotente:
 ### Volver atrás
 
 ```bash
-pnpm rollback                       # restaura el último backup y verifica
-pnpm deploy -- --ref <sha-anterior> # redeploy de esa revisión (sin tocar el worktree)
+pnpm run rollback                        # restaura el último backup y verifica
+pnpm run deploy -- --ref <sha-anterior>  # redeploy de esa revisión (sin tocar el worktree)
 ```
 
 ### Qué NO hay que reiniciar
