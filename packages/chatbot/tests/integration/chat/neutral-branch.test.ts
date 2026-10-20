@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { LanguageModelV3CallOptions } from "@/lib/infrastructure/ai";
+import type { LanguageModelV3CallOptions } from "@/lib/infrastructure/ai/types";
 import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type {

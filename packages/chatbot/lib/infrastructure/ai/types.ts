@@ -7,7 +7,7 @@ import type { GatewayModelEntry } from "@/lib/features/foundation-model/config";
  * features: la frontera de lint prohibe importar `@ai-sdk/*` fuera de este
  * directorio (ADR 0010), pero los DOUBLES de test y los adaptadores necesitan
  * los tipos V3 del protocolo (`LanguageModelV3*`) para construir mocks
- * tipados. Reexportados aquí, consumibles vía `@/lib/infrastructure/ai`.
+ * tipados. Reexportados aquí, consumibles vía `@/lib/infrastructure/ai/types`.
  */
 export type {
   LanguageModelV3,

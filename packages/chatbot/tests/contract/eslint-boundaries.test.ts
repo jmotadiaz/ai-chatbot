@@ -92,7 +92,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
   it("los tipos de protocolo V3 consumibles desde el composition root, no desde @ai-sdk/provider", async () => {
     const ruleIds = await lint(
       "tests/helpers/stream-chunks.ts",
-      serverFile(`import type { LanguageModelV3StreamPart } from "@/lib/infrastructure/ai";`),
+      serverFile(`import type { LanguageModelV3StreamPart } from "@/lib/infrastructure/ai/types";`),
     );
     expect(ruleIds).not.toContain("no-restricted-imports");
 
