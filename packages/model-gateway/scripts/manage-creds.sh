@@ -34,8 +34,11 @@ is_required_key() {
 
 encrypt_cred() {
   local key="$1" value="$2"
-  mkdir -p "$CREDS_DIR"
+  # /etc es de root: el directorio y el .cred se crean con sudo (el .cred queda
+  # 600: está cifrado y atado a esta máquina, pero no hace falta que sea legible).
+  sudo mkdir -p "$CREDS_DIR"
   printf '%s' "$value" | sudo systemd-creds encrypt --name="$key" - "$CREDS_DIR/$key.cred"
+  sudo chmod 600 "$CREDS_DIR/$key.cred"
   echo "ok: $CREDS_DIR/$key.cred"
 }
 

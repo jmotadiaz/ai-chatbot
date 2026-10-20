@@ -134,3 +134,9 @@ def test_package_scripts_point_at_the_deploy_script():
     scripts = json.loads((Path(__file__).resolve().parents[1] / "package.json").read_text())["scripts"]
     assert scripts["deploy"] == "bash scripts/deploy.sh"
     assert scripts["systemd:install"] == "bash scripts/deploy.sh"
+
+def test_manage_creds_creates_the_creds_dir_with_sudo():
+    script = (Path(__file__).resolve().parents[1] / "scripts" / "manage-creds.sh").read_text()
+    assert "sudo mkdir -p" in script, "/etc es de root: sin sudo el wizard muere con Permission denied"
+    assert "sudo systemd-creds encrypt" in script
+    assert "chmod 600" in script
