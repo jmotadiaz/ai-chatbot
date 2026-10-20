@@ -1,8 +1,8 @@
 """Lógica pura del Model Catalog (importable sin litellm/fastapi).
 
 Transforma el `model_list` de `config.yaml` en el esquema normalizado que
-publica `GET /v1/models/catalog` (ver `.scratch/model-gateway/spec.md` §2.2 y
-`/tmp/model-gateway-contracts/contracts.md` §1). Este módulo NO importa
+publica `GET /v1/models/catalog` (ver `CONTRACT.md` en este paquete, que
+espeja `.scratch/model-gateway/spec.md` §2.2). Este módulo NO importa
 fastapi ni litellm: `server.py` hace las imports pesadas dentro de su fábrica
 de app para que los tests puedan ejecutarse solo con pyyaml/pytest.
 

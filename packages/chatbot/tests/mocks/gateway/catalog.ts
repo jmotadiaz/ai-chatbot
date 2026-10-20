@@ -5,30 +5,16 @@
  * aquí las entradas SON las capacidades que los tests necesitan: el id es el
  * alias de comportamiento y no hay ningún mapa de indirección hacia ids
  * comerciales. El schema de cada entrada es exactamente el `GatewayModelEntry`
- * del contrato compartido (§1 de `/tmp/model-gateway-contracts/contracts.md`):
+ * de `packages/config/src/gateway-contract.ts` (ver
+ * `packages/model-gateway/CONTRACT.md`, que espeja la spec §2.2):
  * `GET /v1/models/catalog` filtra en servidor las user-invocables (las 7 de
  * capacidad) y las internas (`*-default`) solo salen con `?include_internal=true`.
  */
 
+import type { GatewayModelEntry } from "config";
+
 /** Entrada del catálogo con el schema exacto del contrato compartido (§1). */
-export interface MockCatalogEntry {
-  id: string;
-  company: string;
-  isDefault: boolean;
-  /** null en entradas sparse (contratos de embedding/rerank/tts sin ventana). */
-  contextWindow: number | null;
-  maxTokens: number | null;
-  cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
-  reasoning: boolean;
-  thinkingLevels: string[];
-  defaultThinkingLevel: string | null;
-  supportedFiles: ("img" | "pdf")[];
-  supportedOutput: ("text" | "img")[];
-  zeroDataRetention: boolean;
-  temperature: number | null;
-  topP: number | null;
-  topK: number | null;
-}
+export type MockCatalogEntry = GatewayModelEntry;
 
 /** Entrada base determinista: los tests solo se fijan en las propiedades que assertan. */
 const entry = (overrides: Partial<MockCatalogEntry> & { id: string }): MockCatalogEntry => ({

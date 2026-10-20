@@ -1,5 +1,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import {
+  GATEWAY_THINKING_LEVELS,
+  type GatewayModelCost,
+  type GatewayModelEntry,
+  type ThinkingLevel,
+} from "config";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
@@ -21,12 +27,10 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
 
 export const GATEWAY_PROVIDER_ID = "model-gateway";
 
-/** Same vocabulary the chatbot uses (Model Gateway contracts, §1). */
-export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+// Tipos del contrato del Gateway (única copia TS en packages/config).
+export type { GatewayModelCost, GatewayModelEntry, ThinkingLevel };
 
-export const THINKING_LEVELS: readonly ThinkingLevel[] = [
-  "off", "minimal", "low", "medium", "high", "xhigh", "max",
-];
+export const THINKING_LEVELS: readonly ThinkingLevel[] = GATEWAY_THINKING_LEVELS;
 
 /**
  * Model-level thinking controls, keyed by Pi thinking level. A string value is
@@ -35,33 +39,7 @@ export const THINKING_LEVELS: readonly ThinkingLevel[] = [
  */
 export type ThinkingLevelMap = Partial<Record<ThinkingLevel, string | null>>;
 
-/** Price per million tokens, in the same units Pi uses. */
-export interface GatewayModelCost {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-}
-
 /** Entry of `GET /v1/models/catalog` (see CONTRACT.md in model-gateway). */
-export interface GatewayModelEntry {
-  id: string;
-  company: string;
-  isDefault: boolean;
-  /** null on sparse entries (embedding/rerank/tts contracts have no window). */
-  contextWindow: number | null;
-  maxTokens: number | null;
-  cost: GatewayModelCost;
-  reasoning: boolean;
-  thinkingLevels: ThinkingLevel[];
-  defaultThinkingLevel: ThinkingLevel | null;
-  supportedFiles: Array<"img" | "pdf">;
-  supportedOutput: Array<"text" | "img">;
-  zeroDataRetention: boolean;
-  temperature: number | null;
-  topP: number | null;
-  topK: number | null;
-}
 
 /**
  * Pi model definition for a model Pi does not ship built-in (the
