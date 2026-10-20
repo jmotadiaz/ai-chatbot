@@ -3,6 +3,19 @@ import type { SpeechModelV3 } from "@ai-sdk/provider";
 import type { GatewayModelEntry } from "@/lib/features/foundation-model/config";
 
 /**
+ * Reexport de tipos de protocolo del AI SDK (`@ai-sdk/provider`) para test y
+ * features: la frontera de lint prohibe importar `@ai-sdk/*` fuera de este
+ * directorio (ADR 0010), pero los DOUBLES de test y los adaptadores necesitan
+ * los tipos V3 del protocolo (`LanguageModelV3*`) para construir mocks
+ * tipados. Reexportados aquí, consumibles vía `@/lib/infrastructure/ai`.
+ */
+export type {
+  LanguageModelV3,
+  LanguageModelV3CallOptions,
+  LanguageModelV3StreamPart,
+} from "@ai-sdk/provider";
+
+/**
  * Tipos de la capa de IA del chatbot (antes reexportados de `inference`,
  * ADR 0010: ahora viven aquí). Sin tipos por proveedor: con el Gateway único
  * todo el tráfico habla el dialecto OpenAI-compatible, así que
