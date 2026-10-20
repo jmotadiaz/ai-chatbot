@@ -41,3 +41,40 @@ export function assertDbMatchesEntorno(
   }
   return url;
 }
+
+/**
+ * Guardarraíl de coherencia Entorno ↔ Model Gateway (ADR 0010, ticket 02).
+ *
+ * En test, `MODEL_GATEWAY_URL` debe apuntar al **Mock Model Gateway**
+ * (`packages/chatbot/tests/mocks/gateway/`, puerto `4001`): un test que hable
+ * contra el `:4000` de dev/prod golpearía LLMs reales con credenciales reales —
+ * exactamente el cruce de Entornos que este esfuerzo existe para impedir.
+ * Solo test declara puerto esperado: dev y prod comparten hoy el mismo Gateway
+ * local (`:4000`), y un entorno no declarado o desconocido (`evals`, runners
+ * sin env) no tiene nada que cruzar — se pasa tal cual.
+ *
+ * Misma pureza que `assertDbMatchesEntorno`: el Entorno puede pasarse explícito
+ * (tests) o leerse vía `readEnv` (la única costura con `process.env`).
+ */
+export const ENTORNO_GATEWAY_PORT: Record<string, string> = {
+  test: "4001",
+};
+
+export function assertGatewayMatchesEntorno(
+  url: string,
+  entorno?: string,
+): string {
+  const declared = (entorno ?? readEnv("NEXT_PUBLIC_ENV"))?.trim();
+  if (!declared || !(declared in ENTORNO_GATEWAY_PORT)) return url;
+  const expectedPort = ENTORNO_GATEWAY_PORT[declared];
+  const port = /:(\d+)(?=[/?]|$)/.exec(url)?.[1];
+  if (port !== expectedPort) {
+    throw new ConfigError(
+      "MODEL_GATEWAY_URL",
+      `NEXT_PUBLIC_ENV=${declared} exige el Mock Model Gateway (puerto ${expectedPort}); ` +
+        `obtenida "${url}". El shell probablemente arrastró la MODEL_GATEWAY_URL de otro Entorno — ` +
+        "usa `dotenv -o -e .env.test` o levanta el entorno con `pnpm test:e2e`.",
+    );
+  }
+  return url;
+}

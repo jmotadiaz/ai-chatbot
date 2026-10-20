@@ -37,6 +37,13 @@ describe("config (objeto semántico)", () => {
       }
       if (spec.required) {
         expect(["string", "secret", "int"], key).toContain(kind);
+      } else if (spec.default !== undefined) {
+        // No requerida con default: cualquier builder nunca lanza (con default
+        // los throwing devuelven el default en vez de lanzar).
+        expect(
+          ["string", "int", "secret", "stringOptional", "secretOptional", "intOptional", "bool"],
+          key,
+        ).toContain(kind);
       } else {
         expect(["string", "secret", "int"], key).not.toContain(kind);
       }
@@ -106,5 +113,32 @@ describe("config (objeto semántico)", () => {
     expect(config.postgresUrl()).toBe(
       "postgres://postgres:postgres@127.0.0.1:5434/test",
     );
+  });
+
+  it("modelGatewayUrl() aplica el guardarraíl NEXT_PUBLIC_ENV ↔ :4001 (ADR 0010)", () => {
+    // Sin Entorno declarado: default del catálogo (Gateway real, :4000).
+    mockReadEnv.mockReturnValue(undefined);
+    expect(config.modelGatewayUrl()).toBe("http://127.0.0.1:4000");
+
+    // En test solo vale el Mock Model Gateway.
+    mockReadEnv.mockImplementation((name) =>
+      name === "NEXT_PUBLIC_ENV" ? "test" : undefined,
+    );
+    expect(() => config.modelGatewayUrl()).toThrow(ConfigError);
+    expect(() => config.modelGatewayUrl()).toThrow(/4001/);
+    mockReadEnv.mockImplementation((name) =>
+      name === "NEXT_PUBLIC_ENV"
+        ? "test"
+        : "http://127.0.0.1:4001",
+    );
+    expect(config.modelGatewayUrl()).toBe("http://127.0.0.1:4001");
+  });
+
+  it("modelGatewayApiKey() es un secreto opcional", () => {
+    mockReadEnv.mockReturnValue(undefined);
+    mockResolveSecret.mockReturnValue(undefined);
+    expect(config.modelGatewayApiKey()).toBeUndefined();
+    mockResolveSecret.mockReturnValue("test-gateway-key");
+    expect(config.modelGatewayApiKey()).toBe("test-gateway-key");
   });
 });
