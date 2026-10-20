@@ -140,3 +140,13 @@ def test_manage_creds_creates_the_creds_dir_with_sudo():
     assert "sudo mkdir -p" in script, "/etc es de root: sin sudo el wizard muere con Permission denied"
     assert "sudo systemd-creds encrypt" in script
     assert "chmod 600" in script
+
+def test_server_module_keeps_runtime_annotations():
+    """Con `from __future__ import annotations`, FastAPI no resuelve `Request`
+    (se importa dentro de create_app) y convierte `request` en query param
+    obligatorio: 422 en todas las peticiones. Ya nos pasó."""
+    script = (Path(__file__).resolve().parents[1] / "server.py").read_text()
+    assert not any(
+        line.strip().startswith("from __future__")
+        for line in script.splitlines()
+    ), "las anotaciones deben evaluarse en runtime (ver docstring de server.py)"

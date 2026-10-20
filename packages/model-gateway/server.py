@@ -1,5 +1,11 @@
 """Model Gateway — wrapper FastAPI sobre LiteLLM Proxy (stateless, sin DB).
 
+OJO: aquí no va `from __future__ import annotations`. Las anotaciones de las
+rutas se resuelven contra los globals del módulo, y `Request` se importa dentro
+de `create_app` (imports pesados diferidos): con el future-import la anotación
+llegaba como texto sin resolver y FastAPI trataba `request` como query param
+obligatorio → 422 en todas las peticiones.
+
 Expone `GET /v1/models/catalog` (catálogo filtrado en servidor, ver spec §2.2)
 y monta la app del proxy de LiteLLM por debajo, de modo que el resto de rutas
 de operación (`/v1/chat/completions`, `/v1/embeddings`, `/v1/rerank`,
@@ -13,8 +19,6 @@ Arranque: `uvicorn server:app --host 127.0.0.1 --port 4000`
 (vía `scripts/run-gateway.sh`, que inyecta las credenciales de systemd-creds
 como variables de entorno).
 """
-
-from __future__ import annotations
 
 import os
 from pathlib import Path
