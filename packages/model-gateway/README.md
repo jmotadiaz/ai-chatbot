@@ -28,7 +28,7 @@ bash scripts/manage-creds.sh set openrouter_api_key
 
 # 2) Despliegue + unidad systemd (copia a /opt/model-gateway, crea el venv,
 #    instala, habilita, arranca en :4000 y verifica)
-pnpm deploy
+pnpm run deploy
 
 # 3) Arranque manual desde el repo (sin systemd): crea un venv local y exporta
 #    las 7 vars a mano (o usa un CREDENTIALS_DIRECTORY falso)
@@ -82,12 +82,12 @@ pnpm run deploy -- --ref <sha-anterior>  # redeploy de esa revisión (sin tocar 
 
 El chatbot y el worker no necesitan reinicio tras un redeploy del gateway: el
 catálogo del chatbot tiene TTL de 60 s y el worker lo consulta al arrancar. Sí
-hay que relanzar `pnpm deploy` tras editar `config.yaml` (los modelos y
+hay que relanzar `pnpm run deploy` tras editar `config.yaml` (los modelos y
 contratos viven ahí, no en el proceso).
 
 ### Primera instalación
 
-`pnpm deploy` también sirve para la primera vez: si no hay credenciales, aborta
+`pnpm run deploy` también sirve para la primera vez: si no hay credenciales, aborta
 antes de tocar nada y te dice qué ejecutar (`scripts/manage-creds.sh`). No hay
 un script de instalación aparte a propósito: dos caminos con la misma lógica
 acaban divergiendo.
