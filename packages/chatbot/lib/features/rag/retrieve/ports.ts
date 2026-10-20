@@ -1,5 +1,5 @@
-import type { RerankResult } from "inference";
 import { QueryType } from "../types";
+import type { RerankResult } from "@/lib/infrastructure/ai/types";
 
 export interface RagRetrieveAiPort {
   generateEmbeddings(

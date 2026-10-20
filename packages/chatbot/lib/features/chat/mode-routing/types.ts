@@ -1,4 +1,4 @@
-import type { Decision, DecisionAnswer } from "inference";
+import type { Decision, DecisionAnswer } from "@/lib/infrastructure/ai/types";
 
 /**
  * Mode the answer is actually produced with.

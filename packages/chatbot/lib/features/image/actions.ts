@@ -1,10 +1,25 @@
 import { type GeneratedFile, convertToModelMessages, generateText } from "ai";
 import { type ChatbotMessage } from "@/lib/features/chat/types";
+import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 export const generateImages = async (
   message: ChatbotMessage
 ): Promise<GeneratedFile[]> => {
+  await warmModelCatalog();
+
+  // FIXME(model-gateway, ticket 03): edición de imagen degradada sobre el
+  // transporte único `openai-compatible` de LiteLLM. Antes el modelo
+  // (`google` + responseModalities: ["IMAGE"]) devolvía partes de archivo
+  // que el AI SDK parseaba a `GeneratedFile`. Con el transporte
+  // openai-compatible:
+  //  1. no hay forma tipada de enviar `responseModalities` (las
+  //     providerOptions del transport validan contra un esquema cerrado y
+  //     descartan las claves desconocidas), y
+  //  2. el transport no parsea partes de imagen de la respuesta: `files`
+  //     vuelve vacío aunque el upstream genere la imagen.
+  // Ninguna suite e2e cubre esta salida; el ticket 05 decidirá si se
+  // reintroduce vía `transformRequestBody` + parseo manual del body.
   const { files } = await generateText({
     system: `
       You are an expert photo editing assistant. Your task is to analyze user-submitted images and generate an enhanced image based on a detailed technical analysis, with a primary focus on photorealistic composition and subject enhancement.
@@ -49,11 +64,7 @@ export const generateImages = async (
       - If the composition is already adequate, only subtle improvements will be applied.
       - In low-quality images, prioritise noise reduction and focus enhancement before other adjustments.
       `,
-    ...inferenceKit.languageModel("imageEdit", {
-      providerOptions: {
-        google: { responseModalities: ["IMAGE"] },
-      },
-    }),
+    ...inferenceKit.languageModel("image-default"),
     messages: await convertToModelMessages([message]),
   });
 

@@ -1,4 +1,3 @@
-import type { DecideOptions, Decision } from "inference";
 import {
   AUDIENCE_QUESTION_KEY,
   DIRECTION_QUESTION_KEY,
@@ -13,6 +12,7 @@ import {
   type TextClassifications,
   type TranslationClassifications,
 } from "./policy";
+import type { DecideOptions, Decision } from "@/lib/infrastructure/ai/types";
 
 /** Trace name grouping English Helper classification calls in OpenRouter's observability. */
 export const ENGLISH_CLASSIFIER_TRACE_NAME = "english-helper";
@@ -44,7 +44,8 @@ export const createEnglishClassifier = (
   ): Promise<Decision | null> => {
     try {
       return await decide({
-        model: "englishHelper",
+        // Default Model Contract único para decisiones (spec §2.4).
+        model: "decision-default",
         questions,
         state: { text },
         scope: { traceName: ENGLISH_CLASSIFIER_TRACE_NAME },

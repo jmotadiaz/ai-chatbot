@@ -1,13 +1,13 @@
 "use client";
 
 import { FileText, ImageIcon, Plus, Shield, Brain } from "lucide-react";
-import type { Company } from "models";
 import { useChatContext } from "@/components/chat/provider";
 import { Button } from "@/components/ui/button";
 import { Select, useSelect } from "@/components/ui/select";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { cn } from "@/lib/utils/helpers";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import {
   MetaIcon,
   ClaudeIcon,
@@ -143,7 +143,8 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   );
 };
 
-const icons: Record<Company, React.ComponentType<{ size: number }>> = {
+/** Company es un string libre del catálogo: las desconocidas caen en el logo. */
+const icons: Record<string, React.ComponentType<{ size: number }>> = {
   openai: OpenaiIcon,
   anthropic: ClaudeIcon,
   meta: MetaIcon,
@@ -169,7 +170,8 @@ interface ModelItemProps {
 }
 
 export const ModelItem: React.FC<ModelItemProps> = ({ name }) => {
-  const config = getChatConfigurationByModelId(name);
+  const catalog = useModelCatalog();
+  const config = getChatConfigurationByModelId(catalog, name);
   const CompanyIcon = icons[config.company] || LogoIcon;
   return (
     <div className="flex items-center space-x-6 py-4 px-8 lg:pl-4">
@@ -254,11 +256,12 @@ export const useModelPicker = (): Omit<
   "models" | "id"
 > => {
   const { selectedModel, setConfig } = useChatContext();
+  const catalog = useModelCatalog();
 
   const setSelectedModel = (model: chatModelId) => {
     setConfig({
       selectedModel: model,
-      ...getChatConfigurationByModelId(model),
+      ...getChatConfigurationByModelId(catalog, model),
     });
   };
 

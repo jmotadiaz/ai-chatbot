@@ -1,4 +1,4 @@
-import type { Decision, DecideOptions } from "inference";
+import type { Decision, DecideOptions } from "@/lib/infrastructure/ai/types";
 import { isOneOf } from "@/lib/features/chat/mode-routing/guards";
 import {
   CHAT_MODE_ROUTING_QUESTION,
@@ -65,7 +65,8 @@ export const createChatModeRouter = (
 ): ChatModeRouterPort => ({
   async route(input: ChatModeRouterInput): Promise<RoutingDecision> {
     const decision = await decide({
-      model: "chatModeRouter",
+      // Default Model Contract único para decisiones (spec §2.4).
+      model: "decision-default",
       questions: {
         [CHAT_MODE_ROUTING_QUESTION_KEY]: {
           instructions: CHAT_MODE_ROUTING_QUESTION.instructions,

@@ -6,7 +6,7 @@ export type { RetrieveResourcesInput } from "./search";
 const aiAdapter = {
   generateEmbeddings,
   rerank: (params: { query: string; documents: string[]; topN?: number }) =>
-    inferenceKit.rerank("rerank", params),
+    inferenceKit.rerank(params),
 };
 
 // Singleton export to be used by the app / tools

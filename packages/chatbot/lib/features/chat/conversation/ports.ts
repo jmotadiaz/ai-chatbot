@@ -1,5 +1,5 @@
 import type { ToolLoopAgent, ToolSet } from "ai";
-import type { CreateAgentOptions, ModelConfiguration } from "inference";
+import type { CreateAgentOptions, ModelConfiguration } from "@/lib/infrastructure/ai/types";
 
 export interface ChatAgentAiPort {
   /**

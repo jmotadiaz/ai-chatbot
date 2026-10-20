@@ -5,7 +5,12 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { getDefaultThinkingLevel, isThinkingLevel, toPiModelId } from "models";
+import {
+  getDefaultThinkingLevel,
+  isKnownModelId,
+  isThinkingLevel,
+} from "@/lib/features/foundation-model/config";
+import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import {
@@ -18,7 +23,6 @@ import {
   touchSession,
   updateSessionLabel,
 } from "@/lib/features/code/session-store";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { parseLeadingSkillCommands } from "@/lib/features/code/skill-commands";
 import {
   promptTextFromContent,
@@ -62,9 +66,12 @@ export const POST = withAuth(async (user, req) => {
   const requestedThinkingLevel =
     context.find((c) => c.description === "thinkingLevel")?.value ??
     forwardedProps.thinkingLevel;
+  const catalog = await fetchModelCatalog();
   const thinkingLevel = isThinkingLevel(requestedThinkingLevel)
     ? requestedThinkingLevel
-    : getDefaultThinkingLevel(modelId as chatModelId);
+    : isKnownModelId(catalog, modelId)
+      ? getDefaultThinkingLevel(catalog, modelId)
+      : undefined;
 
   if (!project) {
     return new Response(
@@ -113,9 +120,9 @@ export const POST = withAuth(async (user, req) => {
 
       const client = new WorkerClient();
 
-      const piModelId = modelId
-        ? toPiModelId(modelId as chatModelId)
-        : undefined;
+      // Proveedor único Gateway: el id de Pi es el id del catálogo, validado
+      // en runtime (un id retirado no se manda al worker).
+      const piModelId = isKnownModelId(catalog, modelId) ? modelId : undefined;
       log.info("model.mapping", { from: modelId, to: piModelId });
 
       const initStop = log.startTimer("worker.initialize");
@@ -123,9 +130,7 @@ export const POST = withAuth(async (user, req) => {
         userId: user.id,
         sessionId,
         project,
-        modelId: piModelId
-          ? `${piModelId.providerId}/${piModelId.modelId}`
-          : undefined,
+        modelId: piModelId ?? undefined,
         _traceRunId: runId,
       });
       initStop();
@@ -138,9 +143,7 @@ export const POST = withAuth(async (user, req) => {
         sessionId,
         prompt,
         messages: stripNonTailAttachmentData(messages),
-        modelId: piModelId
-          ? `${piModelId.providerId}/${piModelId.modelId}`
-          : undefined,
+        modelId: piModelId ?? undefined,
         thinkingLevel,
         _traceRunId: runId,
       });

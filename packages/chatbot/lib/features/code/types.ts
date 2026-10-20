@@ -1,5 +1,5 @@
 import type { Message } from "@ag-ui/client";
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import type {
   PromptSummary,
   SessionSummary,

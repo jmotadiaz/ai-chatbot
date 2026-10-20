@@ -1,14 +1,15 @@
 import { z } from "zod";
 import { Project, InsertProject } from "@/lib/infrastructure/db/schema";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
 
 // Re-export database types
 export type { Project, InsertProject };
 
 // Zod schema for Project validation
+// defaultModel es free-form (varchar): la validez contra el catálogo se
+// resuelve en runtime con resolveChatModelId al leerla.
 export const createProjectSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  defaultModel: z.enum(CHAT_MODELS as [string, ...string[]]).optional(),
+  defaultModel: z.string().optional(),
   defaultTemperature: z.number().min(0).max(2).optional(),
   defaultTopP: z.number().min(0).max(1).optional(),
   defaultTopK: z.number().min(0).optional(),

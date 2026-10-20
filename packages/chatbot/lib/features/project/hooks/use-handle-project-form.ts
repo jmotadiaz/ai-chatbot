@@ -1,25 +1,23 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 import { updateProject } from "@/lib/features/project/actions";
 import type { Project } from "@/lib/features/project/types";
 import {
-  CHAT_MODELS,
   defaultWebSearchNumResults,
+  chatModelKeys,
   getChatConfigurationByModelId,
   resolveChatModelId,
 } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { Tool, Tools } from "@/lib/features/chat/types";
 import { getProjectResourcesAction } from "@/lib/features/rag/actions";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 
-const models = CHAT_MODELS;
-
-// Check if an existing project has custom advanced settings configured
 const hasAdvancedConfig = (project?: Project): boolean => {
   if (!project) return false;
   return (
@@ -41,6 +39,8 @@ export const useHandleProjectForm = ({
   mode = "edit",
 }: UseHandleProjectFormProps = {}) => {
   const router = useRouter();
+  const catalog = useModelCatalog();
+  const models = useMemo(() => chatModelKeys(catalog), [catalog]);
   const [title, setTitle] = useState(
     mode === "create" ? "" : project?.name || "",
   );
@@ -52,7 +52,7 @@ export const useHandleProjectForm = ({
   );
   const [tools, setTools] = useState<Tools>((project?.tools as Tools) || []);
   const [model, setModel] = useState<chatModelId>(
-    resolveChatModelId(project?.defaultModel),
+    resolveChatModelId(catalog, project?.defaultModel),
   );
 
   // Advanced settings - collapsible state
@@ -63,8 +63,8 @@ export const useHandleProjectForm = ({
 
   // Get model config for defaults
   const getModelConfig = useCallback(
-    (modelId: chatModelId) => getChatConfigurationByModelId(modelId),
-    [],
+    (modelId: chatModelId) => getChatConfigurationByModelId(catalog, modelId),
+    [catalog],
   );
 
   const modelConfig = getModelConfig(model);

@@ -12,6 +12,7 @@ import { AttachmentsControl } from "@/components/chat/attachments/control";
 
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import { ChatConversation } from "@/components/chat/conversation";
 
 export interface ChatProps {
@@ -53,7 +54,7 @@ const Chat: React.FC<ChatProps> = ({ className }) => {
       status,
       projectId,
     });
-  const modelConfig = getChatConfigurationByModelId(selectedModel);
+  const modelConfig = getChatConfigurationByModelId(useModelCatalog(), selectedModel);
 
   const onPasteFiles = (files: FileList) => {
     handleFileUpload(setFiles, files, modelConfig.supportedFiles);

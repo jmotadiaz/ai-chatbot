@@ -31,7 +31,7 @@ export async function extractMemoryFacts({
   if (!conversation.trim()) return;
 
   const { output } = await generateText({
-    ...inferenceKit.languageModel("memoryExtraction"),
+    ...inferenceKit.languageModel("fast-default"),
     system: MEMORY_EXTRACTION_SYSTEM_PROMPT,
     prompt: conversation,
     output: Output.object({ schema: factSchema }),
@@ -41,7 +41,7 @@ export async function extractMemoryFacts({
   if (facts.length === 0) return;
 
   const contents = facts.map((f) => f.content);
-  const embeddings = await inferenceKit.embed("embedding", contents, {
+  const embeddings = await inferenceKit.embed(contents, {
     taskType: "SEMANTIC_SIMILARITY",
   });
 

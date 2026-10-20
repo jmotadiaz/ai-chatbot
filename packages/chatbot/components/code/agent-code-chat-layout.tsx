@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Edit } from "lucide-react";
-import type { ThinkingLevel } from "models";
 import { AgentCodeChat } from "./agent-code-chat";
 import { FileBrowserEntryButton } from "./file-browser/file-browser-entry-button";
 import { FileBrowserProvider } from "./file-browser/file-browser-provider";
+import type { ThinkingLevel, chatModelId  } from "@/lib/features/foundation-model/config";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
@@ -18,7 +18,6 @@ import { Main } from "@/components/ui/main";
 import { useCodingAgentSessionModel } from "@/lib/features/code/hooks/use-coding-agent-session-model";
 import { useCreateCodingAgentSession } from "@/lib/features/code/hooks/use-create-coding-agent-session";
 import type { CodingAgentBootstrap } from "@/lib/features/code/types";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
 
 /** Lo que la UI necesita saber del razonamiento de un modelo del picker. */
 export interface ModelThinking {
