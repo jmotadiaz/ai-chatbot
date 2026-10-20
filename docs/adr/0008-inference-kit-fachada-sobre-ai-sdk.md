@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0010
+---
+
 # Inference Kit: fachada fina sobre el AI SDK en un paquete de servidor propio
 
 Origen: revisión de arquitectura del 2026-09-24 (página compartida
