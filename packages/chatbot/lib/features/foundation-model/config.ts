@@ -35,8 +35,9 @@ export interface GatewayModelEntry {
   id: string;
   company: string;
   isDefault: boolean;
-  contextWindow: number;
-  maxTokens: number;
+  /** null en entradas sparse (contratos de embedding/rerank/tts sin ventana). */
+  contextWindow: number | null;
+  maxTokens: number | null;
   cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
   reasoning: boolean;
   thinkingLevels: string[];
@@ -146,7 +147,9 @@ export const getChatConfigurationByModelId = (
     temperature: entry.temperature ?? undefined,
     topP: entry.topP ?? undefined,
     topK: entry.topK ?? undefined,
-    contextWindow: entry.contextWindow,
+    // null (entradas sparse) → undefined: los consumidores caen a
+    // `config.contextWindow()` (p. ej. factory.ts, orchestration.ts).
+    contextWindow: entry.contextWindow ?? undefined,
     reasoning: entry.reasoning,
     zeroDataRetention: entry.zeroDataRetention,
     supportedFiles: [...entry.supportedFiles],

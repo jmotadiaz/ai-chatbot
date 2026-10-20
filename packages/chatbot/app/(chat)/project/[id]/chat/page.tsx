@@ -4,7 +4,7 @@ import {
   defaultWebSearchNumResults,
   resolveChatModelId,
 } from "@/lib/features/foundation-model/config";
-import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { getProjectById } from "@/lib/features/project/queries";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
@@ -44,7 +44,7 @@ const Page: React.FC<ProjectPageProps> = async ({
     redirect(`/project/${project.id}/add`);
   }
 
-  const catalog = await fetchModelCatalog();
+  const catalog = await fetchPublicModelCatalog();
 
   return (
     <ChatLifecycleShell>

@@ -43,13 +43,14 @@ export interface GatewayModelCost {
   cacheWrite: number;
 }
 
-/** Entry of `GET /v1/models/catalog` (Model Gateway contracts, §1). */
+/** Entry of `GET /v1/models/catalog` (see CONTRACT.md in model-gateway). */
 export interface GatewayModelEntry {
   id: string;
   company: string;
   isDefault: boolean;
-  contextWindow: number;
-  maxTokens: number;
+  /** null on sparse entries (embedding/rerank/tts contracts have no window). */
+  contextWindow: number | null;
+  maxTokens: number | null;
   cost: GatewayModelCost;
   reasoning: boolean;
   thinkingLevels: ThinkingLevel[];
@@ -111,6 +112,10 @@ export function buildThinkingLevelMap(entry: GatewayModelEntry): ThinkingLevelMa
   return map;
 }
 
+/** Fallbacks when the catalog entry is sparse (null), matching Pi's own generic defaults. */
+const FALLBACK_CONTEXT_WINDOW = 128_000;
+const FALLBACK_MAX_TOKENS = 16_384;
+
 /** Translate a catalog entry 1:1 into a Pi model definition (id = id). */
 export function toPiModelDefinition(entry: GatewayModelEntry): GatewayPiModelDefinition {
   return {
@@ -118,8 +123,8 @@ export function toPiModelDefinition(entry: GatewayModelEntry): GatewayPiModelDef
     name: entry.id,
     reasoning: entry.reasoning,
     input: entry.supportedFiles.includes("img") ? ["text", "image"] : ["text"],
-    contextWindow: entry.contextWindow,
-    maxTokens: entry.maxTokens,
+    contextWindow: entry.contextWindow ?? FALLBACK_CONTEXT_WINDOW,
+    maxTokens: entry.maxTokens ?? FALLBACK_MAX_TOKENS,
     cost: entry.cost,
     thinkingLevelMap: buildThinkingLevelMap(entry),
   };
@@ -182,12 +187,15 @@ function assertCatalog(payload: unknown, url: string): GatewayModelEntry[] {
     );
   }
   return models.map((entry, index) => {
+    // contextWindow/maxTokens pueden ser null (entradas sparse del contrato
+    // compartido); lo que NO puede faltar es id y cost.
+    const candidate = entry as GatewayModelEntry;
     if (
       typeof entry !== "object" || entry === null ||
-      typeof (entry as GatewayModelEntry).id !== "string" ||
-      typeof (entry as GatewayModelEntry).contextWindow !== "number" ||
-      typeof (entry as GatewayModelEntry).maxTokens !== "number" ||
-      typeof (entry as GatewayModelEntry).cost !== "object"
+      typeof candidate.id !== "string" ||
+      !(candidate.contextWindow === null || typeof candidate.contextWindow === "number") ||
+      !(candidate.maxTokens === null || typeof candidate.maxTokens === "number") ||
+      typeof candidate.cost !== "object"
     ) {
       throw new Error(
         `Model Gateway catalog entry #${index} from ${url} is malformed ` +

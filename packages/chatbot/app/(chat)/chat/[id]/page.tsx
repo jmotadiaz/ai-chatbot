@@ -7,7 +7,7 @@ import {
   defaultMinRagScore,
   resolveChatModelId,
 } from "@/lib/features/foundation-model/config";
-import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { getProjectById } from "@/lib/features/project/queries";
 import { getChatById, getMessagesByChatId } from "@/lib/features/chat/queries";
 import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
@@ -34,7 +34,7 @@ const ChatPage: React.FC<ChatPageProps & Authenticated> = async ({
     redirect("/");
   }
 
-  const catalog = await fetchModelCatalog();
+  const catalog = await fetchPublicModelCatalog();
 
   const messages = await getMessagesByChatId(id);
 

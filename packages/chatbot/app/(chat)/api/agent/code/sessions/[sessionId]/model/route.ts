@@ -1,5 +1,5 @@
 import { isKnownModelId } from "@/lib/features/foundation-model/config";
-import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import { getSession } from "@/lib/features/code/session-store";
@@ -31,7 +31,7 @@ export const GET = withAuth(async (user, req) => {
   // Con el proveedor único Gateway el id de Pi es el id del catálogo: se
   // acepta tal cual si el catálogo lo conoce; si no (worker sin migrar,
   // modelo retirado), cae al modelId persistido de la sesión.
-  const catalog = await fetchModelCatalog();
+  const catalog = await fetchPublicModelCatalog();
   const modelId =
     (isKnownModelId(catalog, model?.modelId) ? model.modelId : undefined) ??
     dbSession.modelId ??

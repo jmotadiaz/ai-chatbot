@@ -17,7 +17,7 @@ import {
 } from "./session-store";
 import { WorkerClient } from "./worker-client";
 import { parseLeadingSkillCommands } from "./skill-commands";
-import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import {
   getDefaultThinkingLevel,
   isKnownModelId,
@@ -146,7 +146,7 @@ async function startInitialRun(args: {
 
   // Proveedor único Gateway: el id de Pi ES el id del catálogo, validado en
   // runtime contra el snapshot (los ids retirados no arrancan run).
-  const catalog = await fetchModelCatalog();
+  const catalog = await fetchPublicModelCatalog();
   const modelRef = isKnownModelId(catalog, modelId) ? modelId : undefined;
   const thinkingLevel = isKnownModelId(catalog, modelId)
     ? getDefaultThinkingLevel(catalog, modelId)
@@ -230,7 +230,7 @@ export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
     assertEnabled();
     const client = new WorkerClient();
     const { models } = await client.getAvailableModels();
-    const catalog = await fetchModelCatalog();
+    const catalog = await fetchPublicModelCatalog();
     const result = models
       .map((model) => ({
         id: model.modelId,

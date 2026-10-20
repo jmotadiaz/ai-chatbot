@@ -10,7 +10,7 @@ import {
   isKnownModelId,
   isThinkingLevel,
 } from "@/lib/features/foundation-model/config";
-import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import {
@@ -66,7 +66,7 @@ export const POST = withAuth(async (user, req) => {
   const requestedThinkingLevel =
     context.find((c) => c.description === "thinkingLevel")?.value ??
     forwardedProps.thinkingLevel;
-  const catalog = await fetchModelCatalog();
+  const catalog = await fetchPublicModelCatalog();
   const thinkingLevel = isThinkingLevel(requestedThinkingLevel)
     ? requestedThinkingLevel
     : isKnownModelId(catalog, modelId)

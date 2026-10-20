@@ -6,7 +6,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModelV3, SpeechModelV3 } from "@ai-sdk/provider";
 import { config } from "config";
 import { getTraceContext, isTracingEnabled, wrapWithTracing } from "tracing";
-import { fetchModelCatalog, getModelCatalogSnapshot } from "./catalog";
+import { fetchPublicModelCatalog, getModelCatalogSnapshot } from "./catalog";
 import { gatewayBaseUrl, gatewayHeaders } from "./gateway";
 import { IMAGE_CONTRACT, createGatewayImageModel } from "./gateway-image-model";
 import type {
@@ -389,5 +389,5 @@ export const inferenceKit: InferenceKit = {
   createAgent,
   createAgentModel,
   decide,
-  fetchModelCatalog,
+  fetchPublicModelCatalog,
 };

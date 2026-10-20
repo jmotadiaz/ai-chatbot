@@ -208,6 +208,6 @@ export interface InferenceKit {
    * fallback policy belongs to the caller.
    */
   decide: (options: DecideOptions) => Promise<Decision>;
-  /** Catálogo completo (contratos incluidos) con caché TTL de 60 s. */
-  fetchModelCatalog: () => Promise<GatewayModelEntry[]>;
+  /** Catálogo público (modelos user-invocable, sin contratos) con caché TTL de 60 s. */
+  fetchPublicModelCatalog: () => Promise<GatewayModelEntry[]>;
 }

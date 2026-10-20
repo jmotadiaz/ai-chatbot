@@ -33,7 +33,7 @@ vi.mock("config", () => ({
 vi.mock("@/lib/infrastructure/ai/catalog", async () => {
   const { TEST_MODELS } = await import("@/tests/mocks/gateway/catalog");
   return {
-    fetchModelCatalog: async () => TEST_MODELS,
+    fetchPublicModelCatalog: async () => TEST_MODELS,
     warmModelCatalog: async () => {},
     getModelCatalogSnapshot: () => TEST_MODELS,
   };

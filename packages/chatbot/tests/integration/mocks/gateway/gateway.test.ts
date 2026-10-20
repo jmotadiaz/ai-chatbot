@@ -150,6 +150,13 @@ describe("Mock Model Gateway — infraestructura", () => {
       });
     });
 
+    it("?include_internal=false se trata como público (bug de la revisión)", async () => {
+      const response = await get("/v1/models/catalog?include_internal=false");
+      const { models } = (await response.json()) as { models: Array<{ id: string }> };
+      expect(models.map((m) => m.id)).not.toContain("image-default");
+      expect(models.map((m) => m.id)).toContain("basicChat");
+    });
+
     it("?include_internal=true expone los contratos *-default", async () => {
       const response = await get("/v1/models/catalog?include_internal=true");
       const { models } = (await response.json()) as { models: Array<{ id: string }> };

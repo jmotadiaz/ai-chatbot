@@ -15,8 +15,9 @@ export interface MockCatalogEntry {
   id: string;
   company: string;
   isDefault: boolean;
-  contextWindow: number;
-  maxTokens: number;
+  /** null en entradas sparse (contratos de embedding/rerank/tts sin ventana). */
+  contextWindow: number | null;
+  maxTokens: number | null;
   cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
   reasoning: boolean;
   thinkingLevels: string[];

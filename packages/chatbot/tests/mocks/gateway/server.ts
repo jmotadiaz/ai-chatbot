@@ -469,9 +469,10 @@ function handleCatalog(req: IncomingMessage, res: ServerResponse): void {
     unauthorized(res, { error: "unauthorized" });
     return;
   }
-  const includeInternal = new URL(req.url ?? "/", "http://localhost").searchParams.has(
-    "include_internal",
-  );
+  // Solo el valor literal "true" activa la vista interna: `has("include_internal")`
+  // trataba ?include_internal=false como true (bug de la revisión).
+  const includeInternal =
+    new URL(req.url ?? "/", "http://localhost").searchParams.get("include_internal") === "true";
   const models: MockCatalogEntry[] = includeInternal
     ? [...TEST_MODELS, ...TEST_INTERNAL_MODELS]
     : TEST_MODELS;
