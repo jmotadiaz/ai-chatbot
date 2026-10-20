@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { SessionEventLog } from "../agui/event-log";
 import {
   type SessionEntry,

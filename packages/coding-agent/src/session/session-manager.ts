@@ -3,8 +3,7 @@ import { existsSync, mkdirSync, statSync } from "node:fs";
 import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
-import { getSupportedThinkingLevels } from "models";
-import type { ThinkingLevel, ThinkingLevelMap } from "models";
+import { getSyncedGatewayCatalog, type ThinkingLevel } from "../runtime/gateway-catalog";
 import { SessionEventLog, type Cursor } from "../agui/event-log";
 import type { PendingQueues } from "./pending-queues";
 import { getModelRuntime } from "../runtime/model-runtime";
@@ -27,6 +26,24 @@ export interface CodingAgentSkill {
 
 const turnRunner = new TurnRunner(sessionRegistry);
 const queries = new SessionQueries(sessionRegistry);
+
+/** Fallback for a model the synced Gateway catalog does not describe (should not happen: the models.json is built from that same catalog). */
+const FALLBACK_REASONING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high"];
+
+/**
+ * Levels exposed for a Pi model: the synced Gateway catalog's
+ * `thinkingLevels` (model id = catalog id), with "off" always available —
+ * for a non-reasoning model it is the only level. Mirrors what Pi's runtime
+ * derives from the models.json `thinkingLevelMap` built by
+ * `buildThinkingLevelMap`, so the facade and the session agree.
+ */
+function levelsFor(entry: { reasoning: boolean; thinkingLevels: ThinkingLevel[] } | undefined, reasoning: boolean): ThinkingLevel[] {
+  if (!entry) return reasoning ? FALLBACK_REASONING_LEVELS : ["off"];
+  if (!entry.reasoning) return ["off"];
+  return entry.thinkingLevels.includes("off")
+    ? [...entry.thinkingLevels]
+    : ["off", ...entry.thinkingLevels];
+}
 
 // Keep type for SnapshotMessage (used by sendPrompt signature)
 interface SnapshotMessage {
@@ -110,14 +127,17 @@ export async function getAvailableModels(): Promise<
   // variant is NOT used here: with `refreshOnCreate: false` it is empty until
   // the first availability refresh, which getAvailable() performs locally.
   const available = await (await getModelRuntime()).getAvailable();
+  // Thinking levels come from the synced Gateway catalog snapshot (model id =
+  // catalog id), not from Pi's thinkingLevelMap: the catalog is the shared
+  // source of truth with the chatbot's Model Picker.
+  const catalogById = new Map(
+    getSyncedGatewayCatalog().map((entry) => [entry.id, entry]),
+  );
   const filtered = available.map((model) => ({
     providerId: model.provider,
     modelId: model.id,
     label: `${model.provider}/${model.id}`,
-    levels: getSupportedThinkingLevels(
-      model.reasoning,
-      (model as { thinkingLevelMap?: ThinkingLevelMap }).thinkingLevelMap,
-    ),
+    levels: levelsFor(catalogById.get(model.id), model.reasoning),
   }));
   log.info("models.result", { count: filtered.length });
   return filtered;

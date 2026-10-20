@@ -9,7 +9,7 @@ import {
   runWithTraceContext,
   setTraceSessionId,
 } from "tracing";
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { handleArtifactRequest, matchArtifactRoute } from "../artifacts/artifacts-http";
 import { getArtifactsBaseUrl, getArtifactsDir } from "../runtime/paths";
 import {

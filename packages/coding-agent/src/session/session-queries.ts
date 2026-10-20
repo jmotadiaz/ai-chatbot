@@ -1,4 +1,4 @@
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { getTraceLogger as getWorkerLogger } from "tracing";
 import { ensureEventLog } from "./session-entry";
 import type { Cursor } from "../agui/event-log";

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AddressInfo } from "node:net";
+import { createServer, type Server } from "node:http";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -42,12 +43,29 @@ let tmp: string;
 let rootDir: string;
 let baseUrl: string;
 let server: ReturnType<typeof startHttpTransport>;
+let gateway: Server;
 
 beforeAll(async () => {
   tmp = await mkdtemp(path.join(os.tmpdir(), "artifacts-server-"));
   rootDir = path.join(tmp, "root");
   await mkdir(path.join(tmp, "generated"), { recursive: true });
   vi.stubEnv("CODING_AGENT_ARTIFACTS_DIR", rootDir);
+
+  // Mock Model Gateway: `POST /rpc getAvailableModels` syncs the runtime
+  // catalog on first call, so the worker needs a live /v1/models/catalog.
+  gateway = createServer((_req, res) => {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ models: [] }));
+  });
+  await new Promise<void>((resolve) => gateway.listen(0, "127.0.0.1", resolve));
+  vi.stubEnv(
+    "MODEL_GATEWAY_URL",
+    `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`,
+  );
+  vi.stubEnv("MODEL_GATEWAY_API_KEY", "test-gateway-key");
+  // Keep the sync out of the package's own .pi/agent files.
+  vi.stubEnv("CODING_AGENT_MODELS_JSON", path.join(tmp, "models.json"));
+  vi.stubEnv("CODING_AGENT_AUTH_JSON", path.join(tmp, "auth.json"));
 
   server = startHttpTransport({ port: 0, host: "127.0.0.1" });
   await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -59,6 +77,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   server?.close();
+  gateway?.close();
   vi.unstubAllEnvs();
   await rm(tmp, { recursive: true, force: true });
 });

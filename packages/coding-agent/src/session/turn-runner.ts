@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { stripFrontmatter } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger, retainTraceSink } from "tracing";
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { type Cursor, type LoggedAguiEvent, type SessionEventLog } from "../agui/event-log";
 import { PiToAguiTranslator } from "../agui/pi-to-agui-translator";
 import { AguiEventType as EventType, FILES_CHANGED_EVENT, isSyncPoint, isTerminal, type AguiEvent } from "../agui/agui-event";

@@ -1,5 +1,6 @@
 import { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
+import { ensureGatewayModelsJson } from "./gateway-catalog";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 
 /**
@@ -25,12 +26,19 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
 let runtimePromise: Promise<ModelRuntime> | undefined;
 
 export function getModelRuntime(): Promise<ModelRuntime> {
-  runtimePromise ??= ModelRuntime.create({
-    authPath: getAuthJsonPath(),
-    modelsPath: getModelsJsonPath(),
-    allowModelNetwork: false,
-    refreshOnCreate: false,
-  }).catch((error) => {
+  runtimePromise ??= (async () => {
+    // Sync the runtime catalog from the Model Gateway BEFORE building the
+    // file-backed runtime: models.json/auth.json must describe the single
+    // `model-gateway` provider, and a dead Gateway must fail fast instead of
+    // silently starting with an empty model list.
+    await ensureGatewayModelsJson();
+    return ModelRuntime.create({
+      authPath: getAuthJsonPath(),
+      modelsPath: getModelsJsonPath(),
+      allowModelNetwork: false,
+      refreshOnCreate: false,
+    });
+  })().catch((error) => {
     // Allow a later caller to retry instead of caching a rejected promise.
     runtimePromise = undefined;
     getTraceLogger("worker").error("modelruntime.create_failed", {
