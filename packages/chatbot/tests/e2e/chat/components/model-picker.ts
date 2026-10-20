@@ -16,8 +16,13 @@ export class ModelPickerComponent {
   }
 
   getModelOption(modelName: string): Locator {
+    // El accessible name de cada option acaba en un sufijo de precios
+    // ("basicChat I: | O: |"), así que NO vale exact: pinsam en ancla ^ sobre
+    // el id (el sufijo contiene la I/O). Con subcadena plana, un id prefijo de
+    // otro (basicChat ↔ basicChatAlt) resolvería 2 elementos en modo estricto.
+    const escaped = modelName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return this.modelDropdown.getByRole("option", {
-      name: modelName,
+      name: new RegExp(`^${escaped}\\s+I:`),
     });
   }
 

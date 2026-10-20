@@ -100,7 +100,12 @@ export default defineConfig({
     command: `npx next dev --webpack -p ${PORT}`,
     stdout: config.serverOutput() ? "pipe" : "ignore",
     stderr: config.serverOutput() ? "pipe" : "ignore",
-    url: baseURL,
+    // Sonda de readiness en /login, no en `/` (ADR 0010): la home hidrata el
+    // catálogo desde el Model Gateway, y el Mock (:4001) lo arranta globalSetup
+    // — que Playwright ejecuta DESPUÉS de esperar esta sonda. Sondar `/` sería
+    // un deadlock: el gateway ya está garantizado para el momento en que
+    // corren los tests, pero la sonda debe valer sin gateway.
+    url: `${baseURL}/login`,
     reuseExistingServer: !config.ci(),
     timeout: 240 * 1000,
     // Reenvío de valores crudos al webServer (strings, defaults propios del runner).

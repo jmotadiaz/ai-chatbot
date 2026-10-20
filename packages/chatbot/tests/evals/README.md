@@ -120,8 +120,7 @@ tests/evals/
 
 ## Requisitos
 
-- `.env.development.local` con las API keys reales de los modelos que usan los casos (al menos: `OPENCODE_ZEN_API_KEY`, `OPENROUTER_API_KEY`).
-- Docker para levantar la DB de test.
+- Credenciales LLM accesibles vía **Model Gateway** (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY`, incluida la URL del Mock `:4001` en test) y Docker para levantar la DB de test.
 - Sin necesidad de tener la app corriendo — el runner la levanta.
 
 ## Trazas

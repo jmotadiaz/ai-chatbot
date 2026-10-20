@@ -1,4 +1,4 @@
-import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import type { LanguageModelV3StreamPart } from "@/lib/infrastructure/ai/types";
 
 /**
  * Chunk builders for AI SDK mock streams (antes `inference/testing`,
