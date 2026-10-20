@@ -4,6 +4,7 @@ import {
   defaultWebSearchNumResults,
   resolveChatModelId,
 } from "@/lib/features/foundation-model/config";
+import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { getProjectById } from "@/lib/features/project/queries";
 import { ChatLayout } from "@/app/(chat)/chat-layout";
 import { withAuth, Authenticated } from "@/lib/features/auth/with-auth/hoc";
@@ -43,13 +44,15 @@ const Page: React.FC<ProjectPageProps> = async ({
     redirect(`/project/${project.id}/add`);
   }
 
+  const catalog = await fetchModelCatalog();
+
   return (
     <ChatLifecycleShell>
       <Sidebar projectId={id} user={user} />
       <ChatLayout
         chatConfig={{
           projectId: id,
-          selectedModel: resolveChatModelId(project.defaultModel),
+          selectedModel: resolveChatModelId(catalog, project.defaultModel),
           temperature: project.defaultTemperature ?? undefined,
           topP: project.defaultTopP ?? undefined,
           topK: project.defaultTopK ?? undefined,

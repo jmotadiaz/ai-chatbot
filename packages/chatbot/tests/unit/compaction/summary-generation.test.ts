@@ -27,38 +27,38 @@ function buildAiPort(): CompactionAiPort {
 
 /**
  * `modelUsed` is persisted verbatim into `ChatSummary.modelUsed`
- * (`lib/infrastructure/db/schema.ts`) as provenance, so it must stay the
- * resolved catalog id the role currently points at — not the role name
- * passed to the port (which is what the AI port still resolves by).
+ * (`lib/infrastructure/db/schema.ts`) as provenance: with the Model Gateway
+ * (ADR 0010) the Default Model Contract IS the stable identifier, so the
+ * same contract the port resolves by is what gets persisted.
  */
 describe("generateSummary / generateTurnPrefixSummary: modelUsed provenance", () => {
-  it("generateSummary passes the compactionText role to the port and returns its catalog id", async () => {
+  it("generateSummary passes the text contract to the port and returns it as provenance", async () => {
     const ai = buildAiPort();
 
     const { modelUsed } = await generateSummary(ai, textMessages);
 
     expect(ai.generateText).toHaveBeenCalledWith(
-      "compactionText",
+      "reasoning-default",
       expect.any(String),
       expect.any(String),
     );
-    expect(modelUsed).toBe("Deepseek v4.1 Flash");
+    expect(modelUsed).toBe("reasoning-default");
   });
 
-  it("generateSummary passes the compactionMultimedia role to the port and returns its catalog id", async () => {
+  it("generateSummary passes the multimedia contract to the port and returns it as provenance", async () => {
     const ai = buildAiPort();
 
     const { modelUsed } = await generateSummary(ai, multimediaMessages);
 
     expect(ai.generateText).toHaveBeenCalledWith(
-      "compactionMultimedia",
+      "vision-default",
       expect.any(String),
       expect.any(String),
     );
-    expect(modelUsed).toBe("Qwen 3.8 Flash");
+    expect(modelUsed).toBe("vision-default");
   });
 
-  it("generateTurnPrefixSummary returns the same catalog ids for the same two roles", async () => {
+  it("generateTurnPrefixSummary returns the same contracts for the same two branches", async () => {
     const textAi = buildAiPort();
     const multimediaAi = buildAiPort();
 
@@ -69,17 +69,17 @@ describe("generateSummary / generateTurnPrefixSummary: modelUsed provenance", ()
     );
 
     expect(textAi.generateText).toHaveBeenCalledWith(
-      "compactionText",
+      "reasoning-default",
       expect.any(String),
       expect.any(String),
     );
-    expect(textResult.modelUsed).toBe("Deepseek v4.1 Flash");
+    expect(textResult.modelUsed).toBe("reasoning-default");
 
     expect(multimediaAi.generateText).toHaveBeenCalledWith(
-      "compactionMultimedia",
+      "vision-default",
       expect.any(String),
       expect.any(String),
     );
-    expect(multimediaResult.modelUsed).toBe("Qwen 3.8 Flash");
+    expect(multimediaResult.modelUsed).toBe("vision-default");
   });
 });

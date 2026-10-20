@@ -16,6 +16,7 @@ import {
   defaultRagMaxResources,
   defaultMinRagScore,
 } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import { useChatRequestBody } from "@/lib/features/chat/conversation/hooks/use-chat-request-body";
 import {
   useChatSession,
@@ -68,6 +69,7 @@ export const useChatHubInstance = ({
   ragMaxResources = defaultRagMaxResources,
   minRagResourcesScore = defaultMinRagScore,
 }: UseChatHubInstanceConfig): UseChatHubInstanceResult => {
+  const catalog = useModelCatalog();
   const { dataPart, setDataPart } = useChatDataPartState();
   // Instance owns its own session + UI state.
   const chatResult = useChatSession({
@@ -78,7 +80,7 @@ export const useChatHubInstance = ({
   });
 
   const chatConfig = useMemo<ChatConfig>(() => {
-    const modelConfig = getChatConfigurationByModelId(model);
+    const modelConfig = getChatConfigurationByModelId(catalog, model);
     return {
       selectedModel: model,
       temperature: temperature ?? modelConfig.temperature,
@@ -97,6 +99,7 @@ export const useChatHubInstance = ({
     webSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,
+    catalog,
   ]);
 
   const body = useChatRequestBody({

@@ -1,4 +1,3 @@
-import type { Decision } from "inference";
 import {
   AUDIENCE_OPTIONS,
   AUDIENCE_QUESTION_KEY,
@@ -10,6 +9,7 @@ import {
   type DirectionOption,
   type DomainOption,
 } from "./questions";
+import type { Decision } from "@/lib/infrastructure/ai/types";
 
 /**
  * Per-question fallbacks, applied only when the classification call fails

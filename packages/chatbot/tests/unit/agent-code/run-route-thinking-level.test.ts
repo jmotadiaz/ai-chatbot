@@ -49,7 +49,7 @@ import { POST } from "@/app/(chat)/api/agent/code/route";
 function makeRequest(
   options: { modelId?: string; thinkingLevel?: string; runId?: string } = {},
 ) {
-  const { modelId = "Deepseek v4.1 Flash", thinkingLevel, runId = "r1" } = options;
+  const { modelId = "canProduceReasoning", thinkingLevel, runId = "r1" } = options;
   return new Request("http://test/api/agent/code", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -85,12 +85,12 @@ describe("POST /api/agent/code", () => {
 
     expect(res.status).toBe(200);
     const init = mockState.initParams[0] as { modelId?: string };
-    expect(init.modelId).toBe("opencode-go/deepseek-v4.1-flash");
+    expect(init.modelId).toBe("canProduceReasoning");
     const promptParams = mockState.sendPromptParams[0] as {
       modelId?: string;
       thinkingLevel?: string;
     };
-    expect(promptParams.modelId).toBe("opencode-go/deepseek-v4.1-flash");
+    expect(promptParams.modelId).toBe("canProduceReasoning");
     expect(promptParams.thinkingLevel).toBe("low");
   });
 
@@ -99,7 +99,7 @@ describe("POST /api/agent/code", () => {
 
     expect(res.status).toBe(200);
     const promptParams = mockState.sendPromptParams[0] as { thinkingLevel?: string };
-    expect(promptParams.thinkingLevel).toBe("xhigh");
+    expect(promptParams.thinkingLevel).toBe("medium");
   });
 
   it("falls back to the catalog default when the level is not a valid one", async () => {
@@ -107,16 +107,16 @@ describe("POST /api/agent/code", () => {
 
     expect(res.status).toBe(200);
     const promptParams = mockState.sendPromptParams[0] as { thinkingLevel?: string };
-    expect(promptParams.thinkingLevel).toBe("xhigh");
+    expect(promptParams.thinkingLevel).toBe("medium");
   });
 
   it("uses each model's own catalog default", async () => {
     const res = await POST(
-      makeRequest({ modelId: "Kimi K3", runId: "r2" }) as never,
+      makeRequest({ modelId: "basicChat", runId: "r2" }) as never,
     );
 
     expect(res.status).toBe(200);
     const promptParams = mockState.sendPromptParams[0] as { thinkingLevel?: string };
-    expect(promptParams.thinkingLevel).toBe("high");
+    expect(promptParams.thinkingLevel).toBeUndefined();
   });
 });

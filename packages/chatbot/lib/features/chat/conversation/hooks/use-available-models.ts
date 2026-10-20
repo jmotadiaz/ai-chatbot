@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import type { FilePart } from "@/lib/features/attachment/types";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
@@ -15,9 +16,10 @@ export const useAvailableModels = ({
   messages: ChatbotMessage[];
   files: FilePart[];
 }): chatModelId[] => {
+  const catalog = useModelCatalog();
   return useMemo(() => {
     return models.filter((model) => {
-      const config = getChatConfigurationByModelId(model);
+      const config = getChatConfigurationByModelId(catalog, model);
       const mediaTypes = [
         ...messages.flatMap((message) =>
           message.parts
@@ -34,5 +36,5 @@ export const useAvailableModels = ({
         return true;
       });
     });
-  }, [files, messages, models]);
+  }, [catalog, files, messages, models]);
 };

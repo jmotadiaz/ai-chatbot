@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 
 export interface UseCodingAgentSessionThinkingLevelArgs {
   sessionId: string;

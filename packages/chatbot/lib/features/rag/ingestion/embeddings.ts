@@ -33,7 +33,7 @@ export async function generateEmbeddings(
 
     // Solo enviamos el texto al modelo
     const embeddings = await embeddingRateLimiter.execute(batchContents, () =>
-      inferenceKit.embed("embedding", batchContents, {
+      inferenceKit.embed(batchContents, {
         taskType: "RETRIEVAL_DOCUMENT",
       }),
     );

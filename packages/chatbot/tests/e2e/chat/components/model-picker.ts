@@ -1,7 +1,4 @@
 import { Locator } from "@playwright/test";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
-import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
-import type { CapabilityAlias } from "@/tests/mocks/ai/capabilities";
 
 /**
  * Component Object Model for Header functionality
@@ -28,9 +25,9 @@ export class ModelPickerComponent {
     await this.modelPicker.click();
   }
 
-  async selectModel(modelNameOrCapability: chatModelId | CapabilityAlias) {
-    const alias = CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias];
-    const modelName = alias?.id ?? modelNameOrCapability;
+  // Los ids del picker son los del catálogo que sirve el Mock Model Gateway
+  // (capacidades: basicChat, canExecuteTools, …) — sin alias intermedios.
+  async selectModel(modelName: string) {
     await this.openSelectModelDropdown();
     await this.getModelOption(modelName).click();
     await this.modelDropdown.waitFor({ state: "detached" });

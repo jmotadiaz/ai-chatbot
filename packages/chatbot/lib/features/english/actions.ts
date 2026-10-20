@@ -1,11 +1,14 @@
 "use server";
 
 import { experimental_generateSpeech as aiGenerateSpeech } from "ai";
+import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { speechModel } from "@/lib/infrastructure/ai/inference-kit";
 
 export async function generateSpeech(text: string) {
+  await warmModelCatalog();
   const result = await aiGenerateSpeech({
-    model: speechModel("englishTts"),
+    // Contrato único del Gateway: `tts-default` (`POST /v1/audio/speech`).
+    model: speechModel(),
     speed: 0.9,
     voice: "alloy",
     instructions: `

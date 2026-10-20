@@ -6,25 +6,28 @@ import type {
   chatModelId,
 } from "@/lib/features/foundation-model/config";
 import { getChatConfigurationByModelId } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 
 const unionSupportedFiles = (
+  catalog: Parameters<typeof getChatConfigurationByModelId>[0],
   models: chatModelId[]
 ): ChatModelConfiguration["supportedFiles"] => {
   const set = new Set<ChatModelConfiguration["supportedFiles"][number]>();
   for (const model of models) {
-    for (const f of getChatConfigurationByModelId(model).supportedFiles) set.add(f);
+    for (const f of getChatConfigurationByModelId(catalog, model).supportedFiles) set.add(f);
   }
   return Array.from(set);
 };
 
 const intersectSupportedFiles = (
+  catalog: Parameters<typeof getChatConfigurationByModelId>[0],
   models: chatModelId[]
 ): ChatModelConfiguration["supportedFiles"] => {
   if (models.length === 0) return [];
   const [first, ...rest] = models;
-  const base = new Set(getChatConfigurationByModelId(first).supportedFiles);
+  const base = new Set(getChatConfigurationByModelId(catalog, first).supportedFiles);
   for (const model of rest) {
-    const current = new Set(getChatConfigurationByModelId(model).supportedFiles);
+    const current = new Set(getChatConfigurationByModelId(catalog, model).supportedFiles);
     for (const value of Array.from(base)) {
       if (!current.has(value)) base.delete(value);
     }
@@ -43,12 +46,11 @@ export const useSupportedFiles = ({
   selectedModels,
   availableModels,
 }: UseSupportedFilesArgs): ChatModelConfiguration["supportedFiles"] => {
+  const catalog = useModelCatalog();
   return useMemo(() => {
     if (selectedModels.length > 0) {
-      return intersectSupportedFiles(selectedModels);
+      return intersectSupportedFiles(catalog, selectedModels);
     }
-    return unionSupportedFiles(availableModels);
-  }, [availableModels, selectedModels]);
+    return unionSupportedFiles(catalog, availableModels);
+  }, [availableModels, catalog, selectedModels]);
 };
-
-

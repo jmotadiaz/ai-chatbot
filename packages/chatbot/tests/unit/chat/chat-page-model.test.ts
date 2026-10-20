@@ -42,6 +42,13 @@ import {
   defaultModel,
   getChatConfigurationByModelId,
 } from "@/lib/features/foundation-model/config";
+import { TEST_MODELS } from "@/tests/mocks/gateway/catalog";
+
+// La página resuelve el modelo contra el catálogo del Gateway; la fixture
+// del Mock Model Gateway hace el papel de catálogo aquí.
+vi.mock("@/lib/infrastructure/ai/catalog", () => ({
+  fetchModelCatalog: async () => TEST_MODELS,
+}));
 
 const chatRow = (defaultModelColumn: string | null) => ({
   id: "chat-1",
@@ -79,18 +86,18 @@ describe("chat page model selection", () => {
   it("opens a chat whose row has no model with the default model", async () => {
     const { selectedModel } = await loadChatConfig(chatRow(null));
 
-    expect(selectedModel).toBe(defaultModel);
-    expect(() => getChatConfigurationByModelId(selectedModel!)).not.toThrow();
+    expect(selectedModel).toBe(defaultModel(TEST_MODELS));
+    expect(() => getChatConfigurationByModelId(TEST_MODELS, selectedModel!)).not.toThrow();
   });
 
   it("opens a chat whose model left the catalog with the default model", async () => {
     const { selectedModel } = await loadChatConfig(chatRow("Retired Model 0.9"));
 
-    expect(selectedModel).toBe(defaultModel);
+    expect(selectedModel).toBe(defaultModel(TEST_MODELS));
   });
 
   it("keeps the chat's model while it is still selectable", async () => {
-    const selectable = chatModelKeys.at(-1)!;
+    const selectable = chatModelKeys(TEST_MODELS).at(-1)!;
 
     const { selectedModel } = await loadChatConfig(chatRow(selectable));
 

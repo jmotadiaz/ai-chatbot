@@ -1,6 +1,5 @@
 import "server-only";
 
-import { LANGUAGE_MODEL_ROLES, type LanguageModelRole } from "models";
 import {
   SUMMARIZER_SYSTEM_PROMPT,
   INITIAL_SUMMARIZATION_PROMPT,
@@ -11,15 +10,12 @@ import type { CompactionAiPort } from "./ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 /**
- * The two roles this feature's runtime `hasMultimedia` ternary picks
- * between — see LANGUAGE_MODEL_ROLES in `models`. Narrowing to just these
- * two (instead of the full LanguageModelRole union) is what lets
- * `LANGUAGE_MODEL_ROLES[modelKey]` below resolve to a literal ModelId.
+ * The two Default Model Contracts this feature's runtime `hasMultimedia`
+ * ternary picks between (spec §2.4): text-only turns compact with
+ * `reasoning-default`, turns with multimedia (files) with `vision-default`.
  */
-type CompactionModelRole = Extract<
-  LanguageModelRole,
-  "compactionText" | "compactionMultimedia"
->;
+const COMPACTION_TEXT_CONTRACT = "reasoning-default";
+const COMPACTION_MULTIMEDIA_CONTRACT = "vision-default";
 
 export async function generateSummary(
   ai: CompactionAiPort,
@@ -31,9 +27,9 @@ export async function generateSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey: CompactionModelRole = hasMultimedia
-    ? "compactionMultimedia"
-    : "compactionText";
+  const modelKey = hasMultimedia
+    ? COMPACTION_MULTIMEDIA_CONTRACT
+    : COMPACTION_TEXT_CONTRACT;
 
   const promptText = previousSummary
     ? INCREMENTAL_UPDATE_PROMPT.replace("{previousSummary}", previousSummary)
@@ -43,16 +39,15 @@ export async function generateSummary(
         serializedMessages,
       );
 
-  // The port still resolves by role; only the persisted provenance
-  // (modelUsed, a DB column — see ChatSummary in db/schema.ts) needs the
-  // catalog id a role currently points at, not the role name itself.
   const summary = await ai.generateText(
     modelKey,
     SUMMARIZER_SYSTEM_PROMPT,
     promptText,
   );
 
-  return { summary, modelUsed: LANGUAGE_MODEL_ROLES[modelKey] };
+  // Provenance persisted in ChatSummary.modelUsed (a DB column): the
+  // contract name itself is the stable identifier now.
+  return { summary, modelUsed: modelKey };
 }
 
 export async function generateTurnPrefixSummary(
@@ -64,9 +59,9 @@ export async function generateTurnPrefixSummary(
     msg.parts?.some((part) => part.type === "file"),
   );
 
-  const modelKey: CompactionModelRole = hasMultimedia
-    ? "compactionMultimedia"
-    : "compactionText";
+  const modelKey = hasMultimedia
+    ? COMPACTION_MULTIMEDIA_CONTRACT
+    : COMPACTION_TEXT_CONTRACT;
 
   const prompt = `Summarize the following turn prefix (the beginning of an assistant response that was interrupted or split):
 
@@ -80,5 +75,5 @@ Output a concise summary of what the assistant was doing, what tools it used, an
     prompt,
   );
 
-  return { summary, modelUsed: LANGUAGE_MODEL_ROLES[modelKey] };
+  return { summary, modelUsed: modelKey };
 }

@@ -126,7 +126,7 @@ function completionJson(text: string, model: string): unknown {
   };
 }
 
-/** Texto exacto del mock genérico actual (`createMockModel` en inference/testing). */
+/** Texto determinista de tipo "mock genérico": incluye el id y la temperature. */
 const basicText = (model: string, temperature: number | undefined) =>
   `Hello, I'm ${model}, Temperature: ${temperature ?? 0}, `;
 
@@ -533,8 +533,14 @@ export async function ensureMockGateway(
         server.once("error", reject);
         server.listen(port, "127.0.0.1", resolve);
       });
-      running = { server, port };
-      return { port, started: true };
+      // Con `port: 0` (efímero, para tests que quieren un server propio sin
+      // carreras entre workers) reportamos el puerto REAL asignado por el SO.
+      const boundPort =
+        port === 0
+          ? (server.address() as { port: number }).port
+          : port;
+      running = { server, port: boundPort };
+      return { port: boundPort, started: true };
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code !== "EADDRINUSE") throw error;

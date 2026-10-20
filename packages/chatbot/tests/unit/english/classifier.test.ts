@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DecideOptions, Decision } from "inference";
 import {
   createEnglishClassifier,
   ENGLISH_CLASSIFIER_TRACE_NAME,
@@ -9,6 +8,7 @@ import {
   DIRECTION_QUESTION_KEY,
   DOMAIN_QUESTION_KEY,
 } from "../../../lib/features/english/workflows/questions";
+import type { DecideOptions, Decision } from "@/lib/infrastructure/ai/types";
 
 const answer = (choice: string) => ({
   choice,
@@ -42,7 +42,7 @@ describe("createEnglishClassifier: one Decisions call per workflow", () => {
 
     expect(decide).toHaveBeenCalledTimes(1);
     const call = decide.mock.calls[0]![0];
-    expect(call.model).toBe("englishHelper");
+    expect(call.model).toBe("decision-default");
     expect(Object.keys(call.questions)).toEqual([
       DIRECTION_QUESTION_KEY,
       AUDIENCE_QUESTION_KEY,

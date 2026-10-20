@@ -6,8 +6,6 @@ import {
   runWithTraceContext,
   getTraceLogger,
 } from "tracing";
-import { getDefaultThinkingLevel, toChatModelId, toPiModelId } from "models";
-import type { InvocableModelId, ThinkingLevel } from "models";
 import { config, optional } from "config";
 import { listProjects } from "./project-resolver";
 import {
@@ -19,7 +17,12 @@ import {
 } from "./session-store";
 import { WorkerClient } from "./worker-client";
 import { parseLeadingSkillCommands } from "./skill-commands";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
+import { fetchModelCatalog } from "@/lib/infrastructure/ai/catalog";
+import {
+  getDefaultThinkingLevel,
+  isKnownModelId,
+} from "@/lib/features/foundation-model/config";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import { auth } from "@/lib/features/auth/auth-config";
 
 function assertEnabled() {
@@ -141,12 +144,12 @@ async function startInitialRun(args: {
   const runId = crypto.randomUUID();
   const client = new WorkerClient();
 
-  const piModelId = modelId ? toPiModelId(modelId as chatModelId) : undefined;
-  const modelRef = piModelId
-    ? `${piModelId.providerId}/${piModelId.modelId}`
-    : undefined;
-  const thinkingLevel = modelId
-    ? getDefaultThinkingLevel(modelId as chatModelId)
+  // Proveedor único Gateway: el id de Pi ES el id del catálogo, validado en
+  // runtime contra el snapshot (los ids retirados no arrancan run).
+  const catalog = await fetchModelCatalog();
+  const modelRef = isKnownModelId(catalog, modelId) ? modelId : undefined;
+  const thinkingLevel = isKnownModelId(catalog, modelId)
+    ? getDefaultThinkingLevel(catalog, modelId)
     : undefined;
 
   await client.initializeSession({
@@ -207,7 +210,7 @@ export async function getSubagentSessionAction(input: {
 }
 
 export interface CodingAgentModel {
-  id: InvocableModelId;
+  id: string;
   /** Niveles de razonamiento del modelo, según el registry de Pi en el worker. */
   levels: ThinkingLevel[];
   /** Nivel que se aplica al elegir este modelo, del catálogo. */
@@ -218,22 +221,23 @@ export interface CodingAgentModel {
  * Modelos disponibles con todo lo que la UI necesita saber de razonamiento.
  * Los niveles solo los conoce el worker (el `thinkingLevelMap` vive en el
  * registry de Pi, no en el catálogo), así que este es el único canal.
+ *
+ * Con el proveedor único Gateway el id de Pi es el id del catálogo: se pasa
+ * tal cual y se valida en runtime para derivar el default level.
  */
 export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
   return withActionTrace("getCodingAgentModels", async (log) => {
     assertEnabled();
     const client = new WorkerClient();
     const { models } = await client.getAvailableModels();
+    const catalog = await fetchModelCatalog();
     const result = models
-      .map((model) => ({ model, id: toChatModelId(model.providerId, model.modelId) }))
-      .filter(
-        (entry): entry is { model: (typeof models)[number]; id: InvocableModelId } =>
-          entry.id !== undefined,
-      )
-      .map(({ model, id }) => ({
-        id,
+      .map((model) => ({
+        id: model.modelId,
         levels: model.levels,
-        defaultLevel: getDefaultThinkingLevel(id),
+        defaultLevel: isKnownModelId(catalog, model.modelId)
+          ? getDefaultThinkingLevel(catalog, model.modelId)
+          : undefined,
       }))
       .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     log.info("action.result", { count: result.length });

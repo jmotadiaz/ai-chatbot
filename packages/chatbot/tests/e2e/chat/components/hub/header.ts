@@ -1,6 +1,4 @@
 import { Locator } from "@playwright/test";
-import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
-import type { CapabilityAlias } from "@/tests/mocks/ai/capabilities";
 
 export class HubHeaderComponent {
   readonly container: Locator;
@@ -11,9 +9,9 @@ export class HubHeaderComponent {
     this.modelPicker = container.getByRole("combobox");
   }
 
-  async addModel(modelNameOrCapability: string | CapabilityAlias) {
-    const alias = CAPABILITY_ALIASES[modelNameOrCapability as CapabilityAlias];
-    const modelName = alias?.id ?? modelNameOrCapability;
+  // Los ids del picker son los del catálogo que sirve el Mock Model Gateway
+  // (capacidades: basicChat, canExecuteTools, …) — sin alias intermedios.
+  async addModel(modelName: string) {
     const newModelButton = this.container.getByRole("button", {
       name: "New Model",
     });

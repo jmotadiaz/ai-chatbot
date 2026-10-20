@@ -1,7 +1,7 @@
 "use client";
 
-import type { ThinkingLevel } from "models";
 import { Check, Settings2 } from "lucide-react";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import { ChatControl } from "@/components/chat/control";
 import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils/helpers";

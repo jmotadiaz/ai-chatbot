@@ -9,6 +9,7 @@ import {
 } from "ai";
 import type { ModelMessage } from "ai";
 import { config } from "config";
+import { getModelCatalogSnapshot, warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
@@ -179,6 +180,10 @@ export const makeProcessChatResponse = (
       throw new Error("Unauthorized");
     }
 
+    // Warm the catalog snapshot before the (synchronous) languageModel/
+    // createAgentModel resolutions in buildAgentAdapter and every Chat Mode.
+    await warmModelCatalog();
+
     const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
 
     const { filteredMessages, augmentedSystemPrompt } = chatId
@@ -329,6 +334,7 @@ export const makeProcessChatResponse = (
                   const resolvedChatId = chatId ?? (String(dbChatId) || "");
                   if (resolvedChatId) {
                     const modelConfig = getChatConfigurationByModelId(
+                      getModelCatalogSnapshot(),
                       selectedModel,
                     );
                     const contextWindow =

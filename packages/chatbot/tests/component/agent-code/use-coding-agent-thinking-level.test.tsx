@@ -2,8 +2,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import type { ThinkingLevel } from "models";
 import { setupMswServer } from "../../helpers/msw-server";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import { useCodingAgentSessionThinkingLevel } from "@/lib/features/code/hooks/use-coding-agent-session-thinking-level";
 
 const thinkingLevelUrl = "*/api/agent/code/sessions/s1/thinking-level";

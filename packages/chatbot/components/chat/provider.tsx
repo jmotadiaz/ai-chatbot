@@ -2,8 +2,6 @@
 
 import React, { createContext, useContext } from "react";
 import {
-  CHAT_MODELS,
-  defaultModel,
   defaultRagMaxResources,
   defaultMinRagScore,
   defaultWebSearchNumResults,
@@ -15,7 +13,7 @@ import {
 } from "@/lib/features/chat/conversation/hooks/use-chat";
 
 const chatContext = createContext<UseChatResult>({
-  selectedModel: defaultModel,
+  selectedModel: "",
   temperature: undefined,
   topP: undefined,
   topK: undefined,
@@ -42,18 +40,18 @@ const chatContext = createContext<UseChatResult>({
   regenerate: async () => {
     return undefined;
   },
-  clearError: () => {},
-  reload: async () => {},
   resumeStream: async () => {},
   addToolResult: async () => {},
   addToolOutput: async () => {},
   addToolApprovalResponse: async () => {},
   chatMode: "auto",
   setChatMode: () => {},
-  availableModels: CHAT_MODELS,
+  availableModels: [],
   dataPart: undefined,
   isNewChat: false,
   preventChatPersistence: false,
+  reload: async () => {},
+  clearError: () => {},
 });
 
 export interface ChatProviderProps extends UseChatArgs {

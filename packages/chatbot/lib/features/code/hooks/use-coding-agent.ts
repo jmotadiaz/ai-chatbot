@@ -8,7 +8,7 @@ import {
   type Message,
 } from "@ag-ui/client";
 import { isCursorCustom, type AguiEvent } from "coding-agent/agui/event";
-import type { ThinkingLevel } from "models";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import { ConnectableHttpAgent } from "@/lib/features/code/connectable-http-agent";
 import { writeClientTrace } from "@/lib/features/code/client-trace";
 import { groupItems } from "@/lib/features/code/group-items";

@@ -1,8 +1,8 @@
-import type { ModelConfiguration } from "inference";
 import type {
   TextClassifications,
   TranslationClassifications,
 } from "./policy";
+import type { ModelConfiguration } from "@/lib/infrastructure/ai/types";
 
 // Ports expose the classifier and one model configuration per workflow.
 // Classification is a Decisions-API call (not a Model Configuration), so it

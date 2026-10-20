@@ -6,5 +6,5 @@ export const generateEmbeddings = async (
   queryType: QueryType,
 ): Promise<number[][]> => {
   const inputs = values.map((v) => v.replaceAll("\\n", " "));
-  return inferenceKit.embed("embedding", inputs, { taskType: queryType });
+  return inferenceKit.embed(inputs, { taskType: queryType });
 };

@@ -1,6 +1,6 @@
-import type { RerankResult } from "inference";
 import type { SimilarChunk, SimilarChunks } from "../types";
 import { QueryType } from "../types";
+import type { RerankResult } from "@/lib/infrastructure/ai/types";
 
 /**
  * After reranking, reorder chunks so that chunks from the same resource

@@ -166,7 +166,7 @@ evalite("Compaction Quality", {
       userId = user.id
 
       const simulator = createSimulator({
-        modelKey: "Deepseek v4.1 Flash",
+        modelKey: "free-default",
         scenarioPrompt,
         traceWriter,
       })

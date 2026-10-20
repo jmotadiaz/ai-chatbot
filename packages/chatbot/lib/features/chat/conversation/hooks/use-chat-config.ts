@@ -2,8 +2,8 @@
 
 import { useCallback, useState } from "react";
 import type { ChatConfig, SetChatConfig } from "./hook-types";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import {
-  defaultModel,
   defaultRagMaxResources,
   defaultMinRagScore,
   defaultWebSearchNumResults,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/features/foundation-model/config";
 
 export const useChatConfig = ({
-  selectedModel = defaultModel,
+  selectedModel,
   temperature,
   topP,
   topK,
@@ -19,12 +19,14 @@ export const useChatConfig = ({
   webSearchNumResults,
   ragMaxResources,
   minRagResourcesScore,
-}: Partial<ChatConfig>): {
+}: { selectedModel: string } & Partial<ChatConfig>): {
   chatConfig: ChatConfig;
   setConfig: SetChatConfig;
 } => {
+  const catalog = useModelCatalog();
+
   const [chatConfig, setChatConfig] = useState<ChatConfig>(() => {
-    const modelConfig = getChatConfigurationByModelId(selectedModel);
+    const modelConfig = getChatConfigurationByModelId(catalog, selectedModel);
     return {
       selectedModel,
       temperature: temperature ?? modelConfig.temperature,

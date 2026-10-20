@@ -8,8 +8,11 @@ import type {
   SubmitHandler,
   SubmitMessage,
 } from "../types";
-import { CHAT_MODELS } from "@/lib/features/foundation-model/config";
-import type { chatModelId } from "@/lib/features/foundation-model/config";
+import {
+  chatModelKeys,
+  type chatModelId,
+} from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import type { FilePart } from "@/lib/features/attachment/types";
 import { handleFileUpload } from "@/lib/features/attachment/utils";
 import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
@@ -20,8 +23,6 @@ import { useSupportedFiles } from "@/lib/features/chat/conversation/hooks/use-su
 import { persistHubChatFromTranscript } from "@/lib/features/chat/hub/actions";
 import { deleteChat } from "@/lib/features/chat/actions";
 import type { ChatConfig } from "@/lib/features/chat/conversation/hooks/hook-types";
-
-const HUB_MODELS: chatModelId[] = CHAT_MODELS;
 
 const HUB_MAX_INSTANCES = 3;
 
@@ -62,6 +63,11 @@ export interface UseChatHubArgs {
 export const useChatHub = ({
   initialInstances = [],
 }: UseChatHubArgs = {}): ChatHub => {
+  const catalog = useModelCatalog();
+  const hubModels = useMemo(
+    () => chatModelKeys(catalog),
+    [catalog],
+  );
   const [instances, setInstances] = useState<HubInstance[]>(
     initialInstances.map((i) => ({ ...i, chatMode: i.chatMode || "auto" })),
   );
@@ -85,7 +91,7 @@ export const useChatHub = ({
   );
 
   const baseAvailableModels = useAvailableModels({
-    models: HUB_MODELS,
+    models: hubModels,
     messages: [],
     files,
   });

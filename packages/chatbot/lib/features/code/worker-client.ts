@@ -1,7 +1,7 @@
 import { getTraceLogger } from "tracing";
 import { config } from "config";
-import type { ThinkingLevel } from "models";
 import type { PendingQueues } from "./types";
+import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 
 export interface WorkerModel {
   providerId: string;

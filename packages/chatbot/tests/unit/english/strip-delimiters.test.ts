@@ -32,7 +32,14 @@ const collect = async (
   );
 
   const emitted: TextStreamPart<ToolSet>[] = [];
-  for await (const part of transformed) emitted.push(part);
+  // Reader explícito: el async-iterator de ReadableStream ya no se resuelve
+  // con el `lib` de este tsconfig tras retirar la dependencia `models`.
+  const reader = transformed.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) emitted.push(value);
+  }
   return emitted;
 };
 

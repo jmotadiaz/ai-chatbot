@@ -52,7 +52,7 @@ async function getContextualFacts({
   console.dir(queries, { depth: null });
 
   // 2. Generate embeddings for all queries in batch
-  const embeddings = await inferenceKit.embed("embedding", queries, {
+  const embeddings = await inferenceKit.embed(queries, {
     taskType: "SEMANTIC_SIMILARITY",
   });
 

@@ -23,10 +23,11 @@ import { useChatRequestBody } from "./use-chat-request-body";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
-  CHAT_MODELS,
+  chatModelKeys,
   defaultModel,
   defaultWebSearchNumResults,
 } from "@/lib/features/foundation-model/config";
+import { useModelCatalog } from "@/lib/features/foundation-model/model-catalog-context";
 import type {
   ChatbotDataPart,
   ChatbotMessage,
@@ -74,7 +75,7 @@ export interface UseChatResult
 
 export const useChat = ({
   initialMessages,
-  selectedModel = defaultModel,
+  selectedModel,
   temperature,
   topP,
   topK,
@@ -91,8 +92,10 @@ export const useChat = ({
   ragMaxResources,
   minRagResourcesScore,
 }: UseChatArgs): UseChatResult => {
+  const catalog = useModelCatalog();
+  const effectiveSelectedModel = selectedModel ?? defaultModel(catalog);
   const { chatConfig, setConfig } = useChatConfig({
-    selectedModel,
+    selectedModel: effectiveSelectedModel,
     temperature,
     topP,
     topK,
@@ -145,13 +148,13 @@ export const useChat = ({
   });
 
   const availableModels = useAvailableModels({
-    models: CHAT_MODELS,
+    models: chatModelKeys(catalog),
     messages: chatResult.messages,
     files,
   });
 
   const supportedFiles = useSupportedFiles({
-    selectedModels: [selectedModel],
+    selectedModels: [effectiveSelectedModel],
     availableModels,
   });
 

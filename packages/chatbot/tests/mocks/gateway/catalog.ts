@@ -50,7 +50,7 @@ const entry = (overrides: Partial<MockCatalogEntry> & { id: string }): MockCatal
 
 /**
  * Los 7 modelos user-invocable del catálogo de test. Invariantes que los e2e
- * consumen (las mismas que `tests/mocks/ai/capabilities.ts` declara hoy):
+ * consumen directamente (sin capa de alias — los ids SON las capacidades):
  * - `basicChat` es el `isDefault` (y su temperature 0.6 difiere de la de
  *   `alwaysRefuses` — settings.spec cambia de modelo y espera otro valor).
  * - `canSeeImages` declara `supportedFiles: ["img"]` (attachments.spec).

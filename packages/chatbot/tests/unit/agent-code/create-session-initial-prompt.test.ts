@@ -21,9 +21,23 @@ vi.mock("tracing", () => ({
 }));
 
 vi.mock("config", () => ({
-  config: { codingAgentEnabled: () => true },
+  config: {
+    codingAgentEnabled: () => true,
+    modelGatewayUrl: () => "http://127.0.0.1:4001",
+    modelGatewayApiKey: () => "test-gateway-key",
+  },
   optional: <T>(fn: () => T) => fn(),
 }));
+
+// El catálogo no se descarga por red en este test: fixture del Mock Gateway.
+vi.mock("@/lib/infrastructure/ai/catalog", async () => {
+  const { TEST_MODELS } = await import("@/tests/mocks/gateway/catalog");
+  return {
+    fetchModelCatalog: async () => TEST_MODELS,
+    warmModelCatalog: async () => {},
+    getModelCatalogSnapshot: () => TEST_MODELS,
+  };
+});
 
 const state = vi.hoisted(() => ({
   initParams: [] as unknown[],
@@ -85,7 +99,7 @@ describe("createCodingAgentSession", () => {
   it("creates the row and starts the detached run with the initial prompt", async () => {
     const result = await createCodingAgentSession(
       "p",
-      "Deepseek v4.1 Flash",
+      "canProduceReasoning",
       "# Task\n\nRefactor this.",
     );
 
@@ -99,7 +113,8 @@ describe("createCodingAgentSession", () => {
     };
     expect(init.sessionId).toBe("s1");
     expect(init.project).toBe("p");
-    expect(init.modelId).toBe("opencode-go/deepseek-v4.1-flash");
+    // Proveedor único Gateway: el id de Pi es el id del catálogo, tal cual.
+    expect(init.modelId).toBe("canProduceReasoning");
     expect(init._traceRunId).toBeTruthy();
 
     const send = state.sendParams[0] as {
@@ -111,8 +126,8 @@ describe("createCodingAgentSession", () => {
     };
     expect(send.sessionId).toBe("s1");
     expect(send.prompt).toBe("# Task\n\nRefactor this.");
-    expect(send.modelId).toBe("opencode-go/deepseek-v4.1-flash");
-    expect(send.thinkingLevel).toBe("xhigh");
+    expect(send.modelId).toBe("canProduceReasoning");
+    expect(send.thinkingLevel).toBe("medium");
     expect(send._traceRunId).toBe(init._traceRunId);
 
     // The request's stream is cancelled so the action returns immediately,
@@ -121,7 +136,7 @@ describe("createCodingAgentSession", () => {
   });
 
   it("labels the session with the first line of the prompt", async () => {
-    await createCodingAgentSession("p", "Deepseek v4.1 Flash", "Fix the bug\n\nDetails here.");
+    await createCodingAgentSession("p", "basicChat", "Fix the bug\n\nDetails here.");
     expect(state.savedLabel).toBe("Fix the bug");
   });
 
@@ -137,7 +152,7 @@ describe("createCodingAgentSession", () => {
     state.sendRejects = true;
 
     await expect(
-      createCodingAgentSession("p", "Deepseek v4.1 Flash", "# Fail"),
+      createCodingAgentSession("p", "basicChat", "# Fail"),
     ).rejects.toThrow("Worker unreachable");
 
     expect(state.deleteCalls).toEqual([

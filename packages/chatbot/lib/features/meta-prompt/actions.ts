@@ -8,6 +8,7 @@ import {
 import { RefinePromptInput } from "./types";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
 import { ragFactory } from "@/lib/features/rag/tool";
+import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 
 export async function refinePrompt({
@@ -17,6 +18,7 @@ export async function refinePrompt({
   userId,
   mode = "chat",
 }: RefinePromptInput) {
+  await warmModelCatalog();
   if (mode === "project") {
     return refineSystemPrompt({ input, projectId, userId });
   }
@@ -32,7 +34,7 @@ async function refineCodingAgentPrompt({
   input,
 }: Pick<RefinePromptInput, "input">) {
   const { text } = await generateText({
-    ...inferenceKit.languageModel("metaPromptRefiner"),
+    ...inferenceKit.languageModel("reasoning-default"),
     system: codingAgentMetaPrompt,
     prompt: input,
   });
@@ -64,7 +66,7 @@ async function refineChatPrompt({
     messages.length > 0 ? continuationMetaPrompt : initialMetaPrompt;
 
   const { text } = await generateText({
-    ...inferenceKit.languageModel("metaPromptRefiner"),
+    ...inferenceKit.languageModel("reasoning-default"),
     system: metaPrompt,
     messages: modelMessages,
   });
@@ -80,7 +82,7 @@ async function refineSystemPrompt({
   let ragCalled = false;
 
   const { text } = await generateText({
-    ...inferenceKit.languageModel("metaPromptRefiner"),
+    ...inferenceKit.languageModel("reasoning-default"),
     system: systemMetaPrompt,
     prompt: input,
     stopWhen: stepCountIs(3),

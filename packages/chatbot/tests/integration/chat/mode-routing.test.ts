@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import type { Decision, DecideOptions } from "inference";
 import { setupTestDb } from "../../helpers/db-setup";
+import type { Decision, DecideOptions } from "@/lib/infrastructure/ai/types";
 import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ChatModeRouterPort } from "@/lib/features/chat/mode-routing/types";
@@ -13,7 +13,7 @@ import {
   project as projectTable,
   user as userTable,
 } from "@/lib/infrastructure/db/schema";
-import { chatModelKeys } from "@/lib/features/foundation-model/config";
+import { TEST_MODELS } from "@/tests/mocks/gateway/catalog";
 import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
 
 vi.mock("server-only", () => ({}));
@@ -164,7 +164,7 @@ const runTurn = async ({
   const processChatResponse = makeProcessChatResponse(compactionAi, router);
   const stream = await processChatResponse({
     messages: [userMessage(text)],
-    selectedModel: chatModelKeys[0],
+    selectedModel: TEST_MODELS[0]!.id,
     chatMode: chatMode as never,
     projectId,
     user: { id: USER_ID },
