@@ -1,12 +1,12 @@
 import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
-import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
 
-const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools.id;
-const FAILING_MODEL = CAPABILITY_ALIASES.failsMidStream.id;
-const VISION_MODEL = CAPABILITY_ALIASES.canSeeImages.id;
-const BASIC_MODEL = CAPABILITY_ALIASES.basicChat.id;
-const BASIC_ALT_MODEL = CAPABILITY_ALIASES.basicChatAlt.id;
+// Ids del catálogo del Mock Model Gateway (capacidades, sin alias).
+const TOOLS_MODEL = "canExecuteTools";
+const FAILING_MODEL = "failsMidStream";
+const VISION_MODEL = "canSeeImages";
+const BASIC_MODEL = "basicChat";
+const BASIC_ALT_MODEL = "basicChatAlt";
 
 test.describe("Chat Hub", () => {
   let hubPage: ChatHubPage;

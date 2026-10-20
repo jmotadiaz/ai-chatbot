@@ -50,13 +50,14 @@ beforeEach(() => {
 });
 
 describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
-  it("returns the worker's model mapped to a chat model id", async () => {
-    mockState.workerModel = { providerId: "opencode-go", modelId: "kimi-k3" };
+  it("returns the worker's model id when the catalog knows it", async () => {
+    // Proveedor único Gateway: el id de Pi es el id del catálogo, tal cual.
+    mockState.workerModel = { providerId: "model-gateway", modelId: "basicChat" };
 
     const res = await GET(makeRequest() as never);
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ modelId: "Kimi K3" });
+    expect(await res.json()).toEqual({ modelId: "basicChat" });
     expect(mockState.modelParams[0]).toEqual({
       sessionId: "s1",
       project: "p",

@@ -1,13 +1,13 @@
 import { randomUUID } from "crypto"
 import { generateText } from "ai"
-import type { ModelId } from "models"
 import type { TranscriptMessage } from "./types"
 import type { createTraceWriter } from "./trace-writer"
+import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog"
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 
 interface SimulatorOptions {
-  /** A Model Catalog id — resolved through the kit, never a raw provider/model pair. */
-  modelKey: ModelId
+  /** Un Default Model Contract — los evals usan `free-default` (spec §2.4). */
+  modelKey?: string
   scenarioPrompt: string
   traceWriter?: ReturnType<typeof createTraceWriter>
 }
@@ -28,10 +28,11 @@ function extractText(
 }
 
 export function createSimulator(options: SimulatorOptions) {
-  const { scenarioPrompt, modelKey, traceWriter } = options
+  const { scenarioPrompt, traceWriter } = options
+  const modelKey = options.modelKey ?? "free-default"
 
-  // Resolved by catalog id through the kit — no provider/model literal here;
-  // `languageModel` itself throws if `modelKey` is not in `MODEL_CATALOG`.
+  // Resolved by contract through the kit — `languageModel` throws if the
+  // catalog snapshot is cold or the contract is unknown.
   const modelFactory = () => inferenceKit.languageModel(modelKey).model
 
   return {
@@ -39,6 +40,7 @@ export function createSimulator(options: SimulatorOptions) {
       history: TranscriptMessage[],
       _messageIndex: number,
     ): Promise<TranscriptMessage> {
+      await warmModelCatalog()
       const historyText = formatHistory(history)
 
       const prompt = `${scenarioPrompt}
@@ -84,6 +86,7 @@ Respond ONLY with the next user message. Do NOT include any meta-commentary, rol
     async generateMessageFromPrompt(
       prompt: string,
     ): Promise<TranscriptMessage> {
+      await warmModelCatalog()
       const startTime = performance.now()
       const result = await generateText({
         model: modelFactory(),

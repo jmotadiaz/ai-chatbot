@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Decision, DecisionAnswer, DecideOptions } from "inference";
+import type { Decision, DecisionAnswer, DecideOptions } from "@/lib/infrastructure/ai/types";
 import {
   CHAT_MODE_ROUTING_QUESTION_KEY,
   CHAT_MODE_ROUTING_TRACE_NAME,
@@ -91,7 +91,7 @@ describe("createChatModeRouter: choice -> mode/reason mapping over a fake decide
     await router.route(input);
 
     expect(decide).toHaveBeenCalledWith({
-      model: "chatModeRouter",
+      model: "decision-default",
       questions: {
         [CHAT_MODE_ROUTING_QUESTION_KEY]: {
           instructions: CHAT_MODE_ROUTING_QUESTION.instructions,

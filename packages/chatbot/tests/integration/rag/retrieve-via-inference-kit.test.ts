@@ -14,21 +14,17 @@ import {
  * `tests/integration/rag/retrieve.test.ts` fakes `RagRetrieveAiPort` directly
  * (`createMockAiPort`), so it never exercises the real
  * `generateEmbeddings`/`rerank` wiring in
- * `lib/features/rag/retrieve/{embeddings,index}.ts`, which now calls the
- * Inference Kit's `embed`/`rerank` operations instead of the pre-ticket-04
- * `providers.embedding`/`providers.rerank`. This file instead builds a real
- * kit (`createInferenceKit`) with deterministic fake embedding/rerank
- * *clients* — the same per-kind override seam
- * (`embeddingClients`/`rerankClients`) the chatbot's test-mode composition
- * root uses — and mocks only that composition root
- * (`@/lib/infrastructure/ai/inference-kit`), so the real
+ * `lib/features/rag/retrieve/{embeddings,index}.ts`, which now goes through
+ * the composition root (`inferenceKit.embed`/`rerank`, HTTP contra el Model
+ * Gateway). This file instead mocks that composition root with deterministic
+ * fakes of the same two operations — the real
  * `retrieveResourceChunks` singleton (`lib/features/rag/retrieve/index.ts`)
- * runs its actual adapter over it. Reuses the DB/fixture setup from
+ * runs its actual adapter over them. Reuses the DB/fixture setup from
  * `retrieve.test.ts`.
  *
  * `vi.hoisted` shares the canned ranking between the hoisted mock factory
  * below and each test body, so every test can drive a different rerank
- * result without rebuilding the kit (mirrors the pattern in
+ * result without rebuilding the fake (mirrors the pattern in
  * `tests/integration/chat/neutral-branch.test.ts`).
  */
 const rerankState = vi.hoisted(() => ({
@@ -36,37 +32,22 @@ const rerankState = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
-  const { createInferenceKit } = await import("inference");
-  const { MockEmbeddingModelV3, MockRerankingModelV3 } = await import("ai/test");
-
   // One-hot 768-dim vector, matching every chunk's seeded embedding below —
   // deterministic "always similar" stand-in for a real embedding call, same
-  // shape (768) `EMBEDDING_MODELS` declares for the real `embedding` role.
+  // shape (768) the Gateway's `embedding-default` contract returns.
   const QUERY_VECTOR = Array(768).fill(0);
   QUERY_VECTOR[0] = 1;
 
-  const inferenceKit = createInferenceKit({
-    embeddingClients: {
-      google: (modelId) =>
-        new MockEmbeddingModelV3({
-          modelId,
-          doEmbed: async ({ values }) => ({
-            embeddings: values.map(() => QUERY_VECTOR),
-            usage: { tokens: values.length },
-            warnings: [],
-          }),
-        }),
+  return {
+    inferenceKit: {
+      embed: async (values: string[]) => values.map(() => QUERY_VECTOR),
+      rerank: async () =>
+        rerankState.ranking.map(({ index, relevanceScore }) => ({
+          originalIndex: index,
+          score: relevanceScore,
+        })),
     },
-    rerankClients: {
-      cohere: (modelId) =>
-        new MockRerankingModelV3({
-          modelId,
-          doRerank: async () => ({ ranking: rerankState.ranking }),
-        }),
-    },
-  });
-
-  return { inferenceKit };
+  };
 });
 
 const { retrieveResourceChunks } = await import("@/lib/features/rag/retrieve");

@@ -28,7 +28,12 @@ export default defineConfig({
     // jsdom test files need a Web Storage implementation: Node 26 exposes an
     // unconfigured `localStorage` global, which makes vitest's jsdom
     // environment skip jsdom's own. See tests/helpers/web-storage-setup.ts.
-    setupFiles: ["./tests/helpers/web-storage-setup.ts"],
+    // mock-gateway-setup fuerza MODEL_GATEWAY_URL al Mock Model Gateway
+    // (:4001) y lo levanta en cada worker (ADR 0010).
+    setupFiles: [
+      "./tests/helpers/web-storage-setup.ts",
+      "./tests/helpers/mock-gateway-setup.ts",
+    ],
     clearMocks: true,
     restoreMocks: true,
   },

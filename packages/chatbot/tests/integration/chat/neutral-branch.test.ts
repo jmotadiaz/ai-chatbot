@@ -7,7 +7,7 @@ import type {
   ChatModeRouterPort,
   RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
-import { chatModelKeys } from "@/lib/features/foundation-model/config";
+import { TEST_MODELS } from "@/tests/mocks/gateway/catalog";
 
 /** Arbitrary provenance value: these tests fake the port directly, never a real Decisions call. */
 const TEST_ROUTING_MODEL_ID = "test/routing-model";
@@ -30,7 +30,7 @@ const state = vi.hoisted(() => ({
 vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream, ToolLoopAgent } = await import("ai");
-  const { textChunks, finishChunk } = await import("inference/testing");
+  const { textChunks, finishChunk } = await import("../../helpers/stream-chunks");
 
   const model = new MockLanguageModelV3({
     modelId: "user-selected-model",
@@ -118,7 +118,7 @@ const runTurn = async ({
   const processChatResponse = makeProcessChatResponse(compactionAi, router);
   const stream = await processChatResponse({
     messages: [userMessage("hola, cuéntame algo")],
-    selectedModel: chatModelKeys[0],
+    selectedModel: TEST_MODELS[0]!.id,
     temperature,
     chatMode: "auto",
     preventChatPersistence: true,

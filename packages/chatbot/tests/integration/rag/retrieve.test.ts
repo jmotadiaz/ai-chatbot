@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { eq } from "drizzle-orm";
-import type { RerankResult } from "inference";
 import { makeRetrieveResourceChunks } from "../../../lib/features/rag/retrieve/factory";
 import type { RagRetrieveAiPort } from "../../../lib/features/rag/retrieve/ports";
 import { setupTestDb } from "../../helpers/db-setup";
+import type { RerankResult } from "@/lib/infrastructure/ai/types";
 import {
   resource as resourceTable,
   chunk as chunkTable,

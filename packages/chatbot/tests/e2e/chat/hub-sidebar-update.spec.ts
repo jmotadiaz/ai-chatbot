@@ -1,8 +1,8 @@
 import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
-import { CAPABILITY_ALIASES } from "@/tests/mocks/ai/capabilities";
 
-const TOOLS_MODEL = CAPABILITY_ALIASES.canExecuteTools.id;
+// Id del catálogo del Mock Model Gateway (capacidad, sin alias).
+const TOOLS_MODEL = "canExecuteTools";
 
 test.describe("Chat Hub - Sidebar Integration", () => {
   let hubPage: ChatHubPage;
