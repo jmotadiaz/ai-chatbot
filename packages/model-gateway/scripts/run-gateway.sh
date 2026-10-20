@@ -27,6 +27,11 @@ for cred in "$CREDENTIALS_DIRECTORY"/*; do
 done
 shopt -u nullglob
 
+# Traza de despliegue: qué commit está corriendo sale en `journalctl -u model-gateway`.
+if [[ -f "$PWD/DEPLOYED" ]]; then
+  echo "model-gateway $(tr '\n' ' ' < "$PWD/DEPLOYED")"
+fi
+
 # El despliegue instala un venv propio en /opt/model-gateway/.venv; en el
 # checkout del repo (arranque manual) se usa el uvicorn del entorno activo.
 UVICORN="$PWD/.venv/bin/uvicorn"
@@ -34,7 +39,7 @@ if [[ ! -x "$UVICORN" ]]; then
   UVICORN="$(command -v uvicorn || true)"
 fi
 if [[ -z "$UVICORN" ]]; then
-  echo "error: no se encontró uvicorn (crea .venv con scripts/install-service.sh o activa el entorno)" >&2
+  echo "error: no se encontró uvicorn (crea .venv con scripts/deploy.sh o activa el entorno)" >&2
   exit 1
 fi
 

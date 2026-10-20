@@ -16,7 +16,7 @@ import pytest
 
 UNIT_PATH = Path(__file__).resolve().parents[1] / "systemd" / "model-gateway.service"
 RUN_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "run-gateway.sh"
-INSTALL_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "install-service.sh"
+DEPLOY_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "deploy.sh"
 
 EXPECTED_CREDENTIALS = [
     "model_gateway_api_key",
@@ -102,10 +102,28 @@ def test_run_script_exports_credentials_and_forces_the_config_path():
     assert re.search(r'exec "\$UVICORN" server:app', script)
 
 
-def test_install_script_deploys_the_artifact_and_builds_the_venv():
-    assert INSTALL_SCRIPT.exists(), "systemd:install debe usar scripts/install-service.sh"
-    script = INSTALL_SCRIPT.read_text()
+def test_deploy_script_deploys_the_artifact_and_builds_the_venv():
+    assert DEPLOY_SCRIPT.exists(), "systemd:install debe usar scripts/deploy.sh"
+    script = DEPLOY_SCRIPT.read_text()
     assert 'DEST="/opt/model-gateway"' in script
     assert "venv --python" in script
     assert "config.yaml" in script
     assert "/etc/systemd/system/model-gateway.service" in script
+    # Un redeploy tiene que poder volver atrás y verificar que arrancó.
+    assert "BACKUP_ROOT=\"/var/backups/model-gateway\"" in script
+    assert "--rollback" in script
+    assert "restore_backup" in script
+    assert "wait_http" in script and "401" in script
+    assert "DEPLOYED" in script
+    assert "git archive" in script
+    # Nunca debe desplegarse desde el home del operador.
+    assert "protecthome" in script.lower()
+
+
+def test_package_scripts_point_at_the_deploy_script():
+    import json
+
+    scripts = json.loads((Path(__file__).resolve().parents[1] / "package.json").read_text())["scripts"]
+    assert scripts["deploy"] == "bash scripts/deploy.sh"
+    assert scripts["rollback"] == "bash scripts/deploy.sh --rollback"
+    assert scripts["systemd:install"] == "bash scripts/deploy.sh"

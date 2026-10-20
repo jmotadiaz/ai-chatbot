@@ -27,28 +27,67 @@ bash scripts/manage-creds.sh        # setup: las 7 credenciales, una a una
 bash scripts/manage-creds.sh set openrouter_api_key
 
 # 2) Despliegue + unidad systemd (copia a /opt/model-gateway, crea el venv,
-#    instala, habilita y arranca en :4000)
-pnpm systemd:install
+#    instala, habilita, arranca en :4000 y verifica)
+pnpm deploy
 
-# 3) Arranque manual (desde el repo, sin systemd; requiere las vars en el entorno)
+# 3) Arranque manual desde el repo (sin systemd): crea un venv local y exporta
+#    las 7 vars a mano (o usa un CREDENTIALS_DIRECTORY falso)
+uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/uvicorn server:app --host 127.0.0.1 --port 4000
 ```
 
-### Qué hace `systemd:install`
+## Redesplegar
 
-`scripts/install-service.sh` no ejecuta el código directamente del monorepo:
+```bash
+cd packages/model-gateway
+pnpm deploy                  # = bash scripts/deploy.sh
+```
 
-1. Copia `server.py`, `catalog.py`, `config.yaml`, `pyproject.toml` y
-   `scripts/run-gateway.sh` a **`/opt/model-gateway`** (artefacto que ejecuta el
-   servicio; el repo sigue siendo la fuente).
-2. Crea `/opt/model-gateway/.venv` con un CPython gestionado por `uv`
-   (`PYTHON_VERSION`, por defecto 3.12) e instala ahí `litellm[proxy]`,
-   `fastapi`, `uvicorn`, `httpx` y `pyyaml` — sin tocar el intérprete del
-   sistema.
-3. Instala la unidad, `daemon-reload` y arranca (o reinicia, si ya estaba
-   activa, para recoger cambios de `config.yaml`).
+`scripts/deploy.sh` es el **único** camino de despliegue (primera instalación y
+redeploys) y es idempotente:
 
-Es idempotente: relánzalo tras editar `config.yaml` o el código del gateway.
+1. **Precondiciones**: los 7 `.cred` presentes, `uv` en el PATH y el árbol de
+   `packages/model-gateway` sin cambios sin commitear (si los hay, aborta para
+   que lo desplegado sea siempre identificable; `--allow-dirty` lo permite y
+   queda estampado como `dirty=yes`).
+2. **Fuente**: el checkout actual, o una revisión concreta con
+   `--ref <commit|tag>` (`git archive`, no toca el worktree).
+3. **Backup** del artefacto anterior en
+   `/var/backups/model-gateway/<UTC>-<sha>/` (se conservan los 5 últimos).
+4. **Copia** de `server.py`, `catalog.py`, `config.yaml`, `pyproject.toml`,
+   `CONTRACT.md`, `README.md` y `scripts/run-gateway.sh` a `/opt/model-gateway`,
+   más un fichero `DEPLOYED` con `commit`, `branch`, `deployed_at` y `dirty`
+   (también se imprime al arrancar, así que `journalctl -u model-gateway` dice
+   qué versión corre).
+5. **Dependencias**: crea `/opt/model-gateway/.venv` si falta (CPython 3.12
+   gestionado por `uv`) e instala `litellm[proxy]`, `fastapi`, `uvicorn`,
+   `httpx` y `pyyaml` — sin tocar el intérprete del sistema.
+6. **Unidad** + `daemon-reload` + `restart` (o `enable --now` la primera vez).
+7. **Health check**: `GET /v1/models/catalog` sin bearer debe dar `401`
+   (app viva y auth enforced); con `MODEL_GATEWAY_API_KEY` exportada en el
+   entorno, además exige modelos en el catálogo.
+8. **Si falla**: vuelca el journal, restaura el backup, rearranca y sale `!= 0`.
+
+### Volver atrás
+
+```bash
+pnpm rollback                       # restaura el último backup y verifica
+pnpm deploy -- --ref <sha-anterior> # redeploy de esa revisión (sin tocar el worktree)
+```
+
+### Qué NO hay que reiniciar
+
+El chatbot y el worker no necesitan reinicio tras un redeploy del gateway: el
+catálogo del chatbot tiene TTL de 60 s y el worker lo consulta al arrancar. Sí
+hay que relanzar `pnpm deploy` tras editar `config.yaml` (los modelos y
+contratos viven ahí, no en el proceso).
+
+### Primera instalación
+
+`pnpm deploy` también sirve para la primera vez: si no hay credenciales, aborta
+antes de tocar nada y te dice qué ejecutar (`scripts/manage-creds.sh`). No hay
+un script de instalación aparte a propósito: dos caminos con la misma lógica
+acaban divergiendo.
 
 ### Por qué `DynamicUser=yes`
 
