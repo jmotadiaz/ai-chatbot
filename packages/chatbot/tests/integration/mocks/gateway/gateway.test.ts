@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  MOCK_IMAGE_PNG_BASE64,
   ensureMockGateway,
   isMockGatewayAlive,
   stopMockGateway,
@@ -212,6 +213,44 @@ describe("Mock Model Gateway — infraestructura", () => {
       );
     });
 
+    it("image-default (JSON): mensaje multipart con parte image_url", async () => {
+      const response = await post("/v1/chat/completions", {
+        model: "image-default",
+        modalities: ["image", "text"],
+        messages: [{ role: "user", content: "brighten it" }],
+      });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        choices: Array<{ message: { content: Array<{ type: string; image_url?: { url?: string } }> } }>;
+      };
+      const parts = body.choices[0]?.message.content ?? [];
+      expect(parts.find((part) => part.type === "text")).toMatchObject({ text: "Enhanced image (mock)." });
+      const image = parts.find((part) => part.type === "image_url");
+      expect(image?.image_url?.url).toBe(
+        `data:image/png;base64,${MOCK_IMAGE_PNG_BASE64}`,
+      );
+    });
+
+    it("image-default (SSE): delta multipart con parte image_url", async () => {
+      const response = await post("/v1/chat/completions", {
+        model: "image-default",
+        stream: true,
+        messages: [{ role: "user", content: "brighten it" }],
+      });
+      const events = await sseEvents(response);
+      const parts = events
+        .map((event) => {
+          const delta = (event as { choices?: Array<{ delta?: { content?: string | Array<{ type: string; image_url?: { url?: string } }> } }> })
+            .choices?.[0]?.delta;
+          return Array.isArray(delta?.content) ? delta!.content : [];
+        })
+        .flat();
+      expect(parts.find((part) => part.type === "text")).toMatchObject({ text: "Enhanced image (mock)." });
+      expect(parts.find((part) => part.type === "image_url")?.image_url?.url).toBe(
+        `data:image/png;base64,${MOCK_IMAGE_PNG_BASE64}`,
+      );
+    });
+
     it("canExecuteTools: turno 1 → tool_calls webSearch; turno 2 → texto final", async () => {
       const first = await post("/v1/chat/completions", {
         model: "canExecuteTools",
@@ -317,7 +356,6 @@ describe("Mock Model Gateway — infraestructura", () => {
       "vision-default",
       "reasoning-default",
       "free-default",
-      "image-default",
     ])("contrato %s: texto determinista con su nombre", async (model) => {
       const response = await post("/v1/chat/completions", {
         model,

@@ -71,7 +71,7 @@ const COMPLETION_ID = "chatcmpl-mock-gateway";
 
 interface ChatChunkDelta {
   role?: "assistant";
-  content?: string;
+  content?: string | unknown[];
   reasoning_content?: string;
   tool_calls?: Array<{
     index: number;
@@ -109,7 +109,11 @@ function startSse(res: ServerResponse): void {
 }
 
 /** JSON (no streaming) de un chat completion. */
-function completionJson(text: string, model: string): unknown {
+function completionJson(
+  text: string,
+  model: string,
+  content?: string | unknown[],
+): unknown {
   return {
     id: COMPLETION_ID,
     object: "chat.completion",
@@ -118,7 +122,7 @@ function completionJson(text: string, model: string): unknown {
     choices: [
       {
         index: 0,
-        message: { role: "assistant", content: text },
+        message: { role: "assistant", content: content ?? text },
         finish_reason: "stop",
       },
     ],
@@ -146,6 +150,22 @@ const REASONING_TEXT = "Let me think about this carefully...";
 const REASONING_ANSWER = "The answer is 42.";
 const REFUSAL_TEXT = "I cannot help with that request.";
 const VISION_TEXT = "Image description (mock)";
+const IMAGE_TEXT = "Enhanced image (mock).";
+
+/**
+ * PNG de 1×1 que el mock sirve como parte `image_url` de `image-default`
+ * (mismo bytes que el antiguo mock de imagen). Mapeado a `GeneratedFile` por
+ * `lib/infrastructure/ai/gateway-image-model.ts`.
+ */
+export const MOCK_IMAGE_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+const IMAGE_DATA_URL = `data:image/png;base64,${MOCK_IMAGE_PNG_BASE64}`;
+
+/** Partes OpenAI de una respuesta del contrato de imagen: texto + imagen. */
+const imageContentParts = () => [
+  { type: "text", text: IMAGE_TEXT },
+  { type: "image_url", image_url: { url: IMAGE_DATA_URL } },
+];
 const MID_STREAM_TEXT = "Partial answer before the failure...";
 const MID_STREAM_ERROR = {
   error: {
@@ -224,6 +244,21 @@ function streamChat(res: ServerResponse, body: ChatRequest): void {
     return;
   }
 
+  // --- image-default: contenido multipart (texto + imagen) ---
+  if (model === "image-default") {
+    res.write(
+      sseChunk(
+        { role: "assistant", content: imageContentParts() },
+        undefined,
+        model,
+      ),
+    );
+    res.write(sseChunk({}, "stop", model));
+    res.write(SSE_DONE);
+    res.end();
+    return;
+  }
+
   // --- Resto: texto determinista ---
   const text =
     model === "basicChat" || model === "basicChatAlt"
@@ -256,6 +291,10 @@ async function handleChatCompletions(req: IncomingMessage, res: ServerResponse):
   }
   const model = body.model ?? "basicChat";
   const last = body.messages?.at(-1);
+  if (model === "image-default") {
+    sendJson(res, 200, completionJson("", model, imageContentParts()));
+    return;
+  }
   const text =
     model === "canExecuteTools" && !isToolResult(last)
       ? TOOL_ANSWER
