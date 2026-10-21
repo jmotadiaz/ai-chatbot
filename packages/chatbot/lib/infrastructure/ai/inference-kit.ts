@@ -229,7 +229,7 @@ async function rerank(args: RerankArgs): Promise<RerankResult[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Decisions (`decision-default`, POST /v1/decisions)
+// Decisions (`decision-default`, POST /v1/systemone)
 // ---------------------------------------------------------------------------
 
 /** Budget for one decide() call: bounds the request and the whole call (same value `inference` used). */
@@ -269,7 +269,7 @@ const answerKind = (answer: unknown): string =>
 /**
  * `decide(options)`: envía las preguntas `type: "choice"` de
  * `options.questions` (una o más) en una sola llamada a
- * `POST /v1/decisions` con `decision-default`. Acotada por
+ * `POST /v1/systemone` con `decision-default`. Acotada por
  * `DECIDE_TIMEOUT_MS` (timeout del fetch + signal del conjunto de la
  * llamada). Cada campo de `scope` cae de forma independiente al contexto de
  * traza ambiente. Las respuestas se validan pregunta a pregunta: la que
@@ -290,7 +290,7 @@ async function decide(options: DecideOptions): Promise<Decision> {
   const traceName = options.scope?.traceName ?? String(options.model);
 
   const startedAt = Date.now();
-  const response = await fetch(`${gatewayBaseUrl()}/decisions`, {
+  const response = await fetch(`${gatewayBaseUrl()}/systemone`, {
     method: "POST",
     headers: { ...gatewayHeaders(), "Content-Type": "application/json" },
     signal: AbortSignal.timeout(DECIDE_TIMEOUT_MS),

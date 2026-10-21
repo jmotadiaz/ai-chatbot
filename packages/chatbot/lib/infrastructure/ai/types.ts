@@ -203,7 +203,7 @@ export interface InferenceKit {
   ) => ModelConfiguration;
   /**
    * Answers one or more `choice` questions in a single Decisions API call
-   * (`POST /v1/decisions` con `decision-default`), bounded by a fixed
+   * (`POST /v1/systemone` con `decision-default`), bounded by a fixed
    * timeout on both the request and the whole call. Errors propagate: the
    * fallback policy belongs to the caller.
    */

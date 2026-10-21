@@ -12,7 +12,7 @@ export const gatewayBaseUrl = (): string => `${config.modelGatewayUrl()}/v1`;
 
 /**
  * Cabeceras de autenticación del Gateway. Toda ruta (`/v1/models/catalog`,
- * `/v1/rerank`, `/v1/decisions`, `/v1/embeddings`, …) exige
+ * `/v1/rerank`, `/v1/systemone` (formato System One de la Decisions API), `/v1/embeddings`, …) exige
  * `Authorization: Bearer <MODEL_GATEWAY_API_KEY>`.
  */
 export const gatewayHeaders = (): Record<string, string> => ({
