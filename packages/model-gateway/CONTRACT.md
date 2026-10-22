@@ -17,6 +17,11 @@ SERVIDOR: solo las entradas con `model_info.user_invocable == true`, salvo
 `?include_internal=true` (inspección de los Default Model Contracts
 `*-default`). Nunca expone `litellm_params` ni `model_info` crudo.
 
+Orden determinista: la entrada `isDefault` primero, el resto alfabético
+(case-insensitive por `id`). El orden de `model_list` en `config.yaml` es
+irrelevante: `build_catalog` (`catalog.py`) lo impone y todos los
+consumidores (Model Picker, coding-agent) lo heredan tal cual.
+
 Respuesta:
 
 ```json

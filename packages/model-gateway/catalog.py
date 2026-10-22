@@ -111,6 +111,11 @@ def build_catalog(
         for model in config["model_list"]
         if include_internal or (model.get("model_info") or {}).get("user_invocable") is True
     ]
+    # Orden determinista del catálogo: la entrada `is_default` primero, el
+    # resto alfabético (case-insensitive). El orden de `model_list` en el YAML
+    # es irrelevante: todos los consumidores (Model Picker, coding-agent)
+    # heredan este orden tal cual.
+    models.sort(key=lambda e: (not e["isDefault"], e["id"].casefold()))
     return {"models": models}
 
 

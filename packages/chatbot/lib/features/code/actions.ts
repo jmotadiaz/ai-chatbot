@@ -232,14 +232,21 @@ export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
     const client = new WorkerClient();
     const { models } = await client.getAvailableModels();
     const catalog = await fetchPublicModelCatalog();
-    const result = models
-      .filter((model) => isKnownModelId(catalog, model.modelId))
-      .map((model) => ({
-        id: model.modelId,
-        levels: model.levels,
-        defaultLevel: getDefaultThinkingLevel(catalog, model.modelId),
-      }))
-      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    // El orden lo manda el catálogo del Gateway: se itera el catálogo y se
+    // busca cada entrada en la respuesta del worker, omitiendo las no
+    // disponibles. Sin `.sort()` local — el orden del array `models` del
+    // Gateway es la fuente de verdad que comparten el Model Picker y el chatbot.
+    const workerById = new Map(models.map((model) => [model.modelId, model]));
+    const result: CodingAgentModel[] = [];
+    for (const entry of catalog) {
+      const workerModel = workerById.get(entry.id);
+      if (!workerModel) continue;
+      result.push({
+        id: workerModel.modelId,
+        levels: workerModel.levels,
+        defaultLevel: getDefaultThinkingLevel(catalog, workerModel.modelId),
+      });
+    }
     log.info("action.result", { count: result.length });
     return result;
   });

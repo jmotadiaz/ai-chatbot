@@ -21,23 +21,25 @@ from catalog import (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.yaml"
 
+# Orden servido por `build_catalog`: la entrada `is_default` primero, el resto
+# alfabético (case-insensitive). Es independiente del orden de `model_list`.
 INVOCABLE_IDS = [
     "Deepseek v4.1 Flash",
+    "Beam Free",
+    "Gemini 4 Argon",
+    "GLM 5.3",
+    "GLM 5.3 Flash",
+    "Haiku",
+    "Hy3",
     "Kimi K3",
-    "MiniMax M3",
-    "MiniMax M3.1 Flash",
-    "Qwen 3.8 Flash",
-    "Qwen 3.8 Max",
     "MiMo V2.6 Flash",
     "MiMo V2.6 Pro",
+    "MiniMax M3",
+    "MiniMax M3.1 Flash",
     "Muse Spark 1.3",
-    "GLM 5.3",
-    "Hy3",
-    "GLM 5.3 Flash",
+    "Qwen 3.8 Flash",
+    "Qwen 3.8 Max",
     "Step 5 Preview",
-    "Haiku",
-    "Gemini 4 Argon",
-    "Beam Free",
 ]
 
 DEFAULT_CONTRACTS = [
@@ -97,6 +99,16 @@ def catalog(config):
 
 
 def test_catalog_returns_exactly_the_16_user_invocable_models_in_order(catalog):
+    assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
+
+
+def test_catalog_order_is_independent_of_yaml_model_list_order(config):
+    # El orden lo impone `build_catalog` (default primero, resto alfabético),
+    # no la posición en `model_list`: ni un reordenamiento del YAML debe
+    # mover el picker.
+    shuffled = copy.deepcopy(config)
+    shuffled["model_list"] = list(reversed(shuffled["model_list"]))
+    catalog = build_catalog(shuffled)
     assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
 
 
