@@ -1,3 +1,9 @@
+// FIXME(component, 2026-10-22): este setup importa `node:http` (vía
+// `mocks/gateway/server`), así que los 19 ficheros de component tests con
+// `@vitest-environment jsdom` fallan en colección con
+// `No such built-in module: node:` — también en árbol limpio (preexistente).
+// Bloquea el hook pre-commit `vitest related`. Pendiente: levantar el mock
+// solo en entorno node o condicionar el import.
 import { ensureMockGateway } from "../mocks/gateway/server";
 
 /**
