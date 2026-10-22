@@ -1,5 +1,4 @@
 import path from "node:path";
-import { existsSync } from "node:fs";
 import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
 import { config } from "config";
 import { getTraceLogger } from "tracing";
@@ -13,6 +12,7 @@ import {
 import { loadPrompts } from "../runtime/prompts";
 import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
 import { makeCreateRuntime as defaultMakeCreateRuntime } from "../runtime/runtime-factory";
+import { findSessionFile } from "./session-file-lookup";
 
 export interface GetOrCreateSessionOptions {
   userId: string;
@@ -84,23 +84,41 @@ export class SessionRegistry {
     const projectsRoot = config.codingAgentProjectsRoot();
     const cwd = resolveProjectPath(projectsRoot, project);
     loadPrompts(cwd);
-    const listDir = options?.sessionsSubdir
+    // Pi keys its transcript folder by this path: `SessionManager.create()` and
+    // `SessionManager.list()` both resolve it as the cwd, so `subagents` gets its
+    // own folder and never mixes with top-level Coding Agent Sessions.
+    const sessionsScope = options?.sessionsSubdir
       ? path.join(sessionsDir, options.sessionsSubdir)
       : sessionsDir;
 
     log.info("session.load_disk_attempt", { sessionId });
 
-    const allSessions = await SessionManager.list(listDir);
-    const found = allSessions.find((s) => s.id === sessionId);
+    // Resolve the transcript by file name instead of listing the directory:
+    // `SessionManager.list()` parses every JSONL file just to find one. The
+    // timer covers lookup + open so it is comparable to that old path.
+    const stopLookup = log.startTimer("session.load_disk_lookup", { sessionId });
+    const sessionFile = await findSessionFile(sessionsScope, sessionId);
 
-    if (!found || !existsSync(found.path)) {
-      log.warn("session.load_disk_not_found", { sessionId, sessionsChecked: allSessions.length });
+    if (!sessionFile) {
+      stopLookup();
+      log.warn("session.load_disk_not_found", { sessionId, sessionsScope });
       return undefined;
     }
 
-    log.info("session.load_disk_found", { path: found.path });
+    log.info("session.load_disk_found", { path: sessionFile });
 
-    const sessionManager = SessionManager.open(found.path, listDir);
+    const sessionManager = SessionManager.open(sessionFile, sessionsScope);
+    stopLookup();
+    // `open()` silently starts a fresh session (with a new id) when the file
+    // vanished or holds no header; never register that under the old id.
+    if (sessionManager.getSessionId() !== sessionId) {
+      log.warn("session.load_disk_id_mismatch", {
+        sessionId,
+        path: sessionFile,
+        foundId: sessionManager.getSessionId(),
+      });
+      return undefined;
+    }
     const createRuntime = this.makeCreateRuntime(modelId, {
       includeSubagentExtension: !options?.parentSessionId,
     });
