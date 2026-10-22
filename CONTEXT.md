@@ -233,7 +233,7 @@ _Avoid_: prompt template, promptie (singular)
 ### Entornos de ejecución
 
 **Entorno**:
-Combinación aislada de base de datos, runtime del Coding Agent y configuración que permite operar sin interferir en otro Entorno. Cada Entorno tiene sus propios valores para todas las variables de entorno.
+Combinación aislada de base de datos, runtime del Coding Agent y configuración tipada (`config.{prod,dev,test}.ts` + `secrets.{prod,dev,test}.ts`) que permite operar sin interferir en otro Entorno, seleccionada por argumento de proceso (`--env=prod|dev|test`) o enlace de compilación del bundler sin variables de entorno heredables.
 _Avoid_: env, environment, stage, target
 
 **Entorno de Test**:

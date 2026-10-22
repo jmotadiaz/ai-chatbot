@@ -124,6 +124,33 @@ model_list:
       default_top_k: null
 
   # Gemini 4 Argon — solo endpoint Google de OpenCode Go (baseUrl propio).
+  - model_name: Claude Haiku
+    litellm_params:
+      model: anthropic/claude-haiku-5-5
+      api_base: https://opencode.ai/zen/go
+      api_key: os.environ/OPENCODE_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: anthropic
+      context_window: 1000000
+      max_output_tokens: 128000
+      input_cost_per_token: 1.0e-7
+      output_cost_per_token: 5.0e-7
+      cache_read_input_token_cost: 1.0e-8
+      cache_creation_input_token_cost: 1.25e-7
+      reasoning: true
+      # La escalera full de Pi built-in; el thinking adaptativo (effort) es
+      # cosa del cliente: el gateway solo enruta.
+      thinking_levels: ["off", "minimal", "low", "medium", "high", "xhigh", "max"]
+      default_thinking_level: "high"
+      supported_files: [img, pdf]
+      supported_output: [text]
+      zero_data_retention: false
+      default_temperature: null
+      default_top_p: null
+      default_top_k: null
+
   - model_name: Gemini 4 Argon
     litellm_params:
       model: gemini/gemini-4-argon-contributor
@@ -198,33 +225,6 @@ model_list:
       zero_data_retention: false
       default_temperature: 0.6
       default_top_p: 0.95
-      default_top_k: null
-
-  - model_name: Haiku
-    litellm_params:
-      model: anthropic/claude-haiku-5-5
-      api_base: https://opencode.ai/zen/go
-      api_key: os.environ/OPENCODE_API_KEY
-    model_info:
-      user_invocable: true
-      is_default: false
-      company: anthropic
-      context_window: 1000000
-      max_output_tokens: 128000
-      input_cost_per_token: 1.0e-7
-      output_cost_per_token: 5.0e-7
-      cache_read_input_token_cost: 1.0e-8
-      cache_creation_input_token_cost: 1.25e-7
-      reasoning: true
-      # La escalera full de Pi built-in; el thinking adaptativo (effort) es
-      # cosa del cliente: el gateway solo enruta.
-      thinking_levels: ["off", "minimal", "low", "medium", "high", "xhigh", "max"]
-      default_thinking_level: "high"
-      supported_files: [img, pdf]
-      supported_output: [text]
-      zero_data_retention: false
-      default_temperature: null
-      default_top_p: null
       default_top_k: null
 
   - model_name: Hy3

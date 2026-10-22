@@ -26,10 +26,10 @@ CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.yaml"
 INVOCABLE_IDS = [
     "Deepseek v4.1 Flash",
     "Beam Free",
+    "Claude Haiku",
     "Gemini 4 Argon",
     "GLM 5.3",
     "GLM 5.3 Flash",
-    "Haiku",
     "Hy3",
     "Kimi K3",
     "MiMo V2.6 Flash",

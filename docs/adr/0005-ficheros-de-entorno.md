@@ -1,4 +1,10 @@
+---
+status: superseded by ADR-0011
+---
+
 # Ficheros de entorno: .env.dev y .env.prod ignorados, .env.test versionado
+
+> **Reemplazado por [ADR 0011](./0011-configuracion-tipada-por-entorno-y-seleccion-por-argv.md)**: los ficheros `.env.{dev,prod,test}` y la selección por variable de entorno se sustituyen por módulos TypeScript tipados por Entorno (`config.{prod,dev,test}.ts` + `secrets.{prod,dev,test}.ts`) y selección local al proceso vía `process.argv` (`--env=prod|dev|test`) y `resolveAlias` en el bundler.
 
 Cada Entorno tiene su propio fichero: `.env.dev` y `.env.prod` (ambos gitignored, con secrets reales) y `.env.test` (versionado, con secrets fake). Todas las variables están duplicadas por entorno; no hay herencia entre ficheros.
 
