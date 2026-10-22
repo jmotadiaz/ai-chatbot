@@ -129,7 +129,6 @@ describe("Pi package extension entrypoints (generic helper)", () => {
     name: "dummy-pkg",
     repo: "https://example.com/dummy.git",
     defaultRef: "v1.0.0",
-    refEnvVar: "CODING_AGENT_DUMMY_REF",
     extensionEntrypoints: [".pi/extensions/dummy.ts"],
   };
   let tmpRoot: string;

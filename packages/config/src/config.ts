@@ -1,73 +1,170 @@
-import {
-  bool, intOptional, secret, secretOptional, string, stringOptional,
-} from "./builders";
-import { assertDbMatchesEntorno, assertGatewayMatchesEntorno } from "./guardrails";
-
-const postgresUrlRaw = secret("POSTGRES_URL");
-const modelGatewayUrlRaw = string("MODEL_GATEWAY_URL");
+import { ConfigError } from "./errors";
+import { envDev } from "./env.dev";
+import { envProd } from "./env.prod";
+import { envTest } from "./env.test";
+import { createConfigFacade, setBuildFlags } from "./facade";
+import { packagePath } from "./paths";
+import type { AppConfig, Entorno } from "./types";
 
 /**
- * API pública del paquete. Cada accessor lee la variable en cada llamada
- * (perezoso): preserva vi.stubEnv en tests y el orden de carga de dotenv.
- * Requeridas ausentes → ConfigError al acceder. Nunca se lee process.env aquí.
+ * Selector de Entorno y fachada `config` (ADR 0011 §3.5).
+ *
+ * El Entorno activo se resuelve SIN leer ninguna variable de `process.env`:
+ *
+ * 1. `initConfig(entorno, options?)` — inicialización explícita en memoria.
+ *    La usan `vitest.config.ts`, `playwright.config.ts` y `scripts/next-cli.ts`.
+ * 2. `--env=prod|dev|test` en `process.argv`. A diferencia de una variable de
+ *    entorno, `process.argv` pertenece SOLO al proceso invocado: el kernel no
+ *    lo propaga en `fork()`/`execve()`, así que ningún subproceso que lance el
+ *    Coding Agent Worker (p. ej. `pnpm test`) puede heredar el Entorno del
+ *    worker padre. De ahí el incidente que motiva ADR 0011.
+ * 3. Detección del runner de test en `process.argv` (`vitest`, `@playwright/test`).
+ * 4. `ConfigError` de fallo rápido.
+ *
+ * Los bundles `env.<env>.ts` están congelados y validados por los guardarraíles
+ * de coherencia. En Next.js el import `"config"` se sustituye en tiempo de
+ * compilación por el bundle de su Entorno (`next.config.ts` → `resolveAlias`),
+ * así que el código compilado no depende de este selector.
  */
-export const config = {
-  // --- chatbot: gates y toggles ---
-  codingAgentEnabled: bool("CODING_AGENT_ENABLED"),
-  codingAgentProjectsRoot: string("CODING_AGENT_PROJECTS_ROOT"),
-  codingAgentSessionsDir: string("CODING_AGENT_SESSIONS_DIR"),
-  codingAgentWorkerUrl: stringOptional("CODING_AGENT_WORKER_URL"),
-  codingAgentWorkerPort: intOptional("CODING_AGENT_WORKER_PORT"),
-  codingAgentAuthJson: stringOptional("CODING_AGENT_AUTH_JSON"),
-  dbProvider: stringOptional("DB_PROVIDER"),
-  dbDialect: stringOptional("DB_DIALECT"),
-  contextWindow: intOptional("DEFAULT_CONTEXT_WINDOW"),
-  ragUploadLimit: stringOptional("RAG_UPLOAD_LIMIT"),
-  debugChunking: bool("DEBUG_CHUNKING"),
-  disableDevIndicator: bool("DISABLE_DEV_INDICATOR"),
-  otelEnabled: bool("OTEL_ENABLED"),
-  authTrustHost: bool("AUTH_TRUST_HOST"),
-  evalBaseUrl: stringOptional("EVAL_BASE_URL"),
-  serverOutput: bool("SERVER_OUTPUT"),
-  port: intOptional("PORT"),
-  privateBehavior: stringOptional("PRIVATE_BEHAVIOR"),
-  traceRunId: stringOptional("TRACE_RUN_ID"),
-  traceDir: stringOptional("TRACE_DIR"),
-  nextBuildDir: stringOptional("NEXT_BUILD_DIR"),
-  allowProdBuild: bool("ALLOW_PROD_BUILD"),
 
-  // --- chatbot: secretos ---
-  // Guardarraíl de coherencia (ticket 05): NEXT_PUBLIC_ENV ↔ DSN aislado
-  // (test↔5434/test, dev↔5433/dev, prod↔5435/prod) antes de conectar.
-  postgresUrl: () => assertDbMatchesEntorno(postgresUrlRaw()),
+export const ENTORNOS: readonly Entorno[] = ["prod", "dev", "test"];
 
-  // --- Model Gateway (spec ADR 0010) ---
-  // Igual patrón que la DB: el accessor aplica el guardarraíl de coherencia
-  // Entorno↔puerto (test↔4001, el Mock Model Gateway) antes de devolver la URL.
-  modelGatewayUrl: () => assertGatewayMatchesEntorno(modelGatewayUrlRaw()),
-  modelGatewayApiKey: secretOptional("MODEL_GATEWAY_API_KEY"),
-  exaSearchApiKey: secretOptional("EXASEARCH_API_KEY"),
-  exaApiKey: secretOptional("EXA_API_KEY"),
-  mcpApiKey: secretOptional("MCP_API_KEY"),
-  authSecret: secretOptional("AUTH_SECRET"),
+const BUNDLES: Record<Entorno, AppConfig> = {
+  prod: envProd,
+  dev: envDev,
+  test: envTest,
+};
 
-  // --- coding-agent ---
-  codingAgentModelsJson: stringOptional("CODING_AGENT_MODELS_JSON"),
-  codingAgentAgentDir: stringOptional("CODING_AGENT_AGENT_DIR"),
-  codingAgentPiPackagesDir: stringOptional("CODING_AGENT_PI_PACKAGES_DIR"),
-  codingAgentArtifactsDir: stringOptional("CODING_AGENT_ARTIFACTS_DIR"),
-  codingAgentArtifactsUrl: stringOptional("CODING_AGENT_ARTIFACTS_URL"),
+export interface InitConfigOptions {
+  /** `build:verify`: aísla los artefactos de compilación (`.next/verify`, `.pi-verify`). */
+  verifyBuild?: boolean;
+  /** `build`: opt-in explícito del operador/CI para pisar los artefactos de prod. */
+  allowProdBuild?: boolean;
+  /** argv a parsear (por defecto `process.argv`); inyectable en tests. */
+  argv?: readonly string[];
+}
 
-  // --- tracing ---
-  traceEnabled: bool("TRACE_ENABLED"),
-  traceRaw: bool("TRACE_RAW"),
+let activeBundle: AppConfig | undefined;
 
-  // --- system/framework ---
-  nodeEnv: stringOptional("NODE_ENV"),
-  ci: bool("CI"),
-} as const;
+function isEntorno(value: string): value is Entorno {
+  return (ENTORNOS as readonly string[]).includes(value);
+}
 
-/** Convierte un acceso throwing (requerida ausente) en undefined. */
+/**
+ * Entorno declarado con `--env=<entorno>` (o `--env <entorno>`). Devuelve
+ * `undefined` si el flag no está; lanza `ConfigError` si el valor no es válido
+ * — un flag mal escrito jamás debe caer silenciosamente al Entorno por defecto.
+ */
+export function parseEntornoFromArgv(
+  argv: readonly string[] = process.argv,
+): Entorno | undefined {
+  let found: Entorno | undefined;
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    let raw: string | undefined;
+    if (arg === "--env") raw = argv[index + 1];
+    else if (arg.startsWith("--env=")) raw = arg.slice("--env=".length);
+    if (raw === undefined) continue;
+    if (!isEntorno(raw)) {
+      throw new ConfigError(
+        "--env",
+        `valor "${raw}" no válido; se esperaba --env=prod|dev|test`,
+      );
+    }
+    found = raw;
+  }
+  return found;
+}
+
+/** Flags de build presentes en argv (`--verify`, `--allow-prod-build`). */
+export function parseBuildFlagsFromArgv(argv: readonly string[] = process.argv): {
+  verifyBuild: boolean;
+  allowProdBuild: boolean;
+} {
+  return {
+    verifyBuild: argv.includes("--verify"),
+    allowProdBuild: argv.includes("--allow-prod-build"),
+  };
+}
+
+/**
+ * Detección automática del runner de test: `npx vitest` o `npx playwright`
+ * lanzados a mano en cualquier cwd también deben correr SIEMPRE en test.
+ * (Los `vitest.config.ts` además llaman a `initConfig("test")`: los workers de
+ * Vitest no conservan el argv del binario, así que la detección es una red de
+ * seguridad para el proceso principal.)
+ */
+export function detectTestRunner(argv: readonly string[] = process.argv): Entorno | undefined {
+  const isRunner = argv.some((arg) => {
+    const normalized = arg.replace(/\\/g, "/");
+    return (
+      /(^|\/)vitest(\.mjs|\.js)?$/.test(normalized) ||
+      normalized.includes("@playwright/test") ||
+      /(^|\/)playwright(\.mjs|\.js)?$/.test(normalized)
+    );
+  });
+  return isRunner ? "test" : undefined;
+}
+
+/**
+ * Fija el Entorno activo en memoria. La última inicialización explícita gana
+ * (los tests pueden re-inicializar). También fija los flags de compilación, que
+ * el bundle estático enlazado por el bundler consulta vía `facade.ts`.
+ */
+export function initConfig(entorno: Entorno, options: InitConfigOptions = {}): void {
+  if (!isEntorno(entorno)) {
+    throw new ConfigError("initConfig", `Entorno "${String(entorno)}" no válido`);
+  }
+  const argv = options.argv ?? process.argv;
+  const flags = parseBuildFlagsFromArgv(argv);
+  setBuildFlags({
+    verifyBuild: options.verifyBuild ?? flags.verifyBuild,
+    allowProdBuild: options.allowProdBuild ?? flags.allowProdBuild,
+  });
+  activeBundle = BUNDLES[entorno];
+}
+
+/** Test hook: olvida el Entorno activo para volver a resolver desde argv. */
+export function resetConfigForTests(): void {
+  activeBundle = undefined;
+}
+
+function resolveBundle(): AppConfig {
+  if (activeBundle) return activeBundle;
+  const argv = process.argv;
+  const entorno = parseEntornoFromArgv(argv) ?? detectTestRunner(argv);
+  if (!entorno) {
+    throw new ConfigError(
+      "--env",
+      "Missing required CLI flag --env=prod|dev|test " +
+        "(process.argv is the only environment selector; see ADR 0011)",
+    );
+  }
+  initConfig(entorno, { argv });
+  if (!activeBundle) {
+    throw new ConfigError("--env", "no se pudo resolver el Entorno activo");
+  }
+  return activeBundle;
+}
+
+/**
+ * Ruta del módulo del Entorno activo. La consumen `next.config.ts` (alias de
+ * Turbopack/Webpack) y los `vitest.config.ts` para enlazar `"config"` al
+ * bundle estático sin leer `process.env`.
+ */
+export function envBundlePath(entorno: Entorno): string {
+  return packagePath("config", "src", `env.${entorno}.ts`);
+}
+
+/**
+ * Fachada funcional congelada del Entorno activo: mantiene la API histórica
+ * (`config.postgresUrl()`, `config.codingAgentAuthJson()`, …) sobre el bundle
+ * resuelto por `initConfig()`/`--env`, de modo que los ~50 puntos de llamada
+ * del monorepo no cambian.
+ */
+export const config = createConfigFacade(resolveBundle);
+
+/** Convierte un acceso throwing en `undefined` (compatibilidad histórica). */
 export function optional<T>(get: () => T): T | undefined {
   try {
     return get();
@@ -75,11 +172,3 @@ export function optional<T>(get: () => T): T | undefined {
     return undefined;
   }
 }
-
-/**
- * Claves dinámicas que se leen vía readEnv (escape hatch documentado).
- * NEXT_PUBLIC_ENV vive aquí a propósito: las claves NEXT_PUBLIC_* quedan fuera
- * del catálogo tipado (Next las inlinea en build), pero el guardarraíl de
- * coherencia Entorno↔DB lo consume en runtime (ver guardrails.ts).
- */
-export const DYNAMIC_ENV_KEYS: string[] = ["NEXT_PUBLIC_ENV"];

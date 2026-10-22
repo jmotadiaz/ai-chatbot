@@ -16,7 +16,7 @@ const EventType = {
 } as const;
 
 export async function POST(req: NextRequest) {
-  if (process.env.NEXT_PUBLIC_ENV !== "test" && config.nodeEnv() !== "test") {
+  if (config.entorno() !== "test") {
     return new NextResponse(null, { status: 404 });
   }
 

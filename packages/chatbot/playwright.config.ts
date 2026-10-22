@@ -15,7 +15,10 @@ loadEnv({
   override: true,
 });
 
-const PORT = config.port() ?? 3000;
+// `CI` la provee el runner (variable gestionada por el framework, no configuración de la app).
+const CI = Boolean(process.env.CI);
+
+const PORT = config.port();
 
 // Set webServer.url and use.baseURL with the location of the WebServer respecting the correct set port
 const baseURL = `http://localhost:${PORT}`;
@@ -34,9 +37,9 @@ export default defineConfig({
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: config.ci(),
+  forbidOnly: CI,
   /* Retry on CI only */
-  retries: config.ci() ? 1 : 0,
+  retries: CI ? 1 : 0,
   /* Tests share one database and one lazily compiled development server. */
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -106,7 +109,7 @@ export default defineConfig({
     // un deadlock: el gateway ya está garantizado para el momento en que
     // corren los tests, pero la sonda debe valer sin gateway.
     url: `${baseURL}/login`,
-    reuseExistingServer: !config.ci(),
+    reuseExistingServer: !CI,
     timeout: 240 * 1000,
     // Reenvío de valores crudos al webServer (strings, defaults propios del runner).
     // A propósito NO usa config: aquí se plumbearn a un proceso hijo, no se leen

@@ -4,7 +4,7 @@ import { config } from "config";
 export function register() {
   // Avoid noisy/unstable tracing output during local development.
   // Enable explicitly with OTEL_ENABLED=1, or rely on production defaults.
-  const isEnabled = config.otelEnabled() || config.nodeEnv() === 'production'
+  const isEnabled = config.otelEnabled() || config.entorno() === "prod"
   if (!isEnabled) return
 
   registerOTel({

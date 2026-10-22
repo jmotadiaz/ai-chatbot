@@ -1,6 +1,6 @@
 import path from "node:path";
 import { existsSync, readdirSync } from "node:fs";
-import { config, readEnv } from "config";
+import { config } from "config";
 import { PACKAGE_ROOT, resolveOverride } from "./paths";
 
 /**
@@ -16,8 +16,6 @@ export interface PiPackage {
   repo: string;
   /** Pinned git ref. Tags keep worker startups reproducible and offline-safe. */
   defaultRef: string;
-  /** Env var that overrides `defaultRef`. */
-  refEnvVar: string;
   /**
    * Extension entrypoints loaded from the checkout instead of handing Pi the
    * package root.
@@ -39,8 +37,13 @@ export function getPiPackagePath(pkg: PiPackage): string {
   return path.join(getPiPackagesDir(), pkg.name);
 }
 
+/**
+ * Ref to check out. Always the pinned one: `packages/config` es la única
+ * fuente de configuración (ADR 0011) y no hay overrides por variable de
+ * entorno que un subproceso pueda heredar.
+ */
 export function getPiPackageRef(pkg: PiPackage): string {
-  return readEnv(pkg.refEnvVar)?.trim() || pkg.defaultRef;
+  return pkg.defaultRef;
 }
 
 /** Extension files handed to Pi without loading their package manifests. */

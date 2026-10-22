@@ -1,5 +1,30 @@
-export { ENV_CATALOG, getSpec } from "./catalog";
-export type { EnvKey, EnvVarSpec } from "./catalog";
+export { ConfigError } from "./errors";
+export { config, optional } from "./config";
+export { createConfigFacade } from "./facade";
+export type { ConfigFacade } from "./facade";
+export {
+  getBuildFlags,
+  resetBuildFlagsForTests,
+  setBuildFlags,
+} from "./facade";
+export type { BuildFlags } from "./facade";
+export {
+  detectTestRunner,
+  ENTORNOS,
+  envBundlePath,
+  initConfig,
+  parseBuildFlagsFromArgv,
+  parseEntornoFromArgv,
+  resetConfigForTests,
+} from "./config";
+export type { InitConfigOptions } from "./config";
+export {
+  assertDbMatchesEntorno,
+  assertGatewayMatchesEntorno,
+  ENTORNO_DB,
+  ENTORNO_GATEWAY_PORT,
+  validateAppConfig,
+} from "./guardrails";
 export {
   EMBEDDING_DIMENSIONS,
   GATEWAY_THINKING_LEVELS,
@@ -9,14 +34,18 @@ export type {
   GatewayModelEntry,
   ThinkingLevel,
 } from "./gateway-contract";
-export { readEnv, resolveSecret } from "./source";
-export { ConfigError } from "./errors";
-export { getAccessorRegistry } from "./builders";
-export type { AccessorKind, AccessorRecord } from "./builders";
-export { config, optional, DYNAMIC_ENV_KEYS } from "./config";
 export {
-  assertDbMatchesEntorno,
-  assertGatewayMatchesEntorno,
-  ENTORNO_DB,
-  ENTORNO_GATEWAY_PORT,
-} from "./guardrails";
+  homePath,
+  normalizePath,
+  packagePath,
+  REPO_ROOT,
+  repoPath,
+  resolvePath,
+} from "./paths";
+export type { PackageName } from "./paths";
+export type {
+  AppConfig,
+  Entorno,
+  SecretsConfig,
+  StructuralConfig,
+} from "./types";
