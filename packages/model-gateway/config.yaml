@@ -63,7 +63,7 @@ router_settings:
       hidden: true
 
 model_list:
-  # ---------- 14 modelos user_invocable: true (selector de modelos) ----------
+  # ---------- 15 modelos user_invocable: true (selector de modelos) ----------
 
   # Deepseek v4.1 Flash — default del catálogo (chatModelKeys[0]).
   - model_name: Deepseek v4.1 Flash
@@ -142,6 +142,34 @@ model_list:
       zero_data_retention: false
       default_temperature: 1
       default_top_p: 0.95
+      default_top_k: null
+
+  # MiniMax M3.1 Flash Free — gratis por tiempo limitado en OpenCode Go. Va por
+  # el endpoint OpenAI-compatible (no anthropic-messages) y el proveedor aplica
+  # zero-retention (tabla de privacidad de Go: «Not used» / 0 days).
+  - model_name: MiniMax M3.1 Flash Free
+    litellm_params:
+      model: openai/minimax-m3.1-flash-free
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: minimax
+      context_window: 1000000
+      max_output_tokens: 512000
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+      cache_read_input_token_cost: 0
+      cache_creation_input_token_cost: 0
+      reasoning: true
+      thinking_levels: ["low", "medium", "high", "xhigh", "max"]
+      default_thinking_level: "high"
+      supported_files: [img]
+      supported_output: [text]
+      zero_data_retention: true
+      default_temperature: null
+      default_top_p: null
       default_top_k: null
 
   - model_name: Qwen 3.8 Flash
@@ -346,9 +374,11 @@ model_list:
       default_top_p: 0.95
       default_top_k: null
 
-  - model_name: Step 5 Preview Free
+  # Step 5 Preview — dejó de ser gratis: Go lo sirve como `step-5-preview`
+  # (el slug `-free` ya no existe) a $1.00 / $2.70 / $0.10 por millón.
+  - model_name: Step 5 Preview
     litellm_params:
-      model: openai/step-5-preview-free
+      model: openai/step-5-preview
       api_base: https://opencode.ai/zen/go/v1
       api_key: os.environ/OPENCODE_API_KEY
     model_info:
@@ -357,9 +387,9 @@ model_list:
       company: stepfun
       context_window: 1000000
       max_output_tokens: 65536
-      input_cost_per_token: 0
-      output_cost_per_token: 0
-      cache_read_input_token_cost: 0
+      input_cost_per_token: 1.0e-6
+      output_cost_per_token: 2.7e-6
+      cache_read_input_token_cost: 1.0e-7
       cache_creation_input_token_cost: 0
       reasoning: true
       thinking_levels: ["minimal", "low", "medium", "high", "xhigh", "max"]

@@ -25,6 +25,7 @@ INVOCABLE_IDS = [
     "Deepseek v4.1 Flash",
     "Kimi K3",
     "MiniMax M3",
+    "MiniMax M3.1 Flash Free",
     "Qwen 3.8 Flash",
     "Qwen 3.8 Max",
     "MiMo V2.6 Flash",
@@ -33,7 +34,7 @@ INVOCABLE_IDS = [
     "GLM 5.3",
     "Hy3",
     "GLM 5.3 Flash",
-    "Step 5 Preview Free",
+    "Step 5 Preview",
     "Haiku",
     "Gemini 4 Argon",
 ]
@@ -93,7 +94,7 @@ def catalog(config):
 # --- filtrado en servidor -------------------------------------------------
 
 
-def test_catalog_returns_exactly_the_14_user_invocable_models_in_order(catalog):
+def test_catalog_returns_exactly_the_15_user_invocable_models_in_order(catalog):
     assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
 
 
@@ -152,6 +153,17 @@ def test_cost_schema_and_units_per_million(catalog):
     for model in catalog["models"]:
         assert set(model["cost"]) == {"input", "output", "cacheRead", "cacheWrite"}
         assert all(isinstance(v, (int, float)) and v >= 0 for v in model["cost"].values())
+
+
+def test_minimax_m31_flash_free_is_free(catalog):
+    model = next(m for m in catalog["models"] if m["id"] == "MiniMax M3.1 Flash Free")
+    assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+
+
+def test_step_5_preview_is_no_longer_free(catalog):
+    # Tarifas de OpenCode Go: $1.00 input / $2.70 output / $0.10 cache read.
+    model = next(m for m in catalog["models"] if m["id"] == "Step 5 Preview")
+    assert model["cost"] == {"input": 1, "output": 2.7, "cacheRead": 0.1, "cacheWrite": 0}
 
 
 def test_thinking_levels_derived_and_defaults_supported(catalog):
