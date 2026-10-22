@@ -32,6 +32,7 @@ cambian entre versiones de modelo (`router_settings.model_group_alias`; ver
 | `mimo-flash` | `MiMo V2.6 Flash` |
 | `mimo-pro` | `MiMo V2.6 Pro` |
 | `meta-muse-spark` | `Muse Spark 1.3` |
+| `free` | `Beam Free` |
 
 - Se aceptan como `model` en `/v1/chat/completions` y el resto de rutas de
   LiteLLM, pero **no** aparecen en `GET /v1/models/catalog` (ni en el picker);

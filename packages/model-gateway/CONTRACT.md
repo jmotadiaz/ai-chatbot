@@ -94,6 +94,7 @@ canónico. Se aceptan como `model` en las rutas de LiteLLM y se reapuntan en
 | `mimo-flash` | `MiMo V2.6 Flash` |
 | `mimo-pro` | `MiMo V2.6 Pro` |
 | `meta-muse-spark` | `Muse Spark 1.3` |
+| `free` | `Beam Free` |
 
 No hay alias `deepseek-pro` porque el Gateway no declara un tier Pro de
 Deepseek (solo `deepseek-v4.1-flash`).

@@ -37,6 +37,7 @@ INVOCABLE_IDS = [
     "Step 5 Preview",
     "Haiku",
     "Gemini 4 Argon",
+    "Beam Free",
 ]
 
 DEFAULT_CONTRACTS = [
@@ -60,6 +61,7 @@ MODEL_ALIASES = {
     "mimo-flash": "MiMo V2.6 Flash",
     "mimo-pro": "MiMo V2.6 Pro",
     "meta-muse-spark": "Muse Spark 1.3",
+    "free": "Beam Free",
 }
 
 ENTRY_KEYS = {
@@ -94,7 +96,7 @@ def catalog(config):
 # --- filtrado en servidor -------------------------------------------------
 
 
-def test_catalog_returns_exactly_the_15_user_invocable_models_in_order(catalog):
+def test_catalog_returns_exactly_the_16_user_invocable_models_in_order(catalog):
     assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
 
 
@@ -161,6 +163,11 @@ def test_minimax_m31_flash_is_no_longer_free(catalog):
     assert model["cost"] == {"input": 0.15, "output": 0.6, "cacheRead": 0.015, "cacheWrite": 0}
 
 
+def test_beam_free_is_free(catalog):
+    model = next(m for m in catalog["models"] if m["id"] == "Beam Free")
+    assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+
+
 def test_step_5_preview_is_no_longer_free(catalog):
     # Tarifas de OpenCode Go: $1.00 input / $2.70 output / $0.10 cache read.
     model = next(m for m in catalog["models"] if m["id"] == "Step 5 Preview")
@@ -208,6 +215,8 @@ def test_opencode_upstream_slugs_match_the_provider_catalog(config):
     params = {m["model_name"]: m["litellm_params"]["model"] for m in config["model_list"]}
     # MiniMax M3.1 Flash ya no es gratis: el slug `-free` desapareció.
     assert params["MiniMax M3.1 Flash"] == "openai/minimax-m3.1-flash"
+    # Beam Free gratis en OpenCode Go (slug `beam-free`).
+    assert params["Beam Free"] == "openai/beam-free"
     # OpenCode Go solo sirve Muse Spark por /v1/responses: el prefijo
     # `responses/` fuerza el bridge de LiteLLM y evita el error
     # «Model does not support this protocol» de chat/completions.

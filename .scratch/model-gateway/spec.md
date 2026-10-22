@@ -127,6 +127,7 @@ LiteLLM) con nombres de familia/tier que no cambian entre versiones:
 | `mimo-flash` | `MiMo V2.6 Flash` |
 | `mimo-pro` | `MiMo V2.6 Pro` |
 | `meta-muse-spark` | `Muse Spark 1.3` |
+| `free` | `Beam Free` |
 
 - Son **solo de enrutado**: LiteLLM resuelve el alias al `model_name` canónico
   antes de elegir deployment, así que funcionan como `model` en
