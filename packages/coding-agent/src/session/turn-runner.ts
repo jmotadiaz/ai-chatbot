@@ -553,7 +553,32 @@ export class TurnRunner {
           await entry.runtime.session.setModel(model as never);
           log.info("session.model_changed", { sessionId, modelId: options.modelId });
         } else {
+          // Unknown model: fail the turn explicitly instead of silently
+          // keeping the previous model (the request would appear to succeed
+          // while running a model nobody asked for).
+          const message =
+            `Model "${options.modelId}" is not available in the coding agent's ` +
+            "Model Catalog. Refresh the model picker and retry; the turn was not started.";
           log.warn("session.model_not_in_registry", { sessionId, modelId: options.modelId });
+          const eventLog = ensureEventLog(entry);
+          const afterSeq = eventLog.lastSeq;
+          appendAguiEvent(
+            entry,
+            {
+              type: EventType.RUN_ERROR,
+              threadId: sessionId,
+              runId,
+              message,
+              timestamp: Date.now(),
+            },
+            {},
+          );
+          return this.createEventStream(
+            "session.prompt_stream",
+            "session.prompt_stream.summary",
+            afterSeq,
+            () => ({ entry, eventLog, prelude: [], events: eventLog.readAfter(afterSeq) }),
+          );
         }
       }
     }

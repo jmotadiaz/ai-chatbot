@@ -1,6 +1,6 @@
 import { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
-import { ensureGatewayModelsJson } from "./gateway-catalog";
+import { ensureGatewayModelsJson, getSyncedGatewayCatalog, syncGatewayModelsFile } from "./gateway-catalog";
 import { getAuthJsonPath, getModelsJsonPath } from "./models";
 
 /**
@@ -52,4 +52,57 @@ export function getModelRuntime(): Promise<ModelRuntime> {
 /** Test hook: drop the cached instance so the next call rebuilds it. */
 export function resetModelRuntimeForTests(): void {
   runtimePromise = undefined;
+}
+
+// --- Runtime Model Catalog refresh (hot reload) -----------------------------
+
+let refreshInFlight: Promise<void> | undefined;
+
+/**
+ * Re-sync the Model Catalog from the Gateway so a model published in
+ * `config.yaml` reaches the code-chat picker without a worker restart
+ * (ADR 0010). Called by `getAvailableModels()` before every availability
+ * read — no TTL: the read is SSR-only and the refresh costs ~20 ms, hidden
+ * behind the SSR `Promise.all`.
+ *
+ * In-flight deduplication: concurrent callers share the same refresh instead
+ * of stacking fetches/rewrites.
+ *
+ * Failure policy: if the Gateway is unreachable mid-life, the last good
+ * catalog (in-memory snapshot + `models.json` + `ModelRuntime` state) is
+ * kept and the failure is logged as a warning — `getAvailableModels` answers
+ * with what it already has. With no catalog yet (cold start) the initial
+ * load behavior is preserved: the error propagates.
+ */
+export function refreshGatewayCatalog(): Promise<void> {
+  refreshInFlight ??= refreshOnce().finally(() => {
+    refreshInFlight = undefined;
+  });
+  return refreshInFlight;
+}
+
+async function refreshOnce(): Promise<void> {
+  const log = getTraceLogger("worker");
+  // Cold start: the lazy initial sync (`ensureGatewayModelsJson` inside
+  // `getModelRuntime`) already fetches the catalog — just build the runtime
+  // and let its errors propagate, as the startup path always did.
+  if (getSyncedGatewayCatalog().length === 0) {
+    await getModelRuntime();
+    return;
+  }
+  try {
+    const catalog = await syncGatewayModelsFile();
+    const runtime = await getModelRuntime();
+    // Re-read the rewritten models.json into the live runtime (file-backed,
+    // `allowNetwork: false` — no provider network refresh) so new ids resolve
+    // through the shared instance sessions already hold.
+    await runtime.refresh({ allowNetwork: false });
+    log.info("gateway.catalog.refreshed", { models: catalog.length });
+  } catch (error) {
+    // Keep the last good catalog; a dead Gateway must not take
+    // getAvailableModels (and with it the SSR of the code-chat page) down.
+    log.warn("gateway.catalog.refresh_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }

@@ -183,7 +183,9 @@ export class SessionRegistry {
       undefined,
       { id: sessionId },
     );
-    const createRuntime = this.makeCreateRuntime(options.modelId);
+    // Create path: an unknown modelId must fail the RPC instead of silently
+    // running on Pi's default model. Reloads keep the tolerant path above.
+    const createRuntime = this.makeCreateRuntime(options.modelId, { strictModel: true });
 
     const stop = log.startTimer("session.runtime_create");
     const runtime = await createAgentSessionRuntime(createRuntime, {

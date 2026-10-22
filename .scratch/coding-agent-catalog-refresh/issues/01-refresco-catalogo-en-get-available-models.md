@@ -5,7 +5,7 @@ cada `getAvailableModels` y deja de caer en silencio ante un `modelId` desconoci
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `gateway-catalog.ts` / `model-runtime.ts`: función de refresco que hace
   `GET /v1/models/catalog`, reescribe `models.json`, actualiza el catálogo sincronizado

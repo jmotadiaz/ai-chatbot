@@ -10,7 +10,7 @@ import {
 } from "../runtime/gateway-catalog";
 import { SessionEventLog, type Cursor } from "../agui/event-log";
 import type { PendingQueues } from "./pending-queues";
-import { getModelRuntime } from "../runtime/model-runtime";
+import { getModelRuntime, refreshGatewayCatalog } from "../runtime/model-runtime";
 import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
 import { startSubagentCollector } from "../subagent/subagent-collector";
 import type { SubagentRunParams, SubagentDetails, SubagentRunResult } from "../subagent/subagent-bridge";
@@ -125,6 +125,11 @@ export async function getAvailableModels(): Promise<
 > {
   const log = getTraceLogger("worker");
   log.info("models.fetch");
+  // Hot reload of the Model Catalog (ADR 0010): re-sync from the Gateway on
+  // every availability read so a model published in `config.yaml` shows up
+  // without a worker restart. In-flight deduped; on Gateway failure it keeps
+  // the last good catalog and answers with it.
+  await refreshGatewayCatalog();
   // Availability refresh on the shared ModelRuntime: file-backed catalog
   // (allowModelNetwork: false) filtered by configured auth — the semantic
   // equivalent of the pre-0.80.8 `ModelRegistry.getAvailable()`. The snapshot

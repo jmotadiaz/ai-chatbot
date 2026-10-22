@@ -223,6 +223,32 @@ describe("TurnRunner (deep module)", () => {
     ).rejects.toThrow("Cannot change model while the agent is running");
   });
 
+  it("fails the turn in-band with RUN_ERROR when the turn's modelId is unknown", async () => {
+    const mock = createMockPiSession({
+      isStreaming: false,
+      model: { provider: "opencode-go", id: "old" },
+    });
+    seed("s5", mock);
+    (registry.getRaw("s5") as any).runtime.services = {
+      modelRuntime: { getModel: () => undefined },
+    };
+
+    const stream = await runner.sendPrompt("s5", "hello", undefined, "r5", {
+      modelId: "ghost-model",
+    });
+    const text = await new Response(stream).text();
+    const events = text
+      .split("\n")
+      .filter((line) => line.trim().length > 0)
+      .map((line) => JSON.parse(line) as { event: { type: string; message?: string } })
+      .map((wrapped) => wrapped.event);
+    const runError = events.find((event) => event.type === EventType.RUN_ERROR);
+    expect(runError).toBeDefined();
+    expect(String(runError?.message)).toContain("ghost-model");
+    // The turn never starts: no prompt against the previous model.
+    expect(mock.promptCalls).toHaveLength(0);
+  });
+
   it("expands leading skill commands preserving order", async () => {
     const baseDir = mkdtempSync(join(tmpdir(), "turn-skills-"));
     const { writeFileSync } = await import("node:fs");

@@ -233,8 +233,6 @@ export function resetGatewayCatalogForTests(): void {
  * would start with an empty model list.
  */
 export async function ensureGatewayModelsJson(): Promise<readonly GatewayModelEntry[]> {
-  const log = getTraceLogger("worker");
-  const gatewayUrl = config.modelGatewayUrl();
   const apiKey = config.modelGatewayApiKey();
   if (!apiKey) {
     throw new Error(
@@ -243,7 +241,19 @@ export async function ensureGatewayModelsJson(): Promise<readonly GatewayModelEn
         "model catalog. Set it in the environment file of this Entorno.",
     );
   }
+  return syncGatewayModelsFile();
+}
 
+/**
+ * Shared body of the initial load (`ensureGatewayModelsJson`) and the runtime
+ * refresh (`refreshGatewayCatalog`): fetch the catalog, rewrite `models.json`
+ * + `auth.json`, and update the in-process snapshot. Assumes the API key is
+ * present; callers validate first.
+ */
+export async function syncGatewayModelsFile(): Promise<readonly GatewayModelEntry[]> {
+  const log = getTraceLogger("worker");
+  const gatewayUrl = config.modelGatewayUrl();
+  const apiKey = config.modelGatewayApiKey()!;
   const catalog = await fetchGatewayCatalog(gatewayUrl, apiKey);
 
   const modelsJson = buildPiModelsJson(catalog, gatewayUrl);

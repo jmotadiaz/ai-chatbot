@@ -36,10 +36,13 @@ export function splitModelReference(
 
 /**
  * Create the runtime factory reused for both new and reloaded sessions.
+ * `strictModel` fails fast when the requested model is not in the catalog:
+ * the create path (chatbot BFF `initializeSession`) wants the error, while
+ * reloads of persisted sessions tolerate retired ids (Pi default + warning).
  */
 export function makeCreateRuntime(
   modelId?: string,
-  options?: { includeSubagentExtension?: boolean },
+  options?: { includeSubagentExtension?: boolean; strictModel?: boolean },
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
     // Shared process-wide facade over credentials + model catalog (SDK ≥ 0.80.8
@@ -77,9 +80,19 @@ export function makeCreateRuntime(
     const model =
       piProvider && piModelId ? services.modelRuntime.getModel(piProvider, piModelId) : undefined;
     if (piProvider && piModelId && !model) {
-      // The registry is authoritative; a missing entry means the session is
-      // created without a model (Pi falls back to its default), which would
-      // be a silent no-op for the caller. Surface it in the trace.
+      if (options?.strictModel) {
+        // A session created for a model the catalog does not describe would
+        // silently run on Pi's default (the registry is authoritative) —
+        // surface it to the caller instead of pretending it applied.
+        throw new Error(
+          `Model "${modelId}" is not available in the coding agent's Model Catalog ` +
+            `(provider ${piProvider}). Refresh the model picker and retry; if it was ` +
+            "just published, the Model Gateway catalog may need a moment to reach the worker.",
+        );
+      }
+      // Reload of a persisted session whose model was retired from the
+      // Gateway: keep the pre-existing behavior (no model → Pi default; the
+      // explicit error shows up when the next turn carries a model id).
       getTraceLogger("worker").warn("session.model_not_in_registry", {
         modelId,
       });

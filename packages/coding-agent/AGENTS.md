@@ -35,6 +35,19 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 | `extensions/artifacts/` | First-party `publish_artifact` tool + automatic publishing of temp-dir reports |
 | `scripts/install-packages.ts` | Clones/updates third-party Pi packages if defined |
 
+## Model Catalog (runtime)
+
+El catálogo de modelos del worker se sincroniza contra el Model Gateway (ADR 0010):
+`src/runtime/gateway-catalog.ts` hace `GET /v1/models/catalog`, reescribe el
+`models.json`/`auth.json` del Entorno y actualiza el snapshot en memoria;
+`src/runtime/model-runtime.ts` posee el `ModelRuntime` singleton y la función
+`refreshGatewayCatalog()` (deduplicación in-flight) que se invoca en **cada
+`getAvailableModels`** — un modelo dado de alta en el Gateway aparece en el picker
+de chats de código sin reiniciar el worker. Si el Gateway cae durante un refresco,
+se conserva el último catálogo bueno (warning en log). Un `modelId` desconocido no
+cae en silencio: la creación de sesión (`initializeSession`) devuelve un error RPC
+y el turno falla en banda con `RUN_ERROR`, ambos con el `modelId` en el mensaje.
+
 ## Built-in Skills (`skills/`)
 
 Standalone Agent Skills live under `skills/<name>/SKILL.md` (e.g. `skills/writing-prompties/`, `skills/mobile-first-artifacts/`). They require no TypeScript runtime hooks and are discovered automatically via `getBuiltinSkillPaths()` in `src/pi-packages.ts` passed to `additionalSkillPaths`.
