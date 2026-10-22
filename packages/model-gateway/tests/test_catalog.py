@@ -25,7 +25,7 @@ INVOCABLE_IDS = [
     "Deepseek v4.1 Flash",
     "Kimi K3",
     "MiniMax M3",
-    "MiniMax M3.1 Flash Free",
+    "MiniMax M3.1 Flash",
     "Qwen 3.8 Flash",
     "Qwen 3.8 Max",
     "MiMo V2.6 Flash",
@@ -155,9 +155,10 @@ def test_cost_schema_and_units_per_million(catalog):
         assert all(isinstance(v, (int, float)) and v >= 0 for v in model["cost"].values())
 
 
-def test_minimax_m31_flash_free_is_free(catalog):
-    model = next(m for m in catalog["models"] if m["id"] == "MiniMax M3.1 Flash Free")
-    assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+def test_minimax_m31_flash_is_no_longer_free(catalog):
+    # Tarifas de OpenCode Go: $0.15 input / $0.60 output / $0.015 cache read.
+    model = next(m for m in catalog["models"] if m["id"] == "MiniMax M3.1 Flash")
+    assert model["cost"] == {"input": 0.15, "output": 0.6, "cacheRead": 0.015, "cacheWrite": 0}
 
 
 def test_step_5_preview_is_no_longer_free(catalog):
@@ -201,6 +202,16 @@ def test_config_model_names_are_the_catalog_ids(config):
         assert "api_key" in params
         assert params["api_key"].startswith("os.environ/")
         assert "sk-" not in str(model)
+
+
+def test_opencode_upstream_slugs_match_the_provider_catalog(config):
+    params = {m["model_name"]: m["litellm_params"]["model"] for m in config["model_list"]}
+    # MiniMax M3.1 Flash ya no es gratis: el slug `-free` desapareció.
+    assert params["MiniMax M3.1 Flash"] == "openai/minimax-m3.1-flash"
+    # OpenCode Go solo sirve Muse Spark por /v1/responses: el prefijo
+    # `responses/` fuerza el bridge de LiteLLM y evita el error
+    # «Model does not support this protocol» de chat/completions.
+    assert params["Muse Spark 1.3"] == "openai/responses/muse-spark-1.3-contributor"
 
 
 # --- aliases estables de familia/tier (solo enrutado) ---------------------
