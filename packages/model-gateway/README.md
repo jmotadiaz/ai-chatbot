@@ -73,11 +73,16 @@ pnpm run deploy              # = bash scripts/deploy.sh
 redeploys) y es idempotente:
 
 1. **Precondiciones**: los 7 `.cred` presentes, `uv` en el PATH y el árbol de
-   `packages/model-gateway` sin cambios sin commitear (si los hay, aborta para
-   que lo desplegado sea identificable; `--allow-dirty` lo permite y queda
-   estampado).
+   `packages/model-gateway` sin cambios sin commitear. Si el árbol está sucio,
+   **no aborta**: avisa, lista los cambios y pregunta «¿Desplegar de todos
+   modos? [y/N]»; con `y` sigue y con `n` (o sin respuesta) cancela antes de
+   tocar nada. `--allow-dirty` salta el aviso y la pregunta por completo
+   (despliega y lo estampa como `dirty=yes`).
 2. **Fuente**: el checkout actual, o una revisión concreta con
-   `--ref <commit|tag>` (`git archive`, no toca el worktree).
+   `--ref <commit|tag>` (`git archive`, no toca el worktree). Con `--ref` el
+   artefacto sale de la revisión commiteada, así que el worktree no interviene
+   y no hay guarda de árbol sucio (un rollback no se bloquea por cambios
+   locales sin commitear).
 3. **Dependencias primero**: solo `pyproject.toml` viaja a `/opt/model-gateway`
    y se resuelven las deps en el venv. Si esto falla, el servicio sigue
    corriendo el artefacto anterior **intacto**.

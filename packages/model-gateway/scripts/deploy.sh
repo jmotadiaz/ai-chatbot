@@ -6,9 +6,13 @@
 # y el sha anterior queda impreso si el arranque falla.
 #
 # Orden (importa):
-#   1. Precondiciones (credenciales, `uv`, árbol del paquete limpio).
+#   1. Precondiciones (credenciales, `uv`, árbol del paquete). Si el árbol
+#      tiene cambios sin commitear, AVISA y pregunta: con `y` sigue, con `n`
+#      (o sin respuesta) cancela. `--allow-dirty` salta el aviso y la
+#      pregunta (despliega y lo estampa como dirty=yes).
 #   2. Fuente: checkout actual o `--ref <commit|tag>` (`git archive`, sin tocar
-#      el worktree).
+#      el worktree). Con `--ref` el worktree no interviene: la revisión
+#      desplegada es la commiteada, así que no hay guarda de árbol sucio.
 #   3. Solo `pyproject.toml` a /opt y dependencias en el venv. Si esto falla,
 #      el servicio sigue corriendo el código anterior intacto.
 #   4. Resto del artefacto + sello `DEPLOYED` (commit, rama, fecha, dirty).
@@ -19,7 +23,7 @@
 # Uso:
 #   scripts/deploy.sh                    # despliega el checkout actual
 #   scripts/deploy.sh --ref HEAD~1       # despliega esa revisión (rollback por ref)
-#   scripts/deploy.sh --allow-dirty      # permite desplegar con cambios sin commitear
+#   scripts/deploy.sh --allow-dirty      # despliega con cambios sin commitear, sin preguntar
 #   scripts/deploy.sh --no-health-check  # sin verificación post-arranque
 #
 # Por qué copia a /opt: la unidad corre con DynamicUser (UID transitorio) y
@@ -28,6 +32,7 @@
 set -euo pipefail
 
 PKG_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PKG_REL="packages/model-gateway"
 DEST="/opt/model-gateway"
 UNIT="/etc/systemd/system/model-gateway.service"
@@ -40,7 +45,7 @@ REF=""
 ALLOW_DIRTY=0
 HEALTH_CHECK=1
 
-usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; }
 log() { printf '==> %s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
@@ -138,12 +143,15 @@ compgen -G "/etc/model-gateway/creds/*.cred" >/dev/null 2>&1 \
   || die "faltan credenciales en /etc/model-gateway/creds (bash $PKG_DIR/scripts/manage-creds.sh)"
 
 DIRTY="no"
-if [[ -n "$(git -C "$PKG_DIR" status --porcelain -- . 2>/dev/null)" ]]; then
-  if [[ "$ALLOW_DIRTY" -eq 0 ]]; then
-    git -C "$PKG_DIR" status --short -- . >&2 || true
-    die "hay cambios sin commitear en $PKG_REL; commitea o usa --allow-dirty (quedará estampado)"
+if [[ -z "$REF" ]]; then
+  # Con `--ref` el artefacto sale de `git archive` de una revisión commiteada:
+  # el worktree no interviene, así que la guarda de árbol sucio no aplica.
+  # shellcheck source=scripts/lib/dirty-guard.sh
+  source "$SCRIPT_DIR/lib/dirty-guard.sh"
+  if ! dirty_guard_confirm "$PKG_DIR" "$PKG_REL" "$ALLOW_DIRTY"; then
+    die "despliegue cancelado: hay cambios sin commitear en $PKG_REL (commitea, usa --allow-dirty o responde 'y' para desplegar así)"
   fi
-  DIRTY="yes"
+  DIRTY="${DIRTY_GUARD_DIRTY:-no}"
 fi
 
 SHA="$(git -C "$PKG_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
