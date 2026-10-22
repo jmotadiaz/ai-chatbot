@@ -30,7 +30,7 @@ import {
   sessionCwd,
 } from "./session-entry";
 import { convertPiMessagesToAgui } from "../agui/agui-messages";
-import { splitModelReference } from "../runtime/runtime-factory";
+import { splitModelReference, unknownModelMessage } from "../runtime/runtime-factory";
 import type { SessionRegistry } from "./session-registry";
 
 interface SnapshotMessage {
@@ -556,9 +556,8 @@ export class TurnRunner {
           // Unknown model: fail the turn explicitly instead of silently
           // keeping the previous model (the request would appear to succeed
           // while running a model nobody asked for).
-          const message =
-            `Model "${options.modelId}" is not available in the coding agent's ` +
-            "Model Catalog. Refresh the model picker and retry; the turn was not started.";
+          const { provider: piProvider } = splitModelReference(options.modelId);
+          const message = unknownModelMessage(options.modelId, piProvider);
           log.warn("session.model_not_in_registry", { sessionId, modelId: options.modelId });
           const eventLog = ensureEventLog(entry);
           const afterSeq = eventLog.lastSeq;

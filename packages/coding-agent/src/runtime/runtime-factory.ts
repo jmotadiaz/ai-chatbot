@@ -35,6 +35,19 @@ export function splitModelReference(
 }
 
 /**
+ * User-facing message for a model reference the catalog does not describe.
+ * Shared by the session-create path (error RPC) and the turn path (in-band
+ * RUN_ERROR) so both speak the same failure.
+ */
+export function unknownModelMessage(modelId: string, provider?: string): string {
+  return (
+    `Model "${modelId}" is not available in the coding agent's Model Catalog ` +
+    `(provider ${provider ?? GATEWAY_PROVIDER_ID}). Refresh the model picker and retry; if it was just ` +
+    "published, the Model Gateway catalog may need a moment to reach the worker."
+  );
+}
+
+/**
  * Create the runtime factory reused for both new and reloaded sessions.
  * `strictModel` fails fast when the requested model is not in the catalog:
  * the create path (chatbot BFF `initializeSession`) wants the error, while
@@ -84,11 +97,7 @@ export function makeCreateRuntime(
         // A session created for a model the catalog does not describe would
         // silently run on Pi's default (the registry is authoritative) —
         // surface it to the caller instead of pretending it applied.
-        throw new Error(
-          `Model "${modelId}" is not available in the coding agent's Model Catalog ` +
-            `(provider ${piProvider}). Refresh the model picker and retry; if it was ` +
-            "just published, the Model Gateway catalog may need a moment to reach the worker.",
-        );
+        throw new Error(unknownModelMessage(modelId ?? piModelId, piProvider));
       }
       // Reload of a persisted session whose model was retired from the
       // Gateway: keep the pre-existing behavior (no model → Pi default; the
