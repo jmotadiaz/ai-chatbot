@@ -95,11 +95,20 @@ describe("unknown modelId fails explicitly", () => {
   const savedEnv = {
     projects: process.env.CODING_AGENT_PROJECTS_ROOT,
     sessions: process.env.CODING_AGENT_SESSIONS_DIR,
+    modelsJson: process.env.CODING_AGENT_MODELS_JSON,
+    gatewayUrl: process.env.MODEL_GATEWAY_URL,
+    gatewayKey: process.env.MODEL_GATEWAY_API_KEY,
   };
 
   beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [] })));
+    process.env.MODEL_GATEWAY_URL = "http://127.0.0.1:4098";
+    process.env.MODEL_GATEWAY_API_KEY = "test-key";
     sessionRegistry.clear();
     root = mkdtempSync(join(tmpdir(), "model-unknown-"));
+    const modelsPath = join(root, "models.json");
+    writeFileSync(modelsPath, "{}");
+    process.env.CODING_AGENT_MODELS_JSON = modelsPath;
     // Pi resolves the transcript under <agentDir>/sessions/--<encoded>--; the
     // lookup tests pin the encoding, mirrored here for the reload path.
     const encoded = root.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-");
@@ -110,10 +119,14 @@ describe("unknown modelId fails explicitly", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     sessionRegistry.clear();
     rmSync(root, { recursive: true, force: true });
     process.env.CODING_AGENT_PROJECTS_ROOT = savedEnv.projects;
     process.env.CODING_AGENT_SESSIONS_DIR = savedEnv.sessions;
+    process.env.CODING_AGENT_MODELS_JSON = savedEnv.modelsJson;
+    process.env.MODEL_GATEWAY_URL = savedEnv.gatewayUrl;
+    process.env.MODEL_GATEWAY_API_KEY = savedEnv.gatewayKey;
   });
 
   it("rejects getOrCreateSession with an unknown modelId on the create path", async () => {
