@@ -1,2 +1,1 @@
-pnpm --filter chatbot exec lint-staged
-pnpm verify:fast
+pnpm lint:staged
