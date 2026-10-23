@@ -38,6 +38,11 @@ const serverFile = (imports: string) =>
   `${imports}\nexport default function S() { return null; }\n`;
 
 describe("chatbot lint boundaries (eslint.config.mjs)", () => {
+  // This case lints three snippets sequentially through a programmatic ESLint
+  // instance built from the real flat config; ESLint startup dominates, so it
+  // can cross Vitest's default 5s timeout when `vitest related` runs many
+  // files in parallel on a loaded machine (flake documented in the migration
+  // commit 62c837f6). Bumped to 15s to absorb that load spike.
   it("a use client file cannot import the composition root (exact nor subpath)", async () => {
     const ruleIds = await lint(
       "lib/features/chat/hooks/use-chat.tsx",
@@ -56,7 +61,7 @@ describe("chatbot lint boundaries (eslint.config.mjs)", () => {
       useClient(`import { config } from "config";`),
     );
     expect(configImport).toContain("local/no-inference-in-client-components");
-  });
+  }, 15_000);
 
   it("a server file CAN import the composition root", async () => {
     const ruleIds = await lint(
