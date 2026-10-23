@@ -6,52 +6,10 @@ import type {
   TextUIPart,
   ToolUIPart,
 } from "ai";
-import { put } from "@vercel/blob";
 import type { InsertMessage, Message } from "@/lib/infrastructure/db/schema";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { RagChunk } from "@/lib/features/rag/types";
 import { Tool, TOOLS } from "@/lib/features/chat/types";
-
-
-
-const isBase64URI = (str: string) => {
-  return /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+)?;base64,/.test(str);
-};
-
-const convertBase64ToBlob = (base64URI: string, mimetype: string): Blob => {
-  let base64Data = base64URI;
-  const prefix = `data:${mimetype};base64,`;
-
-  if (base64URI.startsWith(prefix)) {
-    base64Data = base64URI.substring(prefix.length);
-  }
-
-  const byteString = atob(base64Data);
-
-  const byteArray = new Uint8Array(byteString.length);
-  for (let i = 0; i < byteString.length; i++) {
-    byteArray[i] = byteString.charCodeAt(i);
-  }
-
-  return new Blob([byteArray], { type: mimetype });
-};
-
-const buildBlobPart = async (part: FileUIPart): Promise<FileUIPart> => {
-  if (!isBase64URI(part.url)) return part;
-  const blob = await put(
-    part.filename || "Unknown",
-    convertBase64ToBlob(part.url, part.mediaType),
-    {
-      access: "public",
-      addRandomSuffix: true,
-    },
-  );
-
-  return {
-    ...part,
-    url: blob.url,
-  };
-};
 
 export const chatbotMessageToDbMessage =
   (chatId: string) =>
@@ -65,11 +23,8 @@ export const chatbotMessageToDbMessage =
       chatId,
       id,
       role,
-      parts: await Promise.all(
-        parts.map(async (part) =>
-          part.type === "file" ? await buildBlobPart(part) : part,
-        ),
-      ),
+      // Attachments are data-URLs owned by the client: persist them as-is.
+      parts,
       metadata,
     };
   };

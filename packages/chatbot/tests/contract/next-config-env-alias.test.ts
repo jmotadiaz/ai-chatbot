@@ -74,6 +74,9 @@ describe("next.config alias del Entorno", () => {
 
     const config = await loadActiveNextConfig();
     expect(config.turbopack?.resolveAlias?.config).toBe("@/../config/src/env.test");
+    expect(config.turbopack?.resolveAlias?.["config/contract"]).toBe(
+      "@/../config/src/gateway-contract",
+    );
     expect(existsSync(expectedFile)).toBe(true);
 
     // El alias de Webpack se calcula al invocar la fábrica, conservando los
@@ -85,6 +88,18 @@ describe("next.config alias del Entorno", () => {
     expect(withExisting.resolve?.alias).toMatchObject({
       "next/internal": "kept",
       config: expectedFile,
+      "config/contract": path.join(PACKAGE_ROOT, "..", "config", "src", "gateway-contract.ts"),
+    });
+
+    // En el build de cliente de Webpack (isServer: false), config resuelve a false
+    // para impedir cualquier fuga de secretos al navegador.
+    const clientWebpack = config.webpack!(
+      { resolve: { alias: {} } } as never,
+      { isServer: false } as never,
+    );
+    expect(clientWebpack.resolve?.alias).toMatchObject({
+      config: false,
+      "config/contract": path.join(PACKAGE_ROOT, "..", "config", "src", "gateway-contract.ts"),
     });
   });
 

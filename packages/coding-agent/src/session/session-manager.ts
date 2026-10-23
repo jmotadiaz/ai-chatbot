@@ -24,6 +24,7 @@ import { TurnRunner, applyThinkingLevel } from "./turn-runner";
 import { SessionQueries } from "./session-queries";
 import type { PromptSummary } from "../runtime/prompts";
 import { resolveProjectPath } from "./session-entry";
+import { resolveSessionDir } from "./session-file-lookup";
 import { makeCreateRuntime } from "../runtime/runtime-factory";
 
 export { FILES_CHANGED_EVENT } from "./turn-runner";
@@ -356,9 +357,10 @@ export async function runSubagent(
   if (!modelResult.ok) return errorResult(modelResult.error);
 
   const subSessionId = crypto.randomUUID();
+  const subagentDir = ensureSubagentSessionsDir(resolveSessionsDir(cfg));
   const sessionManager = SessionManager.create(
-    ensureSubagentSessionsDir(resolveSessionsDir(cfg)),
-    undefined,
+    subagentDir,
+    resolveSessionDir(subagentDir, resolveCodingAgentDir(cfg)),
     { id: subSessionId },
   );
   const createRuntime = makeCreateRuntime(modelResult.modelId, {

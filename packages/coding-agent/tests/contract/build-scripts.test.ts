@@ -98,7 +98,7 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
   it("raíz preview compila ambos packages con el gate y arranca los preview", () => {
     const cmd = rootPkg.scripts.preview;
     expect(cmd).toContain("db:prod:start");
-    expect(cmd).toContain("ALLOW_PROD_BUILD=1");
+    expect(cmd).toContain("--allow-prod-build");
     expect(cmd).toContain("--filter chatbot build");
     expect(cmd).toContain("--filter coding-agent build");
     expect(cmd).toContain("concurrently");
@@ -116,7 +116,7 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
 
   it("coding-agent preview arranca el worker compilado bajo --env=prod", () => {
     const cmd = s.preview;
-    expect(cmd).toContain("ALLOW_PROD_BUILD=1");
+    expect(cmd).toContain("--allow-prod-build");
     expect(cmd).toContain("pnpm run build");
     expect(cmd).toContain("node --import tsx dist/transports/http.js --env=prod");
     expect(cmd).not.toContain("start:prod");

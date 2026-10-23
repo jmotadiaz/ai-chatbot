@@ -230,6 +230,10 @@ async function ensurePortFreed(
   port: number,
   timeoutMs = 10_000,
 ): Promise<void> {
+  const FORBIDDEN_PORTS = new Set([8085, 3015, 5435]);
+  if (FORBIDDEN_PORTS.has(port)) {
+    throw new Error(`ensurePortFreed: port ${port} belongs to production and cannot be killed`);
+  }
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {

@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import os, { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
@@ -54,44 +54,55 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => {
 
 const fakeRuntimeFactory = (async () => ({})) as never;
 
-function restoreEnv(name: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[name];
-  else process.env[name] = value;
-}
-
 describe("findSessionFile", () => {
   let root: string;
   let scopePath: string;
-  const savedAgentDir = process.env.PI_CODING_AGENT_DIR;
+  let agentDir: string;
 
   beforeEach(() => {
     root = mkdtempSync(path.join(tmpdir(), "session-file-lookup-"));
-    process.env.PI_CODING_AGENT_DIR = path.join(root, "agent");
+    agentDir = path.join(root, "agent");
     scopePath = path.join(root, "sessions");
   });
 
   afterEach(() => {
     rmSync(root, { recursive: true, force: true });
-    restoreEnv("PI_CODING_AGENT_DIR", savedAgentDir);
   });
 
   it("resolves the transcript path inside the sessions directory", async () => {
     const name = "2026-01-02T03-04-05-678Z_s1.jsonl";
-    const dir = resolveSessionDir(scopePath);
+    const dir = resolveSessionDir(scopePath, agentDir);
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, name), "");
 
-    await expect(findSessionFile(scopePath, "s1")).resolves.toBe(path.join(dir, name));
+    await expect(findSessionFile(scopePath, "s1", agentDir)).resolves.toBe(path.join(dir, name));
   });
 
   it("returns undefined when the sessions directory does not exist", async () => {
-    await expect(findSessionFile(scopePath, "s1")).resolves.toBeUndefined();
+    await expect(findSessionFile(scopePath, "s1", agentDir)).resolves.toBeUndefined();
   });
 
   it("returns undefined when no transcript matches", async () => {
-    mkdirSync(resolveSessionDir(scopePath), { recursive: true });
+    mkdirSync(resolveSessionDir(scopePath, agentDir), { recursive: true });
 
-    await expect(findSessionFile(scopePath, "s1")).resolves.toBeUndefined();
+    await expect(findSessionFile(scopePath, "s1", agentDir)).resolves.toBeUndefined();
+  });
+
+  it("falls back to global ~/.pi/agent sessions directory when not in isolated agentDir", async () => {
+    const fakeHome = path.join(root, "fake-home");
+    const fakeGlobalAgent = path.join(fakeHome, ".pi", "agent");
+    const dir = resolveSessionDir(scopePath, fakeGlobalAgent);
+    mkdirSync(dir, { recursive: true });
+    const name = "2026-01-02T03-04-05-678Z_legacy-s1.jsonl";
+    writeFileSync(path.join(dir, name), "");
+
+    const homedirSpy = vi.spyOn(os, "homedir").mockReturnValue(fakeHome);
+    try {
+      const result = await findSessionFile(scopePath, "legacy-s1", agentDir);
+      expect(result).toBe(path.join(dir, name));
+    } finally {
+      homedirSpy.mockRestore();
+    }
   });
 });
 
@@ -99,29 +110,28 @@ describe("SessionRegistry.loadSessionFromDisk", () => {
   let root: string;
   let sessionsDir: string;
   let registry: SessionRegistry;
-  const savedAgentDir = process.env.PI_CODING_AGENT_DIR;
 
   beforeEach(() => {
     root = mkdtempSync(path.join(tmpdir(), "session-disk-lookup-"));
     sessionsDir = path.join(root, "sessions");
     const projectsRoot = path.join(root, "projects");
     mkdirSync(path.join(projectsRoot, "demo"), { recursive: true });
-    // El agente del SDK de Pi es su propia variable (PI_CODING_AGENT_DIR):
-    // el lookup resuelve la codificación de transcripciones del SDK. NADA de
-    // `CODING_AGENT_*`: rutas del worker por DI (ADR 0011 §6).
-    process.env.PI_CODING_AGENT_DIR = path.join(root, "agent");
-    registry = new SessionRegistry(fakeRuntimeFactory, { sessionsDir, projectsRoot });
+    const agentDir = path.join(root, "agent");
+    registry = new SessionRegistry(fakeRuntimeFactory, { sessionsDir, projectsRoot, agentDir });
   });
 
   afterEach(() => {
     registry.clear();
     rmSync(root, { recursive: true, force: true });
-    restoreEnv("PI_CODING_AGENT_DIR", savedAgentDir);
   });
 
   /** Writes a real Pi transcript through the SDK into `dir` and returns its path. */
   function createTranscript(id: string, text: string, dir = sessionsDir): string {
-    const manager = SessionManager.create(dir, undefined, { id });
+    const manager = SessionManager.create(
+      dir,
+      resolveSessionDir(dir, path.join(root, "agent")),
+      { id },
+    );
     manager.appendMessage({
       role: "user",
       content: text,
@@ -179,7 +189,7 @@ describe("SessionRegistry.loadSessionFromDisk", () => {
 
   it("ignores unreadable foreign transcripts", async () => {
     createTranscript("alpha", "hello from alpha");
-    const dir = resolveSessionDir(sessionsDir);
+    const dir = resolveSessionDir(sessionsDir, path.join(root, "agent"));
     writeFileSync(path.join(dir, "2026-01-01T00-00-00-000Z_corrupt.jsonl"), "not a pi session");
     writeFileSync(path.join(dir, "2026-01-01T00-00-00-000Z_truncated.jsonl"), "");
 
@@ -190,7 +200,7 @@ describe("SessionRegistry.loadSessionFromDisk", () => {
   });
 
   it("refuses a transcript whose header session id does not match", async () => {
-    const dir = resolveSessionDir(sessionsDir);
+    const dir = resolveSessionDir(sessionsDir, path.join(root, "agent"));
     mkdirSync(dir, { recursive: true });
     const mismatched = path.join(dir, "2026-01-01T00-00-00-000Z_broken.jsonl");
     writeFileSync(

@@ -54,6 +54,41 @@ in-process infrastructure checks under `tests/integration`, and public package
 boundary checks under `tests/contract`. Repository-level Playwright scenarios
 remain under `tests/`.
 
+## Verificación en browser (dev)
+
+Para verificar en vivo lo desarrollado con la UI, usa la skill
+**agent-browser** (navegación, login, screenshots): sigue sus instrucciones.
+
+- **App con sesión**: Es una app con autenticación por cookies/sesión. Define siempre una sesión de browser aislada para preservar las cookies tras el login:
+  ```bash
+  export AGENT_BROWSER_SESSION="$(agent-browser session id --scope worktree --prefix dev)"
+  ```
+- **Linux sin sandbox**: Chromium requiere el flag `--no-sandbox`. Añádelo siempre al abrir el navegador:
+  ```bash
+  agent-browser --args "--no-sandbox" open http://localhost:3000/login
+  ```
+
+Secuencia para levantar el entorno de Desarrollo:
+
+1. Model Gateway (prerequisito, ofrece `:4000` via systemd): `curl -fsS
+   http://127.0.0.1:4000/health/liveliness` (espera `"I'm alive!"`; **no uses
+   `GET /health`**, responde 500). Si falla, revisa `systemctl status
+   model-gateway.service` y sus logs; sin Gateway el chat no funciona.
+2. DB dev: `pnpm db:dev:start` (Postgres `5433`), más `pnpm db:dev:migrate` si
+   cambió el schema.
+3. Datos de prueba: `pnpm db:seed:dev` — siembra el usuario de prueba y 5 chats
+   de ejemplo para que la UI no esté vacía.
+4. Servicios: `pnpm dev` → app en `http://localhost:3000`, worker `:3016`.
+5. Login en `/login`: `test@test.com` / `123456` (credenciales vivas de
+   `packages/chatbot/scripts/seed-test-data.ts`).
+6. Al terminar: `pnpm stop:dev` (nunca `pkill`, ver blindaje arriba).
+
+- **Nunca apuntes el browser a prod** (`:8085`): es tráfico real sobre el
+  servicio en vivo. La verificación con browser va contra `localhost:3000`.
+- Si solo cambió código del worker (`coding-agent`), no necesitas hacer nada a
+  mano: el worker dev recarga; para matarlo por puerto usa solo
+  `pnpm --filter coding-agent stop:dev`.
+
 ## Commit Attribution
 
 AI commits MUST include:

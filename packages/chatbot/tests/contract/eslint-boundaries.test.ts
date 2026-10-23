@@ -49,6 +49,12 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
       useClient(`import type { EmbeddingTaskType } from "@/lib/infrastructure/ai";`),
     );
     expect(exactRoot).toContain("local/no-inference-in-client-components");
+
+    const configImport = await lint(
+      "components/chat/model-picker.tsx",
+      useClient(`import { config } from "config";`),
+    );
+    expect(configImport).toContain("local/no-inference-in-client-components");
   });
 
   it("un server file SÍ puede importar el composition root", async () => {

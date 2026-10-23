@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { resolveCodingAgentDir } from "../runtime/paths";
 
 /**
  * Directory where Pi stores the transcripts keyed by `scopePath`.
@@ -13,9 +14,10 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
  * through the SDK and reloads them through this module. The worker only ever
  * passes absolute, already-resolved paths, which is all `path.resolve` needs.
  */
-export function resolveSessionDir(scopePath: string): string {
+export function resolveSessionDir(scopePath: string, agentDir?: string): string {
   const encoded = path.resolve(scopePath).replace(/^[/\\]/, "").replace(/[/\\:]/g, "-");
-  return path.join(getAgentDir(), "sessions", `--${encoded}--`);
+  const baseDir = agentDir ?? resolveCodingAgentDir();
+  return path.join(baseDir, "sessions", `--${encoded}--`);
 }
 
 /**
@@ -44,6 +46,17 @@ export function findSessionFileName(
   return newest;
 }
 
+async function listSessionFileNames(dir: string): Promise<string[] | undefined> {
+  try {
+    // Directories can end in `.jsonl` too; a name match must not try to open one.
+    const entries = await readdir(dir, { withFileTypes: true });
+    return entries.filter((entry) => !entry.isDirectory()).map((entry) => entry.name);
+  } catch {
+    // A missing sessions directory means "no transcript", same as a miss.
+    return undefined;
+  }
+}
+
 /**
  * Absolute path of a session transcript, or undefined when it is not on disk.
  * `scopePath` is the sessions directory (or `<sessions dir>/subagents`) the
@@ -52,17 +65,45 @@ export function findSessionFileName(
 export async function findSessionFile(
   scopePath: string,
   sessionId: string,
+  agentDir?: string,
 ): Promise<string | undefined> {
-  const dir = resolveSessionDir(scopePath);
-  let fileNames: string[];
-  try {
-    // Directories can end in `.jsonl` too; a name match must not try to open one.
-    const entries = await readdir(dir, { withFileTypes: true });
-    fileNames = entries.filter((entry) => !entry.isDirectory()).map((entry) => entry.name);
-  } catch {
-    // A missing sessions directory means "no transcript", same as a miss.
-    return undefined;
+  const dir = resolveSessionDir(scopePath, agentDir);
+  const fileNames = await listSessionFileNames(dir);
+  if (fileNames) {
+    const name = findSessionFileName(fileNames, sessionId);
+    if (name !== undefined) return path.join(dir, name);
   }
-  const name = findSessionFileName(fileNames, sessionId);
-  return name === undefined ? undefined : path.join(dir, name);
+
+  // Fallback: Si el agentDir configurado está aislado (.pi-prod o .pi-dev),
+  // buscar en el agentDir canónico global (~/.pi/agent) para preservar
+  // compatibilidad con las sesiones históricas (ADR 0002).
+  const globalAgentDir = path.join(os.homedir(), ".pi", "agent");
+  const effectiveAgentDir = agentDir ?? resolveCodingAgentDir();
+  if (path.resolve(effectiveAgentDir) !== globalAgentDir) {
+    // 1. Probar con el mismo scopePath en el global agentDir
+    const globalDir = resolveSessionDir(scopePath, globalAgentDir);
+    const globalFiles = await listSessionFileNames(globalDir);
+    if (globalFiles) {
+      const name = findSessionFileName(globalFiles, sessionId);
+      if (name !== undefined) return path.join(globalDir, name);
+    }
+
+    // 2. Probar con el scope histórico de prod (/home/javier/coding-agent/sessions)
+    // especialmente útil para dev cuando el scopePath es .pi-dev/sessions pero las sesiones
+    // provienen del historial de prod
+    const isSubagent = scopePath.endsWith("subagents");
+    const legacyProdScope = isSubagent
+      ? path.join(os.homedir(), "coding-agent", "sessions", "subagents")
+      : path.join(os.homedir(), "coding-agent", "sessions");
+    const legacyProdDir = resolveSessionDir(legacyProdScope, globalAgentDir);
+    if (legacyProdDir !== globalDir) {
+      const legacyProdFiles = await listSessionFileNames(legacyProdDir);
+      if (legacyProdFiles) {
+        const name = findSessionFileName(legacyProdFiles, sessionId);
+        if (name !== undefined) return path.join(legacyProdDir, name);
+      }
+    }
+  }
+
+  return undefined;
 }

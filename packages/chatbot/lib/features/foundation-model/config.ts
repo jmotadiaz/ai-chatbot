@@ -11,9 +11,9 @@
  * romper los imports del chatbot.
  */
 
-import { GATEWAY_THINKING_LEVELS, type GatewayModelEntry, type ThinkingLevel } from "config";
+import { GATEWAY_THINKING_LEVELS, type GatewayModelEntry, type ThinkingLevel } from "config/contract";
 
-export type { GatewayModelEntry, ThinkingLevel } from "config";
+export type { GatewayModelEntry, ThinkingLevel } from "config/contract";
 
 /** Libre desde el Gateway: la compañía ya no es una unión tipada. */
 export type Company = string;

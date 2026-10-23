@@ -112,7 +112,7 @@ describe("unknown modelId fails explicitly", () => {
     // lookup tests pin the encoding, mirrored here for the reload path. The
     // SDK's own agent dir is stubbed to /tmp/agent-dir by the Pi mock above.
     const encoded = ctx.sessionsDir.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-");
-    piState.sessionFilePath = join("/tmp/agent-dir", "sessions", `--${encoded}--`, "s1.jsonl");
+    piState.sessionFilePath = join(ctx.agentDir, "sessions", `--${encoded}--`, "s1.jsonl");
     piState.getModelCalls = [];
   });
 

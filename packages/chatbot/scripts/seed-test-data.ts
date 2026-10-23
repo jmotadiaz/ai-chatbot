@@ -33,7 +33,7 @@ function parseArgs(argv: string[]) {
   };
 
   return {
-    reset: has("--reset") ? true : has("--no-reset") ? false : true,
+    reset: has("--reset") ? true : false,
     chats: getNumber("--chats", 100),
     userMessagesPerChat: getNumber("--user-messages", 5),
     assistantMessagesPerChat: getNumber("--assistant-messages", 5),
@@ -119,9 +119,9 @@ async function main() {
   // El Entorno (y con él el DSN de SU DB aislada) llega por process.argv
   // (ADR 0011): `tsx scripts/seed-test-data.ts --env=dev ...` — sin dotenv.
   const entorno = parseEntornoFromArgv(process.argv);
-  if (!entorno) {
+  if (!entorno || (entorno !== "dev" && entorno !== "test")) {
     console.error(
-      "❌ seed-test-data.ts exige --env=dev|test|prod (ADR 0011). Ej: npx tsx scripts/seed-test-data.ts --env=dev --chats=5",
+      "❌ seed-test-data.ts exige --env=dev|test (ADR 0011 / ADR 0004). Ej: npx tsx scripts/seed-test-data.ts --env=dev --chats=5",
     );
     process.exit(1);
   }
@@ -133,6 +133,9 @@ async function main() {
   const url = optional(() => config.postgresUrl());
   if (!url) {
     throw new Error("POSTGRES_URL is not defined");
+  }
+  if (url.includes("5435") || url.includes("/prod")) {
+    throw new Error("❌ Guardrail: seed-test-data.ts no puede ejecutarse contra la DB de producción (ADR 0004)");
   }
 
   const client = postgres(url!, { max: 1 });

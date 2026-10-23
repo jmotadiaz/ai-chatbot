@@ -1,5 +1,3 @@
-import type { PutBlobResult } from "@vercel/blob";
-import { upload } from "@vercel/blob/client";
 import type { FilePart } from "./types";
 import type { ChatModelConfiguration } from "@/lib/features/foundation-model/config";
 
@@ -47,7 +45,7 @@ const isTextFile = (filename: string): boolean => {
 };
 
 export const toFilePart = (
-  blob: PutBlobResult,
+  blob: { url: string },
   originalFile: File
 ): FilePart => {
   return {
@@ -77,8 +75,14 @@ export const handleLocalFileUpload = async (
 ): Promise<void> => {
   if (!fileList) return;
   const { maxImageBytes, maxTextFileBytes, onError } = options;
+  // `input.files` is a live list bound to the input element. Callers reset
+  // `input.value` (or unmount the menu that owns the input) synchronously
+  // after this handler returns, which empties the list mid-iteration: every
+  // `await` below would then end the loop after the first file. Snapshot it
+  // before yielding.
+  const files = Array.from(fileList);
 
-  for (const file of fileList) {
+  for (const file of files) {
     if (isTextFile(file.name)) {
       if (file.size > maxTextFileBytes) {
         onError?.(
@@ -121,7 +125,11 @@ export const handleFileUpload = async (
   supportedFiles: ChatModelConfiguration["supportedFiles"]
 ) => {
   if (fileList) {
-    for (const file of fileList) {
+    // Same live-list hazard as `handleLocalFileUpload`: snapshot before the
+    // first `await`, or closing the attachment menu truncates the selection
+    // to a single file.
+    const files = Array.from(fileList);
+    for (const file of files) {
       // Check if it's a text file (.md, .txt, .xml)
       if (isTextFile(file.name)) {
         // Read text content directly
@@ -145,39 +153,7 @@ export const handleFileUpload = async (
         continue;
       }
       const filePart = await convertFileToDataURLs(file);
-      setFiles((prevFiles) => [
-        ...prevFiles,
-        { ...filePart, loading: { percentage: 0 } },
-      ]);
-      const blobPromise = upload(file.name, file, {
-        access: "public",
-        contentType: file.type,
-        handleUploadUrl: "/api/upload",
-        onUploadProgress: ({ percentage }) => {
-          setFiles((prevFiles) =>
-            prevFiles.map((f) => {
-              if (f.url === filePart.url) {
-                return { ...f, loading: { percentage } };
-              }
-              return f;
-            })
-          );
-        },
-      });
-      const blob = await blobPromise;
-      setFiles((prevFiles) =>
-        prevFiles.map((f) => {
-          if (f.url === filePart.url) {
-            return {
-              url: blob.url,
-              type: "file",
-              filename: file.name,
-              mediaType: file.type,
-            };
-          }
-          return f;
-        })
-      );
+      setFiles((prevFiles) => [...prevFiles, filePart]);
     }
   }
 };

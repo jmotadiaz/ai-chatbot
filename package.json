@@ -7,7 +7,7 @@
     "dev": "pnpm --filter chatbot --filter coding-agent --parallel dev",
     "build": "pnpm --filter chatbot build && pnpm --filter coding-agent build",
     "build:verify": "pnpm --filter chatbot build:verify && pnpm --filter coding-agent build:verify",
-    "preview": "pnpm --filter chatbot db:prod:start && ALLOW_PROD_BUILD=1 pnpm --filter chatbot build && ALLOW_PROD_BUILD=1 pnpm --filter coding-agent build && concurrently -n chatbot,worker -c cyan,magenta \"pnpm --filter chatbot preview\" \"pnpm --filter coding-agent preview\"",
+    "preview": "pnpm --filter chatbot db:prod:start && ALLOW_PROD_BUILD=1 pnpm --filter chatbot build --allow-prod-build && ALLOW_PROD_BUILD=1 pnpm --filter coding-agent build --allow-prod-build && concurrently -n chatbot,worker -c cyan,magenta \"pnpm --filter chatbot preview\" \"pnpm --filter coding-agent preview\"",
     "stop:dev": "pnpm --filter chatbot stop:dev && pnpm --filter coding-agent stop:dev",
     "stop:test": "pnpm --filter chatbot stop:test && pnpm --filter coding-agent stop:test",
     "db:generate": "pnpm --filter chatbot db:generate",

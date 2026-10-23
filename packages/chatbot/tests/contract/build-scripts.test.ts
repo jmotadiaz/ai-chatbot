@@ -19,9 +19,14 @@ const rootPkg = JSON.parse(
 const s = chatbotPkg.scripts;
 
 describe("scripts de build del chatbot", () => {
-  it("build migra y compila prod por argv (--env=prod); el gate vive en next-cli", () => {
+  it("build protege la DB con gate previo, migra y compila prod por argv (--env=prod)", () => {
+    expect(s.build).toContain("scripts/assert-prod-build-allowed.ts");
     expect(s.build).toContain("migrate.ts --env=prod");
     expect(s.build).toContain("scripts/next-cli.ts build --env=prod");
+    // El gate assert-prod-build-allowed debe preceder a migrate.ts para proteger la DB
+    const gateIndex = s.build.indexOf("scripts/assert-prod-build-allowed.ts");
+    const migrateIndex = s.build.indexOf("migrate.ts --env=prod");
+    expect(gateIndex).toBeLessThan(migrateIndex);
     expect(s.build).not.toContain("dotenv");
     expect(s.build).not.toContain("NEXT_BUILD_DIR");
     // `next build` directo (sin launcher) ya no se usa: el Entorno se fija en
@@ -29,10 +34,11 @@ describe("scripts de build del chatbot", () => {
     expect(s.build).not.toMatch(/(^|&&\s*)next build/);
   });
 
-  it("build:verify compila aislado con --verify, sin requerir el gate", () => {
+  it("build:verify compila aislado con --verify, sin migrar la DB viva de prod", () => {
     const cmd = s["build:verify"];
     expect(cmd).toContain("scripts/next-cli.ts build --env=prod --verify");
-    expect(cmd).toContain("migrate.ts --env=prod");
+    // build:verify debe ser estrictamente aislado de la DB (AGENTS.md / blindaje)
+    expect(cmd).not.toContain("migrate.ts");
     expect(cmd).not.toMatch(/ALLOW_PROD_BUILD|assert-prod-build-allowed/);
     expect(cmd).not.toContain("dotenv");
   });
@@ -65,8 +71,8 @@ describe("vía canónica de prod: preview", () => {
   it("raíz: levanta la DB de prod, compila ambos packages con el gate y lanza los preview", () => {
     const cmd = rootPkg.scripts.preview;
     expect(cmd).toContain("--filter chatbot db:prod:start");
-    expect(cmd).toContain("ALLOW_PROD_BUILD=1 pnpm --filter chatbot build");
-    expect(cmd).toContain("ALLOW_PROD_BUILD=1 pnpm --filter coding-agent build");
+    expect(cmd).toContain("pnpm --filter chatbot build --allow-prod-build");
+    expect(cmd).toContain("pnpm --filter coding-agent build --allow-prod-build");
     expect(cmd).toContain("pnpm --filter chatbot preview");
     expect(cmd).toContain("pnpm --filter coding-agent preview");
     expect(cmd).not.toContain(".env");

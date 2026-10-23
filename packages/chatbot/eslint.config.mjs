@@ -27,7 +27,9 @@ const gitignorePath = fileURLToPath(new URL(".gitignore", import.meta.url));
  */
 const FORBIDDEN_CLIENT_PREFIX = "@/lib/infrastructure/ai";
 const forbiddenClientImport = (source) =>
-  source === FORBIDDEN_CLIENT_PREFIX || source.startsWith(`${FORBIDDEN_CLIENT_PREFIX}/`);
+  source === FORBIDDEN_CLIENT_PREFIX ||
+  source.startsWith(`${FORBIDDEN_CLIENT_PREFIX}/`) ||
+  source === "config";
 
 /**
  * Flat-config ESLint selects files by path only; a directive prologue like

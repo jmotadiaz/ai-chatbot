@@ -17,7 +17,7 @@ import {
 import { getWorkerRuntimeConfig } from "../runtime/runtime-overrides";
 import type { WorkerRuntimeConfig } from "../runtime/runtime-config";
 import { makeCreateRuntime as defaultMakeCreateRuntime } from "../runtime/runtime-factory";
-import { findSessionFile } from "./session-file-lookup";
+import { findSessionFile, resolveSessionDir } from "./session-file-lookup";
 
 export interface GetOrCreateSessionOptions {
   userId: string;
@@ -118,7 +118,7 @@ export class SessionRegistry {
     // `SessionManager.list()` parses every JSONL file just to find one. The
     // timer covers lookup + open so it is comparable to that old path.
     const stopLookup = log.startTimer("session.load_disk_lookup", { sessionId });
-    const sessionFile = await findSessionFile(sessionsScope, sessionId);
+    const sessionFile = await findSessionFile(sessionsScope, sessionId, resolveCodingAgentDir(cfg));
 
     if (!sessionFile) {
       stopLookup();
@@ -128,7 +128,10 @@ export class SessionRegistry {
 
     log.info("session.load_disk_found", { path: sessionFile });
 
-    const sessionManager = SessionManager.open(sessionFile, sessionsScope);
+    const sessionManager = SessionManager.open(
+      sessionFile,
+      resolveSessionDir(sessionsScope, resolveCodingAgentDir(cfg)),
+    );
     stopLookup();
     // `open()` silently starts a fresh session (with a new id) when the file
     // vanished or holds no header; never register that under the old id.
@@ -201,9 +204,10 @@ export class SessionRegistry {
       modelId: options.modelId,
     });
 
+    const sessionsDir = resolveSessionsDir(cfg);
     const sessionManager = SessionManager.create(
-      resolveSessionsDir(cfg),
-      undefined,
+      sessionsDir,
+      resolveSessionDir(sessionsDir, resolveCodingAgentDir(cfg)),
       { id: sessionId },
     );
     // Create path: an unknown modelId must fail the RPC instead of silently

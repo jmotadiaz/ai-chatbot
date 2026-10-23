@@ -29,22 +29,22 @@ const SELF = path.basename(fileURLToPath(import.meta.url));
 /** Mutaciones prohibidas de la configuración por variables de entorno. */
 const FORBIDDEN: Array<{ name: string; pattern: RegExp }> = [
   {
-    name: "assignment to process.env.CODING_AGENT_* / MODEL_GATEWAY_*",
+    name: "assignment to process.env.CODING_AGENT_* / MODEL_GATEWAY_* / PI_CODING_AGENT_DIR",
     pattern:
-      /process\.env\.(?:CODING_AGENT_[A-Z0-9_]+|MODEL_GATEWAY_[A-Z0-9_]+)\s*=[^=]/,
+      /process\.env\.(?:CODING_AGENT_[A-Z0-9_]+|MODEL_GATEWAY_[A-Z0-9_]+|PI_CODING_AGENT_DIR)\s*=[^=]/,
   },
   {
-    name: "computed assignment to process.env['CODING_AGENT_*' | 'MODEL_GATEWAY_*']",
+    name: "computed assignment to process.env['CODING_AGENT_*' | 'MODEL_GATEWAY_*' | 'PI_CODING_AGENT_DIR']",
     pattern:
-      /process\.env\[\s*["'`](?:CODING_AGENT_|MODEL_GATEWAY_)[^"'`]*["'`]\s*\]\s*=[^=]/,
+      /process\.env\[\s*["'`](?:CODING_AGENT_|MODEL_GATEWAY_|PI_CODING_AGENT_DIR)[^"'`]*["'`]\s*\]\s*=[^=]/,
   },
   {
-    name: "delete process.env.CODING_AGENT_* / MODEL_GATEWAY_*",
-    pattern: /delete\s+process\.env\.(?:CODING_AGENT_|MODEL_GATEWAY_)/,
+    name: "delete process.env.CODING_AGENT_* / MODEL_GATEWAY_* / PI_CODING_AGENT_DIR",
+    pattern: /delete\s+process\.env\.(?:CODING_AGENT_|MODEL_GATEWAY_|PI_CODING_AGENT_DIR)/,
   },
   {
-    name: "vi.stubEnv('CODING_AGENT_*' | 'MODEL_GATEWAY_*')",
-    pattern: /vi\.stubEnv\(\s*["'`](?:CODING_AGENT_|MODEL_GATEWAY_)/,
+    name: "vi.stubEnv('CODING_AGENT_*' | 'MODEL_GATEWAY_*' | 'PI_CODING_AGENT_DIR')",
+    pattern: /vi\.stubEnv\(\s*["'`](?:CODING_AGENT_|MODEL_GATEWAY_|PI_CODING_AGENT_DIR)/,
   },
   {
     name: "literal .pi-prod / .pi-dev as a destination in a test string",

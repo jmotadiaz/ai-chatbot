@@ -1,29 +1,17 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   findSessionFileName,
   resolveSessionDir,
 } from "../../src/session/session-file-lookup";
 
-function restoreEnv(name: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[name];
-  else process.env[name] = value;
-}
-
 describe("resolveSessionDir", () => {
-  const savedAgentDir = process.env.PI_CODING_AGENT_DIR;
-
-  afterEach(() => {
-    restoreEnv("PI_CODING_AGENT_DIR", savedAgentDir);
-  });
-
   it("mirrors Pi's --<encoded cwd>-- sessions directory", () => {
-    process.env.PI_CODING_AGENT_DIR = "/tmp/pi-agent";
     // Matches the layout Pi created in production for
     // CODING_AGENT_SESSIONS_DIR=/home/javier/coding-agent/sessions.
-    expect(resolveSessionDir("/home/javier/coding-agent/sessions")).toBe(
+    expect(resolveSessionDir("/home/javier/coding-agent/sessions", "/tmp/pi-agent")).toBe(
       "/tmp/pi-agent/sessions/--home-javier-coding-agent-sessions--",
     );
-    expect(resolveSessionDir("/home/javier/coding-agent/sessions/subagents")).toBe(
+    expect(resolveSessionDir("/home/javier/coding-agent/sessions/subagents", "/tmp/pi-agent")).toBe(
       "/tmp/pi-agent/sessions/--home-javier-coding-agent-sessions-subagents--",
     );
   });

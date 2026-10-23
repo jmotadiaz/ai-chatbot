@@ -120,23 +120,30 @@ const nextConfig = (phase: string): NextConfig => {
     turbopack: {
       root: path.join(__dirname, "../.."),
       resolveAlias: {
+        "config/contract": "@/../config/src/gateway-contract",
         config: configAlias,
       },
     },
     // Webpack (el `--webpack` del launcher y del webServer de Playwright):
     // conserva los aliases internos de Next y añade el del Entorno.
-    webpack: (config) => {
+    webpack: (config, options) => {
       const existing = config.resolve?.alias;
       // Webpack sí acepta la ruta absoluta: mismo módulo que Turbopack sin
       // depender de la normalización de `@/…`.
       const webpackAlias = envBundlePath(entorno);
+      const contractPath = path.join(__dirname, "../config/src/gateway-contract.ts");
+      const isClient = (options as { isServer?: boolean } | undefined)?.isServer === false;
       config.resolve = {
         ...config.resolve,
         alias: {
           ...(typeof existing === "object" && existing !== null
             ? existing
             : {}),
-          config: webpackAlias,
+          "config/contract": contractPath,
+          // En el bundle de cliente (navegador), el import de `"config"` completo
+          // está PROHIBIDO para evitar inlinar secretos del servidor.
+          // Solo se permite `"config/contract"` (tipos y constantes puros).
+          config: isClient ? false : webpackAlias,
         },
       };
       return config;
