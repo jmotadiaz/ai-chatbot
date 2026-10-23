@@ -57,15 +57,15 @@
     "typebox": "1.1.38"
   },
   "scripts": {
-    "dev": "tsx scripts/install-packages.ts && tsx src/transports/http.ts",
+    "dev": "tsx scripts/install-packages.ts --env=dev && tsx watch src/transports/http.ts --env=dev",
     "lint": "eslint src scripts extensions tests --config ../../eslint.config.mjs",
     "lint:fix": "eslint --fix src scripts extensions tests --config ../../eslint.config.mjs",
     "build": "tsx scripts/assert-prod-build-allowed.ts && tsc -p tsconfig.json --outDir dist",
-    "build:verify": "tsc -p tsconfig.json --outDir dist/verify",
-    "preview": "dotenv -o -e ../../.env.prod -- sh -c 'ALLOW_PROD_BUILD=1 pnpm run build && node --import tsx dist/transports/http.js'",
+    "build:verify": "tsc -p tsconfig.json --outDir dist/verify --noEmitOnError false",
+    "preview": "ALLOW_PROD_BUILD=1 pnpm run build && node --import tsx dist/transports/http.js --env=prod",
     "stop:dev": "sh -c 'lsof -ti:3016 | xargs -r kill 2>/dev/null || true; echo \"worker dev (3016) stopped\"'",
     "stop:test": "sh -c 'echo \"test uses stub on 3001, no worker dev to stop\"'",
-    "packages:install": "tsx scripts/install-packages.ts",
+    "packages:install": "tsx scripts/install-packages.ts --env=dev",
     "type:check": "tsc --noEmit --pretty false",
     "test:unit": "vitest run tests/unit --passWithNoTests",
     "test:integration": "vitest run tests/integration --passWithNoTests",
@@ -75,7 +75,6 @@
   },
   "devDependencies": {
     "@types/nunjucks": "^3.2.6",
-    "dotenv-cli": "^11.0.0",
     "vitest": "^4.0.18"
   }
 }

@@ -4,8 +4,8 @@ import {
   PHASE_PRODUCTION_BUILD,
   PHASE_PRODUCTION_SERVER,
 } from "next/constants";
-import { config, setBuildFlags, type Entorno } from "config";
-import { config as prodBundleConfig } from "./lib/config-bundle/env.prod";
+import { config, envBundlePath, setBuildFlags, type Entorno } from "config";
+import { config as prodBundleConfig } from "../config/src/env.prod";
 
 /**
  * Señal IPC launcher → workers de Next (NO es configuración de la app).
@@ -33,21 +33,20 @@ if (process.env.NEXT_CLI_VERIFY === "1") {
 /**
  * Configuración de Next.js con el Entorno soldado en compilación (ADR 0011 §4.2).
  *
- * ### Alias `"config"` → `lib/config-bundle/env.<entorno>.ts` (Turbopack y Webpack)
+ * ### Alias `"config"` → `packages/config/src/env.<entorno>.ts` (Turbopack y Webpack)
  *
  * Tanto `turbopack.resolveAlias` como `webpack.resolve.alias` redirigen el
- * import `"config"` al shim del Entorno activo, de modo que TODO el código
+ * import `"config"` al bundle estático del Entorno activo, de modo que TODO el código
  * compilado — Server Components, Route Handlers, Client Components y los
  * workers hijos que Next biforca en `build`/`dev` — importa estáticamente el
  * bundle de su Entorno. Ni `process.env` ni `process.argv` (que el kernel no
  * propaga en `fork()`) participan en la resolución en los hijos.
  *
- * El shim (`lib/config-bundle/env.<env>.ts`, ver su comentario) re-exporta la
- * superficie completa del paquete `config` además de la fachada `config` del
- * bundle: apuntar el alias directamente a `packages/config/src/env.<env>.ts`
- * dejaría `optional` / `EMBEDDING_DIMENSIONS` / `GATEWAY_THINKING_LEVELS`
- * como `undefined` en el bundle, porque ese módulo solo exporta `envX` + la
- * fachada.
+ * Cada `env.<env>.ts` re-exporta la superficie isomorfa completa del paquete
+ * (`surface.ts`: tipos, constantes del contrato del Gateway, rutas,
+ * `optional`, …) además de la fachada `config` de su bundle, así que el alias
+ * puede apuntar al fichero del Entorno directamente y todo el código compilado
+ * conserva la misma API que la entrada pública.
  *
  * ### De dónde sale el Entorno (sin `process.argv` aquí)
  *
@@ -79,14 +78,19 @@ function activeEntorno(phase: string): { entorno: Entorno; cfg: typeof config } 
   }
 }
 
+/**
+ * Specifier del bundle del Entorno para el alias de Turbopack.
+ *
+ * Turbopack (Next 16) interpreta un valor de alias que empieza por `/` como
+ * import "server relative" (URL root-relative) y falla con "server relative
+ * imports are not implemented yet", así que no vale la ruta absoluta. El
+ * specifier `@/…` lo resuelven los paths de `tsconfig.json`
+ * (`"@/*": ["./*"]`) y `../` normaliza a `packages/config/src/env.<entorno>`:
+ * el alias apunta DIRECTAMENTE al bundle estático del Entorno, sin shims.
+ * Contrato en `tests/contract/next-config-env-alias.test.ts`.
+ */
 const configBundleAlias = (entorno: Entorno): string =>
-  // `@/…` en vez de ruta absoluta: Turbopack (Next 16) interpreta un valor de
-  // alias que empieza por `/` como import "server relative" (URL root-relative)
-  // y falla con "server relative imports are not implemented yet"; Webpack
-  // sí acepta rutas absolutas. El specifier `@/…` — resuelto por los paths de
-  // `tsconfig.json` (`"@/*": ["./*"]`) en AMBOS bundlers — es la única forma
-  // portátil de apuntar al mismo fichero. Ver tests/contract/next-config-env-alias.
-  `@/lib/config-bundle/env.${entorno}`;
+  `@/../config/src/env.${entorno}`;
 
 const nextConfig = (phase: string): NextConfig => {
   const { entorno, cfg } = activeEntorno(phase);
@@ -118,13 +122,16 @@ const nextConfig = (phase: string): NextConfig => {
     // conserva los aliases internos de Next y añade el del Entorno.
     webpack: (config) => {
       const existing = config.resolve?.alias;
+      // Webpack sí acepta la ruta absoluta: mismo módulo que Turbopack sin
+      // depender de la normalización de `@/…`.
+      const webpackAlias = envBundlePath(entorno);
       config.resolve = {
         ...config.resolve,
         alias: {
           ...(typeof existing === "object" && existing !== null
             ? existing
             : {}),
-          config: configAlias,
+          config: webpackAlias,
         },
       };
       return config;

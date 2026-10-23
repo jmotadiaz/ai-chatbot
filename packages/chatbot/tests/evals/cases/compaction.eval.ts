@@ -2,7 +2,6 @@ import { randomUUID } from "crypto"
 import { readFileSync } from "fs"
 import { resolve, dirname } from "path"
 import { fileURLToPath } from "url"
-import { config } from "dotenv"
 import { evalite } from "evalite"
 import { generateObject } from "ai"
 import { z } from "zod"
@@ -17,10 +16,8 @@ import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-config({ path: resolve(__dirname, "../../../.env.development.local") })
-config({ path: resolve(__dirname, "../../../.env.development") })
-config({ path: resolve(__dirname, "../../../.env.local") })
-config({ path: resolve(__dirname, "../../../.env") })
+// Sin ficheros `.env.*` (ADR 0011): la configuración la aporta el bundle
+// tipado del Entorno activo (`packages/config`); `EVAL_BASE_URL` es harness.
 
 
 

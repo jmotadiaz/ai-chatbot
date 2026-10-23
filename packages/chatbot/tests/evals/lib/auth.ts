@@ -2,6 +2,7 @@ import { randomUUID } from "crypto"
 import type { DefaultJWT } from "next-auth/jwt"
 import { hashSync } from "bcrypt-ts"
 import { eq } from "drizzle-orm"
+import { config } from "config"
 import { user } from "@/lib/infrastructure/db/schema"
 import { getDb } from "@/lib/infrastructure/db/db"
 
@@ -19,7 +20,7 @@ export async function createTestUser(): Promise<{
     .values({ email, password: hashedPassword })
     .returning()
 
-  const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me"
+  const secret = config.authSecret()
   const token: DefaultJWT = {
     id: newUser.id,
     email: newUser.email,

@@ -15,11 +15,10 @@ import { describe, expect, it, vi } from "vitest";
  *    launcher→workers de `--verify` (Next re-evalúa el config en workers de
  *    jest-worker con estado de módulo nuevo; ver comentario en next.config).
  * 2. `turbopack.resolveAlias` y `webpack.resolve.alias` redirigen `"config"`
- *    al shim del Entorno activo (`lib/config-bundle/env.<entorno>.ts`).
- * 3. El shim del Entorno exporta la fachada `config` SOLDADA a su bundle
- *    (Entorno correcto) y, además, la superficie completa del paquete — el
- *    motivo por el que el alias apunta al shim y no directamente a
- *    `packages/config/src/env.<env>.ts` (que solo exporta `envX` + `config`).
+ *    DIRECTAMENTE al bundle estático del Entorno activo
+ *    (`packages/config/src/env.<entorno>.ts`), sin shims intermedios.
+ * 3. Ese bundle exporta la fachada `config` SOLDADA a su Entorno y la
+ *    superficie isomorfa completa del paquete (`surface.ts`).
  *
  * En los tests el Entorno es test (initConfig + alias), así que el Entorno
  * activo esperado es `"test"`.
@@ -67,14 +66,14 @@ describe("next.config alias del Entorno", () => {
     }
   });
 
-  it("turbopack.resolveAlias y webpack.resolve.alias apuntan al shim del Entorno activo", async () => {
-    // Forma del alias: specifier `@/…` (paths de tsconfig), NO ruta absoluta —
-    // Turbopack interpreta `/…` como import "server relative" y no lo soporta.
-    const expected = "@/lib/config-bundle/env.test";
-    const expectedFile = path.join(PACKAGE_ROOT, "lib", "config-bundle", "env.test.ts");
+  it("turbopack.resolveAlias y webpack.resolve.alias apuntan al bundle del Entorno activo", async () => {
+    // Turbopack: specifier `@/…` (paths de tsconfig) + `../` hasta
+    // packages/config — una ruta absoluta `/…` sería "server relative" y no
+    // está soportada. Webpack: ruta absoluta al mismo módulo.
+    const expectedFile = path.join(PACKAGE_ROOT, "..", "config", "src", "env.test.ts");
 
     const config = await loadActiveNextConfig();
-    expect(config.turbopack?.resolveAlias?.config).toBe(expected);
+    expect(config.turbopack?.resolveAlias?.config).toBe("@/../config/src/env.test");
     expect(existsSync(expectedFile)).toBe(true);
 
     // El alias de Webpack se calcula al invocar la fábrica, conservando los
@@ -85,19 +84,13 @@ describe("next.config alias del Entorno", () => {
     );
     expect(withExisting.resolve?.alias).toMatchObject({
       "next/internal": "kept",
-      config: expected,
+      config: expectedFile,
     });
   });
 
-  it("el shim del Entorno exporta la fachada soldada + la superficie completa del paquete", async () => {
-    const config = await loadActiveNextConfig();
-    const specifier = config.turbopack?.resolveAlias?.config as string;
-    expect(specifier).toBe("@/lib/config-bundle/env.test");
-    const shimPath = `${path.join(
-      PACKAGE_ROOT,
-      specifier.replace(/^@\//, ""),
-    )}.ts`;
-    const shim = (await import(shimPath)) as Record<string, unknown>;
+  it("el bundle del Entorno exporta la fachada soldada + la superficie completa del paquete", async () => {
+    const bundlePath = path.join(PACKAGE_ROOT, "..", "config", "src", "env.test.ts");
+    const shim = (await import(bundlePath)) as Record<string, unknown>;
 
     // Fachada soldada al bundle del Entorno activo (test): debe ser la
     // fachada ESTÁTICA de env.test, nunca la fachada-selector de index
@@ -118,10 +111,8 @@ describe("next.config alias del Entorno", () => {
     expect(shim.config).not.toBe(selectorMod.config);
 
     // Superficie que el código del chatbot importa de `"config"` además de la
-    // fachada: sin el shim, estos exports no existirían en el bundle.
+    // fachada: el bundle la re-exporta desde `surface.ts`.
     expect(typeof shim.optional).toBe("function");
-    expect(typeof shim.initConfig).toBe("function");
-    expect(typeof shim.envBundlePath).toBe("function");
     expect(typeof shim.EMBEDDING_DIMENSIONS).toBe("number");
     expect(Array.isArray(shim.GATEWAY_THINKING_LEVELS)).toBe(true);
     expect(typeof shim.setBuildFlags).toBe("function");

@@ -1,13 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { config, initConfig, resetConfigForTests } from "../../src/config";
 import {
-  config,
   detectTestRunner,
-  initConfig,
-  optional,
   parseBuildFlagsFromArgv,
   parseEntornoFromArgv,
-  resetConfigForTests,
-} from "../../src/config";
+} from "../../src/argv";
+import { optional } from "../../src/facade";
 import { ConfigError } from "../../src/errors";
 import { packagePath } from "../../src/paths";
 

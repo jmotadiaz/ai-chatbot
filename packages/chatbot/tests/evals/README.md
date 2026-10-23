@@ -23,8 +23,10 @@ pnpm eval -c compaction --no-server          # asumir next dev ya levantado
 
 ## ¿Qué hace el runner?
 
-1. Carga `.env.development.local` (API keys reales; `override:false`).
-2. Fuerza vars de evals: `POSTGRES_URL` apuntando a la DB de test (`5434/test`), `AUTH_SECRET=test_secret`, `NEXT_PUBLIC_ENV=evals` (≠ `"test"` para no activar mocks), `TRACE_ENABLED=1`, `TRACE_RUN_ID=<uuid>`, `EVAL_BASE_URL=http://localhost:<port>`.
+1. Exige `--env=dev|test|prod` en `process.argv` (ADR 0011): no hay `.env.*` ni
+   selector por variable de entorno. El Entorno viaja por argv a cada hijo.
+2. Exporta solo el harness de evals: `EVAL_BASE_URL=http://localhost:<port>`
+   (la configuración de la app la aporta el bundle tipado de `packages/config`).
 3. Levanta la DB de test (`docker compose -f docker-compose.test.yml up --wait`).
 4. Migra la DB. No siembra datos: cada caso de eval crea su propio usuario con `createTestUser()`.
 5. Arranca `next dev --turbo -p <port>` (con prefijo `[next]` en logs) — o reutiliza uno ya corriendo en ese puerto.

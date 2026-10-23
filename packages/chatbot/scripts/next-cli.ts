@@ -15,7 +15,7 @@
  * clona en cada `fork()`/`execve()` — el vector del incidente del 2026-10-22),
  * la única vía fiable es parsear `--env` aquí e `initConfig()` en ESTE mismo
  * proceso, que es el que además evalúa `next.config.ts` y fija el alias
- * `"config"` → `lib/config-bundle/env.<entorno>.ts` (soldadura estática del
+ * `"config"` → `packages/config/src/env.<entorno>.ts` (soldadura estática del
  * Entorno en el bundle; los workers hijos de Next ni siquiera necesitan el
  * selector).
  *
@@ -67,7 +67,12 @@
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { config, initConfig, parseEntornoFromArgv, type Entorno } from "config";
+import { config, parseEntornoFromArgv, type Entorno } from "config";
+// `initConfig` vive en el selector, que importa los tres bundles: los scripts
+// no pasan por el alias del bundler, así que lo importamos por ruta relativa
+// para que este módulo siga funcionando aunque `"config"` apunte a
+// `env.<entorno>.ts` (p. ej. bajo el alias de vitest).
+import { initConfig } from "../../config/src/config";
 
 export type NextCliCommand = "dev" | "build" | "start";
 

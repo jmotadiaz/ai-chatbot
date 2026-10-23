@@ -1,11 +1,16 @@
 /**
- * Vía canónica de prod: 1 app pm2 → pnpm preview con .env.prod (ADR 0003 v2).
+ * Vía canónica de prod: 1 app pm2 → pnpm preview (ADR 0003 v2).
  * Esta es la única vía probada y guardada en pm2 (dump). No usar 2 apps
  * `start:prod` hasta que se valide la migración futura; si alguien arranca
  * este fichero por error, debe levantar exactamente lo mismo que `pm2 start
  * pnpm --name ai-chatbot -- preview` (chatbot 8085 + worker 3015 via
- * concurrently dentro de preview). Antes tenía 2 apps con `start`/`worker:dev`
- * que arrastraban .env.dev — eliminado en ticket 08.
+ * concurrently dentro de preview).
+ *
+ * Sin `env_file`: desde ADR 0011 la configuración son módulos TS tipados
+ * (`packages/config`) y el Entorno de prod viaja por `process.argv`
+ * (`--env=prod`) en los scripts de `package.json`; `pnpm preview` ya no lee
+ * `.env.*`. Las variables de abajo son del supervisor (NODE_ENV/PORT), no
+ * configuración de la app.
  */
 module.exports = {
   apps: [
@@ -19,7 +24,6 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: "1G",
-      env_file: ".env.prod",
       env: {
         NODE_ENV: "production",
         PATH: process.env.PATH,

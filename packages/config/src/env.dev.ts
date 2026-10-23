@@ -4,6 +4,10 @@ import { validateAppConfig } from "./guardrails";
 import { secretsDev } from "./secrets.dev";
 import type { AppConfig } from "./types";
 
+// El alias `"config"` del bundler apunta a ESTE módulo: re-exporta la
+// superficie isomorfa completa del paquete además de la fachada del Entorno.
+export * from "./surface";
+
 /**
  * Bundle estático de DESARROLLO: `config.dev` + `secrets.dev`, validado por
  * los guardarraíles de coherencia y congelado.

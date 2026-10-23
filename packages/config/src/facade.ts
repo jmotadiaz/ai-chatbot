@@ -102,3 +102,12 @@ export function createConfigFacade(resolveBundle: () => AppConfig) {
 }
 
 export type ConfigFacade = ReturnType<typeof createConfigFacade>;
+
+/** Convierte un acceso throwing en `undefined` (compatibilidad histórica). */
+export function optional<T>(get: () => T): T | undefined {
+  try {
+    return get();
+  } catch {
+    return undefined;
+  }
+}

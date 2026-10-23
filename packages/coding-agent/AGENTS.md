@@ -10,10 +10,27 @@ HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent s
 
 ## Entornos y scripts
 
-- **Dev** (`pnpm dev` con `.env.dev` → `3000`+`3016`, `.pi-dev`): `pnpm --filter coding-agent dev` → `tsx` directo; **parada segura `pnpm --filter coding-agent stop:dev` (lsof -ti:3016 | xargs -r kill) o `pnpm stop:dev` en raíz (3000+3016). Nunca `pkill -f tsx` — `dev` y `prod` comparten `tsx src/transports/http.ts` y matarías `3015` de prod.**
-- **Prod** (`pm2 preview` con `.env.prod` → `8085`+`3015`, `.pi-prod`): 1 app `pm2 → pnpm preview` que hace `ALLOW_PROD_BUILD=1 build` de ambos packages y arranca `next start` + `node --import tsx dist/transports/http.js` (worker ya **compilado**, no `tsx` directo). `build` solo operador/CI (`ALLOW_PROD_BUILD=1`).
-- **Test** (`NEXT_PUBLIC_ENV=test` → `3001` stub + `5434`, `.pi-test`): `pnpm --filter chatbot test:e2e` + `pnpm stop:test` (mata `3001`).
-- **Verificación sin tocar prod**: el agente ejecuta `build:verify` (escribe a `dist/verify` + `.pi-verify/models.json`, sin `dotenv -o .env.prod` — no toca estado de runtime de prod).
+La configuración NO usa `.env.*` ni variables de entorno selectoras (ADR 0011):
+`packages/config` expone bundles TS tipados por Entorno y el Entorno activo viaja
+por `--env=prod|dev|test` en `process.argv` (`initConfig()` en los runners).
+Ver «config — Configuración tipada por Entorno» en el `AGENTS.md` de la raíz.
+
+- **Dev** (`pnpm dev` → `--env=dev`: `3000`+`3016`, `.pi-dev`): `pnpm --filter coding-agent dev` → `tsx` directo; **parada segura `pnpm --filter coding-agent stop:dev` (lsof -ti:3016 | xargs -r kill) o `pnpm stop:dev` en raíz (3000+3016). Nunca `pkill -f tsx` — `dev` y `prod` comparten `tsx src/transports/http.ts` y matarías `3015` de prod.**
+- **Prod** (`pnpm preview` → `--env=prod`: `8085`+`3015`, `.pi-prod`): 1 app `pm2 → pnpm preview` que hace `ALLOW_PROD_BUILD=1 build` de ambos packages y arranca `next start` + `node --import tsx dist/transports/http.js` (worker ya **compilado**, no `tsx` directo). `build` solo operador/CI (`ALLOW_PROD_BUILD=1` o `--allow-prod-build`).
+- **Test** (`--env=test` → `3001` stub + `5434`, `.pi-test`): `pnpm --filter chatbot test:e2e` + `pnpm stop:test` (mata `3001`).
+- **Verificación sin tocar prod**: el agente ejecuta `build:verify` (escribe a `dist/verify` + `.pi-verify/models.json` — no toca estado de runtime de prod).
+
+## DI y aislamiento en tests
+
+- Prohibido mutar `process.env.CODING_AGENT_*` / `process.env.MODEL_GATEWAY_*` en
+  `tests/**`: la config se inyecta por parámetro (`GatewayRuntimeConfig` /
+  `WorkerRuntimeConfig` en `src/runtime/runtime-config.ts`). El composition root
+  (`src/transports/http.ts`) es el único que usa los defaults de `packages/config`.
+- Usa `createTestWorkerContext()` (`tests/helpers/test-context.ts`): crea un sandbox
+  `mkdtempSync` con `projectsRoot`, `sessionsDir`, `modelsJsonPath`, `authJsonPath`,
+  `agentDir`, `piPackagesDir`, `artifactsDir` y `cleanup()` para `afterEach`.
+- Un test NUNCA escribe en `.pi-prod` ni `.pi-dev`. Contrato:
+  `tests/contract/no-process-env-mutations.test.ts`.
 
 ## Key Files
 

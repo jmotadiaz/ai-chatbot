@@ -7,15 +7,15 @@ import { initConfig } from "../config/src/config";
  * `initConfig("test")` al cargar este fichero (proceso principal — el mismo
  * que ejecuta `globalSetup`), nunca una variable de entorno heredada.
  *
- * El alias `"config"` enlaza el paquete al shim `lib/config-bundle/env.test.ts`
- * (re-exporta la superficie completa del paquete y fija la fachada al bundle
- * congelado de test): los workers de Vitest NO re-evalúan este config ni
- * conservan el argv del binario, así que sin alias el selector de `config`
- * fallaría (`Missing required CLI flag --env`) en cada worker. Con el alias,
- * cada worker importa directamente el bundle estático de test — mismo
- * módulo que soldaría `next.config.ts` en un build de test — y un test no
- * puede observar secretos ni rutas de dev/prod (ver shim para por qué no se
- * apunta a `packages/config/src/env.test.ts` directamente).
+ * El alias `"config"` enlaza el paquete al bundle estático
+ * `packages/config/src/env.test.ts` (re-exporta la superficie isomorfa
+ * completa y fija la fachada al bundle congelado de test): los workers de
+ * Vitest NO re-evalúan este config ni conservan el argv del binario, así que
+ * sin alias el selector de `config` fallaría (`Missing required CLI flag
+ * --env`) en cada worker. Con el alias, cada worker importa directamente el
+ * bundle estático de test — el mismo módulo que soldaría `next.config.ts` en
+ * un build de test — y un test no puede observar secretos ni rutas de
+ * dev/prod.
  *
  * `globalSetup` levanta el Mock Model Gateway en el puerto canónico `:4001`
  * (`config.modelGatewayUrl()` en test) en el proceso principal, con teardown;
@@ -30,7 +30,7 @@ export default defineConfig({
     alias: [
       {
         find: /^config$/,
-        replacement: path.resolve(__dirname, "./lib/config-bundle/env.test.ts"),
+        replacement: path.resolve(__dirname, "../config/src/env.test.ts"),
       },
       {
         find: "@",

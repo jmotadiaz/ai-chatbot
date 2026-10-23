@@ -1,6 +1,3 @@
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-import { config as dotenv } from "dotenv";
 import { evalite } from "evalite";
 import {
   MODE_ROUTING_CLASS_COUNTS,
@@ -29,13 +26,8 @@ import type {
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
-// Same precedence as the other eval cases: the runner already exports the evals
-// env, `dotenv` only fills the gaps (all model traffic goes through the
-// Model Gateway: MODEL_GATEWAY_URL / MODEL_GATEWAY_API_KEY).
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-dotenv({ path: resolve(__dirname, "../../../.env.development.local") });
-dotenv({ path: resolve(__dirname, "../../../.env.dev") });
+// La configuración del Entorno llega por el bundle tipado de `packages/config`
+// (ADR 0011): no se cargan ficheros `.env.*`.
 
 /**
  * # mode-routing eval — what it measures
