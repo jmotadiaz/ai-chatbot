@@ -35,6 +35,7 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  secret: config.authSecret(),
   pages: {
     signIn: "/login",
   },

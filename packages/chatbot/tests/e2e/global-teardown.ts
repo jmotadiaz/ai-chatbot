@@ -6,7 +6,14 @@ import { stopMockGateway } from "../mocks/gateway/server";
 import { schema } from "@/lib/infrastructure/db/db";
 
 async function globalTeardown() {
-  const client = postgres(config.postgresUrl());
+  const postgresUrl = config.postgresUrl();
+  if (!postgresUrl.includes("5434/test")) {
+    throw new Error(
+      `[e2e teardown guardrail] POSTGRES_URL="${postgresUrl}" no apunta a la DB de Test (5434/test). Abortando reset para proteger datos.`,
+    );
+  }
+
+  const client = postgres(postgresUrl);
   const db = drizzle(client);
   try {
     await reset(db, schema);
