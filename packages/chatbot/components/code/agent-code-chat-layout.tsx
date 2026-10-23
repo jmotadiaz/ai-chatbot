@@ -19,7 +19,7 @@ import { useCodingAgentSessionModel } from "@/lib/features/code/hooks/use-coding
 import { useCreateCodingAgentSession } from "@/lib/features/code/hooks/use-create-coding-agent-session";
 import type { CodingAgentBootstrap } from "@/lib/features/code/types";
 
-/** Lo que la UI necesita saber del razonamiento de un modelo del picker. */
+/** What the UI needs to know about a picker model's reasoning. */
 export interface ModelThinking {
   levels: ThinkingLevel[];
   defaultLevel: ThinkingLevel | undefined;

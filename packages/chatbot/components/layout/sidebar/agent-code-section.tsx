@@ -64,8 +64,8 @@ export const AgentCodeSection: React.FC<AgentCodeSectionProps> = ({
     }
   };
 
-  // La ruta manda: al montar o navegar a una sesión se abre su proyecto y se
-  // cargan sus sesiones (deep link / navegación entre proyectos).
+  // The route wins: mounting or navigating to a session opens its project and
+  // loads its sessions (deep link / navigation between projects).
   useEffect(() => {
     if (!current) return;
     setOpenProject(current.project);
@@ -186,7 +186,7 @@ const ProjectRow: React.FC<ProjectRowProps> = ({
             </div>
           ) : error ? (
             <div className="text-xs text-red-500 py-1">
-              No se pudieron cargar las sesiones.
+              Could not load the sessions.
             </div>
           ) : sessions ? (
             sessions.length === 0 ? (

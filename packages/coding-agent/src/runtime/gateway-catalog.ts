@@ -26,7 +26,7 @@ import { resolveGatewayRuntimeConfig, type GatewayRuntimeConfig } from "./runtim
 
 export const GATEWAY_PROVIDER_ID = "model-gateway";
 
-// Tipos del contrato del Gateway (única copia TS en packages/config).
+// Gateway contract types (the single TS copy lives in packages/config).
 export type { GatewayModelCost, GatewayModelEntry, ThinkingLevel };
 
 export const THINKING_LEVELS: readonly ThinkingLevel[] = GATEWAY_THINKING_LEVELS;
@@ -132,7 +132,7 @@ interface AuthJsonEntry {
 type AuthJson = Record<string, AuthJsonEntry>;
 
 /**
- * Ensure the `model-gateway` entry in the per-Entorno auth.json: creates the
+ * Ensure the `model-gateway` entry in the per-Environment auth.json: creates the
  * file when missing, preserves every other entry, and only rewrites the file
  * when our entry is actually absent or stale (a matching key means the file on
  * disk is already correct — nothing to touch).
@@ -164,8 +164,8 @@ function assertCatalog(payload: unknown, url: string): GatewayModelEntry[] {
     );
   }
   return models.map((entry, index) => {
-    // contextWindow/maxTokens pueden ser null (entradas sparse del contrato
-    // compartido); lo que NO puede faltar es id y cost.
+    // contextWindow/maxTokens may be null (sparse entries of the shared
+    // contract); what MUST NOT be missing is id and cost.
     const candidate = entry as GatewayModelEntry;
     if (
       typeof entry !== "object" || entry === null ||
@@ -232,7 +232,7 @@ export function resetGatewayCatalogForTests(): void {
  * would start with an empty model list.
  *
  * Config is injected (`GatewayRuntimeConfig`); with no override the
- * composition root resolves the active Entorno bundle (ADR 0011 §6).
+ * composition root resolves the active Environment bundle (ADR 0011 §6).
  */
 export async function ensureGatewayModelsJson(
   options?: GatewayRuntimeConfig,
@@ -242,7 +242,7 @@ export async function ensureGatewayModelsJson(
     throw new Error(
       "MODEL_GATEWAY_API_KEY is not set: the coding-agent worker authenticates " +
         "against the Model Gateway (MODEL_GATEWAY_URL) with it to fetch the " +
-        "model catalog. Set it in the configuration of this Entorno.",
+        "model catalog. Set it in the configuration of this Environment.",
     );
   }
   return syncGatewayModelsFile(resolved);

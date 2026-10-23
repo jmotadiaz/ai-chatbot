@@ -18,7 +18,7 @@ import { chromium } from "@playwright/test";
  */
 
 const VIEWPORTS = [
-  { label: "iPhone SE / Android pequeño", width: 320, height: 700 },
+  { label: "iPhone SE / small Android", width: 320, height: 700 },
   { label: "iPhone 14", width: 390, height: 844 },
 ];
 
@@ -84,11 +84,11 @@ function describe(url: string, measurements: Measurement[]): boolean {
     const fits = m.overflowPx === 0;
     if (!fits || !readable) ok = false;
     console.log(
-      `  ${viewport.width}px (${viewport.label}): ${fits ? "cabe" : `desborda ${m.overflowPx}px`} · ` +
-        `${m.tinyTextNodes} nodos de texto < ${MIN_READABLE_PX}px${m.smallestPx ? ` (mín ${m.smallestPx}px)` : ""}`,
+      `  ${viewport.width}px (${viewport.label}): ${fits ? "fits" : `overflows ${m.overflowPx}px`} · ` +
+        `${m.tinyTextNodes} text nodes < ${MIN_READABLE_PX}px${m.smallestPx ? ` (min ${m.smallestPx}px)` : ""}`,
     );
     for (const offender of m.offenders) {
-      console.log(`      ↳ <${offender.tag} class="${offender.cls}"> mide ${offender.width}px`);
+      console.log(`      ↳ <${offender.tag} class="${offender.cls}"> measures ${offender.width}px`);
     }
   });
   return ok;
@@ -105,7 +105,7 @@ async function main(): Promise<boolean> {
   console.log(
     allOk
       ? "\nMobile-first OK"
-      : "\nMobile-first FAIL: arregla el HTML (ver el skill `mobile-first-artifacts`) y vuelve a publicar.",
+      : "\nMobile-first FAIL: fix the HTML (see the `mobile-first-artifacts` skill) and publish again.",
   );
   return allOk;
 }

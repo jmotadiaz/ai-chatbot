@@ -1,30 +1,30 @@
 # Model Gateway
 
-Servicio de la máquina que custodia todas las API keys de proveedores de IA y
-sirve el **Model Catalog** a sus consumidores (`chatbot`, `coding-agent`).
-LiteLLM Proxy en modo **100% stateless** (`config.yaml` como única fuente de
-verdad, sin base de datos), envuelto en un micro-entrypoint FastAPI
-(`server.py`), desplegado como unidad systemd en `127.0.0.1:4000`.
+Machine service that custodies all AI provider API keys and serves the
+**Model Catalog** to its consumers (`chatbot`, `coding-agent`).
+LiteLLM Proxy in **100% stateless** mode (`config.yaml` as the single source of
+truth, no database), wrapped in a FastAPI micro-entrypoint
+(`server.py`), deployed as a systemd unit on `127.0.0.1:4000`.
 
-## Qué expone
+## What it exposes
 
-- `GET /v1/models/catalog` — catálogo normalizado (`{"models": [...]}`),
-  autenticado con `Authorization: Bearer $MODEL_GATEWAY_API_KEY`. Filtra **en
-  servidor**: solo salen los modelos `user_invocable: true` (los 10 contratos
-  `*-default` quedan ocultos salvo `?include_internal=true`). Nunca expone
-  `litellm_params`.
+- `GET /v1/models/catalog` — normalized catalog (`{"models": [...]}`),
+  authenticated with `Authorization: Bearer $MODEL_GATEWAY_API_KEY`. Filters **on
+  the server**: only models with `user_invocable: true` come out (the 10
+  `*-default` contracts stay hidden unless `?include_internal=true`). It never
+  exposes `litellm_params`.
 - `/v1/chat/completions`, `/v1/embeddings`, `/v1/rerank`, `/v1/audio/speech`,
-  `/v1/decisions`, `/v1/systemone` — servidos nativamente por LiteLLM
-  (montado bajo FastAPI en `server.py`), autenticados con el mismo bearer
-  (`master_key` en `config.yaml`).
+  `/v1/decisions`, `/v1/systemone` — served natively by LiteLLM
+  (mounted under FastAPI in `server.py`), authenticated with the same bearer
+  (`master_key` in `config.yaml`).
 
-## Aliases de modelo (nombres estables)
+## Model aliases (stable names)
 
-Además de los ids canónicos, el Gateway acepta aliases de familia/tier que no
-cambian entre versiones de modelo (`router_settings.model_group_alias`; ver
-`CONTRACT.md` y spec §2.6):
+Besides the canonical ids, the Gateway accepts family/tier aliases that do not
+change between model versions (`router_settings.model_group_alias`; see
+`CONTRACT.md` and spec §2.6):
 
-| Alias | Modelo canónico |
+| Alias | Canonical model |
 | :--- | :--- |
 | `deepseek-flash` | `Deepseek v4.1 Flash` |
 | `glm-flash` | `GLM 5.3 Flash` |
@@ -34,143 +34,145 @@ cambian entre versiones de modelo (`router_settings.model_group_alias`; ver
 | `meta-muse-spark` | `Muse Spark 1.3` |
 | `free` | `Beam Free` |
 
-- Se aceptan como `model` en `/v1/chat/completions` y el resto de rutas de
-  LiteLLM, pero **no** aparecen en `GET /v1/models/catalog` (ni en el picker);
-  `hidden: true` los excluye también del `/v1/models` nativo.
-- Un bump de versión se hace reapuntando el alias en `config.yaml`: los
-  consumidores que invocan el alias no cambian.
-- No hay `deepseek-pro`: el Gateway no declara un tier Pro de Deepseek (solo
-  `deepseek-v4.1-flash`).
+- They are accepted as `model` in `/v1/chat/completions` and the rest of the LiteLLM
+  routes, but **do not** appear in `GET /v1/models/catalog` (nor in the picker);
+  `hidden: true` also excludes them from the native `/v1/models`.
+- A version bump is done by re-pointing the alias in `config.yaml`: the
+  consumers that invoke the alias do not change.
+- There is no `deepseek-pro`: the Gateway does not declare a Pro tier for Deepseek
+  (only `deepseek-v4.1-flash`).
 
-## Cómo arrancarlo
+## How to start it
 
 ```bash
-# 1) Credenciales (wizard interactivo; escribe en /etc/model-gateway/creds/*.cred)
+# 1) Credentials (interactive wizard; writes to /etc/model-gateway/creds/*.cred)
 pnpm creds:list
-bash scripts/manage-creds.sh        # setup: las 7 credenciales, una a una
+bash scripts/manage-creds.sh        # setup: the 7 credentials, one by one
 bash scripts/manage-creds.sh set openrouter_api_key
 
-# 2) Despliegue + unidad systemd (copia a /opt/model-gateway, crea el venv,
-#    instala, habilita, arranca en :4000 y verifica)
+# 2) Deployment + systemd unit (copies to /opt/model-gateway, creates the venv,
+#    installs, enables, starts on :4000 and verifies)
 pnpm run deploy
 
-# 3) Arranque manual desde el repo (sin systemd): crea un venv local y exporta
-#    las 7 vars a mano (o usa un CREDENTIALS_DIRECTORY falso)
+# 3) Manual start from the repo (no systemd): creates a local venv and exports
+#    the 7 vars by hand (or uses a fake CREDENTIALS_DIRECTORY)
 uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/uvicorn server:app --host 127.0.0.1 --port 4000
 ```
 
-## Redesplegar
+## Redeploy
 
 ```bash
 cd packages/model-gateway
 pnpm run deploy              # = bash scripts/deploy.sh
 ```
 
-> Usa `pnpm run deploy`, no `pnpm deploy` a secas: `deploy` es también un
-> comando nativo de pnpm y el enrutado de argumentos se vuelve confuso.
+> Use `pnpm run deploy`, not bare `pnpm deploy`: `deploy` is also a
+> native pnpm command and the argument routing gets confusing.
 
-`scripts/deploy.sh` es el **único** camino de despliegue (primera instalación y
-redeploys) y es idempotente:
+`scripts/deploy.sh` is the **only** deployment path (first install and
+redeploys) and it is idempotent:
 
-1. **Precondiciones**: los 7 `.cred` presentes, `uv` en el PATH y el árbol de
-   `packages/model-gateway` sin cambios sin commitear. Si el árbol está sucio,
-   **no aborta**: avisa, lista los cambios y pregunta «¿Desplegar de todos
-   modos? [y/N]»; con `y` sigue y con `n` (o sin respuesta) cancela antes de
-   tocar nada. `--allow-dirty` salta el aviso y la pregunta por completo
-   (despliega y lo estampa como `dirty=yes`).
-2. **Fuente**: el checkout actual, o una revisión concreta con
-   `--ref <commit|tag>` (`git archive`, no toca el worktree). Con `--ref` el
-   artefacto sale de la revisión commiteada, así que el worktree no interviene
-   y no hay guarda de árbol sucio (un rollback no se bloquea por cambios
-   locales sin commitear).
-3. **Dependencias primero**: solo `pyproject.toml` viaja a `/opt/model-gateway`
-   y se resuelven las deps en el venv. Si esto falla, el servicio sigue
-   corriendo el artefacto anterior **intacto**.
-4. **Artefacto**: `server.py`, `catalog.py`, `config.yaml`, `CONTRACT.md`,
-   `README.md` y `scripts/run-gateway.sh` a `/opt/model-gateway`, más un
-   `DEPLOYED` con `commit`, `branch`, `deployed_at` y `dirty` (también se
-   imprime al arrancar, así que `journalctl -u model-gateway` dice qué versión
-   corre).
-5. **Unidad** + `daemon-reload` + `restart` (o `enable --now` la primera vez).
-6. **Health check**: `GET /v1/models/catalog` sin bearer debe dar `401` (app
-   viva y auth enforced); con `MODEL_GATEWAY_API_KEY` exportada en el entorno,
-   además exige modelos en el catálogo. Si falla, imprime el journal y el
-   comando exacto para volver a la revisión anterior.
+1. **Preconditions**: the 7 `.cred` files present, `uv` on the PATH and the
+   `packages/model-gateway` tree without uncommitted changes. If the tree is
+   dirty, it **does not abort**: it warns, lists the changes and asks "Deploy
+   anyway? [y/N]"; with `y` it continues and with `n` (or no answer) it cancels
+   before touching anything. `--allow-dirty` skips the warning and the question
+   entirely (it deploys and stamps it as `dirty=yes`).
+2. **Source**: the current checkout, or a specific revision with
+   `--ref <commit|tag>` (`git archive`, does not touch the worktree). With `--ref`
+   the artifact comes from the committed revision, so the worktree does not take
+   part and there is no dirty-tree guard (a rollback is not blocked by local
+   uncommitted changes).
+3. **Dependencies first**: only `pyproject.toml` travels to `/opt/model-gateway`
+   and the deps are resolved in the venv. If this fails, the service keeps
+   running the previous artifact **intact**.
+4. **Artifact**: `server.py`, `catalog.py`, `config.yaml`, `CONTRACT.md`,
+   `README.md` and `scripts/run-gateway.sh` to `/opt/model-gateway`, plus a
+   `DEPLOYED` with `commit`, `branch`, `deployed_at` and `dirty` (it is also
+   printed on startup, so `journalctl -u model-gateway` says which version is
+   running).
+5. **Unit** + `daemon-reload` + `restart` (or `enable --now` the first time).
+6. **Health check**: `GET /v1/models/catalog` without a bearer must return `401`
+   (app alive and auth enforced); with `MODEL_GATEWAY_API_KEY` exported in the
+   environment, it also requires models in the catalog. If it fails, it prints the
+   journal and the exact command to go back to the previous revision.
 
-### Volver atrás
+### Rolling back
 
-No hay backups: el artefacto se regenera desde git.
+There are no backups: the artifact is regenerated from git.
 
 ```bash
-pnpm run deploy -- --ref <sha-anterior>
+pnpm run deploy -- --ref <previous-sha>
 ```
 
-El sha de lo que está corriendo vive en `/opt/model-gateway/DEPLOYED` (y en el
-journal). Si el health check falla, el propio script te lo imprime.
+The sha of what is running lives in `/opt/model-gateway/DEPLOYED` (and in the
+journal). If the health check fails, the script itself prints it for you.
 
-### Qué NO hay que reiniciar
+### What NOT to restart
 
-El chatbot y el worker no necesitan reinicio tras un redeploy del gateway: el
-catálogo del chatbot tiene TTL de 60 s y el worker lo consulta al arrancar. Sí
-hay que relanzar `pnpm run deploy` tras editar `config.yaml` (los modelos y
-contratos viven ahí, no en el proceso).
+The chatbot and the worker do not need a restart after a gateway redeploy: the
+chatbot catalog has a 60 s TTL and the worker queries it on startup. You DO
+have to run `pnpm run deploy` again after editing `config.yaml` (the models and
+contracts live there, not in the process).
 
-### Primera instalación
+### First installation
 
-`pnpm run deploy` también sirve para la primera vez: si no hay credenciales,
-aborta antes de tocar nada y te dice qué ejecutar (`scripts/manage-creds.sh`).
-No hay un script de instalación aparte a propósito: dos caminos con la misma
-lógica acaban divergiendo.
+`pnpm run deploy` also works for the first time: if there are no credentials,
+it aborts before touching anything and tells you what to run
+(`scripts/manage-creds.sh`).
+There is no separate install script on purpose: two paths with the same
+logic end up diverging.
 
-### Por qué `DynamicUser=yes`
+### Why `DynamicUser=yes`
 
-La unidad corre con un **UID transitorio** (systemd lo asigna en cada arranque)
-precisamente para que `$CREDENTIALS_DIRECTORY` no sea legible por otros
-procesos del host que compartan el usuario del operador — incluidos los agentes
-de código. Las consecuencias, ya resueltas en la unidad:
+The unit runs with a **transient UID** (systemd assigns it on every boot)
+precisely so that `$CREDENTIALS_DIRECTORY` is not readable by other host
+processes that share the operator's user — including coding
+agents. The consequences, already handled in the unit:
 
-- El proceso **no puede leer `/home/<operador>`** → de ahí el despliegue a
-  `/opt/model-gateway` y `ProtectHome=yes`.
-- `HOME` y los directorios de escritura son `StateDirectory`/`CacheDirectory`
-  (`/var/lib/model-gateway`, `/var/cache/model-gateway`), creados ya con el UID
-  transitorio como dueño.
-- `PYTHONDONTWRITEBYTECODE=1`, para no intentar escribir `__pycache__` en el
-  artefacto read-only.
-- `CONFIG_FILE_PATH=/opt/model-gateway/config.yaml`: LiteLLM lee el YAML de esa
-  variable; sin ella el proxy arrancaría sin `model_list` ni `master_key`.
+- The process **cannot read `/home/<operator>`** → hence the deployment to
+  `/opt/model-gateway` and `ProtectHome=yes`.
+- `HOME` and the writable directories are `StateDirectory`/`CacheDirectory`
+  (`/var/lib/model-gateway`, `/var/cache/model-gateway`), created already with the
+  transient UID as owner.
+- `PYTHONDONTWRITEBYTECODE=1`, so it never tries to write `__pycache__` into the
+  read-only artifact.
+- `CONFIG_FILE_PATH=/opt/model-gateway/config.yaml`: LiteLLM reads the YAML from that
+  variable; without it the proxy would start without `model_list` or `master_key`.
 
-Nada de esto impide que **root** lea las credenciales desencriptadas mientras el
-servicio corre: la garantía es frente a otros procesos no privilegiados del
-mismo usuario, no frente a un compromiso del host.
+None of this prevents **root** from reading the decrypted credentials while the
+service runs: the guarantee is against other unprivileged processes of the
+same user, not against a host compromise.
 
-## Cómo se cargan las credenciales
+## How credentials are loaded
 
-Las 7 API keys (la propia `model_gateway_api_key` + 6 proveedores) viven
-cifradas con `systemd-creds encrypt` en `/etc/model-gateway/creds/*.cred`
-(gestor: `scripts/manage-creds.sh`). La unidad systemd las desencripta a
-`$CREDENTIALS_DIRECTORY` vía `LoadCredentialEncrypted=` y
-`scripts/run-gateway.sh` exporta cada fichero a su variable de entorno en
-MAYÚSCULAS (`model_gateway_api_key` → `MODEL_GATEWAY_API_KEY`) en el arranque
-del proceso: las claves solo existen en memoria del servicio, nunca en disco
-plano ni en `.env`. El directorio del UID transitorio es `0500` y propiedad del
-propio servicio, por lo que un `cat` desde otra sesión del operador falla con
+The 7 API keys (the `model_gateway_api_key` itself + 6 providers) live
+encrypted with `systemd-creds encrypt` in `/etc/model-gateway/creds/*.cred`
+(manager: `scripts/manage-creds.sh`). The systemd unit decrypts them into
+`$CREDENTIALS_DIRECTORY` via `LoadCredentialEncrypted=` and
+`scripts/run-gateway.sh` exports each file to its environment variable in
+UPPERCASE (`model_gateway_api_key` → `MODEL_GATEWAY_API_KEY`) at process
+startup: the keys only exist in the service's memory, never on plain disk nor
+in `.env`. The transient UID's directory is `0500` and owned by the service
+itself, so a `cat` from another operator session fails with
 *permission denied*.
 
-## Por qué no hay DB
+## Why there is no DB
 
-El Gateway es stateless a propósito (ADR 0010): `config.yaml` es la única
-fuente de verdad de modelos, contratos y metadatos. No hay virtual keys, ni
-spend tracking, ni estado de sesiones: autentica por bearer compartido y enruta
-al upstream. Sin DB no hay estado que migrar, respaldar ni sincronizar entre
-entornos, y el servicio se puede recrear desde el repo en segundos.
+The Gateway is stateless on purpose (ADR 0010): `config.yaml` is the only
+source of truth for models, contracts and metadata. There are no virtual keys,
+no spend tracking, no session state: it authenticates by shared bearer and
+routes to the upstream. Without a DB there is no state to migrate, back up or
+sync between Environments, and the service can be recreated from the repo in
+seconds.
 
 ## Tests
 
 ```bash
-python3 -m pytest packages/model-gateway/tests -q   # desde la raíz del repo
+python3 -m pytest packages/model-gateway/tests -q   # from the repo root
 ```
 
-La lógica pura (catálogo, filtrado, autorización) vive en `catalog.py`,
-importable sin `litellm`/`fastapi`; `server.py` hace los imports pesados
-dentro de `create_app()`.
+The pure logic (catalog, filtering, authorization) lives in `catalog.py`,
+importable without `litellm`/`fastapi`; `server.py` does the heavy imports
+inside `create_app()`.

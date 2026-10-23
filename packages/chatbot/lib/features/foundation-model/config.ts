@@ -1,26 +1,26 @@
 /**
- * Tipos isomorfos y helpers PUROS del catálogo de modelos (ADR 0010). Sin
- * ningún import de `models`: el catálogo llega en runtime del Model Gateway
- * (`GET /v1/models/catalog`) y se pasa explícito a cada helper. Es el único
- * módulo de configuración de modelos que pueden importar los `"use client"`
- * (el kit de infraestructura está prohibido para ellos por lint).
+ * Isomorphic types and PURE helpers for the model catalog (ADR 0010). No
+ * `models` import at all: the catalog arrives at runtime from the Model Gateway
+ * (`GET /v1/models/catalog`) and is passed explicitly to each helper. It is the
+ * only model configuration module the `"use client"` files may import (the
+ * infrastructure kit is forbidden to them by lint).
  *
- * El tipo compartido `GatewayModelEntry`/`ThinkingLevel` vive en
- * `packages/config/src/gateway-contract.ts` (única copia TS del contrato;
- * ver `packages/model-gateway/CONTRACT.md`); aquí solo se re-exporta para no
- * romper los imports del chatbot.
+ * The shared `GatewayModelEntry`/`ThinkingLevel` type lives in
+ * `packages/config/src/gateway-contract.ts` (the only TS copy of the contract;
+ * see `packages/model-gateway/CONTRACT.md`); here it is only re-exported so the
+ * chatbot imports do not break.
  */
 
 import { GATEWAY_THINKING_LEVELS, type GatewayModelEntry, type ThinkingLevel } from "config/contract";
 
 export type { GatewayModelEntry, ThinkingLevel } from "config/contract";
 
-/** Libre desde el Gateway: la compañía ya no es una unión tipada. */
+/** Free-form from the Gateway: the company is no longer a typed union. */
 export type Company = string;
 
 /**
- * Id de un modelo de chat. Con el Gateway único desaparece la unión literal
- * `InvocableModelId`: la validez se valida contra el catálogo en runtime
+ * Chat model id. With the single Gateway the literal union `InvocableModelId`
+ * is gone: validity is checked against the catalog at runtime
  * (`resolveChatModelId`, `getChatConfigurationByModelId`).
  */
 export type chatModelId = string;
@@ -29,9 +29,9 @@ export const defaultWebSearchNumResults = 4;
 export const defaultRagMaxResources = 4;
 export const defaultMinRagScore = 0.5;
 
-/** Los 10 Default Model Contracts (`user_invocable: false` en el Gateway):
- * nombres estables que las features internas invocan directamente. Nunca
- * aparecen en el Model Picker (`chatModelKeys` los excluye).
+/** The 10 Default Model Contracts (`user_invocable: false` in the Gateway):
+ * stable names that internal features invoke directly. They never
+ * appear in the Model Picker (`chatModelKeys` excludes them).
  */
 export const DEFAULT_MODEL_CONTRACTS = [
   "fast-default",
@@ -58,11 +58,11 @@ export function isThinkingLevel(value: unknown): value is ThinkingLevel {
   return typeof value === "string" && (THINKING_LEVELS as string[]).includes(value);
 }
 
-/** Ids seleccionables del catálogo: los user-invocable, sin los contratos `*-default`. */
+/** Selectable catalog ids: the user-invocable ones, without the `*-default` contracts. */
 export const chatModelKeys = (catalog: GatewayModelEntry[]): chatModelId[] =>
   catalog.filter((entry) => !isContractId(entry.id)).map((entry) => entry.id);
 
-/** El modelo por defecto: la entrada `isDefault` del catálogo (o la primera seleccionable). */
+/** The default model: the catalog's `isDefault` entry (or the first selectable one). */
 export const defaultModel = (catalog: GatewayModelEntry[]): chatModelId =>
   catalog.find((entry) => entry.isDefault && !isContractId(entry.id))?.id ??
   chatModelKeys(catalog)[0]!;
@@ -117,8 +117,8 @@ export const getChatConfigurationByModelId = (
     temperature: entry.temperature ?? undefined,
     topP: entry.topP ?? undefined,
     topK: entry.topK ?? undefined,
-    // null (entradas sparse) → undefined: los consumidores caen a
-    // `config.contextWindow()` (p. ej. factory.ts, orchestration.ts).
+    // null (sparse entries) → undefined: consumers fall back to
+    // `config.contextWindow()` (e.g. factory.ts, orchestration.ts).
     contextWindow: entry.contextWindow ?? undefined,
     reasoning: entry.reasoning,
     zeroDataRetention: entry.zeroDataRetention,
@@ -127,7 +127,7 @@ export const getChatConfigurationByModelId = (
   };
 };
 
-/** Nivel de razonamiento por defecto de un modelo, según el catálogo. */
+/** A model's default reasoning level, per the catalog. */
 export const getDefaultThinkingLevel = (
   catalog: GatewayModelEntry[],
   modelId: chatModelId,
@@ -135,7 +135,7 @@ export const getDefaultThinkingLevel = (
   (getCatalogEntry(catalog, modelId).defaultThinkingLevel ??
     undefined) as ThinkingLevel | undefined;
 
-/** ¿El id existe en el catálogo (incluidos los contratos)? Validación runtime. */
+/** Does the id exist in the catalog (contracts included)? Runtime validation. */
 export const isKnownModelId = (
   catalog: GatewayModelEntry[],
   modelId: string | null | undefined,

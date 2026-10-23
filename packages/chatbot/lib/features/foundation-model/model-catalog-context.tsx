@@ -4,10 +4,10 @@ import { createContext, useContext, type ReactNode } from "react";
 import type { GatewayModelEntry } from "./config";
 
 /**
- * Runtime catálogo de modelos para componentes cliente (ADR 0010): el
- * `(chat)/layout.tsx` lo descarga en el servidor y hidrata el árbol con
- * `<ModelCatalogProvider catalog={...}>`; los hooks y componentes de UI lo
- * leen síncronamente con `useModelCatalog()`.
+ * Runtime model catalog for client components (ADR 0010): `(chat)/layout.tsx`
+ * downloads it on the server and hydrates the tree with
+ * `<ModelCatalogProvider catalog={...}>`; hooks and UI components read it
+ * synchronously with `useModelCatalog()`.
  */
 
 const ModelCatalogContext = createContext<GatewayModelEntry[] | null>(null);
@@ -27,9 +27,9 @@ export const ModelCatalogProvider: React.FC<ModelCatalogProviderProps> = ({
 );
 
 /**
- * Catálogo hidratado desde el servidor. Lanza si el árbol no está envuelto
- * en `<ModelCatalogProvider>` — el catálogo no tiene default razonable en el
- * cliente (un listado vacío rompería `defaultModel` con un error más críptico).
+ * Catalog hydrated from the server. Throws if the tree is not wrapped in
+ * `<ModelCatalogProvider>` — the catalog has no reasonable default on the
+ * client (an empty listing would break `defaultModel` with a more cryptic error).
  */
 export function useModelCatalog(): GatewayModelEntry[] {
   const catalog = useContext(ModelCatalogContext);

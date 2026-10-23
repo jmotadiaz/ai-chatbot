@@ -26,8 +26,8 @@ import type {
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
-// La configuración del Entorno llega por el bundle tipado de `packages/config`
-// (ADR 0011): no se cargan ficheros `.env.*`.
+// The Environment configuration comes from the typed `packages/config` bundle
+// (ADR 0011): no `.env.*` files are loaded.
 
 /**
  * # mode-routing eval — what it measures

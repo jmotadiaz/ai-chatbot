@@ -1,22 +1,20 @@
 import type { SettingsManager } from "@earendil-works/pi-coding-agent";
 
 /**
- * Pi deja los reintentos a nivel de provider sin configurar (0): solo
- * reintenta el turno completo cuando el error es reintentable
- * (`retry.maxRetries`, 3 por defecto). Para 5xx transitorios — OpenCode Go
- * responde 503 "Endpoint is unavailable" en ráfagas, sobre todo en los
- * modelos stealth gratis — un reintento dentro del propio request es mucho
- * más barato que re-ejecutar el turno (sin re-prompt ni eventos de
- * auto-retry), así que el worker fija un presupuesto por defecto. El
- * presupuesto del turno se suma por encima: 1+3 intentos de provider por
- * cada 1+3 intentos de sesión.
+ * Pi leaves provider-level retries unconfigured (0): it only retries the
+ * whole turn when the error is retryable (`retry.maxRetries`, 3 by default).
+ * For transient 5xx — OpenCode Go answers 503 "Endpoint is unavailable" in
+ * bursts, especially on free stealth models — a retry inside the request
+ * itself is much cheaper than re-running the turn (no re-prompt, no
+ * auto-retry events), so the worker sets a default budget. The turn budget
+ * stacks on top: 1+3 provider attempts per 1+3 session attempts.
  */
 export const DEFAULT_PROVIDER_MAX_RETRIES = 3;
 
 /**
- * Aplica el presupuesto de reintentos de provider solo si el operador no ha
- * configurado uno (`retry.provider.maxRetries` en settings.json). Un valor
- * explícito, incluido 0 para desactivarlos, se respeta tal cual.
+ * Applies the provider retry budget only if the operator has not configured
+ * one (`retry.provider.maxRetries` in settings.json). An explicit value,
+ * including 0 to disable them, is respected as is.
  */
 export function applyProviderRetryDefaults(
   settingsManager: SettingsManager,

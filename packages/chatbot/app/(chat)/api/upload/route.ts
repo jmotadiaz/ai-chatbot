@@ -7,6 +7,6 @@ export async function POST(): Promise<NextResponse> {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Deprecated: los adjuntos se gestionan localmente como data-URLs.
+  // Deprecated: attachments are managed locally as data-URLs.
   return NextResponse.json({ ok: true });
 }

@@ -4,12 +4,12 @@ import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 
 /**
- * Gate ALLOW_PROD_BUILD (ticket 06; migrado a `--allow-prod-build` por argv
- * en ADR 0011, ticket 03): `build:prod` escribe al `.next` que sirve prod
- * bajo pm2, así que exige opt-in explícito del operador/CI. El agente verifica
- * compilación con `build:verify`, que NO lo requiere.
- * Se ejercita el script real como proceso (contrato de exit code + mensaje),
- * tanto por process.argv (vía canónica) como por el env transitorio.
+ * ALLOW_PROD_BUILD gate (ticket 06; migrated to `--allow-prod-build` by argv in
+ * ADR 0011, ticket 03): `build:prod` writes to the `.next` that prod serves
+ * under pm2, so it requires an explicit opt-in from the operator/CI. The agent
+ * checks compilation with `build:verify`, which does NOT require it.
+ * The real script is exercised as a process (exit code + message contract),
+ * both through process.argv (canonical path) and through the transitional env.
  */
 const exec = promisify(execFile);
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
@@ -39,28 +39,28 @@ function strip(extra: Record<string, string | undefined>) {
   return out;
 }
 
-describe("assert-prod-build-allowed (gate de build:prod)", () => {
-  it("pasa con --allow-prod-build por process.argv (vía canónica, ADR 0011)", async () => {
+describe("assert-prod-build-allowed (build:prod gate)", () => {
+  it("passes with --allow-prod-build via process.argv (canonical path, ADR 0011)", async () => {
     const { code } = await runGate({}, ["--allow-prod-build"]);
     expect(code).toBe(0);
   }, 60_000);
 
-  it("pasa con ALLOW_PROD_BUILD=1 (transición: scripts actuales/CI)", async () => {
+  it("passes with ALLOW_PROD_BUILD=1 (transition: current scripts/CI)", async () => {
     const { code } = await runGate({ ALLOW_PROD_BUILD: "1" });
     expect(code).toBe(0);
   }, 60_000);
 
-  it("falla sin opt-in y dirige a build:verify", async () => {
+  it("fails without opt-in and points to build:verify", async () => {
     const { code, output } = await runGate({});
     expect(code).not.toBe(0);
     expect(output).toMatch(/build:verify/);
     expect(output).toMatch(/ALLOW_PROD_BUILD/);
   }, 60_000);
 
-  it("falla con valores que no son el truthy exacto (0/true/yes)", async () => {
+  it("fails with values that are not the exact truthy (0/true/yes)", async () => {
     for (const value of ["0", "true", "yes"]) {
       const { code } = await runGate({ ALLOW_PROD_BUILD: value });
-      expect(code, `ALLOW_PROD_BUILD=${value} no debe autorizar`).not.toBe(0);
+      expect(code, `ALLOW_PROD_BUILD=${value} must not authorize`).not.toBe(0);
     }
   }, 90_000);
 });

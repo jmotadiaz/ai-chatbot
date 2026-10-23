@@ -64,19 +64,19 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => gateway.listen(0, "127.0.0.1", resolve));
   const gatewayUrl = `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`;
 
-  // Reserva el puerto del worker ANTES de construir el config: la base de
-  // artifacts que ve el agente debe ser exactamente la que este transporte
-  // sirve. Se libera el socket y el transporte lo reutiliza acto seguido.
+  // Reserve the worker port BEFORE building the config: the artifacts base the
+  // agent sees must be exactly the one this transport serves. The socket is
+  // released and the transport reuses it right after.
   const reservation = createServer();
   await new Promise<void>((resolve) => reservation.listen(0, "127.0.0.1", resolve));
   const { port } = reservation.address() as AddressInfo;
   await new Promise<void>((resolve) => reservation.close(() => resolve()));
   baseUrl = `http://127.0.0.1:${port}`;
 
-  // DI del composition root (ADR 0011 §6): el transporte recibe el sandbox
-  // (rutas + credenciales del Gateway + base de artifacts) y lo registra como
-  // config de proceso para la facade y las extensiones. Ni vi.stubEnv ni
-  // process.env participan.
+  // DI of the composition root (ADR 0011 §6): the transport receives the sandbox
+  // (paths + Gateway credentials + artifacts base) and registers it as
+  // process config for the facade and the extensions. Neither vi.stubEnv nor
+  // process.env takes part.
   ctx = createTestWorkerContext({
     gatewayUrl,
     apiKey: "test-gateway-key",
@@ -206,19 +206,19 @@ describe("artifact location from config", () => {
   it("resolves the artifacts root and URL base from the injected worker config", async () => {
     const { getArtifactsBaseUrl, getArtifactsDir, resolveArtifactsBaseUrl, resolveArtifactsDir } =
       await import("../../src/runtime/paths");
-    // La config de proceso registrada por startHttpTransport apunta al sandbox
-    // (las lecturas sin override explícito ven la DI del composition root).
+    // The process config registered by startHttpTransport points at the sandbox
+    // (reads without an explicit override see the composition root's DI).
     expect(resolveArtifactsDir(ctx.workerConfig)).toBe(rootDir);
     expect(resolveArtifactsBaseUrl(ctx.workerConfig)).toBe(baseUrl);
     expect(getArtifactsDir()).toBe(rootDir);
     expect(getArtifactsBaseUrl()).toBe(baseUrl);
-    // El sandbox del test vive en el directorio temporal, nunca en el paquete.
+    // The test's sandbox lives in the temporary directory, never in the package.
     expect(rootDir.startsWith(path.join(os.tmpdir()))).toBe(true);
   });
 
-  it("falls back to the Entorno defaults without any injection", async () => {
-    // Sin overrides (y con la config de proceso reseteada), la resolución cae
-    // al Entorno de Test: URL del worker del bundle y `.pi-test/artifacts`.
+  it("falls back to the Environment defaults without any injection", async () => {
+    // Without overrides (and with the process config reset), resolution falls
+    // back to the Test Environment: the bundle's worker URL and `.pi-test/artifacts`.
     const { PACKAGE_ROOT, getArtifactsBaseUrl, getArtifactsDir } = await import(
       "../../src/runtime/paths"
     );

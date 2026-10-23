@@ -1,4 +1,4 @@
-"""Hace importable `catalog.py` (raíz del paquete) desde los tests de pytest."""
+"""Makes `catalog.py` importable (package root) from the pytest tests."""
 
 import sys
 from pathlib import Path

@@ -120,8 +120,8 @@ export const POST = withAuth(async (user, req) => {
 
       const client = new WorkerClient();
 
-      // Proveedor único Gateway: el id de Pi es el id del catálogo, validado
-      // en runtime (un id retirado no se manda al worker).
+      // Single Gateway provider: Pi's id is the catalog id, validated
+      // at runtime (a retired id is not sent to the worker).
       const piModelId = isKnownModelId(catalog, modelId) ? modelId : undefined;
       log.info("model.mapping", { from: modelId, to: piModelId });
 

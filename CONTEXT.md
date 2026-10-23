@@ -1,275 +1,275 @@
 # AI Chatbot
 
-Asistente conversacional multi-modelo con proyectos, base de conocimiento por proyecto (RAG), memoria de usuario y un worker de coding agent. El chatbot es la aplicación; el coding agent es un worker HTTP que ejecuta tareas de código y habla el protocolo AG-UI.
+Multi-model conversational assistant with projects, per-project knowledge base (RAG), user memory and a coding agent worker. The chatbot is the application; the coding agent is an HTTP worker that executes code tasks and speaks the AG-UI protocol.
 
 ## Language
 
-### Chat y modelos
+### Chats and models
 
 **Chat**:
-Un hilo de conversación persistido: la unidad de interacción del usuario con un modelo.
+A persisted conversation thread: the unit of interaction between the user and a model.
 _Avoid_: conversation, chat session
 
 **Message**:
-Una intervención dentro de un Chat, del usuario o del modelo, con partes (texto, razonamiento, herramientas).
-_Avoid_: turn (reservado al coding agent), reply
+An intervention within a Chat, from the user or the model, with parts (text, reasoning, tools).
+_Avoid_: turn (reserved for the coding agent), reply
 
 **Chat Mode**:
-Selector del comportamiento del prompt de un Chat (`auto`, context7, RAG, búsqueda web). En `auto` el Chat Mode Router elige por turno el *Resolved Chat Mode* con el que se responde (`context7`, `web` o la rama *neutral*, interna y sin herramientas) y registra decisión, latencia y coste en `Message.metadata.chatModeRouting`.
+Selector for a Chat's prompt behaviour (`auto`, context7, RAG, web search). In `auto` the Chat Mode Router chooses per turn the *Resolved Chat Mode* used to answer (`context7`, `web` or the *neutral* branch, internal and tool-free) and records decision, latency and cost in `Message.metadata.chatModeRouting`.
 _Avoid_: agent, assistant
 
 **Model**:
-Una entrada del Model Catalog.
+An entry in the Model Catalog.
 _Avoid_: foundation model, LLM
 
 **Model Configuration**:
-Modelo + parámetros (temperatura, topP, topK) resueltos para un Chat o Project.
+Model + parameters (temperature, topP, topK) resolved for a Chat or Project.
 _Avoid_: model settings
 
 **Project**:
-Contenedor de configuración compartida: system prompt, defaults de modelo y Documents.
-_Avoid_: workspace, repo (reservado a Repository)
+Container of shared configuration: system prompt, model defaults and Documents.
+_Avoid_: workspace, repo (reserved for Repository)
 
 **Model Catalog**:
-Catálogo único de Models seleccionables por el usuario, con su compañía, ventana de contexto, costes, capacidades multimodales y niveles de thinking, expuesto dinámicamente por el Model Gateway.
-_Avoid_: model registry (legado), static catalog, model list
+Single catalog of user-selectable Models, with their company, context window, costs, multimodal capabilities and thinking levels, exposed dynamically by the Model Gateway.
+_Avoid_: model registry (legacy), static catalog, model list
 
 **Compaction**:
-Proceso que resume y descarta mensajes antiguos de un Chat cuando se llena la ventana de contexto.
+Process that summarises and discards old messages of a Chat when the context window fills up.
 _Avoid_: summarization, trimming
 
 **Compaction Summary**:
-Resumen materializado que reemplaza al tramo de mensajes descartado por la Compaction.
-_Avoid_: summary (a secas), context summary
+Materialised summary that replaces the stretch of messages discarded by the Compaction.
+_Avoid_: summary (bare), context summary
 
 **Memory**:
-Hecho recordado sobre el usuario que se inyecta en los chats.
+A remembered fact about the user that is injected into chats.
 _Avoid_: user profile, preference
 
 **Extracted Memory**:
-Memory inferida por el sistema a partir de las conversaciones.
+Memory inferred by the system from conversations.
 _Avoid_: implicit memory
 
 **Explicit Memory**:
-Memory escrita directamente por el usuario.
+Memory written directly by the user.
 _Avoid_: manual memory
 
 **Attachment**:
-Fichero adjunto a un Message. No forma parte de la Project Knowledge Base salvo que se ingeste como Document.
+File attached to a Message. It is not part of the Project Knowledge Base unless it is ingested as a Document.
 _Avoid_: file, upload
 
 **Prompt Refiner**:
-Reescritura automática del prompt del usuario antes de enviarlo, activable por Project.
+Automatic rewriting of the user's prompt before it is sent, enabled per Project.
 _Avoid_: meta-prompt, prompt enhancer
 
 **Hub**:
-Panel que ejecuta varios chats en paralelo para compararlos.
+Panel that runs several chats in parallel so they can be compared.
 _Avoid_: playground, multi-chat
 
 **Hub Instance**:
-Columna efímera del Hub (modelo + Chat Mode) que aún no es un Chat.
+Ephemeral Hub column (model + Chat Mode) that is not yet a Chat.
 _Avoid_: hub chat, instance
 
 **Image Editor**:
-Feature que analiza y regenera una imagen del usuario.
-_Avoid_: photo editor, inpainting (detalle técnico)
+Feature that analyses and regenerates an image from the user.
+_Avoid_: photo editor, inpainting (technical detail)
 
-### Inferencia (Model Gateway)
+### Inference (Model Gateway)
 
 **Model Gateway**:
-Servicio autónomo de infraestructura que centraliza el acceso a todos los proveedores de modelos fundacionales de la máquina, custodia sus credenciales, sirve el Model Catalog activo y resuelve los Default Model Contracts.
-_Avoid_: AI gateway (a secas, ambiguo con proveedores upstream), proxy, Inference Kit (retirado)
+Standalone infrastructure service that centralises access to all the foundation-model providers on the machine, custodies their credentials, serves the active Model Catalog and resolves the Default Model Contracts.
+_Avoid_: AI gateway (bare, ambiguous with upstream providers), proxy, Inference Kit (retired)
 
 **Default Model Contract**:
-Identificador de modelo estable expuesto por el Model Gateway (`fast-default`, `flash-default`, `vision-default`, `reasoning-default`, `free-default`, `image-default`, `embedding-default`, `rerank-default`, `decision-default`, `tts-default`) para operaciones internas no seleccionables por el usuario.
-_Avoid_: model role (retirado), internal model, hardcoded model
+Stable model identifier exposed by the Model Gateway (`fast-default`, `flash-default`, `vision-default`, `reasoning-default`, `free-default`, `image-default`, `embedding-default`, `rerank-default`, `decision-default`, `tts-default`) for internal operations not selectable by the user.
+_Avoid_: model role (retired), internal model, hardcoded model
 
 **Decision**:
-Operación de inferencia que resuelve una o varias preguntas de elección con conjunto cerrado de opciones y devuelve una provenance genérica (choice, confidence, probabilities, modelId, provider, latencia, coste) separada del resultado de dominio de quien la usa.
-_Avoid_: routing decision, classification (resultados de dominio de un consumidor, no esta operación)
+Inference operation that resolves one or more choice questions with a closed set of options and returns a generic provenance (choice, confidence, probabilities, modelId, provider, latency, cost) separate from the domain result of its consumer.
+_Avoid_: routing decision, classification (a consumer's domain results, not this operation)
 
 **Mock Model Gateway**:
-Servidor HTTP del Entorno de Test que suplanta al Model Gateway por configuración de entorno, sirviendo un Model Catalog definido directamente por capacidades de prueba y respuestas deterministas.
+HTTP server of the Test Environment that stands in for the Model Gateway through environment configuration, serving a Model Catalog defined directly by test capabilities and deterministic responses.
 _Avoid_: mock registry, test mode flag, in-memory mock
 
-### Conocimiento (RAG)
+### Knowledge (RAG)
 
 **Document**:
-Contenido ingestado (URL o markdown) que alimenta la búsqueda RAG.
+Ingested content (URL or markdown) that feeds RAG search.
 _Avoid_: resource, knowledge item
 
 **Project Knowledge Base**:
-Conjunto de Documents asociados a un Project, sobre el que se realiza la búsqueda.
-_Avoid_: corpus, knowledge base (a secas), library
+Set of Documents associated with a Project, over which the search is performed.
+_Avoid_: corpus, knowledge base (bare), library
 
 **Parent Chunk**:
-Fragmento grande de un Document que aporta contexto al recuperarse.
-_Avoid_: chunk (a secas)
+Large fragment of a Document that provides context when retrieved.
+_Avoid_: chunk (bare)
 
 **Child Chunk**:
-Fragmento pequeño de un Document que se embebe y es el que se busca.
+Small fragment of a Document that is embedded and is the one that gets searched.
 _Avoid_: embedding chunk
 
 **Hybrid Search**:
-Búsqueda que combina Semantic Search y Keyword Search.
-_Avoid_: vector search (a secas)
+Search that combines Semantic Search and Keyword Search.
+_Avoid_: vector search (bare)
 
 **Semantic Search**:
-Búsqueda por similaridad de embeddings de Child Chunks.
+Search by similarity of Child Chunk embeddings.
 _Avoid_: vector search, cosine search
 
 **Keyword Search**:
-Búsqueda léxica full-text sobre los Child Chunks.
+Full-text lexical search over the Child Chunks.
 _Avoid_: full-text search, tsvector search
 
 **Rerank**:
-Reordenación de los candidatos de la Hybrid Search por relevancia antes de devolverlos.
+Reordering of the Hybrid Search candidates by relevance before they are returned.
 _Avoid_: reordering, scoring
 
 **Similarity Threshold**:
-Porcentaje mínimo de similitud para que un Child Chunk se devuelva.
+Minimum similarity percentage for a Child Chunk to be returned.
 _Avoid_: min score, cutoff
 
 **Source**:
-Cita mostrada en la UI que apunta al Document del que salió una respuesta.
+Citation shown in the UI that points to the Document an answer came from.
 _Avoid_: reference, citation
 
 ### English Helper
 
 **English Helper**:
-Asistente de traducción y gramática con clasificación previa del texto.
+Translation and grammar assistant with prior classification of the text.
 _Avoid_: english feature, translator
 
 **Audience**:
-Clasificación del destinatario previsto de un texto (público general, profesionales, equipo interno, partners, ejecutivos/inversores).
+Classification of the intended recipient of a text (general public, professionals, internal team, partners, executives/investors).
 _Avoid_: reader, target
 
 **Domain**:
-Clasificación del área temática de un texto, elegida de un conjunto cerrado: software (desarrollo, devops, datos/IA, seguridad), legal, médico, finanzas, marketing y académico. Admite "ninguno de estos", en cuyo caso el Domain no interviene.
+Classification of the subject area of a text, chosen from a closed set: software (development, devops, data/AI, security), legal, medical, finance, marketing and academic. It accepts "none of these", in which case the Domain does not take part.
 _Avoid_: topic, subject, subdomain
 
 **Direction**:
-Par de idiomas origen→destino de una Translation, limitado a dos rutas fijas: español→inglés (UK) e inglés→español (España).
+Source→target language pair of a Translation, limited to two fixed routes: Spanish→English (UK) and English→Spanish (Spain).
 _Avoid_: language pair, source/target languages
 
 **Grammar Check**:
-Corrección gramatical de un texto, con el texto corregido y las razones de cada cambio.
+Grammar correction of a text, with the corrected text and the reasons for each change.
 _Avoid_: proofread, correction
 
 **Translation**:
-Traducción de un texto aplicando las clasificaciones de Audience, Domain (cuando aplica) y Direction.
-_Avoid_: translate (verbo), localization
+Translation of a text applying the Audience, Domain (when applicable) and Direction classifications.
+_Avoid_: translate (verb), localization
 
 ### Coding Agent
 
 **Coding Agent**:
-Sistema que ejecuta tareas de edición de código sobre un Repository y reporta su progreso en un Chat. Abarca Coding Agent Worker y Coding Agent Client.
+System that executes code-editing tasks on a Repository and reports its progress in a Chat. It spans the Coding Agent Worker and the Coding Agent Client.
 _Avoid_: code agent, Pi
 
 **Coding Agent Worker**:
-Proceso HTTP que gestiona Coding Agent Sessions: envuelve el runtime del SDK, expone /rpc y habla el protocolo AG-UI.
-_Avoid_: backend, service, worker (a secas)
+HTTP process that manages Coding Agent Sessions: it wraps the SDK runtime, exposes /rpc and speaks the AG-UI protocol.
+_Avoid_: backend, service, worker (bare)
 
 **Coding Agent Client**:
-Código del chatbot que conecta la UI con el Coding Agent Worker. Se compone del Coding Agent UI y del Coding Agent Bridge.
-_Avoid_: bridge o UI (a secas), proxy
+Chatbot code that connects the UI with the Coding Agent Worker. It is made up of the Coding Agent UI and the Coding Agent Bridge.
+_Avoid_: bridge or UI (bare), proxy
 
 **Coding Agent UI**:
-Parte del Coding Agent Client que renderiza y gestiona el estado de las Coding Agent Sessions en el Chat: hooks, session store, skill commands.
+Part of the Coding Agent Client that renders and manages the state of Coding Agent Sessions in the Chat: hooks, session store, skill commands.
 _Avoid_: agent components
 
 **Coding Agent Bridge**:
-Parte del Coding Agent Client que transporta eventos AG-UI entre el Coding Agent Worker y el Coding Agent UI: rutas API y stream relay.
+Part of the Coding Agent Client that transports AG-UI events between the Coding Agent Worker and the Coding Agent UI: API routes and stream relay.
 _Avoid_: relay, proxy
 
 **Coding Agent Session**:
-Sesión gestionada por el Coding Agent Worker y expuesta al usuario a través del Coding Agent Client: la suma de sus Turns, con estado entre ellos.
+Session managed by the Coding Agent Worker and exposed to the user through the Coding Agent Client: the sum of its Turns, with state between them.
 _Avoid_: agent session, run
 
 **Turn**:
-Un user message inicial más todas las operaciones del asistente que responde, incluidos los Mensajes en Espera y Steerings inyectados en curso, hasta que el agente para o se aborta.
-_Avoid_: run (sinónimo protocolar: eventos RUN_* de AG-UI), step, model call
+An initial user message plus all the operations of the assistant that answers, including the Pending Messages and Steerings injected while in flight, until the agent stops or is aborted.
+_Avoid_: run (protocol-level synonym: AG-UI RUN_* events), step, model call
 
-**Mensaje en Espera**:
-Instrucción de texto encolada durante un Turn y visible como chip sobre el textarea. Editable, eliminable y promocionable a Steering.
-_Avoid_: borrador, cola local, followUp (término del SDK)
+**Pending Message**:
+Text instruction queued during a Turn and visible as a chip above the textarea. Editable, removable and promotable to a Steering.
+_Avoid_: draft, local queue, followUp (SDK term)
 
 **Steering**:
-Promoción de un Mensaje en Espera para inyectarlo en el siguiente request del Turn activo, sin abortar las tools en curso.
-_Avoid_: followUp (fase previa), interrupción, cancelación
+Promotion of a Pending Message so it is injected into the next request of the active Turn, without aborting the tools in flight.
+_Avoid_: followUp (earlier phase), interruption, cancellation
 
 **File Browser**:
-Vista del Coding Agent UI que lista y previsualiza los ficheros de un Repository: árbol, cambios sin commit y diff por fichero, con comentarios por línea.
-_Avoid_: explorador, file explorer
+View of the Coding Agent UI that lists and previews the files of a Repository: tree, uncommitted changes and per-file diff, with line comments.
+_Avoid_: explorer, file explorer
 
 **File Reference**:
-Enlace Markdown `file:ruta` que emite el Coding Agent para señalar un fichero del Repository; el File Browser lo convierte en navegación.
-_Avoid_: file link, referencia de fichero
+Markdown link `file:ruta` that the Coding Agent emits to point at a file in the Repository; the File Browser turns it into navigation.
+_Avoid_: file link, file reference
 
 **Note Link**:
-Enlace Markdown relativo a un fichero `.md` del Repository (ej. `[X](<../personas/Chus.md>)`), resuelto contra el directorio del fichero que lo contiene; el File Browser lo convierte en navegación. Los wikilinks `[[...]]` no son Note Links.
-_Avoid_: wikilink, relative link (a secas)
+Markdown link relative to an `.md` file in the Repository (e.g. `[X](<../personas/Chus.md>)`), resolved against the directory of the file that contains it; the File Browser turns it into navigation. `[[...]]` wikilinks are not Note Links.
+_Avoid_: wikilink, relative link (bare)
 
 **Repository**:
-Repositorio de código sobre el que opera una Coding Agent Session.
-_Avoid_: project (reservado), repo path
+Code repository on which a Coding Agent Session operates.
+_Avoid_: project (reserved), repo path
 
 **Subagent**:
-Coding Agent Session hija, despachada para una tarea acotada.
+Child Coding Agent Session, dispatched for a bounded task.
 _Avoid_: child session, generic worker
 
 **Subagent Bridge**:
-Mecanismo del Coding Agent Worker que conecta una Coding Agent Session con sus Subagents.
-_Avoid_: bridge (a secas), collector
+Mechanism of the Coding Agent Worker that connects a Coding Agent Session with its Subagents.
+_Avoid_: bridge (bare), collector
 
 **Skill**:
-Capacidad o conjunto de instrucciones cargable del Coding Agent, invocable por el usuario.
+Capability or set of instructions the Coding Agent can load, invocable by the user.
 _Avoid_: extension, plugin
 
 **Prompty**:
-Plantilla parametrizable de prompt para el Coding Agent (formato .prompty). Plural: Prompties.
+Parameterisable prompt template for the Coding Agent (.prompty format). Plural: Prompties.
 _Avoid_: prompt template, promptie (singular)
 
-### Entornos de ejecución
+### Execution Environments
 
-**Entorno**:
-Combinación aislada de base de datos, runtime del Coding Agent y configuración tipada (`config.{prod,dev,test}.ts` + `secrets.{prod,dev,test}.ts`) que permite operar sin interferir en otro Entorno, seleccionada por argumento de proceso (`--env=prod|dev|test`) o enlace de compilación del bundler sin variables de entorno heredables.
+**Environment**:
+Isolated combination of database, Coding Agent runtime and typed configuration (`config.{prod,dev,test}.ts` + `secrets.{prod,dev,test}.ts`) that allows operating without interfering with another Environment, selected by a process argument (`--env=prod|dev|test`) or a bundler compile-time alias, with no inheritable environment variables.
 _Avoid_: env, environment, stage, target
 
-**Entorno de Test**:
-Entorno efímero usado exclusivamente para tests e2e, con su propia base de datos y runtime Pi efímero.
+**Test Environment**:
+Ephemeral Environment used exclusively for e2e tests, with its own database and an ephemeral Runtime Pi.
 _Avoid_: test env, e2e env
 
-**Entorno de Desarrollo**:
-Entorno persistente para desarrollo local, con su propia base de datos, su propio runtime Pi y un Usuario de Test pre-seedeado.
+**Development Environment**:
+Persistent Environment for local development, with its own database, its own Runtime Pi and a pre-seeded Test User.
 _Avoid_: dev env, local env
 
-**Entorno de Producción**:
-Entorno persistente que sirve tráfico real, con su propia base de datos y su propio runtime Pi; es el único que se levanta vía pm2 (comando `preview`, ADR 0003).
+**Production Environment**:
+Persistent Environment that serves real traffic, with its own database and its own Runtime Pi; it is the only one brought up via pm2 (`preview` command, ADR 0003).
 _Avoid_: prod env, live env
 
 **Runtime Pi**:
-Directorio y artefactos del SDK de Pi (agent dir, sessions, artifacts, models.json, auth.json, packages) que pertenecen a un Entorno. No se comparte entre Entornos.
-_Avoid_: pi runtime (a secas), agent dir (a secas)
+Directory and artifacts of the Pi SDK (agent dir, sessions, artifacts, models.json, auth.json, packages) that belong to an Environment. It is not shared between Environments.
+_Avoid_: pi runtime (bare), agent dir (bare)
 
-**Usuario de Test**:
-Identidad determinística (`test@test.com` / `123456`) que solo existe en los Entornos de Test y Desarrollo para pruebas locales y e2e.
+**Test User**:
+Deterministic identity (`test@test.com` / `123456`) that exists only in the Test and Development Environments for local and e2e testing.
 _Avoid_: seed user, mock user
 
 **Build**:
-Fase de compilación y empaquetado de artefactos estáticos (.next para el chatbot, dist/ para el worker) que aplica exclusivamente al Entorno de Producción. Los Entornos de Desarrollo y Test carecen de fase de build (compilan JIT en memoria).
-_Avoid_: build de desarrollo, build:dev, dev bundle
+Compilation and packaging phase for static artifacts (.next for the chatbot, dist/ for the worker) that applies exclusively to the Production Environment. The Development and Test Environments have no build phase (they compile JIT in memory).
+_Avoid_: dev build, build:dev, dev bundle
 
-### Identidad y acceso
+### Identity and access
 
 **User**:
-Identidad con email y contraseña que posee Chats, Projects, Documents, Memories y Personal API Keys.
+Identity with email and password that owns Chats, Projects, Documents, Memories and Personal API Keys.
 _Avoid_: account, customer
 
 **Personal API Key**:
-Credencial propia de un User para acceso programático a sus datos.
-_Avoid_: API key (a secas), third-party key
+A User's own credential for programmatic access to their data.
+_Avoid_: API key (bare), third-party key
 
 **Built-in MCP Server**:
-Servidor MCP incluido en el producto que expone la recuperación de la Project Knowledge Base a clientes externos autenticados con una Personal API Key.
-_Avoid_: MCP server (a secas), knowledge server
+MCP server included in the product that exposes Project Knowledge Base retrieval to external clients authenticated with a Personal API Key.
+_Avoid_: MCP server (bare), knowledge server

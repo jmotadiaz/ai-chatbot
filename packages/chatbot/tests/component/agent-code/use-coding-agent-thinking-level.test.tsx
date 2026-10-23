@@ -35,8 +35,8 @@ describe("useCodingAgentSessionThinkingLevel", () => {
       }),
     );
 
-    // Sin esperar al worker: es lo que hace usable el control en una sesión
-    // nueva, antes del primer mensaje.
+    // Without waiting for the worker: that is what makes the control usable
+    // in a new session, before the first message.
     expect(result.current.level).toBe("xhigh");
   });
 
@@ -91,8 +91,8 @@ describe("useCodingAgentSessionThinkingLevel", () => {
     rerender({ modelId: "Kimi K2.7 Code", defaultLevel: "high" as ThinkingLevel });
 
     expect(result.current.level).toBe("high");
-    // El nivel de la sesión es del modelo anterior: no hay nada que volver a
-    // pedir, el worker aplicará este default al enviar.
+    // The session's level belongs to the previous model: there is nothing to
+    // request again, the worker will apply this default on send.
     expect(requestCount).toBe(1);
   });
 

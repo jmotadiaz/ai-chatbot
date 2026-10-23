@@ -1,22 +1,23 @@
 /**
- * Catálogo de test del Mock Model Gateway (ADR 0010, ticket 02).
+ * Test catalog of the Mock Model Gateway (ADR 0010, ticket 02).
  *
- * A diferencia del catálogo real (LiteLLM `config.yaml` → modelos comerciales),
- * aquí las entradas SON las capacidades que los tests necesitan: el id es el
- * alias de comportamiento y no hay ningún mapa de indirección hacia ids
- * comerciales. El schema de cada entrada es exactamente el `GatewayModelEntry`
- * de `packages/config/src/gateway-contract.ts` (ver
- * `packages/model-gateway/CONTRACT.md`, que espeja la spec §2.2):
- * `GET /v1/models/catalog` filtra en servidor las user-invocables (las 7 de
- * capacidad) y las internas (`*-default`) solo salen con `?include_internal=true`.
+ * Unlike the real catalog (LiteLLM `config.yaml` → commercial models), here the
+ * entries ARE the capabilities the tests need: the id is the behavior alias and
+ * there is no indirection map towards commercial ids. The schema of each entry
+ * is exactly the `GatewayModelEntry` from
+ * `packages/config/src/gateway-contract.ts` (see
+ * `packages/model-gateway/CONTRACT.md`, which mirrors spec §2.2):
+ * `GET /v1/models/catalog` filters the user-invocable ones on the server (the 7
+ * capability ones) and the internal ones (`*-default`) only come out with
+ * `?include_internal=true`.
  */
 
 import type { GatewayModelEntry } from "config";
 
-/** Entrada del catálogo con el schema exacto del contrato compartido (§1). */
+/** Catalog entry with the exact schema of the shared contract (§1). */
 export type MockCatalogEntry = GatewayModelEntry;
 
-/** Entrada base determinista: los tests solo se fijan en las propiedades que assertan. */
+/** Deterministic base entry: the tests only look at the properties they assert. */
 const entry = (overrides: Partial<MockCatalogEntry> & { id: string }): MockCatalogEntry => ({
   company: "mock",
   isDefault: false,
@@ -36,14 +37,14 @@ const entry = (overrides: Partial<MockCatalogEntry> & { id: string }): MockCatal
 });
 
 /**
- * Los 7 modelos user-invocable del catálogo de test. Invariantes que los e2e
- * consumen directamente (sin capa de alias — los ids SON las capacidades):
- * - `basicChat` es el `isDefault` (y su temperature 0.6 difiere de la de
- *   `alwaysRefuses` — settings.spec cambia de modelo y espera otro valor).
- * - `canSeeImages` declara `supportedFiles: ["img"]` (attachments.spec).
- * - `canProduceReasoning` declara `reasoning: true` + thinking levels.
- * - `canExecuteTools` y `failsMidStream` no necesitan flags de catálogo: su
- *   comportamiento vive en el handler de `/v1/chat/completions`.
+ * The 7 user-invocable models of the test catalog. Invariants the e2e consume
+ * directly (no alias layer — the ids ARE the capabilities):
+ * - `basicChat` is the `isDefault` one (and its temperature 0.6 differs from
+ *   `alwaysRefuses`'s — settings.spec switches model and expects another value).
+ * - `canSeeImages` declares `supportedFiles: ["img"]` (attachments.spec).
+ * - `canProduceReasoning` declares `reasoning: true` + thinking levels.
+ * - `canExecuteTools` and `failsMidStream` need no catalog flags: their
+ *   behavior lives in the `/v1/chat/completions` handler.
  */
 export const TEST_MODELS: MockCatalogEntry[] = [
   entry({ id: "basicChat", isDefault: true }),
@@ -61,9 +62,9 @@ export const TEST_MODELS: MockCatalogEntry[] = [
 ];
 
 /**
- * Los Default Model Contracts (spec §2.4): `user_invocable: false` en el
- * Gateway real, así que el mock también los oculta del listado por defecto.
- * Se aceptan como `model` en `/v1/chat/completions` y compañía siempre.
+ * The Default Model Contracts (spec §2.4): `user_invocable: false` in the real
+ * Gateway, so the mock hides them from the default listing as well. They are
+ * always accepted as `model` in `/v1/chat/completions` and friends.
  */
 export const TEST_INTERNAL_MODELS: MockCatalogEntry[] = [
   "fast-default",

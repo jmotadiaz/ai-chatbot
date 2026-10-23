@@ -14,10 +14,10 @@ test.describe("Project Chat", () => {
 
   test("3.1 Standard Project Chat", async ({ db, page }) => {
     const title = "Research Assistant";
-    // Id de capacidad del catálogo del Mock Model Gateway (ADR 0010): los
-    // specs E2E ya no usan ids comerciales del catálogo estático (borrado).
-    // El mock ecía el id pedido en la respuesta "Hello, I'm <model>",
-    // así que el aserto verifica el eco del id seleccionado.
+    // Capability id from the Mock Model Gateway catalog (ADR 0010): the E2E
+    // specs no longer use commercial ids from the static catalog (deleted).
+    // The mock echoes the requested id in the "Hello, I'm <model>" response,
+    // so the assertion checks the echo of the selected id.
     const expectedResponse = "Hello, I'm basicChat";
 
     await db.addProjects([
@@ -69,8 +69,8 @@ test.describe("Project Chat", () => {
     expect.soft(userMessages.length).toBe(0);
   });
 
-  // FIXME(e2e, 2026-09-02): flaky — waitFor de la vista tab en corridas paralelas
-  // (pasó en re-run aislado; timing de hidratación, no del entorno).
+  // FIXME(e2e, 2026-09-02): flaky — waitFor of the tab view in parallel runs
+  // (it happened in an isolated re-run; hydration timing, not the environment).
   test.fixme("3.3 'Test Chat' in Configuration View", async () => {
     await projectPage.gotoAdd();
     await projectPage.ensureSidebarClosed();

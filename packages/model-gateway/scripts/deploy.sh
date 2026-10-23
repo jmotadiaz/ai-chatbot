@@ -1,34 +1,34 @@
 #!/usr/bin/env bash
-# Despliega (o redespliega) el Model Gateway como unidad systemd endurecida.
+# Deploys (or redeploys) the Model Gateway as a hardened systemd unit.
 #
-# Versión mínima: copiar artefacto, dependencias, unidad, reinicio y verificar.
-# Sin backups ni rollback automático — volver atrás es `--ref <sha-anterior>`,
-# y el sha anterior queda impreso si el arranque falla.
+# Minimal version: copy the artifact, dependencies, unit, restart and verify.
+# No backups, no automatic rollback — going back is `--ref <previous-sha>`,
+# and the previous sha is printed if the startup fails.
 #
-# Orden (importa):
-#   1. Precondiciones (credenciales, `uv`, árbol del paquete). Si el árbol
-#      tiene cambios sin commitear, AVISA y pregunta: con `y` sigue, con `n`
-#      (o sin respuesta) cancela. `--allow-dirty` salta el aviso y la
-#      pregunta (despliega y lo estampa como dirty=yes).
-#   2. Fuente: checkout actual o `--ref <commit|tag>` (`git archive`, sin tocar
-#      el worktree). Con `--ref` el worktree no interviene: la revisión
-#      desplegada es la commiteada, así que no hay guarda de árbol sucio.
-#   3. Solo `pyproject.toml` a /opt y dependencias en el venv. Si esto falla,
-#      el servicio sigue corriendo el código anterior intacto.
-#   4. Resto del artefacto + sello `DEPLOYED` (commit, rama, fecha, dirty).
-#   5. Unidad + daemon-reload + restart (o enable --now la primera vez).
-#   6. Health check: 401 sin bearer = app viva y auth enforced; si hay
-#      MODEL_GATEWAY_API_KEY en el entorno, además exige modelos.
+# Order (it matters):
+#   1. Preconditions (credentials, `uv`, package tree). If the tree has
+#      uncommitted changes, it WARNS and asks: with `y` it continues, with `n`
+#      (or no answer) it cancels. `--allow-dirty` skips the warning and the
+#      question (it deploys and stamps it as dirty=yes).
+#   2. Source: current checkout or `--ref <commit|tag>` (`git archive`, without
+#      touching the worktree). With `--ref` the worktree does not take part: the
+#      deployed revision is the committed one, so there is no dirty-tree guard.
+#   3. Only `pyproject.toml` to /opt and dependencies in the venv. If this fails,
+#      the service keeps running the previous code intact.
+#   4. Rest of the artifact + `DEPLOYED` stamp (commit, branch, date, dirty).
+#   5. Unit + daemon-reload + restart (or enable --now the first time).
+#   6. Health check: 401 without bearer = app alive and auth enforced; if
+#      MODEL_GATEWAY_API_KEY is in the environment, it also requires models.
 #
-# Uso:
-#   scripts/deploy.sh                    # despliega el checkout actual
-#   scripts/deploy.sh --ref HEAD~1       # despliega esa revisión (rollback por ref)
-#   scripts/deploy.sh --allow-dirty      # despliega con cambios sin commitear, sin preguntar
-#   scripts/deploy.sh --no-health-check  # sin verificación post-arranque
+# Usage:
+#   scripts/deploy.sh                    # deploys the current checkout
+#   scripts/deploy.sh --ref HEAD~1       # deploys that revision (rollback by ref)
+#   scripts/deploy.sh --allow-dirty      # deploys with uncommitted changes, without asking
+#   scripts/deploy.sh --no-health-check  # without the post-start verification
 #
-# Por qué copia a /opt: la unidad corre con DynamicUser (UID transitorio) y
-# ProtectHome=yes, así que no puede leer /home/<operador>. /opt/model-gateway
-# es el artefacto que ejecuta el servicio; el repo sigue siendo la fuente.
+# Why it copies to /opt: the unit runs with DynamicUser (transient UID) and
+# ProtectHome=yes, so it cannot read /home/<operator>. /opt/model-gateway
+# is the artifact the service runs; the repo remains the source.
 set -euo pipefail
 
 PKG_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -51,19 +51,19 @@ die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --ref) [[ $# -ge 2 ]] || die "--ref requiere un valor"; REF="$2"; shift 2 ;;
+    --ref) [[ $# -ge 2 ]] || die "--ref requires a value"; REF="$2"; shift 2 ;;
     --ref=*) REF="${1#--ref=}"; shift ;;
     --allow-dirty) ALLOW_DIRTY=1; shift ;;
     --no-health-check) HEALTH_CHECK=0; shift ;;
     -h|--help) usage; exit 0 ;;
-    *) die "argumento inesperado: $1 (¿querías --ref $1?)" ;;
+    *) die "unexpected argument: $1 (did you mean --ref $1?)" ;;
   esac
 done
 
 if [[ $EUID -eq 0 ]]; then SUDO=(); else SUDO=(sudo); fi
-command -v curl >/dev/null 2>&1 || die "falta curl (health check)"
+command -v curl >/dev/null 2>&1 || die "curl is missing (health check)"
 
-# 401 sin bearer = FastAPI en pie y auth enforced; 200 solo con key válida.
+# 401 without bearer = FastAPI is up and auth enforced; 200 only with a valid key.
 wait_http() {
   local code
   for _ in $(seq 1 30); do
@@ -76,36 +76,36 @@ wait_http() {
 
 health_check() {
   if [[ "$HEALTH_CHECK" -eq 0 ]]; then
-    log "health check omitido (--no-health-check)"
+    log "health check skipped (--no-health-check)"
     return 0
   fi
-  wait_http || { echo "error: $SERVICE no responde en $HEALTH_URL" >&2; return 1; }
+  wait_http || { echo "error: $SERVICE does not respond at $HEALTH_URL" >&2; return 1; }
   if [[ -n "${MODEL_GATEWAY_API_KEY:-}" ]]; then
     local body models
     body="$(curl -s -m 5 -H "Authorization: Bearer $MODEL_GATEWAY_API_KEY" "$HEALTH_URL")"
     models="$(printf '%s' "$body" | grep -o '"id"' | wc -l | tr -d ' ')"
     if [[ "$models" -lt 1 ]]; then
-      echo "error: el catálogo autenticado no devolvió modelos: ${body:0:200}" >&2
+      echo "error: the authenticated catalog returned no models: ${body:0:200}" >&2
       return 1
     fi
-    log "catálogo OK: $models modelos"
+    log "catalog OK: $models models"
   else
-    log "sin MODEL_GATEWAY_API_KEY en el entorno: solo comprobé 401 (liveness + auth)"
+    log "no MODEL_GATEWAY_API_KEY in the environment: only checked 401 (liveness + auth)"
   fi
 }
 
 install_dependencies() {
-  command -v uv >/dev/null 2>&1 || die "falta 'uv' (pipx install uv): lo usamos para el venv con Python $PYTHON_VERSION"
+  command -v uv >/dev/null 2>&1 || die "'uv' is missing (pipx install uv): it is used for the venv with Python $PYTHON_VERSION"
   local uv_bin; uv_bin="$(command -v uv)"
   "${SUDO[@]}" install -d -m 0755 "$DEST"
-  # Solo el manifiesto: si las deps fallan, el artefacto anterior sigue intacto.
+  # Only the manifest: if the deps fail, the previous artifact stays intact.
   "${SUDO[@]}" install -m 0644 "$SRC/pyproject.toml" "$DEST/pyproject.toml"
   if [[ ! -x "$DEST/.venv/bin/uvicorn" ]]; then
-    log "creando venv ($DEST/.venv, Python $PYTHON_VERSION)"
+    log "creating venv ($DEST/.venv, Python $PYTHON_VERSION)"
     "${SUDO[@]}" env "PATH=$PATH" UV_PYTHON_INSTALL_DIR="$DEST/.python" \
       "$uv_bin" venv --python "$PYTHON_VERSION" "$DEST/.venv"
   fi
-  log "instalando dependencias"
+  log "installing dependencies"
   "${SUDO[@]}" env "PATH=$PATH" UV_CACHE_DIR=/var/cache/uv \
     "$uv_bin" pip install --quiet --python "$DEST/.venv/bin/python" "$DEST"
 }
@@ -130,26 +130,26 @@ install_unit() {
 
 restart_service() {
   if systemctl is-enabled --quiet "$SERVICE" 2>/dev/null; then
-    log "reiniciando $SERVICE"
+    log "restarting $SERVICE"
     "${SUDO[@]}" systemctl restart "$SERVICE"
   else
-    log "habilitando y arrancando $SERVICE"
+    log "enabling and starting $SERVICE"
     "${SUDO[@]}" systemctl enable --now "$SERVICE"
   fi
 }
 
 # --------------------------------------------------------------- prechecks ----
 compgen -G "/etc/model-gateway/creds/*.cred" >/dev/null 2>&1 \
-  || die "faltan credenciales en /etc/model-gateway/creds (bash $PKG_DIR/scripts/manage-creds.sh)"
+  || die "missing credentials in /etc/model-gateway/creds (bash $PKG_DIR/scripts/manage-creds.sh)"
 
 DIRTY="no"
 if [[ -z "$REF" ]]; then
-  # Con `--ref` el artefacto sale de `git archive` de una revisión commiteada:
-  # el worktree no interviene, así que la guarda de árbol sucio no aplica.
+  # With `--ref` the artifact comes from `git archive` of a committed revision:
+  # the worktree does not take part, so the dirty-tree guard does not apply.
   # shellcheck source=scripts/lib/dirty-guard.sh
   source "$SCRIPT_DIR/lib/dirty-guard.sh"
   if ! dirty_guard_confirm "$PKG_DIR" "$PKG_REL" "$ALLOW_DIRTY"; then
-    die "despliegue cancelado: hay cambios sin commitear en $PKG_REL (commitea, usa --allow-dirty o responde 'y' para desplegar así)"
+    die "deploy cancelled: there are uncommitted changes in $PKG_REL (commit, use --allow-dirty or answer 'y' to deploy anyway)"
   fi
   DIRTY="${DIRTY_GUARD_DIRTY:-no}"
 fi
@@ -159,23 +159,23 @@ BRANCH="$(git -C "$PKG_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unkn
 UTC_NOW="$(date -u +%FT%TZ)"
 PREV_DEPLOYED="$(cat "$DEST/DEPLOYED" 2>/dev/null || true)"
 
-# Materializa la fuente: checkout actual o una revisión concreta.
+# Materializes the source: current checkout or a specific revision.
 TMP_DIR=""
 cleanup() { if [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]]; then rm -rf "$TMP_DIR"; fi; }
 trap cleanup EXIT
 
 if [[ -n "$REF" ]]; then
-  git -C "$PKG_DIR" rev-parse --verify --quiet "$REF^{commit}" >/dev/null || die "ref desconocida: $REF"
+  git -C "$PKG_DIR" rev-parse --verify --quiet "$REF^{commit}" >/dev/null || die "unknown ref: $REF"
   TMP_DIR="$(mktemp -d)"
-  git -C "$PKG_DIR" archive "$REF" -- "$PKG_REL" | tar -x -C "$TMP_DIR" || die "no se pudo materializar $REF"
+  git -C "$PKG_DIR" archive "$REF" -- "$PKG_REL" | tar -x -C "$TMP_DIR" || die "$REF could not be materialized"
   SRC="$TMP_DIR/$PKG_REL"
   REF_SHA="$(git -C "$PKG_DIR" rev-parse --short "$REF")"
   STAMP="$(printf 'commit=%s\nref=%s\ndeployed_at=%s\ndirty=no\n' "$REF_SHA" "$REF" "$UTC_NOW")"
-  log "desplegando la revisión $REF ($REF_SHA)"
+  log "deploying revision $REF ($REF_SHA)"
 else
   SRC="$PKG_DIR"
   STAMP="$(printf 'commit=%s\nbranch=%s\ndeployed_at=%s\ndirty=%s\n' "$SHA" "$BRANCH" "$UTC_NOW" "$DIRTY")"
-  log "desplegando el checkout actual ($SHA en $BRANCH, dirty=$DIRTY)"
+  log "deploying the current checkout ($SHA on $BRANCH, dirty=$DIRTY)"
 fi
 
 # ------------------------------------------------------------------ deploy ----
@@ -186,20 +186,20 @@ restart_service
 
 if health_check; then
   echo
-  log "desplegado: $(printf '%s' "$STAMP" | tr '\n' ' ')"
+  log "deployed: $(printf '%s' "$STAMP" | tr '\n' ' ')"
   "${SUDO[@]}" systemctl --no-pager --lines=0 status "$SERVICE" 2>/dev/null | head -6 || true
   exit 0
 fi
 
-echo "--- journal del intento fallido ---" >&2
+echo "--- journal of the failed attempt ---" >&2
 "${SUDO[@]}" journalctl -u "$SERVICE" -n 40 --no-pager >&2 || true
 echo "-----------------------------------" >&2
 if [[ -n "$PREV_DEPLOYED" ]]; then
-  echo "artefacto anterior:" >&2
+  echo "previous artifact:" >&2
   printf '%s\n' "$PREV_DEPLOYED" >&2
   PREV_SHA="$(printf '%s\n' "$PREV_DEPLOYED" | sed -n 's/^commit=//p' | head -1)"
-  [[ -n "$PREV_SHA" ]] && echo "para volver atrás: pnpm run deploy -- --ref $PREV_SHA && sudo systemctl restart $SERVICE" >&2
+  [[ -n "$PREV_SHA" ]] && echo "to roll back: pnpm run deploy -- --ref $PREV_SHA && sudo systemctl restart $SERVICE" >&2
 else
-  echo "no había artefacto anterior: primer despliegue fallido" >&2
+  echo "there was no previous artifact: first deployment failed" >&2
 fi
-die "deploy completado pero $SERVICE no está sano"
+die "deploy completed but $SERVICE is not healthy"

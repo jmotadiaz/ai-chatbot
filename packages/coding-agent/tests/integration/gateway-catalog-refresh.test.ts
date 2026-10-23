@@ -63,7 +63,7 @@ describe("getAvailableModels refreshes the Model Catalog", () => {
   beforeEach(() => {
     resetModelRuntimeForTests();
     resetGatewayCatalogForTests();
-    // DI por parámetro (ADR 0011 §6): sandbox temporal, sin process.env.
+    // DI through parameters (ADR 0011 §6): temporary sandbox, no process.env.
     ctx = createTestWorkerContext({ gatewayUrl: GATEWAY_URL, apiKey: GATEWAY_KEY });
     modelsPath = ctx.modelsJsonPath;
     gateway = {

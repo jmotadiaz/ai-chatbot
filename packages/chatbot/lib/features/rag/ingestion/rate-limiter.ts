@@ -18,7 +18,7 @@ export class EmbeddingRateLimiter {
   }
 
   private defaultEstimateTokens(content: string): number {
-    // Estimación: 1 token ≈ 4 caracteres
+    // Estimate: 1 token ≈ 4 characters
     return Math.ceil(content.length / 4);
   }
 

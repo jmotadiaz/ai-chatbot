@@ -139,8 +139,8 @@ describe("ensureGatewayModelsJson", () => {
     tmp = mkdtempSync(path.join(tmpdir(), "gateway-catalog-"));
     modelsPath = path.join(tmp, "models.json");
     authPath = path.join(tmp, "auth.json");
-    // DI explícita (ADR 0011 §6): credenciales y rutas por parámetro, nunca
-    // por process.env.
+    // Explicit DI (ADR 0011 §6): credentials and paths passed as parameters,
+    // never through process.env.
     gateway = {
       gatewayUrl: GATEWAY_URL,
       apiKey: GATEWAY_KEY,
@@ -223,8 +223,8 @@ describe("ensureGatewayModelsJson", () => {
   });
 
   it("fails when the API key is explicitly unset, before touching the disk", async () => {
-    // `apiKey: ""` (DI explícita) = sin credencial: la validación corre antes
-    // del fetch y de escribir nada, sin variables de entorno de por medio.
+    // `apiKey: ""` (explicit DI) = no credential: validation runs before the
+    // fetch and before writing anything, with no environment variables involved.
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 

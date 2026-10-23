@@ -7,21 +7,22 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 /**
- * Contrato del enlace estático del Entorno (ADR 0011 §4.2, ticket 03):
+ * Contract of the Environment's static link (ADR 0011 §4.2, ticket 03):
  *
- * 1. `next.config.ts` NO lee `process.argv` (el Entorno activo se lo da el
- *    launcher `scripts/next-cli.ts` vía `initConfig` en el MISMO proceso) y
- *    solo toca UN `process.env.*`: `NEXT_CLI_VERIFY`, la señal IPC
- *    launcher→workers de `--verify` (Next re-evalúa el config en workers de
- *    jest-worker con estado de módulo nuevo; ver comentario en next.config).
- * 2. `turbopack.resolveAlias` y `webpack.resolve.alias` redirigen `"config"`
- *    DIRECTAMENTE al bundle estático del Entorno activo
- *    (`packages/config/src/env.<entorno>.ts`), sin shims intermedios.
- * 3. Ese bundle exporta la fachada `config` SOLDADA a su Entorno y la
- *    superficie isomorfa completa del paquete (`surface.ts`).
+ * 1. `next.config.ts` does NOT read `process.argv` (the active Environment is
+ *    provided by the `scripts/next-cli.ts` launcher via `initConfig` in the
+ *    SAME process) and touches only ONE `process.env.*`: `NEXT_CLI_VERIFY`, the
+ *    launcher→workers IPC signal of `--verify` (Next re-evaluates the config in
+ *    jest-worker workers with fresh module state; see the comment in
+ *    next.config).
+ * 2. `turbopack.resolveAlias` and `webpack.resolve.alias` redirect `"config"`
+ *    DIRECTLY to the active Environment's static bundle
+ *    (`packages/config/src/env.<environment>.ts`), with no intermediate shims.
+ * 3. That bundle exports the `config` facade SOLDERED to its Environment and
+ *    the package's full isomorphic surface (`surface.ts`).
  *
- * En los tests el Entorno es test (initConfig + alias), así que el Entorno
- * activo esperado es `"test"`.
+ * In the tests the Environment is test (initConfig + alias), so the expected
+ * active Environment is `"test"`.
  */
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 
@@ -31,16 +32,16 @@ async function loadActiveNextConfig() {
   return mod.default(PHASE_DEVELOPMENT_SERVER);
 }
 
-describe("next.config alias del Entorno", () => {
-  it("no lee process.argv; de process.env solo NEXT_CLI_VERIFY (IPC con workers)", () => {
+describe("next.config Environment alias", () => {
+  it("does not read process.argv; from process.env only NEXT_CLI_VERIFY (IPC with workers)", () => {
     const source = readFileSync(path.join(PACKAGE_ROOT, "next.config.ts"), "utf8");
-    // Comentarios fuera: documentan el "no process.env/argv" permitido.
+    // Comments stripped: they document the allowed "no process.env/argv".
     const code = source
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/(^|[^:])\/\/.*$/gm, "$1");
     expect(code).not.toContain("process.argv");
-    // Aquí NO hay selector de Entorno (NEXT_PUBLIC_ENV/APP_ENV), rutas ni
-    // credenciales por env: solo el flag de aislamiento del launcher.
+    // Here there is NO Environment selector (NEXT_PUBLIC_ENV/APP_ENV), paths or
+    // per-env credentials: only the launcher's isolation flag.
     const envReads = [...code.matchAll(/process\.env\.[A-Z_0-9]+/g)].map(
       (match) => match[0],
     );
@@ -49,9 +50,9 @@ describe("next.config alias del Entorno", () => {
     );
   });
 
-  it("IPC --verify: un worker con módulos frescos rehidrata flags y acuerda .next/verify", async () => {
-    // Simula la re-evaluación del config en un worker de jest-worker: módulos
-    // nuevos (sin setBuildFlags del launcher) + NEXT_CLI_VERIFY heredado.
+  it("--verify IPC: a worker with fresh modules rehydrates flags and agrees on .next/verify", async () => {
+    // Simulates the config re-evaluation in a jest-worker worker: fresh modules
+    // (without the launcher's setBuildFlags) + inherited NEXT_CLI_VERIFY.
     vi.resetModules();
     const previous = process.env.NEXT_CLI_VERIFY;
     process.env.NEXT_CLI_VERIFY = "1";
@@ -66,10 +67,10 @@ describe("next.config alias del Entorno", () => {
     }
   });
 
-  it("turbopack.resolveAlias y webpack.resolve.alias apuntan al bundle del Entorno activo", async () => {
-    // Turbopack: specifier `@/…` (paths de tsconfig) + `../` hasta
-    // packages/config — una ruta absoluta `/…` sería "server relative" y no
-    // está soportada. Webpack: ruta absoluta al mismo módulo.
+  it("turbopack.resolveAlias and webpack.resolve.alias point to the active Environment's bundle", async () => {
+    // Turbopack: `@/…` specifier (tsconfig paths) + `../` up to
+    // packages/config — an absolute `/…` path would be "server relative" and is
+    // not supported. Webpack: absolute path to the same module.
     const expectedFile = path.join(PACKAGE_ROOT, "..", "config", "src", "env.test.ts");
 
     const config = await loadActiveNextConfig();
@@ -79,8 +80,8 @@ describe("next.config alias del Entorno", () => {
     );
     expect(existsSync(expectedFile)).toBe(true);
 
-    // El alias de Webpack se calcula al invocar la fábrica, conservando los
-    // aliases previos que inyecta Next.
+    // Webpack's alias is computed when the factory is invoked, preserving the
+    // previous aliases that Next injects.
     const withExisting = config.webpack!(
       { resolve: { alias: { "next/internal": "kept" } } } as never,
       {} as never,
@@ -91,8 +92,8 @@ describe("next.config alias del Entorno", () => {
       "config/contract": path.join(PACKAGE_ROOT, "..", "config", "src", "gateway-contract.ts"),
     });
 
-    // En el build de cliente de Webpack (isServer: false), config resuelve a false
-    // para impedir cualquier fuga de secretos al navegador.
+    // In Webpack's client build (isServer: false), config resolves to false to
+    // prevent any secret leak to the browser.
     const clientWebpack = config.webpack!(
       { resolve: { alias: {} } } as never,
       { isServer: false } as never,
@@ -103,17 +104,17 @@ describe("next.config alias del Entorno", () => {
     });
   });
 
-  it("el bundle del Entorno exporta la fachada soldada + la superficie completa del paquete", async () => {
+  it("the Environment bundle exports the soldered facade + the package's full surface", async () => {
     const bundlePath = path.join(PACKAGE_ROOT, "..", "config", "src", "env.test.ts");
     const shim = (await import(bundlePath)) as Record<string, unknown>;
 
-    // Fachada soldada al bundle del Entorno activo (test): debe ser la
-    // fachada ESTÁTICA de env.test, nunca la fachada-selector de index
-    // (prueba de que la exportación explícita prevalece sobre `export *`,
-    // la precedencia ES que el shim documenta).
-    const facade = shim.config as { entorno: () => string; port: () => number };
-    expect(typeof facade.entorno).toBe("function");
-    expect(facade.entorno()).toBe("test");
+    // Facade soldered to the active Environment's bundle (test): it must be the
+    // STATIC facade of env.test, never index's selector facade (proof that the
+    // explicit export prevails over `export *`, the precedence the shim
+    // documents).
+    const facade = shim.config as { environment: () => string; port: () => number };
+    expect(typeof facade.environment).toBe("function");
+    expect(facade.environment()).toBe("test");
     expect(facade.port()).toBe(3001);
 
     const selectorMod = (await import(
@@ -125,8 +126,8 @@ describe("next.config alias del Entorno", () => {
     expect(shim.config).toBe(bundleMod.config);
     expect(shim.config).not.toBe(selectorMod.config);
 
-    // Superficie que el código del chatbot importa de `"config"` además de la
-    // fachada: el bundle la re-exporta desde `surface.ts`.
+    // Surface that the chatbot code imports from `"config"` besides the
+    // facade: the bundle re-exports it from `surface.ts`.
     expect(typeof shim.optional).toBe("function");
     expect(typeof shim.EMBEDDING_DIMENSIONS).toBe("number");
     expect(Array.isArray(shim.GATEWAY_THINKING_LEVELS)).toBe(true);

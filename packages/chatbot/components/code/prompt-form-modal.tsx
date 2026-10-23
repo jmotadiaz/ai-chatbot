@@ -151,7 +151,7 @@ const PromptFormField: React.FC<PromptFormFieldProps> = ({ input, value, session
         </span>
         {sessions.length === 0 ? (
           <span className="mt-1 block text-sm text-muted-foreground">
-            No hay sessions con label disponibles
+            No labeled sessions available
           </span>
         ) : (
           <select

@@ -3,11 +3,11 @@ import type { SpeechModelV3 } from "@ai-sdk/provider";
 import type { GatewayModelEntry } from "@/lib/features/foundation-model/config";
 
 /**
- * Reexport de tipos de protocolo del AI SDK (`@ai-sdk/provider`) para test y
- * features: la frontera de lint prohibe importar `@ai-sdk/*` fuera de este
- * directorio (ADR 0010), pero los DOUBLES de test y los adaptadores necesitan
- * los tipos V3 del protocolo (`LanguageModelV3*`) para construir mocks
- * tipados. Reexportados aquí, consumibles vía `@/lib/infrastructure/ai/types`.
+ * Re-export of the AI SDK's protocol types (`@ai-sdk/provider`) for tests and
+ * features: the lint boundary forbids importing `@ai-sdk/*` outside this
+ * directory (ADR 0010), but test DOUBLES and adapters need
+ * the protocol's V3 types (`LanguageModelV3*`) to build typed
+ * mocks. Re-exported here, consumable via `@/lib/infrastructure/ai/types`.
  */
 export type {
   LanguageModelV3,
@@ -16,24 +16,24 @@ export type {
 } from "@ai-sdk/provider";
 
 /**
- * Tipos de la capa de IA del chatbot (antes reexportados de `inference`,
- * ADR 0010: ahora viven aquí). Sin tipos por proveedor: con el Gateway único
- * todo el tráfico habla el dialecto OpenAI-compatible, así que
- * `providerOptions` es un `Record<string, Record<string, unknown>>` — la
- * forma que acepta el transport `@ai-sdk/openai-compatible` (la key de
- * proveedor es libre; el transport la valida por esquema y tira la que no
- * reconozca).
+ * Types of the chatbot's AI layer (previously re-exported from `inference`,
+ * ADR 0010: they now live here). No per-provider types: with the single Gateway
+ * all traffic speaks the OpenAI-compatible dialect, so
+ * `providerOptions` is a `Record<string, Record<string, unknown>>` — the
+ * shape the `@ai-sdk/openai-compatible` transport accepts (the provider key
+ * is free-form; the transport validates it by schema and drops whatever it does not
+ * recognise).
  */
 export type ProviderOptions = Record<string, Record<string, JSONValue>>;
-// Los valores son `JSONValue` — es la forma que el AI SDK exige en
-// `SharedV3ProviderOptions` cuando el caller hace spread de la
-// `ModelConfiguration` en `generateText`/`streamObject`/…
+// The values are `JSONValue` — that is the shape the AI SDK requires in
+// `SharedV3ProviderOptions` when the caller spreads the
+// `ModelConfiguration` into `generateText`/`streamObject`/…
 
 /**
- * Configuración expandible que `languageModel` resuelve para un id del
- * catálogo (o un contrato `*-default`): el modelo construido más cada
- * parámetro que una feature necesita (temperature, providerOptions, flags de
- * capacidades).
+ * Expandable configuration that `languageModel` resolves for a catalog
+ * id (or a `*-default` contract): the built model plus every
+ * parameter a feature needs (temperature, providerOptions, capability
+ * flags).
  */
 export interface ModelConfiguration {
   model: LanguageModel;
@@ -62,9 +62,9 @@ export interface EmbedOptions {
 }
 
 /**
- * Google's embedding task hint, applied per call (contrato compartido §4:
- * campo `task_type` del body de `POST /v1/embeddings`), con fallback del
- * Gateway a `embedding-default` (`gemini-embedding-001`, 768 dimensiones).
+ * Google's embedding task hint, applied per call (shared contract §4:
+ * the `task_type` field of the `POST /v1/embeddings` body), with the Gateway
+ * falling back to `embedding-default` (`gemini-embedding-001`, 768 dimensions).
  */
 export type EmbeddingTaskType =
   | "SEMANTIC_SIMILARITY"
@@ -117,8 +117,8 @@ export interface DecisionScope {
 
 export interface DecideOptions {
   /**
-   * Default Model Contract que resuelve la decisión — hoy siempre
-   * `"decision-default"` (Chat Mode Router y English Helper).
+   * Default Model Contract that resolves the decision — today always
+   * `"decision-default"` (Chat Mode Router and English Helper).
    */
   model: string;
   /**
@@ -163,8 +163,8 @@ export interface Decision {
 }
 
 /**
- * Surface of the chatbot's AI composition root (`inferenceKit`): todas las
- * operaciones hablan con el Model Gateway (`${config.modelGatewayUrl()}/v1`).
+ * Surface of the chatbot's AI composition root (`inferenceKit`): all
+ * operations speak to the Model Gateway (`${config.modelGatewayUrl()}/v1`).
  */
 export interface InferenceKit {
   /**
@@ -176,11 +176,11 @@ export interface InferenceKit {
     idOrContract: string,
     options?: LanguageModelOptions,
   ) => ModelConfiguration;
-  /** Embeddings vía `embedding-default` (768 dimensiones + taskType). */
+  /** Embeddings via `embedding-default` (768 dimensions + taskType). */
   embed: (values: string[], options: EmbedOptions) => Promise<number[][]>;
-  /** Reranks documents vía `rerank-default` contra `POST /v1/rerank`. */
+  /** Reranks documents via `rerank-default` against `POST /v1/rerank`. */
   rerank: (args: RerankArgs) => Promise<RerankResult[]>;
-  /** Speech model vía `tts-default` contra `POST /v1/audio/speech`. */
+  /** Speech model via `tts-default` against `POST /v1/audio/speech`. */
   speechModel: () => SpeechModelV3;
   /**
    * Resolves `idOrContract` via `languageModel`, wraps the model with tracing
@@ -203,11 +203,11 @@ export interface InferenceKit {
   ) => ModelConfiguration;
   /**
    * Answers one or more `choice` questions in a single Decisions API call
-   * (`POST /v1/systemone` con `decision-default`), bounded by a fixed
+   * (`POST /v1/systemone` with `decision-default`), bounded by a fixed
    * timeout on both the request and the whole call. Errors propagate: the
    * fallback policy belongs to the caller.
    */
   decide: (options: DecideOptions) => Promise<Decision>;
-  /** Catálogo público (modelos user-invocable, sin contratos) con caché TTL de 60 s. */
+  /** Public catalog (user-invocable models, no contracts) with a 60 s TTL cache. */
   fetchPublicModelCatalog: () => Promise<GatewayModelEntry[]>;
 }

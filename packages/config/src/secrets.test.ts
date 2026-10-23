@@ -1,12 +1,12 @@
 import type { SecretsConfig } from "./types";
 
 /**
- * Secretos de TEST (versionados): deterministas y falsos por diseño.
+ * TEST secrets (versioned): deterministic and fake by design.
  *
- * El DSN apunta a la Postgres de test aislada (`docker-compose.test.yml`,
- * `:5434/test`) y el API key es el que acepta el Mock Model Gateway (`:4001`).
- * Cualquier valor aquí es público: si un secreto real acaba en este fichero,
- * es un bug.
+ * The DSN points at the isolated test Postgres (`docker-compose.test.yml`,
+ * `:5434/test`) and the API key is the one the Mock Model Gateway (`:4001`)
+ * accepts. Any value here is public: if a real secret ends up in this file,
+ * it is a bug.
  */
 export const secretsTest = {
   postgresUrl: "postgres://postgres:postgres@127.0.0.1:5434/test",

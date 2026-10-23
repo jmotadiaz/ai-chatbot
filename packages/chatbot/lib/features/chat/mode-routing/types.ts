@@ -58,7 +58,7 @@ export interface ChatModeRoutingMetadata extends RoutingDecision {
 
 /**
  * Classifier input. `recentContext` carries the previous turn so pronoun-only
- * follow-ups ("¿y eso cómo se hace?") can be resolved.
+ * follow-ups ("so how do you do that?") can be resolved.
  */
 export interface ChatModeRouterInput {
   latestMessage: string;

@@ -1,52 +1,83 @@
 # Agent Instructions (Global — Monorepo Root)
 
-## Producción está VIVA — blindaje (approval-first)
+## Language
 
-En esta máquina hay un servicio de Producción en vivo supervisado por pm2: app
-`ai-chatbot` (raíz, `pnpm preview`, configuración tipada de prod) → chatbot
-`:8085`, worker `:3015`, postgres-prod `:5435`.
+Everything in this repo is written in English — code, prompts and harness files alike.
 
-- **PROHIBIDO sin aprobación explícita del operador para cada acción**: cualquier
-  comando que impacte esa ejecución — `pm2 restart|reload|stop|delete|save`,
-  `pnpm preview`, `build` de prod, `docker compose … prod down`,
-  o matar procesos en 8085/3015/5435. Al pedir aprobación, indica la ventana de
-  indisponibilidad (un restart de `preview` tarda ~1–2 min por el rebuild).
-- Verificación de compilación sin tocar prod: `type:check`, `lint` y suites de
-  tests por paquete. Para comprobar que prod compila sin pisar los artefactos
-  que sirve pm2, el agente ejecuta **siempre `build:verify`** (raíz:
-  `pnpm build:verify`; o por paquete `pnpm --filter chatbot build:verify`
-  + `pnpm --filter coding-agent build:verify`) — escribe a directorios
-  aislados `.next/verify` / `dist/verify` / `.pi-verify` (gitignored, descartables).
-  **NUNCA `build`** — pisa `.next`/`dist`/`.pi-prod/models.json`
-  de prod bajo pm2 y rompería la ejecución en curso; reservado a operador/CI
-  con `ALLOW_PROD_BUILD=1` (ver `build` en cada package).
-- Nota de transición (ADR 0011): la definición guardada en pm2 todavía registra
-  `env_file: .env.prod`, un fichero que ya no existe. El proceso vivo no lo lee
-  (la config es tipada y `preview` usa `--env=prod`); `ecosystem.config.js` ya no
-  lo declara. Si un reinicio controlado se quejara del fichero, usa
-  `pm2 start ecosystem.config.js` y `pm2 save` **con aprobación del operador**.
-- Verificación del servicio real: solo comandos de lectura — `pm2 ls`,
-  `pm2 logs --nostream`, `curl` (GET al chatbot 8085; **NUNCA `POST /rpc` al
-  worker 3015** — un body malformado tumbó el worker el 2026-09-02; para el
-  worker solo `ss -tlnp`/logs), `ss -tlnp`.
-- Iteración dev/test: `pnpm dev` con sus DBs (5433 dev / 5434 test), nunca con pm2. Para parar sin riesgo usa **siempre por puerto** — `pnpm stop:dev` (mata `3000`+`3016`) y `pnpm stop:test` (mata `3001`), o por paquete `pnpm --filter chatbot stop:dev` / `pnpm --filter coding-agent stop:dev` (usan `lsof -ti:PORT | xargs -r kill`). **Nunca `pkill -f "tsx ..."`** — `dev` y `prod` comparten el mismo `tsx src/transports/http.ts` y matarías el worker de prod (`3015`) dentro del `concurrently` de `preview` (cae `8085` aunque `pm2 ls` siga `online`).
+- **Code**: identifiers, comments, JSDoc, log and error messages, test names, fixtures,
+  commit messages.
+- **Prompts**: system prompts, `.prompty` templates, chat-mode prompts, eval cases.
+- **Harness**: `AGENTS.md`, `CONTEXT.md`, `docs/agents/`, skills, ADRs.
+
+**Native-language exception**: issue specs and tickets under `.scratch/` may be written
+in the operator's native language (Spanish). They are the operator's working documents;
+the operator is their only human reader, and agents read them in either language.
+
+**Legacy ADRs**: ADRs 0001–0011 are in Spanish; leave them as-is. Translate an existing
+ADR to English only when you edit it for another reason. New ADRs are written in English.
+
+**Canonical terms**: the glossary in `CONTEXT.md` records domain terms in English only.
+When the operator discusses the domain in Spanish, map their words to the canonical
+English term (`entorno` → `Environment`, `chat de prueba` → `Test Chat`); never register
+Spanish aliases in the glossary.
+
+Rename Spanish names to English when you touch a file (`environment` used to be
+`entorno`), and translate Spanish comments you find in your way. Two things stay as they
+are: user-facing localised copy, and prompt fixtures whose whole point is demonstrating
+that the model answers in the user's language.
+
+## Production is LIVE — guardrails (approval-first)
+
+This machine runs a live Production service supervised by pm2: app `ai-chatbot` (root,
+`pnpm preview`, typed prod configuration) → chatbot `:8085`, worker `:3015`,
+postgres-prod `:5435`.
+
+- **FORBIDDEN without the operator's explicit approval for each action**: any command
+  that impacts that execution — `pm2 restart|reload|stop|delete|save`, `pnpm preview`,
+  prod `build`, `docker compose … prod down`, or killing processes on 8085/3015/5435.
+  When asking for approval, state the downtime window (a `preview` restart takes ~1–2 min
+  because of the rebuild).
+- Compilation checks that don't touch prod: `type:check`, `lint` and each package's test
+  suites. To prove that prod compiles without overwriting the artifacts pm2 serves, the
+  agent **always runs `build:verify`** (root: `pnpm build:verify`; or per package
+  `pnpm --filter chatbot build:verify` + `pnpm --filter coding-agent build:verify`) — it
+  writes to isolated, gitignored, disposable directories `.next/verify` / `dist/verify` /
+  `.pi-verify`.
+  **NEVER `build`** — it overwrites prod's `.next`/`dist`/`.pi-prod/models.json` under
+  pm2 and would break the running execution; it is reserved for operator/CI with
+  `ALLOW_PROD_BUILD=1` (see `build` in each package).
+- Transition note (ADR 0011): the definition stored in pm2 still registers
+  `env_file: .env.prod`, a file that no longer exists. The live process doesn't read it
+  (the config is typed and `preview` uses `--env=prod`); `ecosystem.config.js` no longer
+  declares it. If a controlled restart complains about the file, use
+  `pm2 start ecosystem.config.js` and `pm2 save` **with the operator's approval**.
+- Verifying the real service: read-only commands only — `pm2 ls`, `pm2 logs --nostream`,
+  `curl` (GET to chatbot 8085; **NEVER `POST /rpc` to worker 3015** — a malformed body
+  crashed the worker on 2026-09-02; for the worker only `ss -tlnp`/logs), `ss -tlnp`.
+- Dev/test iteration: `pnpm dev` with its DBs (5433 dev / 5434 test), never with pm2. To
+  stop safely **always go by port** — `pnpm stop:dev` (kills `3000`+`3016`) and
+  `pnpm stop:test` (kills `3001`), or per package `pnpm --filter chatbot stop:dev` /
+  `pnpm --filter coding-agent stop:dev` (they use `lsof -ti:PORT | xargs -r kill`).
+  **Never `pkill -f "tsx ..."`** — `dev` and `prod` share the same
+  `tsx src/transports/http.ts` and you would kill the prod worker (`3015`) inside
+  `preview`'s `concurrently` (`8085` goes down even though `pm2 ls` still says `online`).
 
 ## Package Manager
 
-Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (para el agente):
+Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (for the agent):
 
-- `pnpm dev` — start all services (chatbot + coding-agent) en el Entorno de
-  Desarrollo (`--env=dev`: 3000+3016, pg 5433)
-- `pnpm stop:dev` — mata `3000`+`3016` por puerto (`lsof -ti:PORT | xargs -r kill`); `pnpm stop:test` — mata `3001` (+ `docker compose -f docker-compose.test.yml down`). Por paquete: `pnpm --filter chatbot stop:dev` (3000) / `stop:test` (3001); `pnpm --filter coding-agent stop:dev` (3016)
-- `pnpm build:verify` — verificación aislada de compilación (`.next/verify` + `dist/verify`+`.pi-verify`); **única vía del agente para comprobar compilación sin tocar prod**
+- `pnpm dev` — start all services (chatbot + coding-agent) in the Development Environment
+  (`--env=dev`: 3000+3016, pg 5433)
+- `pnpm stop:dev` — kills `3000`+`3016` by port (`lsof -ti:PORT | xargs -r kill`); `pnpm stop:test` — kills `3001` (+ `docker compose -f docker-compose.test.yml down`). Per package: `pnpm --filter chatbot stop:dev` (3000) / `stop:test` (3001); `pnpm --filter coding-agent stop:dev` (3016)
+- `pnpm build:verify` — isolated compilation check (`.next/verify` + `dist/verify` + `.pi-verify`); **the agent's only way to check compilation without touching prod**
 - `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
 - `pnpm lint:fix` — lint all packages
 - `pnpm type:check` — check TypeScript types across all packages
 - `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
-- `pnpm test:gateway` — tests del Model Gateway (`python3 -m pytest packages/model-gateway/tests -q`)
-- `pnpm test:e2e` — Playwright E2E tests (Entorno de Test `--env=test`: pg 5434, worker stub, Mock Gateway `:4001`)
+- `pnpm test:gateway` — Model Gateway tests (`python3 -m pytest packages/model-gateway/tests -q`)
+- `pnpm test:e2e` — Playwright E2E tests (Test Environment `--env=test`: pg 5434, worker stub, Mock Gateway `:4001`)
 - `pnpm db:generate` / `pnpm db:push` — Drizzle ORM schema
-- `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — gestión y seeds de DB para Entornos de Dev (5433) y Test (5434)
+- `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — DB management and seeds for the Dev (5433) and Test (5434) Environments
 
 Test ownership follows package ownership. Within each package, keep pure logic
 under `tests/unit`, rendered UI under `tests/component`, multi-module or
@@ -54,39 +85,39 @@ in-process infrastructure checks under `tests/integration`, and public package
 boundary checks under `tests/contract`. Repository-level Playwright scenarios
 remain under `tests/`.
 
-## Verificación en browser (dev)
+## Browser verification (dev)
 
-Para verificar en vivo lo desarrollado con la UI, usa la skill
-**agent-browser** (navegación, login, screenshots): sigue sus instrucciones.
+To verify UI work live, use the **agent-browser** skill (navigation, login,
+screenshots): follow its instructions.
 
-- **App con sesión**: Es una app con autenticación por cookies/sesión. Define siempre una sesión de browser aislada para preservar las cookies tras el login:
+- **App with a session**: this app authenticates by cookies/session. Always define an isolated browser session so cookies survive the login:
   ```bash
   export AGENT_BROWSER_SESSION="$(agent-browser session id --scope worktree --prefix dev)"
   ```
-- **Linux sin sandbox**: Chromium requiere el flag `--no-sandbox`. Añádelo siempre al abrir el navegador:
+- **Linux without a sandbox**: Chromium requires the `--no-sandbox` flag. Always add it when opening the browser:
   ```bash
   agent-browser --args "--no-sandbox" open http://localhost:3000/login
   ```
 
-Secuencia para levantar el entorno de Desarrollo:
+Sequence to bring up the Development Environment:
 
-1. Model Gateway (prerequisito, ofrece `:4000` via systemd): `curl -fsS
-   http://127.0.0.1:4000/health/liveliness` (espera `"I'm alive!"`; **no uses
-   `GET /health`**, responde 500). Si falla, revisa `systemctl status
-   model-gateway.service` y sus logs; sin Gateway el chat no funciona.
-2. DB dev: `pnpm db:dev:start` (Postgres `5433`), más `pnpm db:dev:migrate` si
-   cambió el schema.
-3. Datos de prueba: `pnpm db:seed:dev` — siembra el usuario de prueba y 5 chats
-   de ejemplo para que la UI no esté vacía.
-4. Servicios: `pnpm dev` → app en `http://localhost:3000`, worker `:3016`.
-5. Login en `/login`: `test@test.com` / `123456` (credenciales vivas de
+1. Model Gateway (prerequisite, serves `:4000` via systemd): `curl -fsS
+   http://127.0.0.1:4000/health/liveliness` (expects `"I'm alive!"`; **do not use
+   `GET /health`**, it answers 500). If it fails, check `systemctl status
+   model-gateway.service` and its logs; without the Gateway the chat doesn't work.
+2. Dev DB: `pnpm db:dev:start` (Postgres `5433`), plus `pnpm db:dev:migrate` if the
+   schema changed.
+3. Test data: `pnpm db:seed:dev` — seeds the test user and 5 sample chats so the UI
+   isn't empty.
+4. Services: `pnpm dev` → app on `http://localhost:3000`, worker `:3016`.
+5. Login at `/login`: `test@test.com` / `123456` (live credentials from
    `packages/chatbot/scripts/seed-test-data.ts`).
-6. Al terminar: `pnpm stop:dev` (nunca `pkill`, ver blindaje arriba).
+6. When done: `pnpm stop:dev` (never `pkill`, see the guardrails above).
 
-- **Nunca apuntes el browser a prod** (`:8085`): es tráfico real sobre el
-  servicio en vivo. La verificación con browser va contra `localhost:3000`.
-- Si solo cambió código del worker (`coding-agent`), no necesitas hacer nada a
-  mano: el worker dev recarga; para matarlo por puerto usa solo
+- **Never point the browser at prod** (`:8085`): that is real traffic on the live
+  service. Browser verification goes against `localhost:3000`.
+- If only worker code changed (`coding-agent`), you don't need to do anything by hand:
+  the dev worker reloads; to kill it by port use only
   `pnpm --filter coding-agent stop:dev`.
 
 ## Commit Attribution
@@ -105,100 +136,99 @@ Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
 packages/
 ├── chatbot/        # Main Next.js web application
 ├── coding-agent/   # Coding agent HTTP worker
-├── model-gateway/  # Model Gateway (LiteLLM Proxy stateless); único proveedor de IA
-├── config/         # Configuración tipada por Entorno (TS, sin process.env)
+├── model-gateway/  # Model Gateway (stateless LiteLLM Proxy); the only AI provider
+├── config/         # Typed per-Environment configuration (TS, no process.env)
 └── tracing/        # Shared tracing/observability library
 tests/              # E2E tests (Playwright)
 ```
 
-### `config` — Configuración tipada por Entorno (ADR 0011)
+### `config` — Typed per-Environment configuration (ADR 0011)
 
-**No hay `.env.*` ni variables de entorno selectoras.** La configuración son módulos
-TypeScript con validación en compilación:
+**There are no `.env.*` files and no environment-variable selectors.** Configuration is
+TypeScript modules with compile-time validation:
 
-- `src/types.ts` — `Entorno = "prod" | "dev" | "test"`, `StructuralConfig`, `SecretsConfig`,
-  `AppConfig = Readonly<StructuralConfig & SecretsConfig>`.
-- `src/config.{prod,dev,test}.ts` — configuración estructural versionada (`satisfies
-  StructuralConfig`), con rutas portables vía `repoPath()`/`packagePath()` (`src/paths.ts`
-  descubre `REPO_ROOT` desde `import.meta.url` hasta `pnpm-workspace.yaml`). La excepción
-  histórica de prod (`codingAgentSessionsDir`, `codingAgentProjectsRoot`) conserva los
-  valores vivos de ADR 0002.
-- `src/secrets.{prod,dev}.ts` — secretos reales, **gitignored**, importados
-  estáticamente: si faltan, `tsc` y el bundler fallan en compilación (nunca en runtime).
-  `src/secrets.test.ts` (falso, versionado) y `src/secrets.example.ts` (plantilla).
-- `src/env.{prod,dev,test}.ts` — bundle congelado (`Object.freeze`) `config.<env>` +
-  `secrets.<env>`, validado por `src/guardrails.ts` (Entorno↔DSN↔puerto del Gateway).
-  Re-exporta `src/surface.ts` (tipos, constantes del contrato del Gateway, rutas,
-  `optional`) para que el alias del bundler mantenga la API completa.
-- `src/config.ts` — selector + fachada `config` (`config.postgresUrl()`,
-  `config.entorno()`, …) sobre el bundle activo. Orden de resolución:
-  `initConfig(entorno)` → `--env=prod|dev|test` en `process.argv` → detección del runner
-  (`vitest`/`@playwright/test`) → `ConfigError` de fallo rápido.
+- `src/types.ts` — `Environment = "prod" | "dev" | "test"`, `StructuralConfig`,
+  `SecretsConfig`, `AppConfig = Readonly<StructuralConfig & SecretsConfig>`.
+- `src/config.{prod,dev,test}.ts` — versioned structural configuration (`satisfies
+  StructuralConfig`), with portable paths via `repoPath()`/`packagePath()` (`src/paths.ts`
+  discovers `REPO_ROOT` from `import.meta.url` up to `pnpm-workspace.yaml`). The historic
+  prod exception (`codingAgentSessionsDir`, `codingAgentProjectsRoot`) keeps ADR 0002's
+  live values.
+- `src/secrets.{prod,dev}.ts` — real secrets, **gitignored**, imported statically: if they
+  are missing, `tsc` and the bundler fail at compile time (never at runtime).
+  `src/secrets.test.ts` (fake, versioned) and `src/secrets.example.ts` (template).
+- `src/env.{prod,dev,test}.ts` — frozen bundle (`Object.freeze`) `config.<env>` +
+  `secrets.<env>`, validated by `src/guardrails.ts` (Environment↔DSN↔Gateway port).
+  Re-exports `src/surface.ts` (types, Gateway contract constants, paths, `optional`) so
+  the bundler alias keeps the full API.
+- `src/config.ts` — selector + `config` facade (`config.postgresUrl()`,
+  `config.environment()`, …) over the active bundle. Resolution order:
+  `initConfig(environment)` → `--env=prod|dev|test` in `process.argv` → runner detection
+  (`vitest`/`@playwright/test`) → fail-fast `ConfigError`.
 
-**Selección de Entorno:**
+**Environment selection:**
 
-- `coding-agent`, migraciones, seeds y `mcp-server` exigen `--env=prod|dev|test` en
-  `process.argv`. `process.argv` pertenece solo al proceso invocado: el kernel no lo
-  clona en `fork()`/`execve()`, así que un subproceso lanzado por el worker (p. ej.
-  `pnpm test`) jamás hereda el Entorno del padre (incidente ADR 0011).
-- `vitest.config.ts` / `playwright.config.mts` llaman `initConfig("test")` al cargarse y
-  aliasan `"config"` a `packages/config/src/env.test.ts`.
-- `chatbot` usa el micro-launcher `packages/chatbot/scripts/next-cli.ts` (el CLI `next`
-  rechaza flags desconocidos y `next dev` no reenvía `argv` al servidor). El launcher
-  llama `initConfig()` en el mismo proceso y `next.config.ts` fija
-  `turbopack.resolveAlias` + `webpack.resolve.alias` de `"config"` al bundle del
-  Entorno. Tradeoff: importa `next/dist/server/lib/start-server` y
-  `next/dist/cli/next-build` (APIs internas) — al subir de major de Next hay que
-  revisar las firmas (contrato en `tests/contract/next-internals.test.ts`).
+- `coding-agent`, migrations, seeds and `mcp-server` require `--env=prod|dev|test` in
+  `process.argv`. `process.argv` belongs only to the invoked process: the kernel doesn't
+  clone it in `fork()`/`execve()`, so a subprocess spawned by the worker (e.g.
+  `pnpm test`) never inherits the parent's Environment (ADR 0011 incident).
+- `vitest.config.ts` / `playwright.config.mts` call `initConfig("test")` when they load
+  and alias `"config"` to `packages/config/src/env.test.ts`.
+- `chatbot` uses the micro-launcher `packages/chatbot/scripts/next-cli.ts` (the `next` CLI
+  rejects unknown flags and `next dev` doesn't forward `argv` to the server). The
+  launcher calls `initConfig()` in the same process and `next.config.ts` pins
+  `turbopack.resolveAlias` + `webpack.resolve.alias` of `"config"` to the Environment's
+  bundle. Tradeoff: it imports `next/dist/server/lib/start-server` and
+  `next/dist/cli/next-build` (internal APIs) — when bumping Next's major, re-check the
+  signatures (contract in `tests/contract/next-internals.test.ts`).
 
-**Reglas duras:**
+**Hard rules:**
 
-- En `src/` de cualquier paquete no se usa `process.env` para configuración. Las
-  variables `NEXT_PUBLIC_*` ya no existen.
-- Nunca reintroduzcas un selector de Entorno por variable de entorno ni un cargador
-  `.env`: cualquier subproceso heredaría el Entorno del padre.
-- Tests de `coding-agent`: prohibido mutar `process.env.CODING_AGENT_*` /
-  `process.env.MODEL_GATEWAY_*`. Usa `createTestWorkerContext()`
-  (`packages/coding-agent/tests/helpers/test-context.ts`) e inyecta el sandbox
-  (prohibido escribir en `.pi-prod`/`.pi-dev`); contrato en
+- In any package's `src/`, configuration never reads `process.env`. The `NEXT_PUBLIC_*`
+  variables no longer exist.
+- Never reintroduce an environment-variable Environment selector or an `.env` loader: any
+  subprocess would inherit the parent's Environment.
+- `coding-agent` tests: mutating `process.env.CODING_AGENT_*` /
+  `process.env.MODEL_GATEWAY_*` is forbidden. Use `createTestWorkerContext()`
+  (`packages/coding-agent/tests/helpers/test-context.ts`) and inject the sandbox (writing
+  to `.pi-prod`/`.pi-dev` is forbidden); contract in
   `tests/contract/no-process-env-mutations.test.ts`.
 
-### `model-gateway` — Model Gateway (único proveedor de IA)
+### `model-gateway` — Model Gateway (the only AI provider)
 
-Servicio `packages/model-gateway` desacoplado del monorepo (sin dependencias de workspace;
-extraíble con `mv` + `git init`): **LiteLLM Proxy stateless** (`config.yaml`, sin DB)
-envuelto en un micro-entrypoint FastAPI (`server.py`), desplegado como unidad systemd
-(`model-gateway.service`, `:4000`). Véase `packages/model-gateway/README.md`.
+Service `packages/model-gateway`, decoupled from the monorepo (no workspace dependencies;
+extractable with `mv` + `git init`): a **stateless LiteLLM Proxy** (`config.yaml`, no DB)
+wrapped in a FastAPI micro-entrypoint (`server.py`), deployed as a systemd unit
+(`model-gateway.service`, `:4000`). See `packages/model-gateway/README.md`.
 
-- **Único proveedor de IA** de chatbot y coding-agent: no hay claves de proveedores
-  externos (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, …) en el repo — se custodian
-  cifradas en el host con **`systemd-creds`** (`LoadCredentialEncrypted=`), gestionadas
-  con `packages/model-gateway/scripts/manage-creds.sh`.
-- **Catálogo en runtime**: `GET ${MODEL_GATEWAY_URL}/v1/models/catalog` (bearer
-  `MODEL_GATEWAY_API_KEY`) filtra en el servidor las entradas `user_invocable: true` y
-  devuelve el esquema limpio de metadatos. `chatbot` lo consume para el Model Picker y
-  `<ModelCatalogProvider>`; `coding-agent` lo consume al arrancar para escribir el
-  `models.json` de Pi con un único provider `model-gateway`.
-- **Default Model Contracts**: los usos internos no seleccionables invocan directamente
-  los nombres estables garantizados por el Gateway — `fast-default`, `flash-default`,
-  `vision-default`, `reasoning-default`, `free-default`, `image-default`,
-  `embedding-default`, `rerank-default`, `decision-default`, `tts-default` — sin catálogo
-  tipado estático.
-- **Mock Model Gateway** (test): `config.test.ts` fija `modelGatewayUrl` en
-  `http://127.0.0.1:4001` (guardarraíl de `packages/config/src/guardrails.ts`), el mock
-  HTTP de `packages/chatbot/tests/mocks/gateway/` que sirve el catálogo de capacidades
-  de test y respuestas deterministas.
-- **Fachada en el chatbot**: `packages/chatbot/lib/infrastructure/ai/inference-kit.ts` es
-  el composition root (`inferenceKit`, `speechModel`), un cliente único OpenAI-compatible
-  contra `${MODEL_GATEWAY_URL}/v1`. Sin `isTestMode()`: en test también se habla HTTP
-  contra el `:4001`. Tipos isomorfos y helpers puros del catálogo en
-  `packages/chatbot/lib/features/foundation-model/config.ts`, hidratado a cliente vía
-  `<ModelCatalogProvider>` (`app/(chat)/layout.tsx`) — los `"use client"` nunca
-  importan el kit.
-- **Fronteras de lint** (`packages/chatbot/eslint.config.mjs`): un fichero con
-  `"use client"` no puede importar `@/lib/infrastructure/ai` (exacto o cualquier subpath),
-  y ningún fichero fuera de `packages/chatbot/lib/infrastructure/ai/` puede importar
-  `@ai-sdk/*` salvo `@ai-sdk/react` (UI). Ambas reglas tienen contrato en
+- **Only AI provider** for chatbot and coding-agent: the repo holds no external provider
+  keys (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, …) — they are custodied encrypted on the
+  host with **`systemd-creds`** (`LoadCredentialEncrypted=`), managed by
+  `packages/model-gateway/scripts/manage-creds.sh`.
+- **Runtime catalog**: `GET ${MODEL_GATEWAY_URL}/v1/models/catalog` (bearer
+  `MODEL_GATEWAY_API_KEY`) filters `user_invocable: true` entries server-side and returns
+  the clean metadata schema. `chatbot` consumes it for the Model Picker and
+  `<ModelCatalogProvider>`; `coding-agent` consumes it on startup to write Pi's
+  `models.json` with a single `model-gateway` provider.
+- **Default Model Contracts**: internal, non-selectable uses call the stable names the
+  Gateway guarantees — `fast-default`, `flash-default`, `vision-default`,
+  `reasoning-default`, `free-default`, `image-default`, `embedding-default`,
+  `rerank-default`, `decision-default`, `tts-default` — with no static typed catalog.
+- **Mock Model Gateway** (test): `config.test.ts` pins `modelGatewayUrl` to
+  `http://127.0.0.1:4001` (guarded by `packages/config/src/guardrails.ts`), the HTTP mock
+  in `packages/chatbot/tests/mocks/gateway/` that serves the test capability catalog and
+  deterministic responses.
+- **Chatbot facade**: `packages/chatbot/lib/infrastructure/ai/inference-kit.ts` is the
+  composition root (`inferenceKit`, `speechModel`), a single OpenAI-compatible client
+  against `${MODEL_GATEWAY_URL}/v1`. No `isTestMode()`: in test it also speaks HTTP to
+  the `:4001`. Isomorphic types and pure catalog helpers live in
+  `packages/chatbot/lib/features/foundation-model/config.ts`, hydrated to the client via
+  `<ModelCatalogProvider>` (`app/(chat)/layout.tsx`) — `"use client"` files never import
+  the kit.
+- **Lint boundaries** (`packages/chatbot/eslint.config.mjs`): a file with `"use client"`
+  cannot import `@/lib/infrastructure/ai` (exact or any subpath), and no file outside
+  `packages/chatbot/lib/infrastructure/ai/` may import `@ai-sdk/*` except `@ai-sdk/react`
+  (UI). Both rules have contracts in
   `packages/chatbot/tests/contract/eslint-boundaries.test.ts`.
 
 ### `chatbot` — Main Application
@@ -221,16 +251,16 @@ Reusable observability library used by both `chatbot` and `coding-agent`. Provid
 chatbot ──→ coding-agent
    │              │
    ├──────────────┼──→ tracing
-   ├──────────────┼──→ model-gateway (HTTP: Model Gateway / Mock Gateway en test)
+   ├──────────────┼──→ model-gateway (HTTP: Model Gateway / Mock Gateway in test)
    └──────────────┼──→ config
                   └
 ```
 
-Los paquetes Node del workspace son `chatbot`, `coding-agent`, `config` y `tracing`; el
-Model Gateway reside en `packages/model-gateway` a efectos de co-location del código, pero
-es deliberadamente **independiente del workspace** (sin `workspace:*`): el único iface entre
-los paquetes TS y él es HTTP (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY` de `config`).
-Los `*-default` son contratos de texto plano, no imports.
+The workspace's Node packages are `chatbot`, `coding-agent`, `config` and `tracing`; the
+Model Gateway lives in `packages/model-gateway` for code co-location, but is deliberately
+**independent of the workspace** (no `workspace:*`): the only interface between the TS
+packages and it is HTTP (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY` from `config`).
+The `*-default` names are plain-text contracts, not imports.
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph
@@ -264,7 +294,7 @@ Skills under `.agents/skills/` are vendored from upstream repos and pinned by
 hash algorithm is not reproducible from this repo, so patches leave the lock
 stale on purpose — keep them minimal and recorded here:
 
-Catalog poda (2026-09-11): `.agents/skills/` went from 40 to 28 skills. Removed
+Catalog pruning (2026-09-11): `.agents/skills/` went from 40 to 28 skills. Removed
 were skills that cannot apply to this repo (Claude Code hooks, the pre-commit
 bootstrapper, the shoehorn migration, course scaffolding), unused upstream
 `in-progress` skills, and `prototype` (dropped per operator request, with its

@@ -48,35 +48,35 @@ Every `.prompty` file consists of two parts: YAML frontmatter and the template b
 ````markdown
 ---
 name: code-review-session
-description: Resume una sesión del coding agent y sugiere mejoras
+description: Summarises a coding agent session and suggests improvements
 inputs:
   - name: target_session
     kind: session
-    description: ID de la sesión a revisar
+    description: ID of the session to review
     required: true
   - name: focus_area
     kind: string
-    description: Enfoque del review
+    description: Review focus
     enumValues: [bugs, perf, style]
   - name: context
     kind: string
-    description: Contexto adicional opcional
-    placeholder: Algo más que el agente deba saber...
+    description: Optional additional context
+    placeholder: Anything else the agent should know...
     required: false
 ---
 
-# Code Review de la sesión {{target_session}}
+# Code Review of session {{target_session}}
 
 {% if focus_area %}
-## Enfoque: {{ focus_area }}
+## Focus: {{ focus_area }}
 {% endif %}
 
 {% if context %}
 {{ context }}
 {% else %}
-## Instrucciones
+## Instructions
 
-Analiza los cambios de la sesión y reporta problemas encontrados y sugerencias.
+Review the session's changes and report the issues found and suggested improvements.
 {% endif %}
 ````
 
@@ -166,18 +166,18 @@ File: `.agents/prompts/quick-refactor.prompty`
 ```markdown
 ---
 name: quick-refactor
-description: Refactorizar un archivo aplicando principios SOLID
+description: Refactor a file applying SOLID principles
 inputs:
   - name: file_path
     kind: string
-    description: Ruta al archivo a refactorizar
+    description: Path to the file to refactor
     required: true
     placeholder: src/utils/helpers.ts
 ---
 
-Por favor refactoriza el archivo `{{ file_path }}`:
-1. Mejora la legibilidad y modularidad.
-2. Mantén intacto el comportamiento existente y las pruebas asociadas.
+Please refactor the file `{{ file_path }}`:
+1. Improve readability and modularity.
+2. Keep existing behaviour and its tests untouched.
 ```
 
 ### Example 2: Parameterized Test Generator with Select Options
@@ -186,30 +186,30 @@ File: `.agents/prompts/generate-tests.prompty`
 ```markdown
 ---
 name: generate-tests
-description: Generar suite de pruebas unitarias o de integración
+description: Generate a unit or integration test suite
 inputs:
   - name: component_path
     kind: string
-    description: Componente o módulo a probar
+    description: Component or module under test
     required: true
   - name: test_type
     kind: string
-    description: Tipo de prueba
+    description: Test type
     enumValues: [unit, integration, component]
     default: unit
   - name: framework
     kind: string
-    description: Framework de testing
+    description: Testing framework
     enumValues: [vitest, jest, playwright]
     default: vitest
 ---
 
-Genera pruebas de tipo **{{ test_type }}** para `{{ component_path }}` usando **{{ framework }}**.
+Generate **{{ test_type }}** tests for `{{ component_path }}` using **{{ framework }}**.
 
-Requisitos:
-- Cubrir casos borde y manejo de errores.
-- Seguir la convención AAA (Arrange-Act-Assert).
-- Ubicar el archivo de test en la carpeta correspondiente según las reglas del proyecto.
+Requirements:
+- Cover edge cases and error handling.
+- Follow the AAA convention (Arrange-Act-Assert).
+- Place the test file in the folder the project's rules dictate.
 ```
 
 ---

@@ -7,15 +7,15 @@ import { Dropdown, useDropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils/helpers";
 
 export interface ReasoningControlProps {
-  /** Nivel que se aplicará en el próximo turno. */
+  /** Level that will be applied on the next Turn. */
   level: ThinkingLevel | null;
-  /** Niveles del modelo seleccionado en el picker. */
+  /** Levels of the model selected in the picker. */
   levels: ThinkingLevel[];
   onSelect: (level: ThinkingLevel) => void;
   /**
-   * Bloqueo mid-turn (ticket 03): el thinking se snapshottea al arrancar
-   * el run, así que cambiarlo en Turn activo no aplicaría hasta el
-   * próximo Turn. Sin tooltip: simplemente no aplica.
+   * Mid-turn lock (ticket 03): thinking is snapshotted when the run starts,
+   * so changing it during an active Turn would not apply until the next
+   * Turn. No tooltip: it simply does not apply.
    */
   disabled?: boolean;
 }
@@ -28,7 +28,7 @@ export const ReasoningControl: React.FC<ReasoningControlProps> = ({
 }) => {
   const { getDropdownPopupProps, getDropdownTriggerProps } = useDropdown();
 
-  // El modelo no razona (solo "off" disponible): sin control.
+  // The model does not reason (only "off" available): no control.
   if (levels.length <= 1) return null;
 
   return (

@@ -1,7 +1,7 @@
 import { stopMockGateway } from "../mocks/gateway/server";
 
 async function globalTeardown() {
-  // El mock del Model Gateway es de este proceso (el global setup lo arrancó): bajarlo aquí.
+  // The Model Gateway mock belongs to this process (the global setup started it): shut it down here.
   await stopMockGateway();
 }
 

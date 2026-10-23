@@ -18,9 +18,9 @@ const translateAiAdapter: TranslateAiPort = {
     inferenceKit.languageModel("flash-default"),
 };
 
-// `languageModel` es síncrono contra el snapshot del catálogo: cada entry
-// point de workflow lo calienta antes de generar (el classify/decide de
-// arriba no necesita catálogo, pero la generación sí).
+// `languageModel` is synchronous against the catalog snapshot: each workflow
+// entry point warms it up before generating (the classify/decide above needs no
+// catalog, but the generation does).
 export const correctGrammar = async (prompt: string) => {
   await warmModelCatalog();
   return makeCorrectGrammar(grammarAiAdapter)(prompt);

@@ -8,13 +8,13 @@ import {
 } from "@/lib/features/chat/mode-routing";
 
 // The real classifier is Jev 1.13 through the OpenRouter Decisions API,
-// reached via the kit's generic `decide` (see `inference`). En el Entorno de
-// Test el router determinista mantiene Auto sin red: el Entorno lo decide
-// `config.entorno()` (bundle estático soldado en compilación — sustituye al
-// antiguo `isTestMode()`/`NEXT_PUBLIC_ENV`, ADR 0011).
+// reached via the kit's generic `decide` (see `inference`). In the Test
+// Environment the deterministic router keeps Auto offline: the Environment is
+// decided by `config.environment()` (static bundle welded at compile time —
+// replacing the old `isTestMode()`/`NEXT_PUBLIC_ENV`, ADR 0011).
 export const processChatResponse = makeProcessChatResponse(
   compactionAiAdapter,
-  config.entorno() === "test"
+  config.environment() === "test"
     ? createDeterministicChatModeRouter()
     : createChatModeRouter(inferenceKit.decide),
 );

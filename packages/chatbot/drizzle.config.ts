@@ -1,22 +1,22 @@
 import { defineConfig } from "drizzle-kit";
-import { config, initConfig, parseEntornoFromArgv } from "config";
+import { config, initConfig, parseEnvironmentFromArgv } from "config";
 
-// drizzle-kit carga este fichero y NO reenvía los flags de su CLI al config
-// (spec ticket 03): `process.argv` solo contendrá `--env=...` cuando el
-// fichero se evalúa en un proceso que lo trae. Por eso el Entorno se toma con
-// el parser canónico de `config` y, si no está, cae al Entorno local por
-// defecto, `dev` — NUNCA a una variable de entorno (la resolución por
-// `NEXT_PUBLIC_ENV`/`.env` murió con ADR 0011).
-const entorno = parseEntornoFromArgv(process.argv) ?? "dev";
+// drizzle-kit loads this file and does NOT forward its CLI flags to the config
+// (spec ticket 03): `process.argv` will only carry `--env=...` when the
+// file is evaluated in a process that brings it. That's why the Environment is taken
+// with the canonical parser from `config` and, if absent, falls back to the default
+// local Environment, `dev` — NEVER to an environment variable (the `NEXT_PUBLIC_ENV`/
+// `.env` resolution died with ADR 0011).
+const environment = parseEnvironmentFromArgv(process.argv) ?? "dev";
 const allowProdPush =
   process.argv.includes("--allow-prod-push") ||
   process.env.ALLOW_PROD_PUSH === "1";
-if (entorno === "prod" && !allowProdPush) {
+if (environment === "prod" && !allowProdPush) {
   throw new Error(
-    "❌ drizzle-kit está bloqueado para el entorno prod por defecto (ADR 0001). Las modificaciones de esquema en producción deben aplicarse mediante migraciones versionadas (pnpm db:prod:migrate). Si como operador necesitas forzar drizzle-kit push contra producción, usa explícitamente --allow-prod-push o ALLOW_PROD_PUSH=1.",
+    "❌ drizzle-kit is blocked for the prod Environment by default (ADR 0001). Schema changes in production must be applied through versioned migrations (pnpm db:prod:migrate). If, as the operator, you need to force drizzle-kit push against production, explicitly pass --allow-prod-push or ALLOW_PROD_PUSH=1.",
   );
 }
-initConfig(entorno);
+initConfig(environment);
 
 export default defineConfig({
   schema: "./lib/infrastructure/db/schema.ts",

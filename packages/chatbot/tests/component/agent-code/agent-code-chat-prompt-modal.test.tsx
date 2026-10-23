@@ -78,8 +78,8 @@ describe("AgentCodeChat prompt modal", () => {
   it("passes the labeled sessions into the session select of the prompt form", async () => {
     render(<AgentCodeChat project="p" sessionId="s" modelId="m" modelThinking={new Map()} />);
 
-    // El popup del dropdown se abre vía startTransition: usar queries
-    // async (findBy*) en lugar de getBy* para esperar el flush.
+    // The dropdown popup opens via startTransition: use async queries
+    // (findBy*) instead of getBy* to wait for the flush.
     fireEvent.click(screen.getByLabelText("Select skills"));
     fireEvent.click(await screen.findByRole("tab", { name: "Prompts" }));
     fireEvent.click(await screen.findByText("review"));
@@ -98,12 +98,12 @@ describe("AgentCodeChat prompt modal", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Prompts" }));
     fireEvent.click(await screen.findByText("review"));
 
-    // El modal se abre y el dropdown permanece abierto detrás.
+    // The modal opens and the dropdown stays open behind it.
     await screen.findByLabelText(/Session/);
     expect(screen.getByRole("tab", { name: "Prompts" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    // El modal se desmonta síncrono al cancelar; el dropdown sigue abierto.
+    // The modal unmounts synchronously on cancel; the dropdown stays open.
     expect(screen.queryByLabelText(/Session/)).toBeNull();
     expect(screen.getByRole("tab", { name: "Prompts" })).toBeTruthy();
   });

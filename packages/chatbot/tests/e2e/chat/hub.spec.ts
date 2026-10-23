@@ -1,7 +1,7 @@
 import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
 
-// Ids del catálogo del Mock Model Gateway (capacidades, sin alias).
+// Ids of the Mock Model Gateway catalog (capabilities, no aliases).
 const TOOLS_MODEL = "canExecuteTools";
 const FAILING_MODEL = "failsMidStream";
 const VISION_MODEL = "canSeeImages";
@@ -21,7 +21,7 @@ test.describe("Chat Hub", () => {
   });
 
   test("Model Management - 3 models limit", async ({ page }) => {
-    // 1.1 Añadir hasta 3 modelos. Verificar que al llegar a 3, el botón de añadir desaparece.
+    // 1.1 Add up to 3 models. Check that on reaching 3, the add button disappears.
 
     // Add first model
     await hubPage.header.addModel("canExecuteTools");
@@ -40,7 +40,7 @@ test.describe("Chat Hub", () => {
     await expect(page.getByRole("button", { name: "New Model" })).toBeHidden();
     await expect(hubPage.header.modelPicker).toBeHidden();
 
-    // 1.2 Eliminar un modelo y verificar que el botón de añadir reaparece.
+    // 1.2 Remove a model and check that the add button reappears.
     const visionPanel = hubPage.getPanel(VISION_MODEL);
     // Ensure the model is selected if we are in mobile/tab view
     await hubPage.header.selectTab(VISION_MODEL);
@@ -55,8 +55,8 @@ test.describe("Chat Hub", () => {
     }
   });
 
-  test("Messaging Multi-Modelo and Locking", async ({ page }) => {
-    // 2.1 Enviar un mensaje y verificar el streaming simultáneo en los paneles activos.
+  test("Multi-Model Messaging and Locking", async ({ page }) => {
+    // 2.1 Send a message and check the simultaneous streaming in the active panels.
     // The hub runs without tools, so both models must be ones that answer with
     // plain text — no tool calls and no mid-stream failure.
     await hubPage.header.addModel("basicChat");
@@ -65,7 +65,7 @@ test.describe("Chat Hub", () => {
     const message = "Hello models, give me a short response.";
     await hubPage.hubContent.sendMessage(message);
 
-    // 2.2 Verificar que el botón de enviar se bloquea durante la generación
+    // 2.2 Check that the send button is locked during generation
     await expect
       .soft(page.getByRole("button", { name: "Send message" }))
       .toBeDisabled();
@@ -104,7 +104,7 @@ test.describe("Chat Hub", () => {
   });
 
   test("Persistence - Select this chat", async ({ page }) => {
-    // 3.1 Pulsar "Select this chat" en uno de los paneles.
+    // 3.1 Press "Select this chat" on one of the panels.
     await hubPage.header.addModel("canExecuteTools");
     await hubPage.hubContent.sendMessage("Hello there");
 
@@ -115,18 +115,18 @@ test.describe("Chat Hub", () => {
     await expect(toolsPanel.selectButton).toBeVisible();
     await toolsPanel.selectButton.click();
 
-    // 3.2 Verificar que permanece en el Hub y el botón cambia a Delete
+    // 3.2 Check that it stays on the Hub and the button changes to Delete
     await expect(page).toHaveURL(/\/chat\/hub/);
     await expect(toolsPanel.selectButton).toBeHidden();
     await expect(toolsPanel.deleteButton).toBeVisible();
 
-    // 3.3 Verificar que Delete elimina la instancia (limpia)
+    // 3.3 Check that Delete removes the instance (clean)
     await toolsPanel.deleteButton.click();
     await expect(toolsPanel.container).toBeHidden();
   });
 
   test("UI & Responsive Grid", async ({ page }) => {
-    // 5.1 Cambiar entre vista grid (desktop) y vista tabs (mobile).
+    // 5.1 Switch between grid view (desktop) and tabs view (mobile).
     await hubPage.header.addModel("canExecuteTools");
     await hubPage.header.addModel("failsMidStream");
 

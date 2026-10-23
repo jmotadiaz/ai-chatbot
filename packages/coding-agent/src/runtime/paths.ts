@@ -31,7 +31,7 @@ export function resolveOverride(value: string | undefined, fallback: string): st
 
 /**
  * Path resolvers (ADR 0011 §6): pure resolution over DI sources in precedence
- * order — explicit override → process-wide worker config → active Entorno
+ * order — explicit override → process-wide worker config → active Environment
  * bundle → legacy `.pi/` package fallback. Tests inject a sandbox through
  * `createTestWorkerContext()`; the `get*()` wrappers below are the
  * composition-root conveniences for callers outside the worker's DI graph

@@ -141,9 +141,9 @@ export async function loadCodingAgentBootstrap(params: {
         project,
       });
       const catalog = await fetchPublicModelCatalog();
-      // Con el proveedor único Gateway el id de Pi es el id del catálogo: se
-      // acepta tal cual si el catálogo lo conoce; si no (worker sin migrar,
-      // modelo retirado), cae al modelId persistido de la sesión.
+      // With the single Gateway provider the Pi id is the catalog id: it is
+      // accepted as-is if the catalog knows it; otherwise (unmigrated worker,
+      // retired model) it falls back to the session's persisted modelId.
       return (
         (isKnownModelId(catalog, model?.modelId) ? model.modelId : undefined) ??
         dbSession.modelId ??

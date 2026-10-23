@@ -4,10 +4,10 @@ import { IMAGE_CONTRACT, IMAGE_MEDIA_TYPE, createGatewayImageModel } from "@/lib
 import { MOCK_IMAGE_PNG_BASE64 } from "@/tests/mocks/gateway/server";
 
 /**
- * Unit del transport propio del contrato `image-default` (spec §2.4):
- * mapeo prompt V3 → mensajes OpenAI (con `image_url`) y respuesta OpenAI
- * multipart → `LanguageModelV3Content` (`text` + `file`). `fetch` va con
- * stub — la integración real contra el Mock Model Gateway vive en
+ * Unit of the `image-default` contract's own transport (spec §2.4): V3 prompt →
+ * OpenAI messages mapping (with `image_url`) and OpenAI multipart response →
+ * `LanguageModelV3Content` (`text` + `file`). `fetch` is stubbed — the real
+ * integration against the Mock Model Gateway lives in
  * `tests/integration/infrastructure/gateway-image-model.test.ts`.
  */
 
@@ -40,7 +40,7 @@ const options = (overrides: Partial<LanguageModelV3CallOptions> = {}): LanguageM
   ...overrides,
 });
 
-/** Capture del fetch: guarda url/body y devuelve la respuesta del Gateway. */
+/** Fetch capture: it stores url/body and returns the Gateway response. */
 function stubFetch(response: unknown, status = 200) {
   const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) =>
     new Response(JSON.stringify(response), {
@@ -74,7 +74,7 @@ afterEach(() => {
 });
 
 describe("gateway-image-model (contrato image-default)", () => {
-  it("POST /chat/completions con model, modalities e image_url del adjunto", async () => {
+  it("POST /chat/completions with the attachment's model, modalities and image_url", async () => {
     const fetchMock = stubFetch(gatewayResponse);
     const model = createGatewayImageModel();
 
@@ -101,11 +101,11 @@ describe("gateway-image-model (contrato image-default)", () => {
         ],
       },
     ]);
-    // Los parámetros opcionales del caller viajan solo si están definidos.
+    // The caller's optional params only travel when they are defined.
     expect(body.temperature).toBeUndefined();
   });
 
-  it("mapea la respuesta multipart a content text + file (GeneratedFile)", async () => {
+  it("maps the multipart response to content text + file (GeneratedFile)", async () => {
     stubFetch(gatewayResponse);
     const model = createGatewayImageModel();
 
@@ -127,11 +127,11 @@ describe("gateway-image-model (contrato image-default)", () => {
     expect(result.usage.outputTokens).toMatchObject({ total: 40, text: 40 });
   });
 
-  it("acepta también content como string plano", async () => {
+  it("also accepts content as a plain string", async () => {
     stubFetch({
       choices: [
         {
-          message: { role: "assistant", content: "solo texto" },
+          message: { role: "assistant", content: "text only" },
           finish_reason: "stop",
         },
       ],
@@ -140,10 +140,10 @@ describe("gateway-image-model (contrato image-default)", () => {
     const model = createGatewayImageModel();
 
     const result = await model.doGenerate(options());
-    expect(result.content).toEqual([{ type: "text", text: "solo texto" }]);
+    expect(result.content).toEqual([{ type: "text", text: "text only" }]);
   });
 
-  it("lanza si el Gateway no responde 2xx", async () => {
+  it("throws if the Gateway does not answer 2xx", async () => {
     stubFetch({ error: "boom" }, 500);
     const model = createGatewayImageModel();
 

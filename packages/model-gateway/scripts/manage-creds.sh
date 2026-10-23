@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Wizard de credenciales del Model Gateway sobre systemd-creds.
+# Credentials wizard for the Model Gateway on top of systemd-creds.
 #
-# Uso:
-#   manage-creds.sh              # setup: recorre las 7 credenciales una a una
-#   manage-creds.sh set <key>    # actualiza un único secreto
-#   manage-creds.sh list         # lista los .cred presentes
+# Usage:
+#   manage-creds.sh              # setup: walks the 7 credentials one by one
+#   manage-creds.sh set <key>    # updates a single secret
+#   manage-creds.sh list         # lists the .cred files present
 #
-# Cada secreto se cifra con:
+# Each secret is encrypted with:
 #   sudo systemd-creds encrypt --name=<key> - /etc/model-gateway/creds/<key>.cred
-# (sobrescribe siempre el .cred previo). El valor se pide en silencio.
+# (it always overwrites the previous .cred). The value is prompted for silently.
 set -euo pipefail
 
 CREDS_DIR="/etc/model-gateway/creds"
 
-# 1 propia (MODEL_GATEWAY_API_KEY) + 6 proveedores activos (spec §2.5).
+# 1 own (MODEL_GATEWAY_API_KEY) + 6 active providers (spec §2.5).
 REQUIRED_KEYS=(
   model_gateway_api_key
   opencode_api_key
@@ -34,8 +34,9 @@ is_required_key() {
 
 encrypt_cred() {
   local key="$1" value="$2"
-  # /etc es de root: el directorio y el .cred se crean con sudo (el .cred queda
-  # 600: está cifrado y atado a esta máquina, pero no hace falta que sea legible).
+  # /etc belongs to root: the directory and the .cred are created with sudo (the
+  # .cred ends up 600: it is encrypted and bound to this machine, but it does not
+  # need to be readable).
   sudo mkdir -p "$CREDS_DIR"
   printf '%s' "$value" | sudo systemd-creds encrypt --name="$key" - "$CREDS_DIR/$key.cred"
   sudo chmod 600 "$CREDS_DIR/$key.cred"
@@ -44,32 +45,32 @@ encrypt_cred() {
 
 ask_and_encrypt() {
   local key="$1" value=""
-  printf 'Valor para %s: ' "$key" >&2
+  printf 'Value for %s: ' "$key" >&2
   read -rs value
   echo >&2
   if [[ -z "$value" ]]; then
-    echo "error: valor vacío para $key" >&2
+    echo "error: empty value for $key" >&2
     exit 1
   fi
   encrypt_cred "$key" "$value"
 }
 
 cmd_setup() {
-  echo "== Model Gateway: setup de credenciales ($CREDS_DIR) =="
+  echo "== Model Gateway: credentials setup ($CREDS_DIR) =="
   for key in "${REQUIRED_KEYS[@]}"; do
     ask_and_encrypt "$key"
   done
-  echo "== Hecho. Reinicia la unidad: sudo systemctl restart model-gateway =="
+  echo "== Done. Restart the unit: sudo systemctl restart model-gateway =="
 }
 
 cmd_set() {
   local key="${1:-}"
   if [[ -z "$key" ]]; then
-    echo "uso: $0 set <key>  (claves válidas: ${REQUIRED_KEYS[*]})" >&2
+    echo "usage: $0 set <key>  (valid keys: ${REQUIRED_KEYS[*]})" >&2
     exit 1
   fi
   if ! is_required_key "$key"; then
-    echo "error: clave desconocida '$key'. Válidas: ${REQUIRED_KEYS[*]}" >&2
+    echo "error: unknown key '$key'. Valid: ${REQUIRED_KEYS[*]}" >&2
     exit 1
   fi
   ask_and_encrypt "$key"
@@ -84,7 +85,7 @@ cmd_list() {
   done
   shopt -u nullglob
   if [[ "$found" -eq 0 ]]; then
-    echo "(sin credenciales en $CREDS_DIR)"
+    echo "(no credentials in $CREDS_DIR)"
   fi
 }
 
@@ -92,5 +93,5 @@ case "${1:-setup}" in
   setup) cmd_setup ;;
   set) shift; cmd_set "$@" ;;
   list) cmd_list ;;
-  *) echo "uso: $0 [setup | set <key> | list]" >&2; exit 1 ;;
+  *) echo "usage: $0 [setup | set <key> | list]" >&2; exit 1 ;;
 esac

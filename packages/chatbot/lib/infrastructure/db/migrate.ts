@@ -1,22 +1,22 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
-import { config, initConfig, optional, parseEntornoFromArgv } from "config";
+import { config, initConfig, optional, parseEnvironmentFromArgv } from "config";
 
 /**
- * Migraciones por Entorno: `tsx lib/infrastructure/db/migrate.ts --env=dev|test|prod`
- * (ADR 0011 — el Entorno llega por process.argv, sin dotenv). Cada Entorno
- * migra SU base aislada (guardarraíles de `packages/config`: dev↔5433/dev,
- * test↔5434/test, prod↔5435/prod). Sin `--env` → fallo rápido.
+ * Per-Environment migrations: `tsx lib/infrastructure/db/migrate.ts --env=dev|test|prod`
+ * (ADR 0011 — the Environment arrives through process.argv, no dotenv). Each Environment
+ * migrates ITS isolated database (`packages/config` guardrails: dev↔5433/dev,
+ * test↔5434/test, prod↔5435/prod). No `--env` → fail fast.
  */
-const entorno = parseEntornoFromArgv(process.argv);
-if (!entorno) {
+const environment = parseEnvironmentFromArgv(process.argv);
+if (!environment) {
   console.error(
-    "❌ migrate.ts exige --env=dev|test|prod (ADR 0011). Ej: npx tsx lib/infrastructure/db/migrate.ts --env=dev",
+    "❌ migrate.ts requires --env=dev|test|prod (ADR 0011). E.g.: npx tsx lib/infrastructure/db/migrate.ts --env=dev",
   );
   process.exit(1);
 }
-initConfig(entorno);
+initConfig(environment);
 
 const runMigrate = async () => {
   const url = optional(() => config.postgresUrl());
@@ -27,7 +27,7 @@ const runMigrate = async () => {
   const connection = postgres(url!, { max: 1 });
   const db = drizzle(connection);
 
-  console.log(`⏳ Running migrations (${entorno})...`);
+  console.log(`⏳ Running migrations (${environment})...`);
 
   const start = Date.now();
   await migrate(db, { migrationsFolder: "./lib/infrastructure/db/migrations" });

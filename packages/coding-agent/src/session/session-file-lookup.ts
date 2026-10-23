@@ -74,13 +74,13 @@ export async function findSessionFile(
     if (name !== undefined) return path.join(dir, name);
   }
 
-  // Fallback: Si el agentDir configurado está aislado (.pi-prod o .pi-dev),
-  // buscar en el agentDir canónico global (~/.pi/agent) para preservar
-  // compatibilidad con las sesiones históricas (ADR 0002).
+  // Fallback: if the configured agentDir is isolated (.pi-prod or .pi-dev),
+  // look in the canonical global agentDir (~/.pi/agent) to preserve
+  // compatibility with historical sessions (ADR 0002).
   const globalAgentDir = path.join(os.homedir(), ".pi", "agent");
   const effectiveAgentDir = agentDir ?? resolveCodingAgentDir();
   if (path.resolve(effectiveAgentDir) !== globalAgentDir) {
-    // 1. Probar con el mismo scopePath en el global agentDir
+    // 1. Try the same scopePath in the global agentDir
     const globalDir = resolveSessionDir(scopePath, globalAgentDir);
     const globalFiles = await listSessionFileNames(globalDir);
     if (globalFiles) {
@@ -88,9 +88,9 @@ export async function findSessionFile(
       if (name !== undefined) return path.join(globalDir, name);
     }
 
-    // 2. Probar con el scope histórico de prod (/home/javier/coding-agent/sessions)
-    // especialmente útil para dev cuando el scopePath es .pi-dev/sessions pero las sesiones
-    // provienen del historial de prod
+    // 2. Try the historical prod scope (/home/javier/coding-agent/sessions)
+    // especially useful for dev when the scopePath is .pi-dev/sessions but the
+    // sessions come from the prod history
     const isSubagent = scopePath.endsWith("subagents");
     const legacyProdScope = isSubagent
       ? path.join(os.homedir(), "coding-agent", "sessions", "subagents")

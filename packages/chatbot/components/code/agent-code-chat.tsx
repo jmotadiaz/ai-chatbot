@@ -137,9 +137,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   } = useCodingAgentSkills(sessionId, !isLoading, bootstrap?.skills);
 
   const [promptModal, setPromptModal] = useState<PromptSummary | null>(null);
-  // Apertura del dropdown de skills/prompts, gobernada por el parent para
-  // que el flujo del modal pueda cerrarlo al insertar el texto (no al
-  // cancelar).
+  // Opening of the skills/prompts dropdown, governed by the parent so the
+  // modal flow can close it when inserting the text (not on cancel).
   const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
 
   const {
@@ -186,8 +185,8 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   const handlePromptInsert = (text: string) => {
     setInput((prev) => (prev ? `${prev}\n\n${text}` : text));
     setPromptModal(null);
-    // Insertar reemplaza el selector: el dropdown se cierra. Al cancelar el
-    // modal permanece abierto para poder elegir otro prompt.
+    // Inserting replaces the selector: the dropdown closes. On cancel the
+    // modal stays open so another prompt can be picked.
     setPromptDropdownOpen(false);
   };
 
@@ -270,7 +269,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     const text = waitingMessageText;
     if (!text) return;
     try {
-      // The chip only ever shows the queued Mensaje en Espera, and with one
+      // The chip only ever shows the queued follow-up message, and with one
       // pending message at a time that is the only armed queue.
       await clearQueue();
       // Back to the textarea as a draft, never auto-reenqueued: the user
@@ -334,7 +333,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         <PendingCommentsBar disabled={isRunning} />
         {waitingMessageText && (
           <div className="mb-2 flex w-full min-w-0 items-center gap-2" data-testid="followup-chip">
-            {/* The chip owns the Mensaje en Espera actions (edit/discard/
+            {/* The chip owns the pending follow-up actions (edit/discard/
                 promote) and keeps that message editable until it is sent;
                 an already-sent steering is shown as a bubble in the
                 conversation instead. */}

@@ -9,8 +9,8 @@ export interface AttachmentsControlProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   supportedFiles: ChatModelConfiguration["supportedFiles"];
   /**
-   * Bloqueo mid-turn (ticket 03): la cola es texto plano v1, así que
-   * adjuntar en Turn activo compondría algo que el worker rechazaría.
+   * Mid-turn lock (ticket 03): the queue is plain text v1, so attaching
+   * during an active Turn would compose something the worker would reject.
    */
   disabled?: boolean;
 }

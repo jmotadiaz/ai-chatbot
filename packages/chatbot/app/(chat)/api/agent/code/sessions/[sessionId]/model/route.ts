@@ -28,9 +28,9 @@ export const GET = withAuth(async (user, req) => {
     project: dbSession.project,
   });
 
-  // Con el proveedor único Gateway el id de Pi es el id del catálogo: se
-  // acepta tal cual si el catálogo lo conoce; si no (worker sin migrar,
-  // modelo retirado), cae al modelId persistido de la sesión.
+  // With the single Gateway provider Pi's id is the catalog id: it is
+  // accepted as-is if the catalog knows it; if not (worker not migrated yet,
+  // retired model), it falls back to the session's persisted modelId.
   const catalog = await fetchPublicModelCatalog();
   const modelId =
     (isKnownModelId(catalog, model?.modelId) ? model.modelId : undefined) ??

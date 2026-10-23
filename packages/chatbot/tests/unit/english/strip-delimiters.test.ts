@@ -32,8 +32,8 @@ const collect = async (
   );
 
   const emitted: TextStreamPart<ToolSet>[] = [];
-  // Reader explícito: el async-iterator de ReadableStream ya no se resuelve
-  // con el `lib` de este tsconfig tras retirar la dependencia `models`.
+  // Explicit reader: the ReadableStream async iterator no longer resolves with
+  // this tsconfig's `lib` after dropping the `models` dependency.
   const reader = transformed.getReader();
   for (;;) {
     const { done, value } = await reader.read();

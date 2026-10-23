@@ -13,12 +13,12 @@ import type { WorkerRuntimeConfig } from "./runtime-config";
  *
  * Everything else receives the config explicitly: `resolveGatewayRuntimeConfig`,
  * `resolveWorkerRuntimeConfig` and the path resolvers merge (explicit overrides
- * > these process-wide overrides > Entorno bundle > package fallback).
+ * > these process-wide overrides > Environment bundle > package fallback).
  *
  * Note for the Pi extensions: `jiti` re-evaluates the extension entrypoints
  * into a second module instance that gets its own empty copy of this module. That is
  * safe because the composition root only ever registers values equal to the
- * Entorno bundle defaults, so the second instance resolves the same paths from
+ * Environment bundle defaults, so the second instance resolves the same paths from
  * the bundle (same reason both copies can read `config`).
  */
 let overrides: WorkerRuntimeConfig = {};

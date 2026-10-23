@@ -4,9 +4,10 @@ import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 
 /**
- * Gate ALLOW_PROD_BUILD del worker (ticket 07): build:prod escribe dist/ y
- * regenera .pi-prod/models.json (estado de runtime de Producción); sin opt-in
- * debe morir antes de compilar nada. build:prod:verify no pasa por aquí.
+ * The worker's ALLOW_PROD_BUILD gate (ticket 07): build:prod writes dist/ and
+ * regenerates .pi-prod/models.json (prod runtime state); without opt-in it
+ * must die before compiling anything. build:prod:verify does not go through
+ * here.
  */
 const exec = promisify(execFile);
 const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../..");
@@ -26,12 +27,12 @@ async function runGate(extra: Record<string, string | undefined>) {
   }
 }
 
-describe("assert-prod-build-allowed del worker", () => {
-  it("pasa con ALLOW_PROD_BUILD=1", async () => {
+describe("worker assert-prod-build-allowed", () => {
+  it("passes with ALLOW_PROD_BUILD=1", async () => {
     expect((await runGate({ ALLOW_PROD_BUILD: "1" })).code).toBe(0);
   }, 60_000);
 
-  it("falla sin opt-in y dirige a build:verify", async () => {
+  it("fails without opt-in and points to build:verify", async () => {
     const { code, output } = await runGate({});
     expect(code).not.toBe(0);
     expect(output).toMatch(/build:verify/);

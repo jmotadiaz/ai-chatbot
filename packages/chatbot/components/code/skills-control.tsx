@@ -23,15 +23,15 @@ export interface SkillsControlProps {
   promptsError?: string | null;
   onPromptSelect?: (promptName: string) => void;
   /**
-   * Popup controlado: si se proveen, el parent gobierna la apertura (el
-   * flujo de prompts cierra el dropdown al insertar el texto, pero lo deja
-   * abierto al cancelar el modal). Sin `open`, el control es autónomo.
+   * Controlled popup: when provided, the parent governs opening (the prompts
+   * flow closes the dropdown when inserting the text, but leaves it open on
+   * cancel). Without `open`, the control is autonomous.
    */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /**
-   * Bloqueo mid-turn (ticket 03): skills y prompts no viajan en la cola
-   * de texto plano v1.
+   * Mid-turn lock (ticket 03): skills and prompts do not travel in the v1
+   * plain-text queue.
    */
   disabled?: boolean;
 }
@@ -53,14 +53,14 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open !== undefined ? open : internalOpen;
   const [activeTab, setActiveTab] = useState<"skills" | "prompts">("skills");
-  // Input único compartido: vive en el control (estado elevado) para que
-  // cambiar de tab no desmonte el <input> y el teclado virtual no se
-  // cierre y reabra. La query se conserva al cambiar de tab.
+  // Single shared input: lives in the control (lifted state) so switching
+  // tabs does not unmount the <input> and the virtual keyboard does not
+  // close and reopen. The query is preserved across tab changes.
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const setOpen = (next: boolean) => {
     startTransition(() => {
-      // Cerrar resetea tab y query; al reabrir el input monta vacío.
+      // Closing resets tab and query; on reopen the input mounts empty.
       if (!next) {
         setActiveTab("skills");
         setQuery("");
@@ -108,10 +108,10 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
             <button
               role="tab"
               aria-selected={activeTab === "skills"}
-              // El tap movería el foco al botón y cerraría el teclado:
-              // se previene el robo de foco y se devuelve al input en el
-              // mismo gesto para que el teclado no parpadee. Por teclado
-              // (Tab+Enter) el foco sigue funcionando con normalidad.
+              // A tap would move focus to the button and close the keyboard:
+              // focus theft is prevented and focus is returned to the input in
+              // the same gesture so the keyboard does not flicker. Via keyboard
+              // (Tab+Enter) focus keeps working as usual.
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
                 setActiveTab("skills");
@@ -146,9 +146,9 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
           </div>
         </div>
         {/*
-         * Input único bajo los tabs, fuera del scroll: montado una sola vez
-         * por apertura para no perder el foco (ni el teclado) al cambiar
-         * de tab. Solo cambia su label/placeholder según la tab activa.
+         * Single input below the tabs, outside the scroll: mounted once per
+         * opening so focus (and the keyboard) is not lost when switching
+         * tabs. Only its label/placeholder changes with the active tab.
          */}
         <PopupFilterInput
           value={query}
@@ -183,7 +183,7 @@ export const SkillsControl: React.FC<SkillsControlProps> = ({
   );
 };
 
-/** Match v1: solo `name`, case-insensitive, substring con `trim()`. */
+/** v1 match: `name` only, case-insensitive, substring on `trim()`. */
 function matchesName(name: string, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -205,8 +205,8 @@ const PopupFilterInput: React.FC<PopupFilterInputProps> = ({
   inputRef,
   activeTab,
 }) => {
-  // Autofocus post-animación solo al montar (apertura del popup): el input
-  // no se desmonta al cambiar de tab, así que el foco/teclado se conserva.
+  // Post-animation autofocus only on mount (popup opening): the input does
+  // not unmount when switching tabs, so focus/keyboard are preserved.
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 200);
     return () => clearTimeout(t);
@@ -217,8 +217,8 @@ const PopupFilterInput: React.FC<PopupFilterInputProps> = ({
     activeTab === "skills" ? "Filter skills…" : "Filter prompts…";
 
   return (
-    // Div (no form): el control vive dentro del <form> del composer y un
-    // <form> anidado provocaría submits del mensaje con Enter.
+    // Div (not form): the control lives inside the composer's <form> and a
+    // nested <form> would trigger message submits on Enter.
     <div role="search" className="border-b border-muted px-3 py-2">
       <div className="relative">
         <Search

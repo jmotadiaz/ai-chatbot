@@ -90,9 +90,9 @@ const { createTestWorkerContext } = await import("../helpers/test-context");
  * kept): session creation rejects with an explicit error and the turn fails
  * in-band with RUN_ERROR.
  *
- * ADR 0011 §6: rutas y credenciales por DI — un registry + TurnRunner propios
- * con el sandbox de `createTestWorkerContext()`. El test jamás toca
- * * los runtime dirs de prod/dev ni muta `process.env`.
+ * ADR 0011 §6: paths and credentials through DI — an own registry + TurnRunner
+ * with the `createTestWorkerContext()` sandbox. The test never touches
+ * * the prod/dev runtime dirs nor mutates `process.env`.
  */
 describe("unknown modelId fails explicitly", () => {
   let ctx: ReturnType<typeof createTestWorkerContext>;

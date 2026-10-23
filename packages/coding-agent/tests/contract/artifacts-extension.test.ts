@@ -29,8 +29,8 @@ const { setWorkerRuntimeConfig, resetWorkerRuntimeConfigForTests } = await impor
  * model sees, and the automatic publish that keeps vendored skills working
  * without editing them.
  *
- * ADR 0011 §6: el sandbox se inyecta como config de proceso (la misma que
- * registra el composition root del transporte), nunca mutando `process.env`.
+ * ADR 0011 §6: the sandbox is injected as process config (the same one the
+ * transport's composition root registers), never by mutating `process.env`.
  */
 
 let tmp: string;

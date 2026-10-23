@@ -123,8 +123,8 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.assertPrevButtonVisible();
     });
 
-    // FIXME(e2e, 2026-09-02): flaky — assertion de viewport con timing variable
-    // (falla en corridas completas y pasa en subsets con conjunto variable).
+    // FIXME(e2e, 2026-09-02): flaky — viewport assertion with variable timing
+    // (it fails in full runs and passes in subsets with a variable set).
     test.fixme("should navigate to previous user message when clicking prev", async ({
       page,
     }) => {
@@ -178,8 +178,8 @@ test.describe("Chat Navigation", () => {
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
-    // FIXME(e2e, 2026-09-02): flaky — visibilidad del botón next según scroll
-    // residual entre tests en paralelo (viewport/timing, no del entorno).
+    // FIXME(e2e, 2026-09-02): flaky — next button visibility depending on residual
+    // scroll between parallel tests (viewport/timing, not the environment).
     test.fixme("should show next button when last user message is below viewport", async ({
       page,
     }) => {
@@ -233,7 +233,7 @@ test.describe("Chat Navigation", () => {
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
-    // FIXME(e2e, 2026-09-02): flaky — mismo patrón viewport/timing que above.
+    // FIXME(e2e, 2026-09-02): flaky — same viewport/timing pattern as above.
     test.fixme("should navigate to next user message when clicking next", async ({
       page,
     }) => {
@@ -261,7 +261,7 @@ test.describe("Chat Navigation", () => {
   });
 
   test.describe("Bottom button", () => {
-    // FIXME(e2e, 2026-09-02): flaky — mismo patrón viewport/timing que above.
+    // FIXME(e2e, 2026-09-02): flaky — same viewport/timing pattern as above.
     test.fixme("should show bottom button when not at bottom of chat", async ({
       page,
     }) => {

@@ -2,34 +2,35 @@
 
 HTTP worker that wraps `@earendil-works/pi-coding-agent`. Manages coding agent sessions, translates Pi events into AG-UI protocol events, and exposes an `/rpc` endpoint.
 
-> ⛔ El worker de prod (`:3015`) está VIVO bajo pm2: aplica el blindaje approval-first
-> de la raíz — ver «Producción está VIVA» en `AGENTS.md` antes de cualquier comando
-> que toque pm2/prod. Para verificar compilación, usa **siempre `build:verify`**
+> ⛔ The prod worker (`:3015`) is LIVE under pm2: root's approval-first guardrails
+> apply — see "Production is LIVE" in `AGENTS.md` before any command that touches
+> pm2/prod. To check compilation, **always use `build:verify`**
 > (`pnpm --filter coding-agent build:verify` → `dist/verify` + `.pi-verify`);
-> **nunca `build`** — pisa `dist`/`.pi-prod` de prod bajo pm2.
+> **never `build`** — it overwrites prod's `dist`/`.pi-prod` under pm2.
 
-## Entornos y scripts
+## Environments and scripts
 
-La configuración NO usa `.env.*` ni variables de entorno selectoras (ADR 0011):
-`packages/config` expone bundles TS tipados por Entorno y el Entorno activo viaja
-por `--env=prod|dev|test` en `process.argv` (`initConfig()` en los runners).
-Ver «config — Configuración tipada por Entorno» en el `AGENTS.md` de la raíz.
+Configuration does NOT use `.env.*` files or environment-variable selectors (ADR
+0011): `packages/config` exposes TS bundles typed per Environment and the active
+Environment travels through `--env=prod|dev|test` in `process.argv` (`initConfig()`
+in the runners). See "config — Typed per-Environment configuration" in the root
+`AGENTS.md`.
 
-- **Dev** (`pnpm dev` → `--env=dev`: `3000`+`3016`, `.pi-dev`): `pnpm --filter coding-agent dev` → `tsx` directo; **parada segura `pnpm --filter coding-agent stop:dev` (lsof -ti:3016 | xargs -r kill) o `pnpm stop:dev` en raíz (3000+3016). Nunca `pkill -f tsx` — `dev` y `prod` comparten `tsx src/transports/http.ts` y matarías `3015` de prod.**
-- **Prod** (`pnpm preview` → `--env=prod`: `8085`+`3015`, `.pi-prod`): 1 app `pm2 → pnpm preview` que hace `ALLOW_PROD_BUILD=1 build` de ambos packages y arranca `next start` + `node --import tsx dist/transports/http.js` (worker ya **compilado**, no `tsx` directo). `build` solo operador/CI (`ALLOW_PROD_BUILD=1` o `--allow-prod-build`).
-- **Test** (`--env=test` → `3001` stub + `5434`, `.pi-test`): `pnpm --filter chatbot test:e2e` + `pnpm stop:test` (mata `3001`).
-- **Verificación sin tocar prod**: el agente ejecuta `build:verify` (escribe a `dist/verify` + `.pi-verify/models.json` — no toca estado de runtime de prod).
+- **Dev** (`pnpm dev` → `--env=dev`: `3000`+`3016`, `.pi-dev`): `pnpm --filter coding-agent dev` → `tsx` directly; **safe stop: `pnpm --filter coding-agent stop:dev` (lsof -ti:3016 | xargs -r kill) or `pnpm stop:dev` at the root (3000+3016). Never `pkill -f tsx` — `dev` and `prod` share `tsx src/transports/http.ts` and you would kill prod's `3015`.**
+- **Prod** (`pnpm preview` → `--env=prod`: `8085`+`3015`, `.pi-prod`): 1 pm2 app → `pnpm preview`, which runs `ALLOW_PROD_BUILD=1 build` for both packages and starts `next start` + `node --import tsx dist/transports/http.js` (worker already **compiled**, not `tsx` directly). `build` is operator/CI only (`ALLOW_PROD_BUILD=1` or `--allow-prod-build`).
+- **Test** (`--env=test` → `3001` stub + `5434`, `.pi-test`): `pnpm --filter chatbot test:e2e` + `pnpm stop:test` (kills `3001`).
+- **Verification without touching prod**: the agent runs `build:verify` (writes to `dist/verify` + `.pi-verify/models.json` — it never touches prod runtime state).
 
-## DI y aislamiento en tests
+## DI and test isolation
 
-- Prohibido mutar `process.env.CODING_AGENT_*` / `process.env.MODEL_GATEWAY_*` en
-  `tests/**`: la config se inyecta por parámetro (`GatewayRuntimeConfig` /
-  `WorkerRuntimeConfig` en `src/runtime/runtime-config.ts`). El composition root
-  (`src/transports/http.ts`) es el único que usa los defaults de `packages/config`.
-- Usa `createTestWorkerContext()` (`tests/helpers/test-context.ts`): crea un sandbox
-  `mkdtempSync` con `projectsRoot`, `sessionsDir`, `modelsJsonPath`, `authJsonPath`,
-  `agentDir`, `piPackagesDir`, `artifactsDir` y `cleanup()` para `afterEach`.
-- Un test NUNCA escribe en `.pi-prod` ni `.pi-dev`. Contrato:
+- Mutating `process.env.CODING_AGENT_*` / `process.env.MODEL_GATEWAY_*` in
+  `tests/**` is forbidden: config is injected as a parameter (`GatewayRuntimeConfig` /
+  `WorkerRuntimeConfig` in `src/runtime/runtime-config.ts`). The composition root
+  (`src/transports/http.ts`) is the only one that uses `packages/config` defaults.
+- Use `createTestWorkerContext()` (`tests/helpers/test-context.ts`): it creates a
+  `mkdtempSync` sandbox with `projectsRoot`, `sessionsDir`, `modelsJsonPath`, `authJsonPath`,
+  `agentDir`, `piPackagesDir`, `artifactsDir`, and `cleanup()` for `afterEach`.
+- A test NEVER writes to `.pi-prod` or `.pi-dev`. Contract:
   `tests/contract/no-process-env-mutations.test.ts`.
 
 ## Key Files
@@ -54,16 +55,17 @@ Ver «config — Configuración tipada por Entorno» en el `AGENTS.md` de la ra�
 
 ## Model Catalog (runtime)
 
-El catálogo de modelos del worker se sincroniza contra el Model Gateway (ADR 0010):
-`src/runtime/gateway-catalog.ts` hace `GET /v1/models/catalog`, reescribe el
-`models.json`/`auth.json` del Entorno y actualiza el snapshot en memoria;
-`src/runtime/model-runtime.ts` posee el `ModelRuntime` singleton y la función
-`refreshGatewayCatalog()` (deduplicación in-flight) que se invoca en **cada
-`getAvailableModels`** — un modelo dado de alta en el Gateway aparece en el picker
-de chats de código sin reiniciar el worker. Si el Gateway cae durante un refresco,
-se conserva el último catálogo bueno (warning en log). Un `modelId` desconocido no
-cae en silencio: la creación de sesión (`initializeSession`) devuelve un error RPC
-y el turno falla en banda con `RUN_ERROR`, ambos con el `modelId` en el mensaje.
+The worker's model catalog is synchronised against the Model Gateway (ADR 0010):
+`src/runtime/gateway-catalog.ts` issues `GET /v1/models/catalog`, rewrites the
+Environment's `models.json`/`auth.json` and updates the in-memory snapshot;
+`src/runtime/model-runtime.ts` owns the `ModelRuntime` singleton and the
+`refreshGatewayCatalog()` function (in-flight deduplication) invoked on **every
+`getAvailableModels`** — a model added in the Gateway shows up in the code-chat
+picker without restarting the worker. If the Gateway goes down during a refresh,
+the last good catalog is kept (warning in the log). An unknown `modelId` never
+fails silently: session creation (`initializeSession`) returns an RPC error and
+the turn fails out of band with `RUN_ERROR`, both carrying the `modelId` in the
+message.
 
 ## Built-in Skills (`skills/`)
 
@@ -87,8 +89,8 @@ First-party Pi extension (`extensions/subagent/`) that registers a `subagent` to
 
 ### Artifacts (`extensions/artifacts/`)
 
-Reportes y documentos generados por el agente que el humano debe poder abrir en el
-navegador. Why: the vendored skills (Matt Pocock's `improve-codebase-architecture`,
+Reports and documents generated by the agent that a human must be able to open in
+the browser. Why: the vendored skills (Matt Pocock's `improve-codebase-architecture`,
 `archify`, and friends) were written for a laptop — they write a self-contained HTML report to
 the OS temp directory and `xdg-open` it. This host is headless, so the open is a
 silent no-op and the artifact ends up stranded at a path nobody can reach. Publishing
@@ -110,8 +112,8 @@ replaces "open it" with "here's the URL".
   file left in place.
 - **URL base:** `CODING_AGENT_ARTIFACTS_URL`, falling back to `CODING_AGENT_WORKER_URL`
   and then `http://localhost:<CODING_AGENT_WORKER_PORT>`. Left unset, the URLs the
-  agent shows are already correct — el mismo host que ya usa el navegador para el
-  chat sirve los reportes.
+  agent shows are already correct — the same host the browser already uses for the
+  chat serves the reports.
 - **Naming:** the published name is the source's own base name sanitized to a single
   safe segment (`architecture-review-20260831-153639.html` survives untouched).
   Republishing unchanged content reuses the same URL; changed content whose name is
@@ -124,8 +126,8 @@ replaces "open it" with "here's the URL".
   `HTML-REPORT.md` and asserted against the CSP in `tests/unit/artifacts-http.test.ts`.
 - **Automatic publish:** a `tool_result` handler publishes any `write` of an
   HTML/markdown file inside `os.tmpdir()` and appends the URL to the tool result the
-  model then reads, so skills that were never patched still deliver links (y los
-  `.html` del repo a propósito no cuentan). Repo-internal HTML is excluded by the
+  model then reads, so skills that were never patched still deliver links (repo
+  `.html` files deliberately don't count). Repo-internal HTML is excluded by the
   temp-directory test, not by name matching.
 - **Mobile-first:** artifacts are opened on phones as much as on desktops, so
   `skills/mobile-first-artifacts/SKILL.md` carries the authoring rules (base layout

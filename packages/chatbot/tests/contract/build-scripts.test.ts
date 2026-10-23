@@ -3,10 +3,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Contrato de scripts de build por Entorno (ADR 0011, tickets 03/04).
- * package.json es la interfaz pública del operador/CI/pm2: con qué `--env`
- * arranca cada pieza, dónde escribe el build y qué camino sirve prod. Parsing
- * del JSON, no texto frágil.
+ * Contract of the per-Environment build scripts (ADR 0011, tickets 03/04).
+ * package.json is the public interface of the operator/CI/pm2: with which `--env`
+ * each piece starts, where the build writes and which path serves prod. JSON
+ * parsing, not fragile text.
  */
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 const chatbotPkg = JSON.parse(
@@ -18,39 +18,39 @@ const rootPkg = JSON.parse(
 
 const s = chatbotPkg.scripts;
 
-describe("scripts de build del chatbot", () => {
-  it("build protege la DB con gate previo, migra y compila prod por argv (--env=prod)", () => {
+describe("chatbot build scripts", () => {
+  it("build protects the DB with a prior gate, migrates and compiles prod by argv (--env=prod)", () => {
     expect(s.build).toContain("scripts/assert-prod-build-allowed.ts");
     expect(s.build).toContain("migrate.ts --env=prod");
     expect(s.build).toContain("scripts/next-cli.ts build --env=prod");
-    // El gate assert-prod-build-allowed debe preceder a migrate.ts para proteger la DB
+    // The assert-prod-build-allowed gate must precede migrate.ts to protect the DB
     const gateIndex = s.build.indexOf("scripts/assert-prod-build-allowed.ts");
     const migrateIndex = s.build.indexOf("migrate.ts --env=prod");
     expect(gateIndex).toBeLessThan(migrateIndex);
     expect(s.build).not.toContain("dotenv");
     expect(s.build).not.toContain("NEXT_BUILD_DIR");
-    // `next build` directo (sin launcher) ya no se usa: el Entorno se fija en
-    // el mismo proceso y el alias del bundler depende de él.
+    // A direct `next build` (without the launcher) is no longer used: the
+    // Environment is set in the same process and the bundler alias depends on it.
     expect(s.build).not.toMatch(/(^|&&\s*)next build/);
   });
 
-  it("build:verify compila aislado con --verify, sin migrar la DB viva de prod", () => {
+  it("build:verify compiles in isolation with --verify, without migrating prod's live DB", () => {
     const cmd = s["build:verify"];
     expect(cmd).toContain("scripts/next-cli.ts build --env=prod --verify");
-    // build:verify debe ser estrictamente aislado de la DB (AGENTS.md / blindaje)
+    // build:verify must be strictly isolated from the DB (AGENTS.md / hard guard)
     expect(cmd).not.toContain("migrate.ts");
     expect(cmd).not.toMatch(/ALLOW_PROD_BUILD|assert-prod-build-allowed/);
     expect(cmd).not.toContain("dotenv");
   });
 
-  it("build:dev, build:prod, start y start:prod ya no existen (ADR 0006)", () => {
+  it("build:dev, build:prod, start and start:prod no longer exist (ADR 0006)", () => {
     expect(s["build:dev"]).toBeUndefined();
     expect(s["build:prod"]).toBeUndefined();
     expect(s.start).toBeUndefined();
     expect(s["start:prod"]).toBeUndefined();
   });
 
-  it("chatbot no tiene scripts que invoquen al coding-agent ni mcp-server redundante", () => {
+  it("chatbot has no scripts that invoke the coding-agent or a redundant mcp-server", () => {
     expect(s["build:worker"]).toBeUndefined();
     expect(s["worker:dev"]).toBeUndefined();
     expect(s["mcp-server"]).toBeUndefined();
@@ -59,7 +59,7 @@ describe("scripts de build del chatbot", () => {
     }
   });
 
-  it("migraciones explícitas por Entorno con --env=<entorno>", () => {
+  it("explicit per-Environment migrations with --env=<environment>", () => {
     for (const env of ["dev", "test", "prod"]) {
       expect(s[`db:${env}:migrate`]).toContain(`migrate.ts --env=${env}`);
       expect(s[`db:${env}:migrate`]).not.toContain("dotenv");
@@ -67,8 +67,8 @@ describe("scripts de build del chatbot", () => {
   });
 });
 
-describe("vía canónica de prod: preview", () => {
-  it("raíz: levanta la DB de prod, compila ambos packages con el gate y lanza los preview", () => {
+describe("canonical prod path: preview", () => {
+  it("root: brings up the prod DB, compiles both packages with the gate and launches the previews", () => {
     const cmd = rootPkg.scripts.preview;
     expect(cmd).toContain("--filter chatbot db:prod:start");
     expect(cmd).toContain("pnpm --filter chatbot build --allow-prod-build");
@@ -79,7 +79,7 @@ describe("vía canónica de prod: preview", () => {
     expect(cmd).not.toContain("dotenv");
   });
 
-  it("raíz: build y build:verify encadenan ambos packages, sin alias db ni start", () => {
+  it("root: build and build:verify chain both packages, without a db alias or start", () => {
     expect(rootPkg.scripts.build).toContain("pnpm --filter chatbot build");
     expect(rootPkg.scripts.build).toContain("pnpm --filter coding-agent build");
     expect(rootPkg.scripts["build:verify"]).toContain("pnpm --filter chatbot build:verify");
@@ -89,14 +89,14 @@ describe("vía canónica de prod: preview", () => {
     expect(rootPkg.scripts["db:migrate"]).toBeUndefined();
   });
 
-  it("chatbot: solo sirve el build de prod con next-cli start --env=prod", () => {
+  it("chatbot: only serves the prod build with next-cli start --env=prod", () => {
     const cmd = s.preview;
     expect(cmd).toBe("tsx scripts/next-cli.ts start --env=prod --port=8085");
     expect(cmd).not.toContain("coding-agent");
     expect(cmd).not.toContain("db:prod:start");
   });
 
-  it("ningún script (raíz o chatbot) referencia .env.development.local ni dotenv", () => {
+  it("no script (root or chatbot) references .env.development.local or dotenv", () => {
     for (const scripts of [rootPkg.scripts, s]) {
       for (const [name, cmd] of Object.entries(scripts)) {
         expect(cmd, `${name}`).not.toContain(".env.development.local");

@@ -4,18 +4,18 @@ import { gatewayBaseUrl, gatewayHeaders } from "./gateway";
 import type { GatewayModelEntry } from "@/lib/features/foundation-model/config";
 
 /**
- * Cliente del catálogo de modelos del Gateway (`GET /v1/models/catalog`,
- * spec §2.2/§5.3): el filtrado `user_invocable` lo hace el Gateway EN
- * SERVIDOR. Dos vistas separadas:
+ * Gateway model catalog client (`GET /v1/models/catalog`,
+ * spec §2.2/§5.3): the `user_invocable` filtering is done by the Gateway
+ * SERVER-SIDE. Two separate views:
  *
- * - **Público** (`fetchPublicModelCatalog`, sin `include_internal`): los 14
- *   modelos user-invocable. Es lo que se hidrata al browser vía
- *   `<ModelCatalogProvider>` y lo que consumen los helpers de UI
- *   (`chatModelKeys`, `defaultModel`, …) — los contratos `*-default` NUNCA
- *   llegan al cliente.
- * - **Interno** (`fetchInternalModelCatalog`, `?include_internal=true`):
- *   público + los 10 Default Model Contracts; solo servidor, para resolver
- *   los metadatos de los contratos en `languageModel()`.
+ * - **Public** (`fetchPublicModelCatalog`, no `include_internal`): the 14
+ *   user-invocable models. This is what gets hydrated to the browser via
+ *   `<ModelCatalogProvider>` and what the UI helpers consume
+ *   (`chatModelKeys`, `defaultModel`, …) — the `*-default` contracts NEVER
+ *   reach the client.
+ * - **Internal** (`fetchInternalModelCatalog`, `?include_internal=true`):
+ *   public + the 10 Default Model Contracts; server only, to resolve
+ *   the contracts' metadata in `languageModel()`.
  */
 
 const CATALOG_TTL_MS = 60_000;
@@ -25,7 +25,7 @@ interface CatalogCache {
   expiresAt: number;
 }
 
-/** Caché en memoria de servidor (TTL 60 s): un snapshot por proceso y vista. */
+/** In-memory server cache (60 s TTL): one snapshot per process and view. */
 let publicCache: CatalogCache | undefined;
 let internalCache: CatalogCache | undefined;
 
@@ -57,8 +57,8 @@ async function fetchCatalog(
 }
 
 /**
- * Catálogo público (modelos user-invocable, SIN los contratos
- * `*-default`). Es el que va hidratado al `<ModelCatalogProvider>`.
+ * Public catalog (user-invocable models, WITHOUT the `*-default`
+ * contracts). It is the one hydrated into `<ModelCatalogProvider>`.
  */
 export async function fetchPublicModelCatalog(): Promise<GatewayModelEntry[]> {
   const { models, cache } = await fetchCatalog(false, publicCache);
@@ -67,8 +67,8 @@ export async function fetchPublicModelCatalog(): Promise<GatewayModelEntry[]> {
 }
 
 /**
- * Catálogo interno (público + los contratos `*-default`), solo servidor:
- * `languageModel()` lo consulta para resolver los metadatos de un contrato.
+ * Internal catalog (public + the `*-default` contracts), server only:
+ * `languageModel()` queries it to resolve a contract's metadata.
  */
 export async function fetchInternalModelCatalog(): Promise<GatewayModelEntry[]> {
   const { models, cache } = await fetchCatalog(true, internalCache);
@@ -77,23 +77,23 @@ export async function fetchInternalModelCatalog(): Promise<GatewayModelEntry[]> 
 }
 
 /**
- * Calienta ambos cachés. Punto de calentamiento acordado:
- * `processChatResponse` antes de construir el adaptador de agente — así
- * `languageModel()`/`createAgent()` pueden seguir siendo síncronos en los
- * API routes. La hidratación del cliente la hace `app/(chat)/layout.tsx`
- * con `fetchPublicModelCatalog()` (el catálogo interno no sale del
- * servidor).
+ * Warms both caches. Agreed warm-up point:
+ * `processChatResponse` before building the agent adapter — that way
+ * `languageModel()`/`createAgent()` can stay synchronous in the
+ * API routes. The client hydration is done by `app/(chat)/layout.tsx`
+ * with `fetchPublicModelCatalog()` (the internal catalog never leaves the
+ * server).
  */
 export async function warmModelCatalog(): Promise<void> {
   await Promise.all([fetchPublicModelCatalog(), fetchInternalModelCatalog()]);
 }
 
 /**
- * Snapshot completo (público + contratos) ya cargado, para lecturas
- * síncronas en servidor. Lanza con un error claro si el caché está frío:
- * los consumidores deben pasar por un punto de calentamiento
- * (`warmModelCatalog`/`fetchInternalModelCatalog`) antes de resolver
- * modelos.
+ * Full snapshot (public + contracts) already loaded, for synchronous
+ * server reads. It throws with a clear error if the cache is cold:
+ * consumers must go through a warm-up point
+ * (`warmModelCatalog`/`fetchInternalModelCatalog`) before resolving
+ * models.
  */
 export function getModelCatalogSnapshot(): GatewayModelEntry[] {
   if (!internalCache) {
@@ -105,8 +105,8 @@ export function getModelCatalogSnapshot(): GatewayModelEntry[] {
 }
 
 /**
- * Snapshot del catálogo PÚBLICO ya cargado (los user-invocable, sin
- * contratos): el que se hidrata al browser. Lanza si el caché está frío.
+ * Snapshot of the already loaded PUBLIC catalog (the user-invocable ones, without
+ * contracts): the one hydrated to the browser. It throws if the cache is cold.
  */
 export function getPublicModelCatalogSnapshot(): GatewayModelEntry[] {
   if (!publicCache) {

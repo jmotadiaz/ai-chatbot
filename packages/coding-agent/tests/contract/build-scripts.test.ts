@@ -3,10 +3,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Contrato de scripts por Entorno (tickets 07 y 04 de ADR 0011). package.json
- * es la interfaz del operador/CI/pm2: qué compila, dónde escribe, con qué
- * `--env` arranca y qué puede lanzar el `preview` canónico sin referencias
- * muertas ni ficheros `.env.*`.
+ * Per-Environment scripts contract (tickets 07 and 04 of ADR 0011). package.json
+ * is the operator/CI/pm2 interface: what it compiles, where it writes, with which
+ * `--env` it starts and what the canonical `preview` may launch without dead
+ * references or `.env.*` files.
  */
 const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../..");
 const workerPkg = JSON.parse(
@@ -21,34 +21,34 @@ const chatbotPkg = JSON.parse(
 
 const s = workerPkg.scripts;
 
-describe("scripts del worker (coding-agent)", () => {
-  it("dev arranca install + tsx watch con --env=dev; el catálogo se sincroniza en arranque", () => {
+describe("worker scripts (coding-agent)", () => {
+  it("dev boots install + tsx watch with --env=dev; the catalog syncs on startup", () => {
     expect(s.dev).toContain("tsx scripts/install-packages.ts --env=dev");
     expect(s.dev).toContain("tsx watch src/transports/http.ts --env=dev");
-    // El models.json ya no se genera en dev: lo sincroniza el arranque del
-    // worker contra el Model Gateway (ensureGatewayModelsJson).
+    // models.json is no longer generated in dev: the worker's startup syncs it
+    // against the Model Gateway (ensureGatewayModelsJson).
     expect(s.dev).not.toContain("generate-models");
   });
 
-  it("ya no existen start, start:prod, build:prod ni transport:http", () => {
+  it("start, start:prod, build:prod and transport:http no longer exist", () => {
     expect(s.start).toBeUndefined();
     expect(s["start:prod"]).toBeUndefined();
     expect(s["build:prod"]).toBeUndefined();
     expect(s["transport:http"]).toBeUndefined();
   });
 
-  it("build exige el gate y compila a dist/, sin generación estática de modelos", () => {
+  it("build requires the gate and compiles to dist/, without static model generation", () => {
     const cmd = s.build;
     expect(cmd).toContain("assert-prod-build-allowed");
     expect(cmd).toContain("tsc -p tsconfig.json --outDir dist");
-    // El models.json lo sincroniza el arranque del worker contra el Gateway,
-    // no el build (el build de prod no necesita el Gateway vivo).
+    // models.json is synced by the worker's startup against the Gateway, not by
+    // the build (the prod build does not need a live Gateway).
     expect(cmd).not.toContain("generate-models");
     expect(cmd).not.toContain("MODEL_GATEWAY");
     expect(cmd).not.toContain("dist/verify");
   });
 
-  it("build:verify solo compila a dist/verify, sin gate ni generación de modelos", () => {
+  it("build:verify only compiles to dist/verify, without the gate or model generation", () => {
     const cmd = s["build:verify"];
     expect(cmd).toContain("tsc -p tsconfig.json --outDir dist/verify");
     expect(cmd).not.toMatch(/ALLOW_PROD_BUILD|assert-prod-build-allowed/);
@@ -57,10 +57,10 @@ describe("scripts del worker (coding-agent)", () => {
   });
 });
 
-describe("scripts del monorepo sin dotenv ni ficheros .env.* (ADR 0011)", () => {
+describe("monorepo scripts without dotenv or .env.* files (ADR 0011)", () => {
   const all = { root: rootPkg.scripts, chatbot: chatbotPkg.scripts, worker: s };
 
-  it("ningún script invoca dotenv ni carga .env.{dev,prod,test}", () => {
+  it("no script invokes dotenv or loads .env.{dev,prod,test}", () => {
     for (const [pkg, scripts] of Object.entries(all)) {
       for (const [name, cmd] of Object.entries(scripts)) {
         expect(cmd, `${pkg}:${name}`).not.toContain("dotenv");
@@ -69,7 +69,7 @@ describe("scripts del monorepo sin dotenv ni ficheros .env.* (ADR 0011)", () => 
     }
   });
 
-  it("los scripts que eligen Entorno lo hacen con --env=prod|dev|test", () => {
+  it("scripts that pick an Environment do it with --env=prod|dev|test", () => {
     expect(chatbotPkg.scripts.dev).toContain("next-cli.ts dev --env=dev");
     expect(chatbotPkg.scripts.build).toContain("next-cli.ts build --env=prod");
     expect(chatbotPkg.scripts["build:verify"]).toContain("--verify");
@@ -85,9 +85,9 @@ describe("scripts del monorepo sin dotenv ni ficheros .env.* (ADR 0011)", () => 
   });
 });
 
-describe("sin referencias muertas a coding-agent transport:http", () => {
+describe("no dead references to coding-agent transport:http", () => {
   const all = { root: rootPkg.scripts, chatbot: chatbotPkg.scripts, worker: s };
-  it("ningún package.json invoca transport:http del worker", () => {
+  it("no package.json invokes the worker's transport:http", () => {
     for (const [pkg, scripts] of Object.entries(all)) {
       for (const [name, cmd] of Object.entries(scripts)) {
         expect(cmd, `${pkg}:${name}`).not.toContain("coding-agent transport:http");
@@ -95,7 +95,7 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
     }
   });
 
-  it("raíz preview compila ambos packages con el gate y arranca los preview", () => {
+  it("root preview compiles both packages with the gate and starts the previews", () => {
     const cmd = rootPkg.scripts.preview;
     expect(cmd).toContain("db:prod:start");
     expect(cmd).toContain("--allow-prod-build");
@@ -106,7 +106,7 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
     expect(cmd).toContain("pnpm --filter coding-agent preview");
   });
 
-  it("chatbot preview solo arranca el servidor compilado (next-cli start --env=prod)", () => {
+  it("chatbot preview only starts the compiled server (next-cli start --env=prod)", () => {
     const cmd = chatbotPkg.scripts.preview;
     expect(cmd).toContain("next-cli.ts start --env=prod --port=8085");
     expect(cmd).not.toContain("coding-agent");
@@ -114,7 +114,7 @@ describe("sin referencias muertas a coding-agent transport:http", () => {
     expect(cmd).not.toContain("next start");
   });
 
-  it("coding-agent preview arranca el worker compilado bajo --env=prod", () => {
+  it("coding-agent preview starts the compiled worker under --env=prod", () => {
     const cmd = s.preview;
     expect(cmd).toContain("--allow-prod-build");
     expect(cmd).toContain("pnpm run build");

@@ -2,19 +2,20 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 /**
- * Contrato de `next.config.ts` (tickets 01/03, ADR 0011):
+ * Contract of `next.config.ts` (tickets 01/03, ADR 0011):
  *
- * - `distDir` lo decide `config.nextBuildDir()`: `.next` por defecto y
- *   `.next/verify` cuando el launcher fija el flag `--verify` vía
- *   `initConfig(env, { verifyBuild })` (ADR 0006). El antiguo selector
- *   `NEXT_BUILD_DIR` por variable de entorno murió en el ticket 01.
- * - `next.config.ts` NO lee `process.argv` ni `process.env`: el Entorno activo
- *   se lo da el proceso del launcher (mismo proceso, `initConfig` ya llamado).
+ * - `distDir` is decided by `config.nextBuildDir()`: `.next` by default and
+ *   `.next/verify` when the launcher sets the `--verify` flag via
+ *   `initConfig(env, { verifyBuild })` (ADR 0006). The old per-environment-
+ *   variable `NEXT_BUILD_DIR` selector died in ticket 01.
+ * - `next.config.ts` does NOT read `process.argv` or `process.env`: the active
+ *   Environment is provided by the launcher process (same process, `initConfig`
+ *   already called).
  */
 async function loadNextConfig(options: { verifyBuild?: boolean } = {}) {
   vi.resetModules();
-  // Mismo grafo de módulos que usará `@/next.config` (alias `"config"` →
-  // shim de test): los flags de build viven en `facade.ts`, compartido.
+  // Same module graph `@/next.config` will use (alias `"config"` → test shim):
+  // the build flags live in `facade.ts`, shared.
   const cfg = await import("config");
   cfg.setBuildFlags({
     verifyBuild: options.verifyBuild ?? false,
@@ -26,22 +27,22 @@ async function loadNextConfig(options: { verifyBuild?: boolean } = {}) {
   return factory(PHASE_DEVELOPMENT_SERVER);
 }
 
-describe("next.config distDir aislable", () => {
+describe("isolatable next.config distDir", () => {
   afterEach(() => {
     vi.resetModules();
   });
 
-  it("sin --verify construye en .next (default canónico)", async () => {
+  it("without --verify it builds into .next (canonical default)", async () => {
     expect((await loadNextConfig()).distDir).toBe(".next");
   });
 
-  it("con --verify (flag de build) construye en el directorio aislado", async () => {
+  it("with --verify (build flag) it builds into the isolated directory", async () => {
     expect((await loadNextConfig({ verifyBuild: true })).distDir).toBe(
       ".next/verify",
     );
   });
 
-  it("NEXT_BUILD_DIR ya NO es canal de configuración (murió en el ticket 01)", async () => {
+  it("NEXT_BUILD_DIR is NO longer a configuration channel (it died in ticket 01)", async () => {
     process.env.NEXT_BUILD_DIR = ".next/verify";
     try {
       expect((await loadNextConfig()).distDir).toBe(".next");

@@ -3,17 +3,17 @@ import { EMBEDDING_DIMENSIONS } from "config";
 import { TEST_INTERNAL_MODELS, TEST_MODELS, type MockCatalogEntry } from "./catalog";
 
 /**
- * Mock Model Gateway (ADR 0010, ticket 02) — suplanta al Gateway real en el
- * Entorno de Test (`MODEL_GATEWAY_URL=http://127.0.0.1:4001` en `.env.test`).
+ * Mock Model Gateway (ADR 0010, ticket 02) — stands in for the real Gateway in
+ * the Test Environment (`MODEL_GATEWAY_URL=http://127.0.0.1:4001` in `.env.test`).
  *
- * Servidor HTTP Node puro (`node:http`), sin dependencias: misma superficie
- * que LiteLLM Proxy (contrato compartido §4) con respuestas deterministas.
- * El catálogo de test se define directamente por capacidades — ver catalog.ts.
+ * Pure Node HTTP server (`node:http`), no dependencies: same surface as LiteLLM
+ * Proxy (shared contract §4) with deterministic responses. The test catalog is
+ * defined directly by capabilities — see catalog.ts.
  */
 
 export const MOCK_GATEWAY_PORT = 4001;
 
-/** Ruta de sonda para `ensureMockGateway`: solo existe en este servidor. */
+/** Probe route for `ensureMockGateway`: it only exists in this server. */
 const HEALTH_PATH = "/__mock-gateway/health";
 
 interface ChatMessage {
@@ -29,7 +29,7 @@ interface ChatRequest {
 }
 
 // ---------------------------------------------------------------------------
-// Utilidades HTTP
+// HTTP utilities
 // ---------------------------------------------------------------------------
 
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
@@ -57,7 +57,7 @@ function parseJson(body: string): Record<string, unknown> | undefined {
   }
 }
 
-/** Bearer requerido en todas las rutas: 401 sin header (detecta misconfiguración). */
+/** Bearer required on every route: 401 without the header (catches misconfiguration). */
 function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
   if (typeof req.headers.authorization === "string" && req.headers.authorization.length > 0) {
     return true;
@@ -113,7 +113,7 @@ function startSse(res: ServerResponse): void {
   });
 }
 
-/** JSON (no streaming) de un chat completion. */
+/** JSON (no streaming) of a chat completion. */
 function completionJson(
   text: string,
   model: string,
@@ -135,14 +135,14 @@ function completionJson(
   };
 }
 
-/** Texto determinista de tipo "mock genérico": incluye el id y la temperature. */
+/** Deterministic "generic mock" text: it includes the id and the temperature. */
 const basicText = (model: string, temperature: number | undefined) =>
   `Hello, I'm ${model}, Temperature: ${temperature ?? 0}, `;
 
 /**
- * `canExecuteTools` equivale al mock actual de dos turnos (doStream en Secuencia):
- * primer request (sin resultado de tool) → tool_calls; segundo (el último
- * mensaje ya es un `role: "tool"`) → texto final.
+ * `canExecuteTools` is equivalent to the current two-turn mock (doStream in
+ * sequence): first request (no tool result) → tool_calls; second one (the last
+ * message is already a `role: "tool"`) → final text.
  */
 function isToolResult(message: ChatMessage | undefined): boolean {
   return message?.role === "tool";
@@ -158,15 +158,15 @@ const VISION_TEXT = "Image description (mock)";
 const IMAGE_TEXT = "Enhanced image (mock).";
 
 /**
- * PNG de 1×1 que el mock sirve como parte `image_url` de `image-default`
- * (mismo bytes que el antiguo mock de imagen). Mapeado a `GeneratedFile` por
+ * 1×1 PNG that the mock serves as the `image_url` part of `image-default` (same
+ * bytes as the old image mock). Mapped to `GeneratedFile` by
  * `lib/infrastructure/ai/gateway-image-model.ts`.
  */
 export const MOCK_IMAGE_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const IMAGE_DATA_URL = `data:image/png;base64,${MOCK_IMAGE_PNG_BASE64}`;
 
-/** Partes OpenAI de una respuesta del contrato de imagen: texto + imagen. */
+/** OpenAI parts of an image-contract response: text + image. */
 const imageContentParts = () => [
   { type: "text", text: IMAGE_TEXT },
   { type: "image_url", image_url: { url: IMAGE_DATA_URL } },
@@ -182,15 +182,16 @@ const MID_STREAM_ERROR = {
 };
 
 /**
- * `failsMidStream` ya no necesita helper propio: su guion vive en
- * `chatScript` (emite texto y corta con un evento `data: {"error": …}` sin
- * `[DONE]`; el provider openai-compatible lo parsea a una parte
- * `{ type: "error" }` con finishReason "error").
+ * `failsMidStream` no longer needs its own helper: its script lives in
+ * `chatScript` (it emits text and cuts with a `data: {"error": …}` event without
+ * `[DONE]`; the openai-compatible provider parses it into a `{ type: "error" }`
+ * part with finishReason "error").
  */
 
 /**
- * Un paso del guion de chat: un delta SSE (con su finish_reason opcional) o,
- * en el caso `failsMidStream`, el error que corta el stream sin `[DONE]`.
+ * One step of the chat script: an SSE delta (with its optional finish_reason)
+ * or, in the `failsMidStream` case, the error that cuts the stream without
+ * `[DONE]`.
  */
 interface ChatStep {
   delta?: ChatChunkDelta;
@@ -199,14 +200,14 @@ interface ChatStep {
 }
 
 /**
- * Guion de un chat completion por id de modelo — la cascada sobre el id vive
- * AQUÍ, una sola vez; los caminos streaming y no-streaming son solo dos
- * renderizados del mismo guion (ver `streamScript`/`jsonScript`).
+ * Script of a chat completion per model id — the cascade on the id lives HERE,
+ * once; the streaming and non-streaming paths are just two renderings of the
+ * same script (see `streamScript`/`jsonScript`).
  */
 function chatScript(body: ChatRequest): {
   model: string;
   steps: ChatStep[];
-  /** Contenido completo del mensaje para el camino no-streaming (JSON). */
+  /** Full message content for the non-streaming path (JSON). */
   jsonContent: string | unknown[];
 } {
   const model = body.model ?? "basicChat";
@@ -220,12 +221,12 @@ function chatScript(body: ChatRequest): {
           { delta: { role: "assistant", content: MID_STREAM_TEXT } },
           { delta: {}, abortWithError: MID_STREAM_ERROR },
         ],
-        // El camino JSON nunca aborta: texto de contrato genérico.
+        // The JSON path never aborts: generic contract text.
         jsonContent: contractText(model),
       };
 
     case "canExecuteTools":
-      // Dos turnos: sin resultado de tool → tool_calls; con él → texto final.
+      // Two turns: without a tool result → tool_calls; with it → final text.
       return isToolResult(last)
         ? {
             model,
@@ -253,7 +254,7 @@ function chatScript(body: ChatRequest): {
               },
               { delta: {}, finishReason: "tool_calls" },
             ],
-            // Sin streaming el mock responde directo el texto final.
+            // Without streaming the mock answers with the final text directly.
             jsonContent: TOOL_ANSWER,
           };
 
@@ -300,7 +301,7 @@ function chatScript(body: ChatRequest): {
   }
 }
 
-/** Renderiza el guion como SSE OpenAI. */
+/** Renders the script as OpenAI SSE. */
 function streamScript(res: ServerResponse, body: ChatRequest): void {
   startSse(res);
   const script = chatScript(body);
@@ -316,13 +317,13 @@ function streamScript(res: ServerResponse, body: ChatRequest): void {
   res.end();
 }
 
-/** Renderiza el guion como JSON no-streaming. */
+/** Renders the script as non-streaming JSON. */
 function jsonScript(res: ServerResponse, body: ChatRequest): void {
   const script = chatScript(body);
   sendJson(res, 200, completionJson("", script.model, script.jsonContent));
 }
 
-/** Respuesta determinista simple para los contratos `*-default` (incluye el nombre). */
+/** Simple deterministic response for the `*-default` contracts (includes the name). */
 const contractText = (model: string) => `Mock response from ${model} (contract).`;
 
 async function handleChatCompletions(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -341,8 +342,8 @@ async function handleChatCompletions(req: IncomingMessage, res: ServerResponse):
 
 
 /**
- * Vector determinista derivado del texto (FNV-1a por posición): mismos inputs
- * → mismos valores, sin necesidad de seed externo.
+ * Deterministic vector derived from the text (FNV-1a per position): same inputs
+ * → same values, with no external seed needed.
  */
 function deterministicEmbedding(text: string): number[] {
   const embedding: number[] = [];
@@ -353,7 +354,7 @@ function deterministicEmbedding(text: string): number[] {
       hash ^= seed.charCodeAt(j);
       hash = Math.imul(hash, 16777619);
     }
-    // Normalizado a [-1, 1] con signo estable.
+    // Normalized to [-1, 1] with a stable sign.
     embedding.push(((hash >>> 0) % 2000 - 1000) / 1000);
   }
   return embedding;
@@ -380,10 +381,10 @@ async function handleEmbeddings(req: IncomingMessage, res: ServerResponse): Prom
 }
 
 /**
- * Ranking VACÍO a propósito: replica la semántica de test actual del chatbot
- * (`createMockRerankModel` en `packages/inference/src/testing/rerank.ts`
- * devuelve `ranking: []` siempre), de modo que hybrid search se comporta en
- * test como vector-puro sin rerank y ningún test cambia de resultado.
+ * Deliberately EMPTY ranking: it replicates the chatbot's current test semantics
+ * (`createMockRerankModel` in `packages/inference/src/testing/rerank.ts` always
+ * returns `ranking: []`), so hybrid search behaves in test like pure vector
+ * without rerank and no test changes its result.
  */
 async function handleRerank(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!requireAuth(req, res)) return;
@@ -392,9 +393,9 @@ async function handleRerank(req: IncomingMessage, res: ServerResponse): Promise<
 }
 
 /**
- * Decisions API (TypeSafe/SystemOne): para cada pregunta `choice` responde con
- * el primer criterio declarado (determinista), confianza 1 y probabilidades
- * uniformes entre los criterios. Alias `/v1/systemone` → mismo handler.
+ * Decisions API (TypeSafe/SystemOne): for each `choice` question it answers with
+ * the first declared criterion (deterministic), confidence 1 and probabilities
+ * uniform across the criteria. Alias `/v1/systemone` → same handler.
  */
 async function handleDecisions(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!requireAuth(req, res)) return;
@@ -427,10 +428,10 @@ async function handleDecisions(req: IncomingMessage, res: ServerResponse): Promi
 }
 
 /**
- * WAV mínimo (header de 44 bytes + PCM determinista de 800 muestras) con el
- * Content-Type `audio/mpeg` que fija el contrato de `/v1/audio/speech` — los
- * bytes exactos no importan para los consumers (solo que haya audio válido y
- * estable entre corridas).
+ * Minimal WAV (44-byte header + deterministic 800-sample PCM) with the
+ * `audio/mpeg` Content-Type that the `/v1/audio/speech` contract pins — the exact
+ * bytes do not matter to the consumers (only that the audio is valid and stable
+ * across runs).
  */
 function deterministicWav(input: string): Buffer {
   const samples = 800;
@@ -444,13 +445,13 @@ function deterministicWav(input: string): Buffer {
   header.writeUInt32LE(36 + data.length, 4);
   header.write("WAVE", 8);
   header.write("fmt ", 12);
-  header.writeUInt32LE(16, 16); // tamaño del chunk fmt
+  header.writeUInt32LE(16, 16); // fmt chunk size
   header.writeUInt16LE(1, 20); // PCM
   header.writeUInt16LE(1, 22); // mono
   header.writeUInt32LE(8000, 24); // sample rate
   header.writeUInt32LE(16000, 28); // byte rate
   header.writeUInt16LE(2, 32); // block align
-  header.writeUInt16LE(16, 34); // bits por muestra
+  header.writeUInt16LE(16, 34); // bits per sample
   header.write("data", 36);
   header.writeUInt32LE(data.length, 40);
   return Buffer.concat([header, data]);
@@ -465,13 +466,13 @@ async function handleSpeech(req: IncomingMessage, res: ServerResponse): Promise<
 }
 
 // ---------------------------------------------------------------------------
-// Catálogo
+// Catalog
 // ---------------------------------------------------------------------------
 
 function handleCatalog(req: IncomingMessage, res: ServerResponse): void {
   if (!requireAuth(req, res)) return;
-  // Solo el valor literal "true" activa la vista interna: `has("include_internal")`
-  // trataba ?include_internal=false como true (bug de la revisión).
+  // Only the literal value "true" enables the internal view: `has("include_internal")`
+  // treated ?include_internal=false as true (review bug).
   const includeInternal =
     new URL(req.url ?? "/", "http://localhost").searchParams.get("include_internal") === "true";
   const models: MockCatalogEntry[] = includeInternal
@@ -481,7 +482,7 @@ function handleCatalog(req: IncomingMessage, res: ServerResponse): void {
 }
 
 // ---------------------------------------------------------------------------
-// Servidor
+// Server
 // ---------------------------------------------------------------------------
 
 function route(req: IncomingMessage, res: ServerResponse): void {
@@ -520,7 +521,7 @@ function route(req: IncomingMessage, res: ServerResponse): void {
 
 export interface MockGatewayHandle {
   port: number;
-  /** false si el puerto ya tenía un mock escuchando y se reutilizó. */
+  /** false if the port already had a mock listening and it was reused. */
   started: boolean;
 }
 
@@ -534,7 +535,7 @@ let running: RunningGateway | undefined;
 const probeTimeoutMs = 500;
 const ensureTimeoutMs = 10_000;
 
-/** ¿Hay un Mock Model Gateway (este mismo mock) ya escuchando en el puerto? */
+/** Is a Mock Model Gateway (this same mock) already listening on the port? */
 export async function isMockGatewayAlive(port: number): Promise<boolean> {
   try {
     const response = await fetch(`http://127.0.0.1:${port}${HEALTH_PATH}`, {
@@ -551,12 +552,13 @@ export async function isMockGatewayAlive(port: number): Promise<boolean> {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Garantiza un mock escuchando en `port`, idempotente y seguro frente a
- * procesos concurrentes:
- * 1. si este proceso ya tiene uno, lo reutiliza;
- * 2. si OTRO proceso ya sirve el mock (sonda al health endpoint), lo reutiliza;
- * 3. si no, escucha en el puerto; si pierde la carrera (EADDRINUSE), espera a
- *    que el ganador esté sondeable y lo reutiliza.
+ * Guarantees a mock listening on `port`, idempotent and safe against concurrent
+ * processes:
+ * 1. if this process already has one, it reuses it;
+ * 2. if ANOTHER process already serves the mock (probe to the health endpoint),
+ *    it reuses it;
+ * 3. otherwise it listens on the port; if it loses the race (EADDRINUSE), it
+ *    waits for the winner to be probeable and reuses it.
  */
 export async function ensureMockGateway(
   options: { port?: number } = {},
@@ -574,8 +576,8 @@ export async function ensureMockGateway(
         server.once("error", reject);
         server.listen(port, "127.0.0.1", resolve);
       });
-      // Con `port: 0` (efímero, para tests que quieren un server propio sin
-      // carreras entre workers) reportamos el puerto REAL asignado por el SO.
+      // With `port: 0` (ephemeral, for tests that want their own server without
+      // races between workers) we report the REAL port assigned by the OS.
       const boundPort =
         port === 0
           ? (server.address() as { port: number }).port
@@ -585,17 +587,17 @@ export async function ensureMockGateway(
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code !== "EADDRINUSE") throw error;
-      // Otro proceso ganó el puerto: esperar a que su mock sea sondeable.
+      // Another process won the port: wait until its mock is probeable.
       if (await isMockGatewayAlive(port)) return { port, started: false };
       await sleep(100);
     }
   }
   throw new Error(
-    `ensureMockGateway: el puerto ${port} sigue ocupado sin un mock sondeable tras ${ensureTimeoutMs}ms`,
+    `ensureMockGateway: port ${port} is still busy without a probeable mock after ${ensureTimeoutMs}ms`,
   );
 }
 
-/** Cierra el mock de ESTE proceso (los de otros procesos no nos pertenecen). */
+/** Closes THIS process's mock (other processes' mocks do not belong to us). */
 export async function stopMockGateway(): Promise<void> {
   if (!running) return;
   const { server } = running;

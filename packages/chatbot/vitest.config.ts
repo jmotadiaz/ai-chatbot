@@ -2,35 +2,34 @@ import path from "path";
 import { defineConfig } from "vitest/config";
 import { initConfig } from "../config/src/config";
 
-// `NODE_ENV=test` debe estar fijado ANTES de que Vite resuelva el grafo: sin
-// él, los tests con `@vitest-environment jsdom` que importan módulos `node:*`
-// (o React 19, que solo exporta `act` en development) fallan en colección con
-// "No such built-in module: node:". Es una variable gestionada por el runner
-// (framework), no configuración de la app: el Entorno lo fija `initConfig`.
-// Next declara `process.env.NODE_ENV` como readonly; el runner necesita
-// fijarla de verdad (no solo en el `env` de los tests).
+// `NODE_ENV=test` must be set BEFORE Vite resolves the graph: without
+// it, the tests using `@vitest-environment jsdom` that import `node:*` modules
+// (or React 19, which only exports `act` in development) fail at collection with
+// "No such built-in module: node:". It is a variable managed by the runner
+// (framework), not app configuration: the Environment is set by `initConfig`.
+// Next declares `process.env.NODE_ENV` as readonly; the runner needs to
+// actually set it (not just in the tests' `env`).
 (process.env as Record<string, string | undefined>).NODE_ENV = "test";
 
 /**
- * Los tests del chatbot corren SIEMPRE en el Entorno de Test (ADR 0011):
- * `initConfig("test")` al cargar este fichero (proceso principal — el mismo
- * que ejecuta `globalSetup`), nunca una variable de entorno heredada.
+ * The chatbot's tests ALWAYS run in the Test Environment (ADR 0011):
+ * `initConfig("test")` when this file loads (main process — the same one
+ * that runs `globalSetup`), never an inherited environment variable.
  *
- * El alias `"config"` enlaza el paquete al bundle estático
- * `packages/config/src/env.test.ts` (re-exporta la superficie isomorfa
- * completa y fija la fachada al bundle congelado de test): los workers de
- * Vitest NO re-evalúan este config ni conservan el argv del binario, así que
- * sin alias el selector de `config` fallaría (`Missing required CLI flag
- * --env`) en cada worker. Con el alias, cada worker importa directamente el
- * bundle estático de test — el mismo módulo que soldaría `next.config.ts` en
- * un build de test — y un test no puede observar secretos ni rutas de
- * dev/prod.
+ * The `"config"` alias binds the package to the static bundle
+ * `packages/config/src/env.test.ts` (it re-exports the full isomorphic surface
+ * and pins the facade to test's frozen bundle): Vitest's workers do
+ * NOT re-evaluate this config nor keep the binary's argv, so
+ * without the alias `config`'s selector would fail (`Missing required CLI flag
+ * --env`) in every worker. With the alias, each worker imports the
+ * static test bundle directly — the same module `next.config.ts` would weld in
+ * a test build — and a test cannot observe dev/prod secrets or paths.
  *
- * `globalSetup` levanta el Mock Model Gateway en el puerto canónico `:4001`
- * (`config.modelGatewayUrl()` en test) en el proceso principal, con teardown;
- * antes vivía en `setupFiles` como server por worker con un puerto efímero
- * mutando `process.env.MODEL_GATEWAY_URL` — mutación que el bundle congelado
- * ignora (y que además metía `node:http` en los workers jsdom).
+ * `globalSetup` brings up the Mock Model Gateway on the canonical port `:4001`
+ * (`config.modelGatewayUrl()` in test) in the main process, with teardown;
+ * it used to live in `setupFiles` as a per-worker server with an ephemeral port
+ * mutating `process.env.MODEL_GATEWAY_URL` — a mutation the frozen bundle
+ * ignores (and which also dragged `node:http` into the jsdom workers).
  */
 initConfig("test");
 

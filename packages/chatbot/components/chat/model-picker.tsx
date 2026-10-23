@@ -70,9 +70,8 @@ export interface ModelPickerSelectorProps {
   dropdownVariant?: React.ComponentProps<typeof Select.Dropdown>["variant"];
   triggerVariant?: "select" | "button";
   /**
-   * Bloqueo mid-turn (ticket 03, solo coding agent): el modelo se
-   * snapshottea al arrancar el run y el cambio no aplicaría hasta el
-   * próximo Turn.
+   * Mid-turn lock (ticket 03, coding agent only): the model is snapshotted
+   * when the run starts and the change would not apply until the next Turn.
    */
   disabled?: boolean;
 }
@@ -143,7 +142,7 @@ export const ModelPickerSelector: React.FC<ModelPickerSelectorProps> = ({
   );
 };
 
-/** Company es un string libre del catálogo: las desconocidas caen en el logo. */
+/** Company is a free-form string from the catalog: unknown ones fall back to the logo. */
 const icons: Record<string, React.ComponentType<{ size: number }>> = {
   openai: OpenaiIcon,
   anthropic: ClaudeIcon,

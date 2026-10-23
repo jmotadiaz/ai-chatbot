@@ -4,107 +4,107 @@ import {
   PHASE_PRODUCTION_BUILD,
   PHASE_PRODUCTION_SERVER,
 } from "next/constants";
-import { config, type Entorno } from "config";
-// Helpers de build fuera de la superficie isomorfa (no viajan al cliente ni
-// al Edge Runtime): se importan por ruta para que sigan disponibles aunque
-// `"config"` esté aliasado a `env.<entorno>.ts` (tests de vitest).
+import { config, type Environment } from "config";
+// Build helpers outside the isomorphic surface (they never travel to the client
+// or to the Edge Runtime): they are imported by path so they stay available even
+// when `"config"` is aliased to `env.<environment>.ts` (vitest tests).
 import { envBundlePath } from "../config/src/argv";
 import { setBuildFlags } from "../config/src/facade";
 import { config as prodBundleConfig } from "../config/src/env.prod";
 
 /**
- * Señal IPC launcher → workers de Next (NO es configuración de la app).
+ * Launcher → Next workers IPC signal (NOT app configuration).
  *
- * Next 16 re-evalúa `next.config.ts` en los workers de jest-worker (threads o
- * forks) durante `build`: cada re-evaluación carga `packages/config` DE NUEVO
- * con el estado de módulo de `facade.ts` limpio, así que `--verify` (fijado por
- * `initConfig` en el proceso del launcher) no llegaba a ellos y `distDir`
- * divergía (main → `.next/verify`, workers → `.next`) rompiendo el build con
- * un ENOENT sobre los manifests. El launcher exporta SU flag como
- * `NEXT_CLI_VERIFY=1` (único productor, se limpia en cada arranque) y aquí se
- * rehidrata `setBuildFlags` en CADA evaluación — `distDir` sigue saliendo de
- * `config.nextBuildDir()` en todos los procesos.
+ * Next 16 re-evaluates `next.config.ts` in the jest-worker workers (threads or
+ * forks) during `build`: every re-evaluation loads `packages/config` AGAIN
+ * with the clean module state of `facade.ts`, so `--verify` (set by
+ * `initConfig` in the launcher's process) never reached them and `distDir`
+ * diverged (main → `.next/verify`, workers → `.next`), breaking the build with
+ * an ENOENT on the manifests. The launcher exports ITS flag as
+ * `NEXT_CLI_VERIFY=1` (single producer, cleared on every start) and here
+ * `setBuildFlags` is rehydrated on EVERY evaluation — `distDir` still comes from
+ * `config.nextBuildDir()` in every process.
  *
- * No es un selector de Entorno (ADR 0011: eso va por argv/`initConfig`), ni
- * ruta, ni credencial: solo propaga el flag de aislamiento de artefactos del
- * launcher a los workers que Next genera. Contrato en
- * `tests/contract/next-config-env-alias.test.ts` (único `process.env.*`
- * permitido en este fichero).
+ * It is not an Environment selector (ADR 0011: that goes through argv/`initConfig`), nor a
+ * path, nor a credential: it only propagates the launcher's artifact-isolation flag
+ * to the workers Next spawns. Contract in
+ * `tests/contract/next-config-env-alias.test.ts` (the only `process.env.*`
+ * allowed in this file).
  */
 if (process.env.NEXT_CLI_VERIFY === "1") {
   setBuildFlags({ verifyBuild: true });
 }
 
 /**
- * Configuración de Next.js con el Entorno soldado en compilación (ADR 0011 §4.2).
+ * Next.js configuration with the Environment welded in at compile time (ADR 0011 §4.2).
  *
- * ### Alias `"config"` → `packages/config/src/env.<entorno>.ts` (Turbopack y Webpack)
+ * ### Alias `"config"` → `packages/config/src/env.<environment>.ts` (Turbopack and Webpack)
  *
- * Tanto `turbopack.resolveAlias` como `webpack.resolve.alias` redirigen el
- * import `"config"` al bundle estático del Entorno activo, de modo que TODO el código
- * compilado — Server Components, Route Handlers, Client Components y los
- * workers hijos que Next biforca en `build`/`dev` — importa estáticamente el
- * bundle de su Entorno. Ni `process.env` ni `process.argv` (que el kernel no
- * propaga en `fork()`) participan en la resolución en los hijos.
+ * Both `turbopack.resolveAlias` and `webpack.resolve.alias` redirect the
+ * `"config"` import to the active Environment's static bundle, so that ALL the compiled
+ * code — Server Components, Route Handlers, Client Components and the
+ * child workers Next forks in `build`/`dev` — statically imports the
+ * bundle of its Environment. Neither `process.env` nor `process.argv` (which the kernel does not
+ * propagate across `fork()`) take part in the resolution in the children.
  *
- * Cada `env.<env>.ts` re-exporta la superficie isomorfa completa del paquete
- * (`surface.ts`: tipos, constantes del contrato del Gateway, rutas,
- * `optional`, …) además de la fachada `config` de su bundle, así que el alias
- * puede apuntar al fichero del Entorno directamente y todo el código compilado
- * conserva la misma API que la entrada pública.
+ * Each `env.<env>.ts` re-exports the package's full isomorphic surface
+ * (`surface.ts`: types, Gateway contract constants, paths,
+ * `optional`, …) plus the `config` facade of its bundle, so the alias
+ * can point at the Environment's file directly and all the compiled code
+ * keeps the same API as the public entry point.
  *
- * ### De dónde sale el Entorno (sin `process.argv` aquí)
+ * ### Where the Environment comes from (no `process.argv` here)
  *
- * Este fichero se evalúa en el MISMO proceso que el launcher
- * `scripts/next-cli.ts`, que ya ejecutó `initConfig(env, …)`: por eso
- * `config.entorno()` es fiable y NO se lee `process.argv` en el config.
+ * This file is evaluated in the SAME process as the launcher
+ * `scripts/next-cli.ts`, which already ran `initConfig(env, …)`: that's why
+ * `config.environment()` is reliable and `process.argv` is NOT read in the config.
  *
- * Único fallback documentado (spec §4.2): si el selector lanza (p. ej.
- * `next build`/`next start` directo, FUERA del launcher — los scripts
- * pre-ticket 04 todavía lo hacen), en las fases de build/serve de producción
- * se asume `"prod"` usando el bundle estático de prod (ADR 0006: solo prod se
- * construye/serve). En cualquier otra fase el error se propaga: un `next dev`
- * directo debe fallar con el ConfigError de ADR 0011 en lugar de arrancar
- * soldado a un Entorno adivinado. Tampoco se leen `process.env` aquí: el
- * antiguo `NEXT_BUILD_DIR` murió en el ticket 01 (`config.nextBuildDir()`),
- * `--verify` llega por flags de build que el launcher fija vía `initConfig`.
+ * Single documented fallback (spec §4.2): if the selector throws (e.g. a
+ * direct `next build`/`next start`, OUTSIDE the launcher — the pre-ticket 04
+ * scripts still do that), in the production build/serve phases
+ * `"prod"` is assumed using prod's static bundle (ADR 0006: only prod is
+ * built/served). In any other phase the error propagates: a direct `next dev`
+ * must fail with ADR 0011's ConfigError instead of starting up
+ * welded to a guessed Environment. `process.env` is not read here either: the
+ * old `NEXT_BUILD_DIR` died in ticket 01 (`config.nextBuildDir()`),
+ * `--verify` arrives through build flags that the launcher sets via `initConfig`.
  */
-function activeEntorno(phase: string): { entorno: Entorno; cfg: typeof config } {
+function activeEnvironment(phase: string): { environment: Environment; cfg: typeof config } {
   try {
-    return { entorno: config.entorno(), cfg: config };
+    return { environment: config.environment(), cfg: config };
   } catch (error) {
     if (
       phase === PHASE_PRODUCTION_BUILD ||
       phase === PHASE_PRODUCTION_SERVER
     ) {
-      return { entorno: "prod", cfg: prodBundleConfig };
+      return { environment: "prod", cfg: prodBundleConfig };
     }
     throw error;
   }
 }
 
 /**
- * Specifier del bundle del Entorno para el alias de Turbopack.
+ * Specifier of the Environment's bundle for the Turbopack alias.
  *
- * Turbopack (Next 16) interpreta un valor de alias que empieza por `/` como
- * import "server relative" (URL root-relative) y falla con "server relative
- * imports are not implemented yet", así que no vale la ruta absoluta. El
- * specifier `@/…` lo resuelven los paths de `tsconfig.json`
- * (`"@/*": ["./*"]`) y `../` normaliza a `packages/config/src/env.<entorno>`:
- * el alias apunta DIRECTAMENTE al bundle estático del Entorno, sin shims.
- * Contrato en `tests/contract/next-config-env-alias.test.ts`.
+ * Turbopack (Next 16) interprets an alias value starting with `/` as a
+ * "server relative" import (root-relative URL) and fails with "server relative
+ * imports are not implemented yet", so the absolute path is no good. The
+ * `@/…` specifier is resolved by the `tsconfig.json` paths
+ * (`"@/*": ["./*"]`) and `../` normalises to `packages/config/src/env.<environment>`:
+ * the alias points DIRECTLY at the Environment's static bundle, with no shims.
+ * Contract in `tests/contract/next-config-env-alias.test.ts`.
  */
-const configBundleAlias = (entorno: Entorno): string =>
-  `@/../config/src/env.${entorno}`;
+const configBundleAlias = (environment: Environment): string =>
+  `@/../config/src/env.${environment}`;
 
 const nextConfig = (phase: string): NextConfig => {
-  const { entorno, cfg } = activeEntorno(phase);
-  const configAlias = configBundleAlias(entorno);
+  const { environment, cfg } = activeEnvironment(phase);
+  const configAlias = configBundleAlias(environment);
   const disableDevIndicators = cfg.disableDevIndicator();
 
   return {
-    // distDir parametrizable: `build:verify` (`--verify`) compila a
-    // `.next/verify` sin pisar el `.next` que sirve prod bajo pm2 (ADR 0006).
+    // Parameterizable distDir: `build:verify` (`--verify`) compiles to
+    // `.next/verify` without overwriting the `.next` prod serves under pm2 (ADR 0006).
     distDir: cfg.nextBuildDir(),
     experimental: {
       viewTransition: true,
@@ -124,13 +124,13 @@ const nextConfig = (phase: string): NextConfig => {
         config: configAlias,
       },
     },
-    // Webpack (el `--webpack` del launcher y del webServer de Playwright):
-    // conserva los aliases internos de Next y añade el del Entorno.
+    // Webpack (the launcher's `--webpack` and Playwright's webServer):
+    // keeps Next's internal aliases and adds the Environment's.
     webpack: (config, options) => {
       const existing = config.resolve?.alias;
-      // Webpack sí acepta la ruta absoluta: mismo módulo que Turbopack sin
-      // depender de la normalización de `@/…`.
-      const webpackAlias = envBundlePath(entorno);
+      // Webpack does accept the absolute path: same module as Turbopack without
+      // relying on the `@/…` normalisation.
+      const webpackAlias = envBundlePath(environment);
       const contractPath = path.join(__dirname, "../config/src/gateway-contract.ts");
       const isClient = (options as { isServer?: boolean } | undefined)?.isServer === false;
       config.resolve = {
@@ -140,9 +140,9 @@ const nextConfig = (phase: string): NextConfig => {
             ? existing
             : {}),
           "config/contract": contractPath,
-          // En el bundle de cliente (navegador), el import de `"config"` completo
-          // está PROHIBIDO para evitar inlinar secretos del servidor.
-          // Solo se permite `"config/contract"` (tipos y constantes puros).
+          // In the client bundle (browser), importing `"config"` as a whole
+          // is FORBIDDEN to avoid inlining server secrets.
+          // Only `"config/contract"` is allowed (pure types and constants).
           config: isClient ? false : webpackAlias,
         },
       };

@@ -13,10 +13,10 @@ const turndownService = new TurndownService({
   codeBlockStyle: "fenced",
 });
 
-turndownService.addRule("soloTextoEnEnlaces", {
-  filter: "a", // Identifica todas las etiquetas <a>
+turndownService.addRule("textOnlyInLinks", {
+  filter: "a", // Matches every <a> tag
   replacement: function (content) {
-    // 'content' es el texto que está dentro del enlace
+    // 'content' is the text inside the link
     return content;
   },
 });
@@ -45,7 +45,7 @@ turndownService.addRule("removeDistractions", {
 
 turndownService.addRule("removeGenericDistractions", {
   filter: function (node) {
-    // Solo aplicamos esto a bloques genéricos, no a parrafos de texto real
+    // We only apply this to generic blocks, not to real text paragraphs
     if (
       node.nodeName === "P" ||
       node.nodeName === "H1" ||
@@ -53,14 +53,14 @@ turndownService.addRule("removeGenericDistractions", {
     )
       return false;
 
-    // Obtenemos clases e IDs
+    // We grab classes and IDs
     const attrs =
       (node.getAttribute("class") || "") +
       " " +
       (node.getAttribute("id") || "");
     const lowerAttrs = attrs.toLowerCase();
 
-    // Palabras clave de cosas que NO queremos indexar
+    // Keywords for things we do NOT want to index
     const noiseKeywords = [
       "share",
       "social",
@@ -81,7 +81,7 @@ turndownService.addRule("removeGenericDistractions", {
       "toc",
     ];
 
-    // Si contiene alguna palabra clave de ruido, lo borramos
+    // If it contains any noise keyword, we drop it
     return noiseKeywords.some((keyword) => lowerAttrs.includes(keyword));
   },
   replacement: function () {
@@ -92,7 +92,7 @@ turndownService.addRule("removeGenericDistractions", {
 interface ExtractOptions {
   doc: Document;
   container?: string;
-  excludeSelectors?: string[]; // Nueva propiedad opcional
+  excludeSelectors?: string[]; // New optional property
 }
 
 const extractContainer = ({
@@ -100,32 +100,32 @@ const extractContainer = ({
   doc,
   excludeSelectors = [],
 }: ExtractOptions): HTMLElement => {
-  // 1. Seleccionar el elemento raíz (Container o Body)
+  // 1. Select the root element (Container or Body)
   let rootElement: HTMLElement | null = null;
 
   if (container) {
     rootElement = doc.querySelector<HTMLElement>(container);
   }
 
-  // Si no se especificó container o no se encontró, usamos el body
+  // If no container was given or it was not found, we use the body
   const finalElement = rootElement ?? doc.body;
 
-  // 2. Limpieza de Ruido (Sanitización del DOM)
+  // 2. Noise Cleanup (DOM sanitization)
   if (excludeSelectors.length > 0 && finalElement) {
     try {
-      // Unimos todos los selectores en un solo string (ej: "nav, .footer, .ad-banner")
-      // Esto es más eficiente que hacer un querySelectorAll por cada selector.
+      // Join all selectors into a single string (e.g. "nav, .footer, .ad-banner")
+      // This is more efficient than a querySelectorAll per selector.
       const combinedSelector = excludeSelectors.join(", ");
 
-      // Buscamos los elementos a eliminar SOLO dentro de nuestro finalElement
+      // We look for the elements to remove ONLY inside our finalElement
       const elementsToRemove = finalElement.querySelectorAll(combinedSelector);
 
       elementsToRemove.forEach((el) => {
-        el.remove(); // Eliminación segura del nodo del árbol DOM
+        el.remove(); // Safe removal of the node from the DOM tree
       });
     } catch (error) {
       console.warn("Error cleaning DOM selectors:", error);
-      // Continuamos sin limpiar si falla un selector mal formado
+      // We carry on without cleaning if a malformed selector fails
     }
   }
 

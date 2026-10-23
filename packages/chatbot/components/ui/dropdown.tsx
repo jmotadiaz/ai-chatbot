@@ -37,9 +37,9 @@ export interface DropdownPopupProps extends Omit<
     | "responsive-center";
   className?: string;
   /**
-   * Prueba B: eleva el bottom-sheet sobre el teclado virtual vía
-   * `visualViewport`. Solo afecta a las variantes `fixed bottom-0` en
-   * mobile (<lg); en desktop el inset es 0 y no hace nada.
+   * Test B: lifts the bottom-sheet above the virtual keyboard via
+   * `visualViewport`. Only affects the `fixed bottom-0` variants on mobile
+   * (<lg); on desktop the inset is 0 and it does nothing.
    */
   avoidKeyboard?: boolean;
 }
@@ -76,8 +76,8 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
   ...props
 }) => {
   const baseVariant = variant.replace("responsive-", "");
-  // Solo escucha mientras el popup está abierto para no dejar listeners
-  // colgados por cada Dropdown montado.
+  // Only listens while the popup is open so no listeners are left dangling
+  // for each mounted Dropdown.
   const keyboardInset = useKeyboardInset(avoidKeyboard && isShown);
 
   const initialY =
@@ -108,9 +108,9 @@ const DropdownPopup: React.FC<DropdownPopupProps> = ({
               variants[variant],
               className,
             )}
-            // `bottom-0` viene de la variante responsive; el style lo
-            // sobrescribe solo cuando el teclado está visible. No usa
-            // transform para no pelear con la animación `y` de motion.
+            // `bottom-0` comes from the responsive variant; the style only
+            // overrides it while the keyboard is visible. It does not use
+            // transform so it does not fight motion's `y` animation.
             style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
             initial={{ opacity: 0, y: initialY }}
             animate={{ opacity: 1, y: 0 }}
@@ -158,10 +158,10 @@ const Dropdown = {
 };
 
 /**
- * Altura del teclado virtual (px) mientras cubre el layout viewport.
- * `window.innerHeight - visualViewport.height` es el inset; se resta
- * `offsetTop` por pinch-zoom. Devuelve 0 en desktop (≥lg), SSR o sin
- * `visualViewport` (navegadores antiguos).
+ * Virtual keyboard height (px) while it covers the layout viewport.
+ * `window.innerHeight - visualViewport.height` is the inset; `offsetTop` is
+ * subtracted for pinch-zoom. Returns 0 on desktop (≥lg), SSR or without
+ * `visualViewport` (older browsers).
  */
 function useKeyboardInset(enabled: boolean): number {
   const [inset, setInset] = useState(0);

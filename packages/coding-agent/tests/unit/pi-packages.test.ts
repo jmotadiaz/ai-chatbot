@@ -138,8 +138,8 @@ describe("Pi package extension entrypoints (generic helper)", () => {
   beforeEach(() => {
     tmpRoot = join(tmpdir(), `pkg-paths-test-${crypto.randomUUID()}`);
 
-    // DI por parámetro (ADR 0011 §6): el checkouts vive en el sandbox del
-    // test, sin process.env de por medio.
+    // DI through parameters (ADR 0011 §6): the checkout lives in the test's
+    // sandbox, with no process.env involved.
     const checkout = getPiPackagePath(dummyPkg, { piPackagesDir: tmpRoot });
     manifestPath = join(checkout, "package.json");
     extensionPath = join(checkout, ".pi", "extensions", "dummy.ts");
@@ -167,8 +167,8 @@ describe("Pi package extension entrypoints (generic helper)", () => {
   it("handles package extension discovery when packages are defined", () => {
     expect(readFileSync(manifestPath, "utf-8")).toContain("dummy-pkg");
     expect(getPiPackageExtensionPaths({ piPackagesDir: tmpRoot })).toEqual([]);
-    // El default del Entorno no se tocó: PI_PACKAGES sigue vacío, así que
-    // aunque resuelva el `.pi-test` del paquete no expone entradas.
+    // The Environment default was not touched: PI_PACKAGES is still empty, so
+    // even if it resolves the package's `.pi-test` it exposes no entries.
     expect(getPiPackageExtensionPaths()).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 "use server";
 
 export const deleteFile = async (_fileUrl: string): Promise<void> => {
-  // Los ficheros locales (data-URLs) no requieren borrado remoto en almacenamiento blob.
+  // Local files (data-URLs) need no remote deletion in blob storage.
 };

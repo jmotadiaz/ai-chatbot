@@ -2,24 +2,24 @@ import { repoPath, packagePath, homePath } from "./paths";
 import type { StructuralConfig } from "./types";
 
 /**
- * Configuración estructural de PRODUCCIÓN (versionada, sin secretos).
+ * PRODUCTION structural configuration (versioned, no secrets).
  *
- * Continuidad de Producción (ADR 0002): `codingAgentSessionsDir` y
- * `codingAgentProjectsRoot` conservan EXACTAMENTE los valores vigentes del
- * servicio bajo pm2; el resto de rutas se expresan de forma portable vía
+ * Production continuity (ADR 0002): `codingAgentSessionsDir` and
+ * `codingAgentProjectsRoot` keep EXACTLY the values in force in the service
+ * under pm2; the rest of the paths are expressed portably via
  * `repoPath`/`packagePath`.
  */
 export const configProd = {
-  entorno: "prod",
+  environment: "prod",
   port: 8085,
   modelGatewayUrl: "http://127.0.0.1:4000",
   codingAgentEnabled: true,
-  // El servicio vivo lista los proyectos bajo el directorio padre del monorepo
-  // (`/home/javier/projects`), no dentro de él. `repoPath("..")` preserva ese
-  // valor sin hardcodear el home del host.
+  // The live service lists the projects under the monorepo's parent directory
+  // (`/home/javier/projects`), not inside it. `repoPath("..")` preserves that
+  // value without hardcoding the host's home.
   codingAgentProjectsRoot: repoPath(".."),
-  // Literal histórico de Producción (ADR 0002): las sesiones Pi ya están
-  // agrupadas bajo ese path y cambiar la ruta perdería el historial visible.
+  // Historical Production literal (ADR 0002): the Pi sessions are already
+  // grouped under that path and changing the route would lose the visible history.
   codingAgentSessionsDir: homePath("coding-agent", "sessions"),
   codingAgentWorkerUrl: "http://localhost:3015",
   codingAgentWorkerPort: 3015,
@@ -28,8 +28,8 @@ export const configProd = {
   codingAgentAgentDir: packagePath("coding-agent", ".pi-prod/agent"),
   codingAgentPiPackagesDir: packagePath("coding-agent", ".pi-prod/packages"),
   codingAgentArtifactsDir: packagePath("coding-agent", ".pi-prod/artifacts"),
-  // Lo sigue el NAVEGADOR del usuario: debe ser alcanzable en la LAN, no en
-  // loopback. Mismo valor vigente en `.env.prod`.
+  // Followed by the user's BROWSER: it must be reachable on the LAN, not on
+  // loopback. Same value in force in `.env.prod`.
   codingAgentArtifactsUrl: "http://192.168.18.50:3015",
   contextWindow: 128000,
   ragUploadLimit: "false",

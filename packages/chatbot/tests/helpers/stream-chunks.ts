@@ -1,8 +1,8 @@
 import type { LanguageModelV3StreamPart } from "@/lib/infrastructure/ai/types";
 
 /**
- * Chunk builders for AI SDK mock streams (antes `inference/testing`,
- * ADR 0010: copiados aquí — son helpers puros sin acoplamiento a modelo).
+ * Chunk builders for AI SDK mock streams (previously `inference/testing`,
+ * ADR 0010: copied here — they are pure helpers with no coupling to a model).
  */
 
 export const textChunks = (

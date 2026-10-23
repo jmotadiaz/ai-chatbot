@@ -8,9 +8,10 @@ import {
 } from "../../../mocks/gateway/server";
 
 /**
- * Mock Model Gateway (`:4001`) — contrato compartido §4. In-process (node:http
- * es infraestructura, no lógica pura) y sobre el puerto canónico `4001` vía
- * `ensureMockGateway()`, para no chocar con un mock ya levantado por el e2e.
+ * Mock Model Gateway (`:4001`) — shared contract §4. In-process (node:http is
+ * infrastructure, not pure logic) and on the canonical port `4001` via
+ * `ensureMockGateway()`, so it does not clash with a mock already started by
+ * the e2e.
  */
 
 const BASE = `http://127.0.0.1:${MOCK_GATEWAY_PORT}`;
@@ -28,7 +29,7 @@ const post = (path: string, body: unknown, extraHeaders: Record<string, string> 
     body: JSON.stringify(body),
   });
 
-/** Parsea el cuerpo SSE en eventos `data:` (con `[DONE]` eliminado). */
+/** Parses the SSE body into `data:` events (with `[DONE]` removed). */
 async function sseEvents(response: Response): Promise<unknown[]> {
   const raw = await response.text();
   return raw
@@ -37,7 +38,7 @@ async function sseEvents(response: Response): Promise<unknown[]> {
     .map((line) => JSON.parse(line.slice("data: ".length)) as unknown);
 }
 
-/** Concatena los deltas de texto de un stream de chat. */
+/** Concatenates the text deltas of a chat stream. */
 const streamText = (events: unknown[]): string =>
   events
     .map((event) => {
@@ -54,15 +55,15 @@ afterAll(async () => {
   await stopMockGateway();
 });
 
-describe("Mock Model Gateway — infraestructura", () => {
-  it("ensureMockGateway es idempotente (reutiliza el mock vivo)", async () => {
+describe("Mock Model Gateway — infrastructure", () => {
+  it("ensureMockGateway is idempotent (reuses the live mock)", async () => {
     const first = await ensureMockGateway();
     expect(first.started).toBe(false);
     expect(await isMockGatewayAlive(MOCK_GATEWAY_PORT)).toBe(true);
   });
 
-  describe("autenticación", () => {
-    it("401 en cualquier ruta sin Authorization header", async () => {
+  describe("authentication", () => {
+    it("401 on any route without the Authorization header", async () => {
       const noAuth = { "Content-Type": "application/json" };
 
       const catalog = await fetch(`${BASE}/v1/models/catalog`);
@@ -91,7 +92,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       }
     });
 
-    it("acepta cualquier bearer cuando hay header", async () => {
+    it("accepts any bearer when the header is present", async () => {
       const response = await get("/v1/models/catalog", {
         Authorization: "Bearer cualquiera",
       });
@@ -100,7 +101,7 @@ describe("Mock Model Gateway — infraestructura", () => {
   });
 
   describe("GET /v1/models/catalog", () => {
-    it("sirve el catálogo de test definido por capacidades", async () => {
+    it("serves the test catalog defined by capabilities", async () => {
       const response = await get("/v1/models/catalog");
       expect(response.status).toBe(200);
       const { models } = (await response.json()) as { models: Array<Record<string, unknown>> };
@@ -115,7 +116,7 @@ describe("Mock Model Gateway — infraestructura", () => {
         "failsMidStream",
       ]);
 
-      // Schema exacto del contrato compartido (§1): sin campos internos.
+      // Exact schema of the shared contract (§1): no internal fields.
       expect(Object.keys(models[0]!).sort()).toEqual([
         "company",
         "contextWindow",
@@ -134,7 +135,7 @@ describe("Mock Model Gateway — infraestructura", () => {
         "zeroDataRetention",
       ]);
 
-      // Invariantes que consumen los e2e:
+      // Invariants the e2e consume:
       const byId = new Map(models.map((m) => [m.id, m]));
       expect(byId.get("basicChat")?.isDefault).toBe(true);
       expect(models.filter((m) => m.isDefault)).toHaveLength(1);
@@ -150,14 +151,14 @@ describe("Mock Model Gateway — infraestructura", () => {
       });
     });
 
-    it("?include_internal=false se trata como público (bug de la revisión)", async () => {
+    it("?include_internal=false is treated as public (review bug)", async () => {
       const response = await get("/v1/models/catalog?include_internal=false");
       const { models } = (await response.json()) as { models: Array<{ id: string }> };
       expect(models.map((m) => m.id)).not.toContain("image-default");
       expect(models.map((m) => m.id)).toContain("basicChat");
     });
 
-    it("?include_internal=true expone los contratos *-default", async () => {
+    it("?include_internal=true exposes the *-default contracts", async () => {
       const response = await get("/v1/models/catalog?include_internal=true");
       const { models } = (await response.json()) as { models: Array<{ id: string }> };
       for (const contract of [
@@ -178,7 +179,7 @@ describe("Mock Model Gateway — infraestructura", () => {
   });
 
   describe("POST /v1/chat/completions", () => {
-    it("basicChat (stream): texto con modelo y temperatura del request", async () => {
+    it("basicChat (stream): text with the request's model and temperature", async () => {
       const response = await post("/v1/chat/completions", {
         model: "basicChat",
         stream: true,
@@ -194,7 +195,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       expect(last.choices[0]?.finish_reason).toBe("stop");
     });
 
-    it("basicChatAlt (stream): mismo patrón con su id", async () => {
+    it("basicChatAlt (stream): same pattern with its id", async () => {
       const response = await post("/v1/chat/completions", {
         model: "basicChatAlt",
         stream: true,
@@ -205,7 +206,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       expect(streamText(events)).toBe("Hello, I'm basicChatAlt, Temperature: 0.7, ");
     });
 
-    it("basicChat (JSON): completion no-streaming", async () => {
+    it("basicChat (JSON): non-streaming completion", async () => {
       const response = await post("/v1/chat/completions", {
         model: "basicChat",
         temperature: 0.6,
@@ -220,7 +221,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       );
     });
 
-    it("image-default (JSON): mensaje multipart con parte image_url", async () => {
+    it("image-default (JSON): multipart message with an image_url part", async () => {
       const response = await post("/v1/chat/completions", {
         model: "image-default",
         modalities: ["image", "text"],
@@ -238,7 +239,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       );
     });
 
-    it("image-default (SSE): delta multipart con parte image_url", async () => {
+    it("image-default (SSE): multipart delta with an image_url part", async () => {
       const response = await post("/v1/chat/completions", {
         model: "image-default",
         stream: true,
@@ -258,7 +259,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       );
     });
 
-    it("canExecuteTools: turno 1 → tool_calls webSearch; turno 2 → texto final", async () => {
+    it("canExecuteTools: turn 1 → webSearch tool_calls; turn 2 → final text", async () => {
       const first = await post("/v1/chat/completions", {
         model: "canExecuteTools",
         stream: true,
@@ -297,7 +298,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       );
     });
 
-    it("canSeeImages: texto de descripción", async () => {
+    it("canSeeImages: description text", async () => {
       const response = await post("/v1/chat/completions", {
         model: "canSeeImages",
         stream: true,
@@ -307,7 +308,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       expect(streamText(events)).toBe("Image description (mock)");
     });
 
-    it("canProduceReasoning: reasoning_content en el delta + texto final", async () => {
+    it("canProduceReasoning: reasoning_content in the delta + final text", async () => {
       const response = await post("/v1/chat/completions", {
         model: "canProduceReasoning",
         stream: true,
@@ -325,7 +326,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       expect(streamText(events)).toBe("The answer is 42.");
     });
 
-    it("alwaysRefuses: negativa determinista", async () => {
+    it("alwaysRefuses: deterministic refusal", async () => {
       const response = await post("/v1/chat/completions", {
         model: "alwaysRefuses",
         stream: true,
@@ -335,7 +336,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       expect(streamText(events)).toBe("I cannot help with that request.");
     });
 
-    it("failsMidStream: un trozo de texto y error sin [DONE]", async () => {
+    it("failsMidStream: one text chunk and an error without [DONE]", async () => {
       const response = await post("/v1/chat/completions", {
         model: "failsMidStream",
         stream: true,
@@ -348,7 +349,7 @@ describe("Mock Model Gateway — infraestructura", () => {
         .split("\n\n")
         .filter((line) => line.startsWith("data: "))
         .map((line) => JSON.parse(line.slice("data: ".length)) as unknown);
-      // Primer evento: texto parcial. Último evento: error del provider.
+      // First event: partial text. Last event: provider error.
       expect(streamText(events)).toBe("Partial answer before the failure...");
       const errorEvent = events.at(-1) as { error: { message: string; type: string } };
       expect(errorEvent.error).toMatchObject({
@@ -363,7 +364,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       "vision-default",
       "reasoning-default",
       "free-default",
-    ])("contrato %s: texto determinista con su nombre", async (model) => {
+    ])("contract %s: deterministic text with its name", async (model) => {
       const response = await post("/v1/chat/completions", {
         model,
         stream: true,
@@ -375,7 +376,7 @@ describe("Mock Model Gateway — infraestructura", () => {
   });
 
   describe("POST /v1/embeddings", () => {
-    it("vector determinista de 768 dimensiones por input", async () => {
+    it("deterministic 768-dimension vector per input", async () => {
       const response = await post("/v1/embeddings", {
         model: "embedding-default",
         input: ["hello world", "hello world", "different text"],
@@ -397,7 +398,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       expect(body.usage.total_tokens).toBeGreaterThan(0);
     });
 
-    it("mismo input entre llamadas → mismo vector", async () => {
+    it("same input across calls → same vector", async () => {
       const body = { model: "embedding-default", input: ["stable text"] };
       const [a, b] = await Promise.all([post("/v1/embeddings", body), post("/v1/embeddings", body)]);
       const aData = (await a.json()) as { data: Array<{ embedding: number[] }> };
@@ -407,7 +408,7 @@ describe("Mock Model Gateway — infraestructura", () => {
   });
 
   describe("POST /v1/rerank", () => {
-    it("ranking vacío: replica la semántica de test actual del chatbot", async () => {
+    it("empty ranking: replicates the chatbot's current test semantics", async () => {
       const response = await post("/v1/rerank", {
         model: "rerank-default",
         query: "query",
@@ -424,7 +425,7 @@ describe("Mock Model Gateway — infraestructura", () => {
     ["POST /v1/decisions", "/v1/decisions"],
     ["POST /v1/systemone (alias)", "/v1/systemone"],
   ])("%s", (_label, path) => {
-    it("answer choice determinista por pregunta", async () => {
+    it("deterministic choice answer per question", async () => {
       const response = await post(path, {
         model: "decision-default",
         state: { latest_message: "hola" },
@@ -448,7 +449,7 @@ describe("Mock Model Gateway — infraestructura", () => {
       };
       expect(body.answers.routing).toEqual({
         type: "choice",
-        choice: "ctx7", // primer criterio declarado
+        choice: "ctx7", // first declared criterion
         confidence: 1,
         probabilities: { ctx7: 1 / 3, web: 1 / 3, neither: 1 / 3 },
       });
@@ -459,21 +460,21 @@ describe("Mock Model Gateway — infraestructura", () => {
   });
 
   describe("POST /v1/audio/speech", () => {
-    it("audio determinista con Content-Type audio/mpeg", async () => {
+    it("deterministic audio with Content-Type audio/mpeg", async () => {
       const body = { model: "tts-default", input: "hello", voice: "alloy" };
       const [a, b] = await Promise.all([post("/v1/audio/speech", body), post("/v1/audio/speech", body)]);
       expect(a.headers.get("content-type")).toBe("audio/mpeg");
       const aBuffer = Buffer.from(await a.arrayBuffer());
       const bBuffer = Buffer.from(await b.arrayBuffer());
-      expect(aBuffer.length).toBeGreaterThan(44); // header WAV + muestras
+      expect(aBuffer.length).toBeGreaterThan(44); // WAV header + samples
       expect(aBuffer.equals(bBuffer)).toBe(true);
-      // Header RIFF/WAVE válido.
+      // Valid RIFF/WAVE header.
       expect(aBuffer.subarray(0, 4).toString()).toBe("RIFF");
       expect(aBuffer.subarray(8, 12).toString()).toBe("WAVE");
     });
   });
 
-  it("404 en rutas desconocidas", async () => {
+  it("404 on unknown routes", async () => {
     const response = await get("/v1/unknown");
     expect(response.status).toBe(404);
   });

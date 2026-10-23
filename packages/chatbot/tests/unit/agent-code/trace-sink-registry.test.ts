@@ -4,13 +4,13 @@ import * as os from "node:os";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 /**
- * La config de tracing (enabled + dir) YA NO es `process.env` (ADR 0011): el
- * bundle `config` de test está congelado (`traceEnabled: false`, traceDir
- * `.pi-test/traces`), así que este test INYECTA su config mockeando el módulo
- * `"config"` — la fachada congelada se copia con los dos overrides que
- * necesita el test (un tmpdir por test). Antes mutaba
- * `process.env.TRACE_ENABLED/TRACE_DIR`, que el selector ignora desde el
- * ticket 01 (y era estado global heredable, la causa del incidente).
+ * The tracing config (enabled + dir) is NO LONGER `process.env` (ADR 0011): the
+ * test `config` bundle is frozen (`traceEnabled: false`, traceDir
+ * `.pi-test/traces`), so this test INJECTS its config by mocking the `"config"`
+ * module — the frozen facade is copied with the two overrides the test needs (a
+ * tmpdir per test). It used to mutate `process.env.TRACE_ENABLED/TRACE_DIR`,
+ * which the selector ignores since ticket 01 (and it was inherited global state,
+ * the cause of the incident).
  */
 const injected = vi.hoisted(() => ({ traceDir: "", traceEnabled: true }));
 
@@ -116,7 +116,7 @@ describe("trace sink registry", () => {
   });
 
   it("returns null and a no-op retain when tracing is disabled", async () => {
-    // Inyección vía el mock del bundle: `config.traceEnabled()` → false.
+    // Injection through the bundle mock: `config.traceEnabled()` → false.
     injected.traceEnabled = false;
     const runId = "55555555-aaaa-4bbb-8ccc-dddddddddddd";
 

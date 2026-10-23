@@ -5,8 +5,8 @@ import { Project, InsertProject } from "@/lib/infrastructure/db/schema";
 export type { Project, InsertProject };
 
 // Zod schema for Project validation
-// defaultModel es free-form (varchar): la validez contra el catálogo se
-// resuelve en runtime con resolveChatModelId al leerla.
+// defaultModel is free-form (varchar): validity against the catalog is
+// resolved at runtime with resolveChatModelId when it is read.
 export const createProjectSchema = z.object({
   name: z.string().min(1, "Name is required"),
   defaultModel: z.string().optional(),

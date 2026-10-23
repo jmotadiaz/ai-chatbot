@@ -24,26 +24,26 @@ import type {
 } from "./types";
 
 /**
- * Composition root de la capa de IA del chatbot (ADR 0010): un único
- * cliente contra el Model Gateway (`${config.modelGatewayUrl()}/v1`,
- * autenticado con `config.modelGatewayApiKey()`). Sin `isTestMode()` ni
- * mocks en memoria: en el Entorno de Test `MODEL_GATEWAY_URL` apunta al Mock
- * Model Gateway (`:4001`) y todo el tráfico es HTTP, igual que en dev/prod.
+ * Composition root of the chatbot's AI layer (ADR 0010): a single
+ * client against the Model Gateway (`${config.modelGatewayUrl()}/v1`,
+ * authenticated with `config.modelGatewayApiKey()`). No `isTestMode()` and no
+ * in-memory mocks: in the Test Environment `MODEL_GATEWAY_URL` points at the Mock
+ * Model Gateway (`:4001`) and all traffic is HTTP, just like in dev/prod.
  *
- * Los modelos se dirigen por id del catálogo o por Default Model Contract
- * (`*-default`, los 10 nombres estables del Gateway). A `"use client"` le
- * está prohibido importar este módulo (lint, `packages/chatbot/eslint.config.mjs`);
- * la configuración segura para UI vive en
- * `@/lib/features/foundation-model/config` y viaja hidratada en el
+ * Models are addressed by catalog id or by Default Model Contract
+ * (`*-default`, the Gateway's 10 stable names). `"use client"` is
+ * forbidden from importing this module (lint, `packages/chatbot/eslint.config.mjs`);
+ * the UI-safe configuration lives in
+ * `@/lib/features/foundation-model/config` and travels hydrated in the
  * `<ModelCatalogProvider>`.
  *
- * `languageModel`/`createAgent` son síncronos y leen el snapshot del
- * catálogo (`getModelCatalogSnapshot()`): los puntos de calentamiento son
- * `app/(chat)/layout.tsx` y `conversation/factory.ts` (`warmModelCatalog`).
+ * `languageModel`/`createAgent` are synchronous and read the catalog
+ * snapshot (`getModelCatalogSnapshot()`): the warm-up points are
+ * `app/(chat)/layout.tsx` and `conversation/factory.ts` (`warmModelCatalog`).
  */
 
 // ---------------------------------------------------------------------------
-// Cliente Gateway (transport openai-compatible, memoizado por id)
+// Gateway client (openai-compatible transport, memoized by id)
 // ---------------------------------------------------------------------------
 
 const buildGatewayProvider = () =>
@@ -56,9 +56,9 @@ const buildGatewayProvider = () =>
 const modelCache = new Map<string, ModelConfiguration>();
 
 /**
- * Transport propio del contrato de imagen (`image-default`), memoizado: el
- * `openai-compatible` genérico no parsea partes de imagen ni admite
- * `modalities` en el body (ver `gateway-image-model.ts`).
+ * Purpose-built transport for the image contract (`image-default`), memoized: the
+ * generic `openai-compatible` does not parse image parts or accept
+ * `modalities` in the body (see `gateway-image-model.ts`).
  */
 let gatewayImageModel: LanguageModelV3 | undefined;
 
@@ -74,10 +74,10 @@ const mergeProviderOptions = (
 };
 
 /**
- * `languageModel(idOrContract, options)`: metadatos del snapshot del
- * catálogo + un cliente `@ai-sdk/openai-compatible` construido con el id
- * tal cual (el id de catálogo ES el model id del Gateway), memoizado por id.
- * `providerOptions` del caller se aplican frescos en cada llamada.
+ * `languageModel(idOrContract, options)`: catalog snapshot metadata + a
+ * `@ai-sdk/openai-compatible` client built with the id
+ * as-is (the catalog id IS the Gateway's model id), memoized by id.
+ * The caller's `providerOptions` are applied fresh on every call.
  */
 function languageModel(
   idOrContract: string,
@@ -115,7 +115,7 @@ function languageModel(
 }
 
 // ---------------------------------------------------------------------------
-// createAgent / createAgentModel (tracing wrap, como en el kit anterior)
+// createAgent / createAgentModel (tracing wrap, as in the previous kit)
 // ---------------------------------------------------------------------------
 
 function resolveTracedModel(
@@ -152,18 +152,18 @@ function createAgent<TOOLS extends ToolSet = ToolSet>(
 }
 
 // ---------------------------------------------------------------------------
-// Embeddings (`embedding-default`, 768 dimensiones + task_type)
+// Embeddings (`embedding-default`, 768 dimensions + task_type)
 // ---------------------------------------------------------------------------
 
 const EMBEDDING_CONTRACT = "embedding-default";
 
 /**
- * `embed(values, { taskType })`: `POST /v1/embeddings` con
+ * `embed(values, { taskType })`: `POST /v1/embeddings` with
  * `{ model: "embedding-default", input, dimensions: 768, task_type }`
- * (contrato compartido §4). Va por fetch directo — el transport
- * `@ai-sdk/openai-compatible` valida sus providerOptions contra un esquema
- * cerrado que no admite `task_type`, y el contrato del Gateway lo pide como
- * campo de primer nivel del body.
+ * (shared contract §4). It goes through a direct fetch — the
+ * `@ai-sdk/openai-compatible` transport validates its providerOptions against a
+ * closed schema that does not accept `task_type`, and the Gateway contract asks for it as a
+ * top-level body field.
  */
 async function embed(
   values: string[],
@@ -202,7 +202,7 @@ async function embed(
 
 const RERANK_CONTRACT = "rerank-default";
 
-/** `rerank({ query, documents, topN })`: mapea `{results:[{index, relevance_score}]}` → `{originalIndex, score}[]`. */
+/** `rerank({ query, documents, topN })`: maps `{results:[{index, relevance_score}]}` → `{originalIndex, score}[]`. */
 async function rerank(args: RerankArgs): Promise<RerankResult[]> {
   const response = await fetch(`${gatewayBaseUrl()}/rerank`, {
     method: "POST",
@@ -267,14 +267,14 @@ const answerKind = (answer: unknown): string =>
     : "missing";
 
 /**
- * `decide(options)`: envía las preguntas `type: "choice"` de
- * `options.questions` (una o más) en una sola llamada a
- * `POST /v1/systemone` con `decision-default`. Acotada por
- * `DECIDE_TIMEOUT_MS` (timeout del fetch + signal del conjunto de la
- * llamada). Cada campo de `scope` cae de forma independiente al contexto de
- * traza ambiente. Las respuestas se validan pregunta a pregunta: la que
- * falte o no sea `choice` se omite de `Decision.answers`, y la llamada solo
- * lanza si NINGUNA pregunta produce respuesta válida.
+ * `decide(options)`: sends the `type: "choice"` questions from
+ * `options.questions` (one or more) in a single call to
+ * `POST /v1/systemone` with `decision-default`. Bounded by
+ * `DECIDE_TIMEOUT_MS` (fetch timeout + the whole call's
+ * signal). Each `scope` field falls back independently to the ambient
+ * trace context. Answers are validated question by question: the one that is
+ * missing or not a `choice` is omitted from `Decision.answers`, and the call only
+ * throws if NO question produces a valid answer.
  */
 async function decide(options: DecideOptions): Promise<Decision> {
   const questionNames = Object.keys(options.questions);
@@ -360,9 +360,9 @@ async function decide(options: DecideOptions): Promise<Decision> {
 // ---------------------------------------------------------------------------
 
 /**
- * `speechModel()`: `tts-default` vía el transport speech de `@ai-sdk/openai`
- * (`/v1/audio/speech`). Voz, speed e instructions siguen siendo parámetros
- * de llamada de la feature, no del modelo.
+ * `speechModel()`: `tts-default` through the `@ai-sdk/openai` speech transport
+ * (`/v1/audio/speech`). Voice, speed and instructions remain call parameters of
+ * the feature, not of the model.
  */
 export const speechModel = (): SpeechModelV3 =>
   createOpenAI({
@@ -375,10 +375,10 @@ export const speechModel = (): SpeechModelV3 =>
 // ---------------------------------------------------------------------------
 
 /**
- * Instancia única del chatbot. Los contratos `*-default` que resuelven las
- * features internas viven como literales en cada call-site (ver tabla de la
- * spec §2.4); la configuración de los modelos user-invocable llega del
- * catálogo en runtime, no de aquí.
+ * Single chatbot instance. The `*-default` contracts that internal
+ * features resolve live as literals at each call-site (see the
+ * spec §2.4 table); the configuration of user-invocable models comes from the
+ * catalog at runtime, not from here.
  */
 export const inferenceKit: InferenceKit = {
   languageModel,

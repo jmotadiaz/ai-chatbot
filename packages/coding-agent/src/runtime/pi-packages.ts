@@ -53,9 +53,9 @@ export function getPiPackagePath(
 }
 
 /**
- * Ref to check out. Always the pinned one: `packages/config` es la única
- * fuente de configuración (ADR 0011) y no hay overrides por variable de
- * entorno que un subproceso pueda heredar.
+ * Ref to check out. Always the pinned one: `packages/config` is the only
+ * configuration source (ADR 0011) and there are no environment-variable
+ * overrides a subprocess could inherit.
  */
 export function getPiPackageRef(pkg: PiPackage): string {
   return pkg.defaultRef;

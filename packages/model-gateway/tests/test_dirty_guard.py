@@ -1,11 +1,11 @@
-"""Guarda del árbol sucio del despliegue: avisa y pregunta (y/n) en vez de fallar.
+"""Deployment dirty-tree guard: warns and asks (y/n) instead of failing.
 
-El deploy NO debe reventar porque el repo tenga cambios sin commitear: avisa,
-pregunta y sigue solo si el operador responde afirmativamente. `--allow-dirty`
-salta el aviso y la pregunta por completo.
+The deploy must NOT blow up because the repo has uncommitted changes: it warns,
+asks and continues only if the operator answers affirmatively. `--allow-dirty`
+skips the warning and the question entirely.
 
-Tests sobre `scripts/lib/dirty-guard.sh` (sourceada por `scripts/deploy.sh`):
-no necesitan root, ni systemd, ni red — solo un repo git temporal.
+Tests for `scripts/lib/dirty-guard.sh` (sourced by `scripts/deploy.sh`):
+they need no root, no systemd, no network — only a temporary git repo.
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 GUARD_PATH = PACKAGE_ROOT / "scripts" / "lib" / "dirty-guard.sh"
 DEPLOY_SCRIPT = PACKAGE_ROOT / "scripts" / "deploy.sh"
 
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="requiere bash")
-pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="requiere git")
+pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="requires bash")
+pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="requires git")
 
 
 @pytest.fixture(scope="module")
@@ -40,7 +40,7 @@ def _git(repo: Path, *args: str) -> None:
 
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
-    """Repo git con un commit; el worktree empieza limpio."""
+    """Git repo with one commit; the worktree starts clean."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
@@ -53,7 +53,7 @@ def repo(tmp_path: Path) -> Path:
 
 
 def _run_guard(repo: Path, allow_dirty: int, stdin: str = "") -> subprocess.CompletedProcess:
-    """Sourcea la guarda y la invoca; devuelve el resultado (rc, stdout, stderr)."""
+    """Sources the guard and invokes it; returns the result (rc, stdout, stderr)."""
     script = (
         f'source "{GUARD_PATH}"; '
         f'dirty_guard_confirm "{repo}" "packages/model-gateway" "{allow_dirty}"; '
@@ -79,8 +79,8 @@ def test_dirty_tree_warns_and_continues_on_yes(repo: Path):
     res = _run_guard(repo, allow_dirty=0, stdin="y\n")
     assert res.returncode == 0
     assert "GUARD_RC=0 DIRTY=yes" in res.stdout
-    # Avisa (lista los cambios) y pregunta.
-    assert "cambios sin commitear" in res.stderr
+    # It warns (lists the changes) and asks.
+    assert "uncommitted changes" in res.stderr
     assert "config.yaml" in res.stderr
     assert "[y/N]" in res.stderr
 
@@ -92,17 +92,17 @@ def test_affirmative_answers_are_accepted(repo: Path, answer: str):
     assert "GUARD_RC=0" in res.stdout
 
 
-@pytest.mark.parametrize("answer", ["n\n", "no\n", "\n", "", "quiza\n"])
+@pytest.mark.parametrize("answer", ["n\n", "no\n", "\n", "", "maybe\n"])
 def test_negative_or_empty_answers_cancel(repo: Path, answer: str):
     (repo / "config.yaml").write_text("model_list: [x]\n", encoding="utf-8")
     res = _run_guard(repo, allow_dirty=0, stdin=answer)
     assert "GUARD_RC=1" in res.stdout
-    # Avisa igualmente: el operador tiene que saber por qué se cancela.
-    assert "cambios sin commitear" in res.stderr
+    # It warns anyway: the operator has to know why it is cancelled.
+    assert "uncommitted changes" in res.stderr
 
 
 def test_allow_dirty_does_not_notify_nor_ask(repo: Path):
-    """Con --allow-dirty no sale ni el aviso ni la pregunta (solo el sello)."""
+    """With --allow-dirty neither the warning nor the question shows (only the stamp)."""
     (repo / "config.yaml").write_text("model_list: [x]\n", encoding="utf-8")
     res = _run_guard(repo, allow_dirty=1, stdin="")
     assert res.returncode == 0
@@ -111,12 +111,12 @@ def test_allow_dirty_does_not_notify_nor_ask(repo: Path):
 
 
 def test_deploy_script_uses_the_guard_instead_of_failing():
-    """El deploy debe delegar en la guarda: ni aborta ni avisa por su cuenta."""
+    """The deploy must delegate to the guard: it neither aborts nor warns on its own."""
     script = DEPLOY_SCRIPT.read_text()
     assert 'source "$SCRIPT_DIR/lib/dirty-guard.sh"' in script
     assert "dirty_guard_confirm" in script
-    assert "despliegue cancelado" in script
-    # El mensaje antiguo (abortar por árbol sucio) ya no puede estar.
-    assert "hay cambios sin commitear en $PKG_REL; commitea" not in script
-    # La guarda se sourcea, no se ejecuta como sub-script.
+    assert "deploy cancelled" in script
+    # The old message (aborting on a dirty tree) can no longer be there.
+    assert "uncommitted changes in $PKG_REL; commit" not in script
+    # The guard is sourced, not executed as a sub-script.
     assert "bash scripts/lib/dirty-guard.sh" not in script

@@ -14,30 +14,30 @@ import type {
 import { gatewayBaseUrl, gatewayHeaders } from "./gateway";
 
 /**
- * Transport propio para el contrato de imagen `image-default` (spec §2.4).
+ * Purpose-built transport for the `image-default` image contract (spec §2.4).
  *
- * El transport genérico `@ai-sdk/openai-compatible` NO parsea las partes de
- * imagen de la respuesta (`files` vuelve vacío aunque el upstream genere la
- * imagen) y no admite el campo de primer nivel `modalities` del body, así
- * que `imageEdit` quedó degradado a solo-texto. Este `LanguageModelV3` mínimo
- * habla directamente con `POST /v1/chat/completions`:
+ * The generic `@ai-sdk/openai-compatible` transport does NOT parse the response's
+ * image parts (`files` comes back empty even when the upstream generates the
+ * image) and does not accept the body's top-level `modalities` field, so
+ * `imageEdit` ended up degraded to text-only. This minimal `LanguageModelV3`
+ * talks directly to `POST /v1/chat/completions`:
  *
- * - Petición: `{ model: "image-default", messages, modalities: ["image","text"] }`
- *   — las modalidades del contrato están fijadas en `config.yaml` del
- *   Gateway; el caller no pasa `providerOptions`.
- * - Respuesta OpenAI: `choices[0].message.content` con partes
- *   `{type:"text"}` y `{type:"image_url", image_url:{url:"data:image/png;base64,…"}}`
- *   → se mapea a `LanguageModelV3Content` (`text` / `file`), que es lo que el
- *   AI SDK convierte en `GeneratedFile`.
+ * - Request: `{ model: "image-default", messages, modalities: ["image","text"] }`
+ *   — the contract's modalities are pinned in the Gateway's `config.yaml`;
+ *   the caller does not pass `providerOptions`.
+ * - OpenAI response: `choices[0].message.content` with parts
+ *   `{type:"text"}` and `{type:"image_url", image_url:{url:"data:image/png;base64,…"}}`
+ *   → mapped to `LanguageModelV3Content` (`text` / `file`), which is what the
+ *   AI SDK turns into `GeneratedFile`.
  *
- * Solo cubre el contrato de imagen: el resto de modelos sigue por el
- * transport genérico (`inference-kit.ts`). La imagen no necesita streaming
- * real: `doStream` re-emetde el resultado de `doGenerate` en partes.
+ * It only covers the image contract: every other model still goes through the
+ * generic transport (`inference-kit.ts`). Images do not need real
+ * streaming: `doStream` re-emits the `doGenerate` result as parts.
  */
 
 export const IMAGE_CONTRACT = "image-default";
 
-/** Media type del PNG que sirve el upstream (y el Mock Model Gateway). */
+/** Media type of the PNG the upstream serves (and the Mock Model Gateway). */
 export const IMAGE_MEDIA_TYPE = "image/png";
 
 interface GatewayImagePart {
@@ -63,7 +63,7 @@ type OpenAiPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
 
-/** Parte del prompt V3, con tipado pato (la unión cambia por rol). */
+/** V3 prompt part, duck-typed (the union changes per role). */
 interface PromptPart {
   type?: string;
   text?: string;
@@ -84,13 +84,13 @@ function toImageUrl(part: PromptPart): string | null {
   return `data:${part.mediaType};base64,${base64}`;
 }
 
-/** Prompt estándar V3 → mensajes OpenAI (texto + image_url). */
+/** Standard V3 prompt → OpenAI messages (text + image_url). */
 function toOpenAiMessages(prompt: LanguageModelV3Prompt): OpenAiMessage[] {
   const messages: OpenAiMessage[] = [];
   for (const message of prompt) {
-    if (message.role === "tool") continue; // el contrato de imagen no usa tools
+    if (message.role === "tool") continue; // the image contract uses no tools
     if (typeof message.content === "string") {
-      // role "system": el contenido ya es texto plano.
+      // role "system": the content is already plain text.
       if (message.content) messages.push({ role: message.role, content: message.content });
       continue;
     }
@@ -112,7 +112,7 @@ function toOpenAiMessages(prompt: LanguageModelV3Prompt): OpenAiMessage[] {
   return messages;
 }
 
-/** `data:<mediaType>;base64,<data>` → parte `file` del protocolo V3. */
+/** `data:<mediaType>;base64,<data>` → `file` part of the V3 protocol. */
 function parseDataUrl(url: string): LanguageModelV3File | null {
   const match = /^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/.exec(url);
   if (!match) return null;
@@ -135,7 +135,7 @@ function mapFinishReason(raw: string | undefined): { unified: "stop" | "length" 
   return { unified: "other", raw };
 }
 
-/** Respuesta OpenAI → `LanguageModelV3GenerateResult`. */
+/** OpenAI response → `LanguageModelV3GenerateResult`. */
 function mapResponse(response: GatewayImageResponse): LanguageModelV3GenerateResult {
   const choice = response.choices?.[0];
   const content = choice?.message?.content;
@@ -163,9 +163,9 @@ function mapResponse(response: GatewayImageResponse): LanguageModelV3GenerateRes
 }
 
 /**
- * Crea el transport V3 del contrato `image-default`. Memoizado por el
- * composition root (`inference-kit.languageModel`); no lee estado global
- * aparte de la config del Gateway (`gatewayBaseUrl`/`gatewayHeaders`).
+ * Creates the V3 transport for the `image-default` contract. Memoized by the
+ * composition root (`inference-kit.languageModel`); it reads no global state
+ * apart from the Gateway config (`gatewayBaseUrl`/`gatewayHeaders`).
  */
 export function createGatewayImageModel(): LanguageModelV3 {
   const doGenerate = async (
@@ -211,7 +211,7 @@ export function createGatewayImageModel(): LanguageModelV3 {
               controller.enqueue({ type: "text-delta", id, delta: part.text });
               controller.enqueue({ type: "text-end", id });
             } else {
-              // Solo text y file salen del contrato de imagen.
+              // Only text and file come out of the image contract.
               controller.enqueue(part as LanguageModelV3File);
             }
           }

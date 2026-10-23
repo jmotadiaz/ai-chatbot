@@ -1,35 +1,35 @@
 ---
 name: code-review-session
-description: Resume una sesión del coding agent y sugiere mejoras
+description: Summarises a coding agent session and suggests improvements
 inputs:
   - name: target_session
     kind: session
-    description: ID de la sesión a revisar
+    description: ID of the session to review
     required: true
   - name: focus_area
     kind: string
-    description: Enfoque del review
+    description: Review focus
     enumValues: [bugs, perf, style]
   - name: context
     kind: string
-    description: Contexto del review; si se provee, reemplaza las instrucciones por defecto
-    placeholder: Algo más que el agente deba saber...
+    description: Review context; when provided, it replaces the default instructions
+    placeholder: Anything else the agent should know...
     required: false
 ---
 
-# Code Review de la sesión {{target_session}}
+# Code Review of session {{target_session}}
 
 {% if focus_area %}
-## Enfoque: {{ focus_area }}
+## Focus: {{ focus_area }}
 {% endif %}
 
 {% if context %}
 {{context}}
 {% else %}
-## Instrucciones
+## Instructions
 
-Analiza los cambios de la sesión, enfócate en **{{focus_area}}** y reporta:
-1. Problemas encontrados
-2. Sugerencias de mejora
-3. Riesgos y trade-offs
+Review the session's changes, focus on **{{focus_area}}** and report:
+1. Issues found
+2. Suggested improvements
+3. Risks and trade-offs
 {% endif %}

@@ -3,19 +3,20 @@ import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
 /**
- * Contrato de fronteras de lint (ticket 05, spec ADR 0010). El `eslint.config.mjs`
- * del chatbot publique dos reglas de frontera que son parte de la API del paquete:
+ * Lint boundary contract (ticket 05, ADR 0010 spec). The chatbot's
+ * `eslint.config.mjs` publishes two boundary rules that are part of the package
+ * API:
  *
- *  1. Ningún fichero con directiva `"use client"` puede importar
- *     `@/lib/infrastructure/ai` (exacto o cualquier subpath, p. ej.
- *     `@/lib/infrastructure/ai/inference-kit`): es el composition root del Model
- *     Gateway, server-only de hecho.
- *  2. Ningún fichero FUERA de `lib/infrastructure/ai/` puede importar `@ai-sdk/*`,
- *     salvo `@ai-sdk/react` (UI, no transporte de IA).
+ *  1. No file with the `"use client"` directive may import
+ *     `@/lib/infrastructure/ai` (exact or any subpath, e.g.
+ *     `@/lib/infrastructure/ai/inference-kit`): it is the Model Gateway's
+ *     composition root, effectively server-only.
+ *  2. No file OUTSIDE `lib/infrastructure/ai/` may import `@ai-sdk/*`, except
+ *     `@ai-sdk/react` (UI, not AI transport).
  *
- * Se ejecutan versiones sintéticas de ficheros reales a través del ESLint
- * programático con el config plano real del paquete, así el contrato rompe si
- * alguien relaja o renombra las reglas sin pasar por aquí.
+ * Synthetic versions of real files are run through the programmatic ESLint with
+ * the package's real flat config, so the contract breaks if someone relaxes or
+ * renames the rules without passing through here.
  */
 
 const PACKAGE_ROOT = path.resolve(__dirname, "../..");
@@ -36,8 +37,8 @@ const useClient = (imports: string) =>
 const serverFile = (imports: string) =>
   `${imports}\nexport default function S() { return null; }\n`;
 
-describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
-  it("un use client no puede importar el composition root (exact ni subpath)", async () => {
+describe("chatbot lint boundaries (eslint.config.mjs)", () => {
+  it("a use client file cannot import the composition root (exact nor subpath)", async () => {
     const ruleIds = await lint(
       "lib/features/chat/hooks/use-chat.tsx",
       useClient(`import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";`),
@@ -57,7 +58,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
     expect(configImport).toContain("local/no-inference-in-client-components");
   });
 
-  it("un server file SÍ puede importar el composition root", async () => {
+  it("a server file CAN import the composition root", async () => {
     const ruleIds = await lint(
       "lib/features/chat/actions.ts",
       serverFile(`import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";`),
@@ -65,7 +66,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
     expect(ruleIds).not.toContain("local/no-inference-in-client-components");
   });
 
-  it("sin use client no aplica la regla local aunque el import sea el mismo", async () => {
+  it("without use client the local rule does not apply even if the import is the same", async () => {
     const ruleIds = await lint(
       "components/chat/message.tsx",
       serverFile(`import type { CreateAgentOptions } from "@/lib/infrastructure/ai";`),
@@ -73,7 +74,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
     expect(ruleIds).not.toContain("local/no-inference-in-client-components");
   });
 
-  it("@ai-sdk/* fuera de lib/infrastructure/ai está prohibido (wildcard y vendor)", async () => {
+  it("@ai-sdk/* outside lib/infrastructure/ai is forbidden (wildcard and vendor)", async () => {
     const wildcard = await lint(
       "lib/features/english/actions.ts",
       serverFile(`import type { SpeechModelV3 } from "@ai-sdk/amazon-bedrock";`),
@@ -87,7 +88,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
     expect(vendor).toContain("no-restricted-imports");
   });
 
-  it("@ai-sdk/react queda permitido fuera de infra (es UI)", async () => {
+  it("@ai-sdk/react stays allowed outside infra (it is UI)", async () => {
     const ruleIds = await lint(
       "lib/features/chat/conversation/hooks/use-chat.ts",
       serverFile(`import type { UseChatHelpers } from "@ai-sdk/react";`),
@@ -95,7 +96,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
     expect(ruleIds).not.toContain("no-restricted-imports");
   });
 
-  it("los tipos de protocolo V3 consumibles desde el composition root, no desde @ai-sdk/provider", async () => {
+  it("V3 protocol types are consumable from the composition root, not from @ai-sdk/provider", async () => {
     const ruleIds = await lint(
       "tests/helpers/stream-chunks.ts",
       serverFile(`import type { LanguageModelV3StreamPart } from "@/lib/infrastructure/ai/types";`),
@@ -109,7 +110,7 @@ describe("fronteras de lint del chatbot (eslint.config.mjs)", () => {
     expect(forbidden).toContain("no-restricted-imports");
   });
 
-  it("dentro de lib/infrastructure/ai los transportes @ai-sdk/openai-* son los permitidos", async () => {
+  it("inside lib/infrastructure/ai the @ai-sdk/openai-* transports are the allowed ones", async () => {
     const ruleIds = await lint(
       "lib/infrastructure/ai/inference-kit.ts",
       serverFile(

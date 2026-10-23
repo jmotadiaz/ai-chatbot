@@ -1,50 +1,50 @@
 #!/usr/bin/env bash
-# Carga $CREDENTIALS_DIRECTORY (inyectado por systemd vía LoadCredentialEncrypted=)
-# a variables de entorno efímeras del proceso y lanza uvicorn en 127.0.0.1:4000.
+# Loads $CREDENTIALS_DIRECTORY (injected by systemd via LoadCredentialEncrypted=)
+# into ephemeral process environment variables and launches uvicorn on 127.0.0.1:4000.
 #
-# Convención de nombres: el nombre del fichero .cred en minúsculas_con_guiones_bajos
-# se exporta en MAYÚSCULAS (model_gateway_api_key -> MODEL_GATEWAY_API_KEY).
+# Naming convention: the .cred file name in lowercase_with_underscores is
+# exported in UPPERCASE (model_gateway_api_key -> MODEL_GATEWAY_API_KEY).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# El Gateway es stateless por diseño (ADR 0010): sin DB. Si el shell del
-# operador arrastra un DATABASE_URL (p. ej. el de prod en :5435), LiteLLM
-# intentaría montar Prisma contra esa base en el arranque — nunca debe pasar.
+# The Gateway is stateless by design (ADR 0010): no DB. If the operator's shell
+# drags along a DATABASE_URL (e.g. prod's on :5435), LiteLLM would try to mount
+# Prisma against that database on startup — that must never happen.
 unset DATABASE_URL DATABASE_URL_UNPOOLED POSTGRES_URL POSTGRES_URL_NON_POOLING POSTGRES_URL_NO_SSL
 
 if [[ -z "${CREDENTIALS_DIRECTORY:-}" ]]; then
-  echo "error: CREDENTIALS_DIRECTORY no está definido (ejecuta bajo systemd con LoadCredentialEncrypted=)" >&2
+  echo "error: CREDENTIALS_DIRECTORY is not set (run under systemd with LoadCredentialEncrypted=)" >&2
   exit 1
 fi
 
-# LiteLLM lee el YAML de esta variable al importar proxy_server. Sin ella el
-# proxy arranca sin model_list ni master_key (GET /v1/models/catalog seguiría
-# funcionando porque lo lee catalog.py, de ahí que el fallo pase desapercibido).
+# LiteLLM reads the YAML from this variable when importing proxy_server. Without it
+# the proxy starts without model_list or master_key (GET /v1/models/catalog would
+# still work because catalog.py reads it, which is why the failure goes unnoticed).
 export CONFIG_FILE_PATH="${CONFIG_FILE_PATH:-$PWD/config.yaml}"
 
 shopt -s nullglob
 for cred in "$CREDENTIALS_DIRECTORY"/*; do
   name="$(basename "$cred")"
   var="$(echo "$name" | tr '[:lower:]-' '[:upper:]_')"
-  # El fichero .cred desencriptado por systemd ES el valor plano del secreto.
+  # The .cred file decrypted by systemd IS the secret's plaintext value.
   export "$var=$(cat "$cred")"
 done
 shopt -u nullglob
 
-# Traza de despliegue: qué commit está corriendo sale en `journalctl -u model-gateway`.
+# Deployment trace: which commit is running shows up in `journalctl -u model-gateway`.
 if [[ -f "$PWD/DEPLOYED" ]]; then
   echo "model-gateway $(tr '\n' ' ' < "$PWD/DEPLOYED")"
 fi
 
-# El despliegue instala un venv propio en /opt/model-gateway/.venv; en el
-# checkout del repo (arranque manual) se usa el uvicorn del entorno activo.
+# The deployment installs its own venv in /opt/model-gateway/.venv; in the repo
+# checkout (manual start) the uvicorn of the active environment is used.
 UVICORN="$PWD/.venv/bin/uvicorn"
 if [[ ! -x "$UVICORN" ]]; then
   UVICORN="$(command -v uvicorn || true)"
 fi
 if [[ -z "$UVICORN" ]]; then
-  echo "error: no se encontró uvicorn (crea .venv con scripts/deploy.sh o activa el entorno)" >&2
+  echo "error: uvicorn not found (create .venv with scripts/deploy.sh or activate the environment)" >&2
   exit 1
 fi
 

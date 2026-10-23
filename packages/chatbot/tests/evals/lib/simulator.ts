@@ -6,7 +6,7 @@ import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog"
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 
 interface SimulatorOptions {
-  /** Un Default Model Contract — los evals usan `free-default` (spec §2.4). */
+  /** A Default Model Contract — the evals use `free-default` (spec §2.4). */
   modelKey?: string
   scenarioPrompt: string
   traceWriter?: ReturnType<typeof createTraceWriter>

@@ -1,27 +1,27 @@
-"""Model Gateway — LiteLLM Proxy stateless (sin DB) + endpoint del catálogo.
+"""Model Gateway — stateless LiteLLM Proxy (no DB) + catalog endpoint.
 
-La app que sirve uvicorn ES la app del proxy de LiteLLM (`proxy_server.app`),
-no un wrapper que la monta: el `model_list` y el `master_key` los carga
-LiteLLM en el LIFESPAN de su propia app, y los lifespan de las sub-apps
-montadas no se ejecutan — montándola debajo, el router arrancaba vacío
-("Invalid model name" en /v1/chat/completions aunque /v1/models/catalog
-respondiera, porque ese lo lee catalog.py del YAML).
+The app uvicorn serves IS the LiteLLM proxy app (`proxy_server.app`),
+not a wrapper that mounts it: `model_list` and `master_key` are loaded by
+LiteLLM in the LIFESPAN of its own app, and the lifespans of mounted sub-apps
+do not run — mounting it underneath made the router start empty
+("Invalid model name" in /v1/chat/completions even though /v1/models/catalog
+answered, because that one is read by catalog.py from the YAML).
 
-OJO: aquí no va `from __future__ import annotations`. Las anotaciones de las
-rutas se resuelven contra los globals del módulo, y `Request` se importa
-dentro de `create_app` (imports pesados diferidos): con el future-import la
-anotación llegaba como texto sin resolver y FastAPI trataba `request` como
-query param obligatorio → 422 en todas las peticiones.
+CAREFUL: no `from __future__ import annotations` here. The route annotations
+are resolved against the module globals, and `Request` is imported inside
+`create_app` (deferred heavy imports): with the future-import the annotation
+arrived as unresolved text and FastAPI treated `request` as a mandatory
+query param → 422 on every request.
 
-Sobre la app de LiteLLM se registra `GET /v1/models/catalog` (autenticado,
-filtrado en servidor, ver spec §2.2). El resto de rutas de operación
+On top of the LiteLLM app we register `GET /v1/models/catalog` (authenticated,
+filtered on the server, see spec §2.2). The rest of the operation routes
 (`/v1/chat/completions`, `/v1/embeddings`, `/v1/rerank`, `/v1/audio/speech`,
-`/v1/decisions`, `/v1/systemone`) las sirve LiteLLM nativamente; `decision-default`
-no necesita passthrough manual (spec §2.3).
+`/v1/decisions`, `/v1/systemone`) are served natively by LiteLLM; `decision-default`
+needs no manual passthrough (spec §2.3).
 
-Arranque: `uvicorn server:app --host 127.0.0.1 --port 4000`
-(vía `scripts/run-gateway.sh`, que inyecta las credenciales de systemd-creds
-como variables de entorno).
+Startup: `uvicorn server:app --host 127.0.0.1 --port 4000`
+(via `scripts/run-gateway.sh`, which injects the systemd-creds credentials as
+environment variables).
 """
 
 import os
@@ -36,17 +36,17 @@ from catalog import (
     prepare_opencode_deployment_kwargs,
 )
 
-# El consumidor autentica con `Authorization: Bearer $MODEL_GATEWAY_API_KEY`;
-# la misma variable alimenta el master_key de LiteLLM en config.yaml.
+# The consumer authenticates with `Authorization: Bearer $MODEL_GATEWAY_API_KEY`;
+# the same variable feeds the LiteLLM master_key in config.yaml.
 API_KEY_ENV = "MODEL_GATEWAY_API_KEY"
 
-# OpenCode Go exige identificar cada request con una sesión estable por proceso
-# (https://opencode.ai/docs/go/#where-can-i-use-it) para routing y prompt caching.
+# OpenCode Go requires identifying each request with a session that is stable per
+# process (https://opencode.ai/docs/go/#where-can-i-use-it) for routing and prompt caching.
 OPENCODE_SESSION_ID = str(uuid.uuid4())
 
 
 def create_app(config_path: str | Path = CONFIG_PATH):
-    """Fábrica de la app (imports pesados aquí dentro)."""
+    """App factory (heavy imports in here)."""
     from fastapi import HTTPException, Request
 
     import litellm
@@ -75,11 +75,11 @@ def create_app(config_path: str | Path = CONFIG_PATH):
             raise HTTPException(status_code=401, detail={"error": "unauthorized"})
         return build_catalog(config, include_internal=include_internal)
 
-    # Que la nuestra despache antes que cualquier ruta dinámica de LiteLLM
-    # (Starlette despacha en orden de registro; la nuestra acaba de quedar última).
+    # Let ours dispatch before any LiteLLM dynamic route
+    # (Starlette dispatches in registration order; ours just ended up last).
     app.router.routes.insert(0, app.router.routes.pop())
     return app
 
 
-# Entrypoint de uvicorn (`uvicorn server:app`).
+# uvicorn entrypoint (`uvicorn server:app`).
 app = create_app()

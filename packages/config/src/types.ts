@@ -1,21 +1,21 @@
 /**
- * Contrato de la configuración tipada por Entorno (ADR 0011).
+ * Contract of the Environment-typed configuration (ADR 0011).
  *
- * — `StructuralConfig`: valores versionados en Git (`config.<env>.ts`), sin
- *   secretos, validados en compilación con `satisfies StructuralConfig`.
- * — `SecretsConfig`: credenciales (`secrets.<env>.ts`); `secrets.prod.ts` y
- *   `secrets.dev.ts` están gitignored y su ausencia rompe `tsc`; `secrets.test.ts`
- *   se versiona con valores deterministas.
- * — `AppConfig`: la unión congelada que consumen los tres bundles `env.<env>.ts`.
+ * — `StructuralConfig`: values versioned in Git (`config.<env>.ts`), without
+ *   secrets, validated at compile time with `satisfies StructuralConfig`.
+ * — `SecretsConfig`: credentials (`secrets.<env>.ts`); `secrets.prod.ts` and
+ *   `secrets.dev.ts` are gitignored and their absence breaks `tsc`; `secrets.test.ts`
+ *   is versioned with deterministic values.
+ * — `AppConfig`: the frozen union consumed by the three `env.<env>.ts` bundles.
  *
- * Nada de `process.env`: el Entorno activo se selecciona por `process.argv`
- * (`--env=prod|dev|test`) o por `initConfig()` (ver `config.ts`).
+ * No `process.env`: the active Environment is selected by `process.argv`
+ * (`--env=prod|dev|test`) or by `initConfig()` (see `config.ts`).
  */
 
-export type Entorno = "prod" | "dev" | "test";
+export type Environment = "prod" | "dev" | "test";
 
 export interface StructuralConfig {
-  readonly entorno: Entorno;
+  readonly environment: Environment;
   readonly port: number;
   readonly modelGatewayUrl: string;
   readonly codingAgentEnabled: boolean;

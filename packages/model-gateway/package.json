@@ -2,7 +2,7 @@
   "name": "@ai-chatbot/model-gateway",
   "version": "0.1.0",
   "private": true,
-  "description": "Model Gateway: LiteLLM Proxy stateless + FastAPI /v1/models/catalog + systemd-creds. Sin dependencias del workspace (extraíble con mv + git init).",
+  "description": "Model Gateway: stateless LiteLLM Proxy + FastAPI /v1/models/catalog + systemd-creds. No workspace dependencies (extractable with mv + git init).",
   "scripts": {
     "dev": "bash scripts/run-gateway.sh",
     "start": "bash scripts/run-gateway.sh",

@@ -115,8 +115,8 @@ describe("SessionRegistry (deep module)", () => {
       diagnostics: [],
     })) as unknown as any;
 
-    // DI por constructor: factory + config de rutas (sandbox temporal), sin
-    // process.env. setRuntimeFactory sigue siendo el seam público.
+    // DI through the constructor: factory + path config (temporary sandbox),
+    // without process.env. setRuntimeFactory is still the public seam.
     const ctx = createTestWorkerContext();
     try {
       const customRegistry = new SessionRegistry(fakeFactory, ctx.workerConfig);

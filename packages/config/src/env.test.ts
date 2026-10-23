@@ -4,24 +4,24 @@ import { validateAppConfig } from "./guardrails";
 import { secretsTest } from "./secrets.test";
 import type { AppConfig } from "./types";
 
-// El alias `"config"` del bundler apunta a ESTE módulo: re-exporta la
-// superficie isomorfa completa del paquete además de la fachada del Entorno.
+// The bundler alias `"config"` points at THIS module: it re-exports the
+// package's full isomorphic surface in addition to the Environment facade.
 export * from "./surface";
 
 /**
- * Bundle estático de TEST: `config.test` + `secrets.test`, validado por los
- * guardarraíles de coherencia y congelado.
+ * TEST static bundle: `config.test` + `secrets.test`, validated by the
+ * coherence guardrails and frozen.
  *
- * Es el módulo al que el bundler de Next.js redirige el import `"config"`
- * cuando el Entorno activo es test (`next.config.ts` → `resolveAlias`), al que
- * apuntan los `resolve.alias` de `vitest.config.ts` (chatbot y coding-agent) y
- * el que `config.ts` selecciona para los scripts CLI con `--env=test`.
+ * It is the module to which the Next.js bundler redirects the `"config"` import
+ * when the active Environment is test (`next.config.ts` → `resolveAlias`), the
+ * one the `resolve.alias` entries of `vitest.config.ts` (chatbot and coding-agent)
+ * point at, and the one `config.ts` selects for the CLI scripts with `--env=test`.
  */
 export const envTest: AppConfig = Object.freeze(
   validateAppConfig({ ...configTest, ...secretsTest }),
 );
 
-// El alias `"config"` del bundler (Next.js) y de los runners de test
-// resuelve este módulo: debe exportar la MISMA fachada `config` que el
-// selector para que los puntos de llamada no cambien (ADR 0011 §4.2).
+// The bundler (Next.js) alias and the test runners resolve this module: it
+// must export the SAME `config` facade as the selector so the call sites do
+// not change (ADR 0011 §4.2).
 export const config = createConfigFacade(() => envTest);

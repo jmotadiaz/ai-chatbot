@@ -6,7 +6,7 @@ import { faker } from "@faker-js/faker";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
-import { config, initConfig, optional, parseEntornoFromArgv } from "config";
+import { config, initConfig, optional, parseEnvironmentFromArgv } from "config";
 import { generateHashedPassword } from "../lib/features/auth/utils";
 import { schema } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
@@ -116,16 +116,16 @@ async function upsertSeedProject(tx: Tx, userId: string) {
 }
 
 async function main() {
-  // El Entorno (y con él el DSN de SU DB aislada) llega por process.argv
-  // (ADR 0011): `tsx scripts/seed-test-data.ts --env=dev ...` — sin dotenv.
-  const entorno = parseEntornoFromArgv(process.argv);
-  if (!entorno || (entorno !== "dev" && entorno !== "test")) {
+  // The Environment (and with it the DSN of ITS isolated DB) arrives through process.argv
+  // (ADR 0011): `tsx scripts/seed-test-data.ts --env=dev ...` — no dotenv.
+  const environment = parseEnvironmentFromArgv(process.argv);
+  if (!environment || (environment !== "dev" && environment !== "test")) {
     console.error(
-      "❌ seed-test-data.ts exige --env=dev|test (ADR 0011 / ADR 0004). Ej: npx tsx scripts/seed-test-data.ts --env=dev --chats=5",
+      "❌ seed-test-data.ts requires --env=dev|test (ADR 0011 / ADR 0004). E.g.: npx tsx scripts/seed-test-data.ts --env=dev --chats=5",
     );
     process.exit(1);
   }
-  initConfig(entorno);
+  initConfig(environment);
 
   const args = parseArgs(process.argv.slice(2));
   faker.seed(args.seed);
@@ -135,7 +135,7 @@ async function main() {
     throw new Error("POSTGRES_URL is not defined");
   }
   if (url.includes("5435") || url.includes("/prod")) {
-    throw new Error("❌ Guardrail: seed-test-data.ts no puede ejecutarse contra la DB de producción (ADR 0004)");
+    throw new Error("❌ Guardrail: seed-test-data.ts cannot run against the production DB (ADR 0004)");
   }
 
   const client = postgres(url!, { max: 1 });

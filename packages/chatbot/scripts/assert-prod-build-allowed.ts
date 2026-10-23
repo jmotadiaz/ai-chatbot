@@ -6,24 +6,24 @@ import {
 } from "config";
 
 /**
- * Gate de `build:prod` (ticket 06; selector migrado a argv en ADR 0011,
+ * Gate for `build:prod` (ticket 06; selector migrated to argv in ADR 0011,
  * ticket 03).
  *
- * `build` escribe al `.next` que serve Producción bajo pm2; un disparo
- * distraído del agente rompería la ejecución en curso. Por eso exige un
- * opt-in explícito del operador/CI:
+ * `build` writes to the `.next` that Production serves under pm2; a distracted
+ * trigger from the agent would break the running execution. That's why it requires an
+ * explicit opt-in from the operator/CI:
  *
- *   - `--allow-prod-build` en process.argv — la vía canónica (ADR 0011); la
- *     usan los scripts `build` de package.json (ticket 04) y este launcher.
- *   - `ALLOW_PROD_BUILD=1` en el ambiente — aceptado TRANSITORIAMENTE para no
- *     romper los scripts actuales del package.json (que aún lo inyectan) hasta
- *     que el ticket 04 los migre a `--allow-prod-build`. Es el único
- *     process.env que queda en el gate y no selecciona Entorno alguno.
+ *   - `--allow-prod-build` in process.argv — the canonical way (ADR 0011); it is
+ *     used by the package.json `build` scripts (ticket 04) and by this launcher.
+ *   - `ALLOW_PROD_BUILD=1` in the environment — accepted TRANSITIONALLY so as not
+ *     to break the current package.json scripts (which still inject it) until
+ *     ticket 04 migrates them to `--allow-prod-build`. It is the only
+ *     process.env left in the gate and it does not select any Environment.
  *
- * La verificación de compilación del agente NO pasa por aquí: usa `--verify`
- * (next-cli → `.next/verify`, aislado). Está prohibido `build` — ver AGENTS.md.
+ * The agent's compilation check does NOT go through here: it uses `--verify`
+ * (next-cli → `.next/verify`, isolated). `build` is forbidden — see AGENTS.md.
  *
- * Salida a stderr → exit 1 sin opt-in; silenciosa → exit 0 con él.
+ * Output to stderr → exit 1 without opt-in; silent → exit 0 with it.
  */
 const fromArgv = parseBuildFlagsFromArgv(process.argv);
 setBuildFlags({
@@ -33,12 +33,12 @@ setBuildFlags({
 if (!getBuildFlags().allowProdBuild) {
   console.error(
     [
-      "build está bloqueado: escribe el .next que sirve prod bajo pm2.",
-      "Si eres el operador/CI: reejecuta con --allow-prod-build (o con",
-      "ALLOW_PROD_BUILD=1 mientras los scripts migran en el ticket 04; la vía",
-      "canónica `pnpm preview` ya lo incorpora).",
-      "Si eres el agente verificando compilación: usa `pnpm --filter chatbot build:verify`",
-      "(compila a .next/verify, aislado). Está prohibido build — ver AGENTS.md.",
+      "build is blocked: it writes the .next that prod serves under pm2.",
+      "If you are the operator/CI: re-run with --allow-prod-build (or with",
+      "ALLOW_PROD_BUILD=1 while the scripts migrate in ticket 04; the canonical",
+      "`pnpm preview` path already includes it).",
+      "If you are the agent verifying compilation: use `pnpm --filter chatbot build:verify`",
+      "(compiles to .next/verify, isolated). build is forbidden — see AGENTS.md.",
     ].join("\n"),
   );
   process.exit(1);

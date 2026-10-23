@@ -1,20 +1,20 @@
 /**
- * Resolución portable de rutas del monorepo (ADR 0011 §3.3).
+ * Portable path resolution for the monorepo (ADR 0011 §3.3).
  *
- * `REPO_ROOT` se descubre subiendo directorios desde la ubicación de ESTE
- * módulo (`import.meta.url`) hasta encontrar `pnpm-workspace.yaml`, con fallback
- * a la subida fija de tres niveles (`packages/config/src` → raíz). Ninguna
- * ruta de la configuración hardcodea el home del host.
+ * `REPO_ROOT` is discovered by walking up from the location of THIS module
+ * (`import.meta.url`) until `pnpm-workspace.yaml` is found, with a fallback to
+ * the fixed three-level walk-up (`packages/config/src` → root). No config path
+ * hardcodes the host's home.
  *
- * A propósito NO importa `node:path`/`node:fs`/`node:url`: este módulo forma
- * parte del grafo que el bundler de Next.js enlaza en el bundle de cliente
- * (`config.entorno()` es seguro en Client Components). Las operaciones de
- * fichero se resuelven con `process.getBuiltinModule("node:fs")` y solo cuando
- * existe un runtime Node; en el navegador las rutas se calculan igual (nunca se
- * usan) y no se toca el sistema de ficheros.
+ * On purpose it does NOT import `node:path`/`node:fs`/`node:url`: this module
+ * is part of the graph the Next.js bundler links into the client bundle
+ * (`config.environment()` is safe in Client Components). File operations are
+ * resolved with `process.getBuiltinModule("node:fs")` and only when a Node
+ * runtime exists; in the browser the paths are computed the same way (they are
+ * never used) and the filesystem is not touched.
  */
 
-/** Directorio de `src/paths.ts` (con `/` final eliminado). */
+/** Directory of `src/paths.ts` (with the trailing `/` removed). */
 function moduleDir(): string {
   try {
     const here = new URL(".", import.meta.url);
@@ -31,7 +31,7 @@ function getBuiltinModule(): ((id: string) => unknown) | undefined {
   return typeof fn === "function" ? (fn as (id: string) => unknown) : undefined;
 }
 
-/** `node:fs` cuando corremos en Node; `undefined` en el bundle de cliente. */
+/** `node:fs` when running on Node; `undefined` in the client bundle. */
 function nodeFs(): { existsSync(path: string): boolean } | undefined {
   const getBuiltin = getBuiltinModule();
   if (!getBuiltin) return undefined;
@@ -42,7 +42,7 @@ function nodeFs(): { existsSync(path: string): boolean } | undefined {
   }
 }
 
-/** `node:os` cuando corremos en Node; `undefined` en el bundle de cliente. */
+/** `node:os` when running on Node; `undefined` in the client bundle. */
 function nodeOs(): { homedir(): string } | undefined {
   const getBuiltin = getBuiltinModule();
   if (!getBuiltin) return undefined;
@@ -54,10 +54,10 @@ function nodeOs(): { homedir(): string } | undefined {
 }
 
 /**
- * Normaliza una ruta POSIX sin tocar el sistema de ficheros: colapsa `//`,
- * resuelve `.` y `..` y conserva la raíz absoluta. El monorepo solo se ejecuta
- * en Linux (prod/dev/test son procesos Node locales), así que no hace falta
- * normalización win32.
+ * Normalizes a POSIX path without touching the filesystem: collapses `//`,
+ * resolves `.` and `..` and keeps the absolute root. The monorepo only runs on
+ * Linux (prod/dev/test are local Node processes), so no win32 normalization is
+ * needed.
  */
 export function normalizePath(input: string): string {
   const absolute = input.startsWith("/");
@@ -76,7 +76,7 @@ export function normalizePath(input: string): string {
   return joined || ".";
 }
 
-/** `path.resolve(...parts)` POSIX: un segmento absoluto reinicia la ruta. */
+/** POSIX `path.resolve(...parts)`: an absolute segment restarts the path. */
 export function resolvePath(...parts: string[]): string {
   let out = "";
   for (const part of parts) {
@@ -91,9 +91,9 @@ export function resolvePath(...parts: string[]): string {
 }
 
 /**
- * Override opcional de la raíz del repo (ADR 0011). NO selecciona Entorno ni
- * puertos: solo permite apuntar la resolución de ficheros a otra copia del
- * monorepo (p. ej. un worktree) cuando el operador lo declara explícitamente.
+ * Optional override of the repo root (ADR 0011). It does NOT select an
+ * Environment nor ports: it only allows pointing file resolution at another copy
+ * of the monorepo (e.g. a worktree) when the operator declares it explicitly.
  */
 function declaredRepoRoot(): string | undefined {
   if (typeof process === "undefined") return undefined;
@@ -136,7 +136,7 @@ function discoverRepoRoot(): string {
     }
   }
 
-  // Fallback: `packages/config/src` → raíz del monorepo si start existe.
+  // Fallback: `packages/config/src` → monorepo root if start exists.
   if (start) return resolvePath(start, "../../..");
   if (typeof process !== "undefined" && typeof process.cwd === "function") {
     try {
@@ -148,25 +148,25 @@ function discoverRepoRoot(): string {
   return ".";
 }
 
-/** Raíz absoluta del monorepo. */
+/** Absolute root of the monorepo. */
 export const REPO_ROOT: string = discoverRepoRoot();
 
-/** Ruta absoluta dentro de la raíz del monorepo. */
+/** Absolute path inside the monorepo root. */
 export function repoPath(...segments: string[]): string {
   return resolvePath(REPO_ROOT, ...segments);
 }
 
 export type PackageName = "chatbot" | "coding-agent" | "config" | "tracing";
 
-/** Ruta absoluta dentro de `packages/<pkg>`. */
+/** Absolute path inside `packages/<pkg>`. */
 export function packagePath(pkg: PackageName, ...segments: string[]): string {
   return resolvePath(REPO_ROOT, "packages", pkg, ...segments);
 }
 
 /**
- * Ruta dentro del home del usuario sin `node:os` en el grafo de cliente.
- * Existe solo para la excepción histórica de Producción (ADR 0002): las
- * rutas de sesiones de prod quedan fuera de `repoPath`.
+ * Path inside the user's home without `node:os` in the client graph.
+ * It exists only for the historical Production exception (ADR 0002): the prod
+ * session paths stay outside `repoPath`.
  */
 export function homePath(...segments: string[]): string {
   const home = nodeOs()?.homedir() ?? "";

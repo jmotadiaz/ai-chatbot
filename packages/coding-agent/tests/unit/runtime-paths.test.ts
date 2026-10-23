@@ -19,16 +19,16 @@ import { resolveWorkerRuntimeConfig } from "../../src/runtime/runtime-config";
 import { createTestWorkerContext } from "../helpers/test-context";
 
 /**
- * Aislamiento del runtime Pi por Entorno (ADR 0002 v2 + ADR 0011 §6).
+ * Per-Environment Pi runtime isolation (ADR 0002 v2 + ADR 0011 §6).
  *
- * La continuidad de prod (literales absolutos intactos) vive en
- * `packages/config/tests/unit/env-bundles.test.ts`; aquí se cubre lo que
- * corre en la suite de tests: los defaults del Entorno de Test (bundle
- * `env.test.ts` enlazado por el alias de vitest) y que los overrides por DI
- * ganan y quedan dentro del sandbox temporal del test. Ningún `process.env`
- * participa: la configuración por variables de entorno murió con ADR 0011.
+ * Prod continuity (absolute literals untouched) lives in
+ * `packages/config/tests/unit/env-bundles.test.ts`; what is covered here is
+ * what runs in the test suite: the Test Environment defaults (bundle
+ * `env.test.ts` bound by the vitest alias) and that the DI overrides win and
+ * stay inside the test's temporary sandbox. No `process.env` takes part:
+ * configuration through environment variables died with ADR 0011.
  */
-describe("per-Entorno Pi runtime paths (defaults del Entorno de Test)", () => {
+describe("per-Environment Pi runtime paths (Test Environment defaults)", () => {
   it("resolves every default inside packages/coding-agent/.pi-test", () => {
     expect(getCodingAgentDir()).toBe(path.join(PACKAGE_ROOT, ".pi-test", "agent"));
     expect(getAuthJsonPath()).toBe(path.join(PACKAGE_ROOT, ".pi-test", "auth.json"));
@@ -37,14 +37,14 @@ describe("per-Entorno Pi runtime paths (defaults del Entorno de Test)", () => {
     expect(getPiPackagesDir()).toBe(path.join(PACKAGE_ROOT, ".pi-test", "packages"));
   });
 
-  it("defaults auth.json to the worker-owned agent dir of the Entorno, never ~/.pi/agent", () => {
+  it("defaults auth.json to the worker-owned agent dir of the Environment, never ~/.pi/agent", () => {
     const auth = getAuthJsonPath();
     expect(auth).toBe(path.join(PACKAGE_ROOT, ".pi-test", "auth.json"));
     expect(auth.startsWith(path.join(os.homedir(), ".pi"))).toBe(false);
   });
 });
 
-describe("DI: los overrides por constructor ganan y quedan dentro del sandbox", () => {
+describe("DI: constructor overrides win and stay inside the sandbox", () => {
   it("replaces every runtime dir with the sandbox paths", () => {
     const ctx = createTestWorkerContext();
     try {
@@ -66,8 +66,8 @@ describe("DI: los overrides por constructor ganan y quedan dentro del sandbox", 
         expect(resolved.startsWith(ctx.root + path.sep)).toBe(true);
       }
 
-      // El config resuelto del worker entero apunta al sandbox (los defaults
-      // del Entorno siguen intactos: nada escribió en `.pi-test`).
+      // The config resolved for the whole worker points at the sandbox (the
+      // Environment defaults stay untouched: nothing wrote to `.pi-test`).
       const resolved = resolveWorkerRuntimeConfig(ctx.workerConfig);
       expect(resolved.sessionsDir).toBe(ctx.sessionsDir);
       expect(resolved.agentDir).toBe(ctx.agentDir);
@@ -81,7 +81,7 @@ describe("DI: los overrides por constructor ganan y quedan dentro del sandbox", 
 });
 
 describe("resolveArtifactsBaseUrl", () => {
-  it("defaults to the worker URL of the Entorno", () => {
+  it("defaults to the worker URL of the Environment", () => {
     // config.test.ts: codingAgentWorkerUrl = stub de test en :3001.
     expect(getArtifactsBaseUrl()).toBe(
       "http://localhost:3001/api/agent/code/worker-stub",

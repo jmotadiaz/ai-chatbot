@@ -2,20 +2,20 @@ import { repoPath, packagePath } from "./paths";
 import type { StructuralConfig } from "./types";
 
 /**
- * Configuración estructural de TEST (versionada, sin secretos).
+ * TEST structural configuration (versioned, no secrets).
  *
- * Runtime Pi aislado en `.pi-test/*` (ADR 0002 v2) y mock del Model Gateway
- * en `:4001` (ADR 0010). El webServer de Playwright sirve el chatbot en
- * `:3001`; los tests de Vitest no abren puerto.
+ * Pi runtime isolated under `.pi-test/*` (ADR 0002 v2) and Model Gateway mock
+ * on `:4001` (ADR 0010). The Playwright webServer serves the chatbot on
+ * `:3001`; the Vitest tests do not open a port.
  */
 export const configTest = {
-  entorno: "test",
+  environment: "test",
   port: 3001,
   modelGatewayUrl: "http://127.0.0.1:4001",
   codingAgentEnabled: true,
   codingAgentProjectsRoot: repoPath("coding-agent-projects"),
   codingAgentSessionsDir: packagePath("coding-agent", ".pi-test/sessions"),
-  // En test el chatbot NO habla con el worker real: usa el stub HTTP.
+  // In test the chatbot does NOT talk to the real worker: it uses the HTTP stub.
   codingAgentWorkerUrl: "http://localhost:3001/api/agent/code/worker-stub",
   codingAgentWorkerPort: 3015,
   codingAgentAuthJson: packagePath("coding-agent", ".pi-test/auth.json"),

@@ -2,9 +2,9 @@ import { defineConfig } from "vitest/config";
 import { initConfig } from "./src/config";
 
 /**
- * Los tests del paquete `config` corren SIEMPRE en el Entorno de Test
- * (ADR 0011 §3.5): la inicialización es explícita al cargar este fichero, no
- * una variable de entorno que un shell pueda arrastrar.
+ * The `config` package tests ALWAYS run in the Test Environment
+ * (ADR 0011 §3.5): initialization is explicit when this file loads, not
+ * an environment variable a shell could drag along.
  */
 initConfig("test");
 

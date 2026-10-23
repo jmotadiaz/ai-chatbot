@@ -15,10 +15,10 @@ there quietly: Tailwind classes without a breakpoint prefix look perfect at
 Measured on a real architecture review, before these rules were written:
 
 ```
-320px: desborda 134px · 296 nodos de texto < 12px (mín 6.8px)
-390px: desborda 64px
-  ↳ <div class="lg:col-span-3 … p-4">  mide 397px   ← la rejilla padre usa grid-cols-3 sin prefijo
-  ↳ <table class="w-full text-[12px]"> mide 363px   ← sin contenedor con scroll propio
+320px (small): overflows 134px · 296 text nodes < 12px (min 6.8px)
+390px (large): overflows 64px
+      ↳ <div class="lg:col-span-3 … p-4"> measures 397px   ← the parent grid uses grid-cols-3 with no prefix
+      ↳ <table class="w-full text-[12px]"> measures 363px   ← no self-scrolling container
 ```
 
 Two decisions carry the fix: the **base layout is one column** (breakpoints *add*

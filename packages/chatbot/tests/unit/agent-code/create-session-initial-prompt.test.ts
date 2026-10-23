@@ -33,7 +33,7 @@ vi.mock("config", async (importOriginal) => {
   };
 });
 
-// El catálogo no se descarga por red en este test: fixture del Mock Gateway.
+// The catalog is not downloaded over the network in this test: Mock Gateway fixture.
 vi.mock("@/lib/infrastructure/ai/catalog", async () => {
   const { TEST_MODELS } = await import("@/tests/mocks/gateway/catalog");
   return {
@@ -117,7 +117,7 @@ describe("createCodingAgentSession", () => {
     };
     expect(init.sessionId).toBe("s1");
     expect(init.project).toBe("p");
-    // Proveedor único Gateway: el id de Pi es el id del catálogo, tal cual.
+    // Single Gateway provider: Pi's id is the catalog id, verbatim.
     expect(init.modelId).toBe("canProduceReasoning");
     expect(init._traceRunId).toBeTruthy();
 

@@ -58,8 +58,8 @@ const { createTestWorkerContext } = await import("../helpers/test-context");
  * thinkingLevel is turn config applied by TurnRunner.sendPrompt.
  * Reload from disk still seeds the model, but thinking is applied on the turn.
  *
- * ADR 0011 §6: registry + TurnRunner propios con el sandbox del helper
- * (projectsRoot/sessionsDir por DI, nunca por process.env).
+ * ADR 0011 §6: own registry + TurnRunner with the helper's sandbox
+ * (projectsRoot/sessionsDir through DI, never process.env).
  */
 describe("getOrCreateSession + TurnRunner thinking level after reload", () => {
   let ctx: ReturnType<typeof createTestWorkerContext>;

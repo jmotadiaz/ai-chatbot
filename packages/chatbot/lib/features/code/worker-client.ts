@@ -121,7 +121,7 @@ export class WorkerClient {
   private id = 0;
 
   constructor(baseUrl?: string) {
-    // El default del catálogo se aplica en runtime; el literal cubre el tipo opcional.
+    // The catalog default is applied at runtime; the literal satisfies the optional type.
     this.baseUrl = baseUrl ?? config.codingAgentWorkerUrl() ?? "http://localhost:3015";
   }
 

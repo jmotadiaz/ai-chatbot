@@ -69,7 +69,7 @@ async function withActionTrace<T>(
 export async function getCodingAgentProjects() {
   return withActionTrace("getCodingAgentProjects", async (log) => {
     assertEnabled();
-    if (config.entorno() === "test") {
+    if (config.environment() === "test") {
       log.info("action.result", { count: 1, mocked: true });
       return ["ai-chatbot"];
     }
@@ -144,8 +144,8 @@ async function startInitialRun(args: {
   const runId = crypto.randomUUID();
   const client = new WorkerClient();
 
-  // Proveedor único Gateway: el id de Pi ES el id del catálogo, validado en
-  // runtime contra el snapshot (los ids retirados no arrancan run).
+  // Single Gateway provider: the Pi id IS the catalog id, validated at runtime
+  // against the snapshot (retired ids do not start a run).
   const catalog = await fetchPublicModelCatalog();
   const modelRef = isKnownModelId(catalog, modelId) ? modelId : undefined;
   const thinkingLevel = isKnownModelId(catalog, modelId)
@@ -211,20 +211,20 @@ export async function getSubagentSessionAction(input: {
 
 export interface CodingAgentModel {
   id: string;
-  /** Niveles de razonamiento del modelo, según el catálogo del Gateway sincronizado en el worker. */
+  /** The model's reasoning levels, per the Gateway catalog synced in the worker. */
   levels: ThinkingLevel[];
-  /** Nivel que se aplica al elegir este modelo, del catálogo. */
+  /** The level applied when this model is selected, from the catalog. */
   defaultLevel: ThinkingLevel | undefined;
 }
 
 /**
- * Modelos disponibles con todo lo que la UI necesita saber de razonamiento.
- * El catálogo sincronizado del Gateway vive en el worker (sesiones de Pi),
- * y es de donde salen tanto los niveles soportados como el default
- * (`session-manager.ts`), así que este es el único canal.
+ * Available models with everything the UI needs to know about reasoning.
+ * The Gateway's synced catalog lives in the worker (Pi sessions), and that is
+ * where both the supported levels and the default come from
+ * (`session-manager.ts`), so this is the only channel.
  *
- * Con el proveedor único Gateway el id de Pi es el id del catálogo: se pasa
- * tal cual y se valida en runtime para derivar el default level.
+ * With the single Gateway provider the Pi id is the catalog id: it is passed
+ * through as-is and validated at runtime to derive the default level.
  */
 export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
   return withActionTrace("getCodingAgentModels", async (log) => {
@@ -232,10 +232,10 @@ export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
     const client = new WorkerClient();
     const { models } = await client.getAvailableModels();
     const catalog = await fetchPublicModelCatalog();
-    // El orden lo manda el catálogo del Gateway: se itera el catálogo y se
-    // busca cada entrada en la respuesta del worker, omitiendo las no
-    // disponibles. Sin `.sort()` local — el orden del array `models` del
-    // Gateway es la fuente de verdad que comparten el Model Picker y el chatbot.
+    // The Gateway catalog dictates the order: iterate the catalog and look each
+    // entry up in the worker response, skipping the unavailable ones. No local
+    // `.sort()` — the order of the Gateway's `models` array is the source of
+    // truth shared by the Model Picker and the chatbot.
     const workerById = new Map(models.map((model) => [model.modelId, model]));
     const result: CodingAgentModel[] = [];
     for (const entry of catalog) {

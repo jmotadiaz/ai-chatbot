@@ -1,10 +1,10 @@
-"""Guardas del despliegue systemd: la unidad corre con UID transitorio y las
-credenciales solo son legibles por el proceso del servicio.
+"""Guards of the systemd deployment: the unit runs with a transient UID and the
+credentials are only readable by the service's process.
 
-No arranca nada ni necesita root: solo lee los ficheros del paquete para que
-un cambio accidental (volver a `User=javier`, olvidar `CONFIG_FILE_PATH`,
-perder una credencial, apuntar `ExecStart` al checkout del repo) falle aquí y
-no en el host.
+It starts nothing and needs no root: it only reads the package files so that an
+accidental change (going back to `User=javier`, forgetting `CONFIG_FILE_PATH`,
+losing a credential, pointing `ExecStart` at the repo checkout) fails here and
+not on the host.
 """
 
 from __future__ import annotations
@@ -48,10 +48,10 @@ def _directives(unit: str) -> dict[str, list[str]]:
 def test_service_runs_with_dynamic_user(unit: str):
     directives = _directives(unit)
     assert directives["DynamicUser"] == ["yes"], (
-        "La unidad debe usar dynamicUser para que el UID sea transitorio y otros "
-        "procesos del operador no puedan leer $CREDENTIALS_DIRECTORY"
+        "The unit must use DynamicUser so the UID is transient and other "
+        "operator processes cannot read $CREDENTIALS_DIRECTORY"
     )
-    # Un User=/Group= explícito desactivaría el UID transitorio.
+    # An explicit User=/Group= would disable the transient UID.
     assert "User" not in directives
     assert "Group" not in directives
 
@@ -62,7 +62,7 @@ def test_credentials_are_loaded_encrypted_and_complete(unit: str):
     assert len(loaded) == len(EXPECTED_CREDENTIALS)
     for key in EXPECTED_CREDENTIALS:
         assert f"{key}:/etc/model-gateway/creds/{key}.cred" in loaded
-    # Nada de LoadCredential= en claro: los secretos solo se cargan cifrados.
+    # No plaintext LoadCredential=: secrets are only loaded encrypted.
     assert "LoadCredential" not in directives
 
 
@@ -70,11 +70,11 @@ def test_deployment_artifact_is_outside_the_operator_home(unit: str):
     directives = _directives(unit)
     assert directives["WorkingDirectory"] == ["/opt/model-gateway"]
     assert directives["ProtectHome"] == ["yes"], (
-        "Con DynamicUser el servicio no puede leer /home; ProtectHome=yes lo "
-        "deja explícito"
+        "With DynamicUser the service cannot read /home; ProtectHome=yes makes "
+        "it explicit"
     )
     assert directives["ExecStart"][0].endswith("/opt/model-gateway/scripts/run-gateway.sh")
-    # Ninguna directiva (los comentarios no cuentan) puede apuntar al home del operador.
+    # No directive (comments do not count) may point at the operator home.
     assert not [
         f"{key}={value}" for key, values in directives.items() for value in values if "/home/" in value
     ]
@@ -83,8 +83,8 @@ def test_deployment_artifact_is_outside_the_operator_home(unit: str):
 def test_litellm_config_path_and_writable_state(unit: str):
     directives = _directives(unit)
     assert "CONFIG_FILE_PATH=/opt/model-gateway/config.yaml" in directives["Environment"], (
-        "LiteLLM lee config.yaml de CONFIG_FILE_PATH; sin ella el proxy arranca "
-        "sin model_list ni master_key"
+        "LiteLLM reads config.yaml from CONFIG_FILE_PATH; without it the proxy "
+        "starts without model_list or master_key"
     )
     assert "PYTHONDONTWRITEBYTECODE=1" in directives["Environment"]
     assert directives["StateDirectory"] == ["model-gateway"]
@@ -97,31 +97,31 @@ def test_run_script_exports_credentials_and_forces_the_config_path():
     assert "CREDENTIALS_DIRECTORY" in script
     assert "tr '[:lower:]-' '[:upper:]_'" in script
     assert 'export CONFIG_FILE_PATH="${CONFIG_FILE_PATH:-$PWD/config.yaml}"' in script
-    # Debe usar el venv del despliegue cuando exista (el PATH de systemd no lo trae).
+    # It must use the deployment venv when it exists (systemd PATH does not bring it).
     assert '.venv/bin/uvicorn' in script
     assert re.search(r'exec "\$UVICORN" server:app', script)
 
 
 def test_deploy_script_deploys_the_artifact_and_builds_the_venv():
-    assert DEPLOY_SCRIPT.exists(), "systemd:install debe usar scripts/deploy.sh"
+    assert DEPLOY_SCRIPT.exists(), "systemd:install must use scripts/deploy.sh"
     script = DEPLOY_SCRIPT.read_text()
     assert 'DEST="/opt/model-gateway"' in script
     assert "venv --python" in script
     assert "config.yaml" in script
     assert "/etc/systemd/system/model-gateway.service" in script
-    # Identificabilidad: sello con el commit desplegado + guarda de árbol limpio.
+    # Identifiability: stamp with the deployed commit + clean-tree guard.
     assert "DEPLOYED" in script
     assert "--allow-dirty" in script
-    # Rollback por revisión (sin backups: la versión mínima no los tiene).
+    # Rollback by revision (no backups: the minimal version has none).
     assert "git archive" in script
     assert "BACKUP_ROOT" not in script and "restore_backup" not in script
-    # Health check real (401 sin bearer) y sin desplegar desde el home.
+    # Real health check (401 without bearer) and no deploying from home.
     assert "wait_http" in script and "401" in script
     assert "protecthome" in script.lower()
 
 
 def test_dependencies_are_installed_before_the_artifact_is_replaced():
-    """Si fallan las deps, el servicio debe seguir corriendo el código anterior."""
+    """If the deps fail, the service must keep running the previous code."""
     script = DEPLOY_SCRIPT.read_text()
     deps = script.index("\ninstall_dependencies\n")
     publish = script.index("\npublish_artifact\n")
@@ -137,16 +137,18 @@ def test_package_scripts_point_at_the_deploy_script():
 
 def test_manage_creds_creates_the_creds_dir_with_sudo():
     script = (Path(__file__).resolve().parents[1] / "scripts" / "manage-creds.sh").read_text()
-    assert "sudo mkdir -p" in script, "/etc es de root: sin sudo el wizard muere con Permission denied"
+    assert "sudo mkdir -p" in script, (
+        "/etc belongs to root: without sudo the wizard dies with Permission denied"
+    )
     assert "sudo systemd-creds encrypt" in script
     assert "chmod 600" in script
 
 def test_server_module_keeps_runtime_annotations():
-    """Con `from __future__ import annotations`, FastAPI no resuelve `Request`
-    (se importa dentro de create_app) y convierte `request` en query param
-    obligatorio: 422 en todas las peticiones. Ya nos pasó."""
+    """With `from __future__ import annotations`, FastAPI does not resolve `Request`
+    (it is imported inside create_app) and turns `request` into a mandatory
+    query param: 422 on every request. It already happened to us."""
     script = (Path(__file__).resolve().parents[1] / "server.py").read_text()
     assert not any(
         line.strip().startswith("from __future__")
         for line in script.splitlines()
-    ), "las anotaciones deben evaluarse en runtime (ver docstring de server.py)"
+    ), "the annotations must be evaluated at runtime (see server.py docstring)"

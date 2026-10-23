@@ -9,11 +9,11 @@ export interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = async ({ children }) => {
-  // Hidratación del catálogo (ADR 0010, spec §5.3): el servidor descarga la
-  // vista PÚBLICA del catálogo (los user-invocable; el Gateway ya filtra los
-  // contratos `*-default` en servidor) y la hidrata en el árbol cliente. El
-  // snapshot interno (contratos incluidos) que consumen los API routes vía
-  // `getModelCatalogSnapshot` lo calienta `warmModelCatalog` por su cuenta.
+  // Catalog hydration (ADR 0010, spec §5.3): the server fetches the
+  // PUBLIC view of the catalog (the user-invocable ones; the Gateway already filters the
+  // `*-default` contracts server-side) and hydrates it into the client tree. The
+  // internal snapshot (contracts included) that the API routes consume via
+  // `getModelCatalogSnapshot` is warmed by `warmModelCatalog` on its own.
   const catalog = await fetchPublicModelCatalog();
 
   return (

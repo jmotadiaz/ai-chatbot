@@ -8,22 +8,22 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { config, initConfig, parseEntornoFromArgv } from "config";
+import { config, initConfig, parseEnvironmentFromArgv } from "config";
 import { getDb } from "../lib/infrastructure/db/db";
 import { userApiKey } from "../lib/infrastructure/db/schema";
 import { retrieveResourceChunks } from "../lib/features/rag/retrieve";
 
-// El Entorno del servidor MCP llega por process.argv (ADR 0011), sin dotenv:
+// The MCP server's Environment arrives through process.argv (ADR 0011), no dotenv:
 // `tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts --env=dev`.
-// Sin `--env` → fallo rápido antes de abrir la DB o el catálogo.
-const entorno = parseEntornoFromArgv(process.argv);
-if (!entorno) {
+// Without `--env` → fail fast before opening the DB or the catalog.
+const environment = parseEnvironmentFromArgv(process.argv);
+if (!environment) {
   console.error(
-    "❌ mcp-server exige --env=dev|test|prod (ADR 0011). Ej: npx tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts --env=dev",
+    "❌ mcp-server requires --env=dev|test|prod (ADR 0011). E.g.: npx tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts --env=dev",
   );
   process.exit(1);
 }
-initConfig(entorno);
+initConfig(environment);
 
 // Initialize MCP Server
 const server = new Server(

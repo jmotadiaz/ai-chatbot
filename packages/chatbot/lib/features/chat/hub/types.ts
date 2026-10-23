@@ -68,12 +68,12 @@ export interface ChatHub {
 
   sendEnabled: boolean;
 
-  /* Verifica si un chat ya ha sido persistido en esta sesión */
+  /* Checks whether a chat has already been persisted in this session */
   isChatPersisted: (chatId: string) => boolean;
 
-  /** Permite a las instancias registrar su callback de envío */
+  /** Lets instances register their submit callback */
   submitSubscribe: (handler: SubmitHandler) => () => void;
-  /** Único submit del form: construye el mensaje una vez y lo dispara a todos los suscriptores */
+  /** Single form submit: builds the message once and dispatches it to every subscriber */
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
 

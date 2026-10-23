@@ -59,7 +59,7 @@ describe("PromptFormModal session input", () => {
   it("shows a hint and disables submit when there are no labeled sessions", () => {
     renderModal({ sessions: [] });
 
-    expect(screen.getByText("No hay sessions con label disponibles")).toBeTruthy();
+    expect(screen.getByText("No labeled sessions available")).toBeTruthy();
     // toBeDisabled is a jest-dom matcher, which is not registered in this
     // repo's vitest setup; assert the native property instead.
     expect(screen.getByRole("button", { name: "Insert" })).toHaveProperty("disabled", true);

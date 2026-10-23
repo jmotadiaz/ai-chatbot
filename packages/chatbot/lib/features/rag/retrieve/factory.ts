@@ -67,7 +67,7 @@ export const makeRetrieveResourceChunks = (
 
       finalResults = chunksByScore(results, chunks, minRagResourcesScore);
     } catch (error) {
-      console.error("Error al reordenar documentos:", error);
+      console.error("Error reranking documents:", error);
       finalResults = [];
     }
 

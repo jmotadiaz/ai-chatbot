@@ -44,7 +44,7 @@ export const createEnglishClassifier = (
   ): Promise<Decision | null> => {
     try {
       return await decide({
-        // Default Model Contract único para decisiones (spec §2.4).
+        // The single Default Model Contract for decisions (spec §2.4).
         model: "decision-default",
         questions,
         state: { text },

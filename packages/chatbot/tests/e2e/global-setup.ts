@@ -26,15 +26,16 @@ async function waitForPostgres(postgresUrl: string) {
 }
 
 async function globalSetup() {
-  // El DSN sale del bundle estático de Test (ADR 0011), no del shell: el
-  // guardarraíl Entorno↔DB ya validó `:5434/test` al cargar `env.test.ts`.
+  // The DSN comes from the static Test bundle (ADR 0011), not from the shell:
+  // the Environment↔DB guardrail already validated `:5434/test` when loading
+  // `env.test.ts`.
   const postgresUrl = config.postgresUrl();
 
   await waitForPostgres(postgresUrl);
 
-  // Mock Model Gateway (ADR 0010, ticket 02): .env.test apunta
-  // MODEL_GATEWAY_URL a http://127.0.0.1:4001; asegurar el mock antes de la
-  // suite (idempotente: reutiliza el puerto si otro proceso ya lo sirve).
+  // Mock Model Gateway (ADR 0010, ticket 02): .env.test points
+  // MODEL_GATEWAY_URL to http://127.0.0.1:4001; make sure the mock is up before
+  // the suite (idempotent: it reuses the port if another process already serves it).
   const gateway = await ensureMockGateway({ port: MOCK_GATEWAY_PORT });
   console.log(
     `[global-setup] Mock Model Gateway ${gateway.started ? "started" : "reused"} on :${gateway.port}`,

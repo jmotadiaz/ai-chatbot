@@ -1,6 +1,6 @@
-"""Tests del Model Catalog del Model Gateway (spec §2.2 / contrato §1).
+"""Tests of the Model Gateway Model Catalog (spec §2.2 / contract §1).
 
-Solo importan lógica pura (`catalog.py`): no requieren litellm ni fastapi.
+They only import pure logic (`catalog.py`): they require neither litellm nor fastapi.
 """
 
 from __future__ import annotations
@@ -21,8 +21,8 @@ from catalog import (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.yaml"
 
-# Orden servido por `build_catalog`: la entrada `is_default` primero, el resto
-# alfabético (case-insensitive). Es independiente del orden de `model_list`.
+# Order served by `build_catalog`: the `is_default` entry first, the rest
+# alphabetical (case-insensitive). It is independent of the `model_list` order.
 INVOCABLE_IDS = [
     "Deepseek v4.1 Flash",
     "Beam Free",
@@ -55,7 +55,7 @@ DEFAULT_CONTRACTS = [
     "tts-default",
 ]
 
-# Alias estable -> id canónico del catálogo. Solo enrutado: no son ids.
+# Stable alias -> canonical catalog id. Routing only: they are not ids.
 MODEL_ALIASES = {
     "deepseek-flash": "Deepseek v4.1 Flash",
     "glm-flash": "GLM 5.3 Flash",
@@ -95,7 +95,7 @@ def catalog(config):
     return build_catalog(copy.deepcopy(config))
 
 
-# --- filtrado en servidor -------------------------------------------------
+# --- server-side filtering ------------------------------------------------
 
 
 def test_catalog_returns_exactly_the_16_user_invocable_models_in_order(catalog):
@@ -103,9 +103,9 @@ def test_catalog_returns_exactly_the_16_user_invocable_models_in_order(catalog):
 
 
 def test_catalog_order_is_independent_of_yaml_model_list_order(config):
-    # El orden lo impone `build_catalog` (default primero, resto alfabético),
-    # no la posición en `model_list`: ni un reordenamiento del YAML debe
-    # mover el picker.
+    # The order is imposed by `build_catalog` (default first, rest alphabetical),
+    # not by the position in `model_list`: not even a YAML reorder should
+    # move the picker.
     shuffled = copy.deepcopy(config)
     shuffled["model_list"] = list(reversed(shuffled["model_list"]))
     catalog = build_catalog(shuffled)
@@ -129,7 +129,7 @@ def test_exactly_one_default_and_it_is_the_first_chat_model(catalog):
     assert [m["id"] for m in defaults] == ["Deepseek v4.1 Flash"]
 
 
-# --- esquema normalizado exacto -------------------------------------------
+# --- exact normalized schema ----------------------------------------------
 
 
 def test_entry_schema_exact_keys(catalog):
@@ -162,7 +162,7 @@ def test_entry_types(catalog):
 
 def test_cost_schema_and_units_per_million(catalog):
     kimi = next(m for m in catalog["models"] if m["id"] == "Kimi K3")
-    # Catálogo original por millón: input 3, output 15, cacheRead 0.3, cacheWrite 0.
+    # Original catalog per million: input 3, output 15, cacheRead 0.3, cacheWrite 0.
     assert kimi["cost"] == {"input": 3, "output": 15, "cacheRead": 0.3, "cacheWrite": 0}
     for model in catalog["models"]:
         assert set(model["cost"]) == {"input", "output", "cacheRead", "cacheWrite"}
@@ -170,7 +170,7 @@ def test_cost_schema_and_units_per_million(catalog):
 
 
 def test_minimax_m31_flash_is_no_longer_free(catalog):
-    # Tarifas de OpenCode Go: $0.15 input / $0.60 output / $0.015 cache read.
+    # OpenCode Go rates: $0.15 input / $0.60 output / $0.015 cache read.
     model = next(m for m in catalog["models"] if m["id"] == "MiniMax M3.1 Flash")
     assert model["cost"] == {"input": 0.15, "output": 0.6, "cacheRead": 0.015, "cacheWrite": 0}
 
@@ -181,7 +181,7 @@ def test_beam_free_is_free(catalog):
 
 
 def test_step_5_preview_is_no_longer_free(catalog):
-    # Tarifas de OpenCode Go: $1.00 input / $2.70 output / $0.10 cache read.
+    # OpenCode Go rates: $1.00 input / $2.70 output / $0.10 cache read.
     model = next(m for m in catalog["models"] if m["id"] == "Step 5 Preview")
     assert model["cost"] == {"input": 1, "output": 2.7, "cacheRead": 0.1, "cacheWrite": 0}
 
@@ -196,7 +196,7 @@ def test_thinking_levels_derived_and_defaults_supported(catalog):
             assert model["defaultThinkingLevel"] in model["thinkingLevels"], model["id"]
 
 
-# --- sin fuga de credenciales ---------------------------------------------
+# --- no credential leaks ---------------------------------------------------
 
 
 def test_json_never_exposes_litellm_params_or_raw_model_info(config):
@@ -225,17 +225,17 @@ def test_config_model_names_are_the_catalog_ids(config):
 
 def test_opencode_upstream_slugs_match_the_provider_catalog(config):
     params = {m["model_name"]: m["litellm_params"]["model"] for m in config["model_list"]}
-    # MiniMax M3.1 Flash ya no es gratis: el slug `-free` desapareció.
+    # MiniMax M3.1 Flash is no longer free: the `-free` slug disappeared.
     assert params["MiniMax M3.1 Flash"] == "openai/minimax-m3.1-flash"
-    # Beam Free gratis en OpenCode Go (slug `beam-free`).
+    # Beam Free is free on OpenCode Go (slug `beam-free`).
     assert params["Beam Free"] == "openai/beam-free"
-    # OpenCode Go solo sirve Muse Spark por /v1/responses: el prefijo
-    # `responses/` fuerza el bridge de LiteLLM y evita el error
-    # «Model does not support this protocol» de chat/completions.
+    # OpenCode Go serves Muse Spark only through /v1/responses: the
+    # `responses/` prefix forces LiteLLM's bridge and avoids the
+    # "Model does not support this protocol" error from chat/completions.
     assert params["Muse Spark 1.3"] == "openai/responses/muse-spark-1.3-contributor"
 
 
-# --- aliases estables de familia/tier (solo enrutado) ---------------------
+# --- stable family/tier aliases (routing only) ----------------------------
 
 
 def _model_group_alias(config):
@@ -245,13 +245,13 @@ def _model_group_alias(config):
 def test_model_aliases_are_the_stable_family_tier_names(config):
     aliases = _model_group_alias(config)
     assert {alias: entry["model"] for alias, entry in aliases.items()} == MODEL_ALIASES
-    # Sin tier Pro de Deepseek en el gateway: el alias no debe existir.
+    # No Pro tier for Deepseek in the gateway: the alias must not exist.
     assert "deepseek-pro" not in aliases
 
 
 def test_model_aliases_are_hidden_router_items(config):
     for alias, entry in _model_group_alias(config).items():
-        # RouterModelGroupAliasItem: dict {model, hidden}, sin claves raras.
+        # RouterModelGroupAliasItem: dict {model, hidden}, no odd keys.
         assert set(entry) == {"model", "hidden"}, alias
         assert entry["hidden"] is True, alias
 
@@ -259,19 +259,19 @@ def test_model_aliases_are_hidden_router_items(config):
 def test_model_aliases_target_existing_model_names_without_colliding(config):
     names = {m["model_name"] for m in config["model_list"]}
     for alias, entry in _model_group_alias(config).items():
-        assert alias not in names, f"{alias}: colisiona con un model_name"
-        assert entry["model"] in names, f"{alias}: destino inexistente {entry['model']!r}"
+        assert alias not in names, f"{alias}: collides with a model_name"
+        assert entry["model"] in names, f"{alias}: missing target {entry['model']!r}"
 
 
 def test_model_aliases_never_leak_into_the_catalog(config):
-    # El catálogo se construye solo desde model_list: los aliases no son ids
-    # ni siquiera con include_internal=true (el picker no debe duplicarlos).
+    # The catalog is built only from model_list: aliases are not ids
+    # even with include_internal=true (the picker must not duplicate them).
     for include_internal in (False, True):
         ids = {m["id"] for m in build_catalog(config, include_internal=include_internal)["models"]}
         assert not ids & set(_model_group_alias(config))
 
 
-# --- autorización del endpoint --------------------------------------------
+# --- endpoint authorization ------------------------------------------------
 
 
 def test_authorize_rejects_missing_or_malformed_headers():
@@ -279,13 +279,13 @@ def test_authorize_rejects_missing_or_malformed_headers():
     assert authorize("", "secret") is False
     assert authorize("Bearer", "secret") is False
     assert authorize("Bearer ", "secret") is False
-    assert authorize("secret", "secret") is False  # sin esquema Bearer
+    assert authorize("secret", "secret") is False  # no Bearer scheme
     assert authorize("Basic c2VjcmV0", "secret") is False
 
 
 def test_authorize_rejects_wrong_bearer_and_unset_server_key():
     assert authorize("Bearer wrong", "secret") is False
-    # Sin MODEL_GATEWAY_API_KEY configurada en el servidor, nada pasa.
+    # Without MODEL_GATEWAY_API_KEY configured on the server, nothing passes.
     assert authorize("Bearer secret", None) is False
     assert authorize("Bearer secret", "") is False
 
@@ -295,7 +295,7 @@ def test_authorize_accepts_correct_bearer():
     assert authorize("bearer secret", "secret") is True
 
 
-# --- build_entry sobre entradas sueltas -----------------------------------
+# --- build_entry on standalone entries ------------------------------------
 
 
 def test_build_entry_defaults_for_sparse_contract_entries():
@@ -313,14 +313,14 @@ def test_build_entry_defaults_for_sparse_contract_entries():
     assert entry["temperature"] is None and entry["topK"] is None
 
 
-def test_load_config_rejects_yaml_sin_model_list(tmp_path):
+def test_load_config_rejects_yaml_without_model_list(tmp_path):
     bad = tmp_path / "config.yaml"
     bad.write_text("litellm_settings: {}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="model_list"):
         load_config(bad)
 
 
-# --- adaptación para upstreams de OpenCode Go ------------------------------
+# --- adaptation for OpenCode Go upstreams ----------------------------------
 
 
 def test_prepare_opencode_deployment_kwargs_injects_headers_and_adapts_deepseek():
@@ -332,7 +332,7 @@ def test_prepare_opencode_deployment_kwargs_injects_headers_and_adapts_deepseek(
         "max_completion_tokens": 4096,
         "messages": [
             {"role": "developer", "content": "sys"},
-            {"role": "user", "content": "hola"},
+            {"role": "user", "content": "hello"},
             {"role": "assistant", "content": None, "tool_calls": [{"id": "c1"}]},
             {"role": "assistant", "content": "prev", "reasoning": "thought"},
         ],

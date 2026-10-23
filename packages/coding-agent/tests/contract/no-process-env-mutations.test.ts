@@ -6,27 +6,27 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTestWorkerContext } from "../helpers/test-context";
 
 /**
- * Contrato de DI del Coding Agent Worker (ADR 0011 §6 / ticket 02):
+ * DI contract of the Coding Agent Worker (ADR 0011 §6 / ticket 02):
  *
- * 1. Ningún fichero bajo `packages/coding-agent/tests/` configura tests
- *    mutando `process.env.CODING_AGENT_*` / `process.env.MODEL_GATEWAY_*`
- *    (asignación, `delete` o `vi.stubEnv`), ni apunta a los runtime dirs de
- *    prod/dev (`.pi-prod`, `.pi-dev`) como destino — `process.env` es estado
- *    global heredable y fue la causa del incidente de ADR 0011.
- * 2. En runtime: el sandbox de `createTestWorkerContext()` vive bajo
- *    `os.tmpdir()` y un sync del catálogo con el sandbox inyectado escribe
- *    `models.json`/`auth.json` SOLO dentro de ese sandbox.
+ * 1. No file under `packages/coding-agent/tests/` configures tests by
+ *    mutating `process.env.CODING_AGENT_*` / `process.env.MODEL_GATEWAY_*`
+ *    (assignment, `delete` or `vi.stubEnv`), nor points at the prod/dev
+ *    runtime dirs (`.pi-prod`, `.pi-dev`) as a destination — `process.env` is
+ *    global, inheritable state and was the cause of the ADR 0011 incident.
+ * 2. At runtime: the `createTestWorkerContext()` sandbox lives under
+ *    `os.tmpdir()` and a catalog sync with the injected sandbox writes
+ *    `models.json`/`auth.json` ONLY inside that sandbox.
  *
- * El incidente que motiva este contrato: un test que mutaba
- * `MODEL_GATEWAY_API_KEY`/`CODING_AGENT_MODELS_JSON` olvidó aislar
- * `CODING_AGENT_AUTH_JSON`; el subproceso de Vitest heredó el valor de prod
- * del worker y `ensureGatewayAuthJson()` sobrescribió `.pi-prod/auth.json`.
+ * The incident that motivates this contract: a test that mutated
+ * `MODEL_GATEWAY_API_KEY`/`CODING_AGENT_MODELS_JSON` forgot to isolate
+ * `CODING_AGENT_AUTH_JSON`; the Vitest subprocess inherited the worker's prod
+ * value and `ensureGatewayAuthJson()` overwrote `.pi-prod/auth.json`.
  */
 
 const TESTS_ROOT = path.resolve(import.meta.dirname, "..");
 const SELF = path.basename(fileURLToPath(import.meta.url));
 
-/** Mutaciones prohibidas de la configuración por variables de entorno. */
+/** Forbidden configuration mutations through environment variables. */
 const FORBIDDEN: Array<{ name: string; pattern: RegExp }> = [
   {
     name: "assignment to process.env.CODING_AGENT_* / MODEL_GATEWAY_* / PI_CODING_AGENT_DIR",
@@ -48,8 +48,8 @@ const FORBIDDEN: Array<{ name: string; pattern: RegExp }> = [
   },
   {
     name: "literal .pi-prod / .pi-dev as a destination in a test string",
-    // Sin cruzar líneas: un comentario de docstring que mencione .pi-prod no
-    // es un destino; un join(..., \".pi-prod/…\") sí lo es.
+    // Without crossing lines: a docstring comment that mentions .pi-prod is
+    // not a destination; a join(..., ".pi-prod/…") is.
     pattern: /["'`][^"'`\n]*\.pi-(?:prod|dev)/,
   },
 ];
@@ -68,7 +68,7 @@ describe("no process.env mutations in packages/coding-agent/tests", () => {
   it("never mutates CODING_AGENT_* / MODEL_GATEWAY_* nor targets .pi-prod/.pi-dev", () => {
     const violations: string[] = [];
     for (const file of listTestFiles(TESTS_ROOT)) {
-      if (path.basename(file) === SELF) continue; // este contrato vive de sus propios literales
+      if (path.basename(file) === SELF) continue; // this contract lives off its own literals
       const source = readFileSync(file, "utf8");
       for (const { name, pattern } of FORBIDDEN) {
         const match = source.match(pattern);
@@ -125,7 +125,7 @@ describe("test sandbox isolation (runtime)", () => {
 
       await syncGatewayModelsFile(ctx.workerConfig);
 
-      // Escritos dentro del sandbox…
+      // Written inside the sandbox…
       expect(existsSync(ctx.modelsJsonPath)).toBe(true);
       expect(existsSync(ctx.authJsonPath)).toBe(true);
       expect(JSON.parse(readFileSync(ctx.authJsonPath, "utf8"))["model-gateway"]).toEqual({
@@ -137,7 +137,7 @@ describe("test sandbox isolation (runtime)", () => {
         expect(relative.startsWith("..")).toBe(false);
         expect(path.isAbsolute(relative)).toBe(false);
       }
-      // …y la petición salió contra la URL inyectada, no contra la del bundle.
+      // …and the request went to the injected URL, not to the bundle's.
       expect(fetchMock.mock.calls[0]?.[0]).toBe(
         "http://127.0.0.1:4097/v1/models/catalog",
       );

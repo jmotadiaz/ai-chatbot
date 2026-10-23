@@ -15,7 +15,7 @@ import {
  * (`createMockAiPort`), so it never exercises the real
  * `generateEmbeddings`/`rerank` wiring in
  * `lib/features/rag/retrieve/{embeddings,index}.ts`, which now goes through
- * the composition root (`inferenceKit.embed`/`rerank`, HTTP contra el Model
+ * the composition root (`inferenceKit.embed`/`rerank`, HTTP against the Model
  * Gateway). This file instead mocks that composition root with deterministic
  * fakes of the same two operations — the real
  * `retrieveResourceChunks` singleton (`lib/features/rag/retrieve/index.ts`)

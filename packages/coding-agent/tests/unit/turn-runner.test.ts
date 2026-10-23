@@ -75,8 +75,8 @@ describe("TurnRunner (deep module)", () => {
   let projectsRoot: string;
 
   beforeEach(() => {
-    // DI por constructor (ADR 0011 §6): el projectsRoot (baseline git, cwd de
-    // proyectos) viaja en el registry, nunca por process.env.
+    // DI through the constructor (ADR 0011 §6): the projectsRoot (git baseline,
+    // project cwd) travels in the registry, never through process.env.
     projectsRoot = mkdtempSync(join(tmpdir(), "turn-runner-"));
     registry = new SessionRegistry(undefined, { projectsRoot });
     runner = new TurnRunner(registry);

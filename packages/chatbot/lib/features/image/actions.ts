@@ -8,11 +8,11 @@ export const generateImages = async (
 ): Promise<GeneratedFile[]> => {
   await warmModelCatalog();
 
-  // El contrato `image-default` usa el transport propio de imagen
-  // (`lib/infrastructure/ai/gateway-image-model.ts`): envía
-  // `modalities: ["image", "text"]` y parsea las partes `image_url` de la
-  // respuesta a `GeneratedFile`. Las modalidades del contrato están fijadas
-  // en el `config.yaml` del Gateway — el caller NO pasa `providerOptions`.
+  // The `image-default` contract uses its own image transport
+  // (`lib/infrastructure/ai/gateway-image-model.ts`): it sends
+  // `modalities: ["image", "text"]` and parses the `image_url` parts of the
+  // response into `GeneratedFile`. The contract's modalities are pinned in the
+  // Gateway's `config.yaml` — the caller does NOT pass `providerOptions`.
   const { files } = await generateText({
     system: `
       You are an expert photo editing assistant. Your task is to analyze user-submitted images and generate an enhanced image based on a detailed technical analysis, with a primary focus on photorealistic composition and subject enhancement.

@@ -48,7 +48,7 @@ export const SubagentToolLink: React.FC<SubagentToolLinkProps> = ({
         className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary"
       >
         <Bot className="size-4 text-muted-foreground" />
-        <span className="flex-1">Ver sesión del subagente</span>
+        <span className="flex-1">View subagent session</span>
         <ArrowRight className="size-4 text-muted-foreground" />
       </Link>
     </div>

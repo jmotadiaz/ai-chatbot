@@ -1,28 +1,28 @@
-# Model Gateway — Contrato compartido del catálogo
+# Model Gateway — Shared catalog contract
 
-Fuente de verdad de este documento: `.scratch/model-gateway/spec.md` §2.2 y
-[ADR 0010](../../docs/adr/0010-model-gateway-desacoplado.md). Ambos lados del
-contrato (el servicio Python y los consumidores TypeScript) referencian este
-fichero como schema único versionado:
+Source of truth for this document: `.scratch/model-gateway/spec.md` §2.2 and
+[ADR 0010](../../docs/adr/0010-model-gateway-desacoplado.md). Both sides of the
+contract (the Python service and the TypeScript consumers) reference this
+file as the single versioned schema:
 
-- Lado Python: `packages/model-gateway/catalog.py` (`build_entry`).
-- Lado TypeScript: `packages/config/src/gateway-contract.ts` (`GatewayModelEntry`),
-  re-exportado/consolidado en `packages/chatbot` (fachada y mock) y
-  `packages/coding-agent` (catálogo en runtime del worker).
+- Python side: `packages/model-gateway/catalog.py` (`build_entry`).
+- TypeScript side: `packages/config/src/gateway-contract.ts` (`GatewayModelEntry`),
+  re-exported/consolidated in `packages/chatbot` (facade and mock) and
+  `packages/coding-agent` (runtime catalog of the worker).
 
 ## `GET /v1/models/catalog`
 
-Autenticado (`Authorization: Bearer <MODEL_GATEWAY_API_KEY>`). Filtra en el
-SERVIDOR: solo las entradas con `model_info.user_invocable == true`, salvo
-`?include_internal=true` (inspección de los Default Model Contracts
-`*-default`). Nunca expone `litellm_params` ni `model_info` crudo.
+Authenticated (`Authorization: Bearer <MODEL_GATEWAY_API_KEY>`). It filters on the
+SERVER: only entries with `model_info.user_invocable == true`, unless
+`?include_internal=true` (inspection of the Default Model Contracts
+`*-default`). It never exposes `litellm_params` nor raw `model_info`.
 
-Orden determinista: la entrada `isDefault` primero, el resto alfabético
-(case-insensitive por `id`). El orden de `model_list` en `config.yaml` es
-irrelevante: `build_catalog` (`catalog.py`) lo impone y todos los
-consumidores (Model Picker, coding-agent) lo heredan tal cual.
+Deterministic order: the `isDefault` entry first, the rest alphabetical
+(case-insensitive by `id`). The order of `model_list` in `config.yaml` is
+irrelevant: `build_catalog` (`catalog.py`) imposes it and all the consumers
+(Model Picker, coding-agent) inherit it as is.
 
-Respuesta:
+Response:
 
 ```json
 {
@@ -50,48 +50,48 @@ Respuesta:
 
 ## `GatewayModelEntry` (schema)
 
-| Campo | Tipo | Notas |
+| Field | Type | Notes |
 | :--- | :--- | :--- |
-| `id` | `string` | Nombre estable; en Pi y en los consumidores es el model id 1:1. |
-| `company` | `string` | Libre (ya no es una unión tipada). |
-| `isDefault` | `boolean` | El picker usa la entrada `isDefault` no-contrato. |
-| `contextWindow` | `number \| null` | `null` en entradas sparse (embedding/rerank/tts); los consumidores caen a su default (`DEFAULT_CONTEXT_WINDOW` / 128k en Pi). |
-| `maxTokens` | `number \| null` | Ídem (fallback 16k en Pi). |
-| `cost` | `GatewayModelCost` | `{ input, output, cacheRead, cacheWrite }`, USD por millón de tokens (LiteLLM sirve por token; el catálogo re-expresa por millón). |
+| `id` | `string` | Stable name; in Pi and in the consumers it is the model id 1:1. |
+| `company` | `string` | Free-form (it is no longer a typed union). |
+| `isDefault` | `boolean` | The picker uses the non-contract `isDefault` entry. |
+| `contextWindow` | `number \| null` | `null` in sparse entries (embedding/rerank/tts); consumers fall back to their default (`DEFAULT_CONTEXT_WINDOW` / 128k in Pi). |
+| `maxTokens` | `number \| null` | Same (16k fallback in Pi). |
+| `cost` | `GatewayModelCost` | `{ input, output, cacheRead, cacheWrite }`, USD per million tokens (LiteLLM serves per token; the catalog re-expresses per million). |
 | `reasoning` | `boolean` | |
-| `thinkingLevels` | `string[]` | Niveles de razonamiento soportados (`off` no se lista: ausente = sin `reasoning_effort`). |
+| `thinkingLevels` | `string[]` | Supported reasoning levels (`off` is not listed: absent = no `reasoning_effort`). |
 | `defaultThinkingLevel` | `string \| null` | |
 | `supportedFiles` | `("img" \| "pdf")[]` | |
 | `supportedOutput` | `("text" \| "img")[]` | |
 | `zeroDataRetention` | `boolean` | |
-| `temperature` | `number \| null` | Default de muestreo del modelo. |
+| `temperature` | `number \| null` | Sampling default of the model. |
 | `topP` | `number \| null` | |
 | `topK` | `number \| null` | |
 
 ## Default Model Contracts (`user_invocable: false`)
 
-Nombres estables que las features invocan directamente, garantizados por el
-Gateway (tabla completa en la spec §2.4): `fast-default`, `flash-default`,
+Stable names that the features invoke directly, guaranteed by the
+Gateway (full table in the spec §2.4): `fast-default`, `flash-default`,
 `vision-default`, `reasoning-default`, `free-default`, `image-default`,
 `embedding-default`, `rerank-default`, `decision-default`, `tts-default`.
-Solo aparecen en el catálogo con `?include_internal=true`.
+They only appear in the catalog with `?include_internal=true`.
 
-El contrato de imagen (`image-default`) se sirve por `/v1/chat/completions`
-con `modalities: ["image", "text"]` fijadas en `config.yaml` y responde con
-un mensaje multipart (`{type:"text"}` + `{type:"image_url", image_url:{url:"data:…;base64,…"}}`);
-lo consume el transport propio
+The image contract (`image-default`) is served by `/v1/chat/completions`
+with `modalities: ["image", "text"]` pinned in `config.yaml` and it answers with
+a multipart message (`{type:"text"}` + `{type:"image_url", image_url:{url:"data:…;base64,…"}}`);
+it is consumed by the dedicated transport
 `packages/chatbot/lib/infrastructure/ai/gateway-image-model.ts`.
 
-## Aliases de modelo (solo enrutado)
+## Model aliases (routing only)
 
-`config.yaml` → `router_settings.model_group_alias` declara nombres estables de
-familia/tier (semántica completa en la spec §2.6). No son parte del schema del
-catálogo: `GET /v1/models/catalog` no los devuelve ni con
-`?include_internal=true`; los consumidores de catálogo siguen usando el `id`
-canónico. Se aceptan como `model` en las rutas de LiteLLM y se reapuntan en
-`config.yaml` cuando cambia la versión del modelo.
+`config.yaml` → `router_settings.model_group_alias` declares stable
+family/tier names (full semantics in the spec §2.6). They are not part of the
+catalog schema: `GET /v1/models/catalog` does not return them even with
+`?include_internal=true`; catalog consumers keep using the canonical `id`.
+They are accepted as `model` in the LiteLLM routes and are re-pointed in
+`config.yaml` when the model version changes.
 
-| Alias | Destino (id canónico) |
+| Alias | Target (canonical id) |
 | :--- | :--- |
 | `deepseek-flash` | `Deepseek v4.1 Flash` |
 | `glm-flash` | `GLM 5.3 Flash` |
@@ -101,5 +101,5 @@ canónico. Se aceptan como `model` en las rutas de LiteLLM y se reapuntan en
 | `meta-muse-spark` | `Muse Spark 1.3` |
 | `free` | `Beam Free` |
 
-No hay alias `deepseek-pro` porque el Gateway no declara un tier Pro de
-Deepseek (solo `deepseek-v4.1-flash`).
+There is no `deepseek-pro` alias because the Gateway does not declare a Pro tier
+for Deepseek (only `deepseek-v4.1-flash`).

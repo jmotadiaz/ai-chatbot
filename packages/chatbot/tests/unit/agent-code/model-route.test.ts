@@ -51,7 +51,7 @@ beforeEach(() => {
 
 describe("GET /api/agent/code/sessions/[sessionId]/model", () => {
   it("returns the worker's model id when the catalog knows it", async () => {
-    // Proveedor único Gateway: el id de Pi es el id del catálogo, tal cual.
+    // Single Gateway provider: Pi's id is the catalog id, verbatim.
     mockState.workerModel = { providerId: "model-gateway", modelId: "basicChat" };
 
     const res = await GET(makeRequest() as never);

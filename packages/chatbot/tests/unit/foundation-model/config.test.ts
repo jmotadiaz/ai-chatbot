@@ -9,14 +9,14 @@ import {
   isThinkingLevel,
   resolveChatModelId,
 } from "@/lib/features/foundation-model/config";
-// La fixture del catálogo es el catálogo que sirve el Mock Model Gateway
-// (ticket 02): mismos ids que los e2e usan directamente.
+// The catalog fixture is the catalog the Mock Model Gateway serves (ticket 02):
+// the same ids the e2e use directly.
 import { TEST_MODELS, TEST_INTERNAL_MODELS } from "@/tests/mocks/gateway/catalog";
 
 const catalog = [...TEST_MODELS, ...TEST_INTERNAL_MODELS];
 
-describe("chatModelKeys / defaultModel sobre el catálogo del Gateway", () => {
-  it("expone los modelos user-invocable y excluye los contratos *-default", () => {
+describe("chatModelKeys / defaultModel over the Gateway catalog", () => {
+  it("exposes the user-invocable models and excludes the *-default contracts", () => {
     const keys = chatModelKeys(catalog);
 
     expect(keys).toEqual(TEST_MODELS.map((m) => m.id));
@@ -25,13 +25,13 @@ describe("chatModelKeys / defaultModel sobre el catálogo del Gateway", () => {
     }
   });
 
-  it("el default es la entrada isDefault del catálogo", () => {
+  it("the default is the catalog's isDefault entry", () => {
     expect(defaultModel(catalog)).toBe("basicChat");
   });
 });
 
 describe("getChatConfigurationByModelId", () => {
-  it("construye la configuración desde la entrada del catálogo", () => {
+  it("builds the configuration from the catalog entry", () => {
     const cfg = getChatConfigurationByModelId(catalog, "basicChat");
     expect(cfg).toEqual({
       company: "mock",
@@ -46,7 +46,7 @@ describe("getChatConfigurationByModelId", () => {
     });
   });
 
-  it("expone capacidades por modelo (archivos, reasoning, thinking)", () => {
+  it("exposes capabilities per model (files, reasoning, thinking)", () => {
     const images = getChatConfigurationByModelId(catalog, "canSeeImages");
     expect(images.supportedFiles).toEqual(["img"]);
 
@@ -57,7 +57,7 @@ describe("getChatConfigurationByModelId", () => {
     expect(getDefaultThinkingLevel(catalog, "basicChat")).toBeUndefined();
   });
 
-  it("lanza para un id que no está en el catálogo", () => {
+  it("throws for an id that is not in the catalog", () => {
     expect(() => getChatConfigurationByModelId(catalog, "Retired Model 0.9"))
       .toThrowError(/Retired Model 0.9/);
   });
@@ -81,17 +81,17 @@ describe("resolveChatModelId", () => {
   });
 });
 
-describe("thinking levels / validación runtime", () => {
-  it("isThinkingLevel valida el vocabulario de ThinkingLevel", () => {
+describe("thinking levels / runtime validation", () => {
+  it("isThinkingLevel validates the ThinkingLevel vocabulary", () => {
     expect(isThinkingLevel("medium")).toBe(true);
     expect(isThinkingLevel("extreme")).toBe(false);
     expect(isThinkingLevel(42)).toBe(false);
   });
 
-  it("isKnownModelId reconoce ids del catálogo y rechaza desconocidos", () => {
+  it("isKnownModelId recognizes catalog ids and rejects unknown ones", () => {
     expect(isKnownModelId(catalog, "basicChat")).toBe(true);
     expect(isKnownModelId(catalog, "decision-default")).toBe(true);
-    expect(isKnownModelId(catalog, "no-existe")).toBe(false);
+    expect(isKnownModelId(catalog, "does-not-exist")).toBe(false);
     expect(isKnownModelId(catalog, null)).toBe(false);
   });
 });

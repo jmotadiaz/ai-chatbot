@@ -41,7 +41,7 @@ export interface WorkerRuntimeConfig extends GatewayRuntimeConfig {
 /**
  * Composition root of the Gateway config: explicit overrides win, then the
  * process-wide config registered by `startHttpTransport()`, then the active
- * Entorno bundle. Path defaults reuse the resolvers of `paths.ts`/`models.ts`,
+ * Environment bundle. Path defaults reuse the resolvers of `paths.ts`/`models.ts`,
  * so a relative override still anchors to this package and an empty string is
  * still treated as unset.
  */
@@ -84,7 +84,7 @@ export function resolveWorkerRuntimeConfig(
 }
 
 /**
- * The worker HTTP transport's default config (active Entorno bundle, plus any
+ * The worker HTTP transport's default config (active Environment bundle, plus any
  * process-wide overrides already registered). Exported so `transports/http.ts`
  * can build the composition root without knowing where the defaults live.
  */

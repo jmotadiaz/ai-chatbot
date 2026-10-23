@@ -273,11 +273,11 @@ export function resolveProjectPrompt(
     const match = message.match(/\[Line (\d+), Column (\d+)\]/);
     if (match) {
       throw new Error(
-        `Prompt "${promptName}": error de plantilla en línea ${match[1]} de ${prompt.filePath}: ${message}`,
+        `Prompt "${promptName}": template error at line ${match[1]} of ${prompt.filePath}: ${message}`,
       );
     }
     throw new Error(
-      `Prompt "${promptName}": error de plantilla de ${prompt.filePath}: ${message}`,
+      `Prompt "${promptName}": template error in ${prompt.filePath}: ${message}`,
     );
   }
   return { text };

@@ -70,7 +70,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Cuál es la firma exacta de `useOptimistic` en React 19 y cuándo se reinicia su estado?",
     expected: "ctx7",
     rationale:
-      "Pregunta por la superficie de API de un framework (firma y semántica de un hook), no por hechos externos.",
+      "Asks about a framework's API surface (a hook's signature and semantics), not about external facts.",
   },
   {
     id: "ctx7-02",
@@ -79,7 +79,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "How do I configure `dynamicIO` in Next.js 16 and which routes opt out of it?",
     expected: "ctx7",
     rationale:
-      "Configuración de un framework y comportamiento específico de versión → documentación.",
+      "Framework configuration and version-specific behavior → documentation.",
   },
   {
     id: "ctx7-03",
@@ -88,7 +88,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Qué API de Drizzle ORM se usa para crear un índice parcial sobre una columna de texto?",
     expected: "ctx7",
     rationale:
-      "API concreta de una librería (Drizzle) → documentación actualizada.",
+      "A library's concrete API (Drizzle) → up-to-date documentation.",
   },
   {
     id: "ctx7-04",
@@ -97,7 +97,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "What options does Vitest's `defineConfig` accept to isolate the environment per test file?",
     expected: "ctx7",
     rationale:
-      "Opciones de configuración de una herramienta (Vitest) → documentación.",
+      "Configuration options of a tool (Vitest) → documentation.",
   },
   {
     id: "ctx7-05",
@@ -106,7 +106,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Cómo se declara un bloque `@theme` con tokens propios en Tailwind CSS v4?",
     expected: "ctx7",
     rationale:
-      "Sintaxis de una versión mayor concreta (Tailwind v4) → documentación.",
+      "Syntax of a concrete major version (Tailwind v4) → documentation.",
   },
   {
     id: "ctx7-06",
@@ -115,7 +115,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "In the AI SDK v6, how does `stopWhen: stepCountIs(n)` differ from the old `maxSteps`?",
     expected: "ctx7",
     rationale:
-      "Cambio de API entre versiones de un SDK → documentación de la librería.",
+      "API change between SDK versions → the library's documentation.",
   },
   {
     id: "ctx7-07",
@@ -123,7 +123,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message:
       "¿Cómo se define una tool con zod en el AI SDK v6? Necesito la firma de `tool()`.",
     expected: "ctx7",
-    rationale: "Firma de una API de SDK → documentación.",
+    rationale: "A SDK API signature → documentation.",
   },
   {
     id: "ctx7-08",
@@ -132,7 +132,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "How do I enable `trace: 'on-first-retry'` in Playwright and open the trace from the CLI?",
     expected: "ctx7",
     rationale:
-      "Configuración y CLI de una herramienta (Playwright) → documentación.",
+      "Configuration and CLI of a tool (Playwright) → documentation.",
   },
   {
     id: "ctx7-09",
@@ -141,7 +141,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Cómo se añade una dependencia al catálogo (`catalog:`) de un workspace con pnpm 11?",
     expected: "ctx7",
     rationale:
-      "Funcionalidad documentada de una CLI (pnpm catalogs), no un dato del mundo.",
+      "Documented CLI functionality (pnpm catalogs), not a fact about the world.",
   },
   {
     id: "ctx7-10",
@@ -150,7 +150,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "What does `AbortSignal.timeout()` reject with in Node 24, and how does it differ from Node 20?",
     expected: "ctx7",
     rationale:
-      "API del lenguaje/runtime y su comportamiento por versión → documentación.",
+      "Language/runtime API and its per-version behavior → documentation.",
   },
   {
     id: "ctx7-11",
@@ -163,7 +163,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Y cómo se integra eso con un formulario que ya existe?",
     expected: "ctx7",
     rationale:
-      "Follow-up pronominal ('eso' = `useOptimistic`): sin el turno anterior sería ambiguo, con él sigue siendo una pregunta de API de framework.",
+      "Pronominal follow-up ('eso' = `useOptimistic`): without the previous turn it would be ambiguous; with it, it is still a framework API question.",
   },
   {
     id: "ctx7-12",
@@ -176,7 +176,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "And does that still work when the styles live in a shared package?",
     expected: "ctx7",
     rationale:
-      "Follow-up implícito ('that' = bloque `@theme`): la documentación de Tailwind v4 sigue siendo la fuente.",
+      "Implicit follow-up ('that' = the `@theme` block): Tailwind v4's documentation is still the source.",
   },
   {
     id: "ctx7-13",
@@ -185,7 +185,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "Mi componente de React 19 lanza «Cannot update a component while rendering a different component». ¿Qué significa ese error y cómo se corrige?",
     expected: "ctx7",
     rationale:
-      "Frontera ctx7/neither: es un mensaje de error de un framework y la respuesta correcta depende de su semántica y de la API de React 19, no de razonamiento genérico.",
+      "ctx7/neither boundary: it is a framework error message and the correct answer depends on its semantics and on the React 19 API, not on general reasoning.",
   },
 
   // ----------------------------------------------------------------- web (15)
@@ -194,7 +194,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     lang: "es",
     message: "¿A cuánto está el bitcoin ahora mismo?",
     expected: "web",
-    rationale: "Precio en vivo: dato que cambia y no vive en ninguna doc.",
+    rationale: "A live price: data that changes and lives in no doc.",
   },
   {
     id: "web-02",
@@ -202,7 +202,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message:
       "What is the latest stable Node.js release, and when does it reach end of life?",
     expected: "web",
-    rationale: "Releases y fechas de soporte = información actual externa.",
+    rationale: "Releases and support dates = current external information.",
   },
   {
     id: "web-03",
@@ -211,7 +211,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "Give me sources that back the claim that transformers use less energy per token than LSTMs.",
     expected: "web",
     rationale:
-      "Pide referencias/fuentes para contrastar una afirmación → búsqueda externa.",
+      "It asks for references/sources to back a claim → external search.",
   },
   {
     id: "web-04",
@@ -219,35 +219,35 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message:
       "Resume el contenido de https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-questions-and-answers-request",
     expected: "web",
-    rationale: "Contenido detrás de una URL → web.",
+    rationale: "Content behind a URL → web.",
   },
   {
     id: "web-05",
     lang: "es",
     message: "¿Quién ganó el Balón de Oro de este año?",
     expected: "web",
-    rationale: "Actualidad: resultado de un evento reciente.",
+    rationale: "Current affairs: the outcome of a recent event.",
   },
   {
     id: "web-06",
     lang: "en",
     message: "How much does an RTX 5090 cost right now in the EU?",
     expected: "web",
-    rationale: "Precio actual de un producto → dato externo vivo.",
+    rationale: "A product's current price → live external data.",
   },
   {
     id: "web-07",
     lang: "es",
     message: "¿Está abierto mañana el Museo del Prado? ¿Qué horario de visita tiene?",
     expected: "web",
-    rationale: "Disponibilidad y horarios reales → web.",
+    rationale: "Real availability and opening hours → web.",
   },
   {
     id: "web-08",
     lang: "es",
     message: "¿Qué ha pasado hoy con la cotización de NVIDIA?",
     expected: "web",
-    rationale: "Noticia/mercado del día → web.",
+    rationale: "Today's news/market → web.",
   },
   {
     id: "web-09",
@@ -256,7 +256,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Sigue disponible `typesafe/jev-1.13` en OpenRouter? ¿Cuánto cuesta cada llamada?",
     expected: "web",
     rationale:
-      "Disponibilidad y precio del servicio: dato operativo externo, no la documentación de una librería.",
+      "Service availability and price: an external operational fact, not a library's documentation.",
   },
   {
     id: "web-10",
@@ -268,7 +268,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Y cómo cerró ayer?",
     expected: "web",
     rationale:
-      "Follow-up pronominal sin sujeto explícito: 'cerró' remite al precio del turno anterior → sigue necesitando el dato actual externo.",
+      "Pronominal follow-up with no explicit subject: 'cerró' points back to the previous turn's price → it still needs the current external data.",
   },
   {
     id: "web-11",
@@ -280,7 +280,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "And when does its maintenance window end?",
     expected: "web",
     rationale:
-      "Follow-up implícito ('its' = Node 24): fechas de soporte actualizadas → web.",
+      "Implicit follow-up ('its' = Node 24): up-to-date support dates → web.",
   },
   {
     id: "web-12",
@@ -293,7 +293,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Y cuáles serían las fuentes oficiales para contrastarlo?",
     expected: "web",
     rationale:
-      "Pide fuentes verificables sobre un tema de actualidad → web.",
+      "It asks for verifiable sources on a current-affairs topic → web.",
   },
   {
     id: "web-13",
@@ -302,7 +302,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Cuál es la versión publicada más reciente de `@openrouter/sdk` en npm y cuándo salió?",
     expected: "web",
     rationale:
-      "Frontera web/ctx7: menciona una librería, pero la respuesta es un dato de release publicado (versión y fecha), no su documentación.",
+      "web/ctx7 boundary: it mentions a library, but the answer is a published release fact (version and date), not its documentation.",
   },
   {
     id: "web-14",
@@ -311,7 +311,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Dónde puedo comprobar en la fuente oficial que esa certificación sigue vigente?",
     expected: "web",
     rationale:
-      "Documento/autoridad externa cuya vigencia hay que verificar en el emisor: no basta el razonamiento general.",
+      "An external document/authority whose validity must be checked at the issuer: general reasoning is not enough.",
   },
   {
     id: "web-15",
@@ -320,7 +320,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "Dame la referencia oficial y la edición actual del reglamento que regula ese procedimiento.",
     expected: "web",
     rationale:
-      "Pide una fuente normativa externa citable y su edición vigente: información verificable fuera del modelo.",
+      "It asks for a citable external normative source and its current edition: information verifiable outside the model.",
   },
 
   // ------------------------------------------------------------- neither (14)
@@ -329,14 +329,14 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     lang: "es",
     message: "Hola, ¿qué tal?",
     expected: "neither",
-    rationale: "Charla.",
+    rationale: "Chit-chat."
   },
   {
     id: "neither-02",
     lang: "es",
     message: "Gracias, muy útil.",
     expected: "neither",
-    rationale: "Charla.",
+    rationale: "Chit-chat."
   },
   {
     id: "neither-03",
@@ -344,7 +344,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "Write a haiku about distributed systems.",
     expected: "neither",
     rationale:
-      "Generación creativa con conocimiento general: ni docs de librería ni internet.",
+      "Creative generation with general knowledge: neither library docs nor the internet.",
   },
   {
     id: "neither-04",
@@ -352,7 +352,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message:
       "Resume en una frase este párrafo que te pego: «El despliegue se pospuso porque el equipo de datos no terminó la migración, y el comité decidió esperar dos semanas».",
     expected: "neither",
-    rationale: "Transformación de texto pegado, sin herramienta externa.",
+    rationale: "Transformation of pasted text, with no external tool.",
   },
   {
     id: "neither-05",
@@ -360,7 +360,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿En qué archivo de este repositorio se decide el Chat Mode automático?",
     expected: "neither",
     rationale:
-      "Pregunta repo-local: el conocimiento está en el repositorio/conversación, no en docs externas ni en la web.",
+      "Repo-local question: the knowledge is in the repository/conversation, not in external docs or on the web.",
   },
   {
     id: "neither-06",
@@ -368,21 +368,21 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message:
       "Explícame qué hace el archivo `packages/chatbot/lib/features/chat/mode-routing/policy.ts`.",
     expected: "neither",
-    rationale: "Código local del repositorio → ni ctx7 ni web.",
+    rationale: "Local repository code → neither ctx7 nor web.",
   },
   {
     id: "neither-07",
     lang: "es",
     message: "Corrige la gramática de esta frase: «habían muchos problemas con el despliegue».",
     expected: "neither",
-    rationale: "Corrección de texto con conocimiento general.",
+    rationale: "Text correction with general knowledge.",
   },
   {
     id: "neither-08",
     lang: "es",
     message: "¿Qué tablas tiene la base de datos de este proyecto?",
     expected: "neither",
-    rationale: "Pregunta repo-local sobre el esquema del propio proyecto.",
+    rationale: "Repo-local question about the project's own schema.",
   },
   {
     id: "neither-09",
@@ -390,7 +390,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message:
       "¿Me recomiendas alguna forma de organizar las notas de una reunión? Nada técnico.",
     expected: "neither",
-    rationale: "Consejo genérico de razonamiento, sin herramientas.",
+    rationale: "Generic reasoning advice, with no tools.",
   },
   {
     id: "neither-10",
@@ -402,7 +402,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Y quién lo consume?",
     expected: "neither",
     rationale:
-      "Follow-up pronominal ('lo' = policy.ts): repo-local, sin herramientas.",
+      "Pronominal follow-up ('lo' = policy.ts): repo-local, with no tools.",
   },
   {
     id: "neither-11",
@@ -410,7 +410,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Y eso cómo se hace?",
     expected: "neither",
     rationale:
-      "Pronominal SIN contexto previo: el referente es irresoluble, así que no se justifica pagar ninguna tool. La etiqueta correcta es la rama neutra.",
+      "Pronominal WITHOUT previous context: the referent is unresolvable, so paying for any tool is not justified. The correct label is the neutral branch.",
   },
   {
     id: "neither-12",
@@ -418,7 +418,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Y entonces qué me recomiendas?",
     expected: "neither",
     rationale:
-      "Pronominal SIN contexto previo y sin información que buscar: degradar a la rama neutra.",
+      "Pronominal WITHOUT previous context and with no information to look up: degrade to the neutral branch.",
   },
   {
     id: "neither-13",
@@ -426,7 +426,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
     message: "¿Cómo se usa Drizzle en este proyecto?",
     expected: "neither",
     rationale:
-      "Frontera neither/ctx7: nombra una librería, pero la respuesta está en el código del repositorio, no en la documentación externa.",
+      "neither/ctx7 boundary: it names a library, but the answer is in the repository code, not in external documentation.",
   },
   {
     id: "neither-14",
@@ -435,7 +435,7 @@ export const MODE_ROUTING_DATASET: readonly ModeRoutingDatasetEntry[] = [
       "¿Qué diferencia conceptual hay entre un requisito funcional y uno no funcional?",
     expected: "neither",
     rationale:
-      "Frontera neither/web: pregunta de razonamiento sobre un concepto; no pide fuentes externas ni comprobar su vigencia.",
+      "neither/web boundary: a reasoning question about a concept; it asks for no external sources and does not require checking their validity.",
   },
 ] as const;
 

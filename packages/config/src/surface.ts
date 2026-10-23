@@ -1,14 +1,14 @@
 /**
- * Superficie pública ISOMORFA del paquete `config` (ADR 0011).
+ * ISOMORPHIC public surface of the `config` package (ADR 0011).
  *
- * Todo lo que puede importar código compilado por Next.js (servidor o
- * cliente) y los tests: tipos, constantes del contrato del Gateway, rutas
- * portables, guardarraíles, `ConfigError` y la fábrica de la fachada.
+ * Everything that code compiled by Next.js (server or client) and the tests may
+ * import: types, Gateway contract constants, portable paths, guardrails,
+ * `ConfigError` and the facade factory.
  *
- * NO incluye el selector (`initConfig`, parseo de argv, `envBundlePath`): ese
- * módulo importa los tres bundles `env.<env>.ts` y no puede formar parte de
- * ellos sin un ciclo. Los bundles re-exportan esta superficie para que el
- * alias del bundler (`"config"` → `env.<env>.ts`) mantenga la API completa.
+ * It does NOT include the selector (`initConfig`, argv parsing, `envBundlePath`): that
+ * module imports the three `env.<env>.ts` bundles and cannot be part of them
+ * without a cycle. The bundles re-export this surface so that the bundler alias
+ * (`"config"` → `env.<env>.ts`) keeps the full API.
  */
 
 export { ConfigError } from "./errors";
@@ -30,10 +30,10 @@ export type {
   ThinkingLevel,
 } from "./gateway-contract";
 export {
-  assertDbMatchesEntorno,
-  assertGatewayMatchesEntorno,
-  ENTORNO_DB,
-  ENTORNO_GATEWAY_PORT,
+  assertDatabaseMatchesEnvironment,
+  assertGatewayMatchesEnvironment,
+  ENVIRONMENT_DSN,
+  ENVIRONMENT_GATEWAY_PORT,
   validateAppConfig,
 } from "./guardrails";
 export {
@@ -47,7 +47,7 @@ export {
 export type { PackageName } from "./paths";
 export type {
   AppConfig,
-  Entorno,
+  Environment,
   SecretsConfig,
   StructuralConfig,
 } from "./types";

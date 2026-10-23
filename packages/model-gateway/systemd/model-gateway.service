@@ -28,8 +28,8 @@ ExecStart=/usr/bin/env bash /opt/model-gateway/scripts/run-gateway.sh
 Restart=on-failure
 RestartSec=5
 
-# Credenciales cifradas (systemd-creds), desencriptadas a $CREDENTIALS_DIRECTORY.
-# run-gateway.sh las exporta como variables de entorno efímeras del proceso.
+# Encrypted credentials (systemd-creds), decrypted into $CREDENTIALS_DIRECTORY.
+# run-gateway.sh exports them as ephemeral process environment variables.
 LoadCredentialEncrypted=model_gateway_api_key:/etc/model-gateway/creds/model_gateway_api_key.cred
 LoadCredentialEncrypted=opencode_api_key:/etc/model-gateway/creds/opencode_api_key.cred
 LoadCredentialEncrypted=ai_gateway_api_key:/etc/model-gateway/creds/ai_gateway_api_key.cred

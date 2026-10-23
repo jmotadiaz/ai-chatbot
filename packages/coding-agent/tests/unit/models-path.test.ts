@@ -5,9 +5,9 @@ import { resolveCodingAgentDir, getCodingAgentDir, PACKAGE_ROOT } from "../../sr
 import { createTestWorkerContext } from "../helpers/test-context";
 
 /**
- * Resolución del models.json por DI (ADR 0011 §6): el override explícito gana,
- * vacío = sin definir, los relativos se anclan al paquete y el default es el
- * models.json del Entorno de Test. Ninguna de estas rutas sale de `process.env`.
+ * models.json resolution through DI (ADR 0011 §6): the explicit override wins,
+ * empty = unset, relative paths anchor to the package and the default is the
+ * Test Environment's models.json. None of these paths comes from `process.env`.
  */
 describe("resolveModelsJsonPath", () => {
   it("honours an explicit modelsJsonPath override", () => {
@@ -16,14 +16,14 @@ describe("resolveModelsJsonPath", () => {
     );
   });
 
-  it("defaults to the models.json of the active Entorno (test)", () => {
-    // Entorno de Test (bundle `env.test.ts` enlazado por vitest.config.ts):
-    // `.pi-test/models.json` dentro del paquete.
+  it("defaults to the models.json of the active Environment (test)", () => {
+    // Test Environment (bundle `env.test.ts` bound by vitest.config.ts):
+    // `.pi-test/models.json` inside the package.
     expect(getModelsJsonPath()).toBe(path.join(PACKAGE_ROOT, ".pi-test", "models.json"));
     expect(getModelsJsonPath()).toBe(resolveModelsJsonPath({}));
   });
 
-  it("treats an empty override as unset (falls back to the Entorno default)", () => {
+  it("treats an empty override as unset (falls back to the Environment default)", () => {
     // Playwright's web server forwards unset variables as empty strings.
     expect(resolveModelsJsonPath({ modelsJsonPath: "" })).toBe(getModelsJsonPath());
     expect(resolveModelsJsonPath({ modelsJsonPath: "" })).toMatch(/models\.json$/);
@@ -47,12 +47,12 @@ describe("resolveModelsJsonPath", () => {
     const ctx = createTestWorkerContext();
     try {
       expect(resolveModelsJsonPath(ctx.workerConfig)).toBe(ctx.modelsJsonPath);
-      // Sin modelsJsonPath explícito, cae al agentDir inyectado.
+      // Without an explicit modelsJsonPath, it falls back to the injected agentDir.
       expect(resolveModelsJsonPath({ agentDir: ctx.agentDir })).toBe(
         path.join(ctx.agentDir, "models.json"),
       );
       expect(resolveCodingAgentDir(ctx.workerConfig)).toBe(ctx.agentDir);
-      expect(getCodingAgentDir()).not.toBe(ctx.agentDir); // el default del Entorno no se muta
+      expect(getCodingAgentDir()).not.toBe(ctx.agentDir); // the Environment default is not mutated
     } finally {
       ctx.cleanup();
     }

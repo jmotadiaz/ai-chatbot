@@ -3,14 +3,14 @@ import { defineConfig } from "vitest/config";
 import { initConfig } from "../config/src/config";
 
 /**
- * Los tests del Coding Agent Worker corren SIEMPRE en el Entorno de Test
- * (ADR 0011): la inicialización es explícita al cargar este fichero, nunca una
- * variable de entorno heredada del worker padre.
+ * The Coding Agent Worker tests ALWAYS run in the Test Environment
+ * (ADR 0011): initialization is explicit when this file loads, never an
+ * environment variable inherited from the parent worker.
  *
- * El alias `"config"` enlaza el paquete al bundle estático `env.test.ts` (que
- * re-exporta la superficie isomorfa completa del paquete además de la fachada
- * soldada al Entorno), el mismo módulo que el bundler de Next.js soldaría en
- * un build de test: un test no puede observar secretos ni rutas de dev/prod.
+ * The `"config"` alias binds the package to the static bundle `env.test.ts`
+ * (which re-exports the package's full isomorphic surface plus the facade
+ * wired to the Environment), the same module the Next.js bundler would wire in
+ * a test build: a test cannot observe secrets or dev/prod paths.
  */
 initConfig("test");
 

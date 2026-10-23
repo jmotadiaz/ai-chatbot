@@ -44,8 +44,8 @@ import {
 } from "@/lib/features/foundation-model/config";
 import { TEST_MODELS } from "@/tests/mocks/gateway/catalog";
 
-// La página resuelve el modelo contra el catálogo del Gateway; la fixture
-// del Mock Model Gateway hace el papel de catálogo aquí.
+// The page resolves the model against the Gateway catalog; the Mock Model
+// Gateway fixture plays the role of catalog here.
 vi.mock("@/lib/infrastructure/ai/catalog", () => ({
   fetchPublicModelCatalog: async () => TEST_MODELS,
 }));

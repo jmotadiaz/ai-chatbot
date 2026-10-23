@@ -23,10 +23,10 @@ beforeEach(() => {
 });
 
 /**
- * Hardening del parseo (ticket 10, incidente 2026-09-02): un POST con body
- * vacío/malformado a /rpc tiraba el proceso entero (JSON.parse fuera de
- * try/catch → unhandledRejection). El contrato ahora es: NUNCA lanzar por el
- * body; responder JSON-RPC error. 3015 está expuesto en la LAN sin auth.
+ * Parsing hardening (ticket 10, 2026-09-02 incident): a POST with an
+ * empty/malformed body to /rpc took down the whole process (JSON.parse outside
+ * try/catch → unhandledRejection). The contract is now: NEVER throw over the
+ * body; answer a JSON-RPC error. 3015 is exposed on the LAN without auth.
  */
 async function expectJsonRpcError(body: string, code: number) {
   const res = await handleRpc(body);
@@ -39,20 +39,20 @@ async function expectJsonRpcError(body: string, code: number) {
   expect(json.error?.code).toBe(code);
 }
 
-describe("handleRpc parseo defensivo del body", () => {
-  it("body vacío → -32700 Parse error, sin tumbar el proceso", async () => {
+describe("handleRpc defensive body parsing", () => {
+  it("empty body → -32700 Parse error, without taking down the process", async () => {
     await expectJsonRpcError("", -32700);
   });
 
-  it("body no-JSON → -32700", async () => {
+  it("non-JSON body → -32700", async () => {
     await expectJsonRpcError("not-json{", -32700);
   });
 
-  it("JSON que no es objeto (null) → -32700", async () => {
+  it("JSON that is not an object (null) → -32700", async () => {
     await expectJsonRpcError("null", -32700);
   });
 
-  it("objeto válido sin method → -32601 Method not found (regresión del default)", async () => {
+  it("valid object without method → -32601 Method not found (default regression)", async () => {
     await expectJsonRpcError('{"id":1}', -32601);
   });
 });

@@ -27,7 +27,7 @@ describe("ReasoningControl", () => {
     expect(trigger).toBeTruthy();
 
     fireEvent.click(trigger);
-    // El popup se abre vía startTransition: findByRole espera el flush.
+    // The popup opens via startTransition: findByRole waits for the flush.
     fireEvent.click(await screen.findByRole("menuitem", { name: /xhigh/ }));
 
     expect(onSelect).toHaveBeenCalledWith("xhigh");
@@ -52,7 +52,7 @@ describe("ReasoningControl", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Reasoning effort: high/ }));
-    // El popup se abre vía startTransition: findByRole espera el flush.
+    // The popup opens via startTransition: findByRole waits for the flush.
     fireEvent.click(await screen.findByRole("menuitem", { name: /off/ }));
 
     expect(onSubmitSpy).not.toHaveBeenCalled();

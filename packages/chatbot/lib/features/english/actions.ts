@@ -7,7 +7,7 @@ import { speechModel } from "@/lib/infrastructure/ai/inference-kit";
 export async function generateSpeech(text: string) {
   await warmModelCatalog();
   const result = await aiGenerateSpeech({
-    // Contrato único del Gateway: `tts-default` (`POST /v1/audio/speech`).
+    // Single Gateway contract: `tts-default` (`POST /v1/audio/speech`).
     model: speechModel(),
     speed: 0.9,
     voice: "alloy",

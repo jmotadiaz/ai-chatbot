@@ -245,7 +245,7 @@ async function postQueue(
 
 /**
  * Queueable plain text for a mid-turn send. Attachments never travel with
- * queue operations (texto plano v1): null tells the caller to surface a
+ * queue operations (plain text v1): null tells the caller to surface a
  * visible error instead of enqueueing something the worker would reject
  * late with a cryptic error. Skill/prompt commands stay in the text here
  * and are rejected worker-side with a precise message.

@@ -1,17 +1,16 @@
 /**
- * Contrato compartido del catálogo del Model Gateway (ADR 0010): tipos PUROS
- * e isomorfos, sin leer variables de entorno ni importar nada de Node — se
- * consumen desde código de servidor (`inference-kit`, worker del
- * coding-agent), desde el cliente (`<ModelCatalogProvider>`) y desde los
- * tests (Mock Model Gateway).
+ * Shared contract of the Model Gateway catalog (ADR 0010): PURE and isomorphic
+ * types, reading no environment variables and importing nothing from Node — they
+ * are consumed from server code (`inference-kit`, coding-agent worker), from the
+ * client (`<ModelCatalogProvider>`) and from the tests (Mock Model Gateway).
  *
- * Es la única copia del lado TypeScript; el lado Python vive en
- * `packages/model-gateway/catalog.py`. El schema está documentado y
- * versionado en `packages/model-gateway/CONTRACT.md` (espejo de la spec
+ * It is the only copy on the TypeScript side; the Python side lives in
+ * `packages/model-gateway/catalog.py`. The schema is documented and
+ * versioned in `packages/model-gateway/CONTRACT.md` (mirror of spec
  * §2.2).
  */
 
-/** Niveles de razonamiento; el catálogo declara el subconjunto soportado. */
+/** Reasoning levels; the catalog declares the supported subset. */
 export type ThinkingLevel =
   | "off"
   | "minimal"
@@ -32,14 +31,14 @@ export const GATEWAY_THINKING_LEVELS: readonly ThinkingLevel[] = [
 ];
 
 /**
- * Dimensiones de salida del contrato `embedding-default` (spec §2.4: Gemini
- * Embedding 001 recortado a 768). Única fuente del valor: lo consumen el
- * `inference-kit` del chatbot (`POST /v1/embeddings` con `dimensions`) y el
- * Mock Model Gateway (vectores deterministas de test).
+ * Output dimensions of the `embedding-default` contract (spec §2.4: Gemini
+ * Embedding 001 truncated to 768). Single source of the value: consumed by the
+ * chatbot `inference-kit` (`POST /v1/embeddings` with `dimensions`) and by the
+ * Mock Model Gateway (deterministic test vectors).
  */
 export const EMBEDDING_DIMENSIONS = 768;
 
-/** Price per million tokens (USD), en las unidades del catálogo original. */
+/** Price per million tokens (USD), in the units of the original catalog. */
 export interface GatewayModelCost {
   input: number;
   output: number;
@@ -47,12 +46,12 @@ export interface GatewayModelCost {
   cacheWrite: number;
 }
 
-/** Entrada de `GET /v1/models/catalog` — ver `packages/model-gateway/CONTRACT.md`. */
+/** Entry of `GET /v1/models/catalog` — see `packages/model-gateway/CONTRACT.md`. */
 export interface GatewayModelEntry {
   id: string;
   company: string;
   isDefault: boolean;
-  /** null en entradas sparse (contratos de embedding/rerank/tts sin ventana). */
+  /** null in sparse entries (embedding/rerank/tts contracts without a window). */
   contextWindow: number | null;
   maxTokens: number | null;
   cost: GatewayModelCost;

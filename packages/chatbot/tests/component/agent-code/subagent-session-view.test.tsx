@@ -41,7 +41,7 @@ describe("SubagentSessionView", () => {
     render(
       <SubagentSessionView project="proj" parentSessionId="p" subSessionId="c" />,
     );
-    const back = screen.getByRole("link", { name: /sesión principal/i });
+    const back = screen.getByRole("link", { name: /main session/i });
     expect(back.getAttribute("href")).toBe("/agent/code/proj/p");
     expect(screen.queryByRole("textbox")).toBeNull();
   });

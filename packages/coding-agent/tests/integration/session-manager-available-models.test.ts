@@ -76,8 +76,8 @@ beforeEach(() => {
   );
   resetModelRuntimeForTests();
   resetGatewayCatalogForTests();
-  // DI por parámetro (ADR 0011 §6): sandbox temporal + credenciales del test,
-  // sin process.env. La suite jamás toca los runtime dirs de prod/dev.
+  // DI through parameters (ADR 0011 §6): temporary sandbox + test credentials,
+  // no process.env. The suite never touches the prod/dev runtime dirs.
   ctx = createTestWorkerContext({ gatewayUrl: GATEWAY_URL, apiKey: GATEWAY_KEY });
   gateway = {
     gatewayUrl: GATEWAY_URL,
@@ -122,8 +122,8 @@ describe("getAvailableModels", () => {
   });
 
   it("fails fast when the API key is unset instead of starting with an empty catalog", async () => {
-    // DI explícita `apiKey: ""` = sin credencial: valida antes de escribir o
-    // arrancar con un catálogo vacío, sin variables de entorno.
+    // Explicit DI `apiKey: ""` = no credential: it validates before writing or
+    // starting with an empty catalog, without environment variables.
     resetModelRuntimeForTests();
     await expect(
       getAvailableModels({ ...gateway, apiKey: "" }),

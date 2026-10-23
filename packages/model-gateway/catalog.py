@@ -1,16 +1,16 @@
-"""Lógica pura del Model Catalog (importable sin litellm/fastapi).
+"""Pure logic of the Model Catalog (importable without litellm/fastapi).
 
-Transforma el `model_list` de `config.yaml` en el esquema normalizado que
-publica `GET /v1/models/catalog` (ver `CONTRACT.md` en este paquete, que
-espeja `.scratch/model-gateway/spec.md` §2.2). Este módulo NO importa
-fastapi ni litellm: `server.py` hace las imports pesadas dentro de su fábrica
-de app para que los tests puedan ejecutarse solo con pyyaml/pytest.
+It turns the `model_list` of `config.yaml` into the normalized schema that
+`GET /v1/models/catalog` publishes (see `CONTRACT.md` in this package, which
+mirrors `.scratch/model-gateway/spec.md` §2.2). This module does NOT import
+fastapi nor litellm: `server.py` does the heavy imports inside its app factory
+so the tests can run with just pyyaml/pytest.
 
-Claves de coste en `model_info` (nativas de LiteLLM, POR TOKEN):
+Cost keys in `model_info` (native to LiteLLM, PER TOKEN):
   input_cost_per_token, output_cost_per_token,
   cache_read_input_token_cost, cache_creation_input_token_cost.
-El JSON del catálogo las re-expresa POR MILLÓN (unidades del catálogo original
-de `packages/models`), bajo `cost.{input,output,cacheRead,cacheWrite}`.
+The catalog JSON re-expresses them PER MILLION (units of the original catalog
+in `packages/models`), under `cost.{input,output,cacheRead,cacheWrite}`.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import yaml
 PACKAGE_ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = PACKAGE_ROOT / "config.yaml"
 
-# Esquema exacto de cada GatewayModelEntry (orden fijo, tipos cerrados).
+# Exact schema of each GatewayModelEntry (fixed order, closed types).
 _ENTRY_KEYS = (
     "id",
     "company",
@@ -45,7 +45,7 @@ _ENTRY_KEYS = (
 
 _COST_KEYS = ("input", "output", "cacheRead", "cacheWrite")
 
-# model_info (por token) -> cost JSON (por millón).
+# model_info (per token) -> cost JSON (per million).
 _COST_INFO_TO_PER_MILLION = {
     "input": "input_cost_per_token",
     "output": "output_cost_per_token",
@@ -55,11 +55,11 @@ _COST_INFO_TO_PER_MILLION = {
 
 
 def load_config(path: str | Path = CONFIG_PATH) -> dict[str, Any]:
-    """Lee el config.yaml del Gateway (fuente de verdad stateless)."""
+    """Reads the Gateway config.yaml (the stateless source of truth)."""
     with open(path, "r", encoding="utf-8") as fh:
         config = yaml.safe_load(fh)
     if not isinstance(config, dict) or not isinstance(config.get("model_list"), list):
-        raise ValueError(f"{path}: se esperaba un mapping con 'model_list'")
+        raise ValueError(f"{path}: expected a mapping with 'model_list'")
     return config
 
 
@@ -71,7 +71,7 @@ def _cost_per_million(info: dict[str, Any]) -> dict[str, float]:
 
 
 def build_entry(model: dict[str, Any]) -> dict[str, Any]:
-    """Normaliza una entrada de `model_list` a un GatewayModelEntry."""
+    """Normalizes an entry of `model_list` into a GatewayModelEntry."""
     name = model["model_name"]
     info: dict[str, Any] = model.get("model_info") or {}
     entry = {
@@ -92,7 +92,7 @@ def build_entry(model: dict[str, Any]) -> dict[str, Any]:
         "topK": info.get("default_top_k"),
     }
     if set(entry) != set(_ENTRY_KEYS):
-        raise AssertionError(f"{name}: esquema de entry inesperado")
+        raise AssertionError(f"{name}: unexpected entry schema")
     return entry
 
 
@@ -100,35 +100,35 @@ def build_catalog(
     config: dict[str, Any],
     include_internal: bool = False,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Construye la respuesta del endpoint del catálogo.
+    """Builds the response of the catalog endpoint.
 
-    Filtra en servidor: solo `model_info.user_invocable == true` salvo
-    `include_internal=True` (inspección de los contratos `*-default`).
-    Nunca expone `litellm_params` ni `model_info` crudo.
+    It filters on the server: only `model_info.user_invocable == true` unless
+    `include_internal=True` (inspection of the `*-default` contracts).
+    It never exposes `litellm_params` nor raw `model_info`.
     """
     models = [
         build_entry(model)
         for model in config["model_list"]
         if include_internal or (model.get("model_info") or {}).get("user_invocable") is True
     ]
-    # Orden determinista del catálogo: la entrada `is_default` primero, el
-    # resto alfabético (case-insensitive). El orden de `model_list` en el YAML
-    # es irrelevante: todos los consumidores (Model Picker, coding-agent)
-    # heredan este orden tal cual.
+    # Deterministic catalog order: the `is_default` entry first, the rest
+    # alphabetical (case-insensitive). The order of `model_list` in the YAML
+    # is irrelevant: all consumers (Model Picker, coding-agent) inherit this
+    # order as is.
     models.sort(key=lambda e: (not e["isDefault"], e["id"].casefold()))
     return {"models": models}
 
 
 def authorize(header: str | None, expected_api_key: str | None) -> bool:
-    """Valida `Authorization: Bearer <MODEL_GATEWAY_API_KEY>`.
+    """Validates `Authorization: Bearer <MODEL_GATEWAY_API_KEY>`.
 
-    Comparación en tiempo constante; False si falta la cabecera, el esquema no
-    es Bearer, la clave esperada no está configurada o no coincide.
+    Constant-time comparison; False if the header is missing, the scheme is not
+    Bearer, the expected key is not configured or it does not match.
     """
     if not header or not expected_api_key:
         return False
     scheme, _, token = header.partition(" ")
-    # El esquema es case-insensitive (RFC 7235).
+    # The scheme is case-insensitive (RFC 7235).
     if scheme.lower() != "bearer" or not token:
         return False
     return hmac.compare_digest(token, expected_api_key)
@@ -142,16 +142,16 @@ def prepare_opencode_deployment_kwargs(
     kwargs: dict[str, Any],
     session_id: str,
 ) -> dict[str, Any]:
-    """Adapta una llamada de LiteLLM para los upstreams de OpenCode Go.
+    """Adapts a LiteLLM call for the OpenCode Go upstreams.
 
-    - OpenCode Go exige `x-opencode-session` (estable por proceso para routing y
-      prompt caching, https://opencode.ai/docs/go/#where-can-i-use-it) y un
-      `user-agent` propio en lugar del genérico del SDK.
-    - Los modelos OpenAI-compatible de OpenCode Go no soportan `store` ni el rol
-      `developer`.
-    - `deepseek-v4.1-flash` expone el nivel `xhigh` en el catálogo pero su
-      upstream espera `reasoning_effort: "max"`, y exige `reasoning_content` en
-      todos los mensajes `assistant` del historial (p. ej. tras tool calls).
+    - OpenCode Go requires `x-opencode-session` (stable per process for routing and
+      prompt caching, https://opencode.ai/docs/go/#where-can-i-use-it) and its own
+      `user-agent` instead of the SDK's generic one.
+    - The OpenAI-compatible models of OpenCode Go do not support `store` nor the
+      `developer` role.
+    - `deepseek-v4.1-flash` exposes the `xhigh` level in the catalog but its
+      upstream expects `reasoning_effort: "max"`, and it requires `reasoning_content` in
+      every `assistant` message of the history (e.g. after tool calls).
     """
     api_base = str(kwargs.get("api_base") or "")
     if OPENCODE_HOST not in api_base:
@@ -168,8 +168,8 @@ def prepare_opencode_deployment_kwargs(
         extra_headers["user-agent"] = OPENCODE_USER_AGENT
     kwargs["extra_headers"] = extra_headers
 
-    # Los endpoints OpenAI-compatible de OpenCode Go tienen supportsStore=false
-    # y maxTokensField="max_tokens".
+    # The OpenAI-compatible endpoints of OpenCode Go have supportsStore=false
+    # and maxTokensField="max_tokens".
     kwargs.pop("store", None)
     if "max_completion_tokens" in kwargs:
         max_comp = kwargs.pop("max_completion_tokens")

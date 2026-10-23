@@ -5,36 +5,36 @@ import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 
 export interface UseCodingAgentSessionThinkingLevelArgs {
   sessionId: string;
-  /** Modelo seleccionado en el picker; null mientras se resuelve. */
+  /** Model selected in the picker; null while it is being resolved. */
   modelId: string | null;
-  /** Default del catálogo para el modelo seleccionado (lo sirve la página). */
+  /** Catalog default for the selected model (served by the page). */
   defaultLevel: ThinkingLevel | undefined;
   /**
-   * Lo que el render de servidor averiguó sobre el nivel de la sesión.
-   * `null` = no se pudo preguntar, así que el GET sigue haciendo falta.
-   * `{ level: null }` = sí se preguntó y la sesión nunca ha corrido, que es
-   * justo el caso en el que hay que quedarse con el default del catálogo.
+   * What the server render found out about the session's level.
+   * `null` = it could not be asked, so the GET is still needed.
+   * `{ level: null }` = it was asked and the session has never run, which is
+   * exactly the case where the catalog default has to be kept.
    */
   initialThinking?: { level: ThinkingLevel | null } | null;
 }
 
 export interface UseCodingAgentSessionThinkingLevelResult {
-  /** Nivel que se aplicará en el próximo turno; null hasta que hay modelo. */
+  /** Level that will apply on the next turn; null until there is a model. */
   level: ThinkingLevel | null;
   setLevel: (level: ThinkingLevel) => void;
 }
 
 /**
- * El nivel de razonamiento es perezoso, igual que el modelo: solo importa
- * cuando corre un turno, así que vive en el cliente y viaja con el prompt.
- * Esto es lo que permite ajustarlo en una sesión nueva, antes del primer
- * mensaje, cuando el worker todavía no tiene sesión que consultar.
+ * The reasoning level is lazy, just like the model: it only matters when a
+ * turn runs, so it lives on the client and travels with the prompt. This is
+ * what makes it adjustable in a new session, before the first message, while
+ * the worker has no session to consult yet.
  *
- * De dónde sale el valor que se muestra, por orden:
- *  1. El nivel real de la sesión si el servidor ya lo resolvió (inmediato).
- *  2. El default del catálogo para el modelo seleccionado (inmediato).
- *  3. El nivel real de la sesión, si ya existe en el worker (GET, una vez).
- *  4. Lo que elija el usuario.
+ * Where the displayed value comes from, in order:
+ *  1. The session's real level if the server already resolved it (immediate).
+ *  2. The catalog default for the selected model (immediate).
+ *  3. The session's real level, if it already exists in the worker (GET, once).
+ *  4. Whatever the user picks.
  */
 export function useCodingAgentSessionThinkingLevel({
   sessionId,
@@ -46,19 +46,19 @@ export function useCodingAgentSessionThinkingLevel({
     initialThinking?.level ?? null,
   );
 
-  // Un nivel que ya viene resuelto del servidor no debe perderse cuando el
-  // modelo se resuelve por primera vez: ese primer paso por el efecto de
-  // abajo escribiría el default del catálogo encima. Se consume una sola vez,
-  // así que un cambio de modelo posterior sí resetea al default, como siempre.
+  // A level already resolved by the server must not be lost when the model is
+  // resolved for the first time: that first pass through the effect below
+  // would overwrite it with the catalog default. It is consumed only once, so a
+  // later model change does reset to the default, as always.
   const pendingSeedRef = useRef(initialThinking?.level != null);
 
-  // Cualquier cosa que fije el nivel después de que arranque el GET inicial
-  // (elegir modelo, elegir nivel) invalida su respuesta: el GET describe la
-  // sesión tal como estaba, y para entonces ya no es lo que el usuario ve.
+  // Anything that sets the level after the initial GET starts (choosing a
+  // model, choosing a level) invalidates its answer: the GET describes the
+  // session as it was, and by then that is no longer what the user sees.
   const seedTokenRef = useRef(0);
   const previousModelIdRef = useRef<string | null>(null);
-  // Una respuesta del servidor (aunque sea "esta sesión nunca ha corrido")
-  // hace innecesario el GET para esta sesión.
+  // A server answer (even "this session has never run") makes the GET
+  // unnecessary for this session.
   const fetchedSessionRef = useRef<string | null>(
     initialThinking ? sessionId : null,
   );
@@ -72,9 +72,9 @@ export function useCodingAgentSessionThinkingLevel({
       pendingSeedRef.current = false;
       return;
     }
-    // Cambio de modelo: el nivel de la sesión es del modelo anterior, así que
-    // se descarta y se muestra el default del nuevo (que es justo lo que el
-    // worker aplicará al enviar).
+    // Model change: the session's level belongs to the previous model, so it is
+    // discarded and the new model's default is shown (which is exactly what the
+    // worker will apply when sending).
     if (previousModelId !== null) seedTokenRef.current += 1;
     setLevelState(defaultLevel ?? null);
   }, [modelId, defaultLevel]);
@@ -94,13 +94,13 @@ export function useCodingAgentSessionThinkingLevel({
         const data = (await response.json()) as {
           thinking: { level: ThinkingLevel } | null;
         };
-        // Sesión sin material en el worker (aún sin mensajes): se queda el
-        // default del catálogo.
+        // Session with no material in the worker (no messages yet): the catalog
+        // default is kept.
         if (data.thinking && token === seedTokenRef.current) {
           setLevelState(data.thinking.level);
         }
       } catch {
-        // Worker caído o red: se queda el default del catálogo.
+        // Worker down or network failure: the catalog default is kept.
       }
     })();
   }, [sessionId, modelId]);

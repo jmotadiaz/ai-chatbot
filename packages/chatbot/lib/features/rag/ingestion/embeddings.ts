@@ -6,7 +6,7 @@ interface EmbeddingInput {
   content: string;
 }
 
-// Nuevo output explícito
+// Explicit new output
 interface EmbeddingOutput {
   chunkId: string;
   embedding: number[];
@@ -15,7 +15,7 @@ interface EmbeddingOutput {
 export async function generateEmbeddings(
   inputs: EmbeddingInput[],
 ): Promise<EmbeddingOutput[]> {
-  const BATCH_SIZE = 99; // Límite común de APIs
+  const BATCH_SIZE = 99; // Common API limit
   if (inputs.length === 0) {
     return [];
   }
@@ -23,23 +23,23 @@ export async function generateEmbeddings(
 
   const results: EmbeddingOutput[] = [];
 
-  // Procesamos en lotes
+  // We process in batches
   for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
     const batch = inputs.slice(i, i + BATCH_SIZE);
 
-    // Rate Limiter: Passa el array de contenidos directamente
-    // (internamente concatena para tokens y usa length para requests)
+    // Rate Limiter: Pass the content array directly
+    // (internally it concatenates for tokens and uses length for requests)
     const batchContents = batch.map((item) => item.content);
 
-    // Solo enviamos el texto al modelo
+    // We only send the text to the model
     const embeddings = await embeddingRateLimiter.execute(batchContents, () =>
       inferenceKit.embed(batchContents, {
         taskType: "RETRIEVAL_DOCUMENT",
       }),
     );
 
-    // Mapeamos de vuelta usando la posición en el lote (garantizada por la API de AI SDK)
-    // pero vinculando explícitamente al ID del input original.
+    // We map back using the position in the batch (guaranteed by the AI SDK API)
+    // but explicitly linking to the original input ID.
     const batchResults = batch.map((item, index) => ({
       chunkId: item.chunkId,
       embedding: embeddings[index],

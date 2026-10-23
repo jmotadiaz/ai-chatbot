@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Guarda del árbol sucio para el despliegue del Model Gateway.
+# Dirty-tree guard for the Model Gateway deployment.
 #
-# Se SOURCEA (no se ejecuta): define `dirty_guard_confirm`.
+# It is SOURCED (not executed): it defines `dirty_guard_confirm`.
 #
 # `dirty_guard_confirm <pkg_dir> <pkg_rel> <allow_dirty>`
-#   - Árbol limpio            → no dice nada, devuelve 0.
-#   - Árbol sucio + allow_dirty=1 → no dice NADA (ni aviso ni pregunta) y
-#     devuelve 0: el operador ya ha declarado la intención de desplegar así.
-#   - Árbol sucio + allow_dirty=0 → avisa (lista los cambios), pregunta
-#     «¿Desplegar de todos modos? [y/N]» y devuelve 0 solo si el operador
-#     responde y/yes/s/si. Cualquier otra respuesta (incluido EOF o una
-#     entrada vacía) devuelve 1 → el despliegue se cancela.
+#   - Clean tree              → says nothing, returns 0.
+#   - Dirty tree + allow_dirty=1 → says NOTHING (no warning, no question) and
+#     returns 0: the operator has already declared the intention to deploy like that.
+#   - Dirty tree + allow_dirty=0 → warns (lists the changes), asks
+#     "Deploy anyway? [y/N]" and returns 0 only if the operator
+#     answers y/yes/s/si. Any other answer (including EOF or an
+#     empty input) returns 1 → the deployment is cancelled.
 #
-# Deja en `DIRTY_GUARD_DIRTY` ("yes"/"no") si el árbol está sucio: lo usa el
-# sello `DEPLOYED` para dejar constancia de qué se desplegó.
+# It leaves `DIRTY_GUARD_DIRTY` ("yes"/"no") if the tree is dirty: the
+# `DEPLOYED` stamp uses it to record what was deployed.
 
 dirty_guard_confirm() {
   local pkg_dir="$1"
@@ -22,24 +22,24 @@ dirty_guard_confirm() {
 
   DIRTY_GUARD_DIRTY="no"
 
-  # ¿Hay cambios sin commitear en el paquete?
+  # Are there uncommitted changes in the package?
   if [[ -z "$(git -C "$pkg_dir" status --porcelain -- . 2>/dev/null)" ]]; then
     return 0
   fi
 
   DIRTY_GUARD_DIRTY="yes"
 
-  # Sin preguntas ni aviso si el operador ya lo ha pedido explícitamente
-  # (pero el sello `DEPLOYED` sigue dejando constancia: dirty=yes).
+  # No questions and no warning if the operator already asked for it
+  # explicitly (but the `DEPLOYED` stamp still records it: dirty=yes).
   if [[ "$allow_dirty" == "1" ]]; then
     return 0
   fi
 
-  printf 'aviso: hay cambios sin commitear en %s:\n' "$pkg_rel" >&2
+  printf 'warning: there are uncommitted changes in %s:\n' "$pkg_rel" >&2
   git -C "$pkg_dir" status --short -- . >&2 || true
 
   local answer=""
-  printf '¿Desplegar de todos modos? (quedará estampado dirty=yes) [y/N] ' >&2
+  printf 'Deploy anyway? (it will be stamped dirty=yes) [y/N] ' >&2
   read -r answer || answer=""
 
   case "${answer,,}" in

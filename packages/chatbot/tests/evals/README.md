@@ -1,143 +1,148 @@
 # Eval Suite
 
-Test suite para evaluar la calidad del chatbot usando [Evalite](https://evalite.dev).
+Test suite to evaluate the chatbot's quality using [Evalite](https://evalite.dev).
 
-## Uso
+## Usage
 
-El runner levanta el entorno completo: DB de test, migraciones, `next dev` y evalite. Todo en un solo comando.
+The runner brings up the whole environment: test DB, migrations, `next dev` and evalite. All in a single command.
 
 ```bash
-# Ejecutar todos los evals
+# Run all evals
 pnpm eval
 
-# Ejecutar un caso específico
+# Run a specific case
 pnpm eval -c compaction
 
-# Flags adicionales
-pnpm eval -c compaction --port 3001          # cambiar puerto
-pnpm eval -c compaction --keep-db            # no parar la DB al terminar
-pnpm eval -c compaction --no-db              # asumir DB ya levantada
-pnpm eval -c compaction --no-migrate         # saltar migrate
-pnpm eval -c compaction --no-server          # asumir next dev ya levantado
+# Extra flags
+pnpm eval -c compaction --port 3001          # change the port
+pnpm eval -c compaction --keep-db            # do not stop the DB at the end
+pnpm eval -c compaction --no-db              # assume the DB is already up
+pnpm eval -c compaction --no-migrate         # skip migrate
+pnpm eval -c compaction --no-server          # assume next dev is already up
 ```
 
-## ¿Qué hace el runner?
+## What does the runner do?
 
-1. Exige `--env=dev|test|prod` en `process.argv` (ADR 0011): no hay `.env.*` ni
-   selector por variable de entorno. El Entorno viaja por argv a cada hijo.
-2. Exporta solo el harness de evals: `EVAL_BASE_URL=http://localhost:<port>`
-   (la configuración de la app la aporta el bundle tipado de `packages/config`).
-3. Levanta la DB de test (`docker compose -f docker-compose.test.yml up --wait`).
-4. Migra la DB. No siembra datos: cada caso de eval crea su propio usuario con `createTestUser()`.
-5. Arranca `next dev --turbo -p <port>` (con prefijo `[next]` en logs) — o reutiliza uno ya corriendo en ese puerto.
-6. Espera al HTTP `:200/3xx/4xx` (timeout 120s).
-7. Arranca `npx evalite run <case>` con prefijo `[evalite]`.
-8. Cleanup: mata los children, baja la DB (salvo `--keep-db`), libera el lockfile `tests/evals/.runner.lock`.
+1. It requires `--env=dev|test|prod` in `process.argv` (ADR 0011): there is no
+   `.env.*` and no environment-variable selector. The Environment travels by argv
+   to every child.
+2. It exports only the eval harness: `EVAL_BASE_URL=http://localhost:<port>`
+   (the app configuration is provided by the typed bundle of `packages/config`).
+3. It brings up the test DB (`docker compose -f docker-compose.test.yml up --wait`).
+4. It migrates the DB. It seeds no data: each eval case creates its own user with
+   `createTestUser()`.
+5. It starts `next dev --turbo -p <port>` (with a `[next]` prefix in the logs) — or
+   reuses one already running on that port.
+6. It waits for HTTP `:200/3xx/4xx` (120s timeout).
+7. It starts `npx evalite run <case>` with an `[evalite]` prefix.
+8. Cleanup: it kills the children, stops the DB (unless `--keep-db`), releases the
+   `tests/evals/.runner.lock` lockfile.
 
-## Casos disponibles
+## Available cases
 
 ### `compaction`
 
-Evalúa la calidad de la compactación de conversaciones:
+Evaluates the quality of conversation compaction:
 
-- **Compaction Occurred** (determinista): Verifica que la compactación se ejecutó y cumple un ratio de compresión mínimo de 10x
-- **Fact Recall** (LLM Judge): Inyecta 3 hechos ficticios en la conversación, dispara la compactación, y verifica con Deepseek v4.1 Flash que el modelo recuerda los hechos tras la compactación
+- **Compaction Occurred** (deterministic): Checks that compaction ran and meets a minimum compression ratio of 10x
+- **Fact Recall** (LLM Judge): Injects 3 fictitious facts into the conversation, triggers compaction, and verifies with Deepseek v4.1 Flash that the model remembers the facts after compaction
 
 ### `mode-routing`
 
-Mide el **router** del Chat Mode `auto`, no un turno completo de chat: llama a
-`resolveChatMode()` con el adapter real de Jev 1.13 (Decisions API de OpenRouter vía
-`@openrouter/sdk`) sobre un dataset etiquetado de 39 mensajes ES/EN
-(`tests/evals/scenarios/mode-routing-dataset.ts`). No toca `/api/chat`, ni la DB, ni ningún
-modelo de chat: una llamada al clasificador por mensaje (~$0.00002 cada una, **~$0.0008 el run
-completo**), ~5 s de evalite.
+Measures the Chat Mode `auto` **router**, not a full chat turn: it calls
+`resolveChatMode()` with the real Jev 1.13 adapter (OpenRouter Decisions API via
+`@openrouter/sdk`) over a labeled dataset of 39 ES/EN messages
+(`tests/evals/scenarios/mode-routing-dataset.ts`). It does not touch `/api/chat`, the DB,
+or any chat model: one classifier call per message (~$0.00002 each, **~$0.0008 the full
+run**), ~5 s of evalite.
 
 ```bash
-# Comando canónico (levanta next dev + DB de test aunque el caso no los use)
+# Canonical command (brings up next dev + test DB even if the case does not use them)
 pnpm eval -c mode-routing
 
-# Iteración barata: el caso no necesita servidor ni DB
+# Cheap iteration: the case needs neither server nor DB
 pnpm eval -c mode-routing --no-server --no-db --no-migrate
 ```
 
 Scorers:
 
-- **Global accuracy**: % de mensajes resueltos al modo que etiqueta el dataset.
-- **Per-class accuracy**: ctx7 / web / neither por separado (puntuado como su media sin
-  ponderar).
-- **Confusion matrix**: etiqueta esperada × modo resuelto; se puntúa como la accuracy global
-  para no distorsionar la media.
-- **Confidence of correct calls**: distribución de la confianza cruda de Jev en los aciertos
-  que el gate dejó pasar a una tool; incluye `thresholdSweep` (accuracy que habría con cada
-  umbral) y `flatOptimum` (banda de umbrales con la mejor accuracy). El `output` de cada
-  resultado guarda el `raw` (respuesta del clasificador antes del gate) y el `resolved`
-  (`{ mode, reason, confidence, probabilities, modelId, provider, latencyMs }`).
+- **Global accuracy**: % of messages resolved to the mode the dataset labels.
+- **Per-class accuracy**: ctx7 / web / neither separately (scored as their unweighted
+  mean).
+- **Confusion matrix**: expected label × resolved mode; it is scored as the global
+  accuracy so it does not distort the mean.
+- **Confidence of correct calls**: distribution of Jev's raw confidence on the hits the
+  gate let through to a tool; it includes `thresholdSweep` (accuracy that each threshold
+  would give) and `flatOptimum` (band of thresholds with the best accuracy). Each
+  result's `output` keeps the `raw` (classifier answer before the gate) and the
+  `resolved` (`{ mode, reason, confidence, probabilities, modelId, provider, latencyMs }`).
 
-Dataset (42: ctx7 13 / web 15 / neither 14): documentación de librería, framework, SDK, CLI o
-API de lenguaje (→ ctx7); actualidad, precios, releases, disponibilidad, fuentes para
-contrastar, contenido de una URL, comparativas del mundo real y documentos normativos u
-officiales cuya vigencia/edición hay que verificar en la fuente emisora (→ web); charla,
-preguntas repo-locales y transformaciones de texto (→ neither). Incluye follow-ups pronominales
-**con** contexto (heredan el referente del turno anterior) y **sin** contexto (etiquetados
-`neither`: el referente es irresoluble, no se justifica pagar una tool).
+Dataset (42: ctx7 13 / web 15 / neither 14): library, framework, SDK, CLI or language API
+documentation (→ ctx7); current affairs, prices, releases, availability, sources to
+cross-check, content of a URL, real-world comparisons and official or normative documents
+whose validity/edition must be verified at the issuing source (→ web); chit-chat,
+repo-local questions and text transformations (→ neither). It includes pronominal
+follow-ups **with** context (they inherit the previous turn's referent) and **without**
+context (labeled `neither`: the referent is unresolvable, so paying for a tool is not
+justified).
 
-Criterios vigentes (v2) y umbral están documentados en la cabecera de
-`tests/evals/cases/mode-routing.eval.ts`; la fuente de verdad son
-`lib/features/chat/mode-routing/questions.ts` (`CHAT_MODE_ROUTING_QUESTION_VERSION`) y
-`CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` en `mode-routing/constants.ts`. **Cualquier cambio de
-criterios o de umbral se decide con los números de este eval** (y actualiza los tests de 03/04
-en el mismo commit). Baseline v1 (39 entradas, 3 runs): 38/39 (97.4%), matriz diagonal salvo
-un `ctx7 → neutral/low_confidence`; la accuracy barrida es 97.4% en toda la banda 0–0.75 y solo
-cae por encima de 0.75 (un run llegó al 100% solo en 0.5 y el otro no lo replicó), así que
-bajar el gate no mejora de forma reproducible: umbral final **0.7**. Con los criterios v2
-(documentos oficiales/normativos y su vigencia añadidos a `web`, 42 entradas, 1 run): 41/42
-(97.6%), ctx7 12/13, web 15/15, neither 14/14, mismo único fallo de ctx7. La varianza de ±0.05
-en la `confidence` de Jev es real, así que las decisiones de umbral se toman sobre varios runs,
-no sobre uno.
+Current criteria (v2) and threshold are documented in the header of
+`tests/evals/cases/mode-routing.eval.ts`; the source of truth is
+`lib/features/chat/mode-routing/questions.ts` (`CHAT_MODE_ROUTING_QUESTION_VERSION`) and
+`CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` in `mode-routing/constants.ts`. **Any change of
+criteria or threshold is decided with this eval's numbers** (and updates the 03/04 tests
+in the same commit). Baseline v1 (39 entries, 3 runs): 38/39 (97.4%), diagonal matrix
+except for one `ctx7 → neutral/low_confidence`; the swept accuracy is 97.4% across the
+whole 0–0.75 band and only drops above 0.75 (one run reached 100% only at 0.5 and the
+other did not replicate it), so lowering the gate does not improve reproducibly: final
+threshold **0.7**. With the v2 criteria (official/normative documents and their validity
+added to `web`, 42 entries, 1 run): 41/42 (97.6%), ctx7 12/13, web 15/15, neither 14/14,
+the same single ctx7 failure. The ±0.05 variance in Jev's `confidence` is real, so
+threshold decisions are made over several runs, not over one.
 
-## Estructura
+## Structure
 
 ```
-evalite.config.ts                # Configuración global (raíz del proyecto)
-scripts/eval-runner.ts           # Runner del entorno (DB, next dev, evalite)
-lib/infrastructure/env.ts        # Helpers isTestMode/isEvalMode/resolveEnvFile
-packages/tracing/                # Middleware de tracing (wrap LanguageModelV3)
+evalite.config.ts                # Global configuration (project root)
+scripts/eval-runner.ts           # Environment runner (DB, next dev, evalite)
+lib/infrastructure/env.ts        # isTestMode/isEvalMode/resolveEnvFile helpers
+packages/tracing/                # Tracing middleware (wrap LanguageModelV3)
 tests/evals/
 ├── lib/
-│   ├── auth.ts                  # Gestión de usuarios de test
-│   ├── chatbot-client.ts        # Cliente HTTP para el chatbot
-│   ├── simulator.ts             # Simulador de conversación
-│   ├── compaction-detector.ts   # Detector de eventos de compactación
+│   ├── auth.ts                  # Test user management
+│   ├── chatbot-client.ts        # HTTP client for the chatbot
+│   ├── simulator.ts             # Conversation simulator
+│   ├── compaction-detector.ts   # Compaction event detector
 │   └── scorers/
 │       ├── compaction-occurred.ts
 │       ├── fact-recall.ts
-│       └── mode-routing.ts      # Reporte y scorers del router (accuracy, confusión, umbral)
+│       └── mode-routing.ts      # Router report and scorers (accuracy, confusion, threshold)
 ├── cases/
 │   ├── compaction.eval.ts
-│   └── mode-routing.eval.ts     # Eval del router auto ↔ Jev (no necesita next dev)
+│   └── mode-routing.eval.ts     # Eval of the auto ↔ Jev router (it does not need next dev)
 └── scenarios/
     ├── compaction-recall.txt
-    └── mode-routing-dataset.ts  # Dataset etiquetado ES/EN (39 mensajes)
+    └── mode-routing-dataset.ts  # Labeled ES/EN dataset (39 messages)
 ```
 
-## Requisitos
+## Requirements
 
-- Credenciales LLM accesibles vía **Model Gateway** (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY`, incluida la URL del Mock `:4001` en test) y Docker para levantar la DB de test.
-- Sin necesidad de tener la app corriendo — el runner la levanta.
+- LLM credentials reachable via the **Model Gateway** (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY`, including the Mock URL `:4001` in test) and Docker to bring up the test DB.
+- No need to have the app running — the runner brings it up.
 
-## Trazas
+## Traces
 
-El sistema escribe dos artefactos por run:
+The system writes two artifacts per run:
 
-1. **Trazas del eval** (`tests/evals/traces/<evalName>-<timestamp>.json`): Eventos de alto nivel (`simulator`, `chatbot`, `judge`) escritos manualmente por el caso de eval. Incluye el `traceRunId` para correlacionar con las trazas internas.
+1. **Eval traces** (`tests/evals/traces/<evalName>-<timestamp>.json`): High-level events (`simulator`, `chatbot`, `judge`) written manually by the eval case. It includes the `traceRunId` to correlate with the internal traces.
 
-2. **Trazas internas del modelo** (`tests/evals/traces/chatbot/<timestamp>_<runId>/`): Eventos progresivos (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) escritos por el middleware de tracing sobre cada llamada `streamText`/`generateText` en la app. Se activa con `TRACE_ENABLED=1` (forzado por el runner).
+2. **Model internal traces** (`tests/evals/traces/chatbot/<timestamp>_<runId>/`): Progressive events (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) written by the tracing middleware on every `streamText`/`generateText` call in the app. It is enabled with `TRACE_ENABLED=1` (forced by the runner).
 
-El route handler `/api/chat` propaga `X-Trace-Run-Id` y `X-Trace-Request-Id` en la response, y el `chatbot-client.ts` del eval los lee y los guarda en el `metadata` de la traza del chatbot, permitiendo cruzar ambos archivos.
+The `/api/chat` route handler propagates `X-Trace-Run-Id` and `X-Trace-Request-Id` in the response, and the eval's `chatbot-client.ts` reads them and stores them in the chatbot trace `metadata`, making it possible to cross both files.
 
-### Formato de eventos (NDJSON)
+### Event format (NDJSON)
 
-Cada línea es un `TraceEvent` JSON. Ejemplo:
+Each line is a JSON `TraceEvent`. Example:
 
 ```json
 {"ts":"2026-06-02T10:00:00.000Z","runId":"<uuid>","requestId":"<uuid>","stepIndex":0,"mode":"stream","chatId":"<id>","userId":"<id>","agent":"context7","modelKey":"Deepseek v4.1 Flash","phase":"start","payload":{"prompt":[{...}],"model":{"provider":"opencode-zen-go","modelId":"deepseek-v4.1-flash"},"settings":{...}}}
@@ -145,55 +150,55 @@ Cada línea es un `TraceEvent` JSON. Ejemplo:
 {"ts":"2026-06-02T10:00:00.456Z","runId":"<uuid>","requestId":"<uuid>","stepIndex":0,"mode":"stream","chatId":"<id>","phase":"finish","payload":{"finishReason":{"unified":"stop"},"usage":{"inputTokens":100,"outputTokens":50},"duration_ms":456}}
 ```
 
-## Analizar resultados
+## Analyzing results
 
-### Usando el skill de análisis
+### Using the analysis skill
 
-Pide al agente:
-> "Analiza la última ejecución del eval de compaction"
+Ask the agent:
+> "Analyze the last run of the compaction eval"
 
-El agente usará el skill `eval-analyzer` para:
-- Inspeccionar scores y metadata
-- Revisar traces de AI SDK
-- Diagnosticar problemas
-- Proporcionar recomendaciones
+The agent will use the `eval-analyzer` skill to:
+- Inspect scores and metadata
+- Review AI SDK traces
+- Diagnose problems
+- Provide recommendations
 
-### Inspección manual
+### Manual inspection
 
 ```bash
-# Ver resumen compacto de última ejecución
+# View a compact summary of the last run
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts compact
 
-# Ver conversación completa
+# View the full conversation
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts conversation
 
-# Ver evaluaciones del judge
+# View the judge evaluations
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts judge
 
-# Ver última ejecución completa (JSON)
+# View the last full run (JSON)
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts last
 
-# Ver resumen de últimas 10 ejecuciones
+# View a summary of the last 10 runs
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts summary
 
-# Ver trazas del modelo (NDJSON)
+# View the model traces (NDJSON)
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts model
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts model <runId>
 
-# Reconstruir conversación desde la perspectiva del modelo
+# Rebuild the conversation from the model's perspective
 npx tsx .agents/skills/eval-analyzer/references/inspect-evals.ts model-conversation <runId>
 ```
 
-### UI de Evalite
+### Evalite UI
 
 ```bash
 npx evalite
 ```
 
-Abre `http://localhost:3006` para ver resultados en una interfaz web.
+Open `http://localhost:3006` to see the results in a web interface.
 
-## Añadir nuevos casos
+## Adding new cases
 
-1. Crear `tests/evals/cases/[case-name].eval.ts`
-2. Usar `evalite()` con `data`, `task`, y `scorers`
-3. Ejecutar con `pnpm eval -c [case-name]`
+1. Create `tests/evals/cases/[case-name].eval.ts`
+2. Use `evalite()` with `data`, `task`, and `scorers`
+3. Run it with `pnpm eval -c [case-name]`

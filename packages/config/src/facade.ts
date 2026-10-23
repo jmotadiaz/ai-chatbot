@@ -1,15 +1,15 @@
 import { packagePath } from "./paths";
-import type { AppConfig, Entorno } from "./types";
+import type { AppConfig, Environment } from "./types";
 
 /**
- * Flags de compilación (ADR 0006) compartidos por el selector `config.ts` y
- * por los bundles `env.<env>.ts`.
+ * Build flags (ADR 0006) shared by the `config.ts` selector and by the
+ * `env.<env>.ts` bundles.
  *
- * `--verify` y `--allow-prod-build` no eligen Entorno: ajustan los artefactos
- * que escribe la compilación. Viven en estado de módulo para que el bundle
- * estático al que el bundler de Next.js redirige `"config"` (que no puede
- * re-ejecutar `initConfig`) los vea: `scripts/next-cli.ts` llama a
- * `initConfig()` en el MISMO proceso que evalúa `next.config.ts`.
+ * `--verify` and `--allow-prod-build` do not choose an Environment: they adjust
+ * the artifacts the build writes. They live in module state so that the static
+ * bundle to which the Next.js bundler redirects `"config"` (which cannot
+ * re-run `initConfig`) sees them: `scripts/next-cli.ts` calls `initConfig()` in
+ * the SAME process that evaluates `next.config.ts`.
  */
 export interface BuildFlags {
   readonly verifyBuild: boolean;
@@ -29,24 +29,24 @@ export function getBuildFlags(): BuildFlags {
   return flags;
 }
 
-/** Test hook: vuelve a los flags por defecto. */
+/** Test hook: restores the default flags. */
 export function resetBuildFlagsForTests(): void {
   flags = { verifyBuild: false, allowProdBuild: false };
 }
 
 /**
- * Fachada funcional congelada sobre un bundle del Entorno (ADR 0011).
+ * Frozen functional facade over an Environment bundle (ADR 0011).
  *
- * Mantiene la API histórica (`config.postgresUrl()`, `config.codingAgentAuthJson()`,
- * …) para que los ~50 puntos de llamada del monorepo no cambien. Cada método
- * resuelve el bundle en la llamada: en `env.<env>.ts` es un valor fijo; en el
- * selector `config.ts` es el Entorno activo.
+ * It keeps the historical API (`config.postgresUrl()`, `config.codingAgentAuthJson()`,
+ * …) so the ~50 call sites in the monorepo do not change. Each method resolves
+ * the bundle at call time: in `env.<env>.ts` it is a fixed value; in the
+ * `config.ts` selector it is the active Environment.
  */
 export function createConfigFacade(resolveBundle: () => AppConfig) {
   const value = <K extends keyof AppConfig>(key: K): AppConfig[K] => resolveBundle()[key];
 
   return Object.freeze({
-    entorno: (): Entorno => value("entorno"),
+    environment: (): Environment => value("environment"),
 
     // --- chatbot ---
     port: (): number => value("port"),
@@ -64,8 +64,8 @@ export function createConfigFacade(resolveBundle: () => AppConfig) {
     codingAgentWorkerPort: (): number => value("codingAgentWorkerPort"),
     codingAgentAuthJson: (): string => value("codingAgentAuthJson"),
     codingAgentModelsJson: (): string => {
-      // `build:verify` escribe en `.pi-verify/` para no pisar el models.json
-      // que usa prod bajo pm2 (ADR 0006).
+      // `build:verify` writes to `.pi-verify/` so it does not overwrite the
+      // models.json that prod uses under pm2 (ADR 0006).
       if (getBuildFlags().verifyBuild) {
         return packagePath("coding-agent", ".pi-verify/models.json");
       }
@@ -93,7 +93,7 @@ export function createConfigFacade(resolveBundle: () => AppConfig) {
     traceDir: (): string => value("traceDir"),
     traceRunId: (): string | undefined => value("traceRunId"),
 
-    // --- compilación (ADR 0006) ---
+    // --- build (ADR 0006) ---
     nextBuildDir: (): string =>
       getBuildFlags().verifyBuild ? ".next/verify" : value("nextBuildDir"),
     verifyBuild: (): boolean => getBuildFlags().verifyBuild,
@@ -103,7 +103,7 @@ export function createConfigFacade(resolveBundle: () => AppConfig) {
 
 export type ConfigFacade = ReturnType<typeof createConfigFacade>;
 
-/** Convierte un acceso throwing en `undefined` (compatibilidad histórica). */
+/** Converts a throwing accessor into `undefined` (historical compatibility). */
 export function optional<T>(get: () => T): T | undefined {
   try {
     return get();

@@ -1,9 +1,9 @@
 import { ensureMockGateway, MOCK_GATEWAY_PORT } from "./server";
 
 /**
- * Entry CLI del Mock Model Gateway: `pnpm --filter chatbot exec tsx tests/mocks/gateway/main.ts`
- * (o `tsx ... -- --port 4001`). Para los tests y el e2e global setup, usar
- * `ensureMockGateway()`/`stopMockGateway()` directamente.
+ * CLI entry of the Mock Model Gateway: `pnpm --filter chatbot exec tsx tests/mocks/gateway/main.ts`
+ * (or `tsx ... -- --port 4001`). For the tests and the e2e global setup, use
+ * `ensureMockGateway()`/`stopMockGateway()` directly.
  */
 const portArg = process.argv.indexOf("--port");
 const port = portArg >= 0 ? Number(process.argv[portArg + 1]) : MOCK_GATEWAY_PORT;

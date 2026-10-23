@@ -40,7 +40,7 @@ describe("SkillsControl tabs", () => {
     });
     fireEvent.click(screen.getByLabelText("Select skills"));
 
-    // El popup se abre vía startTransition: findByRole espera el flush.
+    // The popup opens via startTransition: findByRole waits for the flush.
     const skillsTab = await screen.findByRole("tab", { name: "Skills" });
     const promptsTab = screen.getByRole("tab", { name: "Prompts" });
 
@@ -61,13 +61,13 @@ describe("SkillsControl filter", () => {
     await openPopup();
     const input = screen.getByTestId(FILTER_TESTID);
 
-    // Vacío: todos visibles.
+    // Empty: everything visible.
     expect(screen.getByRole("button", { name: /code-review/ })).toBeDefined();
     expect(screen.getByRole("button", { name: /pdf-reader/ })).toBeDefined();
     expect(screen.getByRole("button", { name: /deploy/ })).toBeDefined();
 
-    // Match solo por name: "review" está en la description de pdf-reader
-    // pero no en su name, así que solo queda code-review.
+    // Match by name only: "review" is in pdf-reader's description but not in
+    // its name, so only code-review remains.
     fireEvent.change(input, { target: { value: "PDF" } });
     expect(screen.queryByRole("button", { name: /code-review/ })).toBeNull();
     expect(screen.getByRole("button", { name: /pdf-reader/ })).toBeDefined();
@@ -85,7 +85,7 @@ describe("SkillsControl filter", () => {
 
     fireEvent.change(input, { target: { value: "zzz" } });
     expect(await screen.findByText('No results for "zzz".')).toBeDefined();
-    // La X limpia sin cerrar el popup.
+    // The X clears without closing the popup.
     fireEvent.click(screen.getByLabelText("Clear filter"));
     expect(input.value).toBe("");
     expect(screen.getByRole("button", { name: /code-review/ })).toBeDefined();
@@ -99,7 +99,7 @@ describe("SkillsControl filter", () => {
     fireEvent.change(input, { target: { value: "pdf" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(props.onToggle).toHaveBeenCalledWith("pdf-reader");
-    // Sigue abierto: el input y la tab persisten.
+    // It stays open: the input and the tab persist.
     expect(screen.getByTestId(FILTER_TESTID)).toBeDefined();
   });
 
@@ -121,8 +121,8 @@ describe("SkillsControl filter", () => {
     fireEvent.change(skillsInput, { target: { value: "pdf" } });
     expect(screen.queryByRole("button", { name: /deploy/ })).toBeNull();
 
-    // Cambiar de tab no desmonta el input: mismo nodo, misma query, el
-    // teclado virtual no se cierra y reabre.
+    // Switching tabs does not unmount the input: same node, same query, and
+    // the virtual keyboard does not close and reopen.
     fireEvent.click(screen.getByRole("tab", { name: "Prompts" }));
     const promptsInput = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
     expect(promptsInput).toBe(skillsInput);
@@ -131,7 +131,7 @@ describe("SkillsControl filter", () => {
     expect(screen.getByRole("button", { name: /pdf-export/ })).toBeDefined();
     expect(screen.queryByRole("button", { name: /summary/ })).toBeNull();
 
-    // Volver a Skills: la query sigue ahí.
+    // Back to Skills: the query is still there.
     fireEvent.click(screen.getByRole("tab", { name: "Skills" }));
     const backInput = screen.getByTestId(FILTER_TESTID) as HTMLInputElement;
     expect(backInput).toBe(skillsInput);
@@ -147,8 +147,8 @@ describe("SkillsControl filter", () => {
     input.focus();
     expect(document.activeElement).toBe(input);
 
-    // Sin retención, el tap movería el foco al botón de la tab y el
-    // teclado virtual se cerraría.
+    // Without retention, the tap would move focus to the tab button and the
+    // virtual keyboard would close.
     fireEvent.click(screen.getByRole("tab", { name: "Prompts" }));
     expect(document.activeElement).toBe(screen.getByTestId(FILTER_TESTID));
   });

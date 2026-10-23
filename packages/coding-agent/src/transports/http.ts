@@ -49,7 +49,7 @@ export interface HttpTransportOptions {
   host?: string;
   /**
    * Worker config override (ADR 0011 §6). The transport is the composition
-   * root: it resolves the config once — defaults from the active Entorno
+   * root: it resolves the config once — defaults from the active Environment
    * bundle via `defaultWorkerRuntimeConfig()` — registers it process-wide for
    * the session-manager facade and the Pi extensions, and hands it to the
    * artifacts route. Tests inject their sandbox here.
@@ -222,11 +222,12 @@ async function writeFetchResponseToNode(
 
 export async function handleRpc(requestBody: string): Promise<Response> {
   const log = getTraceLogger("worker");
-  // Parseo defensivo (ticket 10): un body malformado no puede tumbar el
-  // proceso. Antes JSON.parse corría fuera de try/catch y la destructuración
-  // no validaba el tipo: un POST vacío (o `null`) lanzaba un unhandledRejection
-  // que mataba al worker — y con él a la app pm2 completa, que escucha en la
-  // LAN sin auth. Contrato: siempre Response JSON-RPC, nunca throw por el body.
+  // Defensive parsing (ticket 10): a malformed body must not take down the
+  // process. JSON.parse used to run outside try/catch and destructuring did
+  // not validate the type: an empty POST (or `null`) raised an
+  // unhandledRejection that killed the worker — and with it the whole pm2
+  // app, which listens on the LAN without auth. Contract: always a JSON-RPC
+  // Response, never a throw over the body.
   let parsed: unknown;
   try {
     parsed = JSON.parse(requestBody);

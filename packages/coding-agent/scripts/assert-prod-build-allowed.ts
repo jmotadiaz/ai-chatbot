@@ -2,17 +2,18 @@
 import { config, parseBuildFlagsFromArgv, setBuildFlags } from "config";
 
 /**
- * Gate de `build:prod` del worker (ticket 07; mismo contrato que el gate del
- * chatbot). `build:prod` escribe el `dist/` de prod y regenera
- * `.pi-prod/models.json` (insumo del próximo arranque), así que exige el
- * opt-in explícito del operador/CI. La verificación del agente usa
- * `build:verify` (dist/verify + .pi-verify, aislado), que no lo requiere.
+ * `build:prod` gate of the worker (ticket 07; same contract as the chatbot's
+ * gate). `build:prod` writes prod's `dist/` and regenerates
+ * `.pi-prod/models.json` (input for the next startup), so it requires the
+ * operator/CI's explicit opt-in. The agent's verification uses `build:verify`
+ * (dist/verify + .pi-verify, isolated), which does not need it.
  *
- * Opt-in según ADR 0011: flag `--allow-prod-build` en `process.argv` (lo que
- * el selector `config.ts` parsea en `initConfig`). El gate no necesita ningún
- * Entorno, así que fija solo los flags de compilación en vez de inicializar un
- * bundle. Se acepta además `ALLOW_PROD_BUILD=1` en el proceso mientras los
- * `package.json` vigentes (ticket 04) sigan aportando ese opt-in por shell.
+ * Opt-in per ADR 0011: the `--allow-prod-build` flag in `process.argv` (what
+ * the `config.ts` selector parses in `initConfig`). The gate needs no
+ * Environment, so it sets only the build flags instead of initializing a
+ * bundle. `ALLOW_PROD_BUILD=1` in the process is accepted too, as long as the
+ * current `package.json` scripts (ticket 04) keep providing that opt-in from
+ * the shell.
  */
 setBuildFlags(parseBuildFlagsFromArgv());
 
@@ -22,11 +23,12 @@ const allowProdBuild =
 if (!allowProdBuild) {
   console.error(
     [
-      "build del worker está bloqueado: escribe dist/ y .pi-prod/models.json de Producción.",
-      "Si eres el operador/CI: reejecuta con `--allow-prod-build` en argv (o ALLOW_PROD_BUILD=1,",
-      "que es lo que hoy aporta `pnpm preview`).",
-      "Si eres el agente verificando compilación: usa `pnpm --filter coding-agent build:verify`",
-      "(escribe a dist/verify + .pi-verify/models.json, aislado). Está prohibido build — ver AGENTS.md.",
+      "the worker build is blocked: it writes prod's dist/ and .pi-prod/models.json.",
+      "If you are the operator/CI: re-run with `--allow-prod-build` in argv (or",
+      "ALLOW_PROD_BUILD=1, which is what `pnpm preview` provides today).",
+      "If you are the agent verifying compilation: use `pnpm --filter coding-agent build:verify`",
+      "(writes to dist/verify + .pi-verify/models.json, isolated).",
+      "build is forbidden — see AGENTS.md.",
     ].join("\n"),
   );
   process.exit(1);

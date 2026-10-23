@@ -10,7 +10,7 @@ function basename(path: string): string {
 export interface CommentChipProps {
   comment: PendingComment;
   onRemove: () => void;
-  /** Bloqueo mid-turn (ticket 03): los comentarios no viajan en la cola. */
+  /** Mid-turn lock (ticket 03): comments do not travel in the queue. */
   disabled?: boolean;
 }
 

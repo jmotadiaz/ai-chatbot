@@ -7,7 +7,7 @@ import type { WorkerRuntimeConfig } from "./runtime-config";
 /**
  * Pi `models.json` location (the single `model-gateway` provider written by
  * `syncGatewayModelsFile`). DI precedence: explicit override → process-wide
- * worker config → Entorno bundle → `<agent dir>/models.json`.
+ * worker config → Environment bundle → `<agent dir>/models.json`.
  */
 export function resolveModelsJsonPath(
   cfg?: Pick<WorkerRuntimeConfig, "modelsJsonPath" | "agentDir">,
@@ -15,8 +15,8 @@ export function resolveModelsJsonPath(
   const ambient = getWorkerRuntimeConfig();
   const agentDir = pickOverride(cfg?.agentDir, ambient.agentDir);
   // An injected agent dir implies its models.json: a partial DI override must
-  // never fall back to the Entorno path (a test sandbox would leak writes into
-  // the package). The Entorno bundle only answers when neither path nor dir
+  // never fall back to the Environment path (a test sandbox would leak writes into
+  // the package). The Environment bundle only answers when neither path nor dir
   // was injected.
   const derived = agentDir ? path.join(resolveCodingAgentDir(cfg), "models.json") : undefined;
   return resolveOverride(
@@ -35,7 +35,7 @@ export function getModelsJsonPath(): string {
 }
 
 /**
- * Per-Entorno auth.json (ADR 0002 v2). Relative overrides anchor to the
+ * Per-Environment auth.json (ADR 0002 v2). Relative overrides anchor to the
  * package; the fallback is the worker-owned agent dir, never the global
  * `~/.pi/agent/auth.json`, so environments cannot leak credentials into each
  * other.

@@ -3,35 +3,35 @@ import { config, initConfig, resetConfigForTests } from "../../src/config";
 import {
   detectTestRunner,
   parseBuildFlagsFromArgv,
-  parseEntornoFromArgv,
+  parseEnvironmentFromArgv,
 } from "../../src/argv";
 import { optional } from "../../src/facade";
 import { ConfigError } from "../../src/errors";
 import { packagePath } from "../../src/paths";
 
 /**
- * Selección de Entorno por `process.argv` / `initConfig()` (ADR 0011 §3.5).
- * Sin `process.env`: solo argumentos del propio proceso.
+ * Environment selection via `process.argv` / `initConfig()` (ADR 0011 §3.5).
+ * No `process.env`: only the process's own arguments.
  */
 afterEach(() => {
   resetConfigForTests();
 });
 
-describe("parseEntornoFromArgv", () => {
-  it("acepta --env=<entorno> y --env <entorno>", () => {
-    expect(parseEntornoFromArgv(["node", "script.ts", "--env=dev"])).toBe("dev");
-    expect(parseEntornoFromArgv(["node", "script.ts", "--env", "test"])).toBe("test");
-    expect(parseEntornoFromArgv(["node", "script.ts"])).toBeUndefined();
+describe("parseEnvironmentFromArgv", () => {
+  it("accepts --env=<environment> and --env <environment>", () => {
+    expect(parseEnvironmentFromArgv(["node", "script.ts", "--env=dev"])).toBe("dev");
+    expect(parseEnvironmentFromArgv(["node", "script.ts", "--env", "test"])).toBe("test");
+    expect(parseEnvironmentFromArgv(["node", "script.ts"])).toBeUndefined();
   });
 
-  it("falla rápido con un valor desconocido (nunca cae al default)", () => {
-    expect(() => parseEntornoFromArgv(["node", "x", "--env=staging"])).toThrow(ConfigError);
-    expect(() => parseEntornoFromArgv(["node", "x", "--env=staging"])).toThrow(/staging/);
+  it("fails fast on an unknown value (never falls back to the default)", () => {
+    expect(() => parseEnvironmentFromArgv(["node", "x", "--env=staging"])).toThrow(ConfigError);
+    expect(() => parseEnvironmentFromArgv(["node", "x", "--env=staging"])).toThrow(/staging/);
   });
 });
 
 describe("parseBuildFlagsFromArgv", () => {
-  it("reconoce --verify y --allow-prod-build", () => {
+  it("recognizes --verify and --allow-prod-build", () => {
     expect(parseBuildFlagsFromArgv(["node", "x", "--verify"])).toEqual({
       verifyBuild: true,
       allowProdBuild: false,
@@ -44,7 +44,7 @@ describe("parseBuildFlagsFromArgv", () => {
 });
 
 describe("detectTestRunner", () => {
-  it("detecta vitest y playwright lanzados a mano", () => {
+  it("detects vitest and playwright launched by hand", () => {
     expect(detectTestRunner(["node", "/repo/node_modules/.bin/vitest", "run"])).toBe("test");
     expect(detectTestRunner(["node", "/repo/node_modules/@playwright/test/cli.js"])).toBe("test");
     expect(detectTestRunner(["node", "/repo/packages/chatbot/node_modules/.bin/playwright"])).toBe(
@@ -55,16 +55,16 @@ describe("detectTestRunner", () => {
 });
 
 describe("initConfig", () => {
-  it("fija el bundle activo y expone la API histórica", () => {
+  it("sets the active bundle and exposes the historical API", () => {
     initConfig("dev");
-    expect(config.entorno()).toBe("dev");
+    expect(config.environment()).toBe("dev");
     expect(config.port()).toBe(3000);
     expect(config.codingAgentWorkerPort()).toBe(3016);
     expect(config.codingAgentSessionsDir()).toContain(".pi-dev/sessions");
     expect(config.modelGatewayUrl()).toBe("http://127.0.0.1:4000");
   });
 
-  it("cambia de Entorno sin residuos", () => {
+  it("switches Environment without leftovers", () => {
     initConfig("prod");
     expect(config.port()).toBe(8085);
     initConfig("test");
@@ -72,7 +72,7 @@ describe("initConfig", () => {
     expect(config.modelGatewayUrl()).toBe("http://127.0.0.1:4001");
   });
 
-  it("aísla los artefactos de compilación con --verify", () => {
+  it("isolates the compilation artifacts with --verify", () => {
     initConfig("prod", { verifyBuild: true });
     expect(config.nextBuildDir()).toBe(".next/verify");
     expect(config.codingAgentModelsJson()).toBe(
@@ -82,7 +82,7 @@ describe("initConfig", () => {
     expect(config.allowProdBuild()).toBe(false);
   });
 
-  it("--allow-prod-build es un opt-in explícito", () => {
+  it("--allow-prod-build is an explicit opt-in", () => {
     initConfig("prod", { argv: ["node", "next-cli.ts", "--allow-prod-build"] });
     expect(config.allowProdBuild()).toBe(true);
     resetConfigForTests();
@@ -90,24 +90,24 @@ describe("initConfig", () => {
     expect(config.allowProdBuild()).toBe(false);
   });
 
-  it("rechaza Entornos desconocidos", () => {
-    // @ts-expect-error -- valor inválido a propósito
+  it("rejects unknown Environments", () => {
+    // @ts-expect-error -- invalid value on purpose
     expect(() => initConfig("staging")).toThrow(ConfigError);
   });
 
-  it("cae al argv del proceso cuando no hay initConfig", () => {
+  it("falls back to the process argv when there is no initConfig", () => {
     const original = process.argv;
     try {
       process.argv = ["node", "dist/transports/http.js", "--env=prod"];
       resetConfigForTests();
-      expect(config.entorno()).toBe("prod");
+      expect(config.environment()).toBe("prod");
       expect(config.port()).toBe(8085);
     } finally {
       process.argv = original;
     }
   });
 
-  it("falla rápido sin --env ni runner de test", () => {
+  it("fails fast without --env or a test runner", () => {
     const original = process.argv;
     try {
       process.argv = ["node", "dist/transports/http.js"];
@@ -119,12 +119,12 @@ describe("initConfig", () => {
     }
   });
 
-  it("detecta el runner de test desde argv del proceso", () => {
+  it("detects the test runner from the process argv", () => {
     const original = process.argv;
     try {
       process.argv = ["node", "/repo/node_modules/.bin/vitest", "run"];
       resetConfigForTests();
-      expect(config.entorno()).toBe("test");
+      expect(config.environment()).toBe("test");
       expect(config.port()).toBe(3001);
     } finally {
       process.argv = original;
@@ -133,7 +133,7 @@ describe("initConfig", () => {
 });
 
 describe("optional", () => {
-  it("convierte un acceso válido en su valor", () => {
+  it("converts a valid access into its value", () => {
     initConfig("test");
     expect(optional(() => config.postgresUrl())).toContain("5434/test");
   });

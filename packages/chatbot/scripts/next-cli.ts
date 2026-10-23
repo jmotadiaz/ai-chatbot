@@ -1,117 +1,117 @@
 #!/usr/bin/env tsx
 /**
- * Micro-launcher de Next.js (ADR 0011 §4.1, spec §4, ticket 03).
+ * Next.js micro-launcher (ADR 0011 §4.1, spec §4, ticket 03).
  *
- * Uso: `npx tsx scripts/next-cli.ts <dev|build|start> --env=dev|test|prod
+ * Usage: `npx tsx scripts/next-cli.ts <dev|build|start> --env=dev|test|prod
  *                  [--port=<n>] [--webpack] [--verify] [--allow-prod-build]`
  *
- * ## Por qué existe este launcher
+ * ## Why this launcher exists
  *
- * El binario CLI `next` (`next/dist/bin/next`) usa `commander` sin
- * `allowUnknownOption()`: rechaza `--env=...`. Además `next dev`
- * (`next/dist/cli/next-dev.js`) lanza el servidor mediante
- * `child_process.fork(startServerPath)` sin reenviar `process.argv` al hijo.
- * Como ADR 0011 prohíbe seleccionar el Entorno por `process.env` (el kernel lo
- * clona en cada `fork()`/`execve()` — el vector del incidente del 2026-10-22),
- * la única vía fiable es parsear `--env` aquí e `initConfig()` en ESTE mismo
- * proceso, que es el que además evalúa `next.config.ts` y fija el alias
- * `"config"` → `packages/config/src/env.<entorno>.ts` (soldadura estática del
- * Entorno en el bundle; los workers hijos de Next ni siquiera necesitan el
+ * The `next` CLI binary (`next/dist/bin/next`) uses `commander` without
+ * `allowUnknownOption()`: it rejects `--env=...`. On top of that, `next dev`
+ * (`next/dist/cli/next-dev.js`) starts the server through
+ * `child_process.fork(startServerPath)` without forwarding `process.argv` to the child.
+ * Since ADR 0011 forbids selecting the Environment through `process.env` (the kernel
+ * clones it on every `fork()`/`execve()` — the vector of the 2026-10-22 incident),
+ * the only reliable way is to parse `--env` here and `initConfig()` in THIS same
+ * process, which is also the one that evaluates `next.config.ts` and sets the alias
+ * `"config"` → `packages/config/src/env.<environment>.ts` (static welding of the
+ * Environment into the bundle; Next's child workers don't even need the
  * selector).
  *
- * ## Tradeoff documentado: APIs internas de Next.js (spec §4.1)
+ * ## Documented tradeoff: Next.js internal APIs (spec §4.1)
  *
- * Invocamos `startServer` (`next/dist/server/lib/start-server`) y `nextBuild`
- * (`next/dist/cli/next-build`), que NO están cubiertas por semver público:
- * son módulos internos de Next.js (el propio `next/dist/bin/next` los llama
- * así). Al actualizar versiones mayores de Next.js hay que re-verificar
- * ambos entrypoints — lo cubre el test de contrato
- * `tests/contract/next-internals.test.ts` (firma de `StartServerOptions` y
- * `NextBuildOptions` en los `.d.ts`), además de `build --verify`.
+ * We invoke `startServer` (`next/dist/server/lib/start-server`) and `nextBuild`
+ * (`next/dist/cli/next-build`), which are NOT covered by public semver:
+ * they are Next.js internal modules (`next/dist/bin/next` itself calls them
+ * that way). When upgrading Next.js major versions both entrypoints must be
+ * re-verified — covered by the contract test
+ * `tests/contract/next-internals.test.ts` (signature of `StartServerOptions` and
+ * `NextBuildOptions` in the `.d.ts` files), plus `build --verify`.
  *
- * Replicamos los defaults que aplica `next/dist/bin/next` para `build`
- * (inspeccionado en Next 16.1.1): `mangling: true`
- * (`--no-mangling` lo desactiva), `experimentalBuildMode: "default"` y
- * `experimentalDebugMemoryUsage: false`; el bundler se decide como en el CLI:
- * sin flags, `next` usa Turbopack por defecto (interno `TURBOPACK=auto`).
+ * We replicate the defaults `next/dist/bin/next` applies for `build`
+ * (inspected in Next 16.1.1): `mangling: true`
+ * (`--no-mangling` turns it off), `experimentalBuildMode: "default"` and
+ * `experimentalDebugMemoryUsage: false`; the bundler is decided as in the CLI:
+ * without flags, `next` uses Turbopack by default (internal `TURBOPACK=auto`).
  *
- * ## Bundler en dev: `process.env.TURBOPACK` es INTERNO de Next, no config
+ * ## Bundler in dev: `process.env.TURBOPACK` is INTERNAL to Next, not config
  *
- * El bundler de `dev` no es una opción de Entorno (ADR 0011): lo decide el
- * runtime interno de Next.js leyendo `process.env.TURBOPACK`
+ * The `dev` bundler is not an Environment option (ADR 0011): it is decided by
+ * Next.js's internal runtime reading `process.env.TURBOPACK`
  * (`next/dist/lib/bundler#parseBundlerArgs`, `next-dev-server.js`,
- * `start-server.js`). Por eso:
+ * `start-server.js`). Hence:
  *
- * - SIN `--webpack` dejamos el comportamiento actual de `next dev`
- *   (Turbopack): `process.env.TURBOPACK ||= "auto"` — exactamente lo que
- *   fija `next dev` sin flags por defecto (equivale al `TURBOPACK=1`
- *   histórico; `"auto"` es el valor que pone `parseBundlerArgs`).
- * - CON `--webpack` garantizamos que `process.env.TURBOPACK` queda falsy
- *   (`delete`) ANTES de `startServer`/`nextBuild`: si el shell arrastrara un
- *   `TURBOPACK` heredado, `parseBundlerArgs` abortaría con "Multiple bundler
- *   flags set" (o arrancaría Turbopack en vez de Webpack). El `webServer` de
- *   Playwright usa `--webpack` porque Turbopack puede atascarse compilando
- *   `/agent/code` bajo Node 24.
- * - Este es el ÚNICO uso de variables de entorno del launcher, y es
- *   deliberadamente ajeno a la configuración de la app: no selecciona
- *   Entorno, puertos ni secretos.
+ * - WITHOUT `--webpack` we leave the current `next dev` behaviour alone
+ *   (Turbopack): `process.env.TURBOPACK ||= "auto"` — exactly what
+ *   `next dev` sets by default without flags (equivalent to the historical
+ *   `TURBOPACK=1`; `"auto"` is the value `parseBundlerArgs` sets).
+ * - WITH `--webpack` we guarantee `process.env.TURBOPACK` is falsy
+ *   (`delete`) BEFORE `startServer`/`nextBuild`: if the shell carried an inherited
+ *   `TURBOPACK`, `parseBundlerArgs` would abort with "Multiple bundler
+ *   flags set" (or start Turbopack instead of Webpack). Playwright's `webServer`
+ *   uses `--webpack` because Turbopack can get stuck compiling
+ *   `/agent/code` under Node 24.
+ * - This is the launcher's ONLY use of environment variables, and it is
+ *   deliberately unrelated to the app's configuration: it selects neither
+ *   Environment, ports nor secrets.
  *
  * ## NODE_ENV
  *
- * `next/dist/bin/next` hace `NODE_ENV ||= "development"|"production"` por
- * comando. Aquí lo fijamos (no solo `||=`): el bloque `env` que Playwright
- * arrastraba para forzar `NODE_ENV=development` desaparece con este ticket, y
- * `next dev` con un `NODE_ENV=production` heredado del shell (contexto pm2)
- * revienta el pipeline CSS. Un build/start con `NODE_ENV` ajeno compilaría
- * además en modo equivocado — el Entorno ya está decidido por argv.
+ * `next/dist/bin/next` does `NODE_ENV ||= "development"|"production"` per
+ * command. Here we set it (not just `||=`): the `env` block Playwright
+ * carried to force `NODE_ENV=development` disappears with this ticket, and
+ * `next dev` with a `NODE_ENV=production` inherited from the shell (pm2 context)
+ * blows up the CSS pipeline. A build/start with a foreign `NODE_ENV` would
+ * also compile in the wrong mode — the Environment is already decided by argv.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { config, type Entorno } from "config";
-// `initConfig` vive en el selector, que importa los tres bundles: los scripts
-// no pasan por el alias del bundler, así que lo importamos por ruta relativa
-// para que este módulo siga funcionando aunque `"config"` apunte a
-// `env.<entorno>.ts` (p. ej. bajo el alias de vitest).
-import { parseEntornoFromArgv } from "../../config/src/argv";
+import { config, type Environment } from "config";
+// `initConfig` lives in the selector, which imports the three bundles: scripts
+// do not go through the bundler alias, so we import it by relative path
+// so this module keeps working even when `"config"` points at
+// `env.<environment>.ts` (e.g. under vitest's alias).
+import { parseEnvironmentFromArgv } from "../../config/src/argv";
 import { initConfig } from "../../config/src/config";
 
 export type NextCliCommand = "dev" | "build" | "start";
 
 export interface NextCliOptions {
   command: NextCliCommand;
-  env: Entorno;
-  /** `undefined` → `config.port()` del Entorno activo. */
+  env: Environment;
+  /** `undefined` → `config.port()` of the active Environment. */
   port?: number;
-  /** Fuerza Webpack (dev y build); sin él, Turbopack (default de Next 16). */
+  /** Forces Webpack (dev and build); without it, Turbopack (Next 16's default). */
   webpack: boolean;
   verifyBuild: boolean;
   allowProdBuild: boolean;
 }
 
 export const USAGE = [
-  "Uso: npx tsx scripts/next-cli.ts <dev|build|start> --env=<entorno> [opciones]",
+  "Usage: npx tsx scripts/next-cli.ts <dev|build|start> --env=<environment> [options]",
   "",
-  "Comandos:",
-  "  dev     Arranca el servidor de desarrollo (next dev equivalent)",
-  "  build   Compila el proyecto (exige --verify o --allow-prod-build)",
-  "  start   Sirve el build de producción (next start equivalent)",
+  "Commands:",
+  "  dev     Starts the development server (next dev equivalent)",
+  "  build   Compiles the project (requires --verify or --allow-prod-build)",
+  "  start   Serves the production build (next start equivalent)",
   "",
-  "Opciones:",
-  "  --env=dev|test|prod   Entorno activo (OBLIGATORIO; ADR 0011, por process.argv)",
-  "  --port=<n>            Puerto (default: config.port() del Entorno)",
-  "  --webpack             Usa Webpack en vez del Turbopack por defecto",
-  "  --verify              Build aislado en .next/verify (build:verify, sin gate)",
-  "  --allow-prod-build    Opt-in explícito del operador/CI para escribir .next (ADR 0006)",
-  "  --help, -h            Esta ayuda",
+  "Options:",
+  "  --env=dev|test|prod   Active Environment (MANDATORY; ADR 0011, via process.argv)",
+  "  --port=<n>            Port (default: config.port() of the Environment)",
+  "  --webpack             Uses Webpack instead of the default Turbopack",
+  "  --verify              Isolated build into .next/verify (build:verify, no gate)",
+  "  --allow-prod-build    Explicit operator/CI opt-in to write .next (ADR 0006)",
+  "  --help, -h            This help",
   "",
-  "Ejemplos:",
+  "Examples:",
   "  npx tsx scripts/next-cli.ts dev --env=dev --port=3000",
   "  npx tsx scripts/next-cli.ts dev --env=test --webpack --port=3001",
   "  npx tsx scripts/next-cli.ts build --env=prod --verify",
   "  npx tsx scripts/next-cli.ts start --env=prod --port=8085",
 ].join("\n");
 
-/** Error de sintaxis de argv: mensaje de un solo uso + USAGE por el caller. */
+/** argv syntax error: single-use message + USAGE by the caller. */
 export class CliUsageError extends Error {}
 
 const COMMANDS: readonly NextCliCommand[] = ["dev", "build", "start"];
@@ -119,21 +119,21 @@ const COMMANDS: readonly NextCliCommand[] = ["dev", "build", "start"];
 function parsePort(raw: string): number {
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 1 || value > 65535) {
-    throw new CliUsageError(`--port inválido: "${raw}" (entero 1-65535)`);
+    throw new CliUsageError(`invalid --port: "${raw}" (integer 1-65535)`);
   }
   return value;
 }
 
 /**
- * Parser PURO de los argumentos del launcher (sin efectos: no toca
- * `process.env`, ni `initConfig`, ni importa Next.js — por eso es unit-testable
- * sin cargar el servidor). `args` es `process.argv.slice(2)`.
+ * PURE parser of the launcher's arguments (no side effects: it touches neither
+ * `process.env` nor `initConfig` nor imports Next.js — that's why it is unit-testable
+ * without loading the server). `args` is `process.argv.slice(2)`.
  *
- * - El Entorno se resuelve con el parser canónico de `config`
- *   (`parseEntornoFromArgv`): `--env=x` o `--env x`, y un valor inválido
- *   lanza `ConfigError` (nunca cae a un Entorno por defecto).
- * - Sin `--env` → `CliUsageError` con la ayuda (ADR 0011: el launcher es el
- *   proceso que debe declarar su Entorno; no existe default silencioso).
+ * - The Environment is resolved with `config`'s canonical parser
+ *   (`parseEnvironmentFromArgv`): `--env=x` or `--env x`, and an invalid value
+ *   throws `ConfigError` (it never falls back to a default Environment).
+ * - Without `--env` → `CliUsageError` with the help (ADR 0011: the launcher is the
+ *   process that must declare its Environment; there is no silent default).
  */
 export function parseNextCliArgs(args: readonly string[]): NextCliOptions {
   const positionals: string[] = [];
@@ -161,39 +161,39 @@ export function parseNextCliArgs(args: readonly string[]): NextCliOptions {
     }
     if (arg === "--port") {
       const value = args[index + 1];
-      if (value === undefined) throw new CliUsageError("--port requiere un valor (--port=<n>)");
+      if (value === undefined) throw new CliUsageError("--port requires a value (--port=<n>)");
       port = parsePort(value);
-      index += 1; // el valor no es un positional
+      index += 1; // the value is not a positional
       continue;
     }
-    if (arg.startsWith("--env=")) continue; // lo resuelve config
+    if (arg.startsWith("--env=")) continue; // config resolves it
     if (arg === "--env") {
       if (args[index + 1] === undefined) {
-        throw new CliUsageError("--env requiere un valor (--env=dev|test|prod)");
+        throw new CliUsageError("--env requires a value (--env=dev|test|prod)");
       }
-      index += 1; // el valor lo valida parseEntornoFromArgv (ConfigError si es inválido)
+      index += 1; // the value is validated by parseEnvironmentFromArgv (ConfigError if invalid)
       continue;
     }
-    throw new CliUsageError(`argumento desconocido: ${arg}`);
+    throw new CliUsageError(`unknown argument: ${arg}`);
   }
 
   if (positionals.length === 0) {
-    throw new CliUsageError("falta el comando (dev|build|start)");
+    throw new CliUsageError("missing command (dev|build|start)");
   }
   if (positionals.length > 1) {
-    throw new CliUsageError(`comandos de más: ${positionals.join(" ")}`);
+    throw new CliUsageError(`too many commands: ${positionals.join(" ")}`);
   }
   const command = positionals[0];
   if (!(COMMANDS as readonly string[]).includes(command)) {
     throw new CliUsageError(
-      `comando inválido: "${command}" (esperado dev|build|start)`,
+      `invalid command: "${command}" (expected dev|build|start)`,
     );
   }
 
-  const env = parseEntornoFromArgv(args);
+  const env = parseEnvironmentFromArgv(args);
   if (!env) {
     throw new CliUsageError(
-      "falta --env=dev|test|prod (el Entorno se elige por process.argv, ADR 0011)",
+      "missing --env=dev|test|prod (the Environment is chosen via process.argv, ADR 0011)",
     );
   }
 
@@ -229,57 +229,57 @@ async function main(): Promise<void> {
   const allowProdBuild =
     options.allowProdBuild || process.env.ALLOW_PROD_BUILD === "1";
 
-  // ANTES de cualquier import de Next.js ni de `next.config.ts`: el alias del
-  // bundler y `distDir` se calculan con la fachada ya inicializada en este
-  // proceso (mismo patrón que `initConfig` en los `vitest.config.ts`).
+  // BEFORE any import of Next.js or `next.config.ts`: the bundler alias and
+  // `distDir` are computed with the facade already initialised in this
+  // process (same pattern as `initConfig` in the `vitest.config.ts` files).
   initConfig(options.env, {
     verifyBuild: options.verifyBuild,
     allowProdBuild,
   });
 
-  // Señal IPC a los workers de Next (ver comentario en `next.config.ts`):
-  // Next 16 re-evalúa el config en workers de jest-worker con estado de módulo
-  // nuevo; el flag `--verify` viaja por aquí para que TODOS los procesos
-  // acuerden `distDir` (`config.nextBuildDir()`). Siempre se fija (vacío si no
-  // aplica) para que un valor heredado del shell no contamine un build normal.
+  // IPC signal to Next's workers (see the comment in `next.config.ts`):
+  // Next 16 re-evaluates the config in jest-worker workers with fresh module
+  // state; the `--verify` flag travels through here so that ALL processes
+  // agree on `distDir` (`config.nextBuildDir()`). It is always set (empty when not
+  // applicable) so an inherited shell value cannot contaminate a normal build.
   (process.env as { NEXT_CLI_VERIFY?: string }).NEXT_CLI_VERIFY =
     options.verifyBuild ? "1" : "";
 
-  // Ver ADR 0006: `build` escribe el .next de prod salvo que pida explícitamente
-  // aislamiento (--verify) u opt-in del operador (--allow-prod-build o ALLOW_PROD_BUILD=1).
+  // See ADR 0006: `build` writes prod's .next unless it explicitly requests
+  // isolation (--verify) or an operator opt-in (--allow-prod-build or ALLOW_PROD_BUILD=1).
   if (options.command === "build" && !options.verifyBuild && !allowProdBuild) {
     console.error(
       [
-        "❌ build bloqueado: escribe el .next que sirve prod bajo pm2 (ADR 0006).",
-        "  · Verificación (agente/CI):      --verify            → compila en .next/verify, aislado.",
-        "  · Operador/CI construyendo prod: --allow-prod-build  → opt-in explícito para .next.",
+        "❌ build blocked: it writes the .next that prod serves under pm2 (ADR 0006).",
+        "  · Verification (agent/CI):       --verify            → compiles into .next/verify, isolated.",
+        "  · Operator/CI building prod:     --allow-prod-build  → explicit opt-in for .next.",
       ].join("\n"),
     );
     process.exit(1);
   }
 
-  // `dev` exige development (replica el bloque `env` que el webServer de
-  // Playwright forzaba: con NODE_ENV=production heredado, next dev revienta el
-  // pipeline CSS); build/start son siempre production. Next marca NODE_ENV
-  // como readonly en los tipos, pero aquí es exactamente el punto: fijar el
-  // modo por argv en ESTE proceso, no heredarlo.
+  // `dev` requires development (replicates the `env` block Playwright's webServer
+  // used to force: with an inherited NODE_ENV=production, next dev blows up the
+  // CSS pipeline); build/start are always production. Next marks NODE_ENV
+  // as readonly in its types, but this is exactly the point: set the
+  // mode by argv in THIS process, do not inherit it.
   (process.env as { NODE_ENV?: string }).NODE_ENV =
     options.command === "dev" ? "development" : "production";
 
-  // Bundler interno de Next (ver comentario superior): con --webpack,
-  // TURBOPACK falsy; sin él en `dev`, el default Turbopack (`auto`).
+  // Next's internal bundler (see the comment above): with --webpack,
+  // TURBOPACK falsy; without it in `dev`, the Turbopack default (`auto`).
   if (options.webpack) delete process.env.TURBOPACK;
   else if (options.command === "dev") process.env.TURBOPACK ||= "auto";
 
-  // Raíz del paquete chatbot anclada al fichero (no al cwd): los scripts se
-  // invocan desde varios cwd (pnpm --filter, playwright, eval-runner).
+  // Chatbot package root anchored to the file (not to the cwd): the scripts are
+  // invoked from various cwds (pnpm --filter, playwright, eval-runner).
   const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   process.env.REPO_ROOT ||= path.resolve(dir, "../..");
   const port = options.port ?? config.port();
 
   if (options.command === "build") {
-    // Imports internos dinámicos: mantener el módulo importable (tests del
-    // parser) sin cargar Next.js ni registrar sus handlers de señal.
+    // Dynamic internal imports: keeps the module importable (parser tests)
+    // without loading Next.js or registering its signal handlers.
     const { nextBuild } = await import("next/dist/cli/next-build");
     await nextBuild(
       {
@@ -290,7 +290,7 @@ async function main(): Promise<void> {
       },
       dir,
     );
-    // Como `next/dist/bin/next`: salir aunque queden handles abiertos.
+    // Like `next/dist/bin/next`: exit even if handles are left open.
     process.exit(0);
   }
 
@@ -299,15 +299,15 @@ async function main(): Promise<void> {
     dir,
     port,
     isDev: options.command === "dev",
-    // Puerto fijo explícito: sin retry (como `next dev -p`/`next start -p`
-    // con puerto pasado a mano; un puerto ocupado debe fallar, no migrarse).
+    // Explicit fixed port: no retry (like `next dev -p`/`next start -p`
+    // with a manually passed port; a busy port must fail, not migrate).
     allowRetry: false,
   });
 }
 
 /**
- * Ejecución directa vs. import (tests unitarios del parser): solo corre
- * `main()` cuando este fichero es el entrypoint de `process.argv[1]`.
+ * Direct execution vs. import (parser unit tests): `main()` only runs
+ * when this file is the `process.argv[1]` entrypoint.
  */
 const isDirectInvocation = (() => {
   const entry = process.argv[1];

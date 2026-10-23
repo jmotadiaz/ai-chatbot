@@ -19,7 +19,7 @@ describe("client bundle secrets firewall", () => {
   it("never inlines prod secrets or prod DSN into static browser chunks", () => {
     const staticDir = path.join(PACKAGE_ROOT, ".next", "verify", "static");
     if (!existsSync(staticDir)) {
-      // Si aún no se ha ejecutado build:verify, el test pasa (la suite es fast)
+      // If build:verify has not run yet, the test passes (the suite is fast)
       return;
     }
 

@@ -45,7 +45,7 @@ export class SessionRegistry {
   /**
    * Worker config of this registry: explicit constructor DI wins, then the
    * process-wide config the transport composition root registers, then the
-   * active Entorno bundle (inside each resolver). Resolved lazily so tests can
+   * active Environment bundle (inside each resolver). Resolved lazily so tests can
    * register process-wide overrides after constructing the registry.
    */
   get runtimeConfig(): WorkerRuntimeConfig {

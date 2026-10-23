@@ -230,7 +230,7 @@ Línea 1
 
     loadPrompts(badRoot);
     expect(() => resolveProjectPrompt(badRoot, "bad", {})).toThrow(
-      /Prompt "bad": error de plantilla en línea 2 de .*bad\.prompty: \(unknown path\) \[Line 2, Column \d+\]/,
+      /Prompt "bad": template error at line 2 of .*bad\.prompty: \(unknown path\) \[Line 2, Column \d+\]/,
     );
   });
 
@@ -348,12 +348,12 @@ B`);
     const full = resolveProjectPrompt(builtinRoot, "code-review-session", {
       target_session: "s-123",
       focus_area: "bugs",
-      context: "Presta atención a los tests",
+      context: "Pay attention to the tests",
     });
     expect(full.text).toBe(
-      "# Code Review de la sesión [s-123](session:s-123)\n\n" +
-        "## Enfoque: bugs\n\n" +
-        "Presta atención a los tests",
+      "# Code Review of session [s-123](session:s-123)\n\n" +
+        "## Focus: bugs\n\n" +
+        "Pay attention to the tests",
     );
 
     const noContext = resolveProjectPrompt(builtinRoot, "code-review-session", {
@@ -362,13 +362,13 @@ B`);
       context: "",
     });
     expect(noContext.text).toBe(
-      "# Code Review de la sesión [s-123](session:s-123)\n\n" +
-        "## Enfoque: bugs\n\n" +
-        "## Instrucciones\n\n" +
-        "Analiza los cambios de la sesión, enfócate en **bugs** y reporta:\n" +
-        "1. Problemas encontrados\n" +
-        "2. Sugerencias de mejora\n" +
-        "3. Riesgos y trade-offs",
+      "# Code Review of session [s-123](session:s-123)\n\n" +
+        "## Focus: bugs\n\n" +
+        "## Instructions\n\n" +
+        "Review the session's changes, focus on **bugs** and report:\n" +
+        "1. Issues found\n" +
+        "2. Suggested improvements\n" +
+        "3. Risks and trade-offs",
     );
 
     const enumOmitted = resolveProjectPrompt(builtinRoot, "code-review-session", {
@@ -377,12 +377,12 @@ B`);
       context: "",
     });
     expect(enumOmitted.text).toBe(
-      "# Code Review de la sesión [s-123](session:s-123)\n\n" +
-        "## Instrucciones\n\n" +
-        "Analiza los cambios de la sesión, enfócate en **** y reporta:\n" +
-        "1. Problemas encontrados\n" +
-        "2. Sugerencias de mejora\n" +
-        "3. Riesgos y trade-offs",
+      "# Code Review of session [s-123](session:s-123)\n\n" +
+        "## Instructions\n\n" +
+        "Review the session's changes, focus on **** and report:\n" +
+        "1. Issues found\n" +
+        "2. Suggested improvements\n" +
+        "3. Risks and trade-offs",
     );
   });
 });

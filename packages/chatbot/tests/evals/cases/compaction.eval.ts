@@ -16,8 +16,8 @@ import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Sin ficheros `.env.*` (ADR 0011): la configuración la aporta el bundle
-// tipado del Entorno activo (`packages/config`); `EVAL_BASE_URL` es harness.
+// No `.env.*` files (ADR 0011): the configuration is provided by the active
+// Environment's typed bundle (`packages/config`); `EVAL_BASE_URL` is harness.
 
 
 

@@ -2,14 +2,14 @@ import { repoPath, packagePath } from "./paths";
 import type { StructuralConfig } from "./types";
 
 /**
- * Configuración estructural de DESARROLLO (versionada, sin secretos).
+ * DEVELOPMENT structural configuration (versioned, no secrets).
  *
- * Runtime Pi aislado en `.pi-dev/*` (ADR 0002 v2). Dev conserva el mismo
- * `codingAgentProjectsRoot` que Producción (el directorio padre del monorepo),
- * que es donde viven los proyectos con los que trabaja el agente.
+ * Pi runtime isolated under `.pi-dev/*` (ADR 0002 v2). Dev keeps the same
+ * `codingAgentProjectsRoot` as Production (the monorepo's parent directory),
+ * which is where the projects the agent works with live.
  */
 export const configDev = {
-  entorno: "dev",
+  environment: "dev",
   port: 3000,
   modelGatewayUrl: "http://127.0.0.1:4000",
   codingAgentEnabled: true,
@@ -22,7 +22,7 @@ export const configDev = {
   codingAgentAgentDir: packagePath("coding-agent", ".pi-dev/agent"),
   codingAgentPiPackagesDir: packagePath("coding-agent", ".pi-dev/packages"),
   codingAgentArtifactsDir: packagePath("coding-agent", ".pi-dev/artifacts"),
-  // Base de los enlaces que el agente publica; el navegador del usuario la sigue.
+  // Base of the links the agent publishes; the user's browser follows it.
   codingAgentArtifactsUrl: "http://192.168.18.50:3016",
   contextWindow: 128000,
   ragUploadLimit: "false",

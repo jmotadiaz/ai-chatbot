@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { AgentCodeSection } from "@/components/layout/sidebar/agent-code-section";
 
-// react-collapsed observa tamaño con ResizeObserver (no existe en jsdom).
+// react-collapsed observes size with ResizeObserver (which does not exist in jsdom).
 vi.stubGlobal(
   "ResizeObserver",
   class {
@@ -38,7 +38,7 @@ const session = (i: number) => ({
   updatedAt: new Date(),
 });
 
-// react-collapsed pide aria-controls a un id estable; se lo pasamos con data-id
+// react-collapsed asks for aria-controls on a stable id; we pass it via data-id
 const projectItem = (name: string) =>
   document.querySelector(
     `[data-testid="agent-project-item"][aria-label="${name}"]`,
@@ -67,7 +67,7 @@ describe("AgentCodeSection", () => {
     fireEvent.click(getByRole("button", { name: "alpha" }));
 
     await waitFor(() => expect(mocks.sessions).toHaveBeenCalledWith("alpha", 10));
-    // Los links de sesión apuntan a la ruta del proyecto.
+    // Session links point to the project's route.
     expect(
       document.querySelector('[data-testid="agent-session-link"][href="/agent/code/alpha/session-1"]'),
     ).not.toBeNull();
@@ -147,7 +147,7 @@ describe("AgentCodeSection", () => {
       expect(mocks.sessions).toHaveBeenCalledWith("beta", 10),
     );
 
-    // Navegación a otra sesión (cambio de pathname) → manda la ruta.
+    // Navigation to another session (pathname change) → it sends the route.
     mocks.sessions.mockClear();
     mocks.pathname = "/agent/code/alpha/session-3";
     rerender(<AgentCodeSection projects={["alpha", "beta"]} />);

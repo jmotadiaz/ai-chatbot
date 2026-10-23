@@ -1,42 +1,42 @@
 import { ConfigError } from "./errors";
 import { packagePath } from "./paths";
-import type { Entorno } from "./types";
+import type { Environment } from "./types";
 
 /**
- * Parseo de `process.argv` (ADR 0011 §3.5) y ruta del bundle del Entorno.
+ * Parsing of `process.argv` (ADR 0011 §3.5) and the path of the Environment bundle.
  *
- * Este módulo NO importa los bundles `env.<env>.ts`, así que forma parte de la
- * superficie isomorfa (`surface.ts`) y los bundles del Entorno lo re-exportan:
- * los scripts y configs que se cargan en el MISMO proceso que el alias
- * (`next.config.ts`, `scripts/next-cli.ts` bajo vitest) siguen viendo estas
- * funciones aunque `"config"` esté enlazado a `env.<entorno>.ts`.
+ * This module does NOT import the `env.<env>.ts` bundles, so it is part of the
+ * isomorphic surface (`surface.ts`) and the Environment bundles re-export it:
+ * the scripts and configs loaded in the SAME process as the alias
+ * (`next.config.ts`, `scripts/next-cli.ts` under vitest) still see these
+ * functions even when `"config"` is bound to `env.<environment>.ts`.
  */
 
-export const ENTORNOS: readonly Entorno[] = ["prod", "dev", "test"];
+export const ENVIRONMENTS: readonly Environment[] = ["prod", "dev", "test"];
 
-export function isEntorno(value: string): value is Entorno {
-  return (ENTORNOS as readonly string[]).includes(value);
+export function isEnvironment(value: string): value is Environment {
+  return (ENVIRONMENTS as readonly string[]).includes(value);
 }
 
 /**
- * Entorno declarado con `--env=<entorno>` (o `--env <entorno>`). Devuelve
- * `undefined` si el flag no está; lanza `ConfigError` si el valor no es válido
- * — un flag mal escrito jamás debe caer silenciosamente al Entorno por defecto.
+ * Environment declared with `--env=<environment>` (or `--env <environment>`). Returns
+ * `undefined` if the flag is absent; throws `ConfigError` if the value is not valid
+ * — a misspelled flag must NEVER silently fall back to the default Environment.
  */
-export function parseEntornoFromArgv(
+export function parseEnvironmentFromArgv(
   argv: readonly string[] = process.argv,
-): Entorno | undefined {
-  let found: Entorno | undefined;
+): Environment | undefined {
+  let found: Environment | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     let raw: string | undefined;
     if (arg === "--env") raw = argv[index + 1];
     else if (arg.startsWith("--env=")) raw = arg.slice("--env=".length);
     if (raw === undefined) continue;
-    if (!isEntorno(raw)) {
+    if (!isEnvironment(raw)) {
       throw new ConfigError(
         "--env",
-        `valor "${raw}" no válido; se esperaba --env=prod|dev|test`,
+        `invalid value "${raw}"; expected --env=prod|dev|test`,
       );
     }
     found = raw;
@@ -44,7 +44,7 @@ export function parseEntornoFromArgv(
   return found;
 }
 
-/** Flags de build presentes en argv (`--verify`, `--allow-prod-build`). */
+/** Build flags present in argv (`--verify`, `--allow-prod-build`). */
 export function parseBuildFlagsFromArgv(argv: readonly string[] = process.argv): {
   verifyBuild: boolean;
   allowProdBuild: boolean;
@@ -56,13 +56,13 @@ export function parseBuildFlagsFromArgv(argv: readonly string[] = process.argv):
 }
 
 /**
- * Detección automática del runner de test: `npx vitest` o `npx playwright`
- * lanzados a mano en cualquier cwd también deben correr SIEMPRE en test.
- * (Los `vitest.config.ts` además llaman a `initConfig("test")`: los workers de
- * Vitest no conservan el argv del binario, así que la detección es una red de
- * seguridad para el proceso principal.)
+ * Automatic test-runner detection: `npx vitest` or `npx playwright` launched by
+ * hand from any cwd must also ALWAYS run in test.
+ * (The `vitest.config.ts` files also call `initConfig("test")`: Vitest workers
+ * do not keep the binary's argv, so this detection is a safety net for the
+ * main process.)
  */
-export function detectTestRunner(argv: readonly string[] = process.argv): Entorno | undefined {
+export function detectTestRunner(argv: readonly string[] = process.argv): Environment | undefined {
   const isRunner = argv.some((arg) => {
     const normalized = arg.replace(/\\/g, "/");
     return (
@@ -75,10 +75,10 @@ export function detectTestRunner(argv: readonly string[] = process.argv): Entorn
 }
 
 /**
- * Ruta del módulo del Entorno. La consumen `next.config.ts` (alias de
- * Turbopack/Webpack) y los `vitest.config.ts` para enlazar `"config"` al
- * bundle estático sin leer `process.env`.
+ * Path of the Environment module. Consumed by `next.config.ts` (Turbopack/Webpack
+ * alias) and by the `vitest.config.ts` files to bind `"config"` to the static
+ * bundle without reading `process.env`.
  */
-export function envBundlePath(entorno: Entorno): string {
-  return packagePath("config", "src", `env.${entorno}.ts`);
+export function envBundlePath(environment: Environment): string {
+  return packagePath("config", "src", `env.${environment}.ts`);
 }

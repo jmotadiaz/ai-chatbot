@@ -39,8 +39,8 @@ describe("SessionQueries (deep module)", () => {
   let projectsRoot: string;
 
   beforeEach(() => {
-    // DI por constructor (ADR 0011 §6): el projectsRoot del test viaja en el
-    // registry, nunca por process.env.
+    // DI through the constructor (ADR 0011 §6): the test's projectsRoot travels
+    // in the registry, never through process.env.
     projectsRoot = mkdtempSync(join(tmpdir(), "sq-"));
     registry = new SessionRegistry(undefined, { projectsRoot });
     queries = new SessionQueries(registry);

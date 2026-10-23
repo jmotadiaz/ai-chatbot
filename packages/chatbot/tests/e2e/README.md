@@ -1,45 +1,45 @@
 # Playwright E2E Tests
 
-Este directorio contiene las pruebas end-to-end (E2E) del proyecto usando Playwright.
+This directory holds the project's end-to-end (E2E) tests using Playwright.
 
-## Estructura
+## Structure
 
 ```
 tests/
-├── fixtures.ts      # Fixtures para dependency injection (AI providers y DB mocks)
-├── chat-page.ts     # Page Object Model para el chat
-├── chat.spec.ts     # Tests E2E del chat
-├── example.spec.ts  # Ejemplo básico de Playwright
-└── README.md        # Esta documentación
+├── fixtures.ts      # Fixtures for dependency injection (AI providers and DB mocks)
+├── chat-page.ts     # Page Object Model for the chat
+├── chat.spec.ts     # E2E tests for the chat
+├── example.spec.ts  # Basic Playwright example
+└── README.md        # This documentation
 ```
 
 ## Fixtures
 
-Los fixtures utilizan dependency injection para reemplazar los servicios reales con mocks durante las pruebas:
+The fixtures use dependency injection to replace the real services with mocks during the tests:
 
 ### AI Providers Mock
-- Utiliza `MockLanguageModelV2` y `MockEmbeddingModelV2` de Vercel AI SDK
-- Los modelos retornan respuestas predecibles para testing
-- Se configura mediante `setProviders()` de `lib/ai/models/providers`
-- Cada mock incluye el `modelId` en la respuesta
+- Uses `MockLanguageModelV2` and `MockEmbeddingModelV2` from the Vercel AI SDK
+- The models return predictable responses for testing
+- It is configured through `setProviders()` from `lib/ai/models/providers`
+- Each mock includes the `modelId` in the response
 
 ### Database Mock
-- Utiliza `drizzle.mock()` con el schema de la aplicación
-- Se configura mediante `setDb()` de `lib/db/db`
+- Uses `drizzle.mock()` with the application schema
+- It is configured through `setDb()` from `lib/db/db`
 
-## Ejecutar Tests
+## Running Tests
 
 ```bash
-# Ejecutar todos los tests
+# Run all tests
 pnpm test:e2e
 
-# Ejecutar tests con UI interactiva
+# Run tests with the interactive UI
 pnpm test:e2e:ui
 
-# Ejecutar tests con el navegador visible
+# Run tests with a visible browser
 pnpm test:e2e:headed
 
-# Ejecutar un test específico
+# Run a specific test
 pnpm test:e2e tests/chat.spec.ts
 ```
 
@@ -47,41 +47,41 @@ pnpm test:e2e tests/chat.spec.ts
 
 ### ChatPage
 
-El Page Object Model encapsula las interacciones con la interfaz del chat:
+The Page Object Model encapsulates the interactions with the chat interface:
 
-**Métodos principales:**
-- `goto(chatId?)` - Navega a la página del chat
-- `sendMessage(message)` - Envía un mensaje (escribe + submit)
-- `typeMessage(message)` - Escribe un mensaje sin enviar
-- `submitMessage()` - Envía el mensaje actual
-- `waitForAssistantResponse()` - Espera la respuesta del asistente
-- `waitForLoadingComplete()` - Espera que termine la carga
-- `verifyAssistantResponded()` - Verifica que el asistente respondió
-- `verifyAssistantResponseContains(text)` - Verifica que la respuesta contiene texto específico
-- `getLastAssistantMessage()` - Obtiene el último mensaje del asistente
-- `getUserMessages()` - Obtiene todos los mensajes del usuario
-- `getAssistantMessages()` - Obtiene todos los mensajes del asistente
-- `isChatInputEnabled()` - Verifica si el input está habilitado
+**Main methods:**
+- `goto(chatId?)` - Navigates to the chat page
+- `sendMessage(message)` - Sends a message (types + submits)
+- `typeMessage(message)` - Types a message without sending it
+- `submitMessage()` - Submits the current message
+- `waitForAssistantResponse()` - Waits for the assistant's response
+- `waitForLoadingComplete()` - Waits for loading to finish
+- `verifyAssistantResponded()` - Checks that the assistant responded
+- `verifyAssistantResponseContains(text)` - Checks that the response contains specific text
+- `getLastAssistantMessage()` - Gets the last assistant message
+- `getUserMessages()` - Gets all user messages
+- `getAssistantMessages()` - Gets all assistant messages
+- `isChatInputEnabled()` - Checks whether the input is enabled
 
-## Escribir Nuevos Tests
+## Writing New Tests
 
 ```typescript
 import { test, expect } from "./fixtures";
 import { ChatPage } from "./chat-page";
 
-test.describe("Mi funcionalidad", () => {
+test.describe("My feature", () => {
   let chatPage: ChatPage;
 
   test.beforeEach(async ({ page, mockProviders, testDb }) => {
     chatPage = new ChatPage(page);
     await chatPage.goto();
     
-    // Los fixtures están disponibles para verificación
+    // The fixtures are available for verification
     expect(mockProviders).toBeDefined();
     expect(testDb).toBeDefined();
   });
 
-  test("mi test", async () => {
+  test("my test", async () => {
     await chatPage.sendMessage("Hello");
     await chatPage.waitForAssistantResponse();
     
@@ -90,27 +90,26 @@ test.describe("Mi funcionalidad", () => {
 });
 ```
 
-## Configuración
+## Configuration
 
-La configuración de Playwright se encuentra en `playwright.config.mts`:
+The Playwright configuration lives in `playwright.config.mts`:
 - **Base URL**: `http://localhost:3000`
-- **Web Server**: Inicia automáticamente `pnpm dev` antes de los tests
-- **Timeout**: 120 segundos para que el servidor esté listo
+- **Web Server**: Automatically starts `pnpm dev` before the tests
+- **Timeout**: 120 seconds for the server to be ready
 - **Browsers**: Chromium, Firefox, WebKit
-- **Retry**: 2 reintentos en CI, 0 en local
+- **Retry**: 2 retries in CI, 0 locally
 
-## Test Actual: Chat
+## Current Test: Chat
 
-El primer test (`chat.spec.ts`) verifica:
-1. El usuario puede enviar una consulta al chat
-2. El asistente responde correctamente
-3. La respuesta contiene el texto esperado del mock
-4. Los mensajes se muestran en la interfaz
+The first test (`chat.spec.ts`) checks:
+1. The user can send a query to the chat
+2. The assistant answers correctly
+3. The response contains the expected mock text
+4. The messages are shown in the interface
 
-## Notas
+## Notes
 
-- Los tests requieren que el servidor de desarrollo esté corriendo o se iniciará automáticamente
-- Los mocks reemplazan los proveedores de AI y la base de datos para pruebas aisladas y predecibles
-- Se recomienda usar Page Objects para mantener los tests mantenibles y reducir duplicación
-- Los selectores en ChatPage pueden necesitar ajustes según los atributos data-* actuales del HTML
-
+- The tests require the development server to be running, otherwise it is started automatically
+- The mocks replace the AI providers and the database for isolated and predictable tests
+- Using Page Objects is recommended to keep the tests maintainable and reduce duplication
+- The selectors in ChatPage may need adjustments according to the current data-* attributes of the HTML

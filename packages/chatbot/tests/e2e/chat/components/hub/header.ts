@@ -9,8 +9,8 @@ export class HubHeaderComponent {
     this.modelPicker = container.getByRole("combobox");
   }
 
-  // Los ids del picker son los del catálogo que sirve el Mock Model Gateway
-  // (capacidades: basicChat, canExecuteTools, …) — sin alias intermedios.
+  // The picker's ids are those of the catalog the Mock Model Gateway serves
+  // (capabilities: basicChat, canExecuteTools, …) — no intermediate aliases.
   async addModel(modelName: string) {
     const newModelButton = this.container.getByRole("button", {
       name: "New Model",

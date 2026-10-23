@@ -20,7 +20,7 @@ describe("SubagentToolLink", () => {
     });
     render(<SubagentToolLink project="proj" parentSessionId="p" toolCallId="tc-1" />);
     await waitFor(() => {
-      const link = screen.getByRole("link", { name: /sesión del subagente/i });
+      const link = screen.getByRole("link", { name: /subagent session/i });
       expect(link.getAttribute("href")).toBe(
         "/agent/code/proj/p/subagent/child-1",
       );

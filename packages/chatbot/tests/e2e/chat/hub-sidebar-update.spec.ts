@@ -1,7 +1,7 @@
 import { test, expect } from "../fixtures";
 import { ChatHubPage } from "./pages/hub";
 
-// Id del catálogo del Mock Model Gateway (capacidad, sin alias).
+// Id of the Mock Model Gateway catalog (capability, no alias).
 const TOOLS_MODEL = "canExecuteTools";
 
 test.describe("Chat Hub - Sidebar Integration", () => {

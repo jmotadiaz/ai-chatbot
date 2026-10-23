@@ -1,7 +1,7 @@
 [project]
 name = "model-gateway"
 version = "0.1.0"
-description = "Model Gateway de la máquina: LiteLLM Proxy stateless (config.yaml, sin DB) + endpoint FastAPI del Model Catalog."
+description = "The machine's Model Gateway: stateless LiteLLM Proxy (config.yaml, no DB) + FastAPI Model Catalog endpoint."
 requires-python = ">=3.11"
 dependencies = [
     "litellm[proxy]>=1.104.2",
@@ -15,9 +15,9 @@ dependencies = [
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
-# El despliegue instala este proyecto en el venv de /opt/model-gateway para
-# resolver sus dependencias; los módulos de runtime se importan desde el
-# WorkingDirectory de la unidad (`uvicorn server:app`), no de site-packages.
+# Deployment installs this project into the /opt/model-gateway venv so its
+# dependencies resolve; the runtime modules are imported from the unit's
+# WorkingDirectory (`uvicorn server:app`), not from site-packages.
 [tool.setuptools]
 py-modules = ["server", "catalog"]
 

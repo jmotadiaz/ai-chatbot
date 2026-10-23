@@ -65,7 +65,7 @@ export const createChatModeRouter = (
 ): ChatModeRouterPort => ({
   async route(input: ChatModeRouterInput): Promise<RoutingDecision> {
     const decision = await decide({
-      // Default Model Contract único para decisiones (spec §2.4).
+      // The single Default Model Contract for decisions (spec §2.4).
       model: "decision-default",
       questions: {
         [CHAT_MODE_ROUTING_QUESTION_KEY]: {

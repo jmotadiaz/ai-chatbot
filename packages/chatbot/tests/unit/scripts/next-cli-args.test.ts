@@ -7,14 +7,14 @@ import {
 } from "@/scripts/next-cli";
 
 /**
- * Parser PURO de `scripts/next-cli.ts` (ticket 03): nada de Next.js ni de
- * `initConfig` en este módulo, así el contrato del argv (--env, --port,
- * --webpack, --verify, --allow-prod-build) se testea sin arrancar servidores.
+ * PURE parser of `scripts/next-cli.ts` (ticket 03): no Next.js and no
+ * `initConfig` in this module, so the argv contract (--env, --port, --webpack,
+ * --verify, --allow-prod-build) is tested without starting servers.
  */
 const parse = (args: string[]) => parseNextCliArgs(args);
 
 describe("parseNextCliArgs", () => {
-  it("dev con --env=... y defaults (sin bundler, sin flags de build)", () => {
+  it("dev with --env=... and defaults (no bundler, no build flags)", () => {
     expect(parse(["dev", "--env=dev"])).toEqual<NextCliOptions>({
       command: "dev",
       env: "dev",
@@ -25,14 +25,14 @@ describe("parseNextCliArgs", () => {
     });
   });
 
-  it("start con puerto explícito", () => {
+  it("start with an explicit port", () => {
     const options = parse(["start", "--env=prod", "--port=8085"]);
     expect(options.command).toBe("start");
     expect(options.env).toBe("prod");
     expect(options.port).toBe(8085);
   });
 
-  it("build con --verify y --allow-prod-build como banderas independientes", () => {
+  it("build with --verify and --allow-prod-build as independent flags", () => {
     const verify = parse(["build", "--env=prod", "--verify"]);
     expect(verify.verifyBuild).toBe(true);
     expect(verify.allowProdBuild).toBe(false);
@@ -42,36 +42,36 @@ describe("parseNextCliArgs", () => {
     expect(allowed.allowProdBuild).toBe(true);
   });
 
-  it("--webpack activa Webpack (Turbopack queda para el launcher, no el parser)", () => {
+  it("--webpack enables Webpack (Turbopack is left to the launcher, not the parser)", () => {
     expect(parse(["dev", "--env=test", "--webpack"]).webpack).toBe(true);
     expect(parse(["dev", "--env=test"]).webpack).toBe(false);
   });
 
-  it("acepta --env y --port con forma de valor separado", () => {
+  it("accepts --env and --port in separate-value form", () => {
     const options = parse(["dev", "--env", "test", "--port", "3001"]);
     expect(options.env).toBe("test");
     expect(options.port).toBe(3001);
     expect(options.command).toBe("dev");
   });
 
-  it("sin --env falla con CliUsageError (no existe Entorno por defecto, ADR 0011)", () => {
+  it("without --env it fails with CliUsageError (there is no default Environment, ADR 0011)", () => {
     expect(() => parse(["dev"])).toThrow(CliUsageError);
     expect(() => parse(["dev"])).toThrow(/--env/);
   });
 
-  it("--env inválido lanza ConfigError del paquete config (nunca cae a un default)", () => {
+  it("an invalid --env throws the config package's ConfigError (it never falls back to a default)", () => {
     expect(() => parse(["dev", "--env=staging"])).toThrow(/staging/);
   });
 
-  it("comando ausente o desconocido → CliUsageError", () => {
-    expect(() => parse(["--env=dev"])).toThrow(/comando/);
-    expect(() => parse(["deploy", "--env=dev"])).toThrow(/comando inválido/);
-    expect(() => parse(["dev", "start", "--env=dev"])).toThrow(/comandos de más/);
+  it("missing or unknown command → CliUsageError", () => {
+    expect(() => parse(["--env=dev"])).toThrow(/command/);
+    expect(() => parse(["deploy", "--env=dev"])).toThrow(/invalid command/);
+    expect(() => parse(["dev", "start", "--env=dev"])).toThrow(/too many commands/);
   });
 
-  it("flags desconocidos y puertos inválidos se rechazan", () => {
+  it("unknown flags and invalid ports are rejected", () => {
     expect(() => parse(["dev", "--env=dev", "--turbo"])).toThrow(
-      /argumento desconocido/,
+      /unknown argument/,
     );
     expect(() => parse(["dev", "--env=dev", "--port=0"])).toThrow(/--port/);
     expect(() => parse(["dev", "--env=dev", "--port=abc"])).toThrow(/--port/);
@@ -79,7 +79,7 @@ describe("parseNextCliArgs", () => {
     expect(() => parse(["dev", "--env"])).toThrow(/--env/);
   });
 
-  it("la ayuda documenta el contrato completo del launcher", () => {
+  it("the help documents the launcher's full contract", () => {
     expect(USAGE).toContain("--env=dev|test|prod");
     expect(USAGE).toContain("--port=<n>");
     expect(USAGE).toContain("--webpack");
