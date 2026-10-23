@@ -11,13 +11,6 @@
  * alias del bundler (`"config"` → `env.<env>.ts`) mantenga la API completa.
  */
 
-export {
-  detectTestRunner,
-  ENTORNOS,
-  envBundlePath,
-  parseBuildFlagsFromArgv,
-  parseEntornoFromArgv,
-} from "./argv";
 export { ConfigError } from "./errors";
 export {
   createConfigFacade,

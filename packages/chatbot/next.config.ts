@@ -4,7 +4,12 @@ import {
   PHASE_PRODUCTION_BUILD,
   PHASE_PRODUCTION_SERVER,
 } from "next/constants";
-import { config, envBundlePath, setBuildFlags, type Entorno } from "config";
+import { config, type Entorno } from "config";
+// Helpers de build fuera de la superficie isomorfa (no viajan al cliente ni
+// al Edge Runtime): se importan por ruta para que sigan disponibles aunque
+// `"config"` esté aliasado a `env.<entorno>.ts` (tests de vitest).
+import { envBundlePath } from "../config/src/argv";
+import { setBuildFlags } from "../config/src/facade";
 import { config as prodBundleConfig } from "../config/src/env.prod";
 
 /**
