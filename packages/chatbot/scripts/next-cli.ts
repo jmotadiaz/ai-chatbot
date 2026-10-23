@@ -274,6 +274,7 @@ async function main(): Promise<void> {
   // Raíz del paquete chatbot anclada al fichero (no al cwd): los scripts se
   // invocan desde varios cwd (pnpm --filter, playwright, eval-runner).
   const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  process.env.REPO_ROOT ||= path.resolve(dir, "../..");
   const port = options.port ?? config.port();
 
   if (options.command === "build") {

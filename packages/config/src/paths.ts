@@ -81,7 +81,11 @@ export function resolvePath(...parts: string[]): string {
   let out = "";
   for (const part of parts) {
     if (!part) continue;
-    out = part.startsWith("/") ? part : `${out}/${part}`;
+    if (part.startsWith("/")) {
+      out = part;
+    } else {
+      out = out ? `${out}/${part}` : part;
+    }
   }
   return normalizePath(out || ".");
 }
@@ -97,25 +101,51 @@ function declaredRepoRoot(): string | undefined {
   return value ? value : undefined;
 }
 
+function findWorkspaceRoot(
+  startDir: string,
+  fs: { existsSync(path: string): boolean },
+): string | undefined {
+  let dir = normalizePath(startDir);
+  for (;;) {
+    if (fs.existsSync(`${dir}/pnpm-workspace.yaml`)) return dir || "/";
+    const parent = dir.replace(/\/[^/]+$/, "");
+    if (!parent || parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
+}
+
 function discoverRepoRoot(): string {
   const declared = declaredRepoRoot();
   if (declared) return normalizePath(declared);
 
-  const start = moduleDir();
   const fs = nodeFs();
-  if (start && fs) {
-    let dir = start;
-    // packages/config/src → … → raíz (el límite lo pone el sistema de ficheros).
-    for (;;) {
-      if (fs.existsSync(`${dir}/pnpm-workspace.yaml`)) return dir || "/";
-      const parent = dir.replace(/\/[^/]+$/, "");
-      if (!parent || parent === dir) break;
-      dir = parent;
+  const start = moduleDir();
+  if (fs) {
+    if (start) {
+      const fromStart = findWorkspaceRoot(start, fs);
+      if (fromStart) return fromStart;
+    }
+    if (typeof process !== "undefined" && typeof process.cwd === "function") {
+      try {
+        const fromCwd = findWorkspaceRoot(process.cwd(), fs);
+        if (fromCwd) return fromCwd;
+      } catch {
+        // Ignored
+      }
     }
   }
 
-  // Fallback: `packages/config/src` → raíz del monorepo.
-  return start ? resolvePath(start, "../../..") : resolvePath(".");
+  // Fallback: `packages/config/src` → raíz del monorepo si start existe.
+  if (start) return resolvePath(start, "../../..");
+  if (typeof process !== "undefined" && typeof process.cwd === "function") {
+    try {
+      return normalizePath(process.cwd());
+    } catch {
+      // Ignored
+    }
+  }
+  return ".";
 }
 
 /** Raíz absoluta del monorepo. */

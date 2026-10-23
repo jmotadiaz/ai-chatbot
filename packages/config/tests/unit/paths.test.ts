@@ -44,4 +44,10 @@ describe("normalizePath / resolvePath (isomorfos, sin node:path)", () => {
     expect(resolvePath("/root", "a", "/abs", "b")).toBe("/abs/b");
     expect(resolvePath("/root", "packages", "config")).toBe("/root/packages/config");
   });
+
+  it("segmentos relativos no se convierten erróneamente en absolutos", () => {
+    expect(resolvePath(".")).toBe(".");
+    expect(resolvePath(".", "packages")).toBe("packages");
+    expect(resolvePath("a", "b", "c")).toBe("a/b/c");
+  });
 });
