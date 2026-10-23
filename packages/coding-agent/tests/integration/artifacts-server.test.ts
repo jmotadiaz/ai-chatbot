@@ -23,6 +23,10 @@ vi.mock("tracing", () => ({
 
 const { startHttpTransport } = await import("../../src/transports/http");
 const { publishArtifact } = await import("../../src/artifacts/artifacts");
+const { createTestWorkerContext } = await import("../helpers/test-context");
+const { resetWorkerRuntimeConfigForTests, setWorkerRuntimeConfig } = await import(
+  "../../src/runtime/runtime-overrides"
+);
 
 /**
  * The artifact route over the real worker server: an agent publishes a report
@@ -42,6 +46,7 @@ const REPORT = `<!doctype html>
 let tmp: string;
 let rootDir: string;
 let baseUrl: string;
+let ctx: ReturnType<typeof createTestWorkerContext>;
 let server: ReturnType<typeof startHttpTransport>;
 let gateway: Server;
 
@@ -49,7 +54,6 @@ beforeAll(async () => {
   tmp = await mkdtemp(path.join(os.tmpdir(), "artifacts-server-"));
   rootDir = path.join(tmp, "root");
   await mkdir(path.join(tmp, "generated"), { recursive: true });
-  vi.stubEnv("CODING_AGENT_ARTIFACTS_DIR", rootDir);
 
   // Mock Model Gateway: `POST /rpc getAvailableModels` syncs the runtime
   // catalog on first call, so the worker needs a live /v1/models/catalog.
@@ -58,27 +62,36 @@ beforeAll(async () => {
     res.end(JSON.stringify({ models: [] }));
   });
   await new Promise<void>((resolve) => gateway.listen(0, "127.0.0.1", resolve));
-  vi.stubEnv(
-    "MODEL_GATEWAY_URL",
-    `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`,
-  );
-  vi.stubEnv("MODEL_GATEWAY_API_KEY", "test-gateway-key");
-  // Keep the sync out of the package's own .pi/agent files.
-  vi.stubEnv("CODING_AGENT_MODELS_JSON", path.join(tmp, "models.json"));
-  vi.stubEnv("CODING_AGENT_AUTH_JSON", path.join(tmp, "auth.json"));
+  const gatewayUrl = `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`;
 
-  server = startHttpTransport({ port: 0, host: "127.0.0.1" });
-  await new Promise<void>((resolve) => server.once("listening", resolve));
-  const { port } = server.address() as AddressInfo;
+  // Reserva el puerto del worker ANTES de construir el config: la base de
+  // artifacts que ve el agente debe ser exactamente la que este transporte
+  // sirve. Se libera el socket y el transporte lo reutiliza acto seguido.
+  const reservation = createServer();
+  await new Promise<void>((resolve) => reservation.listen(0, "127.0.0.1", resolve));
+  const { port } = reservation.address() as AddressInfo;
+  await new Promise<void>((resolve) => reservation.close(() => resolve()));
   baseUrl = `http://127.0.0.1:${port}`;
-  // The base the agent is shown, so the index and the published URLs point here.
-  vi.stubEnv("CODING_AGENT_ARTIFACTS_URL", baseUrl);
+
+  // DI del composition root (ADR 0011 §6): el transporte recibe el sandbox
+  // (rutas + credenciales del Gateway + base de artifacts) y lo registra como
+  // config de proceso para la facade y las extensiones. Ni vi.stubEnv ni
+  // process.env participan.
+  ctx = createTestWorkerContext({
+    gatewayUrl,
+    apiKey: "test-gateway-key",
+    artifactsDir: rootDir,
+    artifactsBaseUrl: baseUrl,
+  });
+  server = startHttpTransport({ port, host: "127.0.0.1", runtimeConfig: ctx.workerConfig });
+  await new Promise<void>((resolve) => server.once("listening", resolve));
 });
 
 afterAll(async () => {
   server?.close();
   gateway?.close();
-  vi.unstubAllEnvs();
+  resetWorkerRuntimeConfigForTests();
+  ctx?.cleanup();
   await rm(tmp, { recursive: true, force: true });
 });
 
@@ -89,7 +102,7 @@ async function publish(name: string): Promise<string> {
   const ref = await publishArtifact({
     sourcePath: source,
     rootDir,
-    baseUrl: process.env.CODING_AGENT_ARTIFACTS_URL as string,
+    baseUrl,
     cwd: "/home/javier/projects/ai-chatbot",
   });
   return ref.url;
@@ -190,18 +203,33 @@ function externalHosts(html: string): string[] {
 }
 
 describe("artifact location from config", () => {
-  it("reads the artifacts root and URL base from the environment", async () => {
-    const { getArtifactsBaseUrl, getArtifactsDir } = await import("../../src/runtime/paths");
+  it("resolves the artifacts root and URL base from the injected worker config", async () => {
+    const { getArtifactsBaseUrl, getArtifactsDir, resolveArtifactsBaseUrl, resolveArtifactsDir } =
+      await import("../../src/runtime/paths");
+    // La config de proceso registrada por startHttpTransport apunta al sandbox
+    // (las lecturas sin override explícito ven la DI del composition root).
+    expect(resolveArtifactsDir(ctx.workerConfig)).toBe(rootDir);
+    expect(resolveArtifactsBaseUrl(ctx.workerConfig)).toBe(baseUrl);
     expect(getArtifactsDir()).toBe(rootDir);
     expect(getArtifactsBaseUrl()).toBe(baseUrl);
+    // El sandbox del test vive en el directorio temporal, nunca en el paquete.
+    expect(rootDir.startsWith(path.join(os.tmpdir()))).toBe(true);
   });
 
-  it("falls back to the worker URL, then the package .pi dir", async () => {
-    vi.stubEnv("CODING_AGENT_ARTIFACTS_URL", "");
-    vi.stubEnv("CODING_AGENT_ARTIFACTS_DIR", "");
-    vi.stubEnv("CODING_AGENT_WORKER_URL", "http://localhost:3999/");
-    const { getArtifactsBaseUrl, getArtifactsDir } = await import("../../src/runtime/paths");
-    expect(getArtifactsBaseUrl()).toBe("http://localhost:3999");
-    expect(getArtifactsDir().endsWith(path.join(".pi", "artifacts"))).toBe(true);
+  it("falls back to the Entorno defaults without any injection", async () => {
+    // Sin overrides (y con la config de proceso reseteada), la resolución cae
+    // al Entorno de Test: URL del worker del bundle y `.pi-test/artifacts`.
+    const { PACKAGE_ROOT, getArtifactsBaseUrl, getArtifactsDir } = await import(
+      "../../src/runtime/paths"
+    );
+    resetWorkerRuntimeConfigForTests();
+    try {
+      expect(getArtifactsDir()).toBe(path.join(PACKAGE_ROOT, ".pi-test", "artifacts"));
+      expect(getArtifactsBaseUrl()).toBe(
+        "http://localhost:3001/api/agent/code/worker-stub",
+      );
+    } finally {
+      setWorkerRuntimeConfig(ctx.workerConfig);
+    }
   });
 });

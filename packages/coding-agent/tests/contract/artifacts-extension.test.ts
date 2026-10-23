@@ -20,11 +20,17 @@ vi.mock("tracing", () => ({
 
 const registerExtension = (await import("../../extensions/artifacts/index")).default;
 const { getArtifactsDir } = await import("../../src/runtime/paths");
+const { setWorkerRuntimeConfig, resetWorkerRuntimeConfigForTests } = await import(
+  "../../src/runtime/runtime-overrides"
+);
 
 /**
  * The artifacts extension's public boundary: the tool name and description the
  * model sees, and the automatic publish that keeps vendored skills working
  * without editing them.
+ *
+ * ADR 0011 §6: el sandbox se inyecta como config de proceso (la misma que
+ * registra el composition root del transporte), nunca mutando `process.env`.
  */
 
 let tmp: string;
@@ -33,12 +39,14 @@ beforeAll(async () => {
   tmp = await mkdtemp(path.join(os.tmpdir(), "artifacts-extension-"));
   await mkdir(path.join(tmp, "root"), { recursive: true });
   await mkdir(path.join(tmp, "generated"), { recursive: true });
-  vi.stubEnv("CODING_AGENT_ARTIFACTS_DIR", path.join(tmp, "root"));
-  vi.stubEnv("CODING_AGENT_ARTIFACTS_URL", "http://artifacts.test");
+  setWorkerRuntimeConfig({
+    artifactsDir: path.join(tmp, "root"),
+    artifactsBaseUrl: "http://artifacts.test",
+  });
 });
 
 afterAll(async () => {
-  vi.unstubAllEnvs();
+  resetWorkerRuntimeConfigForTests();
   await rm(tmp, { recursive: true, force: true });
 });
 

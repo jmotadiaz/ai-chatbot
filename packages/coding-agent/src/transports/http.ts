@@ -1,7 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { config } from "config";
 import {
   acquireTraceSink,
   getTraceLogger,
@@ -11,7 +10,16 @@ import {
 } from "tracing";
 import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { handleArtifactRequest, matchArtifactRoute } from "../artifacts/artifacts-http";
-import { getArtifactsBaseUrl, getArtifactsDir } from "../runtime/paths";
+import {
+  resolveArtifactsBaseUrl,
+  resolveArtifactsDir,
+} from "../runtime/paths";
+import {
+  defaultWorkerRuntimeConfig,
+  resolveWorkerRuntimeConfig,
+  type WorkerRuntimeConfig,
+} from "../runtime/runtime-config";
+import { setWorkerRuntimeConfig } from "../runtime/runtime-overrides";
 import {
   getOrCreateSession,
   sendPrompt,
@@ -39,6 +47,14 @@ import { QueueConflictError, type PendingQueues } from "../session/pending-queue
 export interface HttpTransportOptions {
   port: number;
   host?: string;
+  /**
+   * Worker config override (ADR 0011 §6). The transport is the composition
+   * root: it resolves the config once — defaults from the active Entorno
+   * bundle via `defaultWorkerRuntimeConfig()` — registers it process-wide for
+   * the session-manager facade and the Pi extensions, and hands it to the
+   * artifacts route. Tests inject their sandbox here.
+   */
+  runtimeConfig?: WorkerRuntimeConfig;
 }
 
 interface RequestTraceMetadata {
@@ -48,12 +64,19 @@ interface RequestTraceMetadata {
 }
 
 export function startHttpTransport(options: HttpTransportOptions) {
+  // Composition root: resolve the worker config once and make it the
+  // process-wide default for every module-level singleton downstream
+  // (sessionRegistry, turnRunner, runSubagent, the artifacts extension).
+  const runtimeConfig = resolveWorkerRuntimeConfig(options.runtimeConfig);
+  setWorkerRuntimeConfig(runtimeConfig);
   // Must happen before any session exists: Pi loads the subagent extension
   // when it builds a session runtime, and the extension resolves the runner
   // off globalThis rather than importing it (see subagent-bridge).
   setSubagentRunner(runSubagent);
 
-  const server = createServer(handleHttpRequest);
+  const server = createServer((req, res) =>
+    handleHttpRequest(req, res, runtimeConfig),
+  );
   const onListening = () => {
     const host = options.host ?? "localhost";
     console.log(`Coding agent worker listening on http://${host}:${options.port}`);
@@ -68,7 +91,11 @@ export function startHttpTransport(options: HttpTransportOptions) {
   return server;
 }
 
-async function handleHttpRequest(req: IncomingMessage, res: ServerResponse) {
+async function handleHttpRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  runtimeConfig: WorkerRuntimeConfig,
+) {
   // Artifacts are the read-only half of this server: reports the agent
   // generated for a human to open. Everything else on this port is the RPC
   // endpoint, which is POST-only and machine-facing.
@@ -78,8 +105,8 @@ async function handleHttpRequest(req: IncomingMessage, res: ServerResponse) {
       : undefined;
   if (artifactRoute) {
     await handleArtifactRequest(req, res, artifactRoute, {
-      rootDir: getArtifactsDir(),
-      baseUrl: getArtifactsBaseUrl(),
+      rootDir: resolveArtifactsDir(runtimeConfig),
+      baseUrl: resolveArtifactsBaseUrl(runtimeConfig),
     });
     return;
   }
@@ -681,7 +708,7 @@ function jsonResponse(
 }
 
 function parsePort(): number {
-  return config.codingAgentWorkerPort() ?? 3015;
+  return defaultWorkerRuntimeConfig().workerPort;
 }
 
 function isMainModule(): boolean {

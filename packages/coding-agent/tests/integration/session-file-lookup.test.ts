@@ -99,29 +99,24 @@ describe("SessionRegistry.loadSessionFromDisk", () => {
   let root: string;
   let sessionsDir: string;
   let registry: SessionRegistry;
-  const savedEnv = {
-    agent: process.env.PI_CODING_AGENT_DIR,
-    sessions: process.env.CODING_AGENT_SESSIONS_DIR,
-    projects: process.env.CODING_AGENT_PROJECTS_ROOT,
-  };
+  const savedAgentDir = process.env.PI_CODING_AGENT_DIR;
 
   beforeEach(() => {
     root = mkdtempSync(path.join(tmpdir(), "session-disk-lookup-"));
     sessionsDir = path.join(root, "sessions");
     const projectsRoot = path.join(root, "projects");
     mkdirSync(path.join(projectsRoot, "demo"), { recursive: true });
+    // El agente del SDK de Pi es su propia variable (PI_CODING_AGENT_DIR):
+    // el lookup resuelve la codificación de transcripciones del SDK. NADA de
+    // `CODING_AGENT_*`: rutas del worker por DI (ADR 0011 §6).
     process.env.PI_CODING_AGENT_DIR = path.join(root, "agent");
-    process.env.CODING_AGENT_SESSIONS_DIR = sessionsDir;
-    process.env.CODING_AGENT_PROJECTS_ROOT = projectsRoot;
-    registry = new SessionRegistry(fakeRuntimeFactory);
+    registry = new SessionRegistry(fakeRuntimeFactory, { sessionsDir, projectsRoot });
   });
 
   afterEach(() => {
     registry.clear();
     rmSync(root, { recursive: true, force: true });
-    restoreEnv("PI_CODING_AGENT_DIR", savedEnv.agent);
-    restoreEnv("CODING_AGENT_SESSIONS_DIR", savedEnv.sessions);
-    restoreEnv("CODING_AGENT_PROJECTS_ROOT", savedEnv.projects);
+    restoreEnv("PI_CODING_AGENT_DIR", savedAgentDir);
   });
 
   /** Writes a real Pi transcript through the SDK into `dir` and returns its path. */

@@ -4,6 +4,7 @@ import { ensureEventLog } from "./session-entry";
 import type { Cursor } from "../agui/event-log";
 import { convertPiMessagesToAgui } from "../agui/agui-messages";
 import { getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "../runtime/prompts";
+import { resolveProjectsRoot } from "../runtime/paths";
 import { sessionCwd } from "./session-entry";
 import type { SessionRegistry } from "./session-registry";
 
@@ -46,7 +47,7 @@ export class SessionQueries {
   private sessionProjectCwd(sessionId: string): string {
     const entry = this.registry.getRaw(sessionId);
     if (!entry) throw new Error("Session not found");
-    const cwd = sessionCwd(entry);
+    const cwd = sessionCwd(entry, resolveProjectsRoot(this.registry.runtimeConfig));
     if (!cwd) throw new Error("Session not found");
     return cwd;
   }

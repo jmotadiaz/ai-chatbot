@@ -1,6 +1,5 @@
 import path from "node:path";
 import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
-import { config } from "config";
 import { getTraceLogger } from "tracing";
 import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { SessionEventLog } from "../agui/event-log";
@@ -10,7 +9,13 @@ import {
   resolveProjectPath,
 } from "./session-entry";
 import { loadPrompts } from "../runtime/prompts";
-import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
+import {
+  resolveCodingAgentDir,
+  resolveProjectsRoot,
+  resolveSessionsDir,
+} from "../runtime/paths";
+import { getWorkerRuntimeConfig } from "../runtime/runtime-overrides";
+import type { WorkerRuntimeConfig } from "../runtime/runtime-config";
 import { makeCreateRuntime as defaultMakeCreateRuntime } from "../runtime/runtime-factory";
 import { findSessionFile } from "./session-file-lookup";
 
@@ -27,9 +32,24 @@ type MakeCreateRuntime = typeof defaultMakeCreateRuntime;
 export class SessionRegistry {
   private sessions = new Map<string, SessionEntry>();
   private makeCreateRuntime: MakeCreateRuntime;
+  private readonly injectedRuntimeConfig: WorkerRuntimeConfig;
 
-  constructor(makeCreateRuntime: MakeCreateRuntime = defaultMakeCreateRuntime) {
+  constructor(
+    makeCreateRuntime: MakeCreateRuntime = defaultMakeCreateRuntime,
+    runtimeConfig: WorkerRuntimeConfig = {},
+  ) {
     this.makeCreateRuntime = makeCreateRuntime;
+    this.injectedRuntimeConfig = runtimeConfig;
+  }
+
+  /**
+   * Worker config of this registry: explicit constructor DI wins, then the
+   * process-wide config the transport composition root registers, then the
+   * active Entorno bundle (inside each resolver). Resolved lazily so tests can
+   * register process-wide overrides after constructing the registry.
+   */
+  get runtimeConfig(): WorkerRuntimeConfig {
+    return { ...getWorkerRuntimeConfig(), ...this.injectedRuntimeConfig };
   }
 
   /** Test seam: override the factory (replaces __seed). */
@@ -80,10 +100,11 @@ export class SessionRegistry {
     },
   ): Promise<SessionEntry | undefined> {
     const log = getTraceLogger("worker");
-    const sessionsDir = getSessionsDir();
-    const projectsRoot = config.codingAgentProjectsRoot();
+    const cfg = this.runtimeConfig;
+    const sessionsDir = resolveSessionsDir(cfg);
+    const projectsRoot = resolveProjectsRoot(cfg);
     const cwd = resolveProjectPath(projectsRoot, project);
-    loadPrompts(cwd);
+    loadPrompts(cwd, cfg);
     // Pi keys its transcript folder by this path: `SessionManager.create()` and
     // `SessionManager.list()` both resolve it as the cwd, so `subagents` gets its
     // own folder and never mixes with top-level Coding Agent Sessions.
@@ -121,12 +142,13 @@ export class SessionRegistry {
     }
     const createRuntime = this.makeCreateRuntime(modelId, {
       includeSubagentExtension: !options?.parentSessionId,
+      runtimeConfig: cfg,
     });
 
     const stop = log.startTimer("session.runtime_create");
     const runtime = await createAgentSessionRuntime(createRuntime, {
       cwd,
-      agentDir: getCodingAgentDir(),
+      agentDir: resolveCodingAgentDir(cfg),
       sessionManager,
     });
     stop();
@@ -167,10 +189,11 @@ export class SessionRegistry {
     }
 
     const sessionId = options.sessionId ?? crypto.randomUUID();
-    const projectsRoot = config.codingAgentProjectsRoot();
+    const cfg = this.runtimeConfig;
+    const projectsRoot = resolveProjectsRoot(cfg);
     const cwd = resolveProjectPath(projectsRoot, options.project);
 
-    loadPrompts(cwd);
+    loadPrompts(cwd, cfg);
 
     log.info("session.create", {
       sessionId,
@@ -179,18 +202,21 @@ export class SessionRegistry {
     });
 
     const sessionManager = SessionManager.create(
-      getSessionsDir(),
+      resolveSessionsDir(cfg),
       undefined,
       { id: sessionId },
     );
     // Create path: an unknown modelId must fail the RPC instead of silently
     // running on Pi's default model. Reloads keep the tolerant path above.
-    const createRuntime = this.makeCreateRuntime(options.modelId, { strictModel: true });
+    const createRuntime = this.makeCreateRuntime(options.modelId, {
+      strictModel: true,
+      runtimeConfig: cfg,
+    });
 
     const stop = log.startTimer("session.runtime_create");
     const runtime = await createAgentSessionRuntime(createRuntime, {
       cwd,
-      agentDir: getCodingAgentDir(),
+      agentDir: resolveCodingAgentDir(cfg),
       sessionManager,
     });
     stop();
