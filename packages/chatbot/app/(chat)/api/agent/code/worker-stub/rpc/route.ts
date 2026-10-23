@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "config";
 
-export const runtime = "edge";
-
 const EventType = {
   RUN_STARTED: "RUN_STARTED",
   RUN_FINISHED: "RUN_FINISHED",

@@ -25,15 +25,18 @@ function moduleDir(): string {
   }
 }
 
+function getBuiltinModule(): ((id: string) => unknown) | undefined {
+  if (typeof process === "undefined") return undefined;
+  const fn = (process as unknown as Record<string, unknown>)["getBuiltinModule"];
+  return typeof fn === "function" ? (fn as (id: string) => unknown) : undefined;
+}
+
 /** `node:fs` cuando corremos en Node; `undefined` en el bundle de cliente. */
 function nodeFs(): { existsSync(path: string): boolean } | undefined {
-  if (typeof process === "undefined") return undefined;
-  const getBuiltinModule = process.getBuiltinModule as
-    | ((id: string) => unknown)
-    | undefined;
-  if (typeof getBuiltinModule !== "function") return undefined;
+  const getBuiltin = getBuiltinModule();
+  if (!getBuiltin) return undefined;
   try {
-    return getBuiltinModule("node:fs") as { existsSync(path: string): boolean };
+    return getBuiltin("node:fs") as { existsSync(path: string): boolean };
   } catch {
     return undefined;
   }
@@ -41,13 +44,10 @@ function nodeFs(): { existsSync(path: string): boolean } | undefined {
 
 /** `node:os` cuando corremos en Node; `undefined` en el bundle de cliente. */
 function nodeOs(): { homedir(): string } | undefined {
-  if (typeof process === "undefined") return undefined;
-  const getBuiltinModule = process.getBuiltinModule as
-    | ((id: string) => unknown)
-    | undefined;
-  if (typeof getBuiltinModule !== "function") return undefined;
+  const getBuiltin = getBuiltinModule();
+  if (!getBuiltin) return undefined;
   try {
-    return getBuiltinModule("node:os") as { homedir(): string };
+    return getBuiltin("node:os") as { homedir(): string };
   } catch {
     return undefined;
   }
