@@ -1,21 +1,19 @@
 import path from "path";
 import { defineConfig, devices } from "@playwright/test";
+import { config, initConfig } from "config";
 
 /**
- * Read environment variables from the versioned test env file at the repo root
- * (consistent from any cwd). https://github.com/motdotla/dotenv
+ * El Entorno de Playwright es SIEMPRE test (ADR 0011): la inicialización es
+ * explícita al cargar este fichero — sin `dotenv`, sin `.env.test` y sin
+ * bloque `env` de negocio en el `webServer`. Todo lo que antes se plumbaba por
+ * variables (`NEXT_PUBLIC_ENV`, `CODING_AGENT_*`, `POSTGRES_URL`, …) lo
+ * aporta el bundle estático de test (`packages/config/src/env.test.ts`) y el
+ * launcher `scripts/next-cli.ts` (`--env=test`) al proceso hijo.
  */
-import { config as loadEnv } from "dotenv";
-import { config } from "config";
+initConfig("test");
 
-loadEnv({
-  path: path.join(__dirname, "..", "..", ".env.test"),
-  // El e2e usa EXCLUSIVAMENTE la DB de Test (historia 5): el shell del
-  // operador puede arrastrar POSTGRES_URL de dev/prod y .env.test gana.
-  override: true,
-});
-
-// `CI` la provee el runner (variable gestionada por el framework, no configuración de la app).
+// `CI` la provee el runner de Playwright (variable del framework, no
+// configuración de la app): por eso sigue leyéndose de process.env.
 const CI = Boolean(process.env.CI);
 
 const PORT = config.port();
@@ -44,7 +42,7 @@ export default defineConfig({
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [["html", { open: "never" }]],
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  /* Shared settings for all the projects below. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: baseURL,
@@ -64,68 +62,26 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-
-    // {
-    //   name: "firefox",
-    //   use: { ...devices["Desktop Firefox"] },
-    // },
-
-    // {
-    //   name: "webkit",
-    //   use: { ...devices["Desktop Safari"] },
-    // },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: "Mobile Chrome",
-    //   use: { ...devices["Pixel 5"] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    // Turbopack can stall indefinitely compiling /agent/code under Node 24.
-    // Webpack keeps the E2E server deterministic across local runs and CI.
-    command: `npx next dev --webpack -p ${PORT}`,
+    // Turbopack puede atascarse compilando /agent/code bajo Node 24: el e2e
+    // usa Webpack (`--webpack`) para que el servidor sea determinista en local
+    // y en CI. El Entorno, el puerto y NODE_ENV los decide el launcher.
+    command: `npx tsx scripts/next-cli.ts dev --env=test --webpack --port=${PORT}`,
     stdout: config.serverOutput() ? "pipe" : "ignore",
     stderr: config.serverOutput() ? "pipe" : "ignore",
     // Sonda de readiness en /login, no en `/` (ADR 0010): la home hidrata el
-    // catálogo desde el Model Gateway, y el Mock (:4001) lo arranta globalSetup
-    // — que Playwright ejecuta DESPUÉS de esperar esta sonda. Sondar `/` sería
-    // un deadlock: el gateway ya está garantizado para el momento en que
-    // corren los tests, pero la sonda debe valer sin gateway.
+    // catálogo desde el Model Gateway, y el Mock (:4001) lo arranta el
+    // globalSetup de Playwright — que se ejecuta DESPUÉS de esperar esta
+    // sonda. Sondar `/` sería un deadlock: el gateway ya está garantizado para
+    // el momento en que corren los tests, pero la sonda debe valer sin gateway.
     url: `${baseURL}/login`,
     reuseExistingServer: !CI,
     timeout: 240 * 1000,
-    // Reenvío de valores crudos al webServer (strings, defaults propios del runner).
-    // A propósito NO usa config: aquí se plumbearn a un proceso hijo, no se leen
-    // para la lógica de la app. Ver docs/archive/specs/2026-08-10-centralized-env-config-design.md.
-    env: {
-      // El shell puede arrastrar NODE_ENV=production (p. ej. contexto pm2/prod);
-      // next dev con un NODE_ENV ajeno revienta el pipeline CSS de webpack.
-      NODE_ENV: "development",
-      DISABLE_DEV_INDICATOR: "1",
-      NEXT_PUBLIC_ENV: "test",
-      CODING_AGENT_ENABLED: process.env.CODING_AGENT_ENABLED ?? "true",
-      CODING_AGENT_PROJECTS_ROOT: process.env.CODING_AGENT_PROJECTS_ROOT ?? "",
-      CODING_AGENT_SESSIONS_DIR: process.env.CODING_AGENT_SESSIONS_DIR ?? "",
-      CODING_AGENT_WORKER_URL: process.env.CODING_AGENT_WORKER_URL ?? "",
-      CODING_AGENT_WORKER_PORT: process.env.CODING_AGENT_WORKER_PORT ?? "",
-      CODING_AGENT_AUTH_JSON: process.env.CODING_AGENT_AUTH_JSON ?? "",
-    },
+    // Sin bloque `env`: no hay variables de configuración de la app (ADR 0011).
+    // El único proceso hijo que arranca aquí es next-cli, que ya recibe
+    // --env=test por argv y fija NODE_ENV/TURBOPACK internamente.
   },
 });

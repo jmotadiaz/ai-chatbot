@@ -1,5 +1,4 @@
 import { randomUUID } from "crypto";
-import { config as loadEnv } from "dotenv";
 import { and, asc, eq } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase, type PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -7,11 +6,10 @@ import { faker } from "@faker-js/faker";
 
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
-import { config, optional } from "config";
+import { config, initConfig, optional, parseEntornoFromArgv } from "config";
 import { generateHashedPassword } from "../lib/features/auth/utils";
 import { schema } from "../lib/infrastructure/db/db";
 import { chat, message, project, user } from "../lib/infrastructure/db/schema";
-import { resolveEnvFile } from "../lib/infrastructure/env-file";
 
 const TEST_USER_EMAIL = "test@test.com";
 const TEST_USER_PASSWORD = "123456";
@@ -118,7 +116,16 @@ async function upsertSeedProject(tx: Tx, userId: string) {
 }
 
 async function main() {
-  loadEnv({ path: resolveEnvFile() });
+  // El Entorno (y con él el DSN de SU DB aislada) llega por process.argv
+  // (ADR 0011): `tsx scripts/seed-test-data.ts --env=dev ...` — sin dotenv.
+  const entorno = parseEntornoFromArgv(process.argv);
+  if (!entorno) {
+    console.error(
+      "❌ seed-test-data.ts exige --env=dev|test|prod (ADR 0011). Ej: npx tsx scripts/seed-test-data.ts --env=dev --chats=5",
+    );
+    process.exit(1);
+  }
+  initConfig(entorno);
 
   const args = parseArgs(process.argv.slice(2));
   faker.seed(args.seed);
