@@ -226,12 +226,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const allowProdBuild =
+    options.allowProdBuild || process.env.ALLOW_PROD_BUILD === "1";
+
   // ANTES de cualquier import de Next.js ni de `next.config.ts`: el alias del
   // bundler y `distDir` se calculan con la fachada ya inicializada en este
   // proceso (mismo patrón que `initConfig` en los `vitest.config.ts`).
   initConfig(options.env, {
     verifyBuild: options.verifyBuild,
-    allowProdBuild: options.allowProdBuild,
+    allowProdBuild,
   });
 
   // Señal IPC a los workers de Next (ver comentario en `next.config.ts`):
@@ -243,8 +246,8 @@ async function main(): Promise<void> {
     options.verifyBuild ? "1" : "";
 
   // Ver ADR 0006: `build` escribe el .next de prod salvo que pida explícitamente
-  // aislamiento (--verify) u opt-in del operador (--allow-prod-build).
-  if (options.command === "build" && !options.verifyBuild && !options.allowProdBuild) {
+  // aislamiento (--verify) u opt-in del operador (--allow-prod-build o ALLOW_PROD_BUILD=1).
+  if (options.command === "build" && !options.verifyBuild && !allowProdBuild) {
     console.error(
       [
         "❌ build bloqueado: escribe el .next que sirve prod bajo pm2 (ADR 0006).",

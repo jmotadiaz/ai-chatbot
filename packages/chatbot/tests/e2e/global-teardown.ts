@@ -1,14 +1,12 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import { reset } from "drizzle-seed";
 import postgres from "postgres";
+import { config } from "config";
 import { stopMockGateway } from "../mocks/gateway/server";
 import { schema } from "@/lib/infrastructure/db/db";
 
-const getTestPostgresUrl = () =>
-  process.env.POSTGRES_URL ?? "postgres://postgres:postgres@localhost:5434/test";
-
 async function globalTeardown() {
-  const client = postgres(getTestPostgresUrl());
+  const client = postgres(config.postgresUrl());
   const db = drizzle(client);
   try {
     await reset(db, schema);

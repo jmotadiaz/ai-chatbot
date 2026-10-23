@@ -92,7 +92,7 @@ test.describe("Mi funcionalidad", () => {
 
 ## Configuración
 
-La configuración de Playwright se encuentra en `playwright.config.ts`:
+La configuración de Playwright se encuentra en `playwright.config.mts`:
 - **Base URL**: `http://localhost:3000`
 - **Web Server**: Inicia automáticamente `pnpm dev` antes de los tests
 - **Timeout**: 120 segundos para que el servidor esté listo

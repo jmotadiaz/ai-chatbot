@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 import { config, initConfig } from "config";
 
@@ -9,6 +9,11 @@ import { config, initConfig } from "config";
  * variables (`NEXT_PUBLIC_ENV`, `CODING_AGENT_*`, `POSTGRES_URL`, …) lo
  * aporta el bundle estático de test (`packages/config/src/env.test.ts`) y el
  * launcher `scripts/next-cli.ts` (`--env=test`) al proceso hijo.
+ *
+ * Es `.mts` (ESM) a propósito: `packages/config` es ESM (`"type": "module"`) y
+ * el transpilador CJS con el que Playwright carga un `playwright.config.ts`
+ * rompe al requerir sus módulos (`import.meta`). Cargado como ESM, el config
+ * importa el paquete `config` nativamente.
  */
 initConfig("test");
 
@@ -25,9 +30,9 @@ const baseURL = `http://localhost:${PORT}`;
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  globalSetup: require.resolve("./tests/e2e/global-setup"),
-  globalTeardown: require.resolve("./tests/e2e/global-teardown"),
-  testDir: path.join(__dirname, "tests/e2e"),
+  globalSetup: path.join(import.meta.dirname, "tests/e2e/global-setup.ts"),
+  globalTeardown: path.join(import.meta.dirname, "tests/e2e/global-teardown.ts"),
+  testDir: path.join(import.meta.dirname, "tests/e2e"),
   timeout: 50 * 1000,
   expect: {
     timeout: 15 * 1000,

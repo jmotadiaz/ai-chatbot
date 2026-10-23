@@ -4,6 +4,7 @@ import { test as base } from "@playwright/test";
 import type { DefaultJWT } from "next-auth/jwt";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { config } from "config";
 import { hashSync } from "bcrypt-ts";
 import {
   user,
@@ -57,10 +58,7 @@ interface TestFixtures {
 export const test = base.extend<TestFixtures>({
   // Shared Database Client Fixture
   dbClient: async ({}, use) => {
-    const client = postgres(
-      process.env.POSTGRES_URL ??
-        "postgres://postgres:postgres@localhost:5434/test",
-    );
+    const client = postgres(config.postgresUrl());
     const db = drizzle(client, { schema });
 
     await use({ client, db });
@@ -85,7 +83,7 @@ export const test = base.extend<TestFixtures>({
         .returning();
 
       // 2. Authenticate (Inject Cookie)
-      const secret = process.env.AUTH_SECRET ?? "test-auth-secret-change-me";
+      const secret = config.authSecret();
       const token: DefaultJWT = {
         id: newUser.id,
         email: newUser.email,

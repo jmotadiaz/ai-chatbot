@@ -106,7 +106,7 @@ TypeScript con validación en compilación:
   `process.argv`. `process.argv` pertenece solo al proceso invocado: el kernel no lo
   clona en `fork()`/`execve()`, así que un subproceso lanzado por el worker (p. ej.
   `pnpm test`) jamás hereda el Entorno del padre (incidente ADR 0011).
-- `vitest.config.ts` / `playwright.config.ts` llaman `initConfig("test")` al cargarse y
+- `vitest.config.ts` / `playwright.config.mts` llaman `initConfig("test")` al cargarse y
   aliasan `"config"` a `packages/config/src/env.test.ts`.
 - `chatbot` usa el micro-launcher `packages/chatbot/scripts/next-cli.ts` (el CLI `next`
   rechaza flags desconocidos y `next dev` no reenvía `argv` al servidor). El launcher

@@ -2,11 +2,8 @@ import path from "path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { config } from "config";
 import { ensureMockGateway, MOCK_GATEWAY_PORT } from "../mocks/gateway/server";
-
-const getTestPostgresUrl = () =>
-  process.env.POSTGRES_URL ??
-  "postgres://postgres:postgres@localhost:5434/test";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -29,20 +26,9 @@ async function waitForPostgres(postgresUrl: string) {
 }
 
 async function globalSetup() {
-  const postgresUrl = getTestPostgresUrl();
-
-  // Guardarraíl de Entorno (ticket 05). Este setup solo corre para e2e, así
-  // que el Entorno es test por definición: si el shell arrastró un
-  // POSTGRES_URL de dev/prod, fallamos antes de tocar ninguna DB. La regla
-  // canónica vive en packages/config/src/guardrails.ts (ENTORNO_DB, ADR 0001);
-  // el arranque de Playwright replica aquí el check porque global-setup corre
-  // antes de que cualquier código de la app haya podido importar config.
-  if (!postgresUrl.includes("5434/test")) {
-    throw new Error(
-      `[e2e guardrail] POSTGRES_URL="${postgresUrl}" no apunta a la DB de Test (5434/test). ` +
-        "Levanta la DB de Test (`pnpm db:test:start`) y exporta el entorno con `dotenv -o -e .env.test`.",
-    );
-  }
+  // El DSN sale del bundle estático de Test (ADR 0011), no del shell: el
+  // guardarraíl Entorno↔DB ya validó `:5434/test` al cargar `env.test.ts`.
+  const postgresUrl = config.postgresUrl();
 
   await waitForPostgres(postgresUrl);
 
