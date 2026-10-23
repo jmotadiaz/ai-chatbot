@@ -29,6 +29,7 @@ import {
   loggedLine,
   sessionCwd,
 } from "./session-entry";
+import { resolveProjectsRoot } from "../runtime/paths";
 import { convertPiMessagesToAgui } from "../agui/agui-messages";
 import { splitModelReference, unknownModelMessage } from "../runtime/runtime-factory";
 import type { SessionRegistry } from "./session-registry";
@@ -87,8 +88,11 @@ ${body}
   return userText ? `${blocks.join("\n\n")}\n\n${userText}` : blocks.join("\n\n");
 }
 
-function captureTurnBaseline(entry: SessionEntry): Promise<GitFileState | null> {
-  const cwd = sessionCwd(entry);
+function captureTurnBaseline(
+  entry: SessionEntry,
+  projectsRoot: string,
+): Promise<GitFileState | null> {
+  const cwd = sessionCwd(entry, projectsRoot);
   if (!cwd) return Promise.resolve(null);
   return captureGitFileState(cwd).catch(() => null);
 }
@@ -360,7 +364,10 @@ export class TurnRunner {
       const flush = (async () => {
         try {
           if (turnBaseline) {
-            const cwd = sessionCwd(entry);
+            const cwd = sessionCwd(
+              entry,
+              resolveProjectsRoot(this.registry.runtimeConfig),
+            );
             const after = cwd ? await captureGitFileState(cwd) : null;
             const files = diffTurnFiles(turnBaseline, after);
             if (files.length > 0) {
@@ -636,7 +643,10 @@ export class TurnRunner {
 
     const eventLog = ensureEventLog(entry);
     const afterSeq = eventLog.lastSeq;
-    const turnBaseline = await captureTurnBaseline(entry);
+    const turnBaseline = await captureTurnBaseline(
+      entry,
+      resolveProjectsRoot(this.registry.runtimeConfig),
+    );
     this.startPromptCollector(entry, prompt, runId, messages, turnBaseline);
     return this.createEventStream(
       "session.prompt_stream",

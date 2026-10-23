@@ -72,20 +72,17 @@ const docBase64 = (content: string) => Buffer.from(content, "utf8").toString("ba
 describe("TurnRunner (deep module)", () => {
   let registry: SessionRegistry;
   let runner: TurnRunner;
-  let savedRoot: string | undefined;
   let projectsRoot: string;
 
   beforeEach(() => {
-    registry = new SessionRegistry();
-    runner = new TurnRunner(registry);
-    savedRoot = process.env.CODING_AGENT_PROJECTS_ROOT;
+    // DI por constructor (ADR 0011 §6): el projectsRoot (baseline git, cwd de
+    // proyectos) viaja en el registry, nunca por process.env.
     projectsRoot = mkdtempSync(join(tmpdir(), "turn-runner-"));
-    process.env.CODING_AGENT_PROJECTS_ROOT = projectsRoot;
+    registry = new SessionRegistry(undefined, { projectsRoot });
+    runner = new TurnRunner(registry);
   });
 
   afterEach(() => {
-    if (savedRoot === undefined) delete process.env.CODING_AGENT_PROJECTS_ROOT;
-    else process.env.CODING_AGENT_PROJECTS_ROOT = savedRoot;
     rmSync(projectsRoot, { recursive: true, force: true });
   });
 

@@ -6,9 +6,8 @@ import {
   type GatewayModelEntry,
   type ThinkingLevel,
 } from "config";
-import { config } from "config";
 import { getTraceLogger } from "tracing";
-import { getAuthJsonPath, getModelsJsonPath } from "./models";
+import { resolveGatewayRuntimeConfig, type GatewayRuntimeConfig } from "./runtime-config";
 
 /**
  * Runtime model catalog, synced from the Model Gateway (ADR 0010).
@@ -231,17 +230,22 @@ export function resetGatewayCatalogForTests(): void {
  * catalog in process memory. Must run before `ModelRuntime.create()` — the
  * runtime reads the file-backed catalog, so without this sync the worker
  * would start with an empty model list.
+ *
+ * Config is injected (`GatewayRuntimeConfig`); with no override the
+ * composition root resolves the active Entorno bundle (ADR 0011 §6).
  */
-export async function ensureGatewayModelsJson(): Promise<readonly GatewayModelEntry[]> {
-  const apiKey = config.modelGatewayApiKey();
-  if (!apiKey) {
+export async function ensureGatewayModelsJson(
+  options?: GatewayRuntimeConfig,
+): Promise<readonly GatewayModelEntry[]> {
+  const resolved = resolveGatewayRuntimeConfig(options);
+  if (!resolved.apiKey) {
     throw new Error(
       "MODEL_GATEWAY_API_KEY is not set: the coding-agent worker authenticates " +
         "against the Model Gateway (MODEL_GATEWAY_URL) with it to fetch the " +
-        "model catalog. Set it in the environment file of this Entorno.",
+        "model catalog. Set it in the configuration of this Entorno.",
     );
   }
-  return syncGatewayModelsFile();
+  return syncGatewayModelsFile(resolved);
 }
 
 /**
@@ -250,22 +254,23 @@ export async function ensureGatewayModelsJson(): Promise<readonly GatewayModelEn
  * + `auth.json`, and update the in-process snapshot. Assumes the API key is
  * present; callers validate first.
  */
-export async function syncGatewayModelsFile(): Promise<readonly GatewayModelEntry[]> {
+export async function syncGatewayModelsFile(
+  options?: GatewayRuntimeConfig,
+): Promise<readonly GatewayModelEntry[]> {
   const log = getTraceLogger("worker");
-  const gatewayUrl = config.modelGatewayUrl();
-  const apiKey = config.modelGatewayApiKey()!;
+  const { gatewayUrl, apiKey, modelsJsonPath, authJsonPath } =
+    resolveGatewayRuntimeConfig(options);
   const catalog = await fetchGatewayCatalog(gatewayUrl, apiKey);
 
   const modelsJson = buildPiModelsJson(catalog, gatewayUrl);
-  const modelsPath = getModelsJsonPath();
-  mkdirSync(path.dirname(modelsPath), { recursive: true });
-  writeFileSync(modelsPath, `${JSON.stringify(modelsJson, null, 2)}\n`);
-  ensureGatewayAuthJson(getAuthJsonPath(), apiKey);
+  mkdirSync(path.dirname(modelsJsonPath), { recursive: true });
+  writeFileSync(modelsJsonPath, `${JSON.stringify(modelsJson, null, 2)}\n`);
+  ensureGatewayAuthJson(authJsonPath, apiKey);
 
   syncedCatalog = catalog;
   log.info("gateway.catalog.synced", {
     models: catalog.length,
-    modelsPath,
+    modelsPath: modelsJsonPath,
   });
   return catalog;
 }

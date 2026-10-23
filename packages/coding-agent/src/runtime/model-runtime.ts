@@ -1,7 +1,7 @@
 import { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { getTraceLogger } from "tracing";
 import { ensureGatewayModelsJson, getSyncedGatewayCatalog, syncGatewayModelsFile } from "./gateway-catalog";
-import { getAuthJsonPath, getModelsJsonPath } from "./models";
+import { resolveGatewayRuntimeConfig, type GatewayRuntimeConfig } from "./runtime-config";
 
 /**
  * Process-wide `ModelRuntime` singleton (pi SDK ≥ 0.80.8).
@@ -14,9 +14,10 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
  * Sessions (including subagent runtimes) therefore share one instance.
  *
  * `ModelRuntime` is NOT bound to a cwd: `authPath` and `modelsPath` are
- * resolved here against this package (ADR 0002 v2 — per-environment paths,
- * never the machine-wide `~/.pi/agent`), so sharing across sessions cannot
- * leak credentials between environments.
+ * injected through `GatewayRuntimeConfig` (resolved by the composition root
+ * against this package — ADR 0002 v2, per-environment paths, never the
+ * machine-wide `~/.pi/agent`), so sharing across sessions cannot leak
+ * credentials between environments.
  *
  * Network parity with the pre-0.80.8 behavior: catalog creation stays
  * file-backed only (`allowModelNetwork: false`, `refreshOnCreate: false`).
@@ -24,17 +25,34 @@ import { getAuthJsonPath, getModelsJsonPath } from "./models";
  * `runtime.refresh()` explicitly if that ever changes.
  */
 let runtimePromise: Promise<ModelRuntime> | undefined;
+let runtimeConfigKey: string | undefined;
 
-export function getModelRuntime(): Promise<ModelRuntime> {
+/** Identity of the config a cached runtime was built with. */
+function configKey(cfg: ReturnType<typeof resolveGatewayRuntimeConfig>): string {
+  return JSON.stringify([cfg.gatewayUrl, cfg.apiKey, cfg.modelsJsonPath, cfg.authJsonPath]);
+}
+
+export function getModelRuntime(
+  options?: GatewayRuntimeConfig,
+): Promise<ModelRuntime> {
+  const resolved = resolveGatewayRuntimeConfig(options);
+  const key = configKey(resolved);
+  if (runtimeConfigKey !== key) {
+    // A caller injected a different config (test sandbox, new process-wide
+    // config): drop the cached instance instead of serving paths/credentials
+    // that belong to someone else.
+    runtimePromise = undefined;
+    runtimeConfigKey = key;
+  }
   runtimePromise ??= (async () => {
     // Sync the runtime catalog from the Model Gateway BEFORE building the
     // file-backed runtime: models.json/auth.json must describe the single
     // `model-gateway` provider, and a dead Gateway must fail fast instead of
     // silently starting with an empty model list.
-    await ensureGatewayModelsJson();
+    await ensureGatewayModelsJson(resolved);
     return ModelRuntime.create({
-      authPath: getAuthJsonPath(),
-      modelsPath: getModelsJsonPath(),
+      authPath: resolved.authJsonPath,
+      modelsPath: resolved.modelsJsonPath,
       allowModelNetwork: false,
       refreshOnCreate: false,
     });
@@ -52,6 +70,7 @@ export function getModelRuntime(): Promise<ModelRuntime> {
 /** Test hook: drop the cached instance so the next call rebuilds it. */
 export function resetModelRuntimeForTests(): void {
   runtimePromise = undefined;
+  runtimeConfigKey = undefined;
 }
 
 // --- Runtime Model Catalog refresh (hot reload) -----------------------------
@@ -74,25 +93,27 @@ let refreshInFlight: Promise<void> | undefined;
  * with what it already has. With no catalog yet (cold start) the initial
  * load behavior is preserved: the error propagates.
  */
-export function refreshGatewayCatalog(): Promise<void> {
-  refreshInFlight ??= refreshOnce().finally(() => {
+export function refreshGatewayCatalog(
+  options?: GatewayRuntimeConfig,
+): Promise<void> {
+  refreshInFlight ??= refreshOnce(options).finally(() => {
     refreshInFlight = undefined;
   });
   return refreshInFlight;
 }
 
-async function refreshOnce(): Promise<void> {
+async function refreshOnce(options?: GatewayRuntimeConfig): Promise<void> {
   const log = getTraceLogger("worker");
   // Cold start: the lazy initial sync (`ensureGatewayModelsJson` inside
   // `getModelRuntime`) already fetches the catalog — just build the runtime
   // and let its errors propagate, as the startup path always did.
   if (getSyncedGatewayCatalog().length === 0) {
-    await getModelRuntime();
+    await getModelRuntime(options);
     return;
   }
   try {
-    const catalog = await syncGatewayModelsFile();
-    const runtime = await getModelRuntime();
+    const catalog = await syncGatewayModelsFile(options);
+    const runtime = await getModelRuntime(options);
     // Re-read the rewritten models.json into the live runtime (file-backed,
     // `allowNetwork: false` — no provider network refresh) so new ids resolve
     // through the shared instance sessions already hold.

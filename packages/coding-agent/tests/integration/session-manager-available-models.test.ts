@@ -1,6 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { writeFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildPiModelsJson,
@@ -8,6 +6,7 @@ import {
   type GatewayModelEntry,
 } from "../../src/runtime/gateway-catalog";
 import { resetModelRuntimeForTests } from "../../src/runtime/model-runtime";
+import { createTestWorkerContext } from "../helpers/test-context";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -65,8 +64,8 @@ const catalog: GatewayModelEntry[] = [
   },
 ];
 
-let tmp: string;
-const savedEnv: Record<string, string | undefined> = {};
+let ctx: ReturnType<typeof createTestWorkerContext>;
+let gateway: { gatewayUrl: string; apiKey: string; modelsJsonPath: string; authJsonPath: string };
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -77,48 +76,40 @@ beforeEach(() => {
   );
   resetModelRuntimeForTests();
   resetGatewayCatalogForTests();
-  tmp = mkdtempSync(path.join(tmpdir(), "available-models-"));
-  for (const key of [
-    "CODING_AGENT_MODELS_JSON",
-    "CODING_AGENT_AUTH_JSON",
-    "MODEL_GATEWAY_URL",
-    "MODEL_GATEWAY_API_KEY",
-  ]) {
-    savedEnv[key] = process.env[key];
-  }
-  process.env.CODING_AGENT_MODELS_JSON = path.join(tmp, "models.json");
-  process.env.CODING_AGENT_AUTH_JSON = path.join(tmp, "auth.json");
-  process.env.MODEL_GATEWAY_URL = GATEWAY_URL;
-  process.env.MODEL_GATEWAY_API_KEY = GATEWAY_KEY;
+  // DI por parámetro (ADR 0011 §6): sandbox temporal + credenciales del test,
+  // sin process.env. La suite jamás toca los runtime dirs de prod/dev.
+  ctx = createTestWorkerContext({ gatewayUrl: GATEWAY_URL, apiKey: GATEWAY_KEY });
+  gateway = {
+    gatewayUrl: GATEWAY_URL,
+    apiKey: GATEWAY_KEY,
+    modelsJsonPath: ctx.modelsJsonPath,
+    authJsonPath: ctx.authJsonPath,
+  };
   // The models.json is written by the startup sync (ensureGatewayModelsJson,
   // via getModelRuntime), not by the test — but pre-writing it here exercises
   // the same shape buildPiModelsJson emits.
   writeFileSync(
-    process.env.CODING_AGENT_MODELS_JSON,
+    ctx.modelsJsonPath,
     JSON.stringify(buildPiModelsJson(catalog, GATEWAY_URL), null, 2),
   );
 });
 
 afterEach(() => {
-  rmSync(tmp, { recursive: true, force: true });
+  ctx.cleanup();
   vi.unstubAllGlobals();
-  for (const [key, value] of Object.entries(savedEnv)) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
   resetGatewayCatalogForTests();
 });
 
 describe("getAvailableModels", () => {
   it("lists the single model-gateway provider with catalog ids and their thinking levels", async () => {
-    // Even if auth.json or process.env holds legacy credentials for Pi's
-    // built-in providers (e.g. opencode-go, openrouter), only model-gateway
-    // entries may surface.
+    // Even if a legacy auth.json holds credentials for Pi's built-in
+    // providers (e.g. opencode-go, openrouter), only model-gateway entries
+    // may surface.
     writeFileSync(
-      process.env.CODING_AGENT_AUTH_JSON!,
+      ctx.authJsonPath,
       JSON.stringify({ "opencode-go": { type: "api_key", key: "legacy-key" } }),
     );
-    const models = await getAvailableModels();
+    const models = await getAvailableModels(gateway);
     expect(models.map((m) => m.providerId)).toEqual(["model-gateway", "model-gateway"]);
     const muse = models.find((m) => m.modelId === "Muse Spark 1.3");
     expect(muse?.modelId).toBe("Muse Spark 1.3");
@@ -130,9 +121,12 @@ describe("getAvailableModels", () => {
     expect(nemotron?.levels).toEqual(["off"]);
   });
 
-  it("fails fast when MODEL_GATEWAY_API_KEY is unset instead of starting with an empty catalog", async () => {
-    delete process.env.MODEL_GATEWAY_API_KEY;
+  it("fails fast when the API key is unset instead of starting with an empty catalog", async () => {
+    // DI explícita `apiKey: ""` = sin credencial: valida antes de escribir o
+    // arrancar con un catálogo vacío, sin variables de entorno.
     resetModelRuntimeForTests();
-    await expect(getAvailableModels()).rejects.toThrow(/MODEL_GATEWAY_API_KEY/);
+    await expect(
+      getAvailableModels({ ...gateway, apiKey: "" }),
+    ).rejects.toThrow(/MODEL_GATEWAY_API_KEY/);
   });
 });

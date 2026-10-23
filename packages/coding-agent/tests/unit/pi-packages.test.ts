@@ -132,16 +132,15 @@ describe("Pi package extension entrypoints (generic helper)", () => {
     extensionEntrypoints: [".pi/extensions/dummy.ts"],
   };
   let tmpRoot: string;
-  let originalPackagesDir: string | undefined;
   let manifestPath: string;
   let extensionPath: string;
 
   beforeEach(() => {
     tmpRoot = join(tmpdir(), `pkg-paths-test-${crypto.randomUUID()}`);
-    originalPackagesDir = process.env.CODING_AGENT_PI_PACKAGES_DIR;
-    process.env.CODING_AGENT_PI_PACKAGES_DIR = tmpRoot;
 
-    const checkout = getPiPackagePath(dummyPkg);
+    // DI por parámetro (ADR 0011 §6): el checkouts vive en el sandbox del
+    // test, sin process.env de por medio.
+    const checkout = getPiPackagePath(dummyPkg, { piPackagesDir: tmpRoot });
     manifestPath = join(checkout, "package.json");
     extensionPath = join(checkout, ".pi", "extensions", "dummy.ts");
     mkdirSync(dirname(extensionPath), { recursive: true });
@@ -162,16 +161,14 @@ describe("Pi package extension entrypoints (generic helper)", () => {
   });
 
   afterEach(() => {
-    if (originalPackagesDir === undefined) {
-      delete process.env.CODING_AGENT_PI_PACKAGES_DIR;
-    } else {
-      process.env.CODING_AGENT_PI_PACKAGES_DIR = originalPackagesDir;
-    }
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 
   it("handles package extension discovery when packages are defined", () => {
     expect(readFileSync(manifestPath, "utf-8")).toContain("dummy-pkg");
+    expect(getPiPackageExtensionPaths({ piPackagesDir: tmpRoot })).toEqual([]);
+    // El default del Entorno no se tocó: PI_PACKAGES sigue vacío, así que
+    // aunque resuelva el `.pi-test` del paquete no expone entradas.
     expect(getPiPackageExtensionPaths()).toEqual([]);
   });
 });

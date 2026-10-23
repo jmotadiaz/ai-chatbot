@@ -1,7 +1,9 @@
 import path from "node:path";
 import { existsSync, readdirSync } from "node:fs";
 import { config } from "config";
-import { PACKAGE_ROOT, resolveOverride } from "./paths";
+import { PACKAGE_ROOT, pickOverride, resolveOverride } from "./paths";
+import { getWorkerRuntimeConfig } from "./runtime-overrides";
+import type { WorkerRuntimeConfig } from "./runtime-config";
 
 /**
  * Pi packages the worker loads from pinned, worker-owned checkouts.
@@ -25,16 +27,29 @@ export interface PiPackage {
 
 export const PI_PACKAGES: PiPackage[] = [];
 
-/** Directory holding the worker-owned package checkouts. */
-export function getPiPackagesDir(): string {
+/** Directory holding the worker-owned package checkouts (DI-resolvable). */
+export function resolvePiPackagesDir(
+  cfg?: Pick<WorkerRuntimeConfig, "piPackagesDir">,
+): string {
   return resolveOverride(
-    config.codingAgentPiPackagesDir(),
+    pickOverride(
+      cfg?.piPackagesDir,
+      getWorkerRuntimeConfig().piPackagesDir,
+      config.codingAgentPiPackagesDir(),
+    ),
     path.join(PACKAGE_ROOT, ".pi", "packages"),
   );
 }
 
-export function getPiPackagePath(pkg: PiPackage): string {
-  return path.join(getPiPackagesDir(), pkg.name);
+export function getPiPackagesDir(): string {
+  return resolvePiPackagesDir(getWorkerRuntimeConfig());
+}
+
+export function getPiPackagePath(
+  pkg: PiPackage,
+  cfg?: Pick<WorkerRuntimeConfig, "piPackagesDir">,
+): string {
+  return path.join(resolvePiPackagesDir(cfg), pkg.name);
 }
 
 /**
@@ -47,10 +62,12 @@ export function getPiPackageRef(pkg: PiPackage): string {
 }
 
 /** Extension files handed to Pi without loading their package manifests. */
-export function getPiPackageExtensionPaths(): string[] {
+export function getPiPackageExtensionPaths(
+  cfg?: Pick<WorkerRuntimeConfig, "piPackagesDir">,
+): string[] {
   return PI_PACKAGES.flatMap((pkg) =>
     pkg.extensionEntrypoints.map((entrypoint) =>
-      path.join(getPiPackagePath(pkg), entrypoint),
+      path.join(getPiPackagePath(pkg, cfg), entrypoint),
     ),
   ).filter((entrypoint) => existsSync(entrypoint));
 }
@@ -108,14 +125,17 @@ export function getFirstPartySkillPaths(): string[] {
  * executes one specific task from a self-contained brief, so the orchestrator
  * keeps the delegation tool to itself.
  */
-export function getExtensionPaths(options?: {
-  includeSubagentExtension?: boolean;
-}): string[] {
+export function getExtensionPaths(
+  options?: {
+    includeSubagentExtension?: boolean;
+  },
+  cfg?: Pick<WorkerRuntimeConfig, "piPackagesDir">,
+): string[] {
   const firstParty = getFirstPartyExtensionPaths().filter((p) => {
     const name = path.basename(path.dirname(p));
     if (options?.includeSubagentExtension === false && name === "subagent")
       return false;
     return true;
   });
-  return [...getPiPackageExtensionPaths(), ...firstParty];
+  return [...getPiPackageExtensionPaths(cfg), ...firstParty];
 }

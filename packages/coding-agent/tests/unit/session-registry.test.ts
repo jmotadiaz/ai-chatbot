@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SessionEventLog } from "../../src/agui/event-log";
 import { SessionRegistry } from "../../src/session/session-registry";
+import { createTestWorkerContext } from "../helpers/test-context";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -107,21 +108,25 @@ describe("SessionRegistry (deep module)", () => {
     expect(session.setModel).not.toHaveBeenCalled();
   });
 
-  it("allows overriding the runtime factory (seam without __seed)", async () => {
+  it("allows overriding the runtime factory (seam without __seed)", () => {
     const fakeFactory = vi.fn(async () => ({
       session: makeSession(),
       services: { modelRuntime: { getModel: () => undefined } },
       diagnostics: [],
     })) as unknown as any;
 
-    const customRegistry = new SessionRegistry(fakeFactory);
-    // Need to mock SessionManager and config for create path
-    const projectsRoot = process.env.CODING_AGENT_PROJECTS_ROOT;
-    process.env.CODING_AGENT_PROJECTS_ROOT = "/tmp";
-    process.env.CODING_AGENT_SESSIONS_DIR = "/tmp";
-    // Mocking createAgentSessionRuntime is not needed if we use fake factory that doesn't call real Pi
-    // Instead we test that setRuntimeFactory was set
-    expect(customRegistry).toBeDefined();
-    if (projectsRoot) process.env.CODING_AGENT_PROJECTS_ROOT = projectsRoot;
+    // DI por constructor: factory + config de rutas (sandbox temporal), sin
+    // process.env. setRuntimeFactory sigue siendo el seam público.
+    const ctx = createTestWorkerContext();
+    try {
+      const customRegistry = new SessionRegistry(fakeFactory, ctx.workerConfig);
+      expect(customRegistry.runtimeConfig.sessionsDir).toBe(ctx.sessionsDir);
+      expect(customRegistry.runtimeConfig.projectsRoot).toBe(ctx.projectsRoot);
+      const swapped = vi.fn(async () => ({ session: makeSession() })) as unknown as any;
+      customRegistry.setRuntimeFactory(swapped);
+      expect(customRegistry).toBeDefined();
+    } finally {
+      ctx.cleanup();
+    }
   });
 });

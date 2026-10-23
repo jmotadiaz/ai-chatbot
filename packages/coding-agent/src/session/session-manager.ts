@@ -1,7 +1,6 @@
 import path from "node:path";
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { createAgentSessionRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
-import { config } from "config";
 import { getTraceLogger } from "tracing";
 import {
   GATEWAY_PROVIDER_ID,
@@ -11,7 +10,13 @@ import {
 import { SessionEventLog, type Cursor } from "../agui/event-log";
 import type { PendingQueues } from "./pending-queues";
 import { getModelRuntime, refreshGatewayCatalog } from "../runtime/model-runtime";
-import { getCodingAgentDir, getSessionsDir } from "../runtime/paths";
+import {
+  resolveCodingAgentDir,
+  resolveProjectsRoot,
+  resolveSessionsDir,
+} from "../runtime/paths";
+import { getWorkerRuntimeConfig } from "../runtime/runtime-overrides";
+import type { WorkerRuntimeConfig } from "../runtime/runtime-config";
 import { startSubagentCollector } from "../subagent/subagent-collector";
 import type { SubagentRunParams, SubagentDetails, SubagentRunResult } from "../subagent/subagent-bridge";
 import { sessionRegistry } from "./session-registry";
@@ -120,22 +125,25 @@ export function resolvePrompt(
   return queries.resolvePrompt(sessionId, promptName, values);
 }
 
-export async function getAvailableModels(): Promise<
+export async function getAvailableModels(
+  runtimeConfig?: WorkerRuntimeConfig,
+): Promise<
   Array<{ providerId: string; modelId: string; label: string; levels: ThinkingLevel[] }>
 > {
   const log = getTraceLogger("worker");
+  const cfg = runtimeConfig ?? getWorkerRuntimeConfig();
   log.info("models.fetch");
   // Hot reload of the Model Catalog (ADR 0010): re-sync from the Gateway on
   // every availability read so a model published in `config.yaml` shows up
   // without a worker restart. In-flight deduped; on Gateway failure it keeps
   // the last good catalog and answers with it.
-  await refreshGatewayCatalog();
+  await refreshGatewayCatalog(cfg);
   // Availability refresh on the shared ModelRuntime: file-backed catalog
   // (allowModelNetwork: false) filtered by configured auth — the semantic
   // equivalent of the pre-0.80.8 `ModelRegistry.getAvailable()`. The snapshot
   // variant is NOT used here: with `refreshOnCreate: false` it is empty until
   // the first availability refresh, which getAvailable() performs locally.
-  const available = await (await getModelRuntime()).getAvailable();
+  const available = await (await getModelRuntime(cfg)).getAvailable();
   // Thinking levels come from the synced Gateway catalog snapshot (model id =
   // catalog id), not from Pi's thinkingLevelMap: the catalog is the shared
   // source of truth with the chatbot's Model Picker.
@@ -318,8 +326,10 @@ export async function runSubagent(
   toolCallId: string,
   params: SubagentRunParams,
   signal?: AbortSignal,
+  runtimeConfig?: WorkerRuntimeConfig,
 ): Promise<SubagentRunResult> {
   const log = getTraceLogger("worker");
+  const cfg = runtimeConfig ?? getWorkerRuntimeConfig();
   const parent = sessionRegistry.getRaw(parentSessionId);
   if (!parent) throw new Error(`Parent session not found for session ${parentSessionId}`);
 
@@ -335,7 +345,7 @@ export async function runSubagent(
     isError: true,
   });
 
-  const projectsRoot = config.codingAgentProjectsRoot();
+  const projectsRoot = resolveProjectsRoot(cfg);
   const parentCwd = resolveProjectPath(projectsRoot, parent.project);
 
   const cwdResult = resolveSubagentCwd(parentCwd, params.cwd);
@@ -347,16 +357,19 @@ export async function runSubagent(
 
   const subSessionId = crypto.randomUUID();
   const sessionManager = SessionManager.create(
-    ensureSubagentSessionsDir(getSessionsDir()),
+    ensureSubagentSessionsDir(resolveSessionsDir(cfg)),
     undefined,
     { id: subSessionId },
   );
-  const createRuntime = makeCreateRuntime(modelResult.modelId, { includeSubagentExtension: false });
+  const createRuntime = makeCreateRuntime(modelResult.modelId, {
+    includeSubagentExtension: false,
+    runtimeConfig: cfg,
+  });
 
   const stop = log.startTimer("subagent.runtime_create");
   const runtime = await createAgentSessionRuntime(createRuntime, {
     cwd: cwdResult.cwd,
-    agentDir: getCodingAgentDir(),
+    agentDir: resolveCodingAgentDir(cfg),
     sessionManager,
   });
   stop();

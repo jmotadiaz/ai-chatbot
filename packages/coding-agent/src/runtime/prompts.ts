@@ -3,8 +3,9 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import nunjucks from "nunjucks";
-import { getPiPackagesDir } from "./pi-packages";
+import { resolvePiPackagesDir } from "./pi-packages";
 import { PACKAGE_ROOT } from "./paths";
+import type { WorkerRuntimeConfig } from "./runtime-config";
 
 /**
  * Nunjucks environment for prompt rendering (Jinja2 syntax per the Prompty
@@ -86,8 +87,15 @@ const promptCatalogs = new Map<string, Map<string, CodingAgentPrompt>>();
  * A project's catalog is loaded at most once: the catalog is immutable
  * during the life of a Pi session, so reconnects and later session
  * creations in the same project never re-scan (or mutate) it.
+ *
+ * `cfg` is the optional injected worker config (ADR 0011 §6): it only feeds
+ * the Pi-packages root of the "package" level, so a sandboxed test never has
+ * to configure that through the environment.
  */
-export function loadPrompts(projectCwd: string): void {
+export function loadPrompts(
+  projectCwd: string,
+  cfg?: Pick<WorkerRuntimeConfig, "piPackagesDir">,
+): void {
   if (promptCatalogs.has(projectCwd)) return;
 
   const catalog = new Map<string, CodingAgentPrompt>();
@@ -99,7 +107,7 @@ export function loadPrompts(projectCwd: string): void {
   }
 
   // 2. Global (Pi packages)
-  const piPackagesDir = getPiPackagesDir();
+  const piPackagesDir = resolvePiPackagesDir(cfg);
   if (existsSync(piPackagesDir)) {
     for (const pkg of readdirSync(piPackagesDir)) {
       const promptsDir = join(piPackagesDir, pkg, "prompts");

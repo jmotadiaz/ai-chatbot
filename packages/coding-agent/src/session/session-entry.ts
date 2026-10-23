@@ -1,5 +1,4 @@
 import path from "node:path";
-import { config, optional } from "config";
 import type { createAgentSessionRuntime } from "@earendil-works/pi-coding-agent";
 import { SessionEventLog, type LoggedAguiEvent } from "../agui/event-log";
 import { isTerminal, type AguiEvent } from "../agui/agui-event";
@@ -89,11 +88,10 @@ export function resolveProjectPath(root: string, project: string): string {
   return path.resolve(root, project);
 }
 
-export function sessionCwd(entry: SessionEntry): string | null {
-  const root = optional(() => config.codingAgentProjectsRoot());
-  if (!root) return null;
+export function sessionCwd(entry: SessionEntry, projectsRoot: string): string | null {
+  if (!projectsRoot) return null;
   try {
-    return resolveProjectPath(root, entry.project);
+    return resolveProjectPath(projectsRoot, entry.project);
   } catch {
     return null;
   }

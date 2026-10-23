@@ -11,6 +11,7 @@ import {
   resetGatewayCatalogForTests,
   type GatewayModelEntry,
 } from "../../src/runtime/gateway-catalog";
+import type { GatewayRuntimeConfig } from "../../src/runtime/runtime-config";
 
 const GATEWAY_URL = "http://127.0.0.1:4098";
 const GATEWAY_KEY = "gw-secret-1";
@@ -131,34 +132,26 @@ describe("ensureGatewayModelsJson", () => {
   let tmp: string;
   let modelsPath: string;
   let authPath: string;
-  const savedEnv: Record<string, string | undefined> = {};
+  let gateway: GatewayRuntimeConfig;
 
   beforeEach(() => {
     resetGatewayCatalogForTests();
     tmp = mkdtempSync(path.join(tmpdir(), "gateway-catalog-"));
     modelsPath = path.join(tmp, "models.json");
     authPath = path.join(tmp, "auth.json");
-    for (const key of [
-      "CODING_AGENT_MODELS_JSON",
-      "CODING_AGENT_AUTH_JSON",
-      "MODEL_GATEWAY_URL",
-      "MODEL_GATEWAY_API_KEY",
-    ]) {
-      savedEnv[key] = process.env[key];
-    }
-    process.env.CODING_AGENT_MODELS_JSON = modelsPath;
-    process.env.CODING_AGENT_AUTH_JSON = authPath;
-    process.env.MODEL_GATEWAY_URL = GATEWAY_URL;
-    process.env.MODEL_GATEWAY_API_KEY = GATEWAY_KEY;
+    // DI explícita (ADR 0011 §6): credenciales y rutas por parámetro, nunca
+    // por process.env.
+    gateway = {
+      gatewayUrl: GATEWAY_URL,
+      apiKey: GATEWAY_KEY,
+      modelsJsonPath: modelsPath,
+      authJsonPath: authPath,
+    };
   });
 
   afterEach(() => {
     rmSync(tmp, { recursive: true, force: true });
     vi.unstubAllGlobals();
-    for (const [key, value] of Object.entries(savedEnv)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
     resetGatewayCatalogForTests();
   });
 
@@ -166,7 +159,7 @@ describe("ensureGatewayModelsJson", () => {
     const fetchMock = vi.fn(async () => Response.json({ models: [entry()] }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const catalog = await ensureGatewayModelsJson();
+    const catalog = await ensureGatewayModelsJson(gateway);
 
     expect(catalog.map((m) => m.id)).toEqual(["Kimi K3"]);
     expect(fetchMock.mock.calls[0]?.[0]).toBe(`${GATEWAY_URL}/v1/models/catalog`);
@@ -191,7 +184,7 @@ describe("ensureGatewayModelsJson", () => {
     );
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [entry()] })));
 
-    await ensureGatewayModelsJson();
+    await ensureGatewayModelsJson(gateway);
 
     const auth = JSON.parse(readFileSync(authPath, "utf8"));
     expect(auth["opencode-go"]).toEqual({ type: "api_key", key: "oc_1" });
@@ -206,7 +199,7 @@ describe("ensureGatewayModelsJson", () => {
       }),
     );
 
-    await expect(ensureGatewayModelsJson()).rejects.toThrow(
+    await expect(ensureGatewayModelsJson(gateway)).rejects.toThrow(
       /MODEL_GATEWAY_URL.*model-gateway\.service/s,
     );
     expect(existsSync(modelsPath)).toBe(false);
@@ -219,22 +212,25 @@ describe("ensureGatewayModelsJson", () => {
       vi.fn(async () => new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
     );
 
-    await expect(ensureGatewayModelsJson()).rejects.toThrow(/401/);
+    await expect(ensureGatewayModelsJson(gateway)).rejects.toThrow(/401/);
     expect(existsSync(modelsPath)).toBe(false);
   });
 
   it("fails on a malformed catalog payload", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [{ nope: true }] })));
 
-    await expect(ensureGatewayModelsJson()).rejects.toThrow(/malformed/);
+    await expect(ensureGatewayModelsJson(gateway)).rejects.toThrow(/malformed/);
   });
 
-  it("fails when MODEL_GATEWAY_API_KEY is unset, before touching the disk", async () => {
-    delete process.env.MODEL_GATEWAY_API_KEY;
+  it("fails when the API key is explicitly unset, before touching the disk", async () => {
+    // `apiKey: ""` (DI explícita) = sin credencial: la validación corre antes
+    // del fetch y de escribir nada, sin variables de entorno de por medio.
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(ensureGatewayModelsJson()).rejects.toThrow(/MODEL_GATEWAY_API_KEY/);
+    await expect(
+      ensureGatewayModelsJson({ ...gateway, apiKey: "" }),
+    ).rejects.toThrow(/MODEL_GATEWAY_API_KEY/);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(existsSync(modelsPath)).toBe(false);
   });

@@ -13,7 +13,9 @@ import {
   getExtensionPaths,
   getFirstPartySkillPaths,
 } from "./pi-packages";
-import { getCodingAgentDir } from "./paths";
+import { resolveCodingAgentDir } from "./paths";
+import { getWorkerRuntimeConfig } from "./runtime-overrides";
+import type { WorkerRuntimeConfig } from "./runtime-config";
 import { FILE_REFERENCE_PROMPT } from "./file-reference-prompt";
 
 /**
@@ -55,31 +57,40 @@ export function unknownModelMessage(modelId: string, provider?: string): string 
  */
 export function makeCreateRuntime(
   modelId?: string,
-  options?: { includeSubagentExtension?: boolean; strictModel?: boolean },
+  options?: {
+    includeSubagentExtension?: boolean;
+    strictModel?: boolean;
+    /** Injected worker config (SessionRegistry passes its own); falls back to the process-wide config. */
+    runtimeConfig?: WorkerRuntimeConfig;
+  },
 ): CreateAgentSessionRuntimeFactory {
   return async ({ cwd: runtimeCwd, sessionManager, sessionStartEvent }) => {
+    const cfg = options?.runtimeConfig ?? getWorkerRuntimeConfig();
     // Shared process-wide facade over credentials + model catalog (SDK ≥ 0.80.8
     // replaced AuthStorage/ModelRegistry with a single async ModelRuntime).
-    const modelRuntime = await getModelRuntime();
+    const modelRuntime = await getModelRuntime(cfg);
     // Pi's own settings manager so the worker can set defaults (provider
     // retries) without writing settings.json; operator values win.
     const settingsManager = SettingsManager.create(
       runtimeCwd,
-      getCodingAgentDir(),
+      resolveCodingAgentDir(cfg),
     );
     applyProviderRetryDefaults(settingsManager);
     const services = await createAgentSessionServices({
       cwd: runtimeCwd,
-      agentDir: getCodingAgentDir(),
+      agentDir: resolveCodingAgentDir(cfg),
       modelRuntime,
       settingsManager,
       resourceLoaderOptions: {
         // FILE_REFERENCE_PROMPT is harness-owned and appended to the system
         // prompt. Extensions do not inject anything here.
         appendSystemPrompt: [FILE_REFERENCE_PROMPT],
-        additionalExtensionPaths: getExtensionPaths({
-          includeSubagentExtension: options?.includeSubagentExtension ?? true,
-        }),
+        additionalExtensionPaths: getExtensionPaths(
+          {
+            includeSubagentExtension: options?.includeSubagentExtension ?? true,
+          },
+          cfg,
+        ),
         // Skills are discovered from `additionalExtensionPaths` only when the
         // path is a skill package (directory with `skills/`) — and in that
         // case the directory is NOT registered as an extension, so its hooks

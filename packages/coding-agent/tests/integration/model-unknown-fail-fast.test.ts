@@ -1,5 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -82,62 +81,55 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
 
 const CATALOG_IDS = { "Kimi K3": true } as Record<string, boolean>;
 
-const { getOrCreateSession, sendPrompt } = await import("../../src/session/session-manager");
-const { sessionRegistry } = await import("../../src/session/session-registry");
+const { SessionRegistry } = await import("../../src/session/session-registry");
+const { TurnRunner } = await import("../../src/session/turn-runner");
+const { createTestWorkerContext } = await import("../helpers/test-context");
 
 /**
  * An unknown modelId must stop failing silently (Pi default / previous model
  * kept): session creation rejects with an explicit error and the turn fails
  * in-band with RUN_ERROR.
+ *
+ * ADR 0011 §6: rutas y credenciales por DI — un registry + TurnRunner propios
+ * con el sandbox de `createTestWorkerContext()`. El test jamás toca
+ * * los runtime dirs de prod/dev ni muta `process.env`.
  */
 describe("unknown modelId fails explicitly", () => {
-  let root: string;
-  const savedEnv = {
-    projects: process.env.CODING_AGENT_PROJECTS_ROOT,
-    sessions: process.env.CODING_AGENT_SESSIONS_DIR,
-    modelsJson: process.env.CODING_AGENT_MODELS_JSON,
-    gatewayUrl: process.env.MODEL_GATEWAY_URL,
-    gatewayKey: process.env.MODEL_GATEWAY_API_KEY,
+  let ctx: ReturnType<typeof createTestWorkerContext>;
+  let registry: InstanceType<typeof SessionRegistry>;
+  let runner: InstanceType<typeof TurnRunner>;
+  const gateway: { gatewayUrl: string; apiKey: string } = {
+    gatewayUrl: "http://127.0.0.1:4098",
+    apiKey: "test-key",
   };
 
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [] })));
-    process.env.MODEL_GATEWAY_URL = "http://127.0.0.1:4098";
-    process.env.MODEL_GATEWAY_API_KEY = "test-key";
-    sessionRegistry.clear();
-    root = mkdtempSync(join(tmpdir(), "model-unknown-"));
-    const modelsPath = join(root, "models.json");
-    writeFileSync(modelsPath, "{}");
-    process.env.CODING_AGENT_MODELS_JSON = modelsPath;
+    ctx = createTestWorkerContext(gateway);
+    registry = new SessionRegistry(undefined, ctx.workerConfig);
+    runner = new TurnRunner(registry);
     // Pi resolves the transcript under <agentDir>/sessions/--<encoded>--; the
-    // lookup tests pin the encoding, mirrored here for the reload path.
-    const encoded = root.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-");
+    // lookup tests pin the encoding, mirrored here for the reload path. The
+    // SDK's own agent dir is stubbed to /tmp/agent-dir by the Pi mock above.
+    const encoded = ctx.sessionsDir.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-");
     piState.sessionFilePath = join("/tmp/agent-dir", "sessions", `--${encoded}--`, "s1.jsonl");
     piState.getModelCalls = [];
-    process.env.CODING_AGENT_PROJECTS_ROOT = root;
-    process.env.CODING_AGENT_SESSIONS_DIR = root;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    sessionRegistry.clear();
-    rmSync(root, { recursive: true, force: true });
-    process.env.CODING_AGENT_PROJECTS_ROOT = savedEnv.projects;
-    process.env.CODING_AGENT_SESSIONS_DIR = savedEnv.sessions;
-    process.env.CODING_AGENT_MODELS_JSON = savedEnv.modelsJson;
-    process.env.MODEL_GATEWAY_URL = savedEnv.gatewayUrl;
-    process.env.MODEL_GATEWAY_API_KEY = savedEnv.gatewayKey;
+    ctx.cleanup();
   });
 
   it("rejects getOrCreateSession with an unknown modelId on the create path", async () => {
     await expect(
-      getOrCreateSession({ userId: "u1", project: "p", modelId: "ghost-model" }),
+      registry.getOrCreateSession({ userId: "u1", project: "p", modelId: "ghost-model" }),
     ).rejects.toThrow(/ghost-model/);
   });
 
   it("does not throw on the reload path with an unknown modelId (persisted obsolete model)", async () => {
     mkdirSync(dirname(piState.sessionFilePath), { recursive: true }); writeFileSync(piState.sessionFilePath, "");
-    const result = await getOrCreateSession({
+    const result = await registry.getOrCreateSession({
       userId: "u1",
       project: "p",
       sessionId: "s1",
@@ -151,9 +143,11 @@ describe("unknown modelId fails explicitly", () => {
 
   it("fails the turn in-band with RUN_ERROR when the turn's modelId is unknown", async () => {
     mkdirSync(dirname(piState.sessionFilePath), { recursive: true }); writeFileSync(piState.sessionFilePath, "");
-    await getOrCreateSession({ userId: "u1", project: "p", sessionId: "s1" });
+    await registry.getOrCreateSession({ userId: "u1", project: "p", sessionId: "s1" });
 
-    const stream = await sendPrompt("s1", "hello", undefined, "r1", "ghost-model");
+    const stream = await runner.sendPrompt("s1", "hello", undefined, "r1", {
+      modelId: "ghost-model",
+    });
     const text = await new Response(stream).text();
     const events = text
       .split("\n")
@@ -167,9 +161,11 @@ describe("unknown modelId fails explicitly", () => {
 
   it("starts the run normally when the turn's modelId is known", async () => {
     mkdirSync(dirname(piState.sessionFilePath), { recursive: true }); writeFileSync(piState.sessionFilePath, "");
-    await getOrCreateSession({ userId: "u1", project: "p", sessionId: "s1" });
+    await registry.getOrCreateSession({ userId: "u1", project: "p", sessionId: "s1" });
 
-    const stream = await sendPrompt("s1", "hello", undefined, "r2", "Kimi K3");
+    const stream = await runner.sendPrompt("s1", "hello", undefined, "r2", {
+      modelId: "Kimi K3",
+    });
     const text = await new Response(stream).text();
     // No turn-start crash; the run flows (finally RUN_FINISHED), no RUN_ERROR.
     expect(text.includes("RUN_ERROR")).toBe(false);

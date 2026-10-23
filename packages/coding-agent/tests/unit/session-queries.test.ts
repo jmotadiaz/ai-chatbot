@@ -37,20 +37,17 @@ describe("SessionQueries (deep module)", () => {
   let registry: SessionRegistry;
   let queries: SessionQueries;
   let projectsRoot: string;
-  let savedRoot: string | undefined;
 
   beforeEach(() => {
-    registry = new SessionRegistry();
-    queries = new SessionQueries(registry);
-    savedRoot = process.env.CODING_AGENT_PROJECTS_ROOT;
+    // DI por constructor (ADR 0011 §6): el projectsRoot del test viaja en el
+    // registry, nunca por process.env.
     projectsRoot = mkdtempSync(join(tmpdir(), "sq-"));
-    process.env.CODING_AGENT_PROJECTS_ROOT = projectsRoot;
+    registry = new SessionRegistry(undefined, { projectsRoot });
+    queries = new SessionQueries(registry);
   });
 
   afterEach(() => {
     rmSync(projectsRoot, { recursive: true, force: true });
-    if (savedRoot === undefined) delete process.env.CODING_AGENT_PROJECTS_ROOT;
-    else process.env.CODING_AGENT_PROJECTS_ROOT = savedRoot;
   });
 
   function seed(sessionId: string, project: string, session: unknown) {
