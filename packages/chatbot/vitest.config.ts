@@ -7,7 +7,9 @@ import { initConfig } from "../config/src/config";
 // (o React 19, que solo exporta `act` en development) fallan en colección con
 // "No such built-in module: node:". Es una variable gestionada por el runner
 // (framework), no configuración de la app: el Entorno lo fija `initConfig`.
-process.env.NODE_ENV = "test";
+// Next declara `process.env.NODE_ENV` como readonly; el runner necesita
+// fijarla de verdad (no solo en el `env` de los tests).
+(process.env as Record<string, string | undefined>).NODE_ENV = "test";
 
 /**
  * Los tests del chatbot corren SIEMPRE en el Entorno de Test (ADR 0011):
