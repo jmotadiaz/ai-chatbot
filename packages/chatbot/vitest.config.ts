@@ -2,6 +2,13 @@ import path from "path";
 import { defineConfig } from "vitest/config";
 import { initConfig } from "../config/src/config";
 
+// `NODE_ENV=test` debe estar fijado ANTES de que Vite resuelva el grafo: sin
+// él, los tests con `@vitest-environment jsdom` que importan módulos `node:*`
+// (o React 19, que solo exporta `act` en development) fallan en colección con
+// "No such built-in module: node:". Es una variable gestionada por el runner
+// (framework), no configuración de la app: el Entorno lo fija `initConfig`.
+process.env.NODE_ENV = "test";
+
 /**
  * Los tests del chatbot corren SIEMPRE en el Entorno de Test (ADR 0011):
  * `initConfig("test")` al cargar este fichero (proceso principal — el mismo
