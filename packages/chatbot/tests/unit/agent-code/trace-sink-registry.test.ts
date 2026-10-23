@@ -1,20 +1,37 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-const originalEnv = { ...process.env };
+/**
+ * La config de tracing (enabled + dir) YA NO es `process.env` (ADR 0011): el
+ * bundle `config` de test está congelado (`traceEnabled: false`, traceDir
+ * `.pi-test/traces`), así que este test INYECTA su config mockeando el módulo
+ * `"config"` — la fachada congelada se copia con los dos overrides que
+ * necesita el test (un tmpdir por test). Antes mutaba
+ * `process.env.TRACE_ENABLED/TRACE_DIR`, que el selector ignora desde el
+ * ticket 01 (y era estado global heredable, la causa del incidente).
+ */
+const injected = vi.hoisted(() => ({ traceDir: "", traceEnabled: true }));
+
+vi.mock("config", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("config")>();
+  return {
+    ...actual,
+    config: {
+      ...actual.config,
+      traceEnabled: () => injected.traceEnabled,
+      traceDir: () => injected.traceDir,
+    },
+  };
+});
+
 let traceDir: string;
 
 beforeEach(() => {
   traceDir = fs.mkdtempSync(path.join(os.tmpdir(), "trace-registry-"));
-  process.env.TRACE_ENABLED = "1";
-  process.env.TRACE_DIR = traceDir;
-});
-
-afterEach(() => {
-  process.env.TRACE_ENABLED = originalEnv.TRACE_ENABLED;
-  process.env.TRACE_DIR = originalEnv.TRACE_DIR;
+  injected.traceDir = traceDir;
+  injected.traceEnabled = true;
 });
 
 const { acquireTraceSink, releaseTraceSink, retainTraceSink, traceSinkRefCount } =
@@ -99,7 +116,8 @@ describe("trace sink registry", () => {
   });
 
   it("returns null and a no-op retain when tracing is disabled", async () => {
-    process.env.TRACE_ENABLED = "0";
+    // Inyección vía el mock del bundle: `config.traceEnabled()` → false.
+    injected.traceEnabled = false;
     const runId = "55555555-aaaa-4bbb-8ccc-dddddddddddd";
 
     expect(await acquireTraceSink({ runId, truncate: false })).toBeNull();

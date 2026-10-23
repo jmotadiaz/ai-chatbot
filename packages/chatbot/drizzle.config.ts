@@ -1,11 +1,13 @@
-import { config as loadEnv } from "dotenv";
 import { defineConfig } from "drizzle-kit";
-import { config } from "config";
-import { resolveEnvFile } from "./lib/infrastructure/env-file";
+import { config, initConfig, parseEntornoFromArgv } from "config";
 
-// Resuelve el .env del Entorno activo (NEXT_PUBLIC_ENV → .env.dev|.env.test|.env.prod)
-// antes de leer POSTGRES_URL: cada Entorno migra/empuja su propia DB.
-loadEnv({ path: resolveEnvFile() });
+// drizzle-kit carga este fichero y NO reenvía los flags de su CLI al config
+// (spec ticket 03): `process.argv` solo contendrá `--env=...` cuando el
+// fichero se evalúa en un proceso que lo trae. Por eso el Entorno se toma con
+// el parser canónico de `config` y, si no está, cae al Entorno local por
+// defecto, `dev` — NUNCA a una variable de entorno (la resolución por
+// `NEXT_PUBLIC_ENV`/`.env` murió con ADR 0011).
+initConfig(parseEntornoFromArgv(process.argv) ?? "dev");
 
 export default defineConfig({
   schema: "./lib/infrastructure/db/schema.ts",

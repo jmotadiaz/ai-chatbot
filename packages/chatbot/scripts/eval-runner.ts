@@ -1,3 +1,23 @@
+/**
+ * Runner de evals (ADR 0011, ticket 03).
+ *
+ * El antiguo "modo evals" (`NEXT_PUBLIC_ENV=evals` + `.env.evals` + un bloque
+ * de overrides en `process.env`) ya no existe: la configuración es un bundle
+ * TypeScript congelado por Entorno y `process.env` no es un canal de
+ * configuración. El runner exige ahora un `--env=dev|test|prod` EXPLÍCITO en
+ * su `process.argv` y se lo reenvía por argv (nunca por env) a cada hijo que
+ * lanza: `scripts/next-cli.ts dev` y `lib/infrastructure/db/migrate.ts`.
+ *
+ * Nota operativa sobre el Entorno de los evals (punto abierto, ticket 04):
+ * los casos se ejecutan DENTRO del proceso de evalite (`createVitest`), que
+ * carga `vitest.config.ts` — inicializado con `initConfig("test")` — así que
+ * los casos en proceso corren siempre sobre el bundle de test (Mock Gateway
+ * `:4001`, DB `:5434/test`), mientras que el servidor evaluado es el que tú
+ * lances con `--env=...`. Un eval que necesite el Gateway REAL (`:4000`) con
+ * la DB de test aislada no tiene hoy un Entorno que lo represente: eso es una
+ * decisión de diseño (p. ej. un Entorno `evals` o un flag explícito) y queda
+ * fuera de este ticket.
+ */
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawn, execSync, type ChildProcess } from "child_process";
@@ -9,9 +29,13 @@ import {
   readdirSync,
 } from "fs";
 import { randomUUID } from "crypto";
-import { config as dotenv } from "dotenv";
-import { config, optional } from "config";
-import { resolveEnvFile } from "../lib/infrastructure/env-file";
+import {
+  config,
+  initConfig,
+  optional,
+  parseEntornoFromArgv,
+  type Entorno,
+} from "config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,9 +44,7 @@ const PROJECT_ROOT = resolve(__dirname, "..");
 // The compose files live at the repo root (`packages/chatbot` is two levels down).
 const REPO_ROOT = resolve(PROJECT_ROOT, "../..");
 const TEST_COMPOSE_FILE = resolve(REPO_ROOT, "docker-compose.test.yml");
-const TEST_DB_URL = "postgres://postgres:postgres@127.0.0.1:5434/test";
 const LOCK_PATH = resolve(PROJECT_ROOT, "tests/evals/.runner.lock");
-const TRACES_DIR = resolve(PROJECT_ROOT, "tests/evals/traces");
 
 function parseArgs(): {
   caseName?: string;
@@ -46,29 +68,15 @@ function parseArgs(): {
   };
 }
 
-function loadEnv(runId: string, port: number): void {
-  // Dev secrets (el runner pisa después lo que necesite en modo evals);
-  // resolución centralizada por NEXT_PUBLIC_ENV, nunca .env.development.local.
-  dotenv({ path: resolveEnvFile(), override: false });
+function prepareEvalEnv(port: number): void {
+  // Solo lo que es HARNESS de evals (no configuración de la app): los casos
+  // (`tests/evals/cases/*.eval.ts`) leen EVAL_BASE_URL para llamar al server.
+  // El resto de lo que este runner inyectaba antes (POSTGRES_URL,
+  // AUTH_SECRET, NEXT_PUBLIC_ENV=evals, TRACE_*, DISABLE_DEV_INDICATOR, …)
+  // era configuración vía process.env, prohibida por ADR 0011: hoy todo eso
+  // lo aporta el bundle del Entorno elegido con `--env=...`.
   Object.assign(process.env, {
-    POSTGRES_URL: TEST_DB_URL,
-    POSTGRES_PRISMA_URL: TEST_DB_URL,
-    POSTGRES_URL_NON_POOLING: TEST_DB_URL,
-    DATABASE_URL: TEST_DB_URL,
-    AUTH_SECRET: "test_secret",
-    AUTH_TRUST_HOST: "true",
-    NEXT_PUBLIC_ENV: "evals",
-    PRIVATE_BEHAVIOR: "enabled",
-    DISABLE_DEV_INDICATOR: "1",
-    DEFAULT_CONTEXT_WINDOW: "20000",
-
-    TRACE_ENABLED: "1",
-    TRACE_RUN_ID: runId,
-    TRACE_DIR: TRACES_DIR,
-
     EVAL_BASE_URL: `http://localhost:${port}`,
-    PORT: String(port),
-    NODE_ENV: "development",
   });
 }
 
@@ -136,9 +144,19 @@ async function waitForHttp(
   );
 }
 
-function spawnNextDev(port: number): ChildProcess {
-  console.log(`[next] starting npx next dev --turbo -p ${port} ...`);
-  const child = spawn("npx", ["next", "dev", "--turbo", "-p", String(port)], {
+function spawnNextDev(port: number, entorno: Entorno): ChildProcess {
+  // El servidor evaluado pasa por el micro-launcher (ADR 0011): el Entorno
+  // viaja por process.argv del hijo, nunca por process.env. Sin `--webpack`
+  // (igual que el antiguo `next dev --turbo`): Turbopack.
+  const args = [
+    "tsx",
+    "scripts/next-cli.ts",
+    "dev",
+    `--env=${entorno}`,
+    `--port=${port}`,
+  ];
+  console.log(`[next] starting npx ${args.join(" ")} ...`);
+  const child = spawn("npx", args, {
     cwd: PROJECT_ROOT,
     env: process.env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -152,6 +170,12 @@ function spawnNextDev(port: number): ChildProcess {
 }
 
 function spawnEvalite(targetPath: string): ChildProcess {
+  // evalite ejecuta los casos DENTRO de su propio proceso (`createVitest`),
+  // que carga `vitest.config.ts` — inicializado con `initConfig("test")` — y
+  // aliasa `"config"` al bundle de test. No hay forma de inyectarle argv por
+  // este spawn: ese es el punto abierto documentado en la cabecera de este
+  // fichero (los casos en proceso corren en Entorno test aunque el server
+  // evaluado corra con otro `--env`).
   const cmd = `npx evalite run ${targetPath}`;
   console.log(`[evalite] ${cmd}`);
   const child = spawn(cmd, {
@@ -256,8 +280,23 @@ function resolveCasePath(caseName: string | undefined): string {
 
 async function main(): Promise<void> {
   const opts = parseArgs();
+
+  // Entorno EXPLÍTITO por process.argv (sustituye al viejo
+  // `NEXT_PUBLIC_ENV=evals`): sin `--env` no se arranca (ADR 0011).
+  const entorno = parseEntornoFromArgv(process.argv);
+  if (!entorno) {
+    console.error(
+      [
+        "❌ eval-runner exige --env=dev|test|prod (ADR 0011; el antiguo modo",
+        "evals por NEXT_PUBLIC_ENV ya no existe). Ej: npx tsx scripts/eval-runner.ts --env=test -c <caso>",
+      ].join("\n"),
+    );
+    process.exit(1);
+  }
+  initConfig(entorno);
+
   const runId = randomUUID();
-  loadEnv(runId, opts.port);
+  prepareEvalEnv(opts.port);
 
   if (!acquireLock()) process.exit(1);
   process.on("exit", () => releaseLock());
@@ -280,29 +319,34 @@ async function main(): Promise<void> {
   });
 
   console.log(`\n=== eval-runner ===`);
+  console.log(`entorno:     ${entorno}`);
   console.log(`runId:       ${runId}`);
   console.log(`port:        ${opts.port}`);
   console.log(`POSTGRES_URL: ${optional(() => config.postgresUrl()) ?? "undefined"}`);
   console.log(`TRACE_DIR:   ${config.traceDir() ?? "undefined"}`);
-  console.log(`EVAL_BASE_URL: ${config.evalBaseUrl() ?? "undefined"}\n`);
+  console.log(`EVAL_BASE_URL: ${process.env.EVAL_BASE_URL ?? "undefined"}\n`);
 
   let exitCode = 0;
 
   try {
-    if (!opts.noDb) {
+    // La DB aislada de test (compose `docker-compose.test.yml`, 5434) solo
+    // aplica cuando el Entorno elegido ES test: con otro Entorno, cada uno
+    // migra su propia DB (ADR 0001/0011) y este runner no toca compose.
+    const usesTestCompose = entorno === "test";
+    if (!opts.noDb && usesTestCompose) {
       console.log("[db] starting test database...");
       runDbCmd(["-f", TEST_COMPOSE_FILE, "up", "--wait"]);
     }
     if (!opts.noMigrate) {
-      console.log("[db] running migrations...");
-      execSync("npx tsx lib/infrastructure/db/migrate.ts", {
+      console.log(`[db] running migrations (${entorno})...`);
+      execSync(`npx tsx lib/infrastructure/db/migrate.ts --env=${entorno}`, {
         cwd: PROJECT_ROOT,
         stdio: "inherit",
       });
     }
 
     if (!opts.noServer) {
-      next = spawnNextDev(opts.port);
+      next = spawnNextDev(opts.port, entorno);
       await waitForHttp(`http://localhost:${opts.port}`, {
         timeoutMs: 120_000,
       });
@@ -335,7 +379,7 @@ async function main(): Promise<void> {
     if (!opts.noServer) {
       await ensurePortFreed(opts.port);
     }
-    if (!opts.keepDb && !opts.noDb) {
+    if (!opts.keepDb && !opts.noDb && entorno === "test") {
       try {
         console.log("[db] stopping test database...");
         runDbCmd(["-f", TEST_COMPOSE_FILE, "down"]);
