@@ -11,8 +11,16 @@ A persisted conversation thread: the unit of interaction between the user and a 
 _Avoid_: conversation, chat session
 
 **Message**:
-An intervention within a Chat, from the user or the model, with parts (text, reasoning, tools).
-_Avoid_: turn (reserved for the coding agent), reply
+An intervention within a Chat, from the user or the model, with parts (text, reasoning, tools); the persisted unit of a Turn's history.
+_Avoid_: reply
+
+**Turn**:
+The unit of interaction within a Chat or a Coding Agent Session: an initial user Message plus all the assistant operations that answer it, until it completes, stops or aborts. In a Chat it groups the Messages produced from one user intervention and admits no mid-turn injections. In a Coding Agent Session it is the execution unit of the Coding Agent Worker, admitting Pending Messages and Steerings injected while in flight.
+_Avoid_: step, model call, run
+
+**Background Generation**:
+Generation of a Message that completes and persists server-side even when the client holding the in-flight Turn disconnects or is gone; returning clients reattach to the in-flight stream.
+_Avoid_: detached stream
 
 **Chat Mode**:
 Selector for a Chat's prompt behaviour (`auto`, context7, RAG, web search). In `auto` the Chat Mode Router chooses per turn the *Resolved Chat Mode* used to answer (`context7`, `web` or the *neutral* branch, internal and tool-free) and records decision, latency and cost in `Message.metadata.chatModeRouting`.
@@ -186,9 +194,6 @@ _Avoid_: relay, proxy
 Session managed by the Coding Agent Worker and exposed to the user through the Coding Agent Client: the sum of its Turns, with state between them.
 _Avoid_: agent session, run
 
-**Turn**:
-An initial user message plus all the operations of the assistant that answers, including the Pending Messages and Steerings injected while in flight, until the agent stops or is aborted.
-_Avoid_: run (protocol-level synonym: AG-UI RUN_* events), step, model call
 
 **Pending Message**:
 Text instruction queued during a Turn and visible as a chip above the textarea. Editable, removable and promotable to a Steering.
