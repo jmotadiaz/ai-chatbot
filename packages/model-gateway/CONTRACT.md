@@ -28,20 +28,20 @@ Response:
 {
   "models": [
     {
-      "id": "Kimi K3",
-      "company": "Moonshot",
-      "isDefault": true,
-      "contextWindow": 262144,
-      "maxTokens": 32768,
-      "cost": { "input": 0.6, "output": 2.5, "cacheRead": 0.15, "cacheWrite": 0 },
+      "id": "Kimi K3.1 Pro",
+      "company": "moonshotai",
+      "isDefault": false,
+      "contextWindow": 1048576,
+      "maxTokens": 131072,
+      "cost": { "input": 2, "output": 10, "cacheRead": 0.2, "cacheWrite": 0 },
       "reasoning": true,
-      "thinkingLevels": ["low", "medium", "high"],
-      "defaultThinkingLevel": "medium",
-      "supportedFiles": ["img", "pdf"],
+      "thinkingLevels": ["low", "high", "max"],
+      "defaultThinkingLevel": "high",
+      "supportedFiles": ["img"],
       "supportedOutput": ["text"],
       "zeroDataRetention": false,
-      "temperature": 0.6,
-      "topP": 0.95,
+      "temperature": null,
+      "topP": null,
       "topK": null
     }
   ]

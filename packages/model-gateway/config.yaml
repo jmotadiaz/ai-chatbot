@@ -10,8 +10,8 @@
 #   million; GET /v1/models/catalog re-expresses them per million.
 #   `thinking_levels` are the levels resolved with the semantics of
 #   getSupportedThinkingLevels (catalog thinkingLevelMap + Pi built-ins);
-#   for Kimi K3 and Qwen 3.8 Max the catalog default ends up clamped to the
-#   closest supported level.
+#   for Qwen 3.8 Max the catalog default ends up clamped to the closest
+#   supported level.
 # - API keys NEVER go in this file: os.environ/<VAR>, injected by
 #   scripts/run-gateway.sh from systemd-creds ($CREDENTIALS_DIRECTORY).
 # - `router_settings.model_group_alias` publishes stable family/tier aliases
@@ -252,9 +252,9 @@ model_list:
       default_top_p: null
       default_top_k: null
 
-  - model_name: Kimi K3
+  - model_name: Kimi K3.1 Pro
     litellm_params:
-      model: openai/kimi-k3
+      model: openai/kimi-k3.1-pro
       api_base: https://opencode.ai/zen/go/v1
       api_key: os.environ/OPENCODE_API_KEY
     model_info:
@@ -263,15 +263,15 @@ model_list:
       company: moonshotai
       context_window: 1048576
       max_output_tokens: 131072
-      input_cost_per_token: 3.0e-6
-      output_cost_per_token: 1.5e-5
-      cache_read_input_token_cost: 3.0e-7
+      input_cost_per_token: 2.0e-6
+      output_cost_per_token: 1.0e-5
+      cache_read_input_token_cost: 2.0e-7
       cache_creation_input_token_cost: 0
       reasoning: true
-      # thinkingLevelMap of the Pi built-in: only `max` is supported; the
-      # catalog default "high" is clamped to "max".
-      thinking_levels: ["max"]
-      default_thinking_level: "max"
+      # Always-on reasoning: OpenCode Go advertises the low/high/max efforts,
+      # so the catalog default "high" is supported as-is (no clamping).
+      thinking_levels: ["low", "high", "max"]
+      default_thinking_level: "high"
       supported_files: [img]
       supported_output: [text]
       zero_data_retention: false

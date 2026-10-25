@@ -185,8 +185,8 @@ describe("TurnRunner (deep module)", () => {
     });
     seed("s3b", mock);
     const getModel = vi.fn((provider: string, id: string) =>
-      provider === "model-gateway" && id === "Kimi K3"
-        ? { provider: "model-gateway", id: "Kimi K3" }
+      provider === "model-gateway" && id === "Kimi K3.1 Pro"
+        ? { provider: "model-gateway", id: "Kimi K3.1 Pro" }
         : undefined,
     );
     (registry.getRaw("s3b") as any).runtime.services = {
@@ -194,14 +194,14 @@ describe("TurnRunner (deep module)", () => {
     };
 
     const stream = await runner.sendPrompt("s3b", "hello", undefined, "r3b", {
-      modelId: "Kimi K3",
+      modelId: "Kimi K3.1 Pro",
     });
     await stream.cancel();
 
-    expect(getModel).toHaveBeenCalledWith("model-gateway", "Kimi K3");
+    expect(getModel).toHaveBeenCalledWith("model-gateway", "Kimi K3.1 Pro");
     expect(mock.session.setModel).toHaveBeenCalledWith({
       provider: "model-gateway",
-      id: "Kimi K3",
+      id: "Kimi K3.1 Pro",
     });
   });
 

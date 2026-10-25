@@ -31,7 +31,7 @@ INVOCABLE_IDS = [
     "GLM 5.3",
     "GLM 5.3 Flash",
     "Hy3",
-    "Kimi K3",
+    "Kimi K3.1 Pro",
     "MiMo V2.6 Flash",
     "MiMo V2.6 Pro",
     "MiniMax M3",
@@ -161,9 +161,9 @@ def test_entry_types(catalog):
 
 
 def test_cost_schema_and_units_per_million(catalog):
-    kimi = next(m for m in catalog["models"] if m["id"] == "Kimi K3")
-    # Original catalog per million: input 3, output 15, cacheRead 0.3, cacheWrite 0.
-    assert kimi["cost"] == {"input": 3, "output": 15, "cacheRead": 0.3, "cacheWrite": 0}
+    kimi = next(m for m in catalog["models"] if m["id"] == "Kimi K3.1 Pro")
+    # OpenCode Go rates: $2.00 input / $10.00 output / $0.20 cache read.
+    assert kimi["cost"] == {"input": 2, "output": 10, "cacheRead": 0.2, "cacheWrite": 0}
     for model in catalog["models"]:
         assert set(model["cost"]) == {"input", "output", "cacheRead", "cacheWrite"}
         assert all(isinstance(v, (int, float)) and v >= 0 for v in model["cost"].values())
@@ -229,6 +229,8 @@ def test_opencode_upstream_slugs_match_the_provider_catalog(config):
     assert params["MiniMax M3.1 Flash"] == "openai/minimax-m3.1-flash"
     # Beam Free is free on OpenCode Go (slug `beam-free`).
     assert params["Beam Free"] == "openai/beam-free"
+    # Kimi K3.1 Pro replaces Kimi K3 on the same OpenAI-compatible endpoint.
+    assert params["Kimi K3.1 Pro"] == "openai/kimi-k3.1-pro"
     # OpenCode Go serves Muse Spark only through /v1/responses: the
     # `responses/` prefix forces LiteLLM's bridge and avoids the
     # "Model does not support this protocol" error from chat/completions.

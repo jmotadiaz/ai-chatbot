@@ -18,7 +18,7 @@ const GATEWAY_KEY = "gw-secret-1";
 
 function entry(overrides: Partial<GatewayModelEntry> = {}): GatewayModelEntry {
   return {
-    id: "Kimi K3",
+    id: "Kimi K3.1 Pro",
     company: "moonshotai",
     isDefault: false,
     contextWindow: 262_144,
@@ -51,8 +51,8 @@ describe("buildPiModelsJson", () => {
     const json = buildPiModelsJson([entry()], GATEWAY_URL);
     expect(json.providers["model-gateway"].models).toEqual([
       {
-        id: "Kimi K3",
-        name: "Kimi K3",
+        id: "Kimi K3.1 Pro",
+        name: "Kimi K3.1 Pro",
         reasoning: true,
         input: ["text", "image"],
         contextWindow: 262_144,
@@ -161,16 +161,16 @@ describe("ensureGatewayModelsJson", () => {
 
     const catalog = await ensureGatewayModelsJson(gateway);
 
-    expect(catalog.map((m) => m.id)).toEqual(["Kimi K3"]);
+    expect(catalog.map((m) => m.id)).toEqual(["Kimi K3.1 Pro"]);
     expect(fetchMock.mock.calls[0]?.[0]).toBe(`${GATEWAY_URL}/v1/models/catalog`);
     expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).toEqual({
       Authorization: `Bearer ${GATEWAY_KEY}`,
     });
-    expect(getSyncedGatewayCatalog().map((m) => m.id)).toEqual(["Kimi K3"]);
+    expect(getSyncedGatewayCatalog().map((m) => m.id)).toEqual(["Kimi K3.1 Pro"]);
 
     const json = JSON.parse(readFileSync(modelsPath, "utf8"));
     expect(json.providers["model-gateway"].baseUrl).toBe(`${GATEWAY_URL}/v1`);
-    expect(json.providers["model-gateway"].models[0].id).toBe("Kimi K3");
+    expect(json.providers["model-gateway"].models[0].id).toBe("Kimi K3.1 Pro");
     expect(JSON.parse(readFileSync(authPath, "utf8"))["model-gateway"]).toEqual({
       type: "api_key",
       key: GATEWAY_KEY,

@@ -79,7 +79,7 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
   },
 }));
 
-const CATALOG_IDS = { "Kimi K3": true } as Record<string, boolean>;
+const CATALOG_IDS = { "Kimi K3.1 Pro": true } as Record<string, boolean>;
 
 const { SessionRegistry } = await import("../../src/session/session-registry");
 const { TurnRunner } = await import("../../src/session/turn-runner");
@@ -164,7 +164,7 @@ describe("unknown modelId fails explicitly", () => {
     await registry.getOrCreateSession({ userId: "u1", project: "p", sessionId: "s1" });
 
     const stream = await runner.sendPrompt("s1", "hello", undefined, "r2", {
-      modelId: "Kimi K3",
+      modelId: "Kimi K3.1 Pro",
     });
     const text = await new Response(stream).text();
     // No turn-start crash; the run flows (finally RUN_FINISHED), no RUN_ERROR.
