@@ -10,6 +10,7 @@ import {
   getLatestByChat,
   markPersisted,
   register,
+  resolveStreamKey,
   setChatId,
   type StreamSubscriber,
 } from "@/lib/features/chat/resume/registry";
@@ -189,6 +190,42 @@ describe("chat resume registry", () => {
       evict();
 
       expect(getLatestByChat("chat-1")).toBeUndefined();
+    });
+  });
+
+  describe("resolveStreamKey", () => {
+    it("returns the segment itself when it is a live stream key", () => {
+      register("k1");
+
+      expect(resolveStreamKey("k1")).toBe("k1");
+    });
+
+    it("prefers the direct key hit over the chatId index", () => {
+      register("k1", { chatId: "chat-1" });
+      // Another stream whose chatId is literally the string "k1".
+      register("k2", { chatId: "k1" });
+
+      expect(resolveStreamKey("k1")).toBe("k1");
+    });
+
+    it("resolves a chatId to the latest stream key", () => {
+      register("k1", { chatId: "chat-1" });
+      register("k2", { chatId: "chat-1" });
+
+      expect(resolveStreamKey("chat-1")).toBe("k2");
+    });
+
+    it("returns undefined for an unknown segment", () => {
+      expect(resolveStreamKey("nope")).toBeUndefined();
+    });
+
+    it("returns undefined once the entry has expired", () => {
+      register("k1");
+      register("k2", { chatId: "chat-1" });
+      vi.advanceTimersByTime(STREAM_TTL_MS + 1);
+
+      expect(resolveStreamKey("k1")).toBeUndefined();
+      expect(resolveStreamKey("chat-1")).toBeUndefined();
     });
   });
 
