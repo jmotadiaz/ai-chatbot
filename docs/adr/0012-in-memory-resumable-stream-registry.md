@@ -71,11 +71,13 @@ single `Message`.
 
 - **Single-process is a structural constraint of the registry**: the registry assumes pm2
   serves the chatbot as one process without cluster. Scaling out would require revisiting
-  this ADR. In a production build both route handlers share the registry module (webpack
-  assigns it one module id across the POST and the GET bundles); in `next dev`, routes
-  compile on demand and a recompile can reload the server module graph, so a resume that
-  races the first compilation of the stream route may answer `204` — a development-only
-  artefact, which the E2E warms up against.
+  this ADR. The `Map`s are anchored on `globalThis` under a `Symbol.for` key rather than
+  being plain module-level bindings: `next dev` compiles route handlers on demand and
+  re-evaluates the shared server modules, which swapped the registry instance and lost
+  every in-flight turn on the first resume after a reload (observed as the in-flight turn
+  vanishing until it persisted). The anchor keeps the state across module re-evaluations,
+  still per process, and the symbol keeps the global namespace clean. Production behaviour
+  is unchanged (one module graph, one instance).
 - A normal chat open (`navigate` navigation) no longer probes the registry, so it neither
   replays the previous turn's whole message within the TTL nor races a user send against a
   mount-probe `204` (which could hide the loading state mid-stream or attach the probe to a

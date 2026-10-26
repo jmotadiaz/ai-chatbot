@@ -27,7 +27,7 @@ vi.mock("@/lib/features/chat/handlers", () => ({
   processChatResponse: processChatResponseMock,
 }));
 
-import { parseSseFrames } from "../../helpers/chat-resume";
+import { parseSseFrames, resetRegistry } from "../../helpers/chat-resume";
 import { POST } from "@/app/(chat)/api/chat/route";
 import { get, getLatestByChat } from "@/lib/features/chat/resume/registry";
 
@@ -67,6 +67,9 @@ beforeEach(() => {
 });
 
 describe("POST /api/chat — resume registry feed", () => {
+  beforeEach(() => {
+    resetRegistry();
+  });
   it("tees every SSE frame into the registry in order, start first and [DONE] last", async () => {
     const streamKey = uuid();
     const chatId = uuid();

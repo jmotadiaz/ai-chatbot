@@ -49,3 +49,16 @@ streams reanudables del chat.
 - Tests: `tests/unit/chat/resume/registry.test.ts` (28 tests, public API only,
   fake timers, per-test singleton reset via clock-advance + `evict`).
   Gates: type:check, lint, test:unit (354), build:verify — all green.
+
+## Comments
+
+- **Ancla en `globalThis` (refinamiento posterior)**: se escribió primero con
+  bindings de módulo (sin `globalThis`, como pedía esta ticket). Al probar el
+  reload mid-turn en `pnpm dev` el turno en vuelo desaparecía: `next dev`
+  compila las rutas bajo demanda y cada primera compilación reevalúa los
+  módulos compartidos, de modo que el GET de resume veía un registry recién
+  creado y respondía `204`. El estado pasa a vivir en
+  `globalThis[Symbol.for("chatbot.chat.resume-registry")]`: sigue siendo
+  process-wide (un proceso pm2), sobrevive a las reevaluaciones, y en
+  producción el comportamiento es idéntico (un único module graph). Se añade
+  `clear()` como reset explícito para aislar las suites.

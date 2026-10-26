@@ -52,27 +52,6 @@ function recordRequests(page: Page): LoggedRequest[] {
 }
 
 /**
- * Compiles the resume route BEFORE the turn starts.
- *
- * The test webServer is `next dev` (webpack): route handlers compile on
- * demand, and each first compile re-evaluates the shared server modules —
- * wiping module-level state (the in-memory resume registry). A production
- * build compiles every route into ONE module graph, so prod is immune; in
- * dev, a compile landing between the POST (register) and the reconnect
- * (attach) would answer the resume with a registry-miss `204`. Hitting the
- * stream route once up front pins its compilation, so the POST is always the
- * last compile before the resume. The unknown key answers `204` (nothing
- * registered) and is a no-op for the app.
- */
-async function warmUpResumeRoute(page: Page): Promise<void> {
-  const status = await page.evaluate(
-    async () =>
-      await fetch("/api/chat/resume-warm-up/stream").then((r) => r.status),
-  );
-  expect(status).toBe(204);
-}
-
-/**
  * Simulates the OS/browser killing the in-flight streaming fetch on a frozen
  * page.
  *
@@ -171,8 +150,6 @@ test.describe("Chat resume", () => {
     // No mount probe on a normal `goto`: the mount resume only fires on a
     // reload/back_forward navigation, so nothing can race the turn.
     await chatPage.goto(chat.id);
-    await warmUpResumeRoute(page);
-
     await chatPage.header.modelPicker.selectModel("slowStream");
     await chatPage.chat.sendMessage(SLOW_PROMPT);
 
@@ -218,7 +195,6 @@ test.describe("Chat resume", () => {
 
     const chatPage = new ChatPage(page);
     await chatPage.goto(chat.id);
-    await warmUpResumeRoute(page);
     await chatPage.header.modelPicker.selectModel("slowStream");
     await chatPage.chat.sendMessage(SLOW_PROMPT);
 
