@@ -11,6 +11,11 @@ export interface UseChatReloadArgs {
   }) => Promise<void>;
   messages: ChatbotMessage[];
   body: ChatBody;
+  /**
+   * Marks the regenerated turn as resumable (a new per-turn `streamKey` in
+   * the body). `undefined` when resume is disabled — the body stays as-is.
+   */
+  beginTurn?: () => string;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   setConfig: SetChatConfig;
   setChatMode: (chatMode: ChatMode) => void;
@@ -24,6 +29,7 @@ export const useChatReload = ({
   regenerate,
   messages,
   body,
+  beginTurn,
   setInput,
   setConfig,
   setChatMode,
@@ -35,10 +41,13 @@ export const useChatReload = ({
        
       const { chatMode, ...config } = reloadConfig;
 
+      const streamKey = beginTurn?.();
+
       void regenerate({
         messageId: messages.at(-1)?.id,
         body: {
           ...body,
+          ...(streamKey !== undefined && { streamKey }),
           ...config,
           ...(chatMode && { chatMode }),
         },
@@ -52,7 +61,7 @@ export const useChatReload = ({
         setChatMode(chatMode);
       }
     },
-    [body, messages, regenerate, setConfig, setInput, setChatMode],
+    [beginTurn, body, messages, regenerate, setConfig, setInput, setChatMode],
   );
 
   return { reload };

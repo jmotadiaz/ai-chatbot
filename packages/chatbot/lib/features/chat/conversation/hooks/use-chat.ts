@@ -20,6 +20,7 @@ import { useChatDataPartState } from "./use-chat-data-part-state";
 import { useChatQueryParamId } from "./use-chat-query-param-id";
 import { useChatReload } from "./use-chat-reload";
 import { useChatRequestBody } from "./use-chat-request-body";
+import { useChatResume } from "./use-chat-resume";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
@@ -109,12 +110,30 @@ export const useChat = ({
   const { dataPart, setDataPart } = useChatDataPartState();
   const effectiveChatId = chatId || validQueryParamChatId;
 
+  // Resume is only for persisted chats (spec decision 6): the hub calls
+  // `useChatSession` directly, and temporary/project-form chats pass
+  // `preventChatPersistence`.
+  const resumeEnabled = !preventChatPersistence && Boolean(effectiveChatId);
+
+  // Called before `useChatSession` because the composed `onFinish` needs
+  // `noteStreamFinished`; the getters are only invoked after the session
+  // exists (event handlers), so referencing `chatResult` is safe.
+  const resume = useChatResume({
+    enabled: resumeEnabled,
+    getStatus: () => chatResult.status,
+    resumeStream: () => chatResult.resumeStream(),
+  });
+
   const chatResult = useChatSession({
     initialMessages,
     api: "/api/chat",
     throttleMs: 200,
     onDataPart: setDataPart,
-    onFinish: async () => {
+    id: resumeEnabled ? effectiveChatId : undefined,
+    resume: resumeEnabled,
+    getStreamKey: resume.getStreamKey,
+    onFinish: async (args) => {
+      resume.noteStreamFinished(args);
       if (!isNewChat) return;
       if (preventChatPersistence) return;
       if (!effectiveChatId) return;
@@ -141,6 +160,7 @@ export const useChat = ({
     input,
     files,
     sendEnabled,
+    beginTurn: resumeEnabled ? resume.beginTurn : undefined,
     onBeforeSubmit: () => {
       setInput("");
       setFiles([]);
@@ -167,6 +187,7 @@ export const useChat = ({
     regenerate: chatResult.regenerate,
     messages: chatResult.messages,
     body,
+    beginTurn: resumeEnabled ? resume.beginTurn : undefined,
     setInput,
     setConfig,
     setChatMode,

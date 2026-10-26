@@ -12,6 +12,13 @@ export interface UseChatSubmitArgs {
   input: string;
   files: FilePart[];
   sendEnabled: boolean;
+  /**
+   * Marks the beginning of a resumable turn: generates the per-turn
+   * `streamKey` (included in the POST body so the server registers it in
+   * the resume registry). `undefined` when resume is disabled — the body
+   * then stays exactly as before.
+   */
+  beginTurn?: () => string;
   onBeforeSubmit?: () => void;
   onAfterSubmit?: () => void;
 }
@@ -22,6 +29,7 @@ export const useChatSubmit = ({
   input,
   files,
   sendEnabled,
+  beginTurn,
   onBeforeSubmit,
   onAfterSubmit,
 }: UseChatSubmitArgs): {
@@ -36,6 +44,12 @@ export const useChatSubmit = ({
     if (!sendEnabled) return;
 
     onBeforeSubmit?.();
+
+    // One resume key per send (never per chat): the POST registers the turn
+    // in the resume registry under it.
+    const streamKey = beginTurn?.();
+    const requestBody =
+      streamKey !== undefined ? { ...body, streamKey } : body;
 
     // Separate text files from other files
     const textFiles = files.filter((f) => f.textContent);
@@ -61,13 +75,14 @@ export const useChatSubmit = ({
         },
       },
       {
-        body,
+        body: requestBody,
       }
     );
 
 
     onAfterSubmit?.();
   }, [
+    beginTurn,
     body,
     files,
     input,
