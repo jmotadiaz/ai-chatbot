@@ -191,13 +191,37 @@ const MID_STREAM_ERROR = {
 /**
  * One step of the chat script: an SSE delta (with its optional finish_reason)
  * or, in the `failsMidStream` case, the error that cuts the stream without
- * `[DONE]`.
+ * `[DONE]`. `delayMs` paces the streaming rendering only (the JSON path
+ * returns the whole script at once): `streamScript` awaits that long before
+ * writing the step, so a scenario can cut the connection while the turn is
+ * still generating (e2e resume suite).
  */
 interface ChatStep {
   delta?: ChatChunkDelta;
   finishReason?: string;
   abortWithError?: unknown;
+  delayMs?: number;
 }
+
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Pacing of the `slowStream` script: a chunk every `SLOW_STREAM_CHUNK_MS`. */
+export const SLOW_STREAM_CHUNK_MS = 350;
+const SLOW_STREAM_CHUNK_COUNT = 8;
+
+/** The deterministic, recognizable chunks the `slowStream` script emits. */
+export const SLOW_STREAM_CHUNKS: string[] = Array.from(
+  { length: SLOW_STREAM_CHUNK_COUNT },
+  (_, index) => `SLOW chunk ${index}.`,
+);
+
+/**
+ * The full text a completed `slowStream` turn renders in the UI: the chunks
+ * carry no separator, and `smoothStream()` may re-split them into words but
+ * never inserts characters.
+ */
+export const SLOW_STREAM_TEXT = SLOW_STREAM_CHUNKS.join("");
 
 /**
  * Script of a chat completion per model id — the cascade on the id lives HERE,
@@ -270,6 +294,20 @@ function chatScript(body: ChatRequest): {
         jsonContent: REASONING_ANSWER,
       };
 
+    case "slowStream":
+      return {
+        model,
+        steps: [
+          { delta: { role: "assistant" }, delayMs: SLOW_STREAM_CHUNK_MS },
+          ...SLOW_STREAM_CHUNKS.map((text) => ({
+            delta: { content: text },
+            delayMs: SLOW_STREAM_CHUNK_MS,
+          })),
+          { delta: {}, finishReason: "stop", delayMs: SLOW_STREAM_CHUNK_MS },
+        ],
+        jsonContent: SLOW_STREAM_TEXT,
+      };
+
     case "image-default":
       return {
         model,
@@ -301,11 +339,19 @@ function chatScript(body: ChatRequest): {
   }
 }
 
-/** Renders the script as OpenAI SSE. */
-function streamScript(res: ServerResponse, body: ChatRequest): void {
+/**
+ * Renders the script as OpenAI SSE. Paced: a step with `delayMs` is written
+ * only after awaiting that long, so a `slowStream` turn lasts several seconds
+ * and is still alive mid-scenario. Everything else stays as before: all steps
+ * without `delayMs` are written in one tick.
+ */
+async function streamScript(res: ServerResponse, body: ChatRequest): Promise<void> {
   startSse(res);
   const script = chatScript(body);
   for (const step of script.steps) {
+    if (step.delayMs !== undefined) {
+      await delay(step.delayMs);
+    }
     if (step.abortWithError !== undefined) {
       res.write(`data: ${JSON.stringify(step.abortWithError)}\n\n`);
       res.end();
@@ -330,7 +376,7 @@ async function handleChatCompletions(req: IncomingMessage, res: ServerResponse):
   if (!requireAuth(req, res)) return;
   const body = (parseJson(await readBody(req)) ?? {}) as ChatRequest;
   if (body.stream) {
-    streamScript(res, body);
+    await streamScript(res, body);
     return;
   }
   jsonScript(res, body);
