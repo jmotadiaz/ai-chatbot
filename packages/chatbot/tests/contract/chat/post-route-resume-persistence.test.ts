@@ -16,24 +16,22 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { setupTestDb } from "../../helpers/db-setup";
 
+// `vi.hoisted` so the `vi.mock` factory below can read it despite the hoist.
+const { USER_ID } = vi.hoisted(() => ({
+  USER_ID: "11111111-1111-1111-1111-111111111111",
+}));
+
 vi.mock("server-only", () => ({}));
 
-vi.mock("@/lib/features/auth/with-auth/handler", () => ({
-  withAuth:
-    <T>(handler: T) =>
-    async (req: Request) =>
-      (handler as never as (user: { id: string }, req: Request) => Promise<Response>)(
-        { id: USER_ID },
-        req,
-      ),
-}));
+vi.mock("@/lib/features/auth/with-auth/handler", async () => {
+  const { withAuthStub } = await import("../../helpers/chat-resume");
+  return withAuthStub(USER_ID);
+});
 
-vi.mock("tracing", () => ({
-  newRequestId: () => "req-1",
-  runWithTraceContext: <T>(_ctx: unknown, fn: () => Promise<T>) => fn(),
-}));
-
-const USER_ID = "11111111-1111-1111-1111-111111111111";
+vi.mock("tracing", async () => {
+  const { tracingStub } = await import("../../helpers/chat-resume");
+  return tracingStub;
+});
 
 /**
  * Paced model: each chunk arrives ~40 ms apart, so cancelling the response
@@ -129,6 +127,7 @@ vi.mock("@/lib/features/memory/extraction", () => ({
   extractMemoryFacts: async () => [],
 }));
 
+import { parseSseFrames } from "../../helpers/chat-resume";
 import { POST } from "@/app/(chat)/api/chat/route";
 import { get, getLatestByChat } from "@/lib/features/chat/resume/registry";
 import {
@@ -200,7 +199,7 @@ describe("POST /api/chat — exact-once persistence on disconnect", () => {
     const reader = res.body!.getReader()!;
     const decoder = new TextDecoder();
     let received = "";
-    while (received.split("\n\n").filter((f) => f.startsWith("data: ")).length < 2) {
+    while (parseSseFrames(received).length < 2) {
       const { done, value } = await reader.read();
       if (done) break;
       received += decoder.decode(value, { stream: true });

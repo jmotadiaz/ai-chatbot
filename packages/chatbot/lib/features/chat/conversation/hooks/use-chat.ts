@@ -2,7 +2,7 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type ChatConfig,
   type ChatModeState,
@@ -119,8 +119,9 @@ export const useChat = ({
   // needs the live `status` value (its intent consumer watches it settle out
   // of the in-flight states). The stable callbacks the session needs
   // (`getStreamKey`, `noteStreamFinished`) reach it through a holder ref
-  // populated right after the resume hook returns — both are only invoked
-  // once a stream is live, long after this render, never at mount.
+  // populated by the effect below — both are only invoked once a stream is
+  // live, long after commit, never at mount; the ref write belongs in an
+  // effect, not in the render body.
   const resumeApiRef = useRef<UseChatResumeResult | null>(null);
 
   const chatResult = useChatSession({
@@ -146,7 +147,10 @@ export const useChat = ({
     getStatus: () => chatResult.status,
     resumeStream: () => chatResult.resumeStream(),
   });
-  resumeApiRef.current = resume;
+
+  useEffect(() => {
+    resumeApiRef.current = resume;
+  });
 
   const body = useChatRequestBody({
     chatId,

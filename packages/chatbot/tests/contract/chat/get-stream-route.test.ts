@@ -12,13 +12,13 @@ vi.mock("@/lib/features/auth/cached-auth", () => ({
   getSession: vi.fn(),
 }));
 
+import { sweepRegistry } from "../../helpers/chat-resume";
 import { getSession } from "@/lib/features/auth/cached-auth";
 import { GET } from "@/app/(chat)/api/chat/[key]/stream/route";
 import {
   STREAM_TTL_MS,
   append,
   completeStream,
-  evict,
   register,
 } from "@/lib/features/chat/resume/registry";
 
@@ -42,10 +42,8 @@ describe("GET /api/chat/[key]/stream", () => {
   });
 
   afterEach(() => {
-    // Reset the module-level registry singleton: push the clock past every
-    // entry's possible TTL (markPersisted refreshes it from "now") and sweep.
-    vi.advanceTimersByTime(10 * STREAM_TTL_MS);
-    evict();
+    // Reset the module-level registry singleton and restore the clock.
+    sweepRegistry();
     vi.useRealTimers();
   });
 

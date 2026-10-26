@@ -44,33 +44,43 @@ export const GET = withAuth(async (_user, req) => {
   }
 
   const encoder = new TextEncoder();
-  let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
-  let started = false;
-  let cancelled = false;
-  // Frames appended between `attach` and the stream's `start` (a defensive
-  // guard: `append` is driven by a fire-and-forget async loop).
-  const pending: string[] = [];
-  let pendingEnd = false;
+
+  /**
+   * The whole response-stream lifecycle in one place: everything the
+   * `attach` subscriber, the `ReadableStream` callbacks and the two helpers
+   * below coordinate on. The `controller`/`started` pair gates writing, the
+   * `pending`/`pendingEnd` pair buffers what arrives before `start`, and
+   * `cancelled` stops writing after the client goes away.
+   */
+  const relay = {
+    controller: undefined as ReadableStreamDefaultController<Uint8Array> | undefined,
+    started: false,
+    cancelled: false,
+    // Frames appended between `attach` and the stream's `start` (a defensive
+    // guard: `append` is driven by a fire-and-forget async loop).
+    pending: [] as string[],
+    pendingEnd: false,
+  };
 
   function closeQuietly(): void {
     try {
-      controller?.close();
+      relay.controller?.close();
     } catch {
       // Already closed; nothing left to do.
     }
   }
 
   function deliver(frame: string): void {
-    if (!started) {
-      pending.push(frame);
+    if (!relay.started) {
+      relay.pending.push(frame);
       return;
     }
-    if (cancelled || !controller) return;
+    if (relay.cancelled || !relay.controller) return;
     try {
-      controller.enqueue(encoder.encode(frame));
+      relay.controller.enqueue(encoder.encode(frame));
     } catch {
       // The response stream is gone (client left); ignore further writes.
-      cancelled = true;
+      relay.cancelled = true;
     }
   }
 
@@ -81,11 +91,11 @@ export const GET = withAuth(async (_user, req) => {
   const snapshot = attach(streamKey, {
     onChunk: deliver,
     onEnd: () => {
-      if (!started) {
-        pendingEnd = true;
+      if (!relay.started) {
+        relay.pendingEnd = true;
         return;
       }
-      if (cancelled) return;
+      if (relay.cancelled) return;
       closeQuietly();
     },
   });
@@ -97,16 +107,16 @@ export const GET = withAuth(async (_user, req) => {
   // microsecond between resolve and attach — handled above as 204.
   const stream = new ReadableStream<Uint8Array>({
     start(streamController) {
-      controller = streamController;
-      started = true;
+      relay.controller = streamController;
+      relay.started = true;
       for (const frame of snapshot.chunks) {
-        controller.enqueue(encoder.encode(frame));
+        relay.controller.enqueue(encoder.encode(frame));
       }
-      for (const frame of pending) {
-        controller.enqueue(encoder.encode(frame));
+      for (const frame of relay.pending) {
+        relay.controller.enqueue(encoder.encode(frame));
       }
-      pending.length = 0;
-      if (snapshot.complete || pendingEnd) {
+      relay.pending.length = 0;
+      if (snapshot.complete || relay.pendingEnd) {
         closeQuietly();
       }
     },
@@ -114,7 +124,7 @@ export const GET = withAuth(async (_user, req) => {
       // The client went away again; stop writing into a dead stream. The
       // generation itself keeps running: the registry's tee side is
       // independent of this response.
-      cancelled = true;
+      relay.cancelled = true;
     },
   });
 

@@ -11,20 +11,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { simulateReadableStream } from "ai";
 import { v4 as uuid } from "uuid";
 
-vi.mock("@/lib/features/auth/with-auth/handler", () => ({
-  withAuth:
-    <T>(handler: T) =>
-    async (req: Request) =>
-      (handler as never as (user: { id: string }, req: Request) => Promise<Response>)(
-        { id: "user-1" },
-        req,
-      ),
-}));
+vi.mock("@/lib/features/auth/with-auth/handler", async () => {
+  const { withAuthStub } = await import("../../helpers/chat-resume");
+  return withAuthStub("user-1");
+});
 
-vi.mock("tracing", () => ({
-  newRequestId: () => "req-1",
-  runWithTraceContext: <T>(_ctx: unknown, fn: () => Promise<T>) => fn(),
-}));
+vi.mock("tracing", async () => {
+  const { tracingStub } = await import("../../helpers/chat-resume");
+  return tracingStub;
+});
 
 const processChatResponseMock = vi.hoisted(() => vi.fn());
 
@@ -32,6 +27,7 @@ vi.mock("@/lib/features/chat/handlers", () => ({
   processChatResponse: processChatResponseMock,
 }));
 
+import { parseSseFrames } from "../../helpers/chat-resume";
 import { POST } from "@/app/(chat)/api/chat/route";
 import { get, getLatestByChat } from "@/lib/features/chat/resume/registry";
 
@@ -62,10 +58,6 @@ function makeRequest(overrides: Record<string, unknown> = {}): Request {
       ...overrides,
     }),
   });
-}
-
-function parseSseFrames(text: string): string[] {
-  return text.split("\n\n").filter((frame) => frame.startsWith("data: "));
 }
 
 beforeEach(() => {
