@@ -203,6 +203,19 @@ export function completeStream(key: string): void {
   }
 }
 
+/**
+ * Resolve a GET resume path segment to a live stream key: the segment may be
+ * the per-turn `streamKey` itself or a `chatId`, resolved through the
+ * "latest stream per chat" index. A direct key hit always wins. `undefined`
+ * when neither matches (never registered, or already expired).
+ */
+export function resolveStreamKey(keyOrChatId: string): string | undefined {
+  if (get(keyOrChatId) !== undefined) return keyOrChatId;
+
+  const key = latestByChat.get(keyOrChatId);
+  return key !== undefined && get(key) !== undefined ? key : undefined;
+}
+
 /** Snapshot of a live entry, or `undefined` when unknown/expired. */
 export function get(key: string): StreamSnapshot | undefined {
   evict();
