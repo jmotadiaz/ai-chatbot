@@ -321,6 +321,59 @@ describe("POST /api/chat — exact-once persistence on disconnect", () => {
     expect(rows.filter((row: any) => row.role === "assistant")).toHaveLength(1);
   });
 
+  it("an existing chat persists the turn's config (model, chat mode) at turn start, not only in onFinish", async () => {
+    const chatId = uuid();
+    // The chat's stored config is NOT the turn's config: the client changed
+    // the model (and mode) for this turn.
+    await db.insert(chatTable).values({
+      id: chatId,
+      userId: USER_ID,
+      title: "Stale config",
+      defaultModel: "basicChat",
+      chatMode: "web",
+    });
+    const userMessage = {
+      id: uuid(),
+      role: "user",
+      parts: [{ type: "text", text: "turn-start config persistence" }],
+    };
+
+    const res = await POST(
+      makeRequest({
+        chatId,
+        messages: [userMessage],
+        selectedModel: "slowStream",
+        chatMode: "rag",
+        temperature: 0.7,
+      }) as never,
+    );
+    expect(res.status).toBe(200);
+
+    // WHILE the stream is still alive — `onFinish` cannot have run yet — the
+    // chat row already carries the TURN's config: a reopen mid-turn shows the
+    // model/chat mode the in-flight turn is actually using.
+    const [chatWhileAlive] = await db
+      .select()
+      .from(chatTable)
+      .where(eq(chatTable.id, chatId));
+    expect(chatWhileAlive).toBeDefined();
+    expect(chatWhileAlive!.defaultModel).toBe("slowStream");
+    expect(chatWhileAlive!.chatMode).toBe("rag");
+
+    // The turn completes normally (quiesce before the afterEach cleanup).
+    await res.text();
+    await waitFor(async () => {
+      const rows = await db
+        .select()
+        .from(messageTable)
+        .where(eq(messageTable.chatId, chatId));
+      return rows.length === 2;
+    });
+    // Exactly one chat row: the turn-start update did not create anything.
+    const chats = await db.select().from(chatTable).where(eq(chatTable.id, chatId));
+    expect(chats).toHaveLength(1);
+  });
+
   it("a regenerate deletes the replaced assistant message at turn start", async () => {
     const chatId = uuid();
     const userMessage = {

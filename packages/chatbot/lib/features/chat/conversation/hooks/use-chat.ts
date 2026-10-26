@@ -144,7 +144,11 @@ export const useChat = ({
     enabled: resumeEnabled,
     status: chatResult.status,
     getStatus: () => chatResult.status,
-    resumeStream: () => chatResult.resumeStream(),
+    resumeStream: (options) => chatResult.resumeStream(options),
+    // The mount probe's `after`: the id of the client's last message at
+    // probe time. When the server's entry started with that exact message
+    // (a normal open of a completed chat) the GET answers a silent `204`.
+    getLastMessageId: () => chatResult.messages.at(-1)?.id,
   });
 
   useEffect(() => {
@@ -171,6 +175,7 @@ export const useChat = ({
     files,
     sendEnabled,
     beginTurn: resumeEnabled ? resume.beginTurn : undefined,
+    resumeGate: resumeEnabled ? resume.resumeGate : undefined,
     onBeforeSubmit: () => {
       setInput("");
       setFiles([]);
@@ -198,6 +203,7 @@ export const useChat = ({
     messages: chatResult.messages,
     body,
     beginTurn: resumeEnabled ? resume.beginTurn : undefined,
+    resumeGate: resumeEnabled ? resume.resumeGate : undefined,
     setInput,
     setConfig,
     setChatMode,

@@ -24,7 +24,17 @@ export interface UseChatResumeArgs {
    */
   getStatus: () => ChatStatus;
   /** The SDK's resume entry point (`useChat`'s `resumeStream`). */
-  resumeStream: () => Promise<void>;
+  resumeStream: (options?: { body?: object }) => Promise<void>;
+  /**
+   * Reads the id of the client's LAST message at call time (a getter: the
+   * probe reads it once, at probe time). The mount probe sends it as
+   * `after` so the GET route can answer a silent `204` when the client
+   * already holds the turn's exact message (a normal open of a completed
+   * chat). The visibility/pageshow resumes deliberately pass NO `after`:
+   * the client's last message may be a partial, and the full replay is
+   * idempotent by the `start` chunk.
+   */
+  getLastMessageId?: () => string | undefined;
 }
 
 export interface StreamFinishedArgs {
@@ -54,6 +64,18 @@ export interface UseChatResumeResult {
    * visibility event can resume it (the server keeps generating).
    */
   noteStreamFinished: (args: StreamFinishedArgs) => void;
+  /**
+   * Serialises sends behind an in-flight resume (ticket 08). Resolves
+   * immediately when no resume request is in flight; otherwise awaits the
+   * resume promise itself — which always settles (silent `204`, replay
+   * completion or fetch error), and when the probe attached to a live
+   * stream it resolves when that stream ends: a send waits for the turn,
+   * consistent with never sending over a live turn. `useChatSubmit`
+   * (send) and `useChatReload` (regenerate) await it before `beginTurn()`
+   * and the request — this replaces the protection the old
+   * navigation-type gate provided.
+   */
+  resumeGate: () => Promise<void>;
 }
 
 /**
@@ -80,10 +102,13 @@ export const useChatResume = ({
   status,
   getStatus,
   resumeStream,
+  getLastMessageId,
 }: UseChatResumeArgs): UseChatResumeResult => {
   const streamKeyRef = useRef<string | undefined>(undefined);
   const pendingTurnRef = useRef(false);
   const resumingRef = useRef(false);
+  /** The in-flight resume promise itself; `resumeGate` awaits it. */
+  const resumePromiseRef = useRef<Promise<void> | undefined>(undefined);
   /** Resume intent recorded by a comeback event that hit an in-flight request. */
   const pendingIntentRef = useRef(false);
 
@@ -94,6 +119,8 @@ export const useChatResume = ({
   getStatusRef.current = getStatus;
   const resumeStreamRef = useRef(resumeStream);
   resumeStreamRef.current = resumeStream;
+  const getLastMessageIdRef = useRef(getLastMessageId);
+  getLastMessageIdRef.current = getLastMessageId;
 
   const beginTurn = useCallback((): string => {
     const key = v4();
@@ -103,18 +130,37 @@ export const useChatResume = ({
   }, []);
 
   /**
-   * The navigation type of the page load driving this mount. Resume on
-   * mount only when the page was actually (re)loaded (`reload` or
-   * `back_forward`): a normal in-app navigation (`navigate`) must NOT
-   * probe — an unconditional mount probe fires a `GET` whose silent `204`
-   * can settle after the user's send and hide the loading state, and can
-   * even attach to a brand-new turn the POST just registered.
+   * Fires at most one `resumeStream()`; guards against live requests. The
+   * optional `onSettle` runs once the resume attempt settles (success,
+   * failure or silent `204`), while `resumingRef` is still held. The resume
+   * promise is kept in `resumePromiseRef` until it settles, so the
+   * `resumeGate` can serialise sends behind it.
    */
-  const getNavigationType = useCallback((): string | undefined => {
-    if (typeof performance.getEntriesByType !== "function") return undefined;
-    const entry = performance
-      .getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-    return entry?.type;
+  const startResume = useCallback(
+    ({ body, onSettle }: { body?: object; onSettle?: () => void } = {}): void => {
+      // At most one resume in flight; further events are ignored until it
+      // settles (the next event after a failure is the retry — no timers).
+      if (resumingRef.current) return;
+      resumingRef.current = true;
+      const promise = resumeStreamRef
+        .current(body !== undefined ? { body } : undefined)
+        .catch(() => {
+          // The SDK already surfaced the failure via `onError`; retrying is
+          // the next visibility event's job.
+        })
+        .finally(() => {
+          resumePromiseRef.current = undefined;
+          resumingRef.current = false;
+          onSettle?.();
+        });
+      resumePromiseRef.current = promise;
+    },
+    [],
+  );
+
+  /** Resolves when no resume request is in flight; else awaits it. */
+  const resumeGate = useCallback((): Promise<void> => {
+    return resumePromiseRef.current ?? Promise.resolve();
   }, []);
 
   const getStreamKey = useCallback(() => streamKeyRef.current, []);
@@ -133,27 +179,6 @@ export const useChatResume = ({
     [],
   );
 
-  /**
-   * Fires at most one `resumeStream()`; guards against live requests. The
-   * optional `onSettle` runs once the resume attempt settles (success,
-   * failure or silent `204`), while `resumingRef` is still held.
-   */
-  const startResume = useCallback((onSettle?: () => void): void => {
-    // At most one resume in flight; further events are ignored until it
-    // settles (the next event after a failure is the retry — no timers).
-    if (resumingRef.current) return;
-    resumingRef.current = true;
-    void resumeStreamRef.current()
-      .catch(() => {
-        // The SDK already surfaced the failure via `onError`; retrying is
-        // the next visibility event's job.
-      })
-      .finally(() => {
-        resumingRef.current = false;
-        onSettle?.();
-      });
-  }, []);
-
   const tryResume = useCallback((): void => {
     if (!enabledRef.current) return;
     if (!pendingTurnRef.current) return;
@@ -164,31 +189,38 @@ export const useChatResume = ({
     startResume();
   }, [startResume]);
 
-  // Mount resume: exactly ONE probe, and only when the page was actually
-  // (re)loaded — "refresh mid-generation re-attaches" is the user story the
-  // mount resume exists for. A normal navigation (`navigate`) never probes:
-  // the SDK's unconditional `resume: true` mount GET raced the user's send
-  // (its silent `204` hid the loading state mid-stream, and the dev server
-  // could even attach it to a brand-new turn the POST had just registered).
+  // Mount resume: exactly ONE probe per mount of a persisted chat, whatever
+  // the navigation type (ticket 08). The old `reload`/`back_forward` gate
+  // left a client-side `navigate` (sidebar click, app-root reopen) unprobed,
+  // so an in-flight turn was invisible until a manual reload. The races the
+  // gate guarded against are covered elsewhere now: `?after=` makes the
+  // common open of a completed chat a silent `204`, and `resumeGate`
+  // serialises sends behind an in-flight probe instead of racing it.
   useEffect(() => {
     if (!enabled) return;
-    const navigationType = getNavigationType();
-    if (navigationType !== "reload" && navigationType !== "back_forward") {
-      return;
-    }
     if (pendingTurnRef.current) return; // a turn is already in flight
     // Flag the pending turn BEFORE the probe: if the probe fails, the turn
     // stays pending and a later visibility event retries the resume.
     pendingTurnRef.current = true;
-    startResume(() => {
-      // The silent `204` path settles to `ready` with nothing to resume:
-      // clear the flag so no phantom pending turn makes a later visibility
-      // event fire a pointless resume. An `error` settle keeps it pending.
-      if (getStatusRef.current() === "ready") {
-        pendingTurnRef.current = false;
-      }
+    // The probe carries the client's last message id as `after`: when the
+    // entry's start message equals it (a normal open of a completed chat)
+    // the route answers a silent `204` without replaying. When the client
+    // holds nothing there is no `after` at all. The options' `body` reaches
+    // `prepareReconnectToStreamRequest` (verified in `ai@6.0.287`), which
+    // turns it into `?after=`.
+    const after = getLastMessageIdRef.current?.();
+    startResume({
+      ...(after !== undefined && { body: { after } }),
+      onSettle: () => {
+        // The silent `204` path settles to `ready` with nothing to resume:
+        // clear the flag so no phantom pending turn makes a later visibility
+        // event fire a pointless resume. An `error` settle keeps it pending.
+        if (getStatusRef.current() === "ready") {
+          pendingTurnRef.current = false;
+        }
+      },
     });
-  }, [enabled, getNavigationType, startResume]);
+  }, [enabled, startResume]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -218,9 +250,8 @@ export const useChatResume = ({
     };
     const handlePageShow = (event: Event): void => {
       // Browsers fire `pageshow` with `persisted: false` on every normal
-      // load, where the mount effect above already probes on a genuine
-      // reload; only a bfcache restore (`persisted: true`) is a genuine
-      // "user came back".
+      // load, where the mount effect above already probes; only a bfcache
+      // restore (`persisted: true`) is a genuine "user came back".
       if (!(event as PageTransitionEvent).persisted) return;
       handleComeback();
     };
@@ -259,5 +290,5 @@ export const useChatResume = ({
     tryResume();
   }, [enabled, status, tryResume]);
 
-  return { beginTurn, getStreamKey, noteStreamFinished };
+  return { beginTurn, getStreamKey, noteStreamFinished, resumeGate };
 };

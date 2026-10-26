@@ -63,11 +63,17 @@ recibe el resto del stream o el mensaje completo.
    reabierta renderizaba el mensaje viejo del asistente del DB más el replay
    del turno nuevo: en un regenerate se veían el turno reemplazado junto a su
    reemplazo hasta que el turno terminaba. Ahora, cuando el chat existe en el
-   DB, el POST ejecuta una transacción al inicio del turno que borra el
-   mensaje que este reemplaza (`messageId`; no-op en un envío normal) y
-   persiste el mensaje del usuario (upsert: el `onFinish` posterior lo
-   actualiza in place). Los chats nuevos no escriben nada temprano (no pueden
-   reengancharse a mitad de turno) y los fallos degradan en silencio al
+   DB, el POST ejecuta una transacción al inicio del turno que (a) persiste la
+   CONFIG del turno (`defaultModel`, `defaultTemperature`, `chatMode`,
+   `webSearchNumResults`, `ragMaxResources`, `minRagResourcesScore`) vía
+   `updateChat` y (b) borra el mensaje que este reemplaza (`messageId`; no-op
+   en un envío normal) y persiste el mensaje del usuario (upsert: el
+   `onFinish` posterior lo actualiza in place). La propia `updateChat` actúa de
+   check de existencia: devuelve `undefined` cuando ninguna fila coincide, y
+   entonces el chat es nuevo (el id borrador no tiene fila) y no se escribe
+   nada temprano (no puede reengancharse a mitad de turno; además evita la
+   violación de FK). `onFinish` repite el `updateChat` con los mismos valores
+   (idempotente; cubre el camino degradado). Los fallos degradan en silencio al
    comportamiento de hoy. Tradeoff aceptado: si la transacción final falla
    tras comprometerse esta, el mensaje reemplazado ya se fue — raro.
 3. **Clave de resume**: el cliente genera un `streamKey` (uuid) por turno y lo
@@ -102,6 +108,24 @@ recibe el resto del stream o el mensaje completo.
    `next dev` recompila rutas bajo demanda y reevalúa los módulos compartidos
    (el primer resume tras un reload respondía `204`); en producción el
    module graph es único y el comportamiento no cambia.
+
+   **Refinamiento (ticket 08)**: el gate de navegación se elimina — la sonda
+   de montaje dispara UNA vez por montaje de un chat persistido, sea cual sea
+   el tipo de navegación (`navigate` incluido): reabrir la app y entrar al
+   chat por la sidebar ya re-engancha el turno en vuelo sin recarga manual.
+   Las dos carreras que motivaron el gate quedan cubiertas por separado:
+   (1) `?after=<último mensaje del cliente>` en la sonda de montaje — la GET
+   responde `204` silencioso cuando la entrada del registry empezó con ese
+   mismo mensaje (la apertura común de un chat ya respondido no replaya);
+   (2) `resumeGate()` — el hook expone una puerta que resuelve al instante si
+   no hay resume en vuelo y si lo hay espera la promesa del resume (siempre
+   se resuelve: `204`, replay completo o error de fetch; si la sonda se
+   enganchó a un stream vivo, cuando ese turno termina); `useChatSubmit`
+   (send) y `useChatReload` (regenerate) la esperan ANTES de `beginTurn()` y
+   la request, así que nunca envían sobre una sonda sin resolver ni sobre el
+   turno vivo al que la sonda se enganchó. Los resumes de visibilidad/pageshow
+   NO llevan `after`: el último mensaje del cliente puede ser un parcial, y el
+   replay completo es idempotente por el chunk `start`.
 6. **Alcance**: solo chats persistidos (página de chat). Hub, temporales y
    project-form (`preventChatPersistence: true`) quedan como hoy.
 7. **Fuera de alcance (explícito)**:

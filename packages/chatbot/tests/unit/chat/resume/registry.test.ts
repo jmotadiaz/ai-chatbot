@@ -13,6 +13,7 @@ import {
   register,
   resolveStreamKey,
   setChatId,
+  setStartMessageId,
   type StreamSubscriber,
 } from "@/lib/features/chat/resume/registry";
 
@@ -190,6 +191,41 @@ describe("chat resume registry", () => {
       evict();
 
       expect(getLatestByChat("chat-1")).toBeUndefined();
+    });
+  });
+
+  describe("startMessageId", () => {
+    it("records the id and exposes it on every snapshot", () => {
+      register("k1");
+      expect(get("k1")?.startMessageId).toBeUndefined();
+
+      setStartMessageId("k1", "m-1");
+
+      expect(get("k1")?.startMessageId).toBe("m-1");
+      // Subscribers and the chatId index see it too (same snapshotOf).
+      register("k1", { chatId: "chat-1" });
+      expect(getLatestByChat("chat-1")?.startMessageId).toBe("m-1");
+    });
+
+    it("is a no-op for an unknown key", () => {
+      expect(() => setStartMessageId("nope", "m-x")).not.toThrow();
+      expect(get("nope")).toBeUndefined();
+    });
+
+    it("is a no-op for an expired key", () => {
+      register("k1");
+      vi.advanceTimersByTime(STREAM_TTL_MS + 1);
+
+      expect(() => setStartMessageId("k1", "m-x")).not.toThrow();
+      expect(get("k1")).toBeUndefined();
+    });
+
+    it("is idempotent: the last write wins", () => {
+      register("k1");
+      setStartMessageId("k1", "m-1");
+      setStartMessageId("k1", "m-2");
+
+      expect(get("k1")?.startMessageId).toBe("m-2");
     });
   });
 
