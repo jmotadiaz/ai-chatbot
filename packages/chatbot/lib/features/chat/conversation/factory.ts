@@ -42,6 +42,7 @@ import {
   updateChat,
   saveMessages,
   deleteMessageById,
+  getChatById,
 } from "@/lib/features/chat/queries";
 import {
   markPersisted,
@@ -205,6 +206,41 @@ export const makeProcessChatResponse = (
       reasoning: "before-last-message",
       emptyMessages: "remove",
     });
+
+    // Turn-start persistence for existing chats. The resume registry keeps
+    // serving an in-flight stream after a client reopen, but until the turn
+    // persisted (only in `onFinish`) the reopened UI rendered the OLD
+    // assistant message from the DB plus the replayed new turn — on a
+    // regenerate this showed the replaced answer alongside its replacement
+    // until the turn ended. Writing the turn's user message — and deleting
+    // the message this turn replaces (`messageId`, the regenerate case; a
+    // no-op otherwise) — at the START of the turn makes the DB, and thus the
+    // reopen's RSC, show exactly one turn from the first frame.
+    //
+    // Safety: `saveMessages` is an UPSERT, so `onFinish`'s later write of the
+    // same user message updates it in place. New chats (a client-only draft
+    // `chatId` with no row) keep today's behavior: they cannot reattach
+    // mid-turn, so nothing is written early. Failures degrade silently to
+    // that same behavior (`onFinish` still writes everything). The one
+    // accepted tradeoff: if the END transaction fails after this one
+    // committed, the replaced message is already gone — rare, and the same
+    // risk the old `onFinish`-first ordering carried in reverse.
+    if (!preventChatPersistence && chatId) {
+      const userMessage = messages.at(-1);
+      if (userMessage?.role === "user") {
+        try {
+          const chat = await getChatById({ id: chatId, userId: user.id });
+          if (chat) {
+            await transaction(
+              deleteMessageById(messageId),
+              saveMessages([await chatbotMessageToDbMessage(chatId)(userMessage)]),
+            );
+          }
+        } catch (error) {
+          console.error("Failed to persist the turn's user message:", error);
+        }
+      }
+    }
 
     return createUIMessageStream({
       async execute({ writer }) {

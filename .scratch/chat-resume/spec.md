@@ -56,6 +56,20 @@ recibe el resto del stream o el mensaje completo.
    del POST existente tee-ea el SSE hacia el registry. Con eso, generación y
    `onFinish` (persistencia, title, memoria, compactación) completan aunque el
    cliente muera.
+
+   **Refinamiento (ticket 07)**: persistencia al inicio del turno para chats
+   existentes. El resume registry sigue sirviendo el stream en vuelo tras una
+   reapertura, pero hasta que el turno persistía (solo en `onFinish`) la UI
+   reabierta renderizaba el mensaje viejo del asistente del DB más el replay
+   del turno nuevo: en un regenerate se veían el turno reemplazado junto a su
+   reemplazo hasta que el turno terminaba. Ahora, cuando el chat existe en el
+   DB, el POST ejecuta una transacción al inicio del turno que borra el
+   mensaje que este reemplaza (`messageId`; no-op en un envío normal) y
+   persiste el mensaje del usuario (upsert: el `onFinish` posterior lo
+   actualiza in place). Los chats nuevos no escriben nada temprano (no pueden
+   reengancharse a mitad de turno) y los fallos degradan en silencio al
+   comportamiento de hoy. Tradeoff aceptado: si la transacción final falla
+   tras comprometerse esta, el mensaje reemplazado ya se fue — raro.
 3. **Clave de resume**: el cliente genera un `streamKey` (uuid) por turno y lo
    manda en el body del POST (los chats nuevos no tienen `chatId` hasta el
    `data-chat` final, que llega al final del stream). El `chatId` (para el
