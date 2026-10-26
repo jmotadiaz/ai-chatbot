@@ -88,3 +88,15 @@ single `Message`.
 - No new infrastructure dependency: the chatbot gains no Redis, no extra service, only a
   module-level `Map`.
 - Memory is bounded by the TTL (~60 min) and the number of in-flight turns.
+- **Turn-start persistence for existing chats**: while the resume keeps the
+  stream alive across a reopen, the reopened UI rendered the OLD assistant
+  message from the DB (persistence lives in `onFinish`) plus the replayed new
+  turn until the turn persisted — on a regenerate, the replaced answer stayed
+  visible alongside its replacement. Existing chats now delete the message the
+  turn replaces (`messageId`) and persist the turn's user message (an upsert,
+  so `onFinish`'s later write updates it in place) in a single transaction at
+  the START of the turn, before the stream is created. New chats keep today's
+  behavior (nothing is written early; they cannot reattach mid-turn) and any
+  failure degrades silently to that same behavior. The tradeoff: if the end
+  transaction fails after this one committed, the replaced message is already
+  gone — accepted, rare, and the mirror image of the old ordering's own risk.

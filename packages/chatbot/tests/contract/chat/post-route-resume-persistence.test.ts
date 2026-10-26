@@ -12,7 +12,7 @@
  * imported and called directly (HTTP boundary, contract suite).
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { setupTestDb } from "../../helpers/db-setup";
 import { resetRegistry, parseSseFrames  } from "../../helpers/chat-resume";
@@ -152,13 +152,13 @@ function makeRequest(overrides: Record<string, unknown> = {}): Request {
   });
 }
 
-/** Polls `predicate` with real timers until true or the deadline expires. */
+/** Polls `predicate` (sync or async) with real timers until true or the deadline expires. */
 async function waitFor(
-  predicate: () => boolean,
+  predicate: () => boolean | Promise<boolean>,
   { timeoutMs = 5000, stepMs = 20 } = {},
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
-  while (!predicate()) {
+  while (!(await predicate())) {
     if (Date.now() > deadline) {
       throw new Error("waitFor: deadline exceeded");
     }
@@ -274,5 +274,155 @@ describe("POST /api/chat — exact-once persistence on disconnect", () => {
 
     expect(get("not-a-uuid")).toBeUndefined();
     expect(getLatestByChat(chats[0]!.id)).toBeUndefined();
+  });
+
+  it("an existing chat persists the turn's user message at turn start, not only in onFinish", async () => {
+    const chatId = uuid();
+    await db.insert(chatTable).values({ id: chatId, userId: USER_ID, title: "Existing" });
+    const userMessage = {
+      id: uuid(),
+      role: "user",
+      parts: [{ type: "text", text: "turn-start persistence" }],
+    };
+
+    const res = await POST(makeRequest({ chatId, messages: [userMessage] }) as never);
+    expect(res.status).toBe(200);
+
+    // WHILE the stream is still alive — the response body has not been
+    // consumed, so `onFinish` cannot have run yet — the user row already
+    // exists: turn-start persistence, not end-of-turn persistence.
+    const userRowsWhileAlive = await db
+      .select()
+      .from(messageTable)
+      .where(
+        and(eq(messageTable.chatId, chatId), eq(messageTable.role, "user")),
+      );
+    expect(userRowsWhileAlive).toHaveLength(1);
+    expect(userRowsWhileAlive[0]!.id).toBe(userMessage.id);
+
+    // The turn completes normally: exactly one user + one assistant row.
+    const text = await res.text();
+    expect(text).toContain("data: [DONE]");
+    // Quiesce: wait for `onFinish`'s own write to land before the afterEach
+    // cleanup, so this test's late persistence cannot pollute later tests.
+    await waitFor(async () => {
+      const rows = await db
+        .select()
+        .from(messageTable)
+        .where(eq(messageTable.chatId, chatId));
+      return rows.length === 2;
+    });
+    const rows = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, chatId));
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row: any) => row.role === "user")).toHaveLength(1);
+    expect(rows.filter((row: any) => row.role === "assistant")).toHaveLength(1);
+  });
+
+  it("a regenerate deletes the replaced assistant message at turn start", async () => {
+    const chatId = uuid();
+    const userMessage = {
+      id: uuid(),
+      role: "user",
+      parts: [{ type: "text", text: "question" }],
+    };
+    const replacedAssistant = {
+      id: uuid(),
+      role: "assistant",
+      parts: [{ type: "text", text: "old answer" }],
+    };
+    await db.insert(chatTable).values({ id: chatId, userId: USER_ID, title: "Regen" });
+    await db
+      .insert(messageTable)
+      .values([
+        { ...userMessage, chatId },
+        { ...replacedAssistant, chatId },
+      ]);
+
+    // Regenerate shape: the SDK truncates the replaced assistant message
+    // client-side, so the body's last message is the user message and
+    // `messageId` is the id of the replaced assistant message.
+    const res = await POST(
+      makeRequest({ chatId, messageId: replacedAssistant.id, messages: [userMessage] }) as never,
+    );
+    expect(res.status).toBe(200);
+
+    // WHILE the stream is still alive, the replaced assistant message is
+    // already gone and the user message is present: a reopen mid-turn cannot
+    // render the stale replaced turn anymore.
+    const rowsWhileAlive = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, chatId));
+    expect(rowsWhileAlive.find((row: any) => row.id === replacedAssistant.id)).toBeUndefined();
+    expect(rowsWhileAlive.some((row: any) => row.role === "user")).toBe(true);
+
+    // After completion: exactly one assistant row, and it is NOT the
+    // replaced one.
+    await res.text();
+    await waitFor(async () => {
+      const rows = await db
+        .select()
+        .from(messageTable)
+        .where(eq(messageTable.chatId, chatId));
+      const assistantRows = rows.filter((row: any) => row.role === "assistant");
+      return assistantRows.length === 1 && assistantRows[0]!.id !== replacedAssistant.id;
+    });
+    const rows = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, chatId));
+    const assistantRows = rows.filter((row: any) => row.role === "assistant");
+    expect(assistantRows).toHaveLength(1);
+    expect(assistantRows[0]!.id).not.toBe(replacedAssistant.id);
+    expect(rows.filter((row: any) => row.role === "user")).toHaveLength(1);
+  });
+
+  it("a new chat (no persisted row) writes nothing at turn start", async () => {
+    const draftChatId = uuid();
+    const res = await POST(
+      makeRequest({ chatId: draftChatId }) as never,
+    );
+    expect(res.status).toBe(200);
+
+    // WHILE the stream is still alive, no Message row exists for the draft
+    // chat: the chatId has no row (client-only draft), so nothing can be
+    // written early. Scoped to the draft id — earlier tests' late `onFinish`
+    // commits must not leak into this assertion.
+    const rowsWhileAlive = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, draftChatId));
+    expect(rowsWhileAlive).toHaveLength(0);
+
+    // Today's behavior is unchanged: onFinish persists the chat + both
+    // messages. Quiesce so the late persistence cannot pollute later tests.
+    await res.text();
+    await waitFor(async () => {
+      const chats = await db
+        .select()
+        .from(chatTable)
+        .where(eq(chatTable.id, draftChatId));
+      if (chats.length !== 1) return false;
+      const rows = await db
+        .select()
+        .from(messageTable)
+        .where(eq(messageTable.chatId, draftChatId));
+      return rows.length === 2;
+    });
+    const chats = await db
+      .select()
+      .from(chatTable)
+      .where(eq(chatTable.id, draftChatId));
+    expect(chats).toHaveLength(1);
+    const rows = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, draftChatId));
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row: any) => row.role === "user")).toHaveLength(1);
+    expect(rows.filter((row: any) => row.role === "assistant")).toHaveLength(1);
   });
 });

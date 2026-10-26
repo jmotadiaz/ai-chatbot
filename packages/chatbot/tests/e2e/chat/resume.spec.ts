@@ -261,4 +261,59 @@ test.describe("Chat resume", () => {
     // Exactly the one reload probe: the silent `204` left no pending turn.
     expect(requests.filter(isStreamGet)).toHaveLength(1);
   });
+
+  test("regenerate + reopen mid-turn: one assistant message, the replaced one never reappears", async ({
+    page,
+    db,
+  }) => {
+    const chat = await seedChat(db);
+    const chatPage = new ChatPage(page);
+
+    await chatPage.goto(chat.id);
+    await chatPage.header.modelPicker.selectModel("slowStream");
+
+    // Regenerate the seeded answer (A1): the SDK truncates it client-side
+    // and streams a replacement. The reload button renders only while the
+    // status is `ready`/`error`, which holds right after the history loads.
+    await chatPage.chat.assistantMessages
+      .last()
+      .getByLabel("Regenerate response")
+      .click();
+
+    // The regenerated turn is alive: part of the slow text is on screen.
+    const slowAssistant = slowAssistantOf(chatPage);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(FIRST_SLOW_CHUNK);
+
+    // The "reopen": a fresh page load while the turn is still generating.
+    // Turn-start persistence has already deleted A1 and written the user
+    // message, so the DB shows exactly this turn in flight and the resumed
+    // replay completes it — the replaced answer never reappears.
+    await page.reload();
+
+    // Exactly ONE assistant message in total (not just one matching the slow
+    // text): without turn-start persistence the stale replaced answer (A1)
+    // would be rendered by the RSC alongside the replayed new turn.
+    await expect(chatPage.chat.assistantMessages).toHaveCount(1);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+    await expect(chatPage.chat.userMessages.filter({ hasText: SEED_QUESTION })).toHaveCount(
+      1,
+    );
+
+    // After the turn finished, a final reload shows the persisted history:
+    // still exactly one assistant message with the full text.
+    await expect(chatPage.chat.loadingIndicator).not.toBeVisible();
+    await page.reload();
+    await expect(chatPage.chat.assistantMessages).toHaveCount(1);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+    await expect(chatPage.chat.userMessages.filter({ hasText: SEED_QUESTION })).toHaveCount(
+      1,
+    );
+  });
 });

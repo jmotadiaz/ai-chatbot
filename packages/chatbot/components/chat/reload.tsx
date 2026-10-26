@@ -27,6 +27,7 @@ export const ChatReloadButton: React.FC = () => {
   return (
     <div
       onClick={() => reload()}
+      aria-label="Regenerate response"
       className="cursor-pointer text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors"
     >
       <RefreshCcw size={18} />
