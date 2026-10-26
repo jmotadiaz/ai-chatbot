@@ -212,8 +212,11 @@ export function completeStream(key: string): void {
 export function resolveStreamKey(keyOrChatId: string): string | undefined {
   if (get(keyOrChatId) !== undefined) return keyOrChatId;
 
-  const key = latestByChat.get(keyOrChatId);
-  return key !== undefined && get(key) !== undefined ? key : undefined;
+  // `getLatestByChat` already owns the index lookup + liveness check (and
+  // cleans a dangling index slot); only the key itself is missing from its
+  // snapshot-oriented answer, so re-read the index for it.
+  if (getLatestByChat(keyOrChatId) === undefined) return undefined;
+  return latestByChat.get(keyOrChatId);
 }
 
 /** Snapshot of a live entry, or `undefined` when unknown/expired. */
