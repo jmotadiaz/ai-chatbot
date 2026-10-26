@@ -123,5 +123,53 @@ nuqs adapter in jsdom); `sonner` is mocked.
 ### Verification
 
 `pnpm --filter chatbot type:check`, `lint`, `test:component` (40 files / 218
+
 tests green), `test:unit` (48 files / 359 tests green) and `build:verify`
 all pass. `pnpm build` was never run.
+
+### Review fix: the resume intent (the frozen-page fetch-kill race)
+
+Real-browser hole found in review: on mobile, the page is frozen while
+hidden, the OS/browser kills the in-flight fetch, and the JS rejection
+(`TypeError: Failed to fetch`) is delivered only AFTER the page resumes —
+often AFTER the `visibilitychange` listener has already run. At that instant
+`getStatus()` still returned `"streaming"`, so `tryResume()` bailed and
+nothing ever resumed the turn until the user backgrounded/foregrounded
+again.
+
+Fix: a comeback event (`visibilitychange → visible`, or a bfcache
+`pageshow` with `persisted: true`) that lands while a request is still
+in-flight no longer just bails — it records a **resume intent** (a ref,
+`pendingIntentRef`): never aborting the live request. A new effect in the
+hook watches the chat `status` VALUE (the hook now receives `status` as a
+prop alongside `getStatus`) and consumes the intent when the status settles
+out of `streaming`/`submitted` while the turn is still pending, the page is
+visible and no resume is in flight — resuming exactly once. The intent is
+cleared by: consuming it, a clean stream end (`noteStreamFinished`), or the
+page becoming hidden (no resume while hidden; the next visibility event
+records a fresh one). There are still no timers and no retry loops: a
+failed resume cannot re-trigger itself from its own status transition
+because the intent is consumed before the resume fires, and a status change
+with no preceding visibility/pageshow event keeps today's behavior (error +
+toast, no automatic resume).
+
+Wiring note: `useChatResume` is now called AFTER `useChatSession` in
+`use-chat.ts` (it needs the live `status` value), and the stable callbacks
+the session needs (`getStreamKey`, `noteStreamFinished`) reach it through a
+holder ref (`resumeApiRef`) populated right after the hook returns — both
+are only invoked once a stream is live, never at mount.
+
+Four component tests were added (same jsdom + MSW harness): the frozen-page
+race itself (visible event WHILE streaming → then kill → exactly one resume
+GET + completed message; this one was RED before the fix), no-intent
+no-auto-resume (kill while visible without a visibility event → error
+stays), hidden drops the intent (visible → hidden → kill → no resume; next
+visible → exactly one), and one intent from two rapid visible events. All
+previously documented semantics that remain: one resume per event, no
+timers, turn-pending ref, `pageshow persisted: false` ignored, 204 silent,
+per-turn `streamKey` URL.
+
+### Verification
+
+`pnpm --filter chatbot type:check`, `lint`, `test:component` (40 files / 222
+tests green) and `build:verify` all pass. `pnpm build` was never run.

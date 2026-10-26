@@ -11,6 +11,13 @@ export interface UseChatResumeArgs {
    */
   enabled: boolean;
   /**
+   * The chat's live status VALUE, re-rendered on every stream transition. It
+   * drives the intent-consumer effect: a visibility event that lands while a
+   * request is still in flight records an intent, and this value settling
+   * out of the in-flight states is what consumes it.
+   */
+  status: ChatStatus;
+  /**
    * Reads the chat's live status at event time. Passed as a getter because
    * the event listeners are registered once, while `status` changes on every
    * stream transition.
@@ -54,18 +61,31 @@ export interface UseChatResumeResult {
  *
  * The pending-turn signal is a ref set at send time and cleared on a clean
  * stream end — never a heuristic over message contents. When the user comes
- * back (`visibilitychange` to visible, or a bfcache `pageshow`), and the
- * turn is still pending while no request is live, the hook fires exactly
- * one `resumeStream()`. No timers, no retries: the next event is the retry.
+ * back (`visibilitychange` to visible, or a bfcache `pageshow`), the hook
+ * fires exactly one `resumeStream()`. No timers, no retries: the next event
+ * is the retry.
+ *
+ * The race this guards against: on a frozen (hidden) page the OS/browser can
+ * kill the in-flight fetch, and the JS rejection is only delivered AFTER the
+ * page resumes — often after the `visibilitychange` listener has already run
+ * against a still-`streaming` status. So a comeback event that lands while a
+ * request is alive never aborts it: it records a resume INTENT (a ref), and
+ * an effect watching the status value consumes the intent the moment the
+ * status settles out of `streaming`/`submitted` while the page is visible.
+ * The intent is consumed at most once, and it is dropped by a clean stream
+ * end or by the page going hidden again (no resume while hidden).
  */
 export const useChatResume = ({
   enabled,
+  status,
   getStatus,
   resumeStream,
 }: UseChatResumeArgs): UseChatResumeResult => {
   const streamKeyRef = useRef<string | undefined>(undefined);
   const pendingTurnRef = useRef(false);
   const resumingRef = useRef(false);
+  /** Resume intent recorded by a comeback event that hit an in-flight request. */
+  const pendingIntentRef = useRef(false);
 
   // Kept current on every render for the once-registered event listeners.
   const enabledRef = useRef(enabled);
@@ -91,22 +111,18 @@ export const useChatResume = ({
       if (isAbort || (!isError && !isDisconnect)) {
         pendingTurnRef.current = false;
         streamKeyRef.current = undefined;
+        // A clean end closes the turn: any recorded intent dies with it.
+        pendingIntentRef.current = false;
       }
     },
     [],
   );
 
-  const tryResume = useCallback((): void => {
-    if (!enabledRef.current) return;
-    if (!pendingTurnRef.current) return;
-    // Never resume over an in-flight POST/resume: aborting a live request
-    // would kill the very stream we are trying to keep.
-    const status = getStatusRef.current();
-    if (status === "streaming" || status === "submitted") return;
+  /** Fires at most one `resumeStream()`; guards against live requests. */
+  const startResume = useCallback((): void => {
     // At most one resume in flight; further events are ignored until it
     // settles (the next event after a failure is the retry — no timers).
     if (resumingRef.current) return;
-
     resumingRef.current = true;
     void resumeStreamRef.current()
       .catch(() => {
@@ -118,19 +134,48 @@ export const useChatResume = ({
       });
   }, []);
 
+  const tryResume = useCallback((): void => {
+    if (!enabledRef.current) return;
+    if (!pendingTurnRef.current) return;
+    // Never resume over an in-flight POST/resume: aborting a live request
+    // would kill the very stream we are trying to keep.
+    const status = getStatusRef.current();
+    if (status === "streaming" || status === "submitted") return;
+    startResume();
+  }, [startResume]);
+
   useEffect(() => {
     if (!enabled) return;
 
-    const handleVisibilityChange = (): void => {
-      if (document.visibilityState !== "visible") return;
+    const handleComeback = (): void => {
+      if (!pendingTurnRef.current) return;
+      const status = getStatusRef.current();
+      if (status === "streaming" || status === "submitted") {
+        // The event landed while a request was still alive: never abort it.
+        // Record the intent instead — if the request turns out to have died
+        // while the page was frozen (the rejection arrives only after the
+        // page resumes), the status-settling effect consumes the intent.
+        pendingIntentRef.current = true;
+        return;
+      }
       tryResume();
+    };
+
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState !== "visible") {
+        // No resume while hidden: drop any recorded intent; the next
+        // visibility event records a fresh one.
+        pendingIntentRef.current = false;
+        return;
+      }
+      handleComeback();
     };
     const handlePageShow = (event: Event): void => {
       // Browsers fire `pageshow` with `persisted: false` on every normal
       // load, where `resume: true` already resumes on mount; only a bfcache
       // restore (`persisted: true`) is a genuine "user came back".
       if (!(event as PageTransitionEvent).persisted) return;
-      tryResume();
+      handleComeback();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -140,6 +185,32 @@ export const useChatResume = ({
       window.removeEventListener("pageshow", handlePageShow);
     };
   }, [enabled, tryResume]);
+
+  // Intent consumer: fires whenever the status settles out of the in-flight
+  // states. It only acts on an intent recorded by a visibility/pageshow
+  // event — a stream dying while the user is looking at the screen keeps
+  // today's behavior (error + toast, no automatic resume).
+  useEffect(() => {
+    if (!enabled) return;
+    if (!pendingIntentRef.current) return;
+    if (status === "streaming" || status === "submitted") return;
+    if (resumingRef.current) return; // wait for the in-flight resume to settle
+    // The turn ended cleanly while the intent was pending: nothing to do.
+    if (!pendingTurnRef.current) {
+      pendingIntentRef.current = false;
+      return;
+    }
+    // The page went hidden before the status settled: drop the intent; the
+    // next visibility event records a fresh one.
+    if (document.visibilityState !== "visible") {
+      pendingIntentRef.current = false;
+      return;
+    }
+    // Consumed at most once: a failed resume cannot re-trigger itself from
+    // its own status transition (the intent is already gone).
+    pendingIntentRef.current = false;
+    tryResume();
+  }, [enabled, status, tryResume]);
 
   return { beginTurn, getStreamKey, noteStreamFinished };
 };

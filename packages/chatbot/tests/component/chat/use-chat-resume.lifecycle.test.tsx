@@ -579,4 +579,231 @@ describe("useChat resume lifecycle", () => {
     expect(screen.getByTestId("status").textContent).toBe("ready");
     expect(streamKeyGets()).toHaveLength(0);
   });
+
+  it("resumes a fetch killed while hidden when the visible event landed while the stream was still alive", async () => {
+    // Real-browser sequence: the page freezes while hidden, the OS/browser
+    // kills the fetch, and the JS rejection (`TypeError: Failed to fetch`)
+    // is delivered only AFTER the page resumes — often after the
+    // `visibilitychange` listener has already run against a still-"streaming"
+    // status. The visible event must therefore record an INTENT that the
+    // status settling out of the in-flight states consumes.
+    let killStream: (() => void) | undefined;
+    setupServer.use(
+      http.post("*/api/chat", async ({ request }) => {
+        postBodies.push((await request.json()) as Record<string, unknown>);
+        return makeSseResponse(
+          [startChunk(ASSISTANT_ID), textStart(), textDelta("Partial ")],
+          { onOpen: ({ kill }) => (killStream = kill) },
+        );
+      }),
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        if (postBodies.length === 0) {
+          return new HttpResponse(null, { status: 204 }); // mount: nothing live
+        }
+        return makeSseResponse(fullReplay("Partial world"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID });
+    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+    const streamKey = postBodies[0]!.streamKey as string;
+
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("streaming"));
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe("Partial "),
+    );
+
+    // The visible event arrives WHILE the stream is still alive…
+    await fireVisibility("visible");
+    await flush();
+    expect(streamKeyGets()).toHaveLength(0); // never abort a live request
+
+    // …and THEN the killed fetch's rejection is delivered (page now visible).
+    act(() => {
+      killStream!();
+    });
+
+    // The intent is consumed when the status settles out of `streaming`:
+    // exactly ONE GET to the turn's resume route, and the replay completes
+    // the message (single assistant message).
+    await waitFor(() => expect(streamKeyGets()).toHaveLength(1));
+    expect(new URL(streamKeyGets()[0]!).pathname).toBe(
+      `/api/chat/${streamKey}/stream`,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe(
+        "Partial world",
+      ),
+    );
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(screen.getByTestId("assistant-count").textContent).toBe("1");
+    await flush();
+    expect(streamKeyGets()).toHaveLength(1); // no retries beyond the one intent
+  });
+
+  it("does not auto-resume when the stream dies while visible with no visibility event", async () => {
+    let killStream: (() => void) | undefined;
+    setupServer.use(
+      http.post("*/api/chat", async ({ request }) => {
+        postBodies.push((await request.json()) as Record<string, unknown>);
+        return makeSseResponse(
+          [startChunk(ASSISTANT_ID), textStart(), textDelta("Partial ")],
+          { onOpen: ({ kill }) => (killStream = kill) },
+        );
+      }),
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        if (postBodies.length === 0) {
+          return new HttpResponse(null, { status: 204 }); // mount: nothing live
+        }
+        return makeSseResponse(fullReplay("Partial world"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID });
+    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("streaming"));
+    // The user is LOOKING at the screen when the stream dies: error + toast,
+    // no automatic resume (a resume requires a visibility/pageshow event).
+    act(() => {
+      killStream!();
+    });
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("error"));
+    await flush();
+
+    expect(streamKeyGets()).toHaveLength(0);
+    expect(screen.getByTestId("status").textContent).toBe("error");
+  });
+
+  it("drops the resume intent when the page is hidden again before the status settles", async () => {
+    let killStream: (() => void) | undefined;
+    setupServer.use(
+      http.post("*/api/chat", async ({ request }) => {
+        postBodies.push((await request.json()) as Record<string, unknown>);
+        return makeSseResponse(
+          [startChunk(ASSISTANT_ID), textStart(), textDelta("Partial ")],
+          { onOpen: ({ kill }) => (killStream = kill) },
+        );
+      }),
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        if (postBodies.length === 0) {
+          return new HttpResponse(null, { status: 204 }); // mount: nothing live
+        }
+        return makeSseResponse(fullReplay("Partial world"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID });
+    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+    const streamKey = postBodies[0]!.streamKey as string;
+
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("streaming"));
+
+    // Visible while streaming records an intent; hiding again drops it, so
+    // the killed fetch afterwards must NOT be resumed.
+    await fireVisibility("visible");
+    await fireVisibility("hidden");
+    act(() => {
+      killStream!();
+    });
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("error"));
+    await flush();
+    expect(streamKeyGets()).toHaveLength(0);
+
+    // The next visibility event records a fresh intent: exactly one resume.
+    await fireVisibility("visible");
+    await waitFor(() => expect(streamKeyGets()).toHaveLength(1));
+    expect(new URL(streamKeyGets()[0]!).pathname).toBe(
+      `/api/chat/${streamKey}/stream`,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe(
+        "Partial world",
+      ),
+    );
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(screen.getByTestId("assistant-count").textContent).toBe("1");
+    await flush();
+    expect(streamKeyGets()).toHaveLength(1);
+  });
+
+  it("records at most one resume intent from two rapid visible events during the same in-flight stream", async () => {
+    let killStream: (() => void) | undefined;
+    setupServer.use(
+      http.post("*/api/chat", async ({ request }) => {
+        postBodies.push((await request.json()) as Record<string, unknown>);
+        return makeSseResponse(
+          [startChunk(ASSISTANT_ID), textStart(), textDelta("Partial ")],
+          { onOpen: ({ kill }) => (killStream = kill) },
+        );
+      }),
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        if (postBodies.length === 0) {
+          return new HttpResponse(null, { status: 204 }); // mount: nothing live
+        }
+        return makeSseResponse(fullReplay("Partial world"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID });
+    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("streaming"));
+
+    // Two rapid visible events while the same request is still alive: ONE
+    // intent, ONE resume after the killed fetch settles.
+    await fireVisibility("visible");
+    await fireVisibility("visible");
+    act(() => {
+      killStream!();
+    });
+
+    await waitFor(() => expect(streamKeyGets()).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe(
+        "Partial world",
+      ),
+    );
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(screen.getByTestId("assistant-count").textContent).toBe("1");
+    await flush();
+    expect(streamKeyGets()).toHaveLength(1); // no double resume, no retry
+  });
 });

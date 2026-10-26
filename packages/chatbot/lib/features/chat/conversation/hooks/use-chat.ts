@@ -2,7 +2,7 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   type ChatConfig,
   type ChatModeState,
@@ -20,7 +20,7 @@ import { useChatDataPartState } from "./use-chat-data-part-state";
 import { useChatQueryParamId } from "./use-chat-query-param-id";
 import { useChatReload } from "./use-chat-reload";
 import { useChatRequestBody } from "./use-chat-request-body";
-import { useChatResume } from "./use-chat-resume";
+import { useChatResume, type UseChatResumeResult } from "./use-chat-resume";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
@@ -115,14 +115,13 @@ export const useChat = ({
   // `preventChatPersistence`.
   const resumeEnabled = !preventChatPersistence && Boolean(effectiveChatId);
 
-  // Called before `useChatSession` because the composed `onFinish` needs
-  // `noteStreamFinished`; the getters are only invoked after the session
-  // exists (event handlers), so referencing `chatResult` is safe.
-  const resume = useChatResume({
-    enabled: resumeEnabled,
-    getStatus: () => chatResult.status,
-    resumeStream: () => chatResult.resumeStream(),
-  });
+  // `useChatSession` runs BEFORE `useChatResume` because the resume hook
+  // needs the live `status` value (its intent consumer watches it settle out
+  // of the in-flight states). The stable callbacks the session needs
+  // (`getStreamKey`, `noteStreamFinished`) reach it through a holder ref
+  // populated right after the resume hook returns — both are only invoked
+  // once a stream is live, long after this render, never at mount.
+  const resumeApiRef = useRef<UseChatResumeResult | null>(null);
 
   const chatResult = useChatSession({
     initialMessages,
@@ -131,15 +130,23 @@ export const useChat = ({
     onDataPart: setDataPart,
     id: resumeEnabled ? effectiveChatId : undefined,
     resume: resumeEnabled,
-    getStreamKey: resume.getStreamKey,
+    getStreamKey: () => resumeApiRef.current?.getStreamKey(),
     onFinish: async (args) => {
-      resume.noteStreamFinished(args);
+      resumeApiRef.current?.noteStreamFinished(args);
       if (!isNewChat) return;
       if (preventChatPersistence) return;
       if (!effectiveChatId) return;
       await setQueryParamChatId(effectiveChatId);
     },
   });
+
+  const resume = useChatResume({
+    enabled: resumeEnabled,
+    status: chatResult.status,
+    getStatus: () => chatResult.status,
+    resumeStream: () => chatResult.resumeStream(),
+  });
+  resumeApiRef.current = resume;
 
   const body = useChatRequestBody({
     chatId,
