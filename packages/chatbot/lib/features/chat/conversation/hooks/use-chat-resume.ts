@@ -102,6 +102,21 @@ export const useChatResume = ({
     return key;
   }, []);
 
+  /**
+   * The navigation type of the page load driving this mount. Resume on
+   * mount only when the page was actually (re)loaded (`reload` or
+   * `back_forward`): a normal in-app navigation (`navigate`) must NOT
+   * probe — an unconditional mount probe fires a `GET` whose silent `204`
+   * can settle after the user's send and hide the loading state, and can
+   * even attach to a brand-new turn the POST just registered.
+   */
+  const getNavigationType = useCallback((): string | undefined => {
+    if (typeof performance.getEntriesByType !== "function") return undefined;
+    const entry = performance
+      .getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    return entry?.type;
+  }, []);
+
   const getStreamKey = useCallback(() => streamKeyRef.current, []);
 
   const noteStreamFinished = useCallback(
@@ -118,8 +133,12 @@ export const useChatResume = ({
     [],
   );
 
-  /** Fires at most one `resumeStream()`; guards against live requests. */
-  const startResume = useCallback((): void => {
+  /**
+   * Fires at most one `resumeStream()`; guards against live requests. The
+   * optional `onSettle` runs once the resume attempt settles (success,
+   * failure or silent `204`), while `resumingRef` is still held.
+   */
+  const startResume = useCallback((onSettle?: () => void): void => {
     // At most one resume in flight; further events are ignored until it
     // settles (the next event after a failure is the retry — no timers).
     if (resumingRef.current) return;
@@ -131,6 +150,7 @@ export const useChatResume = ({
       })
       .finally(() => {
         resumingRef.current = false;
+        onSettle?.();
       });
   }, []);
 
@@ -143,6 +163,32 @@ export const useChatResume = ({
     if (status === "streaming" || status === "submitted") return;
     startResume();
   }, [startResume]);
+
+  // Mount resume: exactly ONE probe, and only when the page was actually
+  // (re)loaded — "refresh mid-generation re-attaches" is the user story the
+  // mount resume exists for. A normal navigation (`navigate`) never probes:
+  // the SDK's unconditional `resume: true` mount GET raced the user's send
+  // (its silent `204` hid the loading state mid-stream, and the dev server
+  // could even attach it to a brand-new turn the POST had just registered).
+  useEffect(() => {
+    if (!enabled) return;
+    const navigationType = getNavigationType();
+    if (navigationType !== "reload" && navigationType !== "back_forward") {
+      return;
+    }
+    if (pendingTurnRef.current) return; // a turn is already in flight
+    // Flag the pending turn BEFORE the probe: if the probe fails, the turn
+    // stays pending and a later visibility event retries the resume.
+    pendingTurnRef.current = true;
+    startResume(() => {
+      // The silent `204` path settles to `ready` with nothing to resume:
+      // clear the flag so no phantom pending turn makes a later visibility
+      // event fire a pointless resume. An `error` settle keeps it pending.
+      if (getStatusRef.current() === "ready") {
+        pendingTurnRef.current = false;
+      }
+    });
+  }, [enabled, getNavigationType, startResume]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -172,8 +218,9 @@ export const useChatResume = ({
     };
     const handlePageShow = (event: Event): void => {
       // Browsers fire `pageshow` with `persisted: false` on every normal
-      // load, where `resume: true` already resumes on mount; only a bfcache
-      // restore (`persisted: true`) is a genuine "user came back".
+      // load, where the mount effect above already probes on a genuine
+      // reload; only a bfcache restore (`persisted: true`) is a genuine
+      // "user came back".
       if (!(event as PageTransitionEvent).persisted) return;
       handleComeback();
     };

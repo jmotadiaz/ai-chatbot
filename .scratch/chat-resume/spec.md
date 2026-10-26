@@ -71,6 +71,18 @@ recibe el resto del stream o el mensaje completo.
    turno en vuelo — sin heurísticas sintácticas sobre mensajes). Un resume por
    evento de visibilidad, sin timers de reintento. Chats nuevos sin `chatId`
    aún: la route GET se invoca con el `streamKey` (`prepareReconnectToStreamRequest`).
+
+   **Refinamiento (E2E)**: el `resume: true` del SDK dispara una sonda de
+   montaje NO condicionada (`GET /api/chat/<chatId>/stream` en cada apertura
+   del chat). Detectado en E2E (`seed.spec.ts` fallando ~1/3 de las runs): el
+   `204` de la sonda puede resolverse después de que el usuario envió (oculta
+   el loading a mitad de stream) y el GET puede ser atendido tras el POST
+   (se engancha a un turno recién registrado: doble replay del mismo mensaje).
+   Se sustituye por un resume de montaje **gateado**: solo cuando la
+   navegación fue `reload` o `back_forward`
+   (`performance.getEntriesByType("navigation")[0]?.type`), vía el propio hook
+   (`useChat({ id })`, sin `resume`). Una apertura normal del chat ya no
+   sondea el registry: ni replay del turno anterior ni carrera con el envío.
 6. **Alcance**: solo chats persistidos (página de chat). Hub, temporales y
    project-form (`preventChatPersistence: true`) quedan como hoy.
 7. **Fuera de alcance (explícito)**:

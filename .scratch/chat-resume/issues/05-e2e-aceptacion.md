@@ -57,3 +57,32 @@ test).
 - Verification: full `pnpm --filter chatbot test:e2e` green (39 passed, 10
   skipped — pre-existing `test.skip`/`fixme`), plus type:check, lint, unit,
   component and contract.
+
+### Refinement (E2E regression): mount probe removed, scenarios adjusted
+
+The unconditional mount probe (`resume: true`) caused intermittent failures
+in `seed.spec.ts` (~1/3 of runs). After gating the mount resume to
+reload/back_forward navigations (see ticket 04):
+
+- Scenario 1 ("screen off"): the mount-probe wait/`204` assertion was removed
+  (a normal `goto` issues no probe now, so nothing can race the turn); the
+  rest is unchanged (streamKey in the body, visibility resume by key, single
+  message, full text).
+- Scenario 2 ("reload mid-generation"): unchanged — the reload probe now
+  comes from our hook instead of `resume: true`.
+- Scenario 3 ("no in-flight turn"): now asserts a normal `goto` issues NO
+  `GET /api/chat/*/stream` at all, and a `page.reload()` probes and answers
+  `204` with the UI staying `ready`, no error, and exactly one stream GET.
+- **New: `warmUpResumeRoute` in scenarios 1–2.** Debugging the post-fix
+  failures revealed a second, independent dev-server hazard: `next dev`
+  (webpack) compiles route handlers ON DEMAND and each first compile
+  re-evaluates the shared server modules — wiping module-level state, the
+  in-memory resume registry included. With the old unconditional `resume:
+  true` mount probe this never bit (the probe compiled the stream route
+  before any POST); with the gated probe, the stream route's first compile
+  could land between the POST (`register`) and the reconnect (`attach`),
+  answering the resume with a registry-miss `204`. A production build
+  compiles every route into one module graph, so prod is immune; the warm-up
+  (`GET /api/chat/resume-warm-up/stream` → `204`) pins the route's
+  compilation before the turn starts. With it, the suite is stable: resume
+  spec 5/5, seed spec 5/5, full suite 39 passed / 10 skipped.

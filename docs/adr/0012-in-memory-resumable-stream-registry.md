@@ -42,10 +42,11 @@ existing response:
    from the initial `start` chunk plus the live tail, or `204` when there is nothing to
    resume. This is the URL `DefaultChatTransport.reconnectToStream` already expects.
 4. **Client (`packages/chatbot/lib/features/chat/conversation/hooks/use-chat-session.ts`)**:
-   `useChat({ id, resume: true })` with `prepareReconnectToStreamRequest` to resolve the
-   stream key, plus a `visibilitychange`/`pageshow` lifecycle hook that calls
-   `resumeStream()` when the turn was in flight and the request died — one resume per
-   event, no retry timers.
+   `useChat({ id })` with `prepareReconnectToStreamRequest` to resolve the stream key,
+   plus a lifecycle hook that calls `resumeStream()` in two gated moments — on mount only
+   when the navigation type is `reload` or `back_forward` (a genuine page reload;
+   `performance.getEntriesByType("navigation")`), and on `visibilitychange`/`pageshow` when
+   the turn was in flight and the request died — one resume per event, no retry timers.
 
 **Replay always starts at the beginning.** The installed SDK (`ai@6.0.287` /
 `@ai-sdk/react@3.0.290`) has no offset protocol: no `Last-Event-ID`, no SSE ids. A
@@ -71,6 +72,10 @@ single `Message`.
 - **Single-process is a structural constraint of the registry**: the registry assumes pm2
   serves the chatbot as one process without cluster. Scaling out would require revisiting
   this ADR.
+- A normal chat open (`navigate` navigation) no longer probes the registry, so it neither
+  replays the previous turn's whole message within the TTL nor races a user send against a
+  mount-probe `204` (which could hide the loading state mid-stream or attach the probe to a
+  brand-new turn).
 - A process restart mid-turn loses the turn: with no persistence there is nothing to
   recover or detect. Accepted cold.
 - Returning after the TTL requires a page reload; the RSC/DB remains the source of truth.
