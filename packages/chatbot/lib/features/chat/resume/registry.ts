@@ -35,6 +35,13 @@ export interface StreamSnapshot {
   state: StreamState;
   /** The source closed: the terminal `data: [DONE]\n\n` is in `chunks`. */
   complete: boolean;
+  /**
+   * The message id the stream's initial `start` chunk carries (fixed by the
+   * factory at turn start): the GET resume route compares a client's
+   * `?after=` probe against it to answer a silent `204` when the client
+   * already holds this exact message.
+   */
+  startMessageId?: string;
 }
 
 export interface StreamSubscriber {
@@ -48,6 +55,7 @@ interface RegistryEntry {
   complete: boolean;
   expiresAt: number;
   chatId?: string;
+  startMessageId?: string;
   /** Present while live; forgotten by `completeStream` or eviction. */
   subscribers: StreamSubscriber[];
 }
@@ -105,6 +113,9 @@ function snapshotOf(entry: RegistryEntry): StreamSnapshot {
     chunks: [...entry.chunks],
     state: entry.state,
     complete: entry.complete,
+    ...(entry.startMessageId !== undefined && {
+      startMessageId: entry.startMessageId,
+    }),
   };
 }
 
@@ -176,6 +187,21 @@ export function register(key: string, options?: { chatId?: string }): void {
   if (options?.chatId) {
     latestByChat.set(options.chatId, key);
   }
+}
+
+/**
+ * Record the message id the turn's initial `start` chunk carries. The factory
+ * calls it at the START of the turn (right after `register` in the POST
+ * route), because a resume probe can arrive at any moment afterwards — long
+ * before `onFinish`. No-op for unknown or expired keys.
+ */
+export function setStartMessageId(key: string, messageId: string): void {
+  evict();
+
+  const entry = streams.get(key);
+  if (!entry) return;
+
+  entry.startMessageId = messageId;
 }
 
 /**

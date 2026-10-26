@@ -20,12 +20,13 @@ import {
   append,
   completeStream,
   register,
+  setStartMessageId,
 } from "@/lib/features/chat/resume/registry";
 
 const mockedGetSession = vi.mocked(getSession);
 
-function makeRequest(keyOrChatId: string): Request {
-  return new Request(`http://test/api/chat/${keyOrChatId}/stream`);
+function makeRequest(keyOrChatId: string, search = ""): Request {
+  return new Request(`http://test/api/chat/${keyOrChatId}/stream${search}`);
 }
 
 function mockSignedIn(): void {
@@ -109,6 +110,61 @@ describe("GET /api/chat/[key]/stream", () => {
     expect(await res.text()).toBe(
       'data: {"type":"start","messageId":"m-3"}\n\n' + "data: [DONE]\n\n",
     );
+  });
+
+  it("answers 204 when ?after equals the entry's start message id (the client already holds it)", async () => {
+    register("turn-after-1", { chatId: "chat-after-1" });
+    setStartMessageId("turn-after-1", "m-start");
+    append("turn-after-1", 'data: {"type":"start","messageId":"m-start"}\n\n');
+    append("turn-after-1", 'data: {"type":"text-delta","id":"t","delta":"hi"}\n\n');
+    completeStream("turn-after-1");
+
+    const res = await GET(makeRequest("turn-after-1", "?after=m-start"));
+
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe("");
+  });
+
+  it("replays in full when ?after differs from the entry's start message id", async () => {
+    register("turn-after-2");
+    setStartMessageId("turn-after-2", "m-start");
+    append("turn-after-2", 'data: {"type":"start","messageId":"m-start"}\n\n');
+    append("turn-after-2", "data: [DONE]\n\n");
+    completeStream("turn-after-2");
+
+    const res = await GET(makeRequest("turn-after-2", "?after=some-other-message"));
+
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe(
+      'data: {"type":"start","messageId":"m-start"}\n\n' + "data: [DONE]\n\n",
+    );
+  });
+
+  it("replays in full when the ?after param is absent (unchanged behavior)", async () => {
+    register("turn-after-3");
+    setStartMessageId("turn-after-3", "m-start");
+    append("turn-after-3", 'data: {"type":"start","messageId":"m-start"}\n\n');
+    append("turn-after-3", "data: [DONE]\n\n");
+    completeStream("turn-after-3");
+
+    const res = await GET(makeRequest("turn-after-3"));
+
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("m-start");
+  });
+
+  it("honours ?after through the chatId resolution path too", async () => {
+    register("turn-after-4", { chatId: "chat-after-4" });
+    setStartMessageId("turn-after-4", "m-start");
+    append("turn-after-4", 'data: {"type":"start","messageId":"m-start"}\n\n');
+    append("turn-after-4", "data: [DONE]\n\n");
+    completeStream("turn-after-4");
+
+    const hit = await GET(makeRequest("chat-after-4", "?after=m-start"));
+    expect(hit.status).toBe(204);
+
+    const miss = await GET(makeRequest("chat-after-4", "?after=m-other"));
+    expect(miss.status).toBe(200);
   });
 
   it("answers 204 when there is no entry at all", async () => {

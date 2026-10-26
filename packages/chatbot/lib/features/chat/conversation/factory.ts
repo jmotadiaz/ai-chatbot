@@ -42,11 +42,11 @@ import {
   updateChat,
   saveMessages,
   deleteMessageById,
-  getChatById,
 } from "@/lib/features/chat/queries";
 import {
   markPersisted,
   setChatId,
+  setStartMessageId,
 } from "@/lib/features/chat/resume/registry";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
@@ -187,6 +187,13 @@ export const makeProcessChatResponse = (
       throw new Error("Unauthorized");
     }
 
+    // The turn's assistant message id is fixed ONCE per turn: `generateMessageId`
+    // is called by the SDK exactly once per stream (the `start` chunk's
+    // messageId), and the registry records it at turn start so the GET resume
+    // route can answer an `?after=` probe with a silent `204` when the client
+    // already holds this exact message.
+    const assistantMessageId = randomUUID();
+
     // Warm the catalog snapshot before the (synchronous) languageModel/
     // createAgentModel resolutions in buildAgentAdapter and every Chat Mode.
     await warmModelCatalog();
@@ -207,37 +214,54 @@ export const makeProcessChatResponse = (
       emptyMessages: "remove",
     });
 
-    // Turn-start persistence for existing chats. The resume registry keeps
-    // serving an in-flight stream after a client reopen, but until the turn
-    // persisted (only in `onFinish`) the reopened UI rendered the OLD
-    // assistant message from the DB plus the replayed new turn — on a
-    // regenerate this showed the replaced answer alongside its replacement
-    // until the turn ended. Writing the turn's user message — and deleting
-    // the message this turn replaces (`messageId`, the regenerate case; a
-    // no-op otherwise) — at the START of the turn makes the DB, and thus the
-    // reopen's RSC, show exactly one turn from the first frame.
+    // The turn's config persists at START (ticket 08): the resume registry
+    // keeps serving an in-flight stream after a client reopen, but until the
+    // turn persisted (only in `onFinish`) the reopened UI showed the chat's
+    // STALE config — the model picker read the old `defaultModel` even though
+    // the in-flight turn was generating with the newly selected one. Writing
+    // the turn's config at start makes the reopen show the model/chat mode the
+    // turn is actually using.
     //
-    // Safety: `saveMessages` is an UPSERT, so `onFinish`'s later write of the
-    // same user message updates it in place. New chats (a client-only draft
-    // `chatId` with no row) keep today's behavior: they cannot reattach
-    // mid-turn, so nothing is written early. Failures degrade silently to
-    // that same behavior (`onFinish` still writes everything). The one
+    // Shape: `updateChat` only sets the passed fields and returns `undefined`
+    // when no row matches — so a NEW chat (a client-only draft `chatId` with no
+    // row) short-circuits here: nothing is written early (it cannot reattach
+    // mid-turn anyway) and no FK violation can occur. For an existing chat the
+    // same transaction deletes the message this turn replaces (`messageId`,
+    // the regenerate case; a no-op otherwise) and persists the turn's user
+    // message — an UPSERT, so `onFinish`'s later write updates it in place.
+    // Failures degrade silently to the end-of-turn persistence. The one
     // accepted tradeoff: if the END transaction fails after this one
-    // committed, the replaced message is already gone — rare, and the same
-    // risk the old `onFinish`-first ordering carried in reverse.
+    // committed, the replaced message is already gone — rare.
+    if (streamKey) {
+      // A probe can arrive at any moment after `register`: the start message
+      // id must be recorded now, not in `onFinish`.
+      setStartMessageId(streamKey, assistantMessageId);
+    }
     if (!preventChatPersistence && chatId) {
       const userMessage = messages.at(-1);
       if (userMessage?.role === "user") {
         try {
-          const chat = await getChatById({ id: chatId, userId: user.id });
-          if (chat) {
-            await transaction(
-              deleteMessageById(messageId),
-              saveMessages([await chatbotMessageToDbMessage(chatId)(userMessage)]),
-            );
-          }
+          await transaction(async (tx) => {
+            const updatedChat = await updateChat(
+              { id: chatId, userId: user.id },
+              {
+                defaultModel: selectedModel,
+                defaultTemperature: temperature,
+                chatMode,
+                webSearchNumResults,
+                ragMaxResources,
+                minRagResourcesScore,
+              },
+            )(tx);
+            // No row matched: a new chat's draft id. Nothing early is written.
+            if (!updatedChat) return;
+            await deleteMessageById(messageId)(tx);
+            await saveMessages([
+              await chatbotMessageToDbMessage(chatId)(userMessage),
+            ])(tx);
+          });
         } catch (error) {
-          console.error("Failed to persist the turn's user message:", error);
+          console.error("Failed to persist the turn-start state:", error);
         }
       }
     }
@@ -280,7 +304,7 @@ export const makeProcessChatResponse = (
             originalMessages: messages,
             sendReasoning: true,
             sendSources: true,
-            generateMessageId: randomUUID,
+            generateMessageId: () => assistantMessageId,
             messageMetadata: ({ part }) => {
               switch (part.type) {
                 case "start":

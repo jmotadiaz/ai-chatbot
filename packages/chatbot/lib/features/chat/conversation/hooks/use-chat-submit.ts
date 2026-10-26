@@ -19,6 +19,15 @@ export interface UseChatSubmitArgs {
    * then stays exactly as before.
    */
   beginTurn?: () => string;
+  /**
+   * Serialises the send behind an in-flight resume probe (ticket 08):
+   * awaited BEFORE `beginTurn()` and the send. A send that starts while a
+   * mount probe is unresolved is the race that hid the loading state
+   * mid-stream — the gate makes the send wait for the probe (and, when the
+   * probe attached to a live stream, for that turn to end). `undefined`
+   * when resume is disabled (nothing can be in flight).
+   */
+  resumeGate?: () => Promise<void>;
   onBeforeSubmit?: () => void;
   onAfterSubmit?: () => void;
 }
@@ -30,6 +39,7 @@ export const useChatSubmit = ({
   files,
   sendEnabled,
   beginTurn,
+  resumeGate,
   onBeforeSubmit,
   onAfterSubmit,
 }: UseChatSubmitArgs): {
@@ -42,6 +52,12 @@ export const useChatSubmit = ({
 } => {
   const sendMessage = useCallback(async () => {
     if (!sendEnabled) return;
+
+    // Never send over an in-flight resume probe (ticket 08): the probe's
+    // late silent `204` would settle the status to `ready` mid-send, and the
+    // probe could attach to a stream registered after this POST. When the
+    // probe attached to a live turn, the gate resolves when that turn ends.
+    await resumeGate?.();
 
     onBeforeSubmit?.();
 
@@ -88,6 +104,7 @@ export const useChatSubmit = ({
     input,
     onAfterSubmit,
     onBeforeSubmit,
+    resumeGate,
     send,
     sendEnabled,
   ]);

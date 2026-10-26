@@ -3,6 +3,7 @@ import { UI_MESSAGE_STREAM_HEADERS } from "ai";
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import {
   attach,
+  get,
   resolveStreamKey,
 } from "@/lib/features/chat/resume/registry";
 
@@ -37,9 +38,24 @@ function getStreamKeyFromUrl(url: URL): string {
  * completes or the entry is evicted.
  */
 export const GET = withAuth(async (_user, req) => {
-  const keyOrChatId = getStreamKeyFromUrl(new URL(req.url));
+  const url = new URL(req.url);
+  const keyOrChatId = getStreamKeyFromUrl(url);
   const streamKey = resolveStreamKey(keyOrChatId);
   if (!streamKey) {
+    return new Response(null, { status: 204 });
+  }
+
+  // `?after=<messageId>` (ticket 08): the mount probe carries the id of the
+  // client's last message. When the resolved entry's `startMessageId` equals
+  // it, the client already holds this exact message — a normal open of a chat
+  // whose last turn completed — so the probe is answered with the same silent
+  // `204` as "nothing to resume" instead of replaying the whole message.
+  // An absent param keeps the full-replay behavior unchanged (the visibility
+  // resumes omit it: the client's last message may be a partial, and the full
+  // replay is idempotent by the `start` chunk). Both resolution paths (direct
+  // `streamKey`, `chatId` index) resolve above, so both honour it.
+  const after = url.searchParams.get("after");
+  if (after && get(streamKey)?.startMessageId === after) {
     return new Response(null, { status: 204 });
   }
 

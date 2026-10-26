@@ -16,7 +16,7 @@ export interface UseChatSessionArgs {
   onChatId?: (chatId: string) => void | Promise<void>;
   /**
    * Stable chat id (persisted chats): becomes the SDK chat id, which the
-   * default resume URL (`${api}/${chatId}/stream`) and the server's
+   * resume GET URL (`${api}/${chatId}/stream`) and the server's
    * "latest stream per chat" index resolve against.
    */
   id?: string;
@@ -24,8 +24,8 @@ export interface UseChatSessionArgs {
    * Reads the CURRENT turn's resume key at request time. The transport is
    * constructed once, so this must read a ref, not a closed-over value.
    * When it returns a key the resume GET goes to `${api}/${key}/stream`
-   * (per-turn registry entry); when it does not, the SDK's default
-   * `${api}/${chatId}/stream` is used (resolved via the chatId index).
+   * (per-turn registry entry); when it does not, the `${api}/${id}/stream`
+   * fallback is used (resolved via the chatId index).
    */
   getStreamKey?: () => string | undefined;
   /** Full SDK callback args: the app needs `isAbort`/`isDisconnect`/`isError`. */
@@ -44,10 +44,14 @@ export const useChatSession = ({
   getStreamKey,
   onFinish,
 }: UseChatSessionArgs): UseChatSessionResult => {
-  // No `resume: true`: the SDK's unconditional mount probe (a `GET` on every
-  // chat open) raced the user's send — its silent `204` hid the loading state
-  // mid-stream and could attach to a brand-new turn. Mount resume is gated
-  // by `useChatResume` (reload/back_forward navigation only).
+  // No `resume: true`: the SDK's unconditional mount probe is replaced by
+  // `useChatResume`'s mount effect (one probe per mount of a persisted chat).
+  // `prepareReconnectToStreamRequest` builds the resume URL itself for BOTH
+  // paths — the per-turn key and the chat-id fallback — and appends
+  // `?after=` when the resume body carries it (the mount probe's options'
+  // `body` lands here, verified in `ai@6.0.287`): the GET route answers a
+  // silent `204` when the client already holds that exact message. The
+  // visibility resumes pass no `after`, so they keep the full replay.
   return useAiSdkChat({
     messages: initialMessages,
     id,
@@ -55,9 +59,14 @@ export const useChatSession = ({
     experimental_throttle: throttleMs,
     transport: new DefaultChatTransport({
       api,
-      prepareReconnectToStreamRequest: ({ api: defaultApi }) => {
+      prepareReconnectToStreamRequest: ({ api: defaultApi, body }) => {
         const streamKey = getStreamKey?.();
-        return streamKey ? { api: `${defaultApi}/${streamKey}/stream` } : {};
+        const after = (body as { after?: unknown } | undefined)?.after;
+        let requestUrl = `${defaultApi}/${streamKey ?? id}/stream`;
+        if (typeof after === "string" && after.length > 0) {
+          requestUrl += `?after=${encodeURIComponent(after)}`;
+        }
+        return { api: requestUrl };
       },
     }),
     onData: (incoming) => {

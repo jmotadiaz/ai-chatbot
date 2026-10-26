@@ -1,6 +1,5 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MockInstance } from "vitest";
 import {
   act,
   cleanup,
@@ -193,23 +192,6 @@ const firePageShow = (persisted: boolean) =>
 const flush = () => new Promise((resolve) => setTimeout(resolve, 25));
 
 // ---------------------------------------------------------------------------
-// Navigation-type harness: the mount resume only fires when the page was
-// actually (re)loaded (`reload` / `back_forward`), so the tests stub
-// `performance.getEntriesByType("navigation")`. The default stub (no entries)
-// behaves like a plain in-app navigation: NO mount probe.
-// ---------------------------------------------------------------------------
-
-let navigationSpy: MockInstance<Performance["getEntriesByType"]> | undefined;
-
-const setNavigationType = (type: string | undefined): void => {
-  navigationSpy?.mockRestore();
-  navigationSpy = vi.spyOn(performance, "getEntriesByType");
-  navigationSpy.mockReturnValue(
-    (type ? [{ type }] : []) as unknown as PerformanceEntryList,
-  );
-};
-
-// ---------------------------------------------------------------------------
 // Request capture
 // ---------------------------------------------------------------------------
 
@@ -217,6 +199,14 @@ let postBodies: Record<string, unknown>[];
 let resumeGets: string[];
 
 const isTurnResume = (url: string) => !url.includes(`${CHAT_ID}/stream`);
+
+/**
+ * The mount probe hits the CHAT_ID path (no turn key is pending on a fresh
+ * page). In these scenarios nothing is live for that path, so the handler
+ * must answer the silent `204` — never the replay (the replay belongs to the
+ * turn's streamKey path).
+ */
+const isMountProbe = (url: string) => !isTurnResume(url);
 
 const streamKeyGets = () => resumeGets.filter(isTurnResume);
 
@@ -235,12 +225,9 @@ const setupServer = setupMswServer(
 beforeEach(() => {
   postBodies = [];
   resumeGets = [];
-  setNavigationType(undefined);
 });
 
 afterEach(() => {
-  navigationSpy?.mockRestore();
-  navigationSpy = undefined;
   cleanup();
 });
 
@@ -257,14 +244,23 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-    // A normal in-app navigation (no navigation entry) never probes.
+    // The mount probe (any navigation type now) answers the default 204 and
+    // settles silently before the turn starts.
     await flush();
-    expect(resumeGets).toHaveLength(0);
+    expect(resumeGets).toHaveLength(1);
+    expect(new URL(resumeGets[0]!).pathname).toBe(`/api/chat/${CHAT_ID}/stream`);
+    // No initial messages: no `after` on the probe.
+    expect(new URL(resumeGets[0]!).search).toBe("");
+    resumeGets.length = 0;
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -321,6 +317,10 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
@@ -423,6 +423,10 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         if (streamKeyGets().length === 1) {
           // First reconnect: tails the still-live stream, then the screen
           // goes off again and kills it mid-generation.
@@ -443,8 +447,10 @@ describe("useChat resume lifecycle", () => {
     );
 
     renderHarness({ chatId: CHAT_ID });
+    // The mount probe (204, nothing live) precedes the turn.
     await flush();
-    expect(resumeGets).toHaveLength(0); // no mount probe on a normal navigation
+    expect(resumeGets).toHaveLength(1);
+    resumeGets.length = 0;
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -485,33 +491,126 @@ describe("useChat resume lifecycle", () => {
     expect(screen.getByTestId("assistant-count").textContent).toBe("1");
   });
 
-  it("does not probe the stream route on a normal mount (in-app navigation)", async () => {
-    // The regression the gate removes: the SDK's `resume: true` fired an
-    // unconditional mount GET on EVERY chat open. With the navigation-type
-    // gate, a normal `navigate` mount (or a page with no navigation entry)
-    // leaves the chat alone: no GET, status untouched.
-    setNavigationType("navigate");
+  it("probes the stream route on a normal in-app navigation too, once per mount, carrying ?after=<lastMessageId>", async () => {
+    // Ticket 08: the mount probe is unconditional — a normal `navigate`
+    // (sidebar click, app-root reopen) probes like a reload does. The probe
+    // carries the client's last message id as `after`, so the server can
+    // answer a silent `204` when the client already holds the exact message
+    // the live entry started with. It fires exactly ONCE per mount.
     setupServer.use(
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        return makeSseResponse(fullReplay("should never be requested"));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
+    await waitFor(() => expect(resumeGets).toHaveLength(1));
+    const probeUrl = new URL(resumeGets[0]!);
+    expect(probeUrl.pathname).toBe(`/api/chat/${CHAT_ID}/stream`);
+    expect(probeUrl.searchParams.get("after")).toBe("user-message");
+
+    // The silent `204` settles to `ready`; no retries, no duplicate probes.
+    await flush();
+    expect(resumeGets).toHaveLength(1);
+    expect(screen.getByTestId("assistant-text").textContent).toBe("");
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(postBodies).toHaveLength(0);
+  });
+
+  it("visibility resumes do NOT carry ?after (the client's last message may be a partial)", async () => {
+    let killStream: (() => void) | undefined;
+    setupServer.use(
+      http.post("*/api/chat", async ({ request }) => {
+        postBodies.push((await request.json()) as Record<string, unknown>);
+        return makeSseResponse(
+          [startChunk(ASSISTANT_ID), textStart(), textDelta("Partial ")],
+          { onOpen: ({ kill }) => (killStream = kill) },
+        );
+      }),
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
+        return makeSseResponse(fullReplay("Partial world"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
+    // Mount probe: carries ?after (last message id at probe time).
+    await waitFor(() => expect(resumeGets).toHaveLength(1));
+    expect(new URL(resumeGets[0]!).searchParams.get("after")).toBe(
+      "user-message",
+    );
+    resumeGets.length = 0;
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe("Partial "),
+    );
+    act(() => {
+      killStream!();
+    });
+    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("error"));
+
+    // The visibility resume goes to the turn's streamKey URL with NO after:
+    // the full replay is idempotent by the `start` chunk.
+    await fireVisibility("visible");
+    await waitFor(() => expect(streamKeyGets()).toHaveLength(1));
+    expect(new URL(streamKeyGets()[0]!).searchParams.get("after")).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe(
+        "Partial world",
+      ),
+    );
+  });
+
+  it("a send issued while the mount probe is unresolved waits for it (probe response precedes the POST), and the POST body still carries the streamKey", async () => {
+    let releaseProbe: (() => void) | undefined;
+    setupServer.use(
+      http.get("*/api/chat/*/stream", async ({ request }) => {
+        resumeGets.push(request.url);
+        await new Promise<void>((resolve) => {
+          releaseProbe = resolve;
+        });
+        return new HttpResponse(null, { status: 204 });
       }),
     );
 
     renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
     await flush();
+    expect(resumeGets).toHaveLength(1); // the probe is in flight
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
     await flush();
-    expect(resumeGets).toHaveLength(0);
-    expect(screen.getByTestId("assistant-text").textContent).toBe("");
-    expect(screen.getByTestId("status").textContent).toBe("ready");
+    // The send is gated: no POST until the probe settles.
     expect(postBodies).toHaveLength(0);
+
+    releaseProbe!();
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+    // ORDER: the probe's response preceded the POST (the POST only exists
+    // after the probe was released above).
+    expect(postBodies[0]!.streamKey).toMatch(/^[0-9a-f-]{36}$/);
+    expect(postBodies[0]!.chatId).toBe(CHAT_ID);
   });
 
   it("re-attaches to the live stream on a reload mount (remount / paste-URL after refresh)", async () => {
     // A page reload mid-generation is the user story the mount resume exists
     // for: exactly ONE GET on mount (the chatId URL — no turn key is pending
     // on a fresh page), and the replay completes the message.
-    setNavigationType("reload");
     setupServer.use(
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
@@ -537,7 +636,6 @@ describe("useChat resume lifecycle", () => {
   });
 
   it("re-attaches to the live stream on a back_forward mount", async () => {
-    setNavigationType("back_forward");
     setupServer.use(
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
@@ -557,7 +655,6 @@ describe("useChat resume lifecycle", () => {
   });
 
   it("a reload mount whose probe answers 204 settles to ready and clears the pending turn", async () => {
-    setNavigationType("reload");
     renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
 
     // The probe runs on mount and answers the default 204 (nothing live).
@@ -601,7 +698,6 @@ describe("useChat resume lifecycle", () => {
     );
 
     // Even a genuine reload navigation must not probe: resume is disabled.
-    setNavigationType("reload");
     renderHarness({ preventChatPersistence: true });
 
     await act(async () => {
@@ -653,13 +749,14 @@ describe("useChat resume lifecycle", () => {
     await waitFor(() => expect(postBodies).toHaveLength(1));
     await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("streaming"));
 
-    // Screen off + on while the POST is alive: no resume GET, and the
-    // in-flight stream keeps flowing.
+    // Screen off + on while the POST is alive: no TURN resume GET (the
+    // chatId-path mount probe from the initial mount is the only GET), and
+    // the in-flight stream keeps flowing.
     await fireVisibility("hidden");
     await fireVisibility("visible");
     await flush();
     expect(streamKeyGets()).toHaveLength(0);
-    expect(resumeGets).toHaveLength(0);
+    expect(resumeGets).toHaveLength(1);
 
     completePost!();
     await waitFor(() =>
@@ -689,6 +786,10 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
@@ -750,6 +851,10 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
@@ -789,6 +894,10 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
@@ -846,6 +955,10 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
+        // The mount probe (chatId path) has nothing live: silent `204`.
+        if (isMountProbe(request.url)) {
+          return new HttpResponse(null, { status: 204 });
+        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
