@@ -43,6 +43,10 @@ import {
   saveMessages,
   deleteMessageById,
 } from "@/lib/features/chat/queries";
+import {
+  markPersisted,
+  setChatId,
+} from "@/lib/features/chat/resume/registry";
 import { transaction } from "@/lib/infrastructure/db/queries";
 
 /**
@@ -154,6 +158,7 @@ export const makeProcessChatResponse = (
     projectId,
     preventChatPersistence = false,
     chatMode = "auto",
+    streamKey,
     webSearchNumResults = defaultWebSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,
@@ -170,6 +175,7 @@ export const makeProcessChatResponse = (
     projectId?: string;
     preventChatPersistence?: boolean;
     chatMode?: ChatMode;
+    streamKey?: string;
     webSearchNumResults?: number;
     ragMaxResources?: number;
     minRagResourcesScore?: number;
@@ -332,6 +338,22 @@ export const makeProcessChatResponse = (
                   });
 
                   const resolvedChatId = chatId ?? (String(dbChatId) || "");
+
+                  // Resume registry confirmations, only reached when the
+                  // persistence transaction committed: bind the persisted
+                  // chat id into the "latest stream per chat" index, then
+                  // flip the entry to `persisted` (refreshing its TTL). Both
+                  // are no-ops for legacy turns (no `streamKey`); skipped
+                  // entirely for `preventChatPersistence` turns (early
+                  // return above) and when the transaction throws (the catch
+                  // below swallows persistence errors).
+                  if (streamKey) {
+                    if (resolvedChatId) {
+                      setChatId(streamKey, resolvedChatId);
+                    }
+                    markPersisted(streamKey);
+                  }
+
                   if (resolvedChatId) {
                     const modelConfig = getChatConfigurationByModelId(
                       getModelCatalogSnapshot(),
