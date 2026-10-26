@@ -52,6 +52,27 @@ function recordRequests(page: Page): LoggedRequest[] {
 }
 
 /**
+ * Compiles the resume route BEFORE the turn starts.
+ *
+ * The test webServer is `next dev` (webpack): route handlers compile on
+ * demand, and each first compile re-evaluates the shared server modules —
+ * wiping module-level state (the in-memory resume registry). A production
+ * build compiles every route into ONE module graph, so prod is immune; in
+ * dev, a compile landing between the POST (register) and the reconnect
+ * (attach) would answer the resume with a registry-miss `204`. Hitting the
+ * stream route once up front pins its compilation, so the POST is always the
+ * last compile before the resume. The unknown key answers `204` (nothing
+ * registered) and is a no-op for the app.
+ */
+async function warmUpResumeRoute(page: Page): Promise<void> {
+  const status = await page.evaluate(
+    async () =>
+      await fetch("/api/chat/resume-warm-up/stream").then((r) => r.status),
+  );
+  expect(status).toBe(204);
+}
+
+/**
  * Simulates the OS/browser killing the in-flight streaming fetch on a frozen
  * page.
  *
@@ -147,17 +168,10 @@ test.describe("Chat resume", () => {
     const requests = recordRequests(page);
 
     const chatPage = new ChatPage(page);
-    // The mount probe must settle BEFORE the turn starts: otherwise the dev
-    // server can handle it after the POST registered the entry and the mount
-    // itself attaches to the live stream (a legitimate resume, but not the
-    // path under test).
-    const mountProbe = page.waitForResponse(
-      (response) =>
-        response.request().method() === "GET" &&
-        /^\/api\/chat\/[^/]+\/stream$/.test(pathnameOf(response.url())),
-    );
+    // No mount probe on a normal `goto`: the mount resume only fires on a
+    // reload/back_forward navigation, so nothing can race the turn.
     await chatPage.goto(chat.id);
-    expect((await mountProbe).status()).toBe(204);
+    await warmUpResumeRoute(page);
 
     await chatPage.header.modelPicker.selectModel("slowStream");
     await chatPage.chat.sendMessage(SLOW_PROMPT);
@@ -204,6 +218,7 @@ test.describe("Chat resume", () => {
 
     const chatPage = new ChatPage(page);
     await chatPage.goto(chat.id);
+    await warmUpResumeRoute(page);
     await chatPage.header.modelPicker.selectModel("slowStream");
     await chatPage.chat.sendMessage(SLOW_PROMPT);
 
@@ -230,20 +245,35 @@ test.describe("Chat resume", () => {
     expect(requests.filter(isStreamGet).length).toBeGreaterThan(0);
   });
 
-  test("resume with no in-flight turn answers 204 and stays ready", async ({
+  test("resume with no in-flight turn: no probe on navigation, 204 on reload, stays ready", async ({
     page,
     db,
   }) => {
     const chat = await seedChat(db);
+    const requests = recordRequests(page);
     const chatPage = new ChatPage(page);
 
-    const mountResume = page.waitForResponse(
+    // A normal chat open issues NO stream GET at all: the mount resume is
+    // gated to reload/back_forward navigations.
+    await chatPage.goto(chat.id);
+    await expect(chatPage.chat.chatInput).toBeEditable();
+    expect(requests.filter(isStreamGet)).toHaveLength(0);
+
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
+    await expect(chatPage.chat.loadingIndicator).not.toBeVisible();
+    await expect(
+      chatPage.chat.assistantMessages.filter({ hasText: SEED_ANSWER }),
+    ).toHaveCount(1);
+
+    // A genuine reload DOES probe: the registry answers `204` (nothing in
+    // flight) and the UI settles to `ready` with no error.
+    const reloadProbe = page.waitForResponse(
       (response) =>
         response.request().method() === "GET" &&
         /^\/api\/chat\/[^/]+\/stream$/.test(pathnameOf(response.url())),
     );
-    await chatPage.goto(chat.id);
-    expect((await mountResume).status()).toBe(204);
+    await page.reload();
+    expect((await reloadProbe).status()).toBe(204);
 
     await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
     await expect(chatPage.chat.loadingIndicator).not.toBeVisible();
@@ -251,5 +281,8 @@ test.describe("Chat resume", () => {
       chatPage.chat.assistantMessages.filter({ hasText: SEED_ANSWER }),
     ).toHaveCount(1);
     await expect(chatPage.chat.chatInput).toBeEditable();
+
+    // Exactly the one reload probe: the silent `204` left no pending turn.
+    expect(requests.filter(isStreamGet)).toHaveLength(1);
   });
 });

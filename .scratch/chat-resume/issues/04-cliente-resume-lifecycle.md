@@ -173,3 +173,39 @@ per-turn `streamKey` URL.
 
 `pnpm --filter chatbot type:check`, `lint`, `test:component` (40 files / 222
 tests green) and `build:verify` all pass. `pnpm build` was never run.
+
+### Refinement (E2E regression): the mount probe is now gated to reload/back_forward
+
+Running the E2E suite on the branch exposed an intermittent failure
+(`tests/e2e/seed.spec.ts`, ~1/3 of runs, "user sends a message and assistant
+responds correctly"): the SDK's `resume: true` fires an UNCONDITIONAL mount
+probe `GET /api/chat/<chatId>/stream` on every chat page load, even when
+nothing is in flight. Two races followed:
+
+1. The probe's `204` could resolve AFTER the user's send started; the SDK's
+   resume-stream handler calls `setStatus({ status: "ready" })` on
+   `reconnect == null`, hiding the loading state mid-stream.
+2. The probe GET could be handled by the dev server AFTER the POST registered
+   the turn, so `resolveStreamKey(chatId)` attached it to the BRAND-NEW
+   stream: a second consumer replayed the same message id concurrently with
+   the POST response (double-write / message reset). Cosmetic third cost:
+   every chat open within the TTL replayed the previous turn's whole message.
+
+Fix: drop `resume: true` entirely (the option was removed from
+`use-chat-session.ts`). `use-chat-resume.ts` now issues ONE mount probe only
+when ALL hold: resume enabled, no turn pending yet, and the navigation type
+is `reload` or `back_forward`
+(`performance.getEntriesByType("navigation")[0]?.type`; absent/other types
+= no probe), guarded by `resumingRef`. `pendingTurnRef` is set before the
+probe so a failed probe (`error`) is retried by a later visibility event; if
+the probe settles to `ready` (the silent `204` path) the flag is cleared
+again. `useChat({ id })` stays, as do the per-turn `streamKey`, the
+visibility/pageshow logic with the deferred resume intent, and all server
+code. No sessionStorage/localStorage.
+
+Component tests updated (`use-chat-resume.lifecycle.test.tsx`, 14 green): the
+harness stubs `performance.getEntriesByType` to control the navigation type;
+new tests cover no-probe on `navigate`, one GET + completion on a `reload`
+mount (also a `back_forward` mount), and the `204` reload mount settling to
+`ready` with the pending flag cleared (a later visibility event is a no-op).
+The old "resume: true on mount" test was replaced.

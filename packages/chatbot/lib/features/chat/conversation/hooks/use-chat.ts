@@ -130,7 +130,6 @@ export const useChat = ({
     throttleMs: 200,
     onDataPart: setDataPart,
     id: resumeEnabled ? effectiveChatId : undefined,
-    resume: resumeEnabled,
     getStreamKey: () => resumeApiRef.current?.getStreamKey(),
     onFinish: async (args) => {
       resumeApiRef.current?.noteStreamFinished(args);

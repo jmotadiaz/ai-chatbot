@@ -20,8 +20,6 @@ export interface UseChatSessionArgs {
    * "latest stream per chat" index resolve against.
    */
   id?: string;
-  /** Fires exactly one `resumeStream()` on mount (SDK contract). */
-  resume?: boolean;
   /**
    * Reads the CURRENT turn's resume key at request time. The transport is
    * constructed once, so this must read a ref, not a closed-over value.
@@ -43,14 +41,16 @@ export const useChatSession = ({
   onDataPart,
   onChatId,
   id,
-  resume,
   getStreamKey,
   onFinish,
 }: UseChatSessionArgs): UseChatSessionResult => {
+  // No `resume: true`: the SDK's unconditional mount probe (a `GET` on every
+  // chat open) raced the user's send — its silent `204` hid the loading state
+  // mid-stream and could attach to a brand-new turn. Mount resume is gated
+  // by `useChatResume` (reload/back_forward navigation only).
   return useAiSdkChat({
     messages: initialMessages,
     id,
-    resume,
     generateId: v4,
     experimental_throttle: throttleMs,
     transport: new DefaultChatTransport({

@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MockInstance } from "vitest";
 import {
   act,
   cleanup,
@@ -192,6 +193,23 @@ const firePageShow = (persisted: boolean) =>
 const flush = () => new Promise((resolve) => setTimeout(resolve, 25));
 
 // ---------------------------------------------------------------------------
+// Navigation-type harness: the mount resume only fires when the page was
+// actually (re)loaded (`reload` / `back_forward`), so the tests stub
+// `performance.getEntriesByType("navigation")`. The default stub (no entries)
+// behaves like a plain in-app navigation: NO mount probe.
+// ---------------------------------------------------------------------------
+
+let navigationSpy: MockInstance<Performance["getEntriesByType"]> | undefined;
+
+const setNavigationType = (type: string | undefined): void => {
+  navigationSpy?.mockRestore();
+  navigationSpy = vi.spyOn(performance, "getEntriesByType");
+  navigationSpy.mockReturnValue(
+    (type ? [{ type }] : []) as unknown as PerformanceEntryList,
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Request capture
 // ---------------------------------------------------------------------------
 
@@ -217,9 +235,12 @@ const setupServer = setupMswServer(
 beforeEach(() => {
   postBodies = [];
   resumeGets = [];
+  setNavigationType(undefined);
 });
 
 afterEach(() => {
+  navigationSpy?.mockRestore();
+  navigationSpy = undefined;
   cleanup();
 });
 
@@ -236,18 +257,14 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-
-    // Mount-time resume (`resume: true`): the chatId-indexed GET answers 204.
-    await waitFor(() => expect(resumeGets).toHaveLength(1));
-    expect(new URL(resumeGets[0]!).pathname).toBe(`/api/chat/${CHAT_ID}/stream`);
+    // A normal in-app navigation (no navigation entry) never probes.
+    await flush();
+    expect(resumeGets).toHaveLength(0);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -304,15 +321,11 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -332,7 +345,7 @@ describe("useChat resume lifecycle", () => {
     await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("error"));
 
     // The `pageshow` browsers fire on a normal load (`persisted: false`) is
-    // NOT a resume trigger: `resume: true` already resumed on mount.
+    // NOT a resume trigger: no turn is pending mid-navigation that way.
     await firePageShow(false);
     await flush();
     expect(streamKeyGets()).toHaveLength(0);
@@ -367,7 +380,6 @@ describe("useChat resume lifecycle", () => {
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1));
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -411,9 +423,6 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         if (streamKeyGets().length === 1) {
           // First reconnect: tails the still-live stream, then the screen
           // goes off again and kills it mid-generation.
@@ -434,7 +443,8 @@ describe("useChat resume lifecycle", () => {
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1));
+    await flush();
+    expect(resumeGets).toHaveLength(0); // no mount probe on a normal navigation
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -475,7 +485,33 @@ describe("useChat resume lifecycle", () => {
     expect(screen.getByTestId("assistant-count").textContent).toBe("1");
   });
 
-  it("re-attaches to the live stream on mount via resume: true (remount / paste-URL)", async () => {
+  it("does not probe the stream route on a normal mount (in-app navigation)", async () => {
+    // The regression the gate removes: the SDK's `resume: true` fired an
+    // unconditional mount GET on EVERY chat open. With the navigation-type
+    // gate, a normal `navigate` mount (or a page with no navigation entry)
+    // leaves the chat alone: no GET, status untouched.
+    setNavigationType("navigate");
+    setupServer.use(
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        return makeSseResponse(fullReplay("should never be requested"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
+    await flush();
+    await flush();
+    expect(resumeGets).toHaveLength(0);
+    expect(screen.getByTestId("assistant-text").textContent).toBe("");
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(postBodies).toHaveLength(0);
+  });
+
+  it("re-attaches to the live stream on a reload mount (remount / paste-URL after refresh)", async () => {
+    // A page reload mid-generation is the user story the mount resume exists
+    // for: exactly ONE GET on mount (the chatId URL — no turn key is pending
+    // on a fresh page), and the replay completes the message.
+    setNavigationType("reload");
     setupServer.use(
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
@@ -485,12 +521,10 @@ describe("useChat resume lifecycle", () => {
 
     renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
 
-    // Exactly ONE GET on mount (the chatId URL — no turn key is pending), and
-    // no duplicate resumes.
     await waitFor(() => expect(resumeGets).toHaveLength(1));
     expect(new URL(resumeGets[0]!).pathname).toBe(`/api/chat/${CHAT_ID}/stream`);
     await flush();
-    expect(resumeGets).toHaveLength(1);
+    expect(resumeGets).toHaveLength(1); // no duplicate resumes
 
     await waitFor(() =>
       expect(screen.getByTestId("assistant-text").textContent).toBe(
@@ -502,7 +536,63 @@ describe("useChat resume lifecycle", () => {
     expect(postBodies).toHaveLength(0); // a resume never re-sends the turn
   });
 
-  it("never opts non-persisted chats into resume: no streamKey in the POST, no stream GET on visibility/pageshow", async () => {
+  it("re-attaches to the live stream on a back_forward mount", async () => {
+    setNavigationType("back_forward");
+    setupServer.use(
+      http.get("*/api/chat/*/stream", ({ request }) => {
+        resumeGets.push(request.url);
+        return makeSseResponse(fullReplay("Resumed from the server"));
+      }),
+    );
+
+    renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
+
+    await waitFor(() => expect(resumeGets).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe(
+        "Resumed from the server",
+      ),
+    );
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+  });
+
+  it("a reload mount whose probe answers 204 settles to ready and clears the pending turn", async () => {
+    setNavigationType("reload");
+    renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
+
+    // The probe runs on mount and answers the default 204 (nothing live).
+    await waitFor(() => expect(resumeGets).toHaveLength(1));
+    expect(new URL(resumeGets[0]!).pathname).toBe(`/api/chat/${CHAT_ID}/stream`);
+    await flush();
+
+    // The silent `204` path: status ready, no error left behind, and the
+    // pending turn cleared — a later visibility event is a no-op.
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(screen.getByTestId("error").textContent).toBe("");
+    await fireVisibility("visible");
+    await firePageShow(true);
+    await flush();
+    expect(resumeGets).toHaveLength(1); // no second GET without a pending turn
+
+    // A NEW turn is what re-arms the resume path: send, let it complete
+    // cleanly, and confirm a clean turn still never probes.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("type"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("send"));
+    });
+    await waitFor(() => expect(postBodies).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-text").textContent).toBe(
+        "hello from the model",
+      ),
+    );
+    expect(screen.getByTestId("status").textContent).toBe("ready");
+    expect(resumeGets).toHaveLength(1); // a clean turn never probes
+  });
+
+  it("never opts non-persisted chats into resume: no streamKey in the POST, no stream GET even on a reload mount", async () => {
     setupServer.use(
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
@@ -510,6 +600,8 @@ describe("useChat resume lifecycle", () => {
       }),
     );
 
+    // Even a genuine reload navigation must not probe: resume is disabled.
+    setNavigationType("reload");
     renderHarness({ preventChatPersistence: true });
 
     await act(async () => {
@@ -531,8 +623,8 @@ describe("useChat resume lifecycle", () => {
     );
     expect(screen.getByTestId("status").textContent).toBe("ready");
 
-    // No mount resume, no visibility/pageshow resume: the stream route is
-    // never contacted.
+    // No mount probe (even on a reload), no visibility/pageshow resume: the
+    // stream route is never contacted.
     await fireVisibility("visible");
     await firePageShow(true);
     await flush();
@@ -551,7 +643,6 @@ describe("useChat resume lifecycle", () => {
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -568,7 +659,7 @@ describe("useChat resume lifecycle", () => {
     await fireVisibility("visible");
     await flush();
     expect(streamKeyGets()).toHaveLength(0);
-    expect(resumeGets).toHaveLength(1);
+    expect(resumeGets).toHaveLength(0);
 
     completePost!();
     await waitFor(() =>
@@ -598,15 +689,11 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -663,15 +750,11 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -706,15 +789,11 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
@@ -767,15 +846,11 @@ describe("useChat resume lifecycle", () => {
       }),
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
-        if (postBodies.length === 0) {
-          return new HttpResponse(null, { status: 204 }); // mount: nothing live
-        }
         return makeSseResponse(fullReplay("Partial world"));
       }),
     );
 
     renderHarness({ chatId: CHAT_ID });
-    await waitFor(() => expect(resumeGets).toHaveLength(1)); // mount resume (204)
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("type"));
