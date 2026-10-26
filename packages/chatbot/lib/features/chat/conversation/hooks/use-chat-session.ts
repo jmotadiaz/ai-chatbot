@@ -2,7 +2,7 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat as useAiSdkChat } from "@ai-sdk/react";
-import type { DataUIPart } from "ai";
+import type { ChatOnFinishCallback, DataUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { v4 } from "uuid";
@@ -14,7 +14,24 @@ export interface UseChatSessionArgs {
   throttleMs?: number;
   onDataPart?: (dataPart: DataUIPart<ChatbotDataPart>) => void | Promise<void>;
   onChatId?: (chatId: string) => void | Promise<void>;
-  onFinish?: () => void | Promise<void>;
+  /**
+   * Stable chat id (persisted chats): becomes the SDK chat id, which the
+   * default resume URL (`${api}/${chatId}/stream`) and the server's
+   * "latest stream per chat" index resolve against.
+   */
+  id?: string;
+  /** Fires exactly one `resumeStream()` on mount (SDK contract). */
+  resume?: boolean;
+  /**
+   * Reads the CURRENT turn's resume key at request time. The transport is
+   * constructed once, so this must read a ref, not a closed-over value.
+   * When it returns a key the resume GET goes to `${api}/${key}/stream`
+   * (per-turn registry entry); when it does not, the SDK's default
+   * `${api}/${chatId}/stream` is used (resolved via the chatId index).
+   */
+  getStreamKey?: () => string | undefined;
+  /** Full SDK callback args: the app needs `isAbort`/`isDisconnect`/`isError`. */
+  onFinish?: ChatOnFinishCallback<ChatbotMessage>;
 }
 
 export type UseChatSessionResult = UseChatHelpers<ChatbotMessage>;
@@ -25,13 +42,24 @@ export const useChatSession = ({
   throttleMs = 200,
   onDataPart,
   onChatId,
+  id,
+  resume,
+  getStreamKey,
   onFinish,
 }: UseChatSessionArgs): UseChatSessionResult => {
   return useAiSdkChat({
     messages: initialMessages,
+    id,
+    resume,
     generateId: v4,
     experimental_throttle: throttleMs,
-    transport: new DefaultChatTransport({ api }),
+    transport: new DefaultChatTransport({
+      api,
+      prepareReconnectToStreamRequest: ({ api: defaultApi }) => {
+        const streamKey = getStreamKey?.();
+        return streamKey ? { api: `${defaultApi}/${streamKey}/stream` } : {};
+      },
+    }),
     onData: (incoming) => {
       const incomingDataPart = incoming as DataUIPart<ChatbotDataPart>;
       void onDataPart?.(incomingDataPart);
@@ -50,5 +78,3 @@ export const useChatSession = ({
     },
   });
 };
-
-

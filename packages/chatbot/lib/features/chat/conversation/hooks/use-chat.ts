@@ -2,7 +2,7 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { DataUIPart } from "ai";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   type ChatConfig,
   type ChatModeState,
@@ -20,6 +20,7 @@ import { useChatDataPartState } from "./use-chat-data-part-state";
 import { useChatQueryParamId } from "./use-chat-query-param-id";
 import { useChatReload } from "./use-chat-reload";
 import { useChatRequestBody } from "./use-chat-request-body";
+import { useChatResume, type UseChatResumeResult } from "./use-chat-resume";
 import { useChatSession } from "./use-chat-session";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import {
@@ -109,18 +110,43 @@ export const useChat = ({
   const { dataPart, setDataPart } = useChatDataPartState();
   const effectiveChatId = chatId || validQueryParamChatId;
 
+  // Resume is only for persisted chats (spec decision 6): the hub calls
+  // `useChatSession` directly, and temporary/project-form chats pass
+  // `preventChatPersistence`.
+  const resumeEnabled = !preventChatPersistence && Boolean(effectiveChatId);
+
+  // `useChatSession` runs BEFORE `useChatResume` because the resume hook
+  // needs the live `status` value (its intent consumer watches it settle out
+  // of the in-flight states). The stable callbacks the session needs
+  // (`getStreamKey`, `noteStreamFinished`) reach it through a holder ref
+  // populated right after the resume hook returns — both are only invoked
+  // once a stream is live, long after this render, never at mount.
+  const resumeApiRef = useRef<UseChatResumeResult | null>(null);
+
   const chatResult = useChatSession({
     initialMessages,
     api: "/api/chat",
     throttleMs: 200,
     onDataPart: setDataPart,
-    onFinish: async () => {
+    id: resumeEnabled ? effectiveChatId : undefined,
+    resume: resumeEnabled,
+    getStreamKey: () => resumeApiRef.current?.getStreamKey(),
+    onFinish: async (args) => {
+      resumeApiRef.current?.noteStreamFinished(args);
       if (!isNewChat) return;
       if (preventChatPersistence) return;
       if (!effectiveChatId) return;
       await setQueryParamChatId(effectiveChatId);
     },
   });
+
+  const resume = useChatResume({
+    enabled: resumeEnabled,
+    status: chatResult.status,
+    getStatus: () => chatResult.status,
+    resumeStream: () => chatResult.resumeStream(),
+  });
+  resumeApiRef.current = resume;
 
   const body = useChatRequestBody({
     chatId,
@@ -141,6 +167,7 @@ export const useChat = ({
     input,
     files,
     sendEnabled,
+    beginTurn: resumeEnabled ? resume.beginTurn : undefined,
     onBeforeSubmit: () => {
       setInput("");
       setFiles([]);
@@ -167,6 +194,7 @@ export const useChat = ({
     regenerate: chatResult.regenerate,
     messages: chatResult.messages,
     body,
+    beginTurn: resumeEnabled ? resume.beginTurn : undefined,
     setInput,
     setConfig,
     setChatMode,
