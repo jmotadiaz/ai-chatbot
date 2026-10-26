@@ -1,6 +1,4 @@
-import { vi } from "vitest";
-
-import { STREAM_TTL_MS, evict } from "@/lib/features/chat/resume/registry";
+import { clear } from "@/lib/features/chat/resume/registry";
 
 /**
  * Shared scaffolding for the chat-resume contract suites
@@ -50,13 +48,11 @@ export function parseSseFrames(text: string): string[] {
 }
 
 /**
- * The per-test reset for the registry's module-level singleton: pushes the
- * fake-timer clock past every entry's possible TTL (`markPersisted` refreshes
- * it from "now", hence the 10x margin) and lets the lazy sweep drop them.
- * Call from `afterEach` while `vi.useFakeTimers()` is still active; pair with
- * `vi.useRealTimers()` right after.
+ * Per-test reset for the registry's process-wide store. The store is anchored
+ * on `globalThis`, so it outlives both a test file's module graph and the
+ * `next dev` recompiles that motivated the anchor: each suite starts from an
+ * empty registry explicitly instead of relying on module isolation.
  */
-export function sweepRegistry(): void {
-  vi.advanceTimersByTime(10 * STREAM_TTL_MS);
-  evict();
+export function resetRegistry(): void {
+  clear();
 }

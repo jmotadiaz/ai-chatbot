@@ -4,6 +4,7 @@ import {
   STREAM_TTL_MS,
   append,
   attach,
+  clear,
   completeStream,
   evict,
   get,
@@ -24,13 +25,12 @@ describe("chat resume registry", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(0);
+    // The store survives module re-evaluations (see the registry module
+    // docs), so start every test from an empty registry.
+    clear();
   });
 
   afterEach(() => {
-    // Reset the module-level singleton: push the clock past every entry's
-    // possible TTL (markPersisted refreshes it from "now") and sweep.
-    vi.advanceTimersByTime(10 * STREAM_TTL_MS);
-    evict();
     vi.useRealTimers();
   });
 

@@ -15,6 +15,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { setupTestDb } from "../../helpers/db-setup";
+import { resetRegistry, parseSseFrames  } from "../../helpers/chat-resume";
 
 // `vi.hoisted` so the `vi.mock` factory below can read it despite the hoist.
 const { USER_ID } = vi.hoisted(() => ({
@@ -127,7 +128,6 @@ vi.mock("@/lib/features/memory/extraction", () => ({
   extractMemoryFacts: async () => [],
 }));
 
-import { parseSseFrames } from "../../helpers/chat-resume";
 import { POST } from "@/app/(chat)/api/chat/route";
 import { get, getLatestByChat } from "@/lib/features/chat/resume/registry";
 import {
@@ -186,6 +186,7 @@ describe("POST /api/chat — exact-once persistence on disconnect", () => {
   });
 
   beforeEach(async () => {
+    resetRegistry();
     await db.insert(userTable).values({ id: USER_ID, email: "resume@example.com" });
   });
 

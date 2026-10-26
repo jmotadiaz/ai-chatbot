@@ -6,8 +6,16 @@ import "server-only";
  * The POST route tees its SSE stream into this registry via
  * `consumeSseStream`, so a turn's generation and persistence survive a client
  * disconnect; the GET resume route replays the buffered frames. Single-process
- * by design (pm2 serves one chatbot process): no Redis, no `globalThis` — the
- * module-level `Map` IS the registry, like `lib/infrastructure/ai/catalog.ts`.
+ * by design (pm2 serves one chatbot process): no Redis, and no on-disk state.
+ *
+ * The `Map`s are anchored on `globalThis` under a `Symbol.for` key instead of
+ * being plain module-level bindings. A production build evaluates this module
+ * once, but `next dev` compiles route handlers on demand and re-evaluates the
+ * server module graph: with module-level bindings, the first request to the
+ * resume route would swap the registry instance and lose every in-flight
+ * turn (a `204` right after a mid-turn reload). The `Symbol.for` key keeps the
+ * state across module re-evaluations, still per process, and the symbol keeps
+ * the global namespace clean.
  *
  * Entries are keyed by `streamKey` (one per turn, client-generated), with a
  * secondary "latest stream per `chatId`" index so a remount without the
@@ -44,10 +52,31 @@ interface RegistryEntry {
   subscribers: StreamSubscriber[];
 }
 
-const streams = new Map<string, RegistryEntry>();
+interface RegistryStore {
+  /** Streams by per-turn key. */
+  streams: Map<string, RegistryEntry>;
+  /** Latest registered stream per chatId (updated by `register` / `setChatId`). */
+  latestByChat: Map<string, string>;
+}
 
-/** Latest registered stream per chatId (updated by `register` / `setChatId`). */
-const latestByChat = new Map<string, string>();
+/**
+ * Process-wide storage key. `Symbol.for` is the same symbol in every module
+ * evaluation, including `next dev`'s on-demand recompiles of a route.
+ */
+const REGISTRY_KEY = Symbol.for("chatbot.chat.resume-registry");
+
+const globalStore = globalThis as typeof globalThis & {
+  [key: symbol]: unknown;
+};
+
+const store: RegistryStore =
+  (globalStore[REGISTRY_KEY] as RegistryStore | undefined) ??
+  ((globalStore[REGISTRY_KEY] = {
+    streams: new Map<string, RegistryEntry>(),
+    latestByChat: new Map<string, string>(),
+  }) as RegistryStore);
+
+const { streams, latestByChat } = store;
 
 /**
  * Bind `entry` to `chatId` and refresh the latest-by-chat index. The old
@@ -101,6 +130,25 @@ export function evict(): void {
       latestByChat.delete(entry.chatId);
     }
   }
+}
+
+/**
+ * Drop every entry, ending live subscribers first (a tailing response closes
+ * instead of hanging). Used for process-level resets and by the test suites to
+ * isolate the process-wide store from one file to the next.
+ */
+export function clear(): void {
+  for (const entry of streams.values()) {
+    for (const subscriber of entry.subscribers) {
+      try {
+        subscriber.onEnd();
+      } catch {
+        // A misbehaving subscriber must not break the reset.
+      }
+    }
+  }
+  streams.clear();
+  latestByChat.clear();
 }
 
 /**

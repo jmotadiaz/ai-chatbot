@@ -83,6 +83,11 @@ recibe el resto del stream o el mensaje completo.
    (`performance.getEntriesByType("navigation")[0]?.type`), vía el propio hook
    (`useChat({ id })`, sin `resume`). Una apertura normal del chat ya no
    sondea el registry: ni replay del turno anterior ni carrera con el envío.
+   **Refinamiento (dev)**: el estado del registry se ancla en
+   `globalThis[Symbol.for(...)]` en lugar de bindings de módulo, porque
+   `next dev` recompila rutas bajo demanda y reevalúa los módulos compartidos
+   (el primer resume tras un reload respondía `204`); en producción el
+   module graph es único y el comportamiento no cambia.
 6. **Alcance**: solo chats persistidos (página de chat). Hub, temporales y
    project-form (`preventChatPersistence: true`) quedan como hoy.
 7. **Fuera de alcance (explícito)**:
