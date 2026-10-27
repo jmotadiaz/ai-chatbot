@@ -45,6 +45,9 @@ const entry = (overrides: Partial<MockCatalogEntry> & { id: string }): MockCatal
  * - `canProduceReasoning` declares `reasoning: true` + thinking levels.
  * - `canExecuteTools` and `failsMidStream` need no catalog flags: their
  *   behavior lives in the `/v1/chat/completions` handler.
+ * - `slowStream` paces its SSE chunks (~350 ms apart, `SLOW_STREAM_CHUNKS`
+ *   text) so the e2e resume suite can cut the connection mid-generation and
+ *   find the turn still alive on the server.
  */
 export const TEST_MODELS: MockCatalogEntry[] = [
   entry({ id: "basicChat", isDefault: true }),
@@ -59,6 +62,7 @@ export const TEST_MODELS: MockCatalogEntry[] = [
   }),
   entry({ id: "alwaysRefuses", temperature: 1 }),
   entry({ id: "failsMidStream" }),
+  entry({ id: "slowStream" }),
 ];
 
 /**

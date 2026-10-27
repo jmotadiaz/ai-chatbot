@@ -38,6 +38,8 @@ type NewChat = {
   updatedAt?: Date;
 };
 interface TestFixtures {
+  /** Warms up (compiles) the resume route before any test needs it. */
+  resumeRouteWarmUp: void;
   dbClient: {
     client: postgres.Sql;
     db: ReturnType<typeof drizzle>;
@@ -56,6 +58,21 @@ interface TestFixtures {
  * This allows dependency injection for testing
  */
 export const test = base.extend<TestFixtures>({
+  // Compiles the resume route (`/api/chat/[key]/stream`) before any test
+  // needs it (ticket 08). The client's mount probe fires during page
+  // hydration, and `next dev` compiles route handlers on demand: without
+  // this warm-up, the first send of a cold server waits behind the probe's
+  // compilation (the resume gate serialises sends behind it). One request
+  // per test; the module compiles once per dev server. Unauthenticated on
+  // purpose — a 401 compiles the route all the same.
+  resumeRouteWarmUp: [
+    async ({ request, baseURL }, use) => {
+      await request.get(`${baseURL}/api/chat/resume-warm-up/stream`).catch(() => {});
+      await use();
+    },
+    { auto: true },
+  ],
+
   // Shared Database Client Fixture
   dbClient: async ({}, use) => {
     const client = postgres(config.postgresUrl());

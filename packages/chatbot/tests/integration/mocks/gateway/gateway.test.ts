@@ -114,6 +114,7 @@ describe("Mock Model Gateway — infrastructure", () => {
         "canProduceReasoning",
         "alwaysRefuses",
         "failsMidStream",
+        "slowStream",
       ]);
 
       // Exact schema of the shared contract (§1): no internal fields.

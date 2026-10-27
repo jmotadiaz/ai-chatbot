@@ -2,7 +2,7 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat as useAiSdkChat } from "@ai-sdk/react";
-import type { DataUIPart } from "ai";
+import type { ChatOnFinishCallback, DataUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { toast } from "sonner";
 import { v4 } from "uuid";
@@ -14,7 +14,22 @@ export interface UseChatSessionArgs {
   throttleMs?: number;
   onDataPart?: (dataPart: DataUIPart<ChatbotDataPart>) => void | Promise<void>;
   onChatId?: (chatId: string) => void | Promise<void>;
-  onFinish?: () => void | Promise<void>;
+  /**
+   * Stable chat id (persisted chats): becomes the SDK chat id, which the
+   * resume GET URL (`${api}/${chatId}/stream`) and the server's
+   * "latest stream per chat" index resolve against.
+   */
+  id?: string;
+  /**
+   * Reads the CURRENT turn's resume key at request time. The transport is
+   * constructed once, so this must read a ref, not a closed-over value.
+   * When it returns a key the resume GET goes to `${api}/${key}/stream`
+   * (per-turn registry entry); when it does not, the `${api}/${id}/stream`
+   * fallback is used (resolved via the chatId index).
+   */
+  getStreamKey?: () => string | undefined;
+  /** Full SDK callback args: the app needs `isAbort`/`isDisconnect`/`isError`. */
+  onFinish?: ChatOnFinishCallback<ChatbotMessage>;
 }
 
 export type UseChatSessionResult = UseChatHelpers<ChatbotMessage>;
@@ -25,13 +40,35 @@ export const useChatSession = ({
   throttleMs = 200,
   onDataPart,
   onChatId,
+  id,
+  getStreamKey,
   onFinish,
 }: UseChatSessionArgs): UseChatSessionResult => {
+  // No `resume: true`: the SDK's unconditional mount probe is replaced by
+  // `useChatResume`'s mount effect (one probe per mount of a persisted chat).
+  // `prepareReconnectToStreamRequest` builds the resume URL itself for BOTH
+  // paths — the per-turn key and the chat-id fallback — and appends
+  // `?after=` when the resume body carries it (the mount probe's options'
+  // `body` lands here, verified in `ai@6.0.287`): the GET route answers a
+  // silent `204` when the client already holds that exact message. The
+  // visibility resumes pass no `after`, so they keep the full replay.
   return useAiSdkChat({
     messages: initialMessages,
+    id,
     generateId: v4,
     experimental_throttle: throttleMs,
-    transport: new DefaultChatTransport({ api }),
+    transport: new DefaultChatTransport({
+      api,
+      prepareReconnectToStreamRequest: ({ api: defaultApi, body }) => {
+        const streamKey = getStreamKey?.();
+        const after = (body as { after?: unknown } | undefined)?.after;
+        let requestUrl = `${defaultApi}/${streamKey ?? id}/stream`;
+        if (typeof after === "string" && after.length > 0) {
+          requestUrl += `?after=${encodeURIComponent(after)}`;
+        }
+        return { api: requestUrl };
+      },
+    }),
     onData: (incoming) => {
       const incomingDataPart = incoming as DataUIPart<ChatbotDataPart>;
       void onDataPart?.(incomingDataPart);
@@ -50,5 +87,3 @@ export const useChatSession = ({
     },
   });
 };
-
-

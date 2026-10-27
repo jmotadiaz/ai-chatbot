@@ -19,6 +19,7 @@ export async function processChatResponse({
   projectId,
   preventChatPersistence = false,
   chatMode = "auto",
+  streamKey,
 
   webSearchNumResults = defaultWebSearchNumResults,
   ragMaxResources,
@@ -36,6 +37,7 @@ export async function processChatResponse({
   projectId?: string;
   preventChatPersistence?: boolean;
   chatMode?: ChatMode;
+  streamKey?: string;
 
   webSearchNumResults?: number;
   ragMaxResources?: number;
@@ -54,6 +56,7 @@ export async function processChatResponse({
     projectId,
     preventChatPersistence,
     chatMode,
+    streamKey,
     webSearchNumResults,
     ragMaxResources,
     minRagResourcesScore,

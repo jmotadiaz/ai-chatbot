@@ -1,0 +1,400 @@
+import type { Page } from "@playwright/test";
+import { test, expect } from "../fixtures";
+import { ChatPage } from "./pages/chat";
+// Single source of truth for the paced capability served by the mock gateway.
+import { SLOW_STREAM_TEXT } from "@/tests/mocks/gateway/server";
+
+/**
+ * E2E acceptance for chat resume (spec acceptance criterion):
+ *
+ * A turn's generation lives server-side (the POST tees its SSE into the resume
+ * registry), so a client that loses its fetch mid-generation — the screen went
+ * off, the browser was backgrounded and the OS killed the connection — can
+ * re-attach and receive the rest of the stream, or the whole message, without
+ * any further user action.
+ */
+
+const SEED_QUESTION = "Seed question for the resume suite.";
+const SEED_ANSWER = "Seed answer for the resume suite.";
+const SLOW_PROMPT = "Tell me a long, slow story.";
+
+/**
+ * A prefix of the `slowStream` script that is already on screen while the
+ * turn is still generating (`smoothStream()` may split it mid-word).
+ */
+const FIRST_SLOW_CHUNK = "SLOW chunk";
+
+interface LoggedRequest {
+  method: string;
+  pathname: string;
+  body: string | null;
+}
+
+const pathnameOf = (url: string): string => new URL(url).pathname;
+
+const isChatPost = (entry: LoggedRequest): boolean =>
+  entry.method === "POST" && entry.pathname === "/api/chat";
+
+const isStreamGet = (entry: LoggedRequest): boolean =>
+  entry.method === "GET" && /^\/api\/chat\/[^/]+\/stream$/.test(entry.pathname);
+
+/** Requests issued by the page; listeners survive a reload on the same Page. */
+function recordRequests(page: Page): LoggedRequest[] {
+  const log: LoggedRequest[] = [];
+  page.on("request", (request) => {
+    log.push({
+      method: request.method(),
+      pathname: pathnameOf(request.url()),
+      body: request.postData(),
+    });
+  });
+  return log;
+}
+
+/**
+ * Simulates the OS/browser killing the in-flight streaming fetch on a frozen
+ * page.
+ *
+ * `context.setOffline(true)` was measured NOT to kill an in-flight streaming
+ * fetch in Chromium (a loopback connection keeps delivering bytes), so the
+ * honest simulation is wrapping `window.fetch`: the FIRST `POST /api/chat`
+ * gets a `Response` whose body forwards a few SSE frames and then fails with
+ * the exact rejection a killed fetch produces (`TypeError: Failed to fetch` —
+ * mapped by the SDK to a disconnect: `status: "error"`, the turn stays
+ * pending, the server keeps generating).
+ */
+const KILL_FIRST_CHAT_POST = `
+  (() => {
+    const original = window.fetch.bind(window);
+    let intercepted = false;
+    window.fetch = async (input, init) => {
+      const url = typeof input === "string" ? input : (input && input.url) || String(input);
+      const method = (init && init.method) || (input && input.method) || "GET";
+      const isTarget = !intercepted && method === "POST" && url.includes("/api/chat");
+      if (!isTarget) return original(input, init);
+      intercepted = true;
+
+      const response = await original(input, init);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffered = "";
+      let frames = 0;
+
+      const stream = new ReadableStream({
+        async pull(controller) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(value);
+          buffered += decoder.decode(value, { stream: true });
+          frames = buffered.split("\\n\\n").length - 1;
+          if (frames >= 6) {
+            await reader.cancel().catch(() => {});
+            controller.error(new TypeError("Failed to fetch"));
+          }
+        },
+      });
+
+      return new Response(stream, {
+        status: response.status,
+        headers: response.headers,
+      });
+    };
+  })();
+`;
+
+/** A real page cannot flip `visibilityState`: redefine it and dispatch. */
+async function simulateScreenBackOn(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+}
+
+const slowAssistantOf = (chatPage: ChatPage) =>
+  chatPage.chat.assistantMessages.filter({ hasText: "SLOW chunk" });
+
+async function seedChat(db: {
+  addChats: (chats: Array<{
+    title: string;
+    messages: Array<{ role: "user" | "assistant"; content: string }>;
+  }>) => Promise<Array<{ id: string }>>;
+}): Promise<{ id: string }> {
+  const [chat] = await db.addChats([
+    {
+      title: "Resume suite chat",
+      messages: [
+        { role: "user", content: SEED_QUESTION },
+        { role: "assistant", content: SEED_ANSWER },
+      ],
+    },
+  ]);
+  return chat!;
+}
+
+test.describe("Chat resume", () => {
+  test("screen off mid-generation: the turn completes without further user action", async ({
+    page,
+    db,
+  }) => {
+    const chat = await seedChat(db);
+    await page.addInitScript(KILL_FIRST_CHAT_POST);
+    const requests = recordRequests(page);
+
+    const chatPage = new ChatPage(page);
+    // The mount probe answers 204 via ?after, and resumeGate serialises the
+    // send behind it so the probe cannot race the new turn.
+    await chatPage.goto(chat.id);
+    await chatPage.header.modelPicker.selectModel("slowStream");
+    await chatPage.chat.sendMessage(SLOW_PROMPT);
+
+    // The fetch died mid-body: part of the text is on screen and the client
+    // knows the turn was interrupted.
+    const slowAssistant = slowAssistantOf(chatPage);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(FIRST_SLOW_CHUNK);
+
+    // The POST carried this turn's key, so the resume targets the exact stream.
+    const posts = requests.filter(isChatPost);
+    expect(posts).toHaveLength(1);
+    const { streamKey } = JSON.parse(posts[0]!.body ?? "{}") as {
+      streamKey?: string;
+    };
+    expect(typeof streamKey).toBe("string");
+    const resumePathname = `/api/chat/${streamKey}/stream`;
+
+    // The screen comes back on: no clicks, no retyping.
+    await simulateScreenBackOn(page);
+
+    // The client re-attaches to the turn's stream…
+    await expect
+      .poll(
+        () => requests.some((r) => isStreamGet(r) && r.pathname === resumePathname),
+        { timeout: 10_000 },
+      )
+      .toBe(true);
+
+    // …and the SAME single assistant message reaches the full scripted text.
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+  });
+
+  test("reload mid-generation: the remount re-attaches instead of restarting", async ({
+    page,
+    db,
+  }) => {
+    const chat = await seedChat(db);
+    const requests = recordRequests(page);
+
+    const chatPage = new ChatPage(page);
+    await chatPage.goto(chat.id);
+    await chatPage.header.modelPicker.selectModel("slowStream");
+    await chatPage.chat.sendMessage(SLOW_PROMPT);
+
+    const slowAssistant = slowAssistantOf(chatPage);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(FIRST_SLOW_CHUNK);
+
+    // A brand-new chat would resume a client-only draft id, so this scenario
+    // uses the persisted chat: its id is in the URL and in the POST body.
+    await page.reload();
+
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+
+    // Exactly ONE POST across the reload: the response was re-attached, not
+    // regenerated.
+    const posts = requests.filter(isChatPost);
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(posts[0]!.body ?? "{}")).toMatchObject({
+      chatId: chat.id,
+    });
+    expect(requests.filter(isStreamGet).length).toBeGreaterThan(0);
+  });
+
+  test("normal open of a chat whose last turn completed: the mount probe answers 204 via ?after and stays ready — no replay", async ({
+    page,
+    db,
+  }) => {
+    const chat = await seedChat(db);
+    const chatPage = new ChatPage(page);
+
+    // Complete one turn in-session so the resume registry holds the entry
+    // (persisted, still replayable within the TTL): only then is a `204`
+    // decisive evidence of the `?after` match — with an empty registry any
+    // probe would answer `204` anyway.
+    await chatPage.goto(chat.id);
+    await chatPage.header.modelPicker.selectModel("slowStream");
+    await chatPage.chat.sendMessage(SLOW_PROMPT);
+    await expect(
+      chatPage.chat.assistantMessages.filter({ hasText: "SLOW chunk" }),
+    ).toContainText(SLOW_STREAM_TEXT, { timeout: 20_000 });
+    await expect(chatPage.chat.loadingIndicator).not.toBeVisible({ timeout: 20_000 });
+
+    // A normal open (client-side navigate from the hub) probes the registry
+    // ONCE (ticket 08: any navigation type), carrying the client's last
+    // message id as `after` — which equals the completed turn's start
+    // message — so the route answers the silent `204` instead of replaying.
+    const probe = page.waitForResponse(
+      (response) =>
+        response.request().method() === "GET" &&
+        // Scope to THIS chat: the hub's own new-chat draft mounts with resume
+        // enabled too (its draft id can reattach after a mid-turn reload), so
+        // its probe is a legitimate second GET with no `after`.
+        pathnameOf(response.url()) === `/api/chat/${chat.id}/stream`,
+    );
+    await page.goto("/");
+    await chatPage.header.toggleSidebar();
+    await chatPage.sidebar.clickChatByTitle("Resume suite chat");
+
+    const probeResponse = await probe;
+    expect(probeResponse.status()).toBe(204);
+    // The probe carried the client's last message id (the completed answer).
+    expect(new URL(probeResponse.url()).searchParams.get("after")).toBeTruthy();
+
+    // No replay: the completed answer renders exactly once, ready, no toast.
+    await expect(chatPage.chat.assistantMessages.filter({ hasText: "SLOW chunk" })).toHaveCount(
+      1,
+    );
+    await expect(
+      chatPage.chat.assistantMessages.filter({ hasText: "SLOW chunk" }),
+    ).toContainText(SLOW_STREAM_TEXT);
+    await expect(chatPage.chat.loadingIndicator).not.toBeVisible();
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
+    await expect(chatPage.chat.chatInput).toBeEditable();
+  });
+
+  test("regenerate + reopen via a client-side navigate: the in-flight turn resumes with the turn's model", async ({
+    page,
+    db,
+  }) => {
+    const chat = await seedChat(db);
+    const chatPage = new ChatPage(page);
+
+    await chatPage.goto(chat.id);
+    await chatPage.header.modelPicker.selectModel("slowStream");
+
+    // Regenerate the seeded answer (A1): the SDK truncates it client-side
+    // and streams a replacement. The reload button renders only while the
+    // status is `ready`/`error`, which holds right after the history loads.
+    await chatPage.chat.assistantMessages
+      .last()
+      .getByLabel("Regenerate response")
+      .click();
+
+    // The regenerated turn is alive: part of the slow text is on screen.
+    const slowAssistant = slowAssistantOf(chatPage);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(FIRST_SLOW_CHUNK);
+
+    // The "reopen": close the app and come back — a fresh load of the root
+    // followed by a client-side navigate to the chat via the sidebar (NOT a
+    // page reload, so this exercises the unconditional mount probe).
+    await page.goto("/");
+    await chatPage.header.toggleSidebar();
+    await chatPage.sidebar.clickChatByTitle("Resume suite chat");
+
+    // WITHOUT any further action the in-flight turn shows up: the mount
+    // probe (chatId path, `after` = the client's last message — the turn's
+    // question, since turn-start persistence deleted A1) does not match the
+    // turn's start message id, so the registry replays and the client
+    // re-attaches. Exactly ONE assistant message in total (not just one
+    // matching the slow text): without turn-start persistence the stale
+    // replaced answer (A1) would be rendered by the RSC alongside the
+    // replayed new turn.
+    await expect(chatPage.chat.assistantMessages).toHaveCount(1);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+    await expect(chatPage.chat.userMessages.filter({ hasText: SEED_QUESTION })).toHaveCount(
+      1,
+    );
+    // The turn's config persisted at turn start: the reopened picker shows
+    // the model the in-flight turn is actually using (not the chat's stale
+    // default — `onFinish` had not run yet).
+    await expect(chatPage.header.modelPicker.modelPicker).toContainText(
+      "slowStream",
+    );
+
+    // After the turn finished, a final reload shows the persisted history:
+    // still exactly one assistant message with the full text.
+    await expect(chatPage.chat.loadingIndicator).not.toBeVisible();
+    await page.reload();
+    await expect(chatPage.chat.assistantMessages).toHaveCount(1);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+    await expect(chatPage.chat.userMessages.filter({ hasText: SEED_QUESTION })).toHaveCount(
+      1,
+    );
+    await expect(chatPage.header.modelPicker.modelPicker).toContainText(
+      "slowStream",
+    );
+  });
+
+  test("regenerate + reopen mid-turn (page reload): one assistant message, the replaced one never reappears", async ({
+    page,
+    db,
+  }) => {
+    const chat = await seedChat(db);
+    const chatPage = new ChatPage(page);
+
+    await chatPage.goto(chat.id);
+    await chatPage.header.modelPicker.selectModel("slowStream");
+
+    // Regenerate the seeded answer (A1): the SDK truncates it client-side
+    // and streams a replacement. The reload button renders only while the
+    // status is `ready`/`error`, which holds right after the history loads.
+    await chatPage.chat.assistantMessages
+      .last()
+      .getByLabel("Regenerate response")
+      .click();
+
+    // The regenerated turn is alive: part of the slow text is on screen.
+    const slowAssistant = slowAssistantOf(chatPage);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(FIRST_SLOW_CHUNK);
+
+    // The "reopen": a fresh page load while the turn is still generating.
+    // Turn-start persistence has already deleted A1 and written the user
+    // message, so the DB shows exactly this turn in flight and the resumed
+    // replay completes it — the replaced answer never reappears.
+    await page.reload();
+
+    // Exactly ONE assistant message in total (not just one matching the slow
+    // text): without turn-start persistence the stale replaced answer (A1)
+    // would be rendered by the RSC alongside the replayed new turn.
+    await expect(chatPage.chat.assistantMessages).toHaveCount(1);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+    await expect(chatPage.chat.userMessages.filter({ hasText: SEED_QUESTION })).toHaveCount(
+      1,
+    );
+
+    // After the turn finished, a final reload shows the persisted history:
+    // still exactly one assistant message with the full text.
+    await expect(chatPage.chat.loadingIndicator).not.toBeVisible();
+    await page.reload();
+    await expect(chatPage.chat.assistantMessages).toHaveCount(1);
+    await expect(slowAssistant).toHaveCount(1);
+    await expect(slowAssistant.first()).toContainText(SLOW_STREAM_TEXT, {
+      timeout: 20_000,
+    });
+    await expect(chatPage.chat.userMessages.filter({ hasText: SEED_QUESTION })).toHaveCount(
+      1,
+    );
+  });
+});

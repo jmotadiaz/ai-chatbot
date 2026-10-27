@@ -16,6 +16,7 @@ capabilities.
 | `canProduceReasoning` | Thinking/reasoning blocks |
 | `alwaysRefuses` | Refusal response (temperature 1) |
 | `failsMidStream` | Mid-stream error |
+| `slowStream` | Paced multi-chunk text stream (stream resume / disconnect tests) |
 
 ### Usage
 

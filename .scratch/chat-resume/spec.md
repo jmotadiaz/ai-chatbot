@@ -1,148 +1,195 @@
-# Spec: Reanudar la respuesta del chat tras perder la conexión
+# Spec: El turno de chat sobrevive a pantalla apagada / browser en segundo plano
 
 **Status:** ready-for-agent
 
 ## Problem Statement
 
-Cuando la pantalla del móvil se apaga (o se cierra la pestaña, se refresca o se
-pierde la red) en mitad de la respuesta del asistente en un Chat, la respuesta
-se interrumpe y se pierde: el Message del asistente nunca se completa ni se
-persiste, y al volver no hay forma de retomar lo que el servidor estaba
-generando. El Coding Agent no sufre esto porque su Worker sigue ejecutando el
-Turn en servidor y el cliente se reconecta al stream; el Chat no tiene ningún
-mecanismo equivalente.
+Cuando la pantalla del móvil se apaga o el browser va a segundo plano a mitad de
+la respuesta del asistente, el fetch del stream muere y con él el turno: el
+Message del asistente nunca se persiste (toda la escritura —mensajes, title,
+memoria, compactación— vive en el `onFinish` del stream) y al volver queda un
+parcial congelado y un toast "Failed to fetch". No existe ningún mecanismo de
+reanudación para `/api/chat` (el del Coding Agent, `use-coding-agent.ts`, es el
+único del repo y no aplica).
+
+**Constraint del operador: nada de Redis.** Una solución in-memory es
+explícitamente aceptable; el chatbot corre como un único proceso pm2.
 
 ## Solution
 
-Adoptar el patrón oficial de streams reanudables del AI SDK: la generación de
-cada respuesta del asistente se publica en un canal reanudable respaldado por
-Redis mientras se emite, el Chat recuerda qué stream sigue activo, y el cliente
-puede reengancharse a ese stream al volver (pantalla encendida, pestaña
-reabierta, red recuperada) y recibir lo que se generó en su ausencia hasta
-completar el Message. Cerrar o apagar se convierte en "desconectar", no en
-"cancelar"; cancelar de verdad sigue existiendo como acción explícita.
+**Replay in-memory con el contrato de resume nativo del SDK.** Un registry
+in-memory en el chatbot guarda el stream SSE de cada turno (tee de
+`consumeSseStream`), lo sirve por una route GET nueva, y el cliente se
+re-engancha con `resume: true` + un hook de ciclo de vida. Apagar la pantalla
+pasa a significar "desconectar", no "cancelar": el servidor termina la
+generación y la persistencia aunque nadie escuche, y al volver el cliente
+recibe el resto del stream o el mensaje completo.
 
-## User Stories
+### Hechos verificados que sostienen el diseño (auditados en `ai@6.0.287` / `@ai-sdk/react@3.0.290`)
 
-1. As a chat user on mobile, I want to turn the screen off mid-response and find the completed assistant Message when I turn it back on, so that a long answer is never lost to a screen lock.
-2. As a chat user on mobile, I want the response to keep generating on the server while my screen is off, so that waiting time passes even with the phone locked.
-3. As a chat user, I want to close the tab mid-response and see the finished Message when I reopen the Chat, so that an accidental close costs nothing.
-4. As a chat user, I want to refresh the page mid-response and have the answer resume instead of restarting, so that I never pay the generation twice.
-5. As a chat user, I want my sent Message to survive any interruption, so that I never have to retype what I already sent.
-6. As a chat user, I want at most one assistant Message per sent Message even after several disconnects and resumes, so that reconnecting never duplicates answers.
-7. As a chat user, I want an explicit stop action that truly cancels the generation, so that disconnecting and stopping stay visibly different intentions.
-8. As a chat user, I want a resumed response to continue the same answer rather than restart it from zero, so that long responses do not loop forever on flaky networks.
-9. As a chat user, I want the Chat history to show the completed Message after a resume, so that navigating away and back shows a coherent record.
-10. As a chat user with a poor connection, I want going offline and back online to resume the in-flight response automatically, so that tunnels and elevators do not kill answers.
-11. As a chat user, I want a clear terminal state when the generation itself fails mid-stream, so that a failed answer is distinguishable from an interrupted one I can resume.
-12. As a chat user, I want retry after a genuine failure to regenerate cleanly, so that resume logic never masks a real error.
-13. As a chat user, I want sources, reasoning and tool activity already streamed to stay visible after a resume, so that reattaching does not wipe context I already saw.
-14. As a chat user, I want token usage and billing to reflect a single generation per Message, so that resumes do not silently multiply cost.
-15. As a chat user, I want the Chat title to be generated exactly once per Chat, so that resumes do not rename or re-title anything.
-16. As a chat user, I want extracted memories to be recorded exactly once per exchange, so that reconnecting does not duplicate what the system remembers about me.
-17. As a chat user, I want context compaction to keep working as today after resumes, so that long Chats do not degrade or lose context.
-18. As a chat user of RAG, web search, project and context modes, I want resume to behave identically in every Chat Mode, so that no mode is a second-class citizen.
-19. As a chat user, I want opening the same Chat in a second tab while a response runs to attach to the running stream, so that multi-tab use converges instead of forking.
-20. As a chat user, I want sending a new Message while disconnected to wait for connectivity with my text intact, so that nothing I write offline is silently dropped.
-21. As a chat user, I want the input to stay usable for reading history while a resume is pending, so that the interface never feels frozen.
-22. As a chat user, I want a visible "reconnecting" indication when the client is reattaching, so that a pause after unlocking the screen reads as recovery, not breakage.
-23. As a chat user, I want image attachments and project context to resume exactly like plain text, so that rich Messages get the same guarantee.
-24. As a chat user, I want the response to finish and persist even if I never come back, so that opening the Chat hours later shows the complete answer.
+- El SDK **no** tiene protocolo de offset: nunca envía `Last-Event-ID`, no
+  genera SSE ids. El único contrato de resume es GET → repetir el stream
+  completo o responder `204`.
+- El replay completo **es idempotente para el cliente**: en `resume-stream` el
+  cliente descarta el último mensaje y reconstruye uno nuevo; el chunk `start`
+  con el `messageId` original hace que `replaceMessage` sustituya el parcial,
+  sin duplicar. Un resume a medias (sin el `start`) duplicaría o lanzaría
+  `UIMessageStreamError`. → El buffer replaya siempre desde el principio.
+- `204` es la única señal "nada que resumir" y el cliente la trata en silencio
+  (status `ready`). No hay reintentos: un resumeStream por llamada.
+- `resumable-stream` no está instalado y no hace falta: el paquete existe para
+  el caso multi-proceso/Redis. Un `Map` process-wide cubre el caso un-proceso.
+- No hay `onToolCall`/handlers de tools en el cliente (todas las tools son
+  server-side): re-emitir chunks de tool tras el terminal es inofensivo.
+- `consumeSseStream` en `createUIMessageStreamResponse` (v6 ya lo soporta) hace
+  que generación y `onFinish` sobrevivan a la desconexión del cliente.
 
 ## Implementation Decisions
 
-- Patrón oficial de streams reanudables del AI SDK (misma forma en v6 instalada
-  y v7 actual): publicar cada stream de respuesta en un canal con identidad
-  propia respaldado por Redis, recordar el stream activo en el Chat, y exponer
-  una ruta GET de stream por Chat que reanuda o responde vacío cuando no hay
-  nada activo.
-- Redis vive uno por Entorno (Desarrollo, Test, Producción), declarado junto a
-  la base de datos de cada Entorno; sus credenciales y URLs entran por el
-  catálogo central de entorno, nunca como acceso directo a variables en código
-  de aplicación.
-- El Message del usuario se persiste al recibir la petición, antes de empezar a
-  streamear; el Message del asistente se persiste una sola vez al terminar la
-  generación, y el identificador de stream activo se limpia en ese mismo paso.
-  Así, volver tarde (historia 24) siempre encuentra el registro completo.
-- Semántica de interrupción: cualquier abort del cliente (pantalla apagada,
-  pestaña cerrada, refresco, `stop` del composer) es desconexión; la generación
-  continúa en servidor. La cancelación real es una ruta dedicada que persiste
-  el parcial, cancela el trabajo y libera el stream activo.
-- Exactamente-una-vez: la reanudación reemite deltas ya generados sin
-  re-ejecutar la generación; la persistencia solo ocurre en el fin terminal,
-  por lo que reanudar N veces produce un único Message del asistente, un único
-  cómputo de uso, una única titulación y una única extracción de memoria.
-- Reanudar nunca cambia el Model ni su configuración: el stream retomado
-  continúa con lo que la petición original fijó, igual que el coding agent
-  nunca cambia de modelo al reconectar.
-- Cliente: la sesión de chat se identifica por Chat y activa reanudación
-  automática al montar; el stub actual de reanudación se sustituye por la
-  llamada real. Además, un hook de ciclo de vida de página (oculto/congelado/
-  ocultación/descartado del lado de corte; visible/mostrado/en línea/foco del
-  lado de reanudación) replica el comportamiento del cliente del coding agent
-  para los casos sin remontaje, como pantalla off→on.
-- La subida del SDK a v7 queda fuera del comportamiento: el patrón es idéntico
-  en ambas generaciones, así que puede viajar en el mismo cambio o justo
-  después sin afectar a esta spec.
-- Despliegue en Producción bajo las reglas del repo: el servicio vivo lo toca
-  solo el operador con ventana de indisponibilidad; la verificación del agente
-  usa los directorios aislados de compilación y las suites rápidas.
+1. **Registry in-memory** (`packages/chatbot`, módulo nuevo): `Map` process-wide
+   claveado por `streamKey` + índice "última stream por `chatId`". Cada entrada:
+   buffer de chunks SSE ya codificados, estado `streaming` → `persisted` (la
+   persistencia en `onFinish` lo confirma), y evict por TTL (~60 min) tras
+   `persisted`. El buffer sigue servible tras el terminal hasta el TTL: el
+   replay tras terminal es seguro (sin handlers de tools en cliente).
+2. **Alimentación**: `consumeSseStream` en el `createUIMessageStreamResponse`
+   del POST existente tee-ea el SSE hacia el registry. Con eso, generación y
+   `onFinish` (persistencia, title, memoria, compactación) completan aunque el
+   cliente muera.
+
+   **Refinamiento (ticket 07)**: persistencia al inicio del turno para chats
+   existentes. El resume registry sigue sirviendo el stream en vuelo tras una
+   reapertura, pero hasta que el turno persistía (solo en `onFinish`) la UI
+   reabierta renderizaba el mensaje viejo del asistente del DB más el replay
+   del turno nuevo: en un regenerate se veían el turno reemplazado junto a su
+   reemplazo hasta que el turno terminaba. Ahora, cuando el chat existe en el
+   DB, el POST ejecuta una transacción al inicio del turno que (a) persiste la
+   CONFIG del turno (`defaultModel`, `defaultTemperature`, `chatMode`,
+   `webSearchNumResults`, `ragMaxResources`, `minRagResourcesScore`) vía
+   `updateChat` y (b) borra el mensaje que este reemplaza (`messageId`; no-op
+   en un envío normal) y persiste el mensaje del usuario (upsert: el
+   `onFinish` posterior lo actualiza in place). La propia `updateChat` actúa de
+   check de existencia: devuelve `undefined` cuando ninguna fila coincide, y
+   entonces el chat es nuevo (el id borrador no tiene fila) y no se escribe
+   nada temprano (no puede reengancharse a mitad de turno; además evita la
+   violación de FK). `onFinish` repite el `updateChat` con los mismos valores
+   (idempotente; cubre el camino degradado). Los fallos degradan en silencio al
+   comportamiento de hoy. Tradeoff aceptado: si la transacción final falla
+   tras comprometerse esta, el mensaje reemplazado ya se fue — raro.
+3. **Clave de resume**: el cliente genera un `streamKey` (uuid) por turno y lo
+   manda en el body del POST (los chats nuevos no tienen `chatId` hasta el
+   `data-chat` final, que llega al final del stream). El `chatId` (para el
+   resume desde un remontaje) resuelve por el índice "última stream".
+4. **GET `/api/chat/[key]/stream`** (wrapper `withAuth` existente): si hay
+   entrada viva → `text/event-stream` con replay completo desde `start` + cola
+   viva + `[DONE]`; si no → `204`. Es la URL por defecto que
+   `DefaultChatTransport.reconnectToStream` ya espera.
+5. **Cliente**: `useChat({ id, resume: true })` (hoy no se pasa `id`) para el
+   resume al montar; hook de ciclo de vida (`visibilitychange`/`pageshow`,
+   espejo del del Coding Agent) que llama `resumeStream()` cuando la request
+   murió (señal: estado `error`/`ready` + el propio cliente sabe que tenía un
+   turno en vuelo — sin heurísticas sintácticas sobre mensajes). Un resume por
+   evento de visibilidad, sin timers de reintento. Chats nuevos sin `chatId`
+   aún: la route GET se invoca con el `streamKey` (`prepareReconnectToStreamRequest`).
+
+   **Refinamiento (E2E)**: el `resume: true` del SDK dispara una sonda de
+   montaje NO condicionada (`GET /api/chat/<chatId>/stream` en cada apertura
+   del chat). Detectado en E2E (`seed.spec.ts` fallando ~1/3 de las runs): el
+   `204` de la sonda puede resolverse después de que el usuario envió (oculta
+   el loading a mitad de stream) y el GET puede ser atendido tras el POST
+   (se engancha a un turno recién registrado: doble replay del mismo mensaje).
+   Se sustituye por un resume de montaje **gateado**: solo cuando la
+   navegación fue `reload` o `back_forward`
+   (`performance.getEntriesByType("navigation")[0]?.type`), vía el propio hook
+   (`useChat({ id })`, sin `resume`). Una apertura normal del chat ya no
+   sondea el registry: ni replay del turno anterior ni carrera con el envío.
+   **Refinamiento (dev)**: el estado del registry se ancla en
+   `globalThis[Symbol.for(...)]` en lugar de bindings de módulo, porque
+   `next dev` recompila rutas bajo demanda y reevalúa los módulos compartidos
+   (el primer resume tras un reload respondía `204`); en producción el
+   module graph es único y el comportamiento no cambia.
+
+   **Refinamiento (ticket 08)**: el gate de navegación se elimina — la sonda
+   de montaje dispara UNA vez por montaje de un chat persistido, sea cual sea
+   el tipo de navegación (`navigate` incluido): reabrir la app y entrar al
+   chat por la sidebar ya re-engancha el turno en vuelo sin recarga manual.
+   Las dos carreras que motivaron el gate quedan cubiertas por separado:
+   (1) `?after=<último mensaje del cliente>` en la sonda de montaje — la GET
+   responde `204` silencioso cuando la entrada del registry empezó con ese
+   mismo mensaje (la apertura común de un chat ya respondido no replaya);
+   (2) `resumeGate()` — el hook expone una puerta que resuelve al instante si
+   no hay resume en vuelo y si lo hay espera la promesa del resume (siempre
+   se resuelve: `204`, replay completo o error de fetch; si la sonda se
+   enganchó a un stream vivo, cuando ese turno termina); `useChatSubmit`
+   (send) y `useChatReload` (regenerate) la esperan ANTES de `beginTurn()` y
+   la request, así que nunca envían sobre una sonda sin resolver ni sobre el
+   turno vivo al que la sonda se enganchó. Los resumes de visibilidad/pageshow
+   NO llevan `after`: el último mensaje del cliente puede ser un parcial, y el
+   replay completo es idempotente por el chunk `start`.
+6. **Alcance**: solo chats persistidos (página de chat). Hub, temporales y
+   project-form (`preventChatPersistence: true`) quedan como hoy.
+7. **Fuera de alcance (explícito)**:
+   - Reinicio del proceso a mitad de turno: el turno se pierde (aceptado en
+     frío; sin persistencia no hay nada que recuperar ni detectar).
+   - Vuelta tras TTL con página viva: la cura es recargar la página (el RSC
+     trae la verdad del DB). No hay server action de adopción del DB.
+   - Multi-dispositivo en vivo, cola offline de envíos, endpoint `stop`
+     dedicado (el `stop` de hoy persiste el parcial vía `onFinish` y queda como
+     está), supresión del toast "Failed to fetch".
+   - Redis / `resumable-stream` / subida a v7 del SDK.
+
+## User Stories (núcleo)
+
+1. Apago la pantalla a mitad de respuesta y al volver veo el resto del stream
+   o el mensaje completo, sin tocar nada.
+2. La generación y su persistencia (mensajes, title, memoria, compactación)
+   completan aunque nadie escuche.
+3. Reengancharse N veces produce un único Message del asistente (idempotencia
+   por replay completo).
+4. Un refresco de página a mitad de generación reataca al stream activo en
+   lugar de reiniciar la respuesta.
 
 ## Testing Decisions
 
-- Un buen test afirma comportamiento externamente visible: el Message se
-  completa tras abortar y reanudar, no hay Messages duplicados, el Message del
-  usuario sobrevive, parar cancela de verdad, el endpoint de stream responde
-  vacío sin stream activo. Ningún test husmea en el buffer de Redis ni en
-  estado interno de componentes.
-- Seams propuestos (existentes primero, el más alto posible; una sola seam
-  nueva):
-  1. Frontera de contrato HTTP de las rutas de chat (POST existente + GET de
-     stream nueva), con publicador y almacén simulados — es la seam más alta
-     y cubre todo el protocolo de reanudación.
-  2. Frontera del hook de sesión de chat para el ciclo
-     ocultar→reanudar (pantalla apagada/encendida) — aquí se fija el síntoma
-     exacto del reporte.
-  3. Frontera de la factoría de respuesta para persistencia anticipada del
-     usuario y limpieza del stream activo al terminar.
-  4. Escenarios Playwright de extremo a extremo (abortar a mitad de stream,
-     reconectar, afirmar Message completo y único).
-- La única seam nueva es el puerto del almacén de streams reanudables, en la
-  forma puerto/adaptador que ya usa la conversación del chat, para que los
-  tests lo simulen sin Redis real.
-- Prior art: los tests de contrato de la ruta de conexión del coding agent
-  (publicador simulado, reenvío SSE, códigos de estado), los tests de ciclo de
-  vida del hook del coding agent (congelar corta, reanudar reconecta), los
-  tests del traductor de streams, y el registro de modelos simulados de e2e
-  (probable alias nuevo de comportamiento tipo stream lento para el caso
-  abortar-a-mitad).
-- Cada cambio mantiene en verde las suites rápidas del repo (lint, type-check
-  y tests unitarios/de componente/integración/contrato afectados).
+- Test = comportamiento externamente visible: el Message se completa tras
+  abortar y reanudar; no hay duplicados; la persistencia ocurre una vez; el
+  GET responde `204` sin stream activo; el replay reconstruye desde `start`.
+  Ningún test husmea el Map interno del registry.
+- Seams:
+  1. Contrato HTTP de las rutas de chat (POST + GET de stream) con el Gateway
+     simulado del entorno test (Mock Model Gateway `:4001`).
+  2. Frontera del hook de sesión de chat para el ciclo ocultar→reanudar
+     (component test sobre `visibilitychange`/`pageshow`), espejo de
+     `tests/component/agent-code/use-coding-agent.lifecycle.test.tsx`.
+  3. Unit del registry (estados, TTL/evict, índice por chatId).
+  4. Playwright E2E: el criterio de aceptación (abajo) con stream lento del
+     Mock Gateway.
+- Prior art en el repo: tests de ciclo de vida y reconexión del coding agent
+  (`packages/chatbot/tests/{unit,component}/agent-code/`).
+- Cada cambio mantiene verdes lint, `type:check` y las suites rápidas.
 
-## Out of Scope
+## Criterio de aceptación (único)
 
-- Subir el SDK a v7 como fin en sí mismo (puede acompañar o seguir; el
-  comportamiento no depende de ello).
-- Reimplementar el buffer reanudable sobre Postgres en lugar de Redis.
-- Cola de envíos offline más allá de preservar el texto escrito sin conexión.
-- Conflictos multi-pestaña más allá de convergencia best-effort al stream
-  activo (sin turnos de escritura ni fusiones).
-- Cambios en RAG, ingesta, compaction, memoria o titulación más allá de
-  mantener su garantía de exactamente-una-vez.
-- Cambios visuales del composer más allá del indicador de reconexión y la
-  acción de parada real.
-- Hub: la reanudación funciona donde se use el hook compartido de sesión; el
-  cableado propio de instancias del Hub queda fuera salvo que lo herede gratis.
+Prompt largo → apagar la pantalla a mitad de la generación → volver → se ve el
+resto del stream o el mensaje completo sin intervención. Equivalente en desktop
+con browser minimizado.
+
+## Guardrails
+
+- Verificación de compilación solo con `pnpm build:verify` (`.next/verify`).
+  **Nunca `build`**: pm2 sirve el `.next` de Producción en vivo.
+- Sin `process.env` en `src/` (ADR 0011); sin `pm2 restart` ni tocar puertos
+  8085/3015/5435 sin aprobación explícita del operador.
+- El registry asume un único proceso (pm2 sirve un chatbot sin cluster); la
+  memoria queda acotada por el TTL y la cantidad de turnos en vuelo.
 
 ## Further Notes
 
-- Nota de investigación con fuentes primarias y verificación en `node_modules`:
-  `.scratch/chat-resume/sdk-v7-resumable-streams.md`.
-- Diagnóstico previo (bucle rojo `node /tmp/chat-screenoff-repro.mjs`): la
-  ejecución del chat vive atada al ciclo de vida del request HTTP y su
-  persistencia ocurre solo en el fin del stream, sin protocolo de reanudación;
-  esa es la hipótesis confirmada que este diseño elimina. Los tests de
-  regresión de esta spec sustituyen a ese harness desechable.
-- En v6+ el contexto de streams reanudables ya no se importa del paquete del
-  SDK sino del paquete separado de streams reanudables; importar del lugar
-  correcto evita un error conocido.
+- Investigación previa con verificación en `node_modules` (contrato exacto de
+  `reconnectToStream`, `resume-stream` en `AbstractChat`, semántica de
+  `replaceMessage` y `204`): hecha en la sesión de grilling de 2026-10-26;
+  supera a la nota eliminada `sdk-v7-resumable-streams.md` (diseño Redis
+  descartado por el constraint del operador).
+- Diagnóstico confirmado: la ejecución del chat vive atada al ciclo de vida del
+  request HTTP y la persistencia solo ocurre en el fin del stream
+  (`lib/features/chat/conversation/factory.ts:257-362`).
