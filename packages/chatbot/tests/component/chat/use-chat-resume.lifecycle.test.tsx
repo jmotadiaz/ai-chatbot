@@ -607,10 +607,10 @@ describe("useChat resume lifecycle", () => {
     expect(postBodies[0]!.chatId).toBe(CHAT_ID);
   });
 
-  it("re-attaches to the live stream on a reload mount (remount / paste-URL after refresh)", async () => {
-    // A page reload mid-generation is the user story the mount resume exists
-    // for: exactly ONE GET on mount (the chatId URL — no turn key is pending
-    // on a fresh page), and the replay completes the message.
+  it("re-attaches to the live stream on mount (reload / back_forward / navigate)", async () => {
+    // A page reload or reopen mid-generation is the user story the mount
+    // resume exists for: exactly ONE GET on mount (the chatId URL — no turn
+    // key is pending on a fresh page), and the replay completes the message.
     setupServer.use(
       http.get("*/api/chat/*/stream", ({ request }) => {
         resumeGets.push(request.url);
@@ -633,25 +633,6 @@ describe("useChat resume lifecycle", () => {
     expect(screen.getByTestId("status").textContent).toBe("ready");
     expect(screen.getByTestId("assistant-count").textContent).toBe("1");
     expect(postBodies).toHaveLength(0); // a resume never re-sends the turn
-  });
-
-  it("re-attaches to the live stream on a back_forward mount", async () => {
-    setupServer.use(
-      http.get("*/api/chat/*/stream", ({ request }) => {
-        resumeGets.push(request.url);
-        return makeSseResponse(fullReplay("Resumed from the server"));
-      }),
-    );
-
-    renderHarness({ chatId: CHAT_ID, initialMessages: [userMessage("hello")] });
-
-    await waitFor(() => expect(resumeGets).toHaveLength(1));
-    await waitFor(() =>
-      expect(screen.getByTestId("assistant-text").textContent).toBe(
-        "Resumed from the server",
-      ),
-    );
-    expect(screen.getByTestId("status").textContent).toBe("ready");
   });
 
   it("a reload mount whose probe answers 204 settles to ready and clears the pending turn", async () => {

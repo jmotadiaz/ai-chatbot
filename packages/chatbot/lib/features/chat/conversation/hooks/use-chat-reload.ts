@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { ChatBody, ChatConfig, SetChatConfig } from "./hook-types";
 import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 
@@ -41,36 +41,45 @@ export const useChatReload = ({
   setConfig,
   setChatMode,
 }: UseChatReloadArgs): UseChatReloadResult => {
+  const reloadingRef = useRef(false);
+
   const reload = useCallback(
     (reloadConfig: Partial<ChatConfig> & { chatMode?: ChatMode } = {}) => {
+      if (reloadingRef.current) return;
+      reloadingRef.current = true;
+
       void (async () => {
-        // Never regenerate over an in-flight resume probe (ticket 08): same
-        // race as a send — await the probe (or the live turn it attached to)
-        // before starting the new one.
-        await resumeGate?.();
+        try {
+          // Never regenerate over an in-flight resume probe (ticket 08): same
+          // race as a send — await the probe (or the live turn it attached to)
+          // before starting the new one.
+          await resumeGate?.();
 
-        setInput("");
+          setInput("");
 
-        const { chatMode, ...config } = reloadConfig;
+          const { chatMode, ...config } = reloadConfig;
 
-        const streamKey = beginTurn?.();
+          const streamKey = beginTurn?.();
 
-        void regenerate({
-          messageId: messages.at(-1)?.id,
-          body: {
-            ...body,
-            ...(streamKey !== undefined && { streamKey }),
-            ...config,
-            ...(chatMode && { chatMode }),
-          },
-        });
+          void regenerate({
+            messageId: messages.at(-1)?.id,
+            body: {
+              ...body,
+              ...(streamKey !== undefined && { streamKey }),
+              ...config,
+              ...(chatMode && { chatMode }),
+            },
+          });
 
-        if (Object.keys(config).length > 0) {
-          setConfig(config);
-        }
+          if (Object.keys(config).length > 0) {
+            setConfig(config);
+          }
 
-        if (chatMode) {
-          setChatMode(chatMode);
+          if (chatMode) {
+            setChatMode(chatMode);
+          }
+        } finally {
+          reloadingRef.current = false;
         }
       })();
     },

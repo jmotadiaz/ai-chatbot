@@ -45,7 +45,7 @@ vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
 
   const pacedChunks: any[] = [
     { type: "text-start", id: "text-1" },
-    ...["Palabra1 ", "Palabra2 ", "Palabra3 ", "Palabra4 ", "Palabra5 ", "Palabra6 "].map(
+    ...["Word1 ", "Word2 ", "Word3 ", "Word4 ", "Word5 ", "Word6 "].map(
       (delta, i) => ({ type: "text-delta", id: "text-1", delta, index: i }),
     ),
     { type: "text-end", id: "text-1" },
@@ -136,7 +136,7 @@ import {
   user as userTable,
 } from "@/lib/infrastructure/db/schema";
 
-const ASSISTANT_TEXT = "Palabra1 Palabra2 Palabra3 Palabra4 Palabra5 Palabra6 ";
+const ASSISTANT_TEXT = "Word1 Word2 Word3 Word4 Word5 Word6 ";
 
 function makeRequest(overrides: Record<string, unknown> = {}): Request {
   return new Request("http://test/api/chat", {

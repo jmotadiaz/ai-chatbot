@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { ChatBody } from "./hook-types";
 import type { FilePart } from "@/lib/features/attachment/types";
@@ -50,53 +50,59 @@ export const useChatSubmit = ({
   sendMessage: () => Promise<void>;
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 } => {
+  const submittingRef = useRef(false);
+
   const sendMessage = useCallback(async () => {
-    if (!sendEnabled) return;
+    if (!sendEnabled || submittingRef.current) return;
+    submittingRef.current = true;
 
-    // Never send over an in-flight resume probe (ticket 08): the probe's
-    // late silent `204` would settle the status to `ready` mid-send, and the
-    // probe could attach to a stream registered after this POST. When the
-    // probe attached to a live turn, the gate resolves when that turn ends.
-    await resumeGate?.();
+    try {
+      // Never send over an in-flight resume probe (ticket 08): the probe's
+      // late silent `204` would settle the status to `ready` mid-send, and the
+      // probe could attach to a stream registered after this POST. When the
+      // probe attached to a live turn, the gate resolves when that turn ends.
+      await resumeGate?.();
 
-    onBeforeSubmit?.();
+      onBeforeSubmit?.();
 
-    // One resume key per send (never per chat): the POST registers the turn
-    // in the resume registry under it.
-    const streamKey = beginTurn?.();
-    const requestBody =
-      streamKey !== undefined ? { ...body, streamKey } : body;
+      // One resume key per send (never per chat): the POST registers the turn
+      // in the resume registry under it.
+      const streamKey = beginTurn?.();
+      const requestBody =
+        streamKey !== undefined ? { ...body, streamKey } : body;
 
-    // Separate text files from other files
-    const textFiles = files.filter((f) => f.textContent);
-    const otherFiles = files.filter((f) => !f.textContent);
+      // Separate text files from other files
+      const textFiles = files.filter((f) => f.textContent);
+      const otherFiles = files.filter((f) => !f.textContent);
 
-    await send(
-      {
-        role: "user",
-        parts: [
-          { type: "text", text: input },
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          ...otherFiles.map(({ loading, textContent, ...file }) => file),
-        ],
-        metadata: {
-          status: "finished",
-          ...(textFiles.length > 0 && {
-            textFiles: textFiles.map((f) => ({
-              filename: f.filename || "",
-              content: f.textContent || "",
-              mediaType: f.mediaType || "text/plain",
-            })),
-          }),
+      await send(
+        {
+          role: "user",
+          parts: [
+            { type: "text", text: input },
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ...otherFiles.map(({ loading, textContent, ...file }) => file),
+          ],
+          metadata: {
+            status: "finished",
+            ...(textFiles.length > 0 && {
+              textFiles: textFiles.map((f) => ({
+                filename: f.filename || "",
+                content: f.textContent || "",
+                mediaType: f.mediaType || "text/plain",
+              })),
+            }),
+          },
         },
-      },
-      {
-        body: requestBody,
-      }
-    );
+        {
+          body: requestBody,
+        }
+      );
 
-
-    onAfterSubmit?.();
+      onAfterSubmit?.();
+    } finally {
+      submittingRef.current = false;
+    }
   }, [
     beginTurn,
     body,

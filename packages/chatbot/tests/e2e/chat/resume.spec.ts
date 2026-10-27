@@ -5,7 +5,7 @@ import { ChatPage } from "./pages/chat";
 import { SLOW_STREAM_TEXT } from "@/tests/mocks/gateway/server";
 
 /**
- * E2E acceptance for chat resume (spec "Criterio de aceptación"):
+ * E2E acceptance for chat resume (spec acceptance criterion):
  *
  * A turn's generation lives server-side (the POST tees its SSE into the resume
  * registry), so a client that loses its fetch mid-generation — the screen went
@@ -147,8 +147,8 @@ test.describe("Chat resume", () => {
     const requests = recordRequests(page);
 
     const chatPage = new ChatPage(page);
-    // No mount probe on a normal `goto`: the mount resume only fires on a
-    // reload/back_forward navigation, so nothing can race the turn.
+    // The mount probe answers 204 via ?after, and resumeGate serialises the
+    // send behind it so the probe cannot race the new turn.
     await chatPage.goto(chat.id);
     await chatPage.header.modelPicker.selectModel("slowStream");
     await chatPage.chat.sendMessage(SLOW_PROMPT);
