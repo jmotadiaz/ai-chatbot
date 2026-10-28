@@ -80,10 +80,13 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (for th
 - `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — DB management and seeds for the Dev (5433) and Test (5434) Environments
 
 Test ownership follows package ownership. Within each package, keep pure logic
-under `tests/unit`, rendered UI under `tests/component`, multi-module or
+and social unit tests (exercising concrete feature modules with PGlite for
+persistence and MSW at the Model Gateway HTTP seam; see ADR 0013) under
+`tests/unit`, rendered UI under `tests/component`, multi-module or
 in-process infrastructure checks under `tests/integration`, and public package
 boundary checks under `tests/contract`. Repository-level Playwright scenarios
-remain under `tests/`.
+remain under `tests/` (or package E2E suites) for guarantees that require the
+deployed application.
 
 ## Browser verification (dev)
 
@@ -214,14 +217,18 @@ wrapped in a FastAPI micro-entrypoint (`server.py`), deployed as a systemd unit
   Gateway guarantees — `fast-default`, `flash-default`, `vision-default`,
   `reasoning-default`, `free-default`, `image-default`, `embedding-default`,
   `rerank-default`, `decision-default`, `tts-default` — with no static typed catalog.
-- **Mock Model Gateway** (test): `config.test.ts` pins `modelGatewayUrl` to
-  `http://127.0.0.1:4001` (guarded by `packages/config/src/guardrails.ts`), the HTTP mock
-  in `packages/chatbot/tests/mocks/gateway/` that serves the test capability catalog and
-  deterministic responses.
+- **Mock Model Gateway & testing toolkit** (ADR 0010, ADR 0013): `config.test.ts` pins
+  `modelGatewayUrl` to `http://127.0.0.1:4001` (guarded by `packages/config/src/guardrails.ts`).
+  Tests substitute the Gateway at its HTTP seam (MSW handlers in social unit tests; the
+  `:4001` HTTP server in E2E and cross-process tests) using the official Gateway testing
+  toolkit (`packages/model-gateway/js/` once extracted from `packages/chatbot/tests/mocks/gateway/`),
+  while test capability catalogs and application scenarios remain owned by each consumer.
 - **Chatbot facade**: `packages/chatbot/lib/infrastructure/ai/inference-kit.ts` is the
   composition root (`inferenceKit`, `speechModel`), a single OpenAI-compatible client
   against `${MODEL_GATEWAY_URL}/v1`. No `isTestMode()`: in test it also speaks HTTP to
-  the `:4001`. Isomorphic types and pure catalog helpers live in
+  `:4001` (intercepted in-process via MSW or served by the Mock Gateway). Concrete
+  features call `inferenceKit` directly without AI injection ports created solely for
+  test doubles (ADR 0013). Isomorphic types and pure catalog helpers live in
   `packages/chatbot/lib/features/foundation-model/config.ts`, hydrated to the client via
   `<ModelCatalogProvider>` (`app/(chat)/layout.tsx`) — `"use client"` files never import
   the kit.
@@ -257,10 +264,13 @@ chatbot ──→ coding-agent
 ```
 
 The workspace's Node packages are `chatbot`, `coding-agent`, `config` and `tracing`; the
-Model Gateway lives in `packages/model-gateway` for code co-location, but is deliberately
-**independent of the workspace** (no `workspace:*`): the only interface between the TS
-packages and it is HTTP (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY` from `config`).
-The `*-default` names are plain-text contracts, not imports.
+Model Gateway Python service lives in `packages/model-gateway` for code co-location and
+is deliberately **independent of the workspace at runtime** (no Node or `workspace:*`
+dependencies to run the Python service): the only production interface between the TS
+packages and it is HTTP (`MODEL_GATEWAY_URL`/`MODEL_GATEWAY_API_KEY` from `config`), and
+the `*-default` names are plain-text contracts, not imports. For testing only,
+`packages/model-gateway` provides an official JS protocol testing toolkit (ADR 0013)
+consumed as a test dependency by `chatbot` and `coding-agent`.
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph
