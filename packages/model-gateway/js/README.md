@@ -74,9 +74,18 @@ Spread a reply to override it: `{ ...toolCallReply(...), json: "final text" }`.
 Non-chat operations are responders returning an `OperationReply` envelope
 (`{ status?, headers?, body }`): `embeddingsResponse` (pass the consumer's
 `dimensions`), `rerankResponse` (empty ranking by default, explicit `results`
-allowed), `decisionsResponse` (first declared criterion, uniform probabilities),
-`speechResponse` (deterministic WAV). `deterministicEmbedding(text, dimensions)`
-and `deterministicWav(input)` are exported for exact fixtures.
+allowed), `decisionsResponse` (the declared choice per question, or its first
+criterion when none is declared; probabilities stay uniform), `speechResponse`
+(deterministic WAV). `deterministicEmbedding(text, dimensions)` and
+`deterministicWav(input)` are exported for exact fixtures.
+
+```ts
+// The consumer owns the answer; the toolkit only renders it.
+decisionsResponse(request, { choices: { mode: "web" } });
+```
+
+A declared choice that is not one of its question's criteria throws (invalid
+configuration) instead of answering.
 
 Any request without a non-empty `Authorization` header is answered `401`. A
 scenario can override that with `authorize(headers)`.

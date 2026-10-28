@@ -383,12 +383,21 @@ export function rerankResponse(
 
 /**
  * Decisions (TypeSafe/SystemOne) response: for each `choice` question it answers
- * with the first declared criterion (deterministic), confidence 1 and
- * probabilities uniform across the criteria.
+ * with the declared criterion (`options.choices`, keyed by question) or, when a
+ * question declares none, with its first criterion (deterministic). Confidence
+ * is 1 and the probabilities are uniform across the criteria.
+ *
+ * `choices` is the consumer's declaration ("routing answers with `web`"); the
+ * toolkit stays free of application routing. A choice outside its question's
+ * criteria is an invalid configuration, not a silent success.
  */
 export function decisionsResponse(
   request: DecisionsRequest,
-  options: { model?: string; provider?: string } = {},
+  options: {
+    model?: string;
+    provider?: string;
+    choices?: Readonly<Record<string, string>>;
+  } = {},
 ): OperationReply {
   const model = request.model ?? options.model ?? "decision-default";
   const answers: Record<
@@ -403,10 +412,16 @@ export function decisionsResponse(
   for (const [name, question] of Object.entries(request.questions ?? {})) {
     const criteria = Object.keys(question.criteria ?? {});
     if (question.type !== "choice" || criteria.length === 0) continue;
+    const choice = options.choices?.[name] ?? criteria[0]!;
+    if (!criteria.includes(choice)) {
+      throw new Error(
+        `Decisions choice "${choice}" is not one of the criteria of question "${name}" (${criteria.join(", ")})`,
+      );
+    }
     const uniform = 1 / criteria.length;
     answers[name] = {
       type: "choice",
-      choice: criteria[0]!,
+      choice,
       confidence: 1,
       probabilities: Object.fromEntries(criteria.map((criterion) => [criterion, uniform])),
     };
