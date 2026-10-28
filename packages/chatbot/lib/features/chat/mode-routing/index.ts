@@ -9,8 +9,6 @@ import type {
   ChatModeRouterInput,
   ChatModeRouterPort,
   ChatModeRoutingMetadata,
-  ResolvedChatMode,
-  RoutingDecision,
 } from "@/lib/features/chat/mode-routing/types";
 
 export * from "@/lib/features/chat/mode-routing/constants";
@@ -19,37 +17,6 @@ export * from "@/lib/features/chat/mode-routing/router";
 export * from "@/lib/features/chat/mode-routing/policy";
 export * from "@/lib/features/chat/mode-routing/questions";
 export * from "@/lib/features/chat/mode-routing/types";
-
-const TEST_ROUTER_MODEL_ID = "test-deterministic";
-
-const deterministicDecision = (
-  mode: ResolvedChatMode,
-  reason: RoutingDecision["reason"],
-): RoutingDecision => ({
-  mode,
-  reason,
-  confidence: 0.99,
-  modelId: TEST_ROUTER_MODEL_ID,
-});
-
-/**
- * Deterministic router for test/e2e mode (no network). It never calls
- * OpenRouter and lets a scenario pick a branch with an explicit marker in the
- * message, so e2e can cover ctx7/web/neutral without the real classifier.
- */
-export const createDeterministicChatModeRouter = (): ChatModeRouterPort => ({
-  async route({ latestMessage }) {
-    const message = latestMessage.toLowerCase();
-
-    if (message.includes("[[route:web]]")) {
-      return deterministicDecision("web", "routed");
-    }
-    if (message.includes("[[route:neutral]]")) {
-      return deterministicDecision("neutral", "neither");
-    }
-    return deterministicDecision("context7", "routed");
-  },
-});
 
 const messageText = (message: ChatbotMessage): string =>
   message.parts

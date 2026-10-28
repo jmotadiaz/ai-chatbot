@@ -362,11 +362,9 @@ export const E2E_PROFILE: MockGatewayProfile = {
     /**
      * Chat Mode Routing (`mode` is `CHAT_MODE_ROUTING_QUESTION_KEY` in
      * `lib/features/chat/mode-routing/router.ts`). `ctx7` is the routing
-     * question's first criterion and maps to the `context7` Chat Mode, which is
-     * what the deterministic router wired today resolves to. Ticket 05 (the real
-     * router in the Test Environment) only needs to keep this entry; a journey
-     * that must route elsewhere declares another criterion here (or a function
-     * of the request).
+     * question's first criterion and resolves to the `context7` Chat Mode, the
+     * answer every routed E2E journey expects; a journey that must route
+     * elsewhere declares another criterion here (or a function of the request).
      */
     mode: "ctx7",
   },

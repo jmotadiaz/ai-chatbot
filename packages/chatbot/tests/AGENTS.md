@@ -91,9 +91,11 @@ classification), and since the OpenAI-compatible transport sends
 operation's system prompt. A `fast-default` operation the profile does not know
 is an explicit `422`, never a guessed JSON body.
 
-### Adding a Decisions answer (ticket 05, Chat Mode Routing)
+### Adding a Decisions answer (Chat Mode Routing)
 
-The profile declares the criterion each Decisions question is answered with:
+The profile declares the criterion each Decisions question is answered with.
+Every Environment runs the production Chat Mode Router, so this entry is what
+makes the Auto journeys deterministic:
 
 ```ts
 // tests/mocks/gateway/profiles.ts
@@ -105,7 +107,10 @@ decisions: {
 ```
 
 The toolkit only renders the answer (`decisionsResponse(request, { choices })`);
-the consumer owns it. An undeclared question, or a criterion the question does
+the consumer owns it. A test builds it with `answerDecision`,
+`answerDecisionWith` or `answerDecisionRaw` (`tests/helpers/gateway-decisions.ts`)
+for a healthy answer, an answer with overlain fields, and the malformed payloads
+a healthy profile never sends. An undeclared question, or a criterion the question does
 not offer, is an explicit `422`. A journey that must route elsewhere declares
 that criterion (or a function of the request's `state`, for routing derived
 from the message) — never a global switch: the same `:4001` mock serves every
@@ -131,7 +136,9 @@ it("uses the text contract", async () => {
 
 The harness owns only the MSW lifecycle (`onUnhandledRequest: "error"`) and the
 catalog warm-up the kit needs before resolving models synchronously; the catalog
-and every responder stay consumer-owned. Persistence uses `setupTestDb()` (PGlite
+and every responder stay consumer-owned. Its `server` is exposed for the one
+condition a scenario cannot express — a responder is synchronous, so a response
+slower than a feature's timeout needs an ad-hoc MSW handler. Persistence uses `setupTestDb()` (PGlite
 in memory), so these tests need neither a PostgreSQL container nor a gateway
 listening on `:4001`.
 
