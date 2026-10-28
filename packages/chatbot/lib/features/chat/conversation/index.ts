@@ -1,6 +1,5 @@
 import { config } from "config";
 import { makeProcessChatResponse } from "./factory";
-import { compactionAiAdapter } from "@/lib/features/compaction";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import {
   createChatModeRouter,
@@ -13,7 +12,6 @@ import {
 // decided by `config.environment()` (static bundle welded at compile time —
 // replacing the old `isTestMode()`/`NEXT_PUBLIC_ENV`, ADR 0011).
 export const processChatResponse = makeProcessChatResponse(
-  compactionAiAdapter,
   config.environment() === "test"
     ? createDeterministicChatModeRouter()
     : createChatModeRouter(inferenceKit.decide),

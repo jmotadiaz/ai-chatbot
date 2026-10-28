@@ -1,12 +1,13 @@
 import "server-only";
 
+import { generateText } from "ai";
 import {
   SUMMARIZER_SYSTEM_PROMPT,
   INITIAL_SUMMARIZATION_PROMPT,
   INCREMENTAL_UPDATE_PROMPT,
 } from "./prompts";
 import { serializeMessages } from "./serialize";
-import type { CompactionAiPort } from "./ports";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 /**
@@ -17,8 +18,27 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
 const COMPACTION_TEXT_CONTRACT = "reasoning-default";
 const COMPACTION_MULTIMEDIA_CONTRACT = "vision-default";
 
+/**
+ * Summarization is a non-streaming, low-temperature call resolved through the
+ * shared inference infrastructure (ADR 0013): the feature owns the contract, the
+ * prompts and the parameters; the kit owns the transport, configuration and
+ * tracing. Tests substitute the Gateway at its HTTP seam, not this call.
+ */
+const generateModelText = async (
+  modelKey: string,
+  system: string,
+  prompt: string,
+): Promise<string> => {
+  const { text } = await generateText({
+    ...inferenceKit.languageModel(modelKey),
+    system,
+    prompt,
+    temperature: 0.1,
+  });
+  return text;
+};
+
 export async function generateSummary(
-  ai: CompactionAiPort,
   messages: ChatbotMessage[],
   previousSummary?: string,
 ): Promise<{ summary: string; modelUsed: string }> {
@@ -39,7 +59,7 @@ export async function generateSummary(
         serializedMessages,
       );
 
-  const summary = await ai.generateText(
+  const summary = await generateModelText(
     modelKey,
     SUMMARIZER_SYSTEM_PROMPT,
     promptText,
@@ -51,7 +71,6 @@ export async function generateSummary(
 }
 
 export async function generateTurnPrefixSummary(
-  ai: CompactionAiPort,
   messages: ChatbotMessage[],
 ): Promise<{ summary: string; modelUsed: string }> {
   const serialized = serializeMessages(messages);
@@ -69,7 +88,7 @@ ${serialized}
 
 Output a concise summary of what the assistant was doing, what tools it used, and what progress was made. Keep it brief.`;
 
-  const summary = await ai.generateText(
+  const summary = await generateModelText(
     modelKey,
     SUMMARIZER_SYSTEM_PROMPT,
     prompt,

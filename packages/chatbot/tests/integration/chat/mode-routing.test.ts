@@ -3,7 +3,6 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "../../helpers/db-setup";
 import type { Decision, DecideOptions } from "@/lib/infrastructure/ai/types";
-import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ChatModeRouterPort } from "@/lib/features/chat/mode-routing/types";
 import { createChatModeRouter } from "@/lib/features/chat/mode-routing/router";
@@ -104,10 +103,6 @@ const USER_ID = "11111111-1111-1111-1111-111111111111";
 const PROJECT_ID = "22222222-2222-2222-2222-222222222222";
 const USER_MESSAGE_ID = "33333333-3333-3333-3333-333333333333";
 
-const compactionAi: CompactionAiPort = {
-  generateText: vi.fn().mockResolvedValue("summary"),
-};
-
 /** Kit-generic fake `decide` result: `createChatModeRouter` maps `choice: "ctx7"` to `mode: "context7"` (answer under the pinned `"mode"` question key). */
 const routedFakeDecision: Decision = {
   answers: {
@@ -161,7 +156,7 @@ const runTurn = async ({
   projectId?: string;
   text?: string;
 }) => {
-  const processChatResponse = makeProcessChatResponse(compactionAi, router);
+  const processChatResponse = makeProcessChatResponse(router);
   const stream = await processChatResponse({
     messages: [userMessage(text)],
     selectedModel: TEST_MODELS[0]!.id,

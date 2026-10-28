@@ -36,7 +36,6 @@ import {
   getEffectiveKeepRecentTokens,
   getEffectiveReserveTokens,
 } from "@/lib/features/compaction/types";
-import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import {
   saveChat,
   updateChat,
@@ -143,10 +142,7 @@ const buildAgentAdapter = (
   };
 };
 
-export const makeProcessChatResponse = (
-  compactionAi: CompactionAiPort,
-  modeRouter: ChatModeRouterPort,
-) => {
+export const makeProcessChatResponse = (modeRouter: ChatModeRouterPort) => {
   return async ({
     messages,
     selectedModel,
@@ -410,7 +406,7 @@ export const makeProcessChatResponse = (
                     );
                     const contextWindow =
                       modelConfig.contextWindow ?? config.contextWindow() ?? 128000;
-                    compact(compactionAi, resolvedChatId, {
+                    compact(resolvedChatId, {
                       keepRecentTokens: getEffectiveKeepRecentTokens(contextWindow),
                       reserveTokens: getEffectiveReserveTokens(contextWindow),
                       contextWindow,

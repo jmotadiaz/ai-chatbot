@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LanguageModelV3CallOptions } from "@/lib/infrastructure/ai/types";
-import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type {
   ChatModeRouterPort,
@@ -90,10 +89,6 @@ const { makeProcessChatResponse } = await import(
 
 const USER_ID = "11111111-1111-1111-1111-111111111111";
 
-const compactionAi: CompactionAiPort = {
-  generateText: vi.fn().mockResolvedValue("summary"),
-};
-
 const userMessage = (text: string): ChatbotMessage => ({
   id: "user-1",
   role: "user",
@@ -115,7 +110,7 @@ const runTurn = async ({
   router: ChatModeRouterPort;
   temperature?: number;
 }) => {
-  const processChatResponse = makeProcessChatResponse(compactionAi, router);
+  const processChatResponse = makeProcessChatResponse(router);
   const stream = await processChatResponse({
     messages: [userMessage("hola, cuéntame algo")],
     selectedModel: TEST_MODELS[0]!.id,
