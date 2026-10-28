@@ -1,296 +1,298 @@
-import { describe, it, expect } from "vitest";
-import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
+import { describe, expect, it } from "vitest";
 import {
-  makeCorrectGrammar,
-  makeTranslate,
-} from "../../../lib/features/english/workflows/factory";
+  GatewayScenarioError,
+  decisionsResponse,
+  pacedTextReply,
+  textReply,
+} from "@ai-chatbot/model-gateway-testing";
 import type {
-  CorrectGrammarAiPort,
-  TranslateAiPort,
-} from "../../../lib/features/english/workflows/ports";
-import type {
-  TextClassifications,
-  TranslationClassifications,
-} from "../../../lib/features/english/workflows/policy";
+  ChatRequest,
+  ChatReply,
+  DecisionsRequest,
+  GatewayScenario,
+} from "@ai-chatbot/model-gateway-testing";
+import { correctGrammar, translate } from "@/lib/features/english/workflows";
 import {
   buildGrammarSystemPrompt,
   buildTranslateSystemPrompt,
-} from "../../../lib/features/english/workflows/utils";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const defaultUsage = {
-  inputTokens: {
-    total: 10,
-    noCache: 10,
-    cacheRead: undefined,
-    cacheWrite: undefined,
-  },
-  outputTokens: { total: 20, text: 20, reasoning: undefined },
-};
-
-const defaultStreamFinish = {
-  type: "finish" as const,
-  finishReason: { unified: "stop" as const, raw: undefined },
-  logprobs: undefined,
-  usage: defaultUsage,
-};
-
-interface CapturedPrompt {
-  system?: string;
-  user?: string;
-}
-
-const extractMessage = (
-  prompt: Array<{ role: string; content: unknown }>,
-  role: string,
-): string | undefined => {
-  const part = prompt.find((p) => p.role === role);
-  if (!part || !("content" in part)) return undefined;
-  const content = part.content;
-  return typeof content === "string"
-    ? content
-    : (content as Array<{ type: string; text?: string }>)
-        .map((piece) => (piece.type === "text" ? (piece.text ?? "") : ""))
-        .join("");
-};
+} from "@/lib/features/english/workflows/utils";
+import { setupGatewayHarness } from "@/tests/helpers/gateway-harness";
 
 /**
- * Mock model that records the prompt it is called with and streams a stub
- * response back, so tests assert on the actual system/user split the factory
- * built.
+ * Social unit tests of the public English Helper workflows at the Model Gateway
+ * HTTP seam (ADR 0013): `correctGrammar`/`translate` are the real entry points
+ * the routes call, classification goes through `inferenceKit.decide`, generation
+ * through `inferenceKit.languageModel("flash-default")`, and MSW answers both
+ * requests deterministically. No AI port, fake model or module mock.
+ *
+ * These tests pass with no gateway listening on `:4001`.
  */
-const createRecordingModel = (captured: CapturedPrompt) =>
-  new MockLanguageModelV3({
-    doStream: async (options) => {
-      const prompt = options.prompt as Array<{ role: string; content: unknown }>;
-      captured.system = extractMessage(prompt, "system");
-      captured.user = extractMessage(prompt, "user");
-      return {
-        stream: simulateReadableStream({
-          initialDelayInMs: 0,
-          chunkDelayInMs: 0,
-          chunks: [
-            { type: "text-start" as const, id: "text-1" },
-            { type: "text-delta" as const, id: "text-1", delta: "ok" },
-            { type: "text-end" as const, id: "text-1" },
-            defaultStreamFinish,
-          ],
-        }),
-      };
-    },
-  });
+const gateway = setupGatewayHarness();
 
-/**
- * Mock model that echoes the delimiter wrapper around a fixed payload, so
- * tests can assert the output-side stripping of the translation workflow.
- */
-const createDelimitedModel = (open: string, close: string) =>
-  new MockLanguageModelV3({
-    doStream: async () => ({
-      stream: simulateReadableStream({
-        initialDelayInMs: 0,
-        chunkDelayInMs: 0,
-        chunks: [
-          { type: "text-start" as const, id: "text-1" },
-          { type: "text-delta" as const, id: "text-1", delta: open },
-          { type: "text-delta" as const, id: "text-1", delta: "hola" },
-          { type: "text-delta" as const, id: "text-1", delta: close },
-          { type: "text-end" as const, id: "text-1" },
-          defaultStreamFinish,
-        ],
-      }),
-    }),
-  });
+const GRAMMAR_INPUT = "This are a sentence.";
+const GRAMMAR_ANSWER = JSON.stringify({
+  correctedText: "This is a sentence.",
+  reasons: ["'are' changed to 'is' for subject-verb agreement."],
+});
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const drainTextStream = async (result: any): Promise<void> => {
-  await Array.fromAsync(result.textStream);
+/** The recorded `POST /v1/chat/completions` bodies, oldest first. */
+const chatBodies = (scenario: GatewayScenario): ChatRequest[] =>
+  scenario.requests
+    .filter((request) => request.path === "/v1/chat/completions")
+    .map((request) => request.body as ChatRequest);
+
+/** The recorded `POST /v1/systemone` bodies, oldest first. */
+const decisionsBodies = (scenario: GatewayScenario): DecisionsRequest[] =>
+  scenario.requests
+    .filter((request) => request.path === "/v1/systemone")
+    .map((request) => request.body as DecisionsRequest);
+
+const contentOf = (body: ChatRequest, role: string): string =>
+  (body.messages ?? [])
+    .filter((message) => message.role === role)
+    .map((message) =>
+      typeof message.content === "string" ? message.content : "",
+    )
+    .join("\n");
+
+const systemContent = (body: ChatRequest): string => contentOf(body, "system");
+const userContent = (body: ChatRequest): string => contentOf(body, "user");
+
+/** Drains the object stream the way the route's text response does. */
+const drainObjectStream = async (
+  result: Awaited<ReturnType<typeof correctGrammar>>,
+): Promise<void> => {
+  await Array.fromAsync(result.fullStream);
 };
 
-const provenance = { modelId: "test-decisions", answers: {} };
+/** Classification answers configured per question by the scenario. */
+const useScenario = (
+  choices: Readonly<Record<string, string>>,
+  chat: (request: ChatRequest) => ChatReply,
+): Promise<GatewayScenario> =>
+  gateway.use({
+    decisions: (request) => decisionsResponse(request, { choices }),
+    chat,
+  });
 
-const grammarClassifications = (
-  overrides: Partial<TextClassifications> = {},
-): TextClassifications => ({
-  audience: "internal",
-  domain: "devops",
-  provenance,
-  ...overrides,
-});
+describe("correctGrammar over the Gateway HTTP seam", () => {
+  it("classifies through decision-default, then generates with flash-default and the static prompt", async () => {
+    const scenario = await useScenario(
+      { audience: "executives", domain: "devops" },
+      () => textReply(GRAMMAR_ANSWER),
+    );
 
-const translationClassifications = (
-  overrides: Partial<TranslationClassifications> = {},
-): TranslationClassifications => ({
-  direction: "es-to-en",
-  ...grammarClassifications(),
-  ...overrides,
-});
+    const result = await correctGrammar(GRAMMAR_INPUT);
+    await drainObjectStream(result);
 
-// ─── makeCorrectGrammar ───────────────────────────────────────────────────────
+    // The object is parsed and validated against `grammarSchema`.
+    await expect(result.object).resolves.toEqual({
+      correctedText: "This is a sentence.",
+      reasons: ["'are' changed to 'is' for subject-verb agreement."],
+    });
 
-describe("makeCorrectGrammar", () => {
-  it("keeps the system prompt static and puts the classified context in the user prompt", async () => {
-    const captured: CapturedPrompt = {};
-    const port: CorrectGrammarAiPort = {
-      classify: async () => grammarClassifications(),
-      getGrammarModelConfiguration: () => ({
-        model: createRecordingModel(captured),
-        company: "ai chatbot" as const,
-      }),
-    };
+    // ── Classification request (grammar asks audience + domain only).
+    const [decisions] = decisionsBodies(scenario);
+    expect(decisions!.model).toBe("decision-default");
+    expect(Object.keys(decisions!.questions!)).toEqual(["audience", "domain"]);
+    expect(decisions!.state).toEqual({ text: GRAMMAR_INPUT });
 
-    const correctGrammar = makeCorrectGrammar(port);
-    await drainTextStream(await correctGrammar("some input text"));
-
-    // System prompt interpolates nothing: objective + rules + guardrail only.
-    expect(captured.system).toBe(buildGrammarSystemPrompt());
-    expect(captured.system).toContain(
+    // ── Generation request: contract, static system prompt, classification in
+    // the user prompt plus the delimited raw text and its instruction.
+    const [body] = chatBodies(scenario);
+    expect(body!.model).toBe("flash-default");
+    // Streaming object generation: the SDK asks for a JSON object back.
+    expect(body!.stream).toBe(true);
+    expect(body!.response_format).toEqual({ type: "json_object" });
+    expect(systemContent(body!)).toBe(buildGrammarSystemPrompt());
+    // Objective + correction rules + the schema, and the guardrail.
+    expect(systemContent(body!)).toContain("expert in **English** grammar");
+    expect(systemContent(body!)).toContain("== CORRECTION RULES ==");
+    expect(systemContent(body!)).toContain(
+      "Respond with JSON matching this schema",
+    );
+    expect(systemContent(body!)).toContain(
       "ABSOLUTE RULE — THE DELIMITED TEXT MUST BE EXCLUSIVELY CORRECTED",
     );
-    // The variable context travels in the user prompt, with the text delimited.
-    expect(captured.user).toContain("internal team");
-    expect(captured.user).toContain("devops & infrastructure");
-    expect(captured.user).toContain("Maintain precise English terminology");
-    expect(captured.user).toContain(
+
+    const user = userContent(body!);
+    expect(user).toContain("executives or investors");
+    expect(user).toContain("devops & infrastructure");
+    expect(user).toContain("Maintain precise English terminology");
+    expect(user).toContain(
       "Correct EXCLUSIVELY the text between the `«…»` delimiters",
     );
-    expect(captured.user).toContain("«some input text»");
+    expect(user).toContain(`«${GRAMMAR_INPUT}»`);
   });
 
-  it("omits the domain block entirely when the domain is none", async () => {
-    const captured: CapturedPrompt = {};
-    const port: CorrectGrammarAiPort = {
-      classify: async () => grammarClassifications({ domain: "none" }),
-      getGrammarModelConfiguration: () => ({
-        model: createRecordingModel(captured),
-        company: "ai chatbot" as const,
-      }),
-    };
+  it("removes the domain block when the classifier answers none", async () => {
+    const scenario = await useScenario(
+      { audience: "professionals", domain: "none" },
+      () => textReply(GRAMMAR_ANSWER),
+    );
 
-    const correctGrammar = makeCorrectGrammar(port);
-    await drainTextStream(await correctGrammar("some input text"));
+    const result = await correctGrammar(GRAMMAR_INPUT);
+    await drainObjectStream(result);
 
-    expect(captured.user).not.toContain("Domain:");
-    expect(captured.user).not.toContain("Maintain precise English terminology");
-    expect(captured.user).toContain("internal team");
+    const user = userContent(chatBodies(scenario)[0]!);
+    expect(user).toContain("professionals");
+    expect(user).not.toContain("Domain:");
+    expect(user).not.toContain("Maintain precise English terminology");
+  });
+
+  it("degrades to the fallback classifications when the Decisions call fails", async () => {
+    const scenario = await gateway.use({
+      decisions: () => {
+        throw new GatewayScenarioError("decisions unavailable", 500);
+      },
+      chat: () => textReply(GRAMMAR_ANSWER),
+    });
+
+    const result = await correctGrammar(GRAMMAR_INPUT);
+    await drainObjectStream(result);
+
+    // The workflow still generates, with the per-question defaults.
+    expect(chatBodies(scenario)).toHaveLength(1);
+    const user = userContent(chatBodies(scenario)[0]!);
+    expect(user).toContain("general public");
+    expect(user).not.toContain("Domain:");
   });
 
   it("falls back to a non-conflicting delimiter when the text contains the first candidate's close", async () => {
-    const captured: CapturedPrompt = {};
-    const port: CorrectGrammarAiPort = {
-      classify: async () => grammarClassifications(),
-      getGrammarModelConfiguration: () => ({
-        model: createRecordingModel(captured),
-        company: "ai chatbot" as const,
-      }),
-    };
+    const text = "un texto con » dentro";
+    const scenario = await useScenario(
+      { audience: "internal", domain: "software" },
+      () => textReply(GRAMMAR_ANSWER),
+    );
 
-    const correctGrammar = makeCorrectGrammar(port);
-    await drainTextStream(await correctGrammar("un texto con » dentro"));
+    const result = await correctGrammar(text);
+    await drainObjectStream(result);
 
-    expect(captured.user).toContain(
+    const user = userContent(chatBodies(scenario)[0]!);
+    expect(user).toContain(
       'Correct EXCLUSIVELY the text between the `"…"` delimiters',
     );
-    expect(captured.user).toContain('"un texto con » dentro"');
+    expect(user).toContain(`"${text}"`);
+  });
+
+  it("propagates a model output that violates grammarSchema", async () => {
+    await useScenario({ audience: "general", domain: "none" }, () =>
+      // `reasons` must be an array of strings.
+      textReply(JSON.stringify({ correctedText: "Fine.", reasons: "because" })),
+    );
+
+    const result = await correctGrammar(GRAMMAR_INPUT);
+    await drainObjectStream(result);
+
+    await expect(result.object).rejects.toThrow();
+  });
+
+  it("propagates a generation transport error instead of returning an object", async () => {
+    await useScenario({ audience: "general", domain: "none" }, () => {
+      throw new GatewayScenarioError("generation rejected the request", 400);
+    });
+
+    const result = await correctGrammar(GRAMMAR_INPUT);
+    await drainObjectStream(result);
+
+    await expect(result.object).rejects.toThrow();
   });
 });
 
-// ─── makeTranslate ────────────────────────────────────────────────────────────
+describe("translate over the Gateway HTTP seam", () => {
+  it("classifies direction + audience + domain, then generates with flash-default and the static prompt", async () => {
+    const scenario = await useScenario(
+      { direction: "en-to-es", audience: "executives", domain: "finance" },
+      () => textReply("hola mundo"),
+    );
 
-describe("makeTranslate", () => {
-  it("keeps the system prompt static and carries direction, audience and domain in the user prompt", async () => {
-    const captured: CapturedPrompt = {};
-    const port: TranslateAiPort = {
-      classify: async () =>
-        translationClassifications({ audience: "executives", domain: "finance" }),
-      getTranslateModelConfiguration: () => ({
-        model: createRecordingModel(captured),
-        company: "ai chatbot" as const,
-      }),
-    };
+    const result = await translate("hello world");
 
-    const translateFn = makeTranslate(port);
-    await (await translateFn("hola mundo")).text;
+    await expect(result.text).resolves.toBe("hola mundo");
 
-    expect(captured.system).toBe(buildTranslateSystemPrompt());
-    expect(captured.system).toContain(
+    // ── Classification request: the three questions of this workflow.
+    const [decisions] = decisionsBodies(scenario);
+    expect(decisions!.model).toBe("decision-default");
+    expect(Object.keys(decisions!.questions!)).toEqual([
+      "direction",
+      "audience",
+      "domain",
+    ]);
+
+    // ── Generation request.
+    const [body] = chatBodies(scenario);
+    expect(body!.model).toBe("flash-default");
+    expect(systemContent(body!)).toBe(buildTranslateSystemPrompt());
+    expect(systemContent(body!)).toContain(
+      "expert Spanish⇄English translator",
+    );
+    expect(systemContent(body!)).toContain("== OUTPUT RULES ==");
+    expect(systemContent(body!)).toContain(
       "ABSOLUTE RULE — THE DELIMITED TEXT MUST BE EXCLUSIVELY TRANSLATED",
     );
-    expect(captured.user).toContain("from Spanish to English (UK)");
-    expect(captured.user).toContain("executives or investors");
-    expect(captured.user).toContain(
-      "Use standard English (UK) terminology for this field",
+
+    const user = userContent(body!);
+    // The classified direction, audience and domain reach the prompt.
+    expect(user).toContain("from English to Spanish (Spain)");
+    expect(user).toContain("executives or investors");
+    expect(user).toContain(
+      "Use standard Spanish (Spain) terminology for this field",
     );
-    expect(captured.user).toContain(
+    expect(user).toContain(
       "Translate EXCLUSIVELY the text between the `«…»` delimiters",
     );
-    expect(captured.user).toContain("«hola mundo»");
-  });
-
-  it("applies the en-to-es direction as-is", async () => {
-    const captured: CapturedPrompt = {};
-    const port: TranslateAiPort = {
-      classify: async () => translationClassifications({ direction: "en-to-es" }),
-      getTranslateModelConfiguration: () => ({
-        model: createRecordingModel(captured),
-        company: "ai chatbot" as const,
-      }),
-    };
-
-    const translateFn = makeTranslate(port);
-    await (await translateFn("hello world")).text;
-
-    expect(captured.user).toContain("from English to Spanish (Spain)");
+    expect(user).toContain("«hello world»");
   });
 
   it("sends the text un-delimited when every candidate conflicts", async () => {
-    const captured: CapturedPrompt = {};
-    const port: TranslateAiPort = {
-      classify: async () => translationClassifications(),
-      getTranslateModelConfiguration: () => ({
-        model: createRecordingModel(captured),
-        company: "ai chatbot" as const,
-      }),
-    };
-
     const everything = '» " ] } ``` >';
-    const translateFn = makeTranslate(port);
-    await (await translateFn(everything)).text;
+    const scenario = await useScenario(
+      { direction: "es-to-en", audience: "general", domain: "none" },
+      () => textReply("whatever"),
+    );
 
-    expect(captured.user).toContain("Translate EXCLUSIVELY the text below.");
-    expect(captured.user).not.toContain("delimiters below");
-    expect(captured.user).toContain(everything);
+    const result = await translate(everything);
+    await result.text;
+
+    const user = userContent(chatBodies(scenario)[0]!);
+    expect(user).toContain("Translate EXCLUSIVELY the text below.");
+    expect(user).not.toContain("delimiters below");
+    expect(user).toContain(everything);
   });
 
-  it("strips the delimiter pair the model echoes back", async () => {
-    const port: TranslateAiPort = {
-      classify: async () => translationClassifications(),
-      getTranslateModelConfiguration: () => ({
-        model: createDelimitedModel("«", "»"),
-        company: "ai chatbot" as const,
-      }),
-    };
+  it("strips the delimiter pair the model echoes back, split across stream chunks", async () => {
+    await useScenario(
+      { direction: "es-to-en", audience: "general", domain: "none" },
+      () => pacedTextReply({ chunks: ["«", "hola", "»"], delayMs: 0 }),
+    );
 
-    const translateFn = makeTranslate(port);
-    const result = await translateFn("hola mundo");
+    const result = await translate("hola mundo");
 
-    expect(await result.text).toBe("hola");
+    await expect(result.text).resolves.toBe("hola");
   });
 
   it("strips the fallback delimiter that the prompt actually chose", async () => {
-    const port: TranslateAiPort = {
-      classify: async () => translationClassifications(),
-      getTranslateModelConfiguration: () => ({
-        model: createDelimitedModel('"', '"'),
-        company: "ai chatbot" as const,
-      }),
-    };
+    await useScenario(
+      { direction: "es-to-en", audience: "general", domain: "none" },
+      () => pacedTextReply({ chunks: ['"', "hola", '"'], delayMs: 0 }),
+    );
 
-    const translateFn = makeTranslate(port);
     // `»` is taken, so `pickDelimiter` falls back to the double quote.
-    const result = await translateFn("un texto con » dentro");
+    const result = await translate("un texto con » dentro");
 
-    expect(await result.text).toBe("hola");
+    await expect(result.text).resolves.toBe("hola");
+  });
+
+  it("propagates a generation transport error instead of returning text", async () => {
+    await useScenario(
+      { direction: "es-to-en", audience: "general", domain: "none" },
+      () => {
+        throw new GatewayScenarioError("generation rejected the request", 400);
+      },
+    );
+
+    const result = await translate("hola mundo");
+
+    await expect(result.text).rejects.toThrow();
   });
 });
