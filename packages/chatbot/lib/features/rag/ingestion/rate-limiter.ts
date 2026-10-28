@@ -1,19 +1,31 @@
 export class EmbeddingRateLimiter {
   private maxRequestsPerMinute: number;
   private maxTokensPerMinute: number;
+  private windowMs: number;
+  private now: () => number;
   private estimateTokens: (content: string) => number;
 
   private requestTimestamps: number[] = [];
   private tokenTimestamps: number[] = [];
   private tokenCounts: number[] = [];
 
+  /**
+   * `windowMs` and `now` are real production variations, not test switches: the
+   * application singleton keeps the one-minute window and the system clock.
+   * A consumer with a different budget (or a test that needs an explicit clock
+   * instead of an arbitrary sleep) can pin them.
+   */
   constructor(options: {
     maxRequestsPerMinute: number;
     maxTokensPerMinute: number;
+    windowMs?: number;
+    now?: () => number;
     estimateTokens?: (content: string) => number;
   }) {
     this.maxRequestsPerMinute = options.maxRequestsPerMinute;
     this.maxTokensPerMinute = options.maxTokensPerMinute;
+    this.windowMs = options.windowMs ?? 60000;
+    this.now = options.now ?? Date.now;
     this.estimateTokens = options.estimateTokens || this.defaultEstimateTokens;
   }
 
@@ -23,12 +35,12 @@ export class EmbeddingRateLimiter {
   }
 
   private cleanupOldEntries(now: number) {
-    const oneMinuteAgo = now - 60000;
+    const windowStart = now - this.windowMs;
 
     let i = 0;
     while (
       i < this.requestTimestamps.length &&
-      this.requestTimestamps[i] < oneMinuteAgo
+      this.requestTimestamps[i] < windowStart
     ) {
       i++;
     }
@@ -37,7 +49,7 @@ export class EmbeddingRateLimiter {
     let j = 0;
     while (
       j < this.tokenTimestamps.length &&
-      this.tokenTimestamps[j] < oneMinuteAgo
+      this.tokenTimestamps[j] < windowStart
     ) {
       j++;
     }
@@ -46,7 +58,7 @@ export class EmbeddingRateLimiter {
   }
 
   private canMakeRequest(tokenEstimate: number, requestCount: number): boolean {
-    const now = Date.now();
+    const now = this.now();
     this.cleanupOldEntries(now);
 
     const currentRequestCount = this.requestTimestamps.length;
@@ -62,7 +74,7 @@ export class EmbeddingRateLimiter {
   }
 
   private recordRequest(tokenEstimate: number, requestCount: number) {
-    const now = Date.now();
+    const now = this.now();
     for (let i = 0; i < requestCount; i++) {
       this.requestTimestamps.push(now);
     }

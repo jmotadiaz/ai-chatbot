@@ -31,6 +31,9 @@ import {
  * handlers after each test.
  */
 
+/** The MSW server instance, owned by this harness. */
+type HarnessServer = ReturnType<typeof setupServer>;
+
 /** Default catalog for feature tests: the ids the E2E harness registers. */
 export const TEST_GATEWAY_CATALOG: GatewayScenarioConfig["catalog"] = {
   public: TEST_MODELS,
@@ -45,6 +48,13 @@ export interface GatewayHarness {
    * can audit `scenario.requests` and call `scenario.reset()`.
    */
   use(config?: GatewayScenarioConfig): Promise<GatewayScenario>;
+  /**
+   * The harness's MSW server, for stubs that are NOT the Gateway (a feature may
+   * also fetch a page, a file upload, …). They live on the same server, so
+   * `onUnhandledRequest: "error"` still applies to every request of the test;
+   * `afterEach` drops them with the scenario handlers.
+   */
+  server: HarnessServer;
 }
 
 export function setupGatewayHarness(): GatewayHarness {
@@ -56,6 +66,7 @@ export function setupGatewayHarness(): GatewayHarness {
   });
 
   return {
+    server,
     async use(config: GatewayScenarioConfig = {}) {
       const scenario = createGatewayScenario({
         ...config,
