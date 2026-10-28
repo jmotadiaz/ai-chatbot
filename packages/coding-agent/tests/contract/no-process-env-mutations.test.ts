@@ -2,7 +2,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
+import { startGatewayServer } from "@ai-chatbot/model-gateway-testing/server";
 import { createTestWorkerContext } from "../helpers/test-context";
 
 /**
@@ -85,10 +87,6 @@ describe("no process.env mutations in packages/coding-agent/tests", () => {
 });
 
 describe("test sandbox isolation (runtime)", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("createTestWorkerContext lives under the OS temp dir and never in the package", () => {
     const ctx = createTestWorkerContext();
     try {
@@ -114,15 +112,19 @@ describe("test sandbox isolation (runtime)", () => {
 
   it("syncGatewayModelsFile with the injected sandbox writes models.json/auth.json ONLY inside it", async () => {
     const { syncGatewayModelsFile } = await import("../../src/runtime/gateway-catalog");
+    // A REAL gateway origin on an ephemeral port (official toolkit): the
+    // worker is configured with an injected URL that is not the Test bundle's,
+    // and only this origin can answer the catalog request. A fetch sent to the
+    // bundle's `:4001` (or to any hardcoded URL) would not reach this server
+    // and the test would fail — the same guarantee the previous fetch spy
+    // asserted by inspecting its first call argument.
+    const scenario = createGatewayScenario({ catalog: { public: [] } });
+    const server = await startGatewayServer(scenario);
     const ctx = createTestWorkerContext({
-      gatewayUrl: "http://127.0.0.1:4097",
+      gatewayUrl: server.url,
       apiKey: "contract-key",
     });
     try {
-      const fetchMock = vi.fn(async () => Response.json({ models: [] }));
-      vi.stubGlobal("fetch", fetchMock);
-      expect(fetchMock).toHaveBeenCalledTimes(0);
-
       await syncGatewayModelsFile(ctx.workerConfig);
 
       // Written inside the sandbox…
@@ -137,14 +139,14 @@ describe("test sandbox isolation (runtime)", () => {
         expect(relative.startsWith("..")).toBe(false);
         expect(path.isAbsolute(relative)).toBe(false);
       }
-      // …and the request went to the injected URL, not to the bundle's.
-      expect(fetchMock.mock.calls[0]?.[0]).toBe(
-        "http://127.0.0.1:4097/v1/models/catalog",
-      );
-      expect(
-        (fetchMock.mock.calls[0]?.[1] as RequestInit).headers,
-      ).toEqual({ Authorization: "Bearer contract-key" });
+      // …and the request reached the injected URL with the injected key, not
+      // the bundle's credentials or origin.
+      expect(scenario.requests.map((request) => `${request.method} ${request.path}`)).toEqual([
+        "GET /v1/models/catalog",
+      ]);
+      expect(scenario.requests[0]?.headers.authorization).toBe("Bearer contract-key");
     } finally {
+      await server.close();
       ctx.cleanup();
     }
   });

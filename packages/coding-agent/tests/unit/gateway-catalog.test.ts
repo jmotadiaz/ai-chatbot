@@ -1,7 +1,14 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
+import type {
+  GatewayScenario,
+  GatewayScenarioConfig,
+} from "@ai-chatbot/model-gateway-testing";
+import { startGatewayServer } from "@ai-chatbot/model-gateway-testing/server";
+import type { GatewayServer } from "@ai-chatbot/model-gateway-testing/server";
 import {
   buildPiModelsJson,
   buildThinkingLevelMap,
@@ -128,48 +135,74 @@ describe("ensureGatewayAuthJson", () => {
   });
 });
 
+/**
+ * `ensureGatewayModelsJson` / `syncGatewayModelsFile` ARE the Gateway transport
+ * of the Worker (catalog URL, bearer auth, error paths), so this suite serves
+ * the catalog from the official toolkit's HTTP server instead of stubbing
+ * `fetch`: the worker's real `fetch` crosses a real socket, and only the
+ * ephemeral origin injected into its config can answer — a hardcoded or
+ * misspelled URL fails the test. Connection failure is a genuine
+ * `ECONNREFUSED` (the server is closed before the call), never a fake
+ * rejection.
+ */
 describe("ensureGatewayModelsJson", () => {
   let tmp: string;
   let modelsPath: string;
   let authPath: string;
-  let gateway: GatewayRuntimeConfig;
+  let gateway: Required<GatewayRuntimeConfig>;
+  let server: GatewayServer | undefined;
 
   beforeEach(() => {
     resetGatewayCatalogForTests();
     tmp = mkdtempSync(path.join(tmpdir(), "gateway-catalog-"));
     modelsPath = path.join(tmp, "models.json");
     authPath = path.join(tmp, "auth.json");
+  });
+
+  afterEach(async () => {
+    // Each test releases its own server; `close()` is idempotent, so a test
+    // that closed it to simulate a dead Gateway is safe here too.
+    await server?.close();
+    server = undefined;
+    rmSync(tmp, { recursive: true, force: true });
+    resetGatewayCatalogForTests();
+  });
+
+  /**
+   * Starts a gateway server for `config` and points the injected worker config
+   * at its ephemeral URL. The catalog entries are the Worker's own.
+   */
+  async function serveGateway(
+    config: GatewayScenarioConfig = {},
+  ): Promise<GatewayScenario> {
+    const scope = createGatewayScenario(config);
+    server = await startGatewayServer(scope);
     // Explicit DI (ADR 0011 §6): credentials and paths passed as parameters,
     // never through process.env.
     gateway = {
-      gatewayUrl: GATEWAY_URL,
+      gatewayUrl: server.url,
       apiKey: GATEWAY_KEY,
       modelsJsonPath: modelsPath,
       authJsonPath: authPath,
     };
-  });
-
-  afterEach(() => {
-    rmSync(tmp, { recursive: true, force: true });
-    vi.unstubAllGlobals();
-    resetGatewayCatalogForTests();
-  });
+    return scope;
+  }
 
   it("writes models.json + auth.json and exposes the synced catalog in memory", async () => {
-    const fetchMock = vi.fn(async () => Response.json({ models: [entry()] }));
-    vi.stubGlobal("fetch", fetchMock);
+    const scope = await serveGateway({ catalog: { public: [entry()] } });
 
     const catalog = await ensureGatewayModelsJson(gateway);
 
     expect(catalog.map((m) => m.id)).toEqual(["Kimi K3.1 Pro"]);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(`${GATEWAY_URL}/v1/models/catalog`);
-    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).toEqual({
-      Authorization: `Bearer ${GATEWAY_KEY}`,
-    });
+    // The request reached THIS origin's catalog route with the injected key.
+    expect(scope.requests.map((r) => `${r.method} ${r.path}`)).toEqual([
+      "GET /v1/models/catalog",
+    ]);
+    expect(scope.requests[0]?.headers.authorization).toBe(`Bearer ${GATEWAY_KEY}`);
     expect(getSyncedGatewayCatalog().map((m) => m.id)).toEqual(["Kimi K3.1 Pro"]);
 
     const json = JSON.parse(readFileSync(modelsPath, "utf8"));
-    expect(json.providers["model-gateway"].baseUrl).toBe(`${GATEWAY_URL}/v1`);
+    expect(json.providers["model-gateway"].baseUrl).toBe(`${gateway.gatewayUrl}/v1`);
     expect(json.providers["model-gateway"].models[0].id).toBe("Kimi K3.1 Pro");
     expect(JSON.parse(readFileSync(authPath, "utf8"))["model-gateway"]).toEqual({
       type: "api_key",
@@ -182,7 +215,7 @@ describe("ensureGatewayModelsJson", () => {
       authPath,
       JSON.stringify({ "opencode-go": { type: "api_key", key: "oc_1" } }),
     );
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [entry()] })));
+    await serveGateway({ catalog: { public: [entry()] } });
 
     await ensureGatewayModelsJson(gateway);
 
@@ -192,12 +225,10 @@ describe("ensureGatewayModelsJson", () => {
   });
 
   it("fails with an actionable error when the Gateway is unreachable", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        throw new Error("ECONNREFUSED");
-      }),
-    );
+    // A server that answers once and is gone: the ephemeral port is free again,
+    // so the worker's fetch hits a real `ECONNREFUSED`.
+    await serveGateway({ catalog: { public: [entry()] } });
+    await server?.close();
 
     await expect(ensureGatewayModelsJson(gateway)).rejects.toThrow(
       /MODEL_GATEWAY_URL.*model-gateway\.service/s,
@@ -207,17 +238,17 @@ describe("ensureGatewayModelsJson", () => {
   });
 
   it("fails on a non-2xx response (e.g. unauthorized)", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
-    );
+    // The toolkit rejects any request without credentials: the worker's 401
+    // path runs against a real HTTP 401, status line included.
+    await serveGateway({ catalog: { public: [entry()] }, authorize: () => false });
 
     await expect(ensureGatewayModelsJson(gateway)).rejects.toThrow(/401/);
     expect(existsSync(modelsPath)).toBe(false);
   });
 
   it("fails on a malformed catalog payload", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [{ nope: true }] })));
+    // Entries pass through untouched: the Worker validates the catalog schema.
+    await serveGateway({ catalog: { public: [{ nope: true }] } });
 
     await expect(ensureGatewayModelsJson(gateway)).rejects.toThrow(/malformed/);
   });
@@ -225,13 +256,12 @@ describe("ensureGatewayModelsJson", () => {
   it("fails when the API key is explicitly unset, before touching the disk", async () => {
     // `apiKey: ""` (explicit DI) = no credential: validation runs before the
     // fetch and before writing anything, with no environment variables involved.
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const scope = await serveGateway({ catalog: { public: [entry()] } });
 
     await expect(
       ensureGatewayModelsJson({ ...gateway, apiKey: "" }),
     ).rejects.toThrow(/MODEL_GATEWAY_API_KEY/);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(scope.requests).toEqual([]);
     expect(existsSync(modelsPath)).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setupWorkerGatewayHarness } from "../helpers/gateway-harness";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -50,6 +51,19 @@ function entry(id: string): GatewayModelEntry {
 const CATALOG_A: GatewayModelEntry[] = [entry("Alpha 1")];
 const CATALOG_B: GatewayModelEntry[] = [entry("Alpha 1"), entry("Bravo 2")];
 
+/**
+ * Catalog hot reload (ADR 0010) driven through the official toolkit: the Worker
+ * keeps fetching the real `GET /v1/models/catalog` over `fetch`, and MSW answers
+ * it from a scenario the test controls.
+ *
+ * A "phase" is one `gateway.use({...})` call: a fresh scenario instance with its
+ * own catalog and its own recorded requests. Publishing a model, removing it or
+ * taking the Gateway down is therefore a local, per-test change of phase — no
+ * re-stubbed global `fetch`, no shared counter or queue, and the number of
+ * requests a phase answered is exactly `phase.requests.length`.
+ */
+const gatewayHarness = setupWorkerGatewayHarness();
+
 describe("getAvailableModels refreshes the Model Catalog", () => {
   let ctx: ReturnType<typeof createTestWorkerContext>;
   let modelsPath: string;
@@ -76,24 +90,22 @@ describe("getAvailableModels refreshes the Model Catalog", () => {
 
   afterEach(() => {
     ctx.cleanup();
-    vi.unstubAllGlobals();
     resetGatewayCatalogForTests();
   });
 
   it("surfaces a newly added model without a worker restart", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: CATALOG_A })));
+    const phaseA = gatewayHarness.use({ catalog: { public: CATALOG_A } });
 
     const before = await getAvailableModels(gateway);
     expect(before.map((m) => m.modelId)).toEqual(["Alpha 1"]);
+    expect(phaseA.requests.map((r) => r.path)).toEqual(["/v1/models/catalog"]);
 
     // The Gateway publishes a new model: the next getAvailableModels must
     // pick it up with no restart.
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => Response.json({ models: CATALOG_B })),
-    );
+    const phaseB = gatewayHarness.use({ catalog: { public: CATALOG_B } });
     const after = await getAvailableModels(gateway);
     expect(after.map((m) => m.modelId)).toEqual(["Alpha 1", "Bravo 2"]);
+    expect(phaseB.requests.map((r) => r.path)).toEqual(["/v1/models/catalog"]);
 
     // models.json was rewritten too (both files-backed catalog and runtime).
     const json = JSON.parse(readFileSync(modelsPath, "utf8"));
@@ -102,80 +114,64 @@ describe("getAvailableModels refreshes the Model Catalog", () => {
   });
 
   it("drops a model removed from the Gateway on the next getAvailableModels", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: CATALOG_B })));
+    gatewayHarness.use({ catalog: { public: CATALOG_B } });
     const before = await getAvailableModels(gateway);
     expect(before.map((m) => m.modelId)).toEqual(["Alpha 1", "Bravo 2"]);
 
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: CATALOG_A })));
+    gatewayHarness.use({ catalog: { public: CATALOG_A } });
     const after = await getAvailableModels(gateway);
     expect(after.map((m) => m.modelId)).toEqual(["Alpha 1"]);
   });
 
   it("keeps the last good catalog when the Gateway is down during a refresh", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: CATALOG_A })));
+    gatewayHarness.use({ catalog: { public: CATALOG_A } });
     const before = await getAvailableModels(gateway);
     expect(before.map((m) => m.modelId)).toEqual(["Alpha 1"]);
     const modelsJsonBefore = readFileSync(modelsPath, "utf8");
 
     // Gateway down mid-life: refresh keeps the last good catalog instead of
     // failing getAvailableModels.
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        throw new Error("ECONNREFUSED");
-      }),
-    );
+    gatewayHarness.failTransport();
     const after = await getAvailableModels(gateway);
     expect(after.map((m) => m.modelId)).toEqual(["Alpha 1"]);
     expect(readFileSync(modelsPath, "utf8")).toBe(modelsJsonBefore);
   });
 
   it("still fails fast when the Gateway is down on the initial load", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        throw new Error("ECONNREFUSED");
-      }),
-    );
+    gatewayHarness.failTransport();
+
     await expect(getAvailableModels(gateway)).rejects.toThrow(/Model Gateway/);
   });
 
   it("shares a single Gateway fetch between concurrent refreshes", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: CATALOG_A })));
     // Warm up: cold start performs the initial ensure (one fetch).
+    gatewayHarness.use({ catalog: { public: CATALOG_A } });
     await getAvailableModels(gateway);
 
-    let counted = 0;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        counted += 1;
-        return Response.json({ models: CATALOG_B });
-      }),
-    );
-    const [first, second] = await Promise.all([getAvailableModels(gateway), getAvailableModels(gateway)]);
-    expect(counted).toBe(1);
+    // New phase: the refresh under test can only be answered by this scenario,
+    // so its recorded requests are the exact request count of the deduplicated
+    // refresh.
+    const phase = gatewayHarness.use({ catalog: { public: CATALOG_B } });
+    const [first, second] = await Promise.all([
+      getAvailableModels(gateway),
+      getAvailableModels(gateway),
+    ]);
+    expect(phase.requests).toHaveLength(1);
     expect(first.map((m) => m.modelId)).toEqual(["Alpha 1", "Bravo 2"]);
     expect(second.map((m) => m.modelId)).toEqual(["Alpha 1", "Bravo 2"]);
   });
 
   it("never reuses a stale refresh: consecutive calls re-sync", async () => {
-    let counted = 0;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        counted += 1;
-        return Response.json({ models: CATALOG_A });
-      }),
-    );
+    const phase = gatewayHarness.use({ catalog: { public: CATALOG_A } });
+
     await getAvailableModels(gateway);
     await getAvailableModels(gateway);
     // cold ensure (1 fetch) + one refresh per call (sequential → 2 fetches).
-    expect(counted).toBe(2);
+    expect(phase.requests).toHaveLength(2);
   });
 
   it("writes models.json on the cold path even when auth.json pre-exists", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: CATALOG_A })));
+    gatewayHarness.use({ catalog: { public: CATALOG_A } });
     await getAvailableModels(gateway);
     expect(existsSync(modelsPath)).toBe(true);
     expect(JSON.parse(readFileSync(modelsPath, "utf8")).providers["model-gateway"].models).toEqual(
