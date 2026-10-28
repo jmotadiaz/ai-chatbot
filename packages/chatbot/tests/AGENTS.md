@@ -111,6 +111,30 @@ that criterion (or a function of the request's `state`, for routing derived
 from the message) — never a global switch: the same `:4001` mock serves every
 journey and its catalog/profile are not reconfigured mid-run.
 
+### Social unit tests at the Gateway seam
+
+Feature tests do not inject AI ports or fakes. They install one gateway scenario
+per test with the consumer helper
+`tests/helpers/gateway-harness.ts` (`setupGatewayHarness().use({ chat, embeddings,
+rerank, decisions })`), exercise the feature through its public interface and
+audit `scenario.requests` for the contracts, parameters and inputs that matter:
+
+```ts
+const gateway = setupGatewayHarness();
+
+it("uses the text contract", async () => {
+  const scenario = await gateway.use({ chat: () => textReply("summary") });
+  await theFeatureUnderTest();
+  expect(scenario.requests.at(0)?.body).toMatchObject({ model: "reasoning-default" });
+});
+```
+
+The harness owns only the MSW lifecycle (`onUnhandledRequest: "error"`) and the
+catalog warm-up the kit needs before resolving models synchronously; the catalog
+and every responder stay consumer-owned. Persistence uses `setupTestDb()` (PGlite
+in memory), so these tests need neither a PostgreSQL container nor a gateway
+listening on `:4001`.
+
 ### Stream/chunk builders for in-process fakes
 
 Pure `LanguageModelV3StreamPart` helpers (`textChunks`, `finishChunk`, …)

@@ -344,9 +344,15 @@ export function deterministicEmbedding(text: string, dimensions: number): number
  * consumer (the Gateway's configured embedding width), never from an implicit
  * default, so a test that asserts vector length configures it explicitly.
  */
+/**
+ * Embeddings reply. `vectors[i]` replaces the deterministic vector of the i-th
+ * input, so a consumer can hand in EXACT vectors (prepared fixtures) instead of
+ * depending on the hash. Missing entries fall back to the deterministic vector;
+ * this is a fixture generator, not an algorithm that pretends to be a model.
+ */
 export function embeddingsResponse(
   request: EmbeddingsRequest,
-  options: { dimensions: number; model?: string },
+  options: { dimensions: number; model?: string; vectors?: number[][] },
 ): OperationReply {
   const inputs = Array.isArray(request.input) ? request.input : [request.input ?? ""];
   const model = request.model ?? options.model ?? "embedding-default";
@@ -357,7 +363,9 @@ export function embeddingsResponse(
       data: inputs.map((input, index) => ({
         object: "embedding",
         index,
-        embedding: deterministicEmbedding(input, options.dimensions),
+        embedding:
+          options.vectors?.[index] ??
+          deterministicEmbedding(input, options.dimensions),
       })),
       usage: { prompt_tokens: 10, total_tokens: 10 },
     },

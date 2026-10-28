@@ -3,12 +3,11 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import {
   GatewayScenarioError,
-  createGatewayScenario,
   textReply,
 } from "@ai-chatbot/model-gateway-testing";
 import type { ChatReply, GatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import { setupTestDb } from "../../helpers/db-setup";
-import { setupMswServer } from "../../helpers/msw-server";
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
 import {
   chat as chatTable,
   message as messageTable,
@@ -17,7 +16,6 @@ import {
   project as projectTable,
 } from "@/lib/infrastructure/db/schema";
 import { compact } from "@/lib/features/compaction/orchestration";
-import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
 
 /**
  * Compaction persistence flow as a social unit test (ADR 0013): PGlite in
@@ -31,17 +29,7 @@ const MOCK_CHAT_ID = "33333333-3333-3333-3333-333333333333";
 const SUMMARY_TEXT =
   "## Goal\nTest conversation\n## Relevant User Details\nIntegration test\n";
 
-/**
- * Consumer-owned catalog: the toolkit passes entries through, and the kit needs
- * the two Default Model Contracts the feature selects from so it can resolve
- * their metadata synchronously.
- */
-const CATALOG = {
-  public: [],
-  internal: [{ id: "reasoning-default" }, { id: "vision-default" }],
-};
-
-const server = setupMswServer();
+const gateway = setupGatewayHarness();
 
 function buildMessageValues(count: number) {
   return Array.from({ length: count }, (_, i) => ({
@@ -55,16 +43,9 @@ function buildMessageValues(count: number) {
   }));
 }
 
-const useScenario = async (
+const useScenario = (
   chat: (request: unknown) => ChatReply,
-): Promise<GatewayScenario> => {
-  const scenario = createGatewayScenario({ catalog: CATALOG, chat });
-  server.use(...scenario.handlers);
-  // The same warm-up point production uses; the catalog fetch is intercepted
-  // by this scenario's MSW handlers.
-  await warmModelCatalog();
-  return scenario;
-};
+): Promise<GatewayScenario> => gateway.use({ chat });
 
 const inferenceRequests = (scenario: GatewayScenario) =>
   scenario.requests.filter((request) => request.path === "/v1/chat/completions");

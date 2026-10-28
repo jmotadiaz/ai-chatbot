@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   GatewayScenarioError,
-  createGatewayScenario,
   textReply,
 } from "@ai-chatbot/model-gateway-testing";
 import type {
@@ -9,13 +8,12 @@ import type {
   ChatReply,
   GatewayScenario,
 } from "@ai-chatbot/model-gateway-testing";
-import { setupMswServer } from "../../helpers/msw-server";
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
 import {
   generateSummary,
   generateTurnPrefixSummary,
 } from "@/lib/features/compaction/summary-generation";
 import { SUMMARIZER_SYSTEM_PROMPT } from "@/lib/features/compaction/prompts";
-import { warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 
 /**
@@ -24,18 +22,12 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
  * SDK serialization and the MSW transport of the official toolkit. No AI port,
  * fake or module mock. These tests pass with no gateway listening on `:4001`.
  *
- * The catalog is consumer-owned (the toolkit passes entries through); the two
- * Default Model Contracts the feature can select need an entry so the kit can
- * resolve their metadata.
+ * `setupGatewayHarness()` installs one scenario per test and warms the catalog
+ * snapshot the kit resolves the `*-default` contracts from.
  */
-const CATALOG = {
-  public: [],
-  internal: [{ id: "reasoning-default" }, { id: "vision-default" }],
-};
-
 const SUMMARY_TEXT = "## Goal\nTest conversation";
 
-const server = setupMswServer();
+const gateway = setupGatewayHarness();
 
 const textMessages = [
   { id: "1", role: "user", parts: [{ type: "text", text: "Hello" }] },
@@ -62,14 +54,9 @@ const multimediaMessages = [
  * warms the catalog snapshot the kit resolves contracts from — the same
  * synchronous-resolution contract production honours via `warmModelCatalog`.
  */
-const useScenario = async (
+const useScenario = (
   chat: (request: ChatRequest) => ChatReply,
-): Promise<GatewayScenario> => {
-  const scenario = createGatewayScenario({ catalog: CATALOG, chat });
-  server.use(...scenario.handlers);
-  await warmModelCatalog();
-  return scenario;
-};
+): Promise<GatewayScenario> => gateway.use({ chat });
 
 /** The recorded `POST /v1/chat/completions` bodies, oldest first. */
 const chatBodies = (scenario: GatewayScenario) =>

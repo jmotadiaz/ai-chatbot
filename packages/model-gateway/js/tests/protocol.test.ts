@@ -242,6 +242,18 @@ describe("operation fixtures", () => {
     expect(body.usage.total_tokens).toBeGreaterThan(0);
   });
 
+  it("accepts explicit vectors as prepared fixtures, keeping the rest deterministic", () => {
+    const response = embeddingsResponse(
+      { model: "embedding-default", input: ["first", "second"] },
+      { dimensions: 3, vectors: [[1, 0, 0]] },
+    );
+    const body = response.body as {
+      data: Array<{ index: number; embedding: number[] }>;
+    };
+    expect(body.data[0]!.embedding).toEqual([1, 0, 0]);
+    expect(body.data[1]!.embedding).toEqual(deterministicEmbedding("second", 3));
+  });
+
   it("defaults the rerank ranking to empty and accepts explicit results", () => {
     expect(rerankResponse({ model: "rerank-default" }).body).toMatchObject({ results: [] });
     const explicit = rerankResponse(
