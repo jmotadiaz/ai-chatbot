@@ -1,5 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { GatewayScenario } from "@ai-chatbot/model-gateway-testing";
+import { setupWorkerGatewayHarness } from "../helpers/gateway-harness";
 import {
   buildPiModelsJson,
   resetGatewayCatalogForTests,
@@ -66,14 +68,17 @@ const catalog: GatewayModelEntry[] = [
 
 let ctx: ReturnType<typeof createTestWorkerContext>;
 let gateway: { gatewayUrl: string; apiKey: string; modelsJsonPath: string; authJsonPath: string };
+let scenario: GatewayScenario;
+
+/**
+ * Catalog served at the Gateway HTTP seam by the official toolkit: the entries
+ * (ids, thinking levels, capabilities) stay owned by the Worker; MSW answers the
+ * worker's real catalog fetch, so no gateway listens on `GATEWAY_URL`.
+ */
+const gatewayHarness = setupWorkerGatewayHarness();
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () =>
-      Response.json({ models: catalog }),
-    ),
-  );
+  scenario = gatewayHarness.use({ catalog: { public: catalog } });
   resetModelRuntimeForTests();
   resetGatewayCatalogForTests();
   // DI through parameters (ADR 0011 §6): temporary sandbox + test credentials,
@@ -96,7 +101,6 @@ beforeEach(() => {
 
 afterEach(() => {
   ctx.cleanup();
-  vi.unstubAllGlobals();
   resetGatewayCatalogForTests();
 });
 
@@ -110,6 +114,8 @@ describe("getAvailableModels", () => {
       JSON.stringify({ "opencode-go": { type: "api_key", key: "legacy-key" } }),
     );
     const models = await getAvailableModels(gateway);
+    // The listing came from the catalog the Gateway actually served.
+    expect(scenario.requests.map((r) => r.path)).toEqual(["/v1/models/catalog"]);
     expect(models.map((m) => m.providerId)).toEqual(["model-gateway", "model-gateway"]);
     const muse = models.find((m) => m.modelId === "Muse Spark 1.3");
     expect(muse?.modelId).toBe("Muse Spark 1.3");

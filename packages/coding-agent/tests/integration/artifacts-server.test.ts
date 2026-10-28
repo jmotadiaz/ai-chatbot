@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AddressInfo } from "node:net";
-import { createServer, type Server } from "node:http";
+import { createServer } from "node:http";
+import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
+import { startGatewayServer } from "@ai-chatbot/model-gateway-testing/server";
+import type { GatewayServer } from "@ai-chatbot/model-gateway-testing/server";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -48,21 +51,19 @@ let rootDir: string;
 let baseUrl: string;
 let ctx: ReturnType<typeof createTestWorkerContext>;
 let server: ReturnType<typeof startHttpTransport>;
-let gateway: Server;
+let gateway: GatewayServer;
 
 beforeAll(async () => {
   tmp = await mkdtemp(path.join(os.tmpdir(), "artifacts-server-"));
   rootDir = path.join(tmp, "root");
   await mkdir(path.join(tmp, "generated"), { recursive: true });
 
-  // Mock Model Gateway: `POST /rpc getAvailableModels` syncs the runtime
-  // catalog on first call, so the worker needs a live /v1/models/catalog.
-  gateway = createServer((_req, res) => {
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ models: [] }));
-  });
-  await new Promise<void>((resolve) => gateway.listen(0, "127.0.0.1", resolve));
-  const gatewayUrl = `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`;
+  // Model Gateway on a real ephemeral origin (official toolkit): `POST /rpc
+  // getAvailableModels` syncs the runtime catalog on first call, so the worker
+  // needs a live `GET /v1/models/catalog`. The server is the transport double
+  // the toolkit owns; its catalog is still the Worker's own (empty here).
+  gateway = await startGatewayServer(createGatewayScenario({ catalog: { public: [] } }));
+  const gatewayUrl = gateway.url;
 
   // Reserve the worker port BEFORE building the config: the artifacts base the
   // agent sees must be exactly the one this transport serves. The socket is
@@ -89,7 +90,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   server?.close();
-  gateway?.close();
+  await gateway?.close();
   resetWorkerRuntimeConfigForTests();
   ctx?.cleanup();
   await rm(tmp, { recursive: true, force: true });

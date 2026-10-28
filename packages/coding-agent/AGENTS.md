@@ -32,6 +32,26 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
   `agentDir`, `piPackagesDir`, `artifactsDir`, and `cleanup()` for `afterEach`.
 - A test NEVER writes to `.pi-prod` or `.pi-dev`. Contract:
   `tests/contract/no-process-env-mutations.test.ts`.
+- The Model Gateway seam is substituted with the official toolkit
+  (`@ai-chatbot/model-gateway-testing`, ADR 0013), never by stubbing
+  `globalThis.fetch`:
+  - `tests/helpers/gateway-harness.ts` (`setupWorkerGatewayHarness()`) installs
+    one scenario per test through MSW: the worker's real catalog `fetch` runs and
+    is answered in-process, so the suite needs **no listening gateway**.
+  - Catalog entries/ids stay in the Worker (`GatewayModelEntry[]` passed as
+    `catalog.public`). A test that needs the Gateway to publish, drop or lose a
+    model opens a new phase with `gateway.use({...})` — a fresh scenario whose
+    `requests` are that phase's audits. `gateway.failTransport()` expresses an
+    unreachable Gateway (fetch rejects, as with `ECONNREFUSED`).
+  - Tests whose subject IS the transport (catalog URL/origin, bearer header,
+    real `ECONNREFUSED`) use the toolkit's HTTP server
+    (`@ai-chatbot/model-gateway-testing/server`, ephemeral port, closed by the
+    test): MSW answers every origin, so only a real origin proves which URL the
+    worker targeted.
+  - Keep the doubles of genuinely different dependencies: the Pi SDK mock,
+    `tracing`, the filesystem sandbox (`createTestWorkerContext()`) and the
+    worker's own HTTP transport. The Chatbot E2E suite keeps its Worker stub and
+    does not cover the real chatbot↔Worker assembly.
 
 ## Key Files
 

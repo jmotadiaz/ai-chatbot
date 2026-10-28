@@ -84,6 +84,10 @@ const CATALOG_IDS = { "Kimi K3.1 Pro": true } as Record<string, boolean>;
 const { SessionRegistry } = await import("../../src/session/session-registry");
 const { TurnRunner } = await import("../../src/session/turn-runner");
 const { createTestWorkerContext } = await import("../helpers/test-context");
+const { setupWorkerGatewayHarness } = await import("../helpers/gateway-harness");
+
+/** Catalog sync answered by the official toolkit (MSW), no gateway listening. */
+const gatewayHarness = setupWorkerGatewayHarness();
 
 /**
  * An unknown modelId must stop failing silently (Pi default / previous model
@@ -104,7 +108,10 @@ describe("unknown modelId fails explicitly", () => {
   };
 
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ models: [] })));
+    // Only the startup catalog sync talks to the Gateway; its catalog is empty
+    // because the Pi SDK double below decides model resolution (models are
+    // resolved by Pi, not by this scenario).
+    gatewayHarness.use({ catalog: { public: [] } });
     ctx = createTestWorkerContext(gateway);
     registry = new SessionRegistry(undefined, ctx.workerConfig);
     runner = new TurnRunner(registry);
@@ -117,7 +124,6 @@ describe("unknown modelId fails explicitly", () => {
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     ctx.cleanup();
   });
 
