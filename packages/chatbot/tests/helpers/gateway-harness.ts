@@ -46,12 +46,14 @@ export interface GatewayHarness {
    */
   use(config?: GatewayScenarioConfig): Promise<GatewayScenario>;
   /**
-   * The MSW server this harness owns. Exposed only for the transport
-   * conditions a scenario deliberately cannot express (a scenario responder is
-   * synchronous, so it cannot answer slower than the feature's timeout):
-   * install a specific handler with `server.use(...)` and it takes precedence
-   * over the scenario's catch-all. Behavioural responses still go through
-   * `use()`.
+   * The MSW server this harness owns, for the stubs a scenario deliberately
+   * cannot express: a transport condition that needs a non-Gateway request (a
+   * page or file fetch the feature also performs) or a response slower than the
+   * feature's timeout, since scenario responders are synchronous. Handlers
+   * installed with `server.use(...)` take precedence over the scenario's
+   * catch-all and `afterEach` drops them with it, so `onUnhandledRequest:
+   * "error"` still applies to every request of the test. Behavioural gateway
+   * responses still go through `use()`.
    */
   server: SetupServerApi;
 }
