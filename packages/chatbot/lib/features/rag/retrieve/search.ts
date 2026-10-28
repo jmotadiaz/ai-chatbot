@@ -29,6 +29,18 @@ export const getUniqueChunks = (chunks: SimilarChunks) => {
   return Array.from(map.values());
 };
 
+/**
+ * Selects chunks in rerank order: `results[i].originalIndex` is the position of
+ * the document in the `documents` array sent to the Gateway, so the association
+ * is purely positional. Selection stops at the first result below `minScore`
+ * (results are expected in descending score order).
+ *
+ * The ranking is trusted: an index outside `chunks` is not validated here, so
+ * it surfaces as a `TypeError` while the selected chunk is read for document
+ * ordering (`reorderByResourcePosition`), which runs outside the `try`/`catch`
+ * that turns a rerank failure into an empty result. Preserved behaviour; a
+ * bounds guard would belong with the rerank contract, not here.
+ */
 export const chunksByScore = (
   results: RerankResult[],
   chunks: SimilarChunks,
