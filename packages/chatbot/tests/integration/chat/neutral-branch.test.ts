@@ -1,15 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HttpResponse, delay, http } from "msw";
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
+import {
+  answerDecision,
+  answerDecisionRaw,
+  answerDecisionWith,
+} from "../../helpers/gateway-decisions";
 import type { LanguageModelV3CallOptions } from "@/lib/infrastructure/ai/types";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import type {
-  ChatModeRouterPort,
-  RoutingDecision,
-} from "@/lib/features/chat/mode-routing/types";
 import { TEST_MODELS } from "@/tests/mocks/gateway/catalog";
-
-/** Arbitrary provenance value: these tests fake the port directly, never a real Decisions call. */
-const TEST_ROUTING_MODEL_ID = "test/routing-model";
+import { CHAT_MODE_ROUTING_QUESTION_KEY } from "@/lib/features/chat/mode-routing/router";
 
 vi.mock("server-only", () => ({}));
 
@@ -20,13 +21,14 @@ const state = vi.hoisted(() => ({
   calls: [] as LanguageModelV3CallOptions[],
 }));
 
-// The AI port is built inside `makeProcessChatResponse`, so the user-selected
-// model + parameters reach the neutral branch from here. This mocks the
-// composition root directly (the `foundation-model/server` shim it used to
-// target is gone): everything under test resolves models through
-// `inferenceKit.languageModel`/`createAgentModel`/`createAgent` — the same
-// three kit members `buildAgentAdapter` (`conversation/factory.ts`) calls.
-vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
+// The user-selected model + parameters are what this suite asserts on, so the
+// model stays an in-process fake (the three kit members `buildAgentAdapter`
+// calls). `decide` — and with it the whole Chat Mode Router — is the REAL
+// composition root member, so the branch under test is chosen by a Decisions
+// answer served over HTTP, exactly as in production.
+vi.mock("@/lib/infrastructure/ai/inference-kit", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/infrastructure/ai/inference-kit")>();
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream, ToolLoopAgent } = await import("ai");
   const { textChunks, finishChunk } = await import("../../helpers/stream-chunks");
@@ -59,6 +61,7 @@ vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
 
   return {
     inferenceKit: {
+      ...actual.inferenceKit,
       languageModel: baseConfig,
       createAgentModel: baseConfig,
       createAgent: (
@@ -86,8 +89,25 @@ vi.mock("@/lib/features/memory/extraction", () => ({
 const { makeProcessChatResponse } = await import(
   "@/lib/features/chat/conversation/factory"
 );
+const { inferenceKit } = await import("@/lib/infrastructure/ai/inference-kit");
+const { createChatModeRouter } = await import(
+  "@/lib/features/chat/mode-routing/router"
+);
+
+const gateway = setupGatewayHarness();
+
+/** The composition root's real router: `createChatModeRouter(decide)`. */
+const processChatResponse = makeProcessChatResponse(
+  createChatModeRouter(inferenceKit.decide),
+);
 
 const USER_ID = "11111111-1111-1111-1111-111111111111";
+
+const answering = (choice: string) =>
+  answerDecision(CHAT_MODE_ROUTING_QUESTION_KEY, choice);
+
+const answeringWith = (choice: string, answer: Record<string, unknown>) =>
+  answerDecisionWith(CHAT_MODE_ROUTING_QUESTION_KEY, choice, answer);
 
 const userMessage = (text: string): ChatbotMessage => ({
   id: "user-1",
@@ -95,22 +115,7 @@ const userMessage = (text: string): ChatbotMessage => ({
   parts: [{ type: "text", text }],
 });
 
-const portReturning = (decision: RoutingDecision): ChatModeRouterPort => ({
-  route: vi.fn(async () => decision),
-});
-
-const buildRouter = (route: ChatModeRouterPort["route"]): ChatModeRouterPort => ({
-  route,
-});
-
-const runTurn = async ({
-  router,
-  temperature,
-}: {
-  router: ChatModeRouterPort;
-  temperature?: number;
-}) => {
-  const processChatResponse = makeProcessChatResponse(router);
+const runTurn = async ({ temperature }: { temperature?: number } = {}) => {
   const stream = await processChatResponse({
     messages: [userMessage("hola, cuéntame algo")],
     selectedModel: TEST_MODELS[0]!.id,
@@ -151,27 +156,31 @@ beforeEach(() => {
 
 describe("neutral branch through the conversation pipeline", () => {
   it("answers a `neither` decision with no tools at all", async () => {
-    const router = portReturning({
-      mode: "neutral",
-      reason: "neither",
-      confidence: 0.91,
-      modelId: TEST_ROUTING_MODEL_ID,
+    const scenario = await gateway.use({ decisions: answering("neither") });
+
+    const { chunkTypes, text, routing } = await runTurn({ temperature: 0.42 });
+
+    // The message routed to the neutral branch through the Decisions answer:
+    // one call, asking for the routing question with the turn's message.
+    const decisions = scenario.requests.filter(
+      (request) => request.path === "/v1/systemone",
+    );
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]!.body).toMatchObject({
+      model: "decision-default",
+      state: { latest_message: "hola, cuéntame algo" },
     });
 
-    const { chunkTypes, text, routing } = await runTurn({
-      router,
-      temperature: 0.42,
-    });
-
-    expect(router.route).toHaveBeenCalledTimes(1);
     expect(chunkTypes.filter((type) => type.startsWith("tool-"))).toEqual([]);
     expect(text).toBe("Respuesta neutra");
+    // The routing metadata the stream announces carries the Decisions
+    // provenance, not a fixture.
     expect(routing).toMatchObject({
       requested: "auto",
       mode: "neutral",
       reason: "neither",
-      confidence: 0.91,
-      modelId: TEST_ROUTING_MODEL_ID,
+      confidence: 1,
+      modelId: "decision-default",
     });
 
     // The model was never offered a tool, and kept the user's parameters.
@@ -183,53 +192,86 @@ describe("neutral branch through the conversation pipeline", () => {
 
   it.each([
     {
-      name: "a router error",
-      route: async () => {
-        throw new Error("router exploded");
-      },
+      name: "a Decisions transport error",
+      use: () => ({
+        decisions: () => {
+          throw new Error("decisions backend down");
+        },
+      }),
     },
     {
-      name: "a router timeout",
-      route: async () => {
-        throw Object.assign(new Error("timed out"), { name: "TimeoutError" });
-      },
+      name: "an invalid Decisions answer",
+      use: () => ({
+        decisions: answerDecisionRaw({
+          answers: {
+            [CHAT_MODE_ROUTING_QUESTION_KEY]: {
+              type: "choice",
+              choice: "banana",
+              confidence: 1,
+            },
+          },
+          model: "decision-default",
+        }),
+      }),
     },
-    {
-      name: "an invalid decision",
-      route: async () => ({ mode: "banana", modelId: "x" }) as any,
+  ])(
+    "degrades to the neutral fallback when routing fails: $name",
+    async ({ use }) => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      await gateway.use(use());
+
+      try {
+        const { chunkTypes, text, routing } = await runTurn();
+
+        expect(routing).toMatchObject({
+          requested: "auto",
+          mode: "neutral",
+          reason: "fallback",
+        });
+        expect(chunkTypes.filter((type) => type.startsWith("tool-"))).toEqual([]);
+        expect(text).toBe("Respuesta neutra");
+        expect(state.calls[0]!.tools ?? []).toEqual([]);
+      } finally {
+        consoleError.mockRestore();
+      }
     },
-  ])("degrades to the neutral fallback when routing fails: $name", async ({ route }) => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  );
+
+  // A scenario responder is synchronous, so a response slower than the kit's
+  // `DECIDE_TIMEOUT_MS` is expressed with an ad-hoc MSW handler ahead of the
+  // scenario's catch-all.
+  it("degrades to the neutral fallback when the Decisions call times out", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    await gateway.use({ decisions: answering("ctx7") });
+    gateway.server.use(
+      http.post("*/v1/systemone", async () => {
+        await delay(2_000);
+        return HttpResponse.json({ answers: {} });
+      }),
+    );
 
     try {
-      const { chunkTypes, text, routing } = await runTurn({
-        router: buildRouter(vi.fn(route)),
-      });
+      const { routing, text } = await runTurn();
 
       expect(routing).toMatchObject({
         requested: "auto",
         mode: "neutral",
         reason: "fallback",
       });
-      expect(chunkTypes.filter((type) => type.startsWith("tool-"))).toEqual([]);
       expect(text).toBe("Respuesta neutra");
-      expect(state.calls[0]!.tools ?? []).toEqual([]);
     } finally {
       consoleError.mockRestore();
     }
   });
 
   it("applies a low-confidence classifier decision as-is (no gate)", async () => {
-    const router = portReturning({
-      mode: "web",
-      reason: "routed",
-      confidence: 0.42,
-      modelId: TEST_ROUTING_MODEL_ID,
+    await gateway.use({
+      decisions: answeringWith("web", { confidence: 0.42 }),
     });
 
-    const { routing, text } = await runTurn({ router });
+    const { routing, text } = await runTurn();
 
     expect(routing).toMatchObject({
       requested: "auto",
@@ -241,13 +283,11 @@ describe("neutral branch through the conversation pipeline", () => {
   });
 
   it("routes a valid answer without confidence instead of gating it", async () => {
-    const router = portReturning({
-      mode: "web",
-      reason: "routed",
-      modelId: TEST_ROUTING_MODEL_ID,
+    await gateway.use({
+      decisions: answeringWith("web", { confidence: undefined }),
     });
 
-    const { routing, text } = await runTurn({ router });
+    const { routing, text } = await runTurn();
 
     expect(routing).toMatchObject({
       requested: "auto",

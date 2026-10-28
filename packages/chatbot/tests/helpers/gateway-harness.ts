@@ -1,5 +1,5 @@
 import { afterEach } from "vitest";
-import { setupServer } from "msw/node";
+import { setupServer, type SetupServerApi } from "msw/node";
 import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import type {
   GatewayScenario,
@@ -45,6 +45,15 @@ export interface GatewayHarness {
    * can audit `scenario.requests` and call `scenario.reset()`.
    */
   use(config?: GatewayScenarioConfig): Promise<GatewayScenario>;
+  /**
+   * The MSW server this harness owns. Exposed only for the transport
+   * conditions a scenario deliberately cannot express (a scenario responder is
+   * synchronous, so it cannot answer slower than the feature's timeout):
+   * install a specific handler with `server.use(...)` and it takes precedence
+   * over the scenario's catch-all. Behavioural responses still go through
+   * `use()`.
+   */
+  server: SetupServerApi;
 }
 
 export function setupGatewayHarness(): GatewayHarness {
@@ -56,6 +65,7 @@ export function setupGatewayHarness(): GatewayHarness {
   });
 
   return {
+    server,
     async use(config: GatewayScenarioConfig = {}) {
       const scenario = createGatewayScenario({
         ...config,

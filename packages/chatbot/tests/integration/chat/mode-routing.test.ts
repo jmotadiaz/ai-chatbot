@@ -1,11 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import type { GatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import { setupTestDb } from "../../helpers/db-setup";
-import type { Decision, DecideOptions } from "@/lib/infrastructure/ai/types";
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
+import { answerDecision } from "../../helpers/gateway-decisions";
+import {
+  CHAT_MODE_ROUTING_QUESTION_KEY,
+  createChatModeRouter,
+} from "@/lib/features/chat/mode-routing/router";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
-import type { ChatModeRouterPort } from "@/lib/features/chat/mode-routing/types";
-import { createChatModeRouter } from "@/lib/features/chat/mode-routing/router";
 import {
   chat as chatTable,
   message as messageTable,
@@ -17,13 +21,14 @@ import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
 
 vi.mock("server-only", () => ({}));
 
-// The AI port is built inside `makeProcessChatResponse`, so the model comes
-// from here instead of being injected. This mocks the composition root
-// directly (the `foundation-model/server` shim it used to target is gone):
-// everything under test resolves models through `inferenceKit.languageModel`/
-// `createAgentModel`/`createAgent` — the same three kit members
-// `buildAgentAdapter` (`conversation/factory.ts`) calls.
-vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
+// The user-selected model is NOT what these tests are about, so the agent
+// generation stays an in-process fake (the same three kit members
+// `buildAgentAdapter` calls). Every other member — `decide` in particular — is
+// the REAL part of the composition root, so routing goes through the actual
+// kit over HTTP exactly as in production.
+vi.mock("@/lib/infrastructure/ai/inference-kit", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/infrastructure/ai/inference-kit")>();
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream, ToolLoopAgent } = await import("ai");
   const model = new MockLanguageModelV3({
@@ -56,6 +61,7 @@ vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
   const baseConfig = () => ({ model, company: "test" as const });
   return {
     inferenceKit: {
+      ...actual.inferenceKit,
       languageModel: baseConfig,
       createAgentModel: baseConfig,
       createAgent: (
@@ -98,39 +104,27 @@ vi.mock("@/lib/features/memory/extraction", () => ({
 const { makeProcessChatResponse } = await import(
   "@/lib/features/chat/conversation/factory"
 );
+const { inferenceKit } = await import("@/lib/infrastructure/ai/inference-kit");
+
+const gateway = setupGatewayHarness();
 
 const USER_ID = "11111111-1111-1111-1111-111111111111";
 const PROJECT_ID = "22222222-2222-2222-2222-222222222222";
 const USER_MESSAGE_ID = "33333333-3333-3333-3333-333333333333";
 
-/** Kit-generic fake `decide` result: `createChatModeRouter` maps `choice: "ctx7"` to `mode: "context7"` (answer under the pinned `"mode"` question key). */
-const routedFakeDecision: Decision = {
-  answers: {
-    mode: {
-      choice: "ctx7",
-      confidence: 0.93,
-      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-    },
-  },
-  modelId: "typesafe/jev-1.13-20260917",
-  provider: "TypeSafe",
-  latencyMs: 412,
-  costUsd: 0.000017976,
-};
+/** The Chat Mode Router the composition root builds, over the real `decide`. */
+const processChatResponse = makeProcessChatResponse(
+  createChatModeRouter(inferenceKit.decide),
+);
 
-/**
- * Builds a `ChatModeRouterPort` over the real `createChatModeRouter`
- * composition and a fake `decide`, so these tests exercise the actual
- * choice → mode/reason mapping (and probability filtering) instead of
- * hand-rolling a `RoutingDecision` fixture. `router.route` stays spy-able
- * (call count/args) by wrapping the composed port's method with `vi.fn`.
- */
-const buildRouter = (
-  decide: (options: DecideOptions) => Promise<Decision> = async () => routedFakeDecision,
-): ChatModeRouterPort => {
-  const port = createChatModeRouter(decide);
-  return { route: vi.fn(port.route) };
-};
+/** The Decisions answer of the chatbot E2E profile: `ctx7` → `context7`. */
+const answering = (choice: string) =>
+  answerDecision(CHAT_MODE_ROUTING_QUESTION_KEY, choice);
+
+const decisionsBodies = (scenario: GatewayScenario) =>
+  scenario.requests
+    .filter((request) => request.path === "/v1/systemone")
+    .map((request) => request.body as Record<string, unknown>);
 
 const userMessage = (text: string): ChatbotMessage => ({
   id: USER_MESSAGE_ID,
@@ -146,17 +140,14 @@ const consume = async (stream: ReadableStream) => {
 };
 
 const runTurn = async ({
-  router,
   chatMode,
   projectId,
   text = "¿Cómo uso drizzle-kit?",
 }: {
-  router: ChatModeRouterPort;
   chatMode: string;
   projectId?: string;
   text?: string;
 }) => {
-  const processChatResponse = makeProcessChatResponse(router);
   const stream = await processChatResponse({
     messages: [userMessage(text)],
     selectedModel: TEST_MODELS[0]!.id,
@@ -188,14 +179,17 @@ describe("auto chat mode persistence", () => {
 
   it("persists Chat.chatMode = auto and chatModeRouting on the assistant message", async () => {
     await seedUser();
-    const router = buildRouter();
+    const scenario = await gateway.use({ decisions: answering("ctx7") });
 
-    await runTurn({ router, chatMode: "auto" });
+    await runTurn({ chatMode: "auto" });
 
-    expect(router.route).toHaveBeenCalledTimes(1);
-    expect(router.route).toHaveBeenCalledWith({
-      latestMessage: "¿Cómo uso drizzle-kit?",
-      recentContext: "",
+    // The router asked the Decisions API once, with the turn's user message as
+    // the question's state (the persisted metadata mirrors that same answer).
+    const bodies = decisionsBodies(scenario);
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject({
+      model: "decision-default",
+      state: { latest_message: "¿Cómo uso drizzle-kit?", recent_context: "" },
     });
 
     const [chatRow] = await db
@@ -210,40 +204,40 @@ describe("auto chat mode persistence", () => {
       .where(eq(messageTable.chatId, chatRow.id));
     const assistantRow = rows.find((row: any) => row.role === "assistant");
     expect(assistantRow).toBeDefined();
-    expect(assistantRow.metadata.chatModeRouting).toEqual({
+    // Provenance is the Decisions response's, not a fixture: the values that
+    // vary per call (latency) are asserted by shape, the rest exactly.
+    expect(assistantRow.metadata.chatModeRouting).toMatchObject({
       requested: "auto",
       mode: "context7",
       reason: "routed",
-      confidence: 0.93,
-      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-      modelId: "typesafe/jev-1.13-20260917",
-      provider: "TypeSafe",
-      latencyMs: 412,
-      costUsd: 0.000017976,
+      confidence: 1,
+      probabilities: { ctx7: 1 / 3, web: 1 / 3, neither: 1 / 3 },
+      modelId: "decision-default",
+      provider: "mock-model-gateway",
+      costUsd: 0,
+      latencyMs: expect.any(Number),
     });
 
     // Round-trip through the read path used when a chat is reloaded.
     const [reloaded] = dbMessageToChatbotMessage([assistantRow]);
-    expect(reloaded.metadata?.chatModeRouting).toEqual({
+    expect(reloaded.metadata?.chatModeRouting).toEqual(
+      assistantRow.metadata.chatModeRouting,
+    );
+    expect(reloaded.metadata?.chatModeRouting).toMatchObject({
       requested: "auto",
       mode: "context7",
       reason: "routed",
-      confidence: 0.93,
-      probabilities: { ctx7: 0.93, web: 0.05, neither: 0.02 },
-      modelId: "typesafe/jev-1.13-20260917",
-      provider: "TypeSafe",
-      latencyMs: 412,
-      costUsd: 0.000017976,
     });
   });
 
   it("does not route explicit chat modes and keeps the stored mode", async () => {
     await seedUser();
-    const router = buildRouter();
+    const scenario = await gateway.use({ decisions: answering("ctx7") });
 
-    await runTurn({ router, chatMode: "web" });
+    await runTurn({ chatMode: "web" });
 
-    expect(router.route).not.toHaveBeenCalled();
+    // Explicit modes never reach the Decisions API.
+    expect(decisionsBodies(scenario)).toHaveLength(0);
 
     const [chatRow] = await db
       .select()
@@ -267,11 +261,11 @@ describe("auto chat mode persistence", () => {
       name: "Project",
       systemPrompt: "Project prompt",
     });
-    const router = buildRouter();
+    const scenario = await gateway.use({ decisions: answering("ctx7") });
 
-    await runTurn({ router, chatMode: "auto", projectId: PROJECT_ID });
+    await runTurn({ chatMode: "auto", projectId: PROJECT_ID });
 
-    expect(router.route).not.toHaveBeenCalled();
+    expect(decisionsBodies(scenario)).toHaveLength(0);
 
     const [chatRow] = await db
       .select()
@@ -287,15 +281,17 @@ describe("auto chat mode persistence", () => {
     expect(assistantRow.metadata.chatModeRouting).toBeUndefined();
   });
 
-  it("degrades to the neutral fallback and still persists when decide fails", async () => {
+  it("degrades to the neutral fallback and still persists when the Decisions call fails", async () => {
     await seedUser();
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const router = buildRouter(async () => {
-      throw new Error("decide exploded");
+    await gateway.use({
+      decisions: () => {
+        throw new Error("decisions backend down");
+      },
     });
 
     try {
-      await runTurn({ router, chatMode: "auto" });
+      await runTurn({ chatMode: "auto" });
     } finally {
       consoleError.mockRestore();
     }
@@ -309,6 +305,8 @@ describe("auto chat mode persistence", () => {
       .from(messageTable)
       .where(eq(messageTable.chatId, chatRow.id));
     const assistantRow = rows.find((row: any) => row.role === "assistant");
+    // A failed classification is never a success default: no provenance from a
+    // non-existent answer, the neutral tool-less branch instead.
     expect(assistantRow.metadata.chatModeRouting).toEqual({
       requested: "auto",
       mode: "neutral",
