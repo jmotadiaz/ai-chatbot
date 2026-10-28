@@ -40,9 +40,11 @@
     "test:component": "pnpm -r --if-present run test:component",
     "test:integration": "pnpm -r --if-present run test:integration",
     "test:contract": "pnpm -r --if-present run test:contract",
+    "test:infra": "pnpm -r --if-present run test:infra",
     "test:gateway": "pnpm --filter @ai-chatbot/model-gateway test",
     "test:fast": "pnpm test:unit && pnpm test:component && pnpm test:integration && pnpm test:contract",
     "verify:fast": "pnpm lint && pnpm type:check && pnpm test:fast",
+    "verify:full": "pnpm lint && pnpm type:check && pnpm test:fast && pnpm test:infra && pnpm test:gateway && pnpm test:e2e && pnpm build:verify",
     "lint:staged": "lint-staged",
     "prepare": "husky"
   },

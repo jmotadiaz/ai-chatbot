@@ -1,5 +1,43 @@
 # Test Conventions
 
+## Execution profiles
+
+Which tests run where follows the policy in
+[ADR 0013](../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md)
+(social unit tests by default, E2E by exception, dependency categories). This
+section only states the commands, the resources they need and the scope they
+cover.
+
+| Profile | Command | Selects | Resources needed |
+| --- | --- | --- | --- |
+| Default (self-contained) | `pnpm test:unit`, `test:component`, `test:integration`, `test:contract` (and `test:fast` for all four) | `tests/{unit,component,integration,contract}` minus `INFRA_TESTS` | none: inference is answered by MSW in-process and persistence by in-memory PGlite. Nothing listens on a port; no PostgreSQL container |
+| Infrastructure | `pnpm test:infra` (`vitest.infra.config.ts`) | `INFRA_TESTS` = `tests/integration/mocks/**/*.test.ts` | the canonical `:4001` of the Test Environment, self-ensured by the test that binds it. A future test needing external PostgreSQL is selected here too, and then this profile means providing that database first |
+| E2E | `pnpm test:e2e` (Playwright) | `tests/e2e` | docker PostgreSQL `:5434/test` (`db:test:start`), dev server `:3001`, Mock Model Gateway `:4001` (Playwright `globalSetup`/`globalTeardown`) |
+| Full verification | `pnpm verify:full` | lint + type-check + default profile + infra profile + `pnpm test:gateway` + E2E + `pnpm build:verify` | all of the above |
+
+- The selection is a **test-file list**, never an environment variable
+  (ADR 0011): `INFRA_TESTS` in `vitest.config.ts` is the single source, and
+  `vitest.infra.config.ts` re-includes it on top of the default config.
+- A profile changes *execution*, not classification: the tests selected by the
+  infra profile stay under `tests/integration/mocks/`, where their scope is
+  visible. No suite is renamed by profile.
+- New tests default to the self-contained profile. A test belongs in
+  `INFRA_TESTS` only when MSW cannot express the condition in-process (a real
+  listening origin, external PostgreSQL); state which resource in the table.
+- A full default run leaves nothing listening (`ss -tlnp | grep 4001` is empty).
+  MSW tests never start a gateway: the Vitest global HTTP setup that booted
+  `:4001` for every run was removed once the features moved to social unit
+  tests.
+- `build:verify` is the **only** compilation check (`pnpm build:verify` writes
+  to isolated `.next/verify`); never `pnpm build` — it overwrites the artifacts
+  prod serves.
+- Out of scope for this closure: the reclassification, reduction or relocation
+  of the historical E2E suite according to the ADR 0013 heuristic. Another
+  issue owns it.
+
+Guarantees accounting (which test file replaced each removed double or port)
+lives in [`docs/model-gateway-testing-migration.md`](../../../docs/model-gateway-testing-migration.md).
+
 ## Capability ids (Mock Model Gateway catalog)
 
 Since the Model Gateway (ADR 0010) there is no alias layer: the chat model
@@ -54,9 +92,10 @@ consumer split into three modules under `tests/mocks/gateway/`:
 - `server.ts` — composition root: binds catalog + profile with
   `createGatewayScenario` and owns the canonical `:4001` lifecycle
   (`ensureMockGateway` / `isMockGatewayAlive` / `stopMockGateway`) used by the
-  Vitest global setup and the Playwright global setup/teardown. It re-exports
-  the fixtures above, which are what most tests import.
-- `main.ts` — CLI to run the mock on its own.
+  Playwright global setup/teardown and by the Mock Model Gateway harness test
+  (the infra profile). It re-exports the fixtures above, which are what most
+  tests import.
+- `main.ts` — CLI to run the mock on its own (manual runs, no runner).
 
 `mockGatewayScenario.handlers` is the same scenario through MSW, for in-process
 tests that must not require a listening server (`setupServer(...handlers)`); the
@@ -138,12 +177,6 @@ The harness owns only the MSW lifecycle (`onUnhandledRequest: "error"`) and the
 catalog warm-up the kit needs before resolving models synchronously; the catalog
 and every responder stay consumer-owned. Its `server` is exposed for the one
 condition a scenario cannot express — a responder is synchronous, so a response
-slower than a feature's timeout needs an ad-hoc MSW handler. Persistence uses `setupTestDb()` (PGlite
+slower than a feature's timeout needs an ad-hoc MSW handler. Persisted state uses `setupTestDb()` (PGlite
 in memory), so these tests need neither a PostgreSQL container nor a gateway
 listening on `:4001`.
-
-### Stream/chunk builders for in-process fakes
-
-Pure `LanguageModelV3StreamPart` helpers (`textChunks`, `finishChunk`, …)
-live in `tests/helpers/stream-chunks.ts` — copy of the old `inference/testing`
-builders, which went away with that package.

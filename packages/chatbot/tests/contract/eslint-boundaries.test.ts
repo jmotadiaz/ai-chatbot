@@ -102,15 +102,17 @@ describe("chatbot lint boundaries (eslint.config.mjs)", () => {
   });
 
   it("V3 protocol types are consumable from the composition root, not from @ai-sdk/provider", async () => {
+    // `tests/unit/infrastructure/gateway-image-model.test.ts` is a real consumer:
+    // it types the transport's call options from the composition root.
     const ruleIds = await lint(
-      "tests/helpers/stream-chunks.ts",
-      serverFile(`import type { LanguageModelV3StreamPart } from "@/lib/infrastructure/ai/types";`),
+      "tests/unit/infrastructure/gateway-image-model.test.ts",
+      serverFile(`import type { LanguageModelV3CallOptions } from "@/lib/infrastructure/ai/types";`),
     );
     expect(ruleIds).not.toContain("no-restricted-imports");
 
     const forbidden = await lint(
-      "tests/helpers/stream-chunks.ts",
-      serverFile(`import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";`),
+      "tests/unit/infrastructure/gateway-image-model.test.ts",
+      serverFile(`import type { LanguageModelV3CallOptions } from "@ai-sdk/provider";`),
     );
     expect(forbidden).toContain("no-restricted-imports");
   });

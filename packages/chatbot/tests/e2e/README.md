@@ -1,115 +1,62 @@
-# Playwright E2E Tests
+# Playwright E2E
 
-This directory holds the project's end-to-end (E2E) tests using Playwright.
+The repository-level E2E suite: it drives the deployed chatbot in a browser
+(Test Environment, `--env=test`) against the real application, a real test
+PostgreSQL and the Mock Model Gateway.
 
-## Structure
+Selection policy (social unit tests by default, E2E only for guarantees that
+need the deployed application) lives in
+[ADR 0013](../../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md).
+Every E2E must state which deployment risk it covers; the classification of the
+historical cases is tracked by another issue and is not part of this docs page.
+
+## Layout
 
 ```
-tests/
-├── fixtures.ts      # Fixtures for dependency injection (AI providers and DB mocks)
-├── chat-page.ts     # Page Object Model for the chat
-├── chat.spec.ts     # E2E tests for the chat
-├── example.spec.ts  # Basic Playwright example
-└── README.md        # This documentation
+tests/e2e/
+├── global-setup.ts      # waits for :5434, starts the Mock Gateway (:4001), runs Drizzle migrations
+├── global-teardown.ts   # closes the Mock Gateway this run started
+├── fixtures.ts          # `test` with db/db-seed fixtures (user, chats, projects)
+├── db-seed.ts           # the Test Environment user used to log in
+├── seed.spec.ts         # representative journey: login + send a message
+├── chat/                # chat, hub, resume, projects, settings, attachments
+│   ├── components/      # page components (header, model picker, hub panels, sidebar, …)
+│   └── pages/           # page objects (chat, hub, history, project)
+└── agent-code/          # worker-stub journeys (currently `test.fixme`)
 ```
 
-## Fixtures
+## Resources and lifecycle
 
-The fixtures use dependency injection to replace the real services with mocks during the tests:
+| Resource | Where it comes from |
+| --- | --- |
+| PostgreSQL `:5434/test` | `pnpm --filter chatbot db:test:start` (docker compose), run by `test:e2e`; migrations run in `global-setup.ts` |
+| Dev server `:3001` | Playwright `webServer` (`scripts/next-cli.ts dev --env=test --webpack`) |
+| Mock Model Gateway `:4001` | `global-setup.ts` (`ensureMockGateway`, idempotent) / `global-teardown.ts` |
 
-### AI Providers Mock
-- Uses `MockLanguageModelV2` and `MockEmbeddingModelV2` from the Vercel AI SDK
-- The models return predictable responses for testing
-- It is configured through `setProviders()` from `lib/ai/models/providers`
-- Each mock includes the `modelId` in the response
+`workers: 1`: the suite shares one database and one lazily compiled dev server.
 
-### Database Mock
-- Uses `drizzle.mock()` with the application schema
-- It is configured through `setDb()` from `lib/db/db`
+## Model scenarios
 
-## Running Tests
+The Gateway answers come from the consumer-owned catalog and named profile in
+[`tests/mocks/gateway/catalog.ts`](../mocks/gateway/catalog.ts) and
+[`tests/mocks/gateway/profiles.ts`](../mocks/gateway/profiles.ts); the protocol
+itself is the shared toolkit
+([`packages/model-gateway/js`](../../../model-gateway/js/README.md)). The catalog
+and profile are fixed for the whole run — the application caches the catalog per
+process (60 s TTL), so a per-test mutation would leak into later journeys. To add
+a capability id or an answer, follow "Adding a New Capability" in
+[`tests/AGENTS.md`](../AGENTS.md).
+
+## Commands
 
 ```bash
-# Run all tests
-pnpm test:e2e
-
-# Run tests with the interactive UI
-pnpm test:e2e:ui
-
-# Run tests with a visible browser
-pnpm test:e2e:headed
-
-# Run a specific test
-pnpm test:e2e tests/chat.spec.ts
+pnpm test:e2e                  # whole suite (root: pnpm --filter chatbot test:e2e)
+pnpm test:e2e:ui               # Playwright UI mode
+pnpm test:e2e:headed           # visible browser
+PLAYWRIGHT_ARGS=--reporter=line pnpm --filter chatbot test:e2e   # line reporter
+pnpm stop:test                 # afterwards: stop :3001, the mock :4001 and the test DB
 ```
 
-## Page Objects
-
-### ChatPage
-
-The Page Object Model encapsulates the interactions with the chat interface:
-
-**Main methods:**
-- `goto(chatId?)` - Navigates to the chat page
-- `sendMessage(message)` - Sends a message (types + submits)
-- `typeMessage(message)` - Types a message without sending it
-- `submitMessage()` - Submits the current message
-- `waitForAssistantResponse()` - Waits for the assistant's response
-- `waitForLoadingComplete()` - Waits for loading to finish
-- `verifyAssistantResponded()` - Checks that the assistant responded
-- `verifyAssistantResponseContains(text)` - Checks that the response contains specific text
-- `getLastAssistantMessage()` - Gets the last assistant message
-- `getUserMessages()` - Gets all user messages
-- `getAssistantMessages()` - Gets all assistant messages
-- `isChatInputEnabled()` - Checks whether the input is enabled
-
-## Writing New Tests
-
-```typescript
-import { test, expect } from "./fixtures";
-import { ChatPage } from "./chat-page";
-
-test.describe("My feature", () => {
-  let chatPage: ChatPage;
-
-  test.beforeEach(async ({ page, mockProviders, testDb }) => {
-    chatPage = new ChatPage(page);
-    await chatPage.goto();
-    
-    // The fixtures are available for verification
-    expect(mockProviders).toBeDefined();
-    expect(testDb).toBeDefined();
-  });
-
-  test("my test", async () => {
-    await chatPage.sendMessage("Hello");
-    await chatPage.waitForAssistantResponse();
-    
-    await chatPage.verifyAssistantResponded();
-  });
-});
-```
-
-## Configuration
-
-The Playwright configuration lives in `playwright.config.mts`:
-- **Base URL**: `http://localhost:3000`
-- **Web Server**: Automatically starts `pnpm dev` before the tests
-- **Timeout**: 120 seconds for the server to be ready
-- **Browsers**: Chromium, Firefox, WebKit
-- **Retry**: 2 retries in CI, 0 locally
-
-## Current Test: Chat
-
-The first test (`chat.spec.ts`) checks:
-1. The user can send a query to the chat
-2. The assistant answers correctly
-3. The response contains the expected mock text
-4. The messages are shown in the interface
-
-## Notes
-
-- The tests require the development server to be running, otherwise it is started automatically
-- The mocks replace the AI providers and the database for isolated and predictable tests
-- Using Page Objects is recommended to keep the tests maintainable and reduce duplication
-- The selectors in ChatPage may need adjustments according to the current data-* attributes of the HTML
+`pnpm verify:full` runs this suite together with both vitest profiles and the
+Model Gateway's Python suite; see
+[`packages/chatbot/tests/AGENTS.md`](../AGENTS.md#execution-profiles).

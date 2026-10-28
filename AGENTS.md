@@ -70,12 +70,15 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (for th
   (`--env=dev`: 3000+3016, pg 5433)
 - `pnpm stop:dev` — kills `3000`+`3016` by port (`lsof -ti:PORT | xargs -r kill`); `pnpm stop:test` — kills `3001` (+ `docker compose -f docker-compose.test.yml down`). Per package: `pnpm --filter chatbot stop:dev` (3000) / `stop:test` (3001); `pnpm --filter coding-agent stop:dev` (3016)
 - `pnpm build:verify` — isolated compilation check (`.next/verify` + `dist/verify` + `.pi-verify`); **the agent's only way to check compilation without touching prod**
-- `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
+- `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests (the self-contained default profile: MSW + PGlite, no PostgreSQL container and no provisioned server)
+- `pnpm test:infra` — the explicit infrastructure profile: the tests that need a provisioned resource (today the Mock Model Gateway harness test, which binds the canonical `:4001`)
+- `pnpm verify:full` — lint, type-check, default profile, infra profile, Model Gateway suite, Playwright E2E, and `build:verify`; test selection lives in `packages/chatbot/vitest.config.ts` (`INFRA_TESTS`) and `vitest.infra.config.ts`, never in environment variables (ADR 0011)
 - `pnpm lint:fix` — lint all packages
 - `pnpm type:check` — check TypeScript types across all packages
 - `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
 - `pnpm test:gateway` — Model Gateway tests (`python3 -m pytest packages/model-gateway/tests -q`)
 - `pnpm test:e2e` — Playwright E2E tests (Test Environment `--env=test`: pg 5434, worker stub, Mock Gateway `:4001`)
+- Execution profiles, resources and scope: [`packages/chatbot/tests/AGENTS.md`](packages/chatbot/tests/AGENTS.md#execution-profiles) (policy in [ADR 0013](docs/adr/0013-model-gateway-testing-and-social-unit-tests.md)); substituted doubles and where their guarantees live: [`docs/model-gateway-testing-migration.md`](docs/model-gateway-testing-migration.md)
 - `pnpm db:generate` / `pnpm db:push` — Drizzle ORM schema
 - `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — DB management and seeds for the Dev (5433) and Test (5434) Environments
 

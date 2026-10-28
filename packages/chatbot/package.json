@@ -31,7 +31,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "type:check": "tsc --noEmit",
-    "test": "concurrently \"pnpm run test:e2e\" \"pnpm run test:unit\"",
+    "test": "vitest run",
+    "test:infra": "vitest run --config vitest.infra.config.ts",
     "eval": "tsx scripts/eval-runner.ts --env=dev",
     "check:mobile": "npx tsx scripts/check-mobile.ts",
     "test:e2e": "pnpm run db:test:start && playwright test $PLAYWRIGHT_ARGS",
@@ -42,7 +43,7 @@
     "test:component": "vitest run tests/component --passWithNoTests",
     "test:integration": "vitest run tests/integration --passWithNoTests",
     "test:contract": "vitest run tests/contract --passWithNoTests",
-    "test:all": "vitest run",
+    "test:all": "vitest run --config vitest.infra.config.ts && vitest run",
     "prepare": "husky"
   },
   "dependencies": {

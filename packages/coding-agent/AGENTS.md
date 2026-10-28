@@ -52,6 +52,15 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
     `tracing`, the filesystem sandbox (`createTestWorkerContext()`) and the
     worker's own HTTP transport. The Chatbot E2E suite keeps its Worker stub and
     does not cover the real chatbot↔Worker assembly.
+- Worker tests all belong to the **self-contained default profile**
+  (`pnpm --filter coding-agent test:unit|test:integration|test:contract`): no
+  external PostgreSQL and no canonical port. The toolkit servers a transport
+  test starts listen on an ephemeral port (`0`) and are closed by the test that
+  opened them. The provisioning-based profile (`pnpm test:infra`) selects only
+  chatbot tests today; see
+  [`packages/chatbot/tests/AGENTS.md`](../chatbot/tests/AGENTS.md#execution-profiles)
+  for the profiles and [`docs/model-gateway-testing-migration.md`](../../docs/model-gateway-testing-migration.md)
+  for the accounting of the doubles replaced in ticket 10.
 
 ## Key Files
 
