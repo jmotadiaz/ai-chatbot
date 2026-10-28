@@ -1,180 +1,75 @@
 /**
- * Mock Model Gateway (ADR 0010, ADR 0013) — stands in for the real Gateway in the
- * Test Environment (`MODEL_GATEWAY_URL=http://127.0.0.1:4001`).
+ * Canonical Mock Model Gateway of the Test Environment (ADR 0010, ADR 0013) —
+ * it stands in for the real Gateway at `MODEL_GATEWAY_URL`
+ * (`http://127.0.0.1:4001` in the frozen Test bundle).
  *
- * The reusable protocol/lifecycle mechanisms live in the official testing toolkit
- * `@ai-chatbot/model-gateway-testing`; this file is the chatbot's thin consumer:
- * it owns the test catalog (`./catalog.ts`), the ids that ARE capabilities, the
- * per-model reply scripts and the canonical `:4001` process lifecycle.
- * `ensureMockGateway`/`stopMockGateway` are the idempotent, cross-process
- * ensure/stop strategy described in the toolkit's README.
+ * This module is the chatbot's composition root for the mock: it binds the
+ * consumer-owned catalog (`./catalog.ts`) and the named execution profile
+ * (`./profiles.ts`) to the official toolkit scenario, and it owns the canonical
+ * `:4001` process lifecycle. The protocol (reply rendering, SSE framing, MSW
+ * handlers, HTTP server, explicit errors) belongs to
+ * `@ai-chatbot/model-gateway-testing`.
+ *
+ * The catalog and the profile are fixed when the scenario is built and never
+ * mutated afterwards: the application caches the catalog per process (60 s TTL
+ * in `lib/infrastructure/ai/catalog.ts`), so a per-test change would leak into
+ * later journeys.
  */
 
 import {
   HEALTH_PATH,
   createGatewayScenario,
-  decisionsResponse,
-  embeddingsResponse,
-  imageReply,
-  midStreamErrorReply,
-  pacedTextReply,
-  reasoningReply,
-  rerankResponse,
-  speechResponse,
-  textReply,
-  toolCallReply,
-  toolResultReply,
-  type ChatMessage,
-  type ChatReply,
-  type ChatRequest,
+  type GatewayScenario,
 } from "@ai-chatbot/model-gateway-testing";
 import {
   startGatewayServer,
   type GatewayServer,
 } from "@ai-chatbot/model-gateway-testing/server";
-import { EMBEDDING_DIMENSIONS } from "config";
 import { TEST_INTERNAL_MODELS, TEST_MODELS } from "./catalog";
+import {
+  E2E_PROFILE,
+  decisionsReply,
+  type MockGatewayProfile,
+} from "./profiles";
+
+/**
+ * Public surface of the mock for the tests that assert on its fixtures. They
+ * live in `./profiles.ts` (next to the reply that serves them) and stay
+ * importable from here, the module the harness already depends on.
+ */
+export {
+  MOCK_IMAGE_PNG_BASE64,
+  SLOW_STREAM_CHUNK_MS,
+  SLOW_STREAM_CHUNKS,
+  SLOW_STREAM_TEXT,
+} from "./profiles";
 
 export const MOCK_GATEWAY_PORT = 4001;
 
-// ---------------------------------------------------------------------------
-// Consumer-owned scenario fixtures
-// ---------------------------------------------------------------------------
-
-/** Deterministic "generic mock" text: it includes the id and the temperature. */
-const basicText = (model: string, temperature: number | undefined) =>
-  `Hello, I'm ${model}, Temperature: ${temperature ?? 0}, `;
-
 /**
- * `canExecuteTools` is a two-turn script derived from the REQUEST HISTORY: with a
- * `role: "tool"` message it answers with the final text, without one it asks for
- * the tool call. There is no first/second-call counter, so concurrent or repeated
- * requests cannot drift.
+ * Builds the toolkit scenario of one profile. The catalog is registered once
+ * here (the same one for every profile); the responders answer from the request
+ * alone and an unlisted model id surfaces as the toolkit's `422`.
  */
-function isToolResult(message: ChatMessage | undefined): boolean {
-  return message?.role === "tool";
-}
-
-const TOOL_NAME = "webSearch";
-const TOOL_ARGS = '{"query":"current weather in San Francisco"}';
-const TOOL_ANSWER = "Based on the search results, it is 68°F and sunny in San Francisco.";
-const REASONING_TEXT = "Let me think about this carefully...";
-const REASONING_ANSWER = "The answer is 42.";
-const REFUSAL_TEXT = "I cannot help with that request.";
-const VISION_TEXT = "Image description (mock)";
-const IMAGE_TEXT = "Enhanced image (mock).";
-
-/**
- * 1×1 PNG that the mock serves as the `image_url` part of `image-default` (same
- * bytes as the old image mock). Mapped to `GeneratedFile` by
- * `lib/infrastructure/ai/gateway-image-model.ts`.
- */
-export const MOCK_IMAGE_PNG_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
-const MID_STREAM_TEXT = "Partial answer before the failure...";
-const MID_STREAM_ERROR = {
-  error: {
-    message: "Mock mid-stream error",
-    type: "server_error",
-    param: null,
-    code: null,
-  },
-};
-
-/** Pacing of the `slowStream` script: a chunk every `SLOW_STREAM_CHUNK_MS`. */
-export const SLOW_STREAM_CHUNK_MS = 350;
-const SLOW_STREAM_CHUNK_COUNT = 8;
-
-/** The deterministic, recognizable chunks the `slowStream` script emits. */
-export const SLOW_STREAM_CHUNKS: string[] = Array.from(
-  { length: SLOW_STREAM_CHUNK_COUNT },
-  (_, index) => `SLOW chunk ${index}.`,
-);
-
-/**
- * The full text a completed `slowStream` turn renders in the UI: the chunks
- * carry no separator, and `smoothStream()` may re-split them into words but
- * never inserts characters.
- */
-export const SLOW_STREAM_TEXT = SLOW_STREAM_CHUNKS.join("");
-
-/** Simple deterministic response for the `*-default` contracts (includes the name). */
-const contractText = (model: string) => `Mock response from ${model} (contract).`;
-
-/**
- * Reply script per model id — the cascade on the id lives HERE, once. Streaming
- * and non-streaming are two renderings of the same reply (the toolkit renders
- * both from one description).
- */
-function chatReply(request: ChatRequest): ChatReply {
-  const model = request.model ?? "basicChat";
-  const last = request.messages?.at(-1);
-
-  switch (model) {
-    case "failsMidStream":
-      return {
-        ...midStreamErrorReply({ text: MID_STREAM_TEXT, error: MID_STREAM_ERROR }),
-        // The JSON path never aborts: generic contract text.
-        json: contractText(model),
-      };
-
-    case "canExecuteTools":
-      // Two turns: without a tool result → tool_calls; with it → final text.
-      return isToolResult(last)
-        ? toolResultReply(TOOL_ANSWER)
-        : {
-            ...toolCallReply({
-              calls: [{ id: "call-1", name: TOOL_NAME, arguments: TOOL_ARGS }],
-            }),
-            // Without streaming the mock answers with the final text directly.
-            json: TOOL_ANSWER,
-          };
-
-    case "canProduceReasoning":
-      return reasoningReply({ reasoning: REASONING_TEXT, text: REASONING_ANSWER });
-
-    case "slowStream":
-      return pacedTextReply({
-        chunks: SLOW_STREAM_CHUNKS,
-        delayMs: SLOW_STREAM_CHUNK_MS,
-      });
-
-    case "image-default":
-      return imageReply({
-        text: IMAGE_TEXT,
-        base64: MOCK_IMAGE_PNG_BASE64,
-        mediaType: "image/png",
-      });
-
-    case "basicChat":
-    case "basicChatAlt":
-      return textReply(basicText(model, request.temperature));
-
-    case "canSeeImages":
-      return textReply(VISION_TEXT);
-
-    case "alwaysRefuses":
-      return textReply(REFUSAL_TEXT);
-
-    default:
-      return textReply(contractText(model));
-  }
+export function createMockGatewayScenario(
+  profile: MockGatewayProfile,
+): GatewayScenario {
+  return createGatewayScenario({
+    catalog: { public: TEST_MODELS, internal: TEST_INTERNAL_MODELS },
+    chat: (request) => profile.chat[request.model ?? ""]?.(request),
+    embeddings: profile.embeddings,
+    rerank: profile.rerank,
+    decisions: (request) => decisionsReply(profile.decisions, request),
+    speech: profile.speech,
+  });
 }
 
 /**
- * The chatbot's gateway scenario: MSW handlers bound to this catalog and these
- * responders (for in-process social unit tests) plus the dispatcher the HTTP
- * server reuses. Exported so a test can observe the recorded requests.
+ * The scenario the `:4001` mock serves. Exported so in-process tests can run
+ * the very same definitions through MSW (`mockGatewayScenario.handlers`) and
+ * observe the recorded requests (`mockGatewayScenario.requests`).
  */
-export const mockGatewayScenario = createGatewayScenario({
-  catalog: { public: TEST_MODELS, internal: TEST_INTERNAL_MODELS },
-  chat: chatReply,
-  embeddings: (request) => embeddingsResponse(request, { dimensions: EMBEDDING_DIMENSIONS }),
-  rerank: (request) => rerankResponse(request),
-  decisions: (request) => decisionsResponse(request),
-  speech: (request) => speechResponse(request),
-});
+export const mockGatewayScenario = createMockGatewayScenario(E2E_PROFILE);
 
 // ---------------------------------------------------------------------------
 // Canonical `:4001` process lifecycle (chatbot-owned)

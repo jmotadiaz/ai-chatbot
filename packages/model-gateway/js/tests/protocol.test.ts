@@ -277,6 +277,40 @@ describe("operation fixtures", () => {
     });
   });
 
+  it("answers decisions with the consumer's declared choice per question", () => {
+    const response = decisionsResponse(
+      {
+        model: "decision-default",
+        questions: {
+          mode: { type: "choice", criteria: { ctx7: "docs", web: "current", neither: "chat" } },
+        },
+      },
+      { choices: { mode: "web" } },
+    );
+    expect(response.body).toMatchObject({
+      answers: {
+        mode: {
+          type: "choice",
+          choice: "web",
+          confidence: 1,
+          probabilities: { ctx7: 1 / 3, web: 1 / 3, neither: 1 / 3 },
+        },
+      },
+    });
+  });
+
+  it("rejects a declared choice that is not one of the question's criteria", () => {
+    expect(() =>
+      decisionsResponse(
+        {
+          model: "decision-default",
+          questions: { mode: { type: "choice", criteria: { ctx7: "docs" } } },
+        },
+        { choices: { mode: "nope" } },
+      ),
+    ).toThrow(/not one of the criteria/);
+  });
+
   it("serves deterministic WAV audio with the contract media type", () => {
     const audio = deterministicWav("hello");
     expect(audio).toHaveLength(44 + 800 * 2);

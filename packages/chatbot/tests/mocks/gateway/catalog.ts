@@ -48,6 +48,12 @@ const entry = (overrides: Partial<MockCatalogEntry> & { id: string }): MockCatal
  * - `slowStream` paces its SSE chunks (~350 ms apart, `SLOW_STREAM_CHUNKS`
  *   text) so the e2e resume suite can cut the connection mid-generation and
  *   find the turn still alive on the server.
+ *
+ * The catalog is registered once when the `:4001` scenario is built and never
+ * mutated per test: the application caches it per process
+ * (`lib/infrastructure/ai/catalog.ts`), so a mid-run change would leak into
+ * later journeys. Add an entry here (and its answer in `./profiles.ts`), not in
+ * a test.
  */
 export const TEST_MODELS: MockCatalogEntry[] = [
   entry({ id: "basicChat", isDefault: true }),
