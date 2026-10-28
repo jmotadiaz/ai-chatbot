@@ -341,3 +341,58 @@ describe("HTTP server lifecycle", () => {
     }
   });
 });
+
+/**
+ * MSW does not buffer a `ReadableStream` body: the toolkit hands the rendered
+ * frames to the intercepted client as a stream, so a scenario's pacing and a
+ * mid-stream disconnect behave the same in-process (MSW) as they do against the
+ * HTTP server. These tests pin that parity down.
+ */
+describe("MSW transport — paced SSE streams", () => {
+  const pacedScenario = (delayMs: number, chunks: readonly string[]) =>
+    createGatewayScenario({
+      chat: () => pacedTextReply({ chunks, delayMs }),
+    });
+
+  const chatRequest = (): RequestInit => ({
+    method: "POST",
+    headers: JSON_AUTH,
+    body: chatBody("paced", true),
+  });
+
+  it("delivers paced frames incrementally instead of buffering the body", async () => {
+    const scenario = pacedScenario(30, ["one", "two", "three"]);
+    const server = setupServer(...scenario.handlers);
+    server.listen({ onUnhandledRequest: "error" });
+
+    try {
+      const startedAt = Date.now();
+      const response = await fetch("http://127.0.0.1:4001/v1/chat/completions", chatRequest());
+      const reader = response.body!.getReader();
+
+      const first = await reader.read();
+      const firstFrameAt = Date.now();
+      const frames = [new TextDecoder().decode(first.value)];
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        frames.push(new TextDecoder().decode(value));
+      }
+      const total = Date.now() - startedAt;
+
+      // The first frame (the assistant role step) arrives long before the
+      // stream is over: the body was not buffered until completion.
+      expect(firstFrameAt - startedAt).toBeLessThan(total);
+      // Every frame arrives in order and completes the reply.
+      expect(first.done).toBe(false);
+      expect(frames.join("")).toContain('"role":"assistant"');
+      expect(frames.join("")).toContain("data: [DONE]");
+      // Five paced steps (role + three chunks + finish) cannot complete faster
+      // than four of the waits.
+      expect(total).toBeGreaterThanOrEqual(30 * 4);
+    } finally {
+      server.close();
+    }
+  });
+});

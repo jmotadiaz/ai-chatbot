@@ -115,6 +115,17 @@ The handlers are bound to that scenario instance: its responders, its recorded
 requests. Point the application at any URL (the handlers match the
 `/v1/*` and health paths on any origin); the real Gateway URL is irrelevant.
 
+A paced reply (`pacedTextReply`, or any `ChatStep` with `delayMs`) reaches the
+consumer as a real `ReadableStream`: MSW does not buffer the body, so the client
+receives each frame when its delay elapses. That is what lets an in-process test
+disconnect or observe a turn mid-generation without a listening server.
+
+Known limitation (MSW 2.12, Node): the consumer cancelling the *mocked* body
+(`reader.cancel()`) never settles and `AbortController.abort()` is not propagated
+to the handler, so a test whose subject is "the gateway stream itself was torn
+down by the client" needs the HTTP server (`./server`), which releases the
+stream's timers on `close` and on client disconnect.
+
 ## HTTP server (E2E and cross-process tests)
 
 ```ts

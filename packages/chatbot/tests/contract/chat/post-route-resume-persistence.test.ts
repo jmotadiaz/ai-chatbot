@@ -14,6 +14,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { pacedTextReply } from "@ai-chatbot/model-gateway-testing";
 import { setupTestDb } from "../../helpers/db-setup";
 import { setupGatewayHarness } from "../../helpers/gateway-harness";
 import { resetRegistry, parseSseFrames  } from "../../helpers/chat-resume";
@@ -33,79 +34,6 @@ vi.mock("@/lib/features/auth/with-auth/handler", async () => {
 vi.mock("tracing", async () => {
   const { tracingStub } = await import("../../helpers/chat-resume");
   return tracingStub;
-});
-
-/**
- * Paced model: each chunk arrives ~40 ms apart, so cancelling the response
- * after a couple of frames lands reliably mid-generation while the tee'd
- * registry branch keeps draining the source.
- */
-vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
-  const { MockLanguageModelV3 } = await import("ai/test");
-  const { ToolLoopAgent } = await import("ai");
-
-  const pacedChunks: any[] = [
-    { type: "text-start", id: "text-1" },
-    ...["Word1 ", "Word2 ", "Word3 ", "Word4 ", "Word5 ", "Word6 "].map(
-      (delta, i) => ({ type: "text-delta", id: "text-1", delta, index: i }),
-    ),
-    { type: "text-end", id: "text-1" },
-    {
-      type: "finish",
-      finishReason: { unified: "stop", raw: "stop" },
-      logprobs: undefined,
-      usage: {
-        inputTokens: {
-          total: 3,
-          noCache: undefined,
-          cacheRead: undefined,
-          cacheWrite: undefined,
-        },
-        outputTokens: { total: 3, text: undefined, reasoning: undefined },
-      },
-    },
-  ];
-
-  const model = new MockLanguageModelV3({
-    modelId: "test-model",
-    doStream: async () => {
-      let index = 0;
-      return {
-        stream: new ReadableStream({
-          async pull(controller) {
-            if (index >= pacedChunks.length) {
-              controller.close();
-              return;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 40));
-            controller.enqueue(pacedChunks[index++]);
-          },
-        }),
-        rawCall: { rawPrompt: null, rawSettings: {} },
-      };
-    },
-  });
-
-  const baseConfig = () => ({ model, company: "test" as const });
-  return {
-    inferenceKit: {
-      languageModel: baseConfig,
-      createAgentModel: baseConfig,
-      decide: async () => {
-        throw new Error("not routed in these tests");
-      },
-      createAgent: (
-        _idOrRole: unknown,
-        { instructions, tools, overrides }: any = {},
-      ) =>
-        new ToolLoopAgent({
-          ...baseConfig(),
-          instructions,
-          tools,
-          ...overrides,
-        }),
-    },
-  };
 });
 
 vi.mock("@/lib/features/chat/chat-modes/factory", async () => {
@@ -145,10 +73,11 @@ import {
 const ASSISTANT_TEXT = "Word1 Word2 Word3 Word4 Word5 Word6 ";
 
 /**
- * The catalog warm-up of `processChatResponse` is a Gateway HTTP call: MSW
- * answers it so this contract suite needs no server listening on `:4001`. The
- * generation itself is the paced in-process model mocked above (a scenario
- * cannot pace chunks; the disconnect has to land mid-stream).
+ * The catalog warm-up of `processChatResponse` and the generation are Gateway
+ * HTTP calls: the scenario answers both, so this contract suite needs no server
+ * listening on `:4001`. The reply is PACED (`pacedTextReply`), and the toolkit's
+ * MSW transport streams it frame by frame instead of buffering the body, so the
+ * disconnect can land mid-generation.
  */
 const gateway = setupGatewayHarness();
 
@@ -201,7 +130,15 @@ describe("POST /api/chat — exact-once persistence on disconnect", () => {
 
   beforeEach(async () => {
     resetRegistry();
-    await gateway.use();
+    // Paced chunks: cancelling the response body after a couple of frames lands
+    // reliably mid-generation while the tee'd registry branch keeps draining.
+    await gateway.use({
+      chat: () =>
+        pacedTextReply({
+          chunks: ["Word1 ", "Word2 ", "Word3 ", "Word4 ", "Word5 ", "Word6 "],
+          delayMs: 40,
+        }),
+    });
     await db.insert(userTable).values({ id: USER_ID, email: "resume@example.com" });
   });
 

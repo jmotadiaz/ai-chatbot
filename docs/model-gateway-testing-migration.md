@@ -77,7 +77,7 @@ qualitative on purpose: no thresholds, no invented numbers.
 
 | Double | Why it survives |
 | --- | --- |
-| `MockLanguageModelV3` module mock in `packages/chatbot/tests/contract/chat/post-route-resume-persistence.test.ts` | Independent guarantee: the disconnect must land *between* SSE chunks, so the model paces its own chunks (~40 ms) while the response body is cancelled. MSW returns a whole body at once, so a scenario cannot express it; the test still warms the catalog through the Gateway harness. |
+| `chat-modes/factory` narrowing in `packages/chatbot/tests/contract/chat/post-route-resume-persistence.test.ts` | Scope, not a Gateway double: the suite's subject is exact-once persistence behind a client disconnect, so the turn streams through the real kit (`streamText` over the resolved agent model) while mode composition is covered by `tests/unit/chat/chat-modes/`. |
 | `packages/chatbot/tests/mocks/gateway/{catalog,profiles}.ts` | Consumer-owned: capability ids, texts, pacing constants, Decisions criterion and internal-operation answers are chatbot test data, not protocol. The toolkit renders them. |
 | `packages/chatbot/tests/mocks/gateway/main.ts` | Manual CLI to run the mock on `:4001` without Playwright. |
 | `packages/chatbot/tests/helpers/msw-server.ts` | Not a Gateway double: it stubs the Worker/HTTP endpoints in agent-code unit and component tests. |
@@ -90,6 +90,14 @@ qualitative on purpose: no thresholds, no invented numbers.
   purpose: each consumer owns its MSW lifecycle and catalog warm-up, and the
   toolkit must not hide MSW behind another API, so a shared wrapper would only be
   a third lifecycle to keep in sync.
+- Paced replies are served as a real `ReadableStream` by the MSW transport
+  (`packages/model-gateway/js/src/msw.ts`), so an in-process test gets the
+  scenario's `delayMs` frame by frame — the `MockLanguageModelV3` double that
+  used to pace `post-route-resume-persistence.test.ts` is gone. The one thing
+  MSW 2.12 does not propagate is the CONSUMER cancelling the mocked body
+  (`reader.cancel()` never settles, `AbortController.abort()` is ignored); a test
+  whose subject is tearing down the gateway stream itself uses the toolkit's HTTP
+  server, which releases that stream's timers.
 - `EmbeddingRateLimiter`'s `windowMs`, `estimateTokens` and `now` options
   parameterise a real production budget (a consumer with another quota builds its
   own limiter), not an AI port; the class is deliberately **not** re-exported from

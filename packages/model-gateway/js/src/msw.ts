@@ -12,7 +12,55 @@
 
 import { HttpResponse, http, type RequestHandler } from "msw";
 import { HEALTH_PATH, JSON_HEADERS, SSE_HEADERS } from "./protocol";
-import type { GatewayDispatch, GatewayResult } from "./types";
+import type { GatewayDispatch, GatewayResult, SseEvent } from "./types";
+
+/**
+ * Renders the SSE events as a real stream so the scenario's `delayMs` pacing
+ * reaches the consumer: MSW does not buffer a `ReadableStream` body, it hands it
+ * to the intercepted client frame by frame. Timers are tracked and released when
+ * the consumer cancels, so a cancelled stream leaves nothing running.
+ */
+function sseStream(events: readonly SseEvent[]): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const pending = new Set<() => void>();
+  let cancelled = false;
+
+  /** Resolves on timeout, or immediately when the consumer cancels. */
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      const finish = () => {
+        clearTimeout(timer);
+        pending.delete(finish);
+        resolve();
+      };
+      const timer = setTimeout(finish, ms);
+      pending.add(finish);
+    });
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for (const event of events) {
+          if (event.delayMs !== undefined && event.delayMs > 0) {
+            await sleep(event.delayMs);
+          }
+          if (cancelled) return;
+          controller.enqueue(encoder.encode(event.frame));
+        }
+        if (!cancelled) controller.close();
+      } catch {
+        // The consumer cancelled between the pacing wait and the enqueue.
+      }
+    },
+    cancel() {
+      cancelled = true;
+      // Settle the in-flight wait so the stream's `start` returns and the
+      // intercepted request finishes instead of staying open until the pacing
+      // would have elapsed.
+      for (const finish of [...pending]) finish();
+    },
+  });
+}
 
 function toHttpResponse(result: GatewayResult): Response {
   switch (result.kind) {
@@ -26,11 +74,17 @@ function toHttpResponse(result: GatewayResult): Response {
         status: result.status,
         headers: result.headers,
       });
-    case "sse":
-      return new HttpResponse(
-        result.events.map((event) => event.frame).join(""),
-        { status: result.status, headers: { ...SSE_HEADERS } },
-      );
+    case "sse": {
+      // A paced scenario streams; an unpaced one keeps the simple buffered body.
+      const paced = result.events.some((event) => (event.delayMs ?? 0) > 0);
+      const body = paced
+        ? sseStream(result.events)
+        : result.events.map((event) => event.frame).join("");
+      return new HttpResponse(body, {
+        status: result.status,
+        headers: { ...SSE_HEADERS },
+      });
+    }
   }
 }
 
