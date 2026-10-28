@@ -90,7 +90,7 @@ const runTurn = async ({
   topP?: number;
 } = {}) => {
   const stream = await processChatResponse({
-    messages: [userMessage("hola, cuéntame algo")],
+    messages: [userMessage("hello, tell me something")],
     selectedModel: SELECTED_MODEL,
     temperature,
     topP,
@@ -128,7 +128,7 @@ describe("neutral branch through the conversation pipeline", () => {
   it("answers a `neither` decision with no tools at all", async () => {
     const scenario = await gateway.use({
       decisions: answering("neither"),
-      chat: () => textReply("Respuesta neutra"),
+      chat: () => textReply("Neutral reply"),
     });
 
     const { chunkTypes, text, routing } = await runTurn({
@@ -144,11 +144,11 @@ describe("neutral branch through the conversation pipeline", () => {
     expect(decisions).toHaveLength(1);
     expect(decisions[0]!.body).toMatchObject({
       model: "decision-default",
-      state: { latest_message: "hola, cuéntame algo" },
+      state: { latest_message: "hello, tell me something" },
     });
 
     expect(chunkTypes.filter((type) => type.startsWith("tool-"))).toEqual([]);
-    expect(text).toBe("Respuesta neutra");
+    expect(text).toBe("Neutral reply");
     // The routing metadata the stream announces carries the Decisions
     // provenance, not a fixture.
     expect(routing).toMatchObject({
@@ -201,7 +201,7 @@ describe("neutral branch through the conversation pipeline", () => {
         .mockImplementation(() => {});
       const scenario = await gateway.use({
         ...use(),
-        chat: () => textReply("Respuesta neutra"),
+        chat: () => textReply("Neutral reply"),
       });
 
       try {
@@ -213,7 +213,7 @@ describe("neutral branch through the conversation pipeline", () => {
           reason: "fallback",
         });
         expect(chunkTypes.filter((type) => type.startsWith("tool-"))).toEqual([]);
-        expect(text).toBe("Respuesta neutra");
+        expect(text).toBe("Neutral reply");
         expect(toolNames(chatBodies(scenario)[0]!)).toEqual([]);
       } finally {
         consoleError.mockRestore();
@@ -228,7 +228,7 @@ describe("neutral branch through the conversation pipeline", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     await gateway.use({
       decisions: answering("ctx7"),
-      chat: () => textReply("Respuesta neutra"),
+      chat: () => textReply("Neutral reply"),
     });
     gateway.server.use(
       http.post("*/v1/systemone", async () => {
@@ -245,7 +245,7 @@ describe("neutral branch through the conversation pipeline", () => {
         mode: "neutral",
         reason: "fallback",
       });
-      expect(text).toBe("Respuesta neutra");
+      expect(text).toBe("Neutral reply");
     } finally {
       consoleError.mockRestore();
     }
@@ -254,7 +254,7 @@ describe("neutral branch through the conversation pipeline", () => {
   it("applies a low-confidence classifier decision as-is (no gate)", async () => {
     const scenario = await gateway.use({
       decisions: answeringWith("web", { confidence: 0.42 }),
-      chat: () => textReply("Respuesta neutra"),
+      chat: () => textReply("Neutral reply"),
     });
 
     const { routing, text } = await runTurn();
@@ -265,7 +265,7 @@ describe("neutral branch through the conversation pipeline", () => {
       reason: "routed",
       confidence: 0.42,
     });
-    expect(text).toBe("Respuesta neutra");
+    expect(text).toBe("Neutral reply");
     // The resolved mode, not the requested one, builds the agent.
     expect(toolNames(chatBodies(scenario)[0]!)).toEqual([WEB_SEARCH_TOOL]);
   });
@@ -273,7 +273,7 @@ describe("neutral branch through the conversation pipeline", () => {
   it("routes a valid answer without confidence instead of gating it", async () => {
     await gateway.use({
       decisions: answeringWith("web", { confidence: undefined }),
-      chat: () => textReply("Respuesta neutra"),
+      chat: () => textReply("Neutral reply"),
     });
 
     const { routing, text } = await runTurn();
@@ -283,6 +283,6 @@ describe("neutral branch through the conversation pipeline", () => {
       mode: "web",
       reason: "routed",
     });
-    expect(text).toBe("Respuesta neutra");
+    expect(text).toBe("Neutral reply");
   });
 });

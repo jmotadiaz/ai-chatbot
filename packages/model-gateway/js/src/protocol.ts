@@ -389,6 +389,14 @@ export function rerankResponse(
   };
 }
 
+/** Rendered answer of one `choice` question, as the Decisions API returns it. */
+interface DecisionsAnswerBody {
+  type: "choice";
+  choice: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+}
+
 /**
  * Decisions (TypeSafe/SystemOne) response: for each `choice` question it answers
  * with the declared criterion (`options.choices`, keyed by question) or, when a
@@ -398,6 +406,12 @@ export function rerankResponse(
  * `choices` is the consumer's declaration ("routing answers with `web`"); the
  * toolkit stays free of application routing. A choice outside its question's
  * criteria is an invalid configuration, not a silent success.
+ *
+ * `answerFields` overlays extra fields on the rendered answer of a question — the
+ * confidence the Gateway reports, an extra probability key: answers the uniform
+ * rendering never invents, which a consumer would otherwise have to rebuild from
+ * the rendered body. A question named here that the request does not ask as a
+ * `choice` question is invalid configuration too, not a silent no-op.
  */
 export function decisionsResponse(
   request: DecisionsRequest,
@@ -405,18 +419,11 @@ export function decisionsResponse(
     model?: string;
     provider?: string;
     choices?: Readonly<Record<string, string>>;
+    answerFields?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
   } = {},
 ): OperationReply {
   const model = request.model ?? options.model ?? "decision-default";
-  const answers: Record<
-    string,
-    {
-      type: "choice";
-      choice: string;
-      confidence: number;
-      probabilities: Record<string, number>;
-    }
-  > = {};
+  const answers: Record<string, DecisionsAnswerBody> = {};
   for (const [name, question] of Object.entries(request.questions ?? {})) {
     const criteria = Object.keys(question.criteria ?? {});
     if (question.type !== "choice" || criteria.length === 0) continue;
@@ -434,6 +441,17 @@ export function decisionsResponse(
       probabilities: Object.fromEntries(criteria.map((criterion) => [criterion, uniform])),
     };
   }
+
+  for (const [name, fields] of Object.entries(options.answerFields ?? {})) {
+    const rendered = answers[name];
+    if (rendered === undefined) {
+      throw new Error(
+        `Decisions answer fields refer to question "${name}", which this request does not ask as a choice question`,
+      );
+    }
+    answers[name] = { ...rendered, ...fields };
+  }
+
   return {
     body: {
       answers,

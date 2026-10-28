@@ -46,7 +46,7 @@ const answerText = async <TOOLS extends ToolSet>(
   agent: ToolLoopAgent<never, TOOLS>,
 ): Promise<string> => {
   const result = await agent.stream({
-    messages: [{ role: "user", content: "hola" }],
+    messages: [{ role: "user", content: "hello" }],
   });
   const reader = result.toUIMessageStream().getReader();
   let text = "";

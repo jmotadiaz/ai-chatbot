@@ -82,10 +82,19 @@ criterion when none is declared; probabilities stay uniform), `speechResponse`
 ```ts
 // The consumer owns the answer; the toolkit only renders it.
 decisionsResponse(request, { choices: { mode: "web" } });
+
+// `answerFields` overlays extra fields on ONE question's rendered answer: the
+// confidence the Gateway reports, an extra probability key — the answers the
+// uniform rendering never invents.
+decisionsResponse(request, {
+  choices: { mode: "web" },
+  answerFields: { mode: { confidence: 0.42, probabilities: { web: 0.9, ctx7: 0.1 } } },
+});
 ```
 
 A declared choice that is not one of its question's criteria throws (invalid
-configuration) instead of answering.
+configuration) instead of answering, and so do `answerFields` naming a question
+the request does not ask as a `choice` question.
 
 Any request without a non-empty `Authorization` header is answered `401`. A
 scenario can override that with `authorize(headers)`.

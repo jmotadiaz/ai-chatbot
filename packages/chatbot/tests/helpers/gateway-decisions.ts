@@ -19,29 +19,19 @@ export const answerDecision =
     decisionsResponse(request, { choices: { [question]: choice } });
 
 /**
- * The toolkit's rendering for `choice` with the question's answer fields
- * overlaid. `choice` must still be one of the question's criteria.
+ * The overlay the toolkit offers for an answer the uniform rendering never
+ * invents: extra fields on ONE question's rendered answer (an explicit
+ * confidence, an extra probability key). `choice` must still be one of the
+ * question's criteria; the toolkit validates both the criterion and the
+ * question.
  */
 export const answerDecisionWith =
   (question: string, choice: string, fields: Record<string, unknown>) =>
-  (request: DecisionsRequest): OperationReply => {
-    const rendered = decisionsResponse(request, {
+  (request: DecisionsRequest): OperationReply =>
+    decisionsResponse(request, {
       choices: { [question]: choice },
+      answerFields: { [question]: fields },
     });
-    const body = rendered.body as {
-      answers: Record<string, Record<string, unknown>>;
-    };
-    return {
-      ...rendered,
-      body: {
-        ...body,
-        answers: {
-          ...body.answers,
-          [question]: { ...body.answers[question], ...fields },
-        },
-      },
-    };
-  };
 
 /** An arbitrary Decisions payload, for the responses a healthy answer never is. */
 export const answerDecisionRaw =

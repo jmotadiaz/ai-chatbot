@@ -1,3 +1,8 @@
+/**
+ * Embedding budget limiter. Internal to the feature: `./index.ts` deliberately
+ * does not re-export it, so the production surface is the singleton below and the
+ * constructor options never become a public knob.
+ */
 export class EmbeddingRateLimiter {
   private maxRequestsPerMinute: number;
   private maxTokensPerMinute: number;
@@ -10,10 +15,13 @@ export class EmbeddingRateLimiter {
   private tokenCounts: number[] = [];
 
   /**
-   * `windowMs` and `now` are real production variations, not test switches: the
-   * application singleton keeps the one-minute window and the system clock.
-   * A consumer with a different budget (or a test that needs an explicit clock
-   * instead of an arbitrary sleep) can pin them.
+   * `windowMs`, `estimateTokens` and `now` describe a real production budget, not
+   * a test switch: a consumer with a different quota (another window, its own
+   * token estimate) constructs its own limiter instead of editing the singleton,
+   * which keeps the one-minute window and the system clock. An explicit clock is
+   * also how a test observes the blocking branch without an arbitrary sleep; that
+   * is the secondary use, and it is why the mechanism is an injected clock rather
+   * than a special test mode.
    */
   constructor(options: {
     maxRequestsPerMinute: number;

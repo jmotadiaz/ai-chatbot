@@ -34,7 +34,7 @@ const gateway = setupGatewayHarness();
 
 const router = createChatModeRouter(inferenceKit.decide);
 
-const input = { latestMessage: "¿Cómo uso drizzle-kit?", recentContext: "" };
+const input = { latestMessage: "How do I use drizzle-kit?", recentContext: "" };
 
 const answering = (choice: string) =>
   answerDecision(CHAT_MODE_ROUTING_QUESTION_KEY, choice);
@@ -166,14 +166,14 @@ const userMessage = (text: string): ChatbotMessage => ({
 describe("buildChatModeRouterInput", () => {
   it("uses the last user message and the previous turn as context", () => {
     const messages: ChatbotMessage[] = [
-      userMessage("primera pregunta"),
-      { id: "a-1", role: "assistant", parts: [{ type: "text", text: "primera respuesta" }] },
-      userMessage("¿y eso cómo se hace?"),
+      userMessage("first question"),
+      { id: "a-1", role: "assistant", parts: [{ type: "text", text: "first answer" }] },
+      userMessage("and how is that done?"),
     ];
 
     expect(buildChatModeRouterInput(messages)).toEqual({
-      latestMessage: "¿y eso cómo se hace?",
-      recentContext: "user: primera pregunta\nassistant: primera respuesta",
+      latestMessage: "and how is that done?",
+      recentContext: "user: first question\nassistant: first answer",
     });
   });
 
@@ -197,7 +197,7 @@ describe("buildChatModeRouterInput", () => {
     });
     expect(
       buildChatModeRouterInput([
-        { id: "a-1", role: "assistant", parts: [{ type: "text", text: "hola" }] },
+        { id: "a-1", role: "assistant", parts: [{ type: "text", text: "hello" }] },
       ]),
     ).toEqual({ latestMessage: "", recentContext: "" });
   });
@@ -205,11 +205,11 @@ describe("buildChatModeRouterInput", () => {
   it("ignores messages without text parts", () => {
     const messages: ChatbotMessage[] = [
       { id: "a-1", role: "assistant", parts: [{ type: "step-start" }] },
-      userMessage("solo texto"),
+      userMessage("text only"),
     ];
 
     expect(buildChatModeRouterInput(messages)).toEqual({
-      latestMessage: "solo texto",
+      latestMessage: "text only",
       recentContext: "assistant: ",
     });
   });

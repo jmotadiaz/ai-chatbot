@@ -62,7 +62,7 @@ const answering = (choice: string) =>
 /** A routed scenario: the Decisions answer plus the generation reply. */
 const routedTo = (choice: string) => ({
   decisions: answering(choice),
-  chat: () => textReply("Respuesta"),
+  chat: () => textReply("Reply"),
 });
 
 const decisionsBodies = (scenario: GatewayScenario) =>
@@ -86,7 +86,7 @@ const consume = async (stream: ReadableStream) => {
 const runTurn = async ({
   chatMode,
   projectId,
-  text = "¿Cómo uso drizzle-kit?",
+  text = "How do I use drizzle-kit?",
 }: {
   chatMode: string;
   projectId?: string;
@@ -133,7 +133,7 @@ describe("auto chat mode persistence", () => {
     expect(bodies).toHaveLength(1);
     expect(bodies[0]).toMatchObject({
       model: "decision-default",
-      state: { latest_message: "¿Cómo uso drizzle-kit?", recent_context: "" },
+      state: { latest_message: "How do I use drizzle-kit?", recent_context: "" },
     });
 
     const [chatRow] = await db
@@ -232,7 +232,7 @@ describe("auto chat mode persistence", () => {
       decisions: () => {
         throw new Error("decisions backend down");
       },
-      chat: () => textReply("Respuesta"),
+      chat: () => textReply("Reply"),
     });
 
     try {

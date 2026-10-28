@@ -145,15 +145,17 @@ decisions: {
 }
 ```
 
-The toolkit only renders the answer (`decisionsResponse(request, { choices })`);
-the consumer owns it. A test builds it with `answerDecision`,
+The toolkit only renders the answer (`decisionsResponse(request, { choices,
+answerFields })`); the consumer owns it. A test builds it with `answerDecision`,
 `answerDecisionWith` or `answerDecisionRaw` (`tests/helpers/gateway-decisions.ts`)
-for a healthy answer, an answer with overlain fields, and the malformed payloads
-a healthy profile never sends. An undeclared question, or a criterion the question does
-not offer, is an explicit `422`. A journey that must route elsewhere declares
-that criterion (or a function of the request's `state`, for routing derived
-from the message) — never a global switch: the same `:4001` mock serves every
-journey and its catalog/profile are not reconfigured mid-run.
+for a healthy answer, an answer with overlaid fields (the toolkit's
+`answerFields`), and the malformed payloads a healthy profile never sends. An
+undeclared question, a criterion the question does not offer, or answer fields
+for a question the request does not ask, is an explicit error. A journey that
+must route elsewhere declares that criterion (or a function of the request's
+`state`, for routing derived from the message) — never a global switch: the same
+`:4001` mock serves every journey and its catalog/profile are not reconfigured
+mid-run.
 
 ### Social unit tests at the Gateway seam
 

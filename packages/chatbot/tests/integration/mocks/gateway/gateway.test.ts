@@ -410,7 +410,7 @@ describe("e2e profile — non-chat operations", () => {
     async (path) => {
       const response = await post(path, {
         model: "decision-default",
-        state: { latest_message: "hola" },
+        state: { latest_message: "hello" },
         questions: {
           mode: {
             type: "choice",

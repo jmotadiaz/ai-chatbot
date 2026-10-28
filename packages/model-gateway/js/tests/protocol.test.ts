@@ -323,6 +323,45 @@ describe("operation fixtures", () => {
     ).toThrow(/not one of the criteria/);
   });
 
+  it("overlays the consumer's extra answer fields on the rendered answer", () => {
+    const response = decisionsResponse(
+      {
+        model: "decision-default",
+        questions: {
+          mode: { type: "choice", criteria: { ctx7: "docs", web: "current" } },
+        },
+      },
+      {
+        choices: { mode: "ctx7" },
+        answerFields: {
+          mode: { confidence: 0.42, probabilities: { ctx7: 0.9, web: 0.1 } },
+        },
+      },
+    );
+    expect(response.body).toMatchObject({
+      answers: {
+        mode: {
+          type: "choice",
+          choice: "ctx7",
+          confidence: 0.42,
+          probabilities: { ctx7: 0.9, web: 0.1 },
+        },
+      },
+    });
+  });
+
+  it("rejects answer fields for a question the request does not ask", () => {
+    expect(() =>
+      decisionsResponse(
+        {
+          model: "decision-default",
+          questions: { mode: { type: "choice", criteria: { ctx7: "docs" } } },
+        },
+        { answerFields: { other: { confidence: 0.42 } } },
+      ),
+    ).toThrow(/does not ask as a choice question/);
+  });
+
   it("serves deterministic WAV audio with the contract media type", () => {
     const audio = deterministicWav("hello");
     expect(audio).toHaveLength(44 + 800 * 2);

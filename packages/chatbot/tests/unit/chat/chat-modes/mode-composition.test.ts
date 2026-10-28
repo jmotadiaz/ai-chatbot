@@ -97,13 +97,13 @@ const runTurn = async ({
     chatMode,
     projectId,
     systemPrompt,
-    messages: [userMessage("hola, ¿cómo estás?")],
+    messages: [userMessage("hello, how are you?")],
     userId: USER_ID,
     webSearchNumResults: 4,
   });
 
   const result = await agent.stream({
-    messages: [{ role: "user", content: "hola, ¿cómo estás?" }],
+    messages: [{ role: "user", content: "hello, how are you?" }],
   });
   const reader = result.toUIMessageStream().getReader();
   for (;;) {
@@ -116,7 +116,7 @@ const runTurn = async ({
   return bodies[0]!;
 };
 
-const answering = () => ({ chat: () => textReply("Hola") });
+const answering = () => ({ chat: () => textReply("Hello") });
 
 type ProjectRow = NonNullable<Awaited<ReturnType<typeof getProjectById>>>;
 
@@ -144,7 +144,7 @@ describe("Chat Mode composition", () => {
     expect(toolNames(body)).toEqual([]);
     expect(systemContent(body)).toBe(DEFAULT_PROJECT_AGENT_PROMPT);
     expect(systemContent(body)).not.toContain(MEMORY_CONTEXT);
-    expect(userContent(body)).toContain("hola, ¿cómo estás?");
+    expect(userContent(body)).toContain("hello, how are you?");
   });
 
   it("a bare auto mode degrades to the same tool-less branch", async () => {
@@ -237,7 +237,7 @@ describe("Chat Mode composition", () => {
         selection: { selectedModel: SELECTED_MODEL },
         chatMode: "auto",
         projectId: PROJECT_ID,
-        messages: [userMessage("hola")],
+        messages: [userMessage("hello")],
         userId: USER_ID,
         webSearchNumResults: 4,
       }),

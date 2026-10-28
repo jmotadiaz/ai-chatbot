@@ -158,18 +158,6 @@ function assertContract(model: string | undefined, contract: string): void {
 // `fast-default`: the internal text operations of a turn
 // ---------------------------------------------------------------------------
 
-/**
- * System-prompt markers of the four `fast-default` operations. The OpenAI-
- * compatible transport sends `response_format: { type: "json_object" }` without
- * the schema (`supportsStructuredOutputs` is off in the kit), so the system
- * prompt is the only wire signal that identifies the operation. Each branch
- * below answers exactly what the operation's schema validates.
- */
-const TITLE_MARKER = "chat title generator";
-const MEMORY_DECOMPOSITION_MARKER = "optimize memory retrieval";
-const MEMORY_EXTRACTION_MARKER = "extracts persistent facts";
-const URL_INTENT_MARKER = "intent classification engine";
-
 /** Schema-valid answer of the memory query decomposition (`{ queries: string[] }`). */
 const MEMORY_SEARCH_QUERIES = JSON.stringify({ queries: ["e2e memory query"] });
 
@@ -188,25 +176,51 @@ const systemPrompt = (request: ChatRequest): string => {
   return typeof message?.content === "string" ? message.content : "";
 };
 
+/**
+ * The four `fast-default` operations, keyed by the system-prompt marker that
+ * identifies each one on the wire. The OpenAI-compatible transport sends
+ * `response_format: { type: "json_object" }` without the schema
+ * (`supportsStructuredOutputs` is off in the kit), so the system prompt is the
+ * only signal that identifies the operation. Each entry answers exactly what
+ * the operation's schema validates.
+ */
+const FAST_DEFAULT_OPERATIONS: ReadonlyArray<{
+  /** Substring of the system prompt that identifies the operation. */
+  readonly marker: string;
+  /** Schema-valid answer of the operation. */
+  readonly answer: () => ChatReply;
+}> = [
+  // Chat title (`generateText`, plain text).
+  {
+    marker: "chat title generator",
+    answer: () => textReply(contractText(FAST_CONTRACT)),
+  },
+  // Memory retrieval query decomposition (`Output.object`).
+  {
+    marker: "optimize memory retrieval",
+    answer: () => textReply(MEMORY_SEARCH_QUERIES),
+  },
+  // Memory fact extraction (`Output.object`).
+  { marker: "extracts persistent facts", answer: () => textReply(MEMORY_FACTS) },
+  // URL context classifier (`generateObject`).
+  { marker: "intent classification engine", answer: () => textReply(URL_INTENT) },
+];
+
 function fastDefaultReply(request: ChatRequest): ChatReply {
   const system = systemPrompt(request);
-
-  // Chat title (`generateText`, plain text).
-  if (system.includes(TITLE_MARKER)) return textReply(contractText(FAST_CONTRACT));
-  // Memory retrieval query decomposition (`Output.object`).
-  if (system.includes(MEMORY_DECOMPOSITION_MARKER)) {
-    return textReply(MEMORY_SEARCH_QUERIES);
-  }
-  // Memory fact extraction (`Output.object`).
-  if (system.includes(MEMORY_EXTRACTION_MARKER)) return textReply(MEMORY_FACTS);
-  // URL context classifier (`generateObject`).
-  if (system.includes(URL_INTENT_MARKER)) return textReply(URL_INTENT);
-
-  throw new GatewayScenarioError(
-    "The e2e profile does not know this fast-default operation",
-    422,
-    "unsupported_operation",
+  const operation = FAST_DEFAULT_OPERATIONS.find(({ marker }) =>
+    system.includes(marker),
   );
+
+  if (operation === undefined) {
+    throw new GatewayScenarioError(
+      "The e2e profile does not know this fast-default operation",
+      422,
+      "unsupported_operation",
+    );
+  }
+
+  return operation.answer();
 }
 
 // ---------------------------------------------------------------------------

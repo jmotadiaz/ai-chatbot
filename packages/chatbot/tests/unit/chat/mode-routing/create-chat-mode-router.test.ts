@@ -41,8 +41,8 @@ const gateway = setupGatewayHarness();
 const router = createChatModeRouter(inferenceKit.decide);
 
 const input: ChatModeRouterInput = {
-  latestMessage: "¿Cómo uso drizzle-kit?",
-  recentContext: "user: hola",
+  latestMessage: "How do I use drizzle-kit?",
+  recentContext: "user: hello",
 };
 
 /** Decisions request body as the kit serializes it (`POST /v1/systemone`). */
