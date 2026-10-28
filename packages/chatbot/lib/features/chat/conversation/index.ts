@@ -10,5 +10,3 @@ import { createChatModeRouter } from "@/lib/features/chat/mode-routing";
 export const processChatResponse = makeProcessChatResponse(
   createChatModeRouter(inferenceKit.decide),
 );
-
-export * from "./ports";

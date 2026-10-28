@@ -1,4 +1,5 @@
-import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
+import type { ChatModelSelection } from "@/lib/features/chat/chat-modes/model";
+import { createChatAgent } from "@/lib/features/chat/chat-modes/model";
 import { DEFAULT_PROJECT_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
 
 /**
@@ -11,5 +12,8 @@ import { DEFAULT_PROJECT_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/pro
  * the model cannot be forced into an irrelevant lookup, and it answers with
  * the same user-selected model, built through the kit's `createAgent`.
  */
-export const createNeutralAgent = ({ ai }: { ai: ChatAgentAiPort }) =>
-  ai.createAgent({ instructions: DEFAULT_PROJECT_AGENT_PROMPT });
+export const createNeutralAgent = ({
+  selection,
+}: {
+  selection: ChatModelSelection;
+}) => createChatAgent(selection, { instructions: DEFAULT_PROJECT_AGENT_PROMPT });

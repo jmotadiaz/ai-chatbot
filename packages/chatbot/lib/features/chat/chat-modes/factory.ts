@@ -1,6 +1,6 @@
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import type { ChatMode, ResolvedChatMode } from "@/lib/features/chat/types";
-import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
+import type { ChatModelSelection } from "@/lib/features/chat/chat-modes/model";
 import { createProjectAgent } from "@/lib/features/chat/chat-modes/project";
 import { createContext7Agent } from "@/lib/features/chat/chat-modes/context7";
 import { createWebSearchAgent } from "@/lib/features/chat/chat-modes/web-search";
@@ -11,7 +11,7 @@ import { messagePartsToText } from "@/lib/features/chat/utils";
 import { getProjectById } from "@/lib/features/project/queries";
 
 export const createChatModeAgent = async ({
-  ai,
+  selection,
   projectId,
   chatMode,
   messages,
@@ -21,7 +21,7 @@ export const createChatModeAgent = async ({
   ragMaxResources,
   minRagResourcesScore,
 }: {
-  ai: ChatAgentAiPort;
+  selection: ChatModelSelection;
   projectId?: string;
   chatMode: ChatMode | ResolvedChatMode;
   systemPrompt?: string;
@@ -54,7 +54,7 @@ export const createChatModeAgent = async ({
       : systemPrompt;
 
     return createProjectAgent({
-      ai,
+      selection,
       systemPrompt: augmentedSystemPrompt,
       messages,
       userId,
@@ -68,12 +68,12 @@ export const createChatModeAgent = async ({
       // `neutral` is the resolved mode of a tool-less Auto turn. A bare `auto`
       // reaching here means no routing decision was available, which degrades to
       // the same branch instead of silently forcing a Context7 lookup.
-      return createNeutralAgent({ ai });
+      return createNeutralAgent({ selection });
     case "context7":
-      return createContext7Agent({ ai, memoryContext });
+      return createContext7Agent({ selection, memoryContext });
     case "rag":
       return createRagAgent({
-        ai,
+        selection,
         messages,
         userId,
         projectId,
@@ -83,7 +83,7 @@ export const createChatModeAgent = async ({
       });
     case "web":
       return createWebSearchAgent({
-        ai,
+        selection,
         messages,
         webSearchNumResults,
         memoryContext: memoryContext,

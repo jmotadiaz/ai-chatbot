@@ -15,6 +15,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { setupTestDb } from "../../helpers/db-setup";
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
 import { resetRegistry, parseSseFrames  } from "../../helpers/chat-resume";
 
 // `vi.hoisted` so the `vi.mock` factory below can read it despite the hoist.
@@ -109,11 +110,16 @@ vi.mock("@/lib/infrastructure/ai/inference-kit", async () => {
 
 vi.mock("@/lib/features/chat/chat-modes/factory", async () => {
   const { streamText } = await import("ai");
+  const { inferenceKit } = await import(
+    "@/lib/infrastructure/ai/inference-kit"
+  );
   return {
-    createChatModeAgent: vi.fn(async ({ ai }: any) => ({
+    createChatModeAgent: vi.fn(async ({ selection }: any) => ({
       stream: ({ messages }: any) =>
         streamText({
-          model: ai.getModelConfiguration().model,
+          // The turn's model comes from the composition the factory received:
+          // the user-selected id resolved through the kit.
+          model: inferenceKit.createAgentModel(selection.selectedModel).model,
           messages,
         }),
     })),
@@ -137,6 +143,14 @@ import {
 } from "@/lib/infrastructure/db/schema";
 
 const ASSISTANT_TEXT = "Word1 Word2 Word3 Word4 Word5 Word6 ";
+
+/**
+ * The catalog warm-up of `processChatResponse` is a Gateway HTTP call: MSW
+ * answers it so this contract suite needs no server listening on `:4001`. The
+ * generation itself is the paced in-process model mocked above (a scenario
+ * cannot pace chunks; the disconnect has to land mid-stream).
+ */
+const gateway = setupGatewayHarness();
 
 function makeRequest(overrides: Record<string, unknown> = {}): Request {
   return new Request("http://test/api/chat", {
@@ -187,6 +201,7 @@ describe("POST /api/chat — exact-once persistence on disconnect", () => {
 
   beforeEach(async () => {
     resetRegistry();
+    await gateway.use();
     await db.insert(userTable).values({ id: USER_ID, email: "resume@example.com" });
   });
 

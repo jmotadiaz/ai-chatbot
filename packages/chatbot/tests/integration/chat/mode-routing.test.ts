@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import { textReply } from "@ai-chatbot/model-gateway-testing";
 import type { GatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import { setupTestDb } from "../../helpers/db-setup";
 import { setupGatewayHarness } from "../../helpers/gateway-harness";
@@ -21,84 +22,21 @@ import { dbMessageToChatbotMessage } from "@/lib/features/chat/utils";
 
 vi.mock("server-only", () => ({}));
 
-// The user-selected model is NOT what these tests are about, so the agent
-// generation stays an in-process fake (the same three kit members
-// `buildAgentAdapter` calls). Every other member — `decide` in particular — is
-// the REAL part of the composition root, so routing goes through the actual
-// kit over HTTP exactly as in production.
-vi.mock("@/lib/infrastructure/ai/inference-kit", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/infrastructure/ai/inference-kit")>();
-  const { MockLanguageModelV3 } = await import("ai/test");
-  const { simulateReadableStream, ToolLoopAgent } = await import("ai");
-  const model = new MockLanguageModelV3({
-    modelId: "test-model",
-    doStream: async () => ({
-      stream: simulateReadableStream({
-        chunks: [
-          { type: "text-start", id: "text-1" },
-          { type: "text-delta", id: "text-1", delta: "Respuesta" },
-          { type: "text-end", id: "text-1" },
-          {
-            type: "finish",
-            finishReason: { unified: "stop", raw: "stop" },
-            logprobs: undefined,
-            usage: {
-              inputTokens: {
-                total: 3,
-                noCache: undefined,
-                cacheRead: undefined,
-                cacheWrite: undefined,
-              },
-              outputTokens: { total: 3, text: undefined, reasoning: undefined },
-            },
-          },
-        ],
-      }),
-      rawCall: { rawPrompt: null, rawSettings: {} },
-    }),
-  });
-  const baseConfig = () => ({ model, company: "test" as const });
-  return {
-    inferenceKit: {
-      ...actual.inferenceKit,
-      languageModel: baseConfig,
-      createAgentModel: baseConfig,
-      createAgent: (
-        _idOrRole: unknown,
-        { instructions, tools, overrides }: any = {},
-      ) =>
-        new ToolLoopAgent({
-          ...baseConfig(),
-          instructions,
-          tools,
-          ...overrides,
-        }),
-    },
-  };
-});
-
-// Real agent dispatch is irrelevant here; what matters is the metadata the
-// factory attaches to the streamed assistant message.
-vi.mock("@/lib/features/chat/chat-modes/factory", async () => {
-  const { streamText } = await import("ai");
-  return {
-    createChatModeAgent: vi.fn(async ({ ai }: any) => ({
-      stream: ({ messages }: any) =>
-        streamText({
-          model: ai.getModelConfiguration().model,
-          messages,
-        }),
-    })),
-  };
-});
-
-vi.mock("@/lib/features/chat/title", () => ({
-  generateTitle: async () => "Auto chat",
+// Collaborators that are NOT inference are stubbed: memory retrieval (DB +
+// embeddings, covered by its own suite) and memory extraction. Everything
+// inference-related is REAL: the Chat Mode Router goes through `inferenceKit`
+// over HTTP (`/v1/systemone`), and the resolved Chat Mode builds its agent
+// through the kit too, answered by the scenario's `/v1/chat/completions`.
+vi.mock("@/lib/features/memory/retrieval", () => ({
+  getRelevantMemory: async () => null,
 }));
 
 vi.mock("@/lib/features/memory/extraction", () => ({
   extractMemoryFacts: async () => [],
+}));
+
+vi.mock("@/lib/features/chat/title", () => ({
+  generateTitle: async () => "Auto chat",
 }));
 
 const { makeProcessChatResponse } = await import(
@@ -120,6 +58,12 @@ const processChatResponse = makeProcessChatResponse(
 /** The Decisions answer of the chatbot E2E profile: `ctx7` → `context7`. */
 const answering = (choice: string) =>
   answerDecision(CHAT_MODE_ROUTING_QUESTION_KEY, choice);
+
+/** A routed scenario: the Decisions answer plus the generation reply. */
+const routedTo = (choice: string) => ({
+  decisions: answering(choice),
+  chat: () => textReply("Respuesta"),
+});
 
 const decisionsBodies = (scenario: GatewayScenario) =>
   scenario.requests
@@ -179,7 +123,7 @@ describe("auto chat mode persistence", () => {
 
   it("persists Chat.chatMode = auto and chatModeRouting on the assistant message", async () => {
     await seedUser();
-    const scenario = await gateway.use({ decisions: answering("ctx7") });
+    const scenario = await gateway.use(routedTo("ctx7"));
 
     await runTurn({ chatMode: "auto" });
 
@@ -232,7 +176,7 @@ describe("auto chat mode persistence", () => {
 
   it("does not route explicit chat modes and keeps the stored mode", async () => {
     await seedUser();
-    const scenario = await gateway.use({ decisions: answering("ctx7") });
+    const scenario = await gateway.use(routedTo("ctx7"));
 
     await runTurn({ chatMode: "web" });
 
@@ -261,7 +205,7 @@ describe("auto chat mode persistence", () => {
       name: "Project",
       systemPrompt: "Project prompt",
     });
-    const scenario = await gateway.use({ decisions: answering("ctx7") });
+    const scenario = await gateway.use(routedTo("ctx7"));
 
     await runTurn({ chatMode: "auto", projectId: PROJECT_ID });
 
@@ -288,6 +232,7 @@ describe("auto chat mode persistence", () => {
       decisions: () => {
         throw new Error("decisions backend down");
       },
+      chat: () => textReply("Respuesta"),
     });
 
     try {
