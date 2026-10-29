@@ -2,7 +2,13 @@ import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent — tool call grouping", () => {
   // The browser checks that the stub's streamed tool events become DOM groups;
-  // a unit test covers grouping logic but not the stream-to-DOM path.
+  // a unit test covers grouping logic but not the stream-to-DOM path. Unit
+  // equivalents stop short of it: group-items.test.ts pairs results by id and
+  // drops orphans, tool-call-group.test.tsx renders one group, and
+  // tool-summary.test.ts builds the header text. None of them runs the AG-UI
+  // chunk relay into the mounted transcript, so only the browser shows one
+  // visible group per streamed call with its real summary. The worker is the
+  // in-app stub pinned by config.test.ts, never a real coding-agent process.
   test("renders one group per tool call with a non-empty summary", async ({ page }) => {
     await page.goto("/");
     await page.locator("[aria-label='Toggle sidebar']").first().click();
