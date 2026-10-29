@@ -23,7 +23,7 @@ tests/e2e/
 ├── chat/                # chat, hub, resume, projects, settings, attachments
 │   ├── components/      # page components (header, model picker, hub panels, sidebar, …)
 │   └── pages/           # page objects (chat, hub, history, project)
-└── agent-code/          # worker-stub journeys (currently `test.fixme`)
+└── agent-code/          # sidebar-based worker-stub journeys
 ```
 
 ## Resources and lifecycle
