@@ -59,7 +59,7 @@ retirado de `tests/integration/compaction/` tienen equivalente idéntico en
 existe en `tests/e2e` ni se propone E2E: no hay garantía de navegador que
 requiera Compaction.
 
-### Bloqueo abierto: punto de corte con un único Message (requiere decisión del operador)
+### Bloqueo abierto (superado: ver "Decisión final del operador" al final)
 
 - El título de `cut-point.test.ts` "keeps all messages if single message exceeds
   threshold" dice que se conservan todos los mensajes.
@@ -78,7 +78,7 @@ requiera Compaction.
   mediante MSW (sin servidor real); no prueban compatibilidad con proveedores.
 - Las evaluaciones de Compaction (`tests/evals`) no se ejecutaron ni se usaron para validar.
 
-## Investigación del punto de corte con un único Message (2026-10-29)
+## Investigación del punto de corte con un único Message (2026-10-29; conclusión superada por la decisión final)
 
 Búsqueda en spec, ADR 0013, `openspec/` y el historial de git. Resultado: **no
 existe ninguna decisión explícita** que resuelva la discrepancia; no se ha
@@ -137,12 +137,12 @@ siguen siendo placeholders locales.
 
 ## Resolución conservadora del título y guarda permanente (2026-10-29, `agent/social-testing-01-final`)
 
-Decisión (del operador): el título "keeps all messages if single message exceeds
+Decisión (del operador, 2026-10-29): el título "keeps all messages if single message exceeds
 threshold" era engañoso. Se corrige el título a "summarizes a single message that
 exceeds the threshold and keeps none" y se añade un comentario que lo marca como
 comportamiento actual, no como decisión aprobada. **No cambian** implementación ni
 aserciones. La pregunta de producto (conservar o resumir un Message oversized) sigue
-abierta; es un bloqueo de decisión, no de ejecución.
+cerrada por el operador: se acepta el comportamiento actual (ver la decisión final abajo).
 
 Guarda permanente de selección: `packages/chatbot/tests/contract/test-profile-selection.test.ts`
 (3 tests). Usa `createVitest` y `projects[0].globTestFiles()` sobre `vitest.config.ts`
