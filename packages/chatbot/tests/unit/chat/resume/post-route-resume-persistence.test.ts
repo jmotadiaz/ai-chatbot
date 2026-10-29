@@ -9,15 +9,15 @@
  * or invalid `streamKey`) must still stream and persist with no registry
  * entry. Full-pipeline harness mirrors
  * `tests/unit/chat/mode-routing/persistence-and-routing.test.ts`; the route handler is
- * imported and called directly (HTTP boundary, contract suite).
+ * imported and called directly (HTTP boundary, unit suite).
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { pacedTextReply } from "@ai-chatbot/model-gateway-testing";
-import { setupTestDb } from "../../helpers/db-setup";
-import { setupGatewayHarness } from "../../helpers/gateway-harness";
-import { resetRegistry, parseSseFrames  } from "../../helpers/chat-resume";
+import { setupTestDb } from "../../../helpers/db-setup";
+import { setupGatewayHarness } from "../../../helpers/gateway-harness";
+import { resetRegistry, parseSseFrames  } from "../../../helpers/chat-resume";
 
 // `vi.hoisted` so the `vi.mock` factory below can read it despite the hoist.
 const { USER_ID } = vi.hoisted(() => ({
@@ -27,12 +27,12 @@ const { USER_ID } = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/features/auth/with-auth/handler", async () => {
-  const { withAuthStub } = await import("../../helpers/chat-resume");
+  const { withAuthStub } = await import("../../../helpers/chat-resume");
   return withAuthStub(USER_ID);
 });
 
 vi.mock("tracing", async () => {
-  const { tracingStub } = await import("../../helpers/chat-resume");
+  const { tracingStub } = await import("../../../helpers/chat-resume");
   return tracingStub;
 });
 
@@ -74,7 +74,7 @@ const ASSISTANT_TEXT = "Word1 Word2 Word3 Word4 Word5 Word6 ";
 
 /**
  * The catalog warm-up of `processChatResponse` and the generation are Gateway
- * HTTP calls: the scenario answers both, so this contract suite needs no server
+ * HTTP calls: the scenario answers both, so this suite needs no server
  * listening on `:4001`. The reply is PACED (`pacedTextReply`), and the toolkit's
  * MSW transport streams it frame by frame instead of buffering the body, so the
  * disconnect can land mid-generation.

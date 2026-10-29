@@ -15,7 +15,7 @@ vi.mock("sonner", () => ({
 }));
 
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
-import { setupMswServer } from "../../helpers/msw-server";
+import { setupMswServer } from "../../../helpers/msw-server";
 import { useChat } from "@/lib/features/chat/conversation/hooks/use-chat";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { ModelCatalogProvider } from "@/lib/features/foundation-model/model-catalog-context";

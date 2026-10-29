@@ -18,10 +18,10 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const registerExtension = (await import("../../extensions/artifacts/index")).default;
-const { getArtifactsDir } = await import("../../src/runtime/paths");
+const registerExtension = (await import("../../../extensions/artifacts/index")).default;
+const { getArtifactsDir } = await import("../../../src/runtime/paths");
 const { setWorkerRuntimeConfig, resetWorkerRuntimeConfigForTests } = await import(
-  "../../src/runtime/runtime-overrides"
+  "../../../src/runtime/runtime-overrides"
 );
 
 /**

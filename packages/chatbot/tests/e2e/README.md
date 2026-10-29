@@ -8,8 +8,11 @@ Selection policy (unit tests by default; E2E only for guarantees that require
 a real browser) lives in
 [ADR 0013](../../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md).
 Every E2E must state what browser behavior it verifies and what a unit test
-would omit. The historical cases have not yet been reclassified; their current
-presence in this suite does not establish that each meets the policy.
+would omit. The historical cases were reviewed during the social-testing
+migration (tickets 06, 07, 09 and 14); retained specs carry that statement
+where the distinction matters, and their presence here does not by itself
+establish policy compliance. Everything verifiable without a real browser
+belongs under `tests/unit/`.
 
 ## Layout
 

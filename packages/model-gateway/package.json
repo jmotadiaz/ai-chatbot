@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bash scripts/run-gateway.sh",
     "start": "bash scripts/run-gateway.sh",
+    "test:unit": "python3 -m pytest tests -q",
     "deploy": "bash scripts/deploy.sh",
     "systemd:install": "bash scripts/deploy.sh",
     "creds:set": "bash scripts/manage-creds.sh set",

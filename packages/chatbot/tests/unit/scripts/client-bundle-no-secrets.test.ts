@@ -5,9 +5,9 @@ import {
   VERIFY_STATIC_DIR,
   inspectClientBundle,
   loadSecretLiterals,
-} from "../../scripts/client-bundle";
+} from "../../../scripts/client-bundle";
 
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 const staticDir = path.join(PACKAGE_ROOT, VERIFY_STATIC_DIR);
 const built = existsSync(staticDir);
 

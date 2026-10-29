@@ -25,17 +25,17 @@ import { initConfig } from "../config/src/config";
  * static test bundle directly — the same module `next.config.ts` would weld in
  * a test build — and a test cannot observe dev/prod secrets or paths.
  *
- * EXECUTION PROFILES (ADR 0013, spec §6). This file is the DEFAULT profile:
- * unit, component, integration and contract, all self-contained. Inference is
- * substituted at the Model Gateway HTTP seam with MSW
+ * EXECUTION PROFILES (ADR 0013). The package has one test CATEGORY — unit
+ * tests, organized by capability under `tests/unit/` — and two EXECUTION
+ * profiles. This file is the DEFAULT profile: every self-contained unit test.
+ * Inference is substituted at the Model Gateway HTTP seam with MSW
  * (`tests/helpers/gateway-harness.ts`) and persistence with in-memory PGlite
  * (`tests/helpers/db-setup.ts`), so nothing listens on a port and no
  * PostgreSQL container is required. Tests that genuinely need a provisioned
  * resource are listed in `INFRA_TESTS` and excluded here; the infrastructure
  * profile (`vitest.infra.config.ts`, `pnpm test:infra`) runs them. That profile
- * is not a category of its own: the selected tests keep the directory that
- * expresses their scope (`tests/integration/...`) and only their execution
- * differs.
+ * changes execution, not category: its tests keep their capability directory
+ * under `tests/unit/`.
  */
 initConfig("test");
 
@@ -49,19 +49,14 @@ initConfig("test");
  * Add a pattern here only for a test that genuinely cannot run in-process.
  * Everything else belongs to the default profile below.
  */
-export const INFRA_TESTS = ["tests/integration/mocks/**/*.test.ts"];
+export const INFRA_TESTS = ["tests/unit/mocks/**/*.test.ts"];
 
-/** Default (self-contained) profile: every suite tied to a package boundary. */
-const DEFAULT_TESTS = [
-  "tests/unit/**/*.test.ts",
-  "tests/unit/**/*.test.tsx",
-  "tests/component/**/*.test.ts",
-  "tests/component/**/*.test.tsx",
-  "tests/integration/**/*.test.ts",
-  "tests/integration/**/*.test.tsx",
-  "tests/contract/**/*.test.ts",
-  "tests/contract/**/*.test.tsx",
-];
+/**
+ * Default (self-contained) profile: every unit test in the package. Contract
+ * checks and rendered-component tests without a real browser are unit tests
+ * (ADR 0013), so they live under `tests/unit/<capability>/` like any other.
+ */
+const DEFAULT_TESTS = ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"];
 
 /**
  * Resolution shared by both profiles. `__dirname` is this package's root, so it

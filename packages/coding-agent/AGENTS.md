@@ -53,11 +53,11 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
     worker's own HTTP transport. The Chatbot E2E suite keeps its Worker stub and
     does not cover the real chatbot↔Worker assembly.
 - Worker tests all belong to the **self-contained default profile**
-  (`pnpm --filter coding-agent test:unit|test:integration|test:contract`): no
-  external PostgreSQL and no canonical port. The toolkit servers a transport
-  test starts listen on an ephemeral port (`0`) and are closed by the test that
-  opened them. The provisioning-based profile (`pnpm test:infra`) selects only
-  chatbot tests today; see
+  (`pnpm --filter coding-agent test:unit`, part of the root `pnpm test:unit`):
+  one unit category under `tests/unit/`, no external PostgreSQL and no canonical
+  port. The toolkit servers a transport test starts listen on an ephemeral port
+  (`0`) and are closed by the test that opened them. The provisioning-based
+  profile (`pnpm test:infra`) selects only chatbot tests today; see
   [`packages/chatbot/tests/AGENTS.md`](../chatbot/tests/AGENTS.md#execution-profiles)
   for the profiles and [`docs/model-gateway-testing-migration.md`](../../docs/model-gateway-testing-migration.md)
   for the accounting of the doubles replaced in ticket 10.
@@ -171,5 +171,5 @@ replaces "open it" with "here's the URL".
 - **Tests:** `tests/unit/artifacts.test.ts`, `tests/unit/artifacts-http.test.ts`
   (including a route round-trip over hostile file names),
   `tests/unit/artifacts/artifacts-server.test.ts` (real worker server on an ephemeral
-  port, test-owned socket), `tests/contract/artifacts-extension.test.ts` (tool boundary + hook).
+  port, test-owned socket), `tests/unit/artifacts/artifacts-extension.test.ts` (tool boundary + hook).
   The in-process RPC parser lives in `tests/unit/rpc/http-transport-parse.test.ts`.

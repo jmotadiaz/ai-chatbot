@@ -11,7 +11,7 @@ import { INFRA_TESTS, sharedResolve, sharedTest } from "./vitest.config";
  * Runs exactly the chatbot tests that need a provisioned resource — today the
  * Mock Model Gateway harness test, which binds the canonical `:4001` instead of
  * intercepting HTTP with MSW (see `INFRA_TESTS` in `vitest.config.ts`). The
- * default profile (`pnpm test:fast`, `vitest.config.ts`) excludes them, so it
+ * default profile (`pnpm test:unit`, `vitest.config.ts`) excludes them, so it
  * stays self-contained; this profile re-enables them with the default profile's
  * aliases, Environment and hooks unchanged.
  *

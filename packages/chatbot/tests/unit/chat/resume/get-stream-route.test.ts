@@ -12,7 +12,7 @@ vi.mock("@/lib/features/auth/cached-auth", () => ({
   getSession: vi.fn(),
 }));
 
-import { resetRegistry } from "../../helpers/chat-resume";
+import { resetRegistry } from "../../../helpers/chat-resume";
 import { getSession } from "@/lib/features/auth/cached-auth";
 import { GET } from "@/app/(chat)/api/chat/[key]/stream/route";
 import {

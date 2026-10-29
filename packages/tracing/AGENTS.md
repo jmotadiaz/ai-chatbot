@@ -21,3 +21,12 @@ keeps calling tools after the browser disconnects — takes its own ref with
 `retainTraceSink(runId)` and calls the returned release when the turn ends. The
 last release flushes and closes. Writes after that are dropped silently, so a
 missing ref shows up as a trace that stops mid-run.
+
+## Tests
+
+`tests/unit/trace-sink-registry.test.ts` is the package's only unit suite: it
+covers the ref-counted sink lifetime (shared sink per run, retained refs, writes
+dropped after the last release, tracing disabled). It runs with
+`pnpm --filter tracing test:unit` (part of the root `pnpm test:unit`), inside the
+Test Environment bundle with the trace directory injected per test through
+`vi.mock("config")` — never by mutating `process.env`.

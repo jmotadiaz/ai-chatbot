@@ -1,8 +1,8 @@
 import { clear } from "@/lib/features/chat/resume/registry";
 
 /**
- * Shared scaffolding for the chat-resume contract suites
- * (`tests/contract/chat/get-stream-route.test.ts`,
+ * Shared scaffolding for the chat-resume unit suites
+ * (`tests/unit/chat/resume/get-stream-route.test.ts`,
  * `post-route-registry-feed.test.ts`,
  * `post-route-resume-persistence.test.ts`). Deliberately small: only the
  * pieces those suites genuinely duplicate live here — everything suite

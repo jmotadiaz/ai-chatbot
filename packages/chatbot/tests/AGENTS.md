@@ -4,23 +4,29 @@
 
 Which tests run where follows the policy in
 [ADR 0013](../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md)
-(unit tests by default; E2E only when a real browser is essential). The table
-describes the current commands and layout, not the ADR's future two-category
-layout and unified unit command.
+(unit tests by default; E2E only when a real browser is essential). The chatbot has
+one test **category** — unit tests organized by capability under `tests/unit/` —
+next to the Playwright E2E suite under `tests/e2e/`. The profiles below change how a
+test runs, never where it lives.
 
 | Profile | Command | Selects | Resources needed |
 | --- | --- | --- | --- |
-| Default (self-contained) | `pnpm test:unit`, `test:component`, `test:integration`, `test:contract` (and `test:fast` for all four) | `tests/{unit,component,integration,contract}` minus `INFRA_TESTS` | none: inference is answered by MSW in-process and persistence by in-memory PGlite. Nothing listens on a port; no PostgreSQL container |
-| Infrastructure | `pnpm test:infra` (`vitest.infra.config.ts`) | `INFRA_TESTS` = `tests/integration/mocks/**/*.test.ts` | the canonical `:4001` of the Test Environment, self-ensured by the test that binds it. A future test needing external PostgreSQL is selected here too, and then this profile means providing that database first |
+| Default (self-contained) | `pnpm --filter chatbot test:unit` (or the root `pnpm test:unit`, which also runs the other packages and the Python suite) | every `tests/unit/**/*.test.{ts,tsx}` minus `INFRA_TESTS` | none: inference is answered by MSW in-process and persistence by in-memory PGlite. Nothing listens on a port; no PostgreSQL container |
+| Infrastructure | `pnpm test:infra` (`vitest.infra.config.ts`) | `INFRA_TESTS` = `tests/unit/mocks/**/*.test.ts` | the canonical `:4001` of the Test Environment, self-ensured by the test that binds it. A future test needing external PostgreSQL is selected here too, and then this profile means providing that database first |
 | E2E | `pnpm test:e2e` (Playwright) | `tests/e2e` | docker PostgreSQL `:5434/test` (`db:test:start`), dev server `:3001`, Mock Model Gateway `:4001` (Playwright `globalSetup`/`globalTeardown`) |
-| Full verification | `pnpm verify:full` | lint + type-check + default profile + infra profile + `pnpm test:gateway` + E2E + `pnpm build:verify` | all of the above |
+| Full verification | `pnpm verify:full` | lint + type-check + root unit command (all packages, including the Python suite) + infra profile + E2E + coding-agent `build:verify` + chatbot `verify:bundle` | all of the above |
 
 - The selection is a **test-file list**, never an environment variable
   (ADR 0011): `INFRA_TESTS` in `vitest.config.ts` is the single source, and
   `vitest.infra.config.ts` re-includes it on top of the default config.
 - A profile changes *execution*, not classification: the tests selected by the
-  infra profile stay under `tests/integration/mocks/`, where their scope is
-  visible. No suite is renamed by profile.
+  infra profile stay under `tests/unit/mocks/`, next to the capability they
+  cover. No suite is renamed by profile.
+- Contract checks and rendered-component tests without a real browser are unit
+  tests (ADR 0013): the historical `tests/{component,integration,contract}`
+  directories and the `test:component|test:integration|test:contract` scripts are
+  retired. `tests/unit/architecture/test-profile-selection.test.ts` is the
+  contract that keeps the category list and the profile selection coherent.
 - New tests default to the self-contained profile. A test belongs in
   `INFRA_TESTS` only when MSW cannot express the condition in-process (a real
   listening origin, external PostgreSQL); state which resource in the table.
@@ -31,10 +37,12 @@ layout and unified unit command.
 - `build:verify` is the **only** compilation check (`pnpm build:verify` writes
   to isolated `.next/verify`); never `pnpm build` — it overwrites the artifacts
   prod serves.
-- The historical E2E reclassification and the target bundle-check ordering
-  have not yet been implemented. `verify:full` currently runs `build:verify`
-  after the tests; it does not guarantee that the bundle check inspected the
-  freshly built artifact.
+- `pnpm verify:full` ends with `pnpm --filter chatbot verify:bundle`, which runs
+  the isolated `build:verify` first and then requires a fresh, leak-free bundle;
+  `verify:fast` reports `NOT INSPECTED` when no verification bundle exists and
+  does not count that as a passing inspection. The historical E2E cases were
+  reviewed during the migration (tickets 06, 07, 09, 14); retained specs state
+  the browser risk they verify where a unit test would omit it.
 
 Guarantees accounting (which test file replaced each removed double or port)
 lives in [`docs/model-gateway-testing-migration.md`](../../../docs/model-gateway-testing-migration.md).

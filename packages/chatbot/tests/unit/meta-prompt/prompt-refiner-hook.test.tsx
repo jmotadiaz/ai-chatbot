@@ -7,7 +7,7 @@ import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-re
  * Prompt Refiner client state (ticket 08, replaces the `refine.spec` E2E).
  * The browser E2E routed `/api/refine-prompt` with page.route; here the same
  * contract is intercepted at fetch, and the server side is covered by
- * `tests/integration/chat/refine-prompt-route.test.ts` through the Gateway.
+ * `tests/unit/meta-prompt/refine-prompt-route.test.ts` through the Gateway.
  */
 describe("usePromptRefiner", () => {
   let fetchMock: ReturnType<typeof vi.fn>;

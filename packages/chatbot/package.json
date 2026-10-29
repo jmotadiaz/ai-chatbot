@@ -41,11 +41,7 @@
     "test:e2e:ui": "pnpm run db:test:start && playwright test --ui $PLAYWRIGHT_ARGS",
     "test:e2e:headed": "pnpm run db:test:start && playwright test --headed $PLAYWRIGHT_ARGS",
     "mcp:start": "tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts --env=dev",
-    "test:unit": "vitest run tests/unit",
-    "test:component": "vitest run tests/component --passWithNoTests",
-    "test:integration": "vitest run tests/integration --passWithNoTests",
-    "test:contract": "vitest run tests/contract --passWithNoTests",
-    "test:all": "vitest run --config vitest.infra.config.ts && vitest run",
+    "test:unit": "vitest run",
     "prepare": "husky"
   },
   "dependencies": {

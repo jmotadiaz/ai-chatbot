@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 const { acquireTraceSink, releaseTraceSink, retainTraceSink, traceSinkRefCount } =
-  await import("tracing");
+  await import("../../src/index");
 
 const runDir = (runId: string) =>
   path.join(traceDir, "coding-agent", fs.readdirSync(path.join(traceDir, "coding-agent"))

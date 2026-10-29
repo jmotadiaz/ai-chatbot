@@ -190,6 +190,18 @@ of removed wiring rather than layering equivalent strategies indefinitely.
 See the [local implementation spec](../../.scratch/model-gateway-testing/spec.md)
 for the original feature-migration scope and sequencing, and the
 [guarantees accounting](../model-gateway-testing-migration.md) for completed
-substitutions. The test taxonomy, layout, commands, bundle-check ordering,
-evaluation location, and historical E2E reclassification above are accepted
-targets, not a claim that those migrations have been implemented.
+substitutions.
+
+## Implementation status
+
+The test taxonomy, layout, commands, bundle-check ordering, evaluation location
+and historical E2E reclassification described above were implemented by the
+social-testing migration (`.scratch/social-testing-migration/`, completed
+2026-10-29). Each package keeps `tests/unit/` (organized by capability) next to
+its E2E suite; the root `pnpm test:unit` covers every package plus the Model
+Gateway Python suite, `pnpm test:infra` is the explicit provisioned-resource
+profile, and `pnpm verify:full` builds the isolated verification bundle before
+inspecting it. The commands, profiles and current selection are documented in
+[`AGENTS.md`](../../AGENTS.md) and
+[`packages/chatbot/tests/AGENTS.md`](../../packages/chatbot/tests/AGENTS.md#execution-profiles).
+The policy in this ADR remains the authority.

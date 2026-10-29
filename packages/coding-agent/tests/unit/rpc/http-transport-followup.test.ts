@@ -15,8 +15,8 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { handleRpc, summarizeRpcParams } = await import("../../src/transports/http");
-import { sessionRegistry } from "../../src/session/session-registry";
+const { handleRpc, summarizeRpcParams } = await import("../../../src/transports/http");
+import { sessionRegistry } from "../../../src/session/session-registry";
 
 beforeEach(() => {
   sessionRegistry.clear();

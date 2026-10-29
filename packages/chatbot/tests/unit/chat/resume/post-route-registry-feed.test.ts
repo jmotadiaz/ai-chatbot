@@ -12,12 +12,12 @@ import { simulateReadableStream } from "ai";
 import { v4 as uuid } from "uuid";
 
 vi.mock("@/lib/features/auth/with-auth/handler", async () => {
-  const { withAuthStub } = await import("../../helpers/chat-resume");
+  const { withAuthStub } = await import("../../../helpers/chat-resume");
   return withAuthStub("user-1");
 });
 
 vi.mock("tracing", async () => {
-  const { tracingStub } = await import("../../helpers/chat-resume");
+  const { tracingStub } = await import("../../../helpers/chat-resume");
   return tracingStub;
 });
 
@@ -27,7 +27,7 @@ vi.mock("@/lib/features/chat/handlers", () => ({
   processChatResponse: processChatResponseMock,
 }));
 
-import { parseSseFrames, resetRegistry } from "../../helpers/chat-resume";
+import { parseSseFrames, resetRegistry } from "../../../helpers/chat-resume";
 import { POST } from "@/app/(chat)/api/chat/route";
 import { get, getLatestByChat } from "@/lib/features/chat/resume/registry";
 
