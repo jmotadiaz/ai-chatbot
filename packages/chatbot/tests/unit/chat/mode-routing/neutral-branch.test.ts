@@ -6,12 +6,12 @@ import type {
   ChatRequest,
   GatewayScenario,
 } from "@ai-chatbot/model-gateway-testing";
-import { setupGatewayHarness } from "../../helpers/gateway-harness";
+import { setupGatewayHarness } from "@/tests/helpers/gateway-harness";
 import {
   answerDecision,
   answerDecisionRaw,
   answerDecisionWith,
-} from "../../helpers/gateway-decisions";
+} from "@/tests/helpers/gateway-decisions";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import { DEFAULT_PROJECT_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";

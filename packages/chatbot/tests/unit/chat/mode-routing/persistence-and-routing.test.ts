@@ -3,9 +3,9 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { textReply } from "@ai-chatbot/model-gateway-testing";
 import type { GatewayScenario } from "@ai-chatbot/model-gateway-testing";
-import { setupTestDb } from "../../helpers/db-setup";
-import { setupGatewayHarness } from "../../helpers/gateway-harness";
-import { answerDecision } from "../../helpers/gateway-decisions";
+import { setupTestDb } from "@/tests/helpers/db-setup";
+import { setupGatewayHarness } from "@/tests/helpers/gateway-harness";
+import { answerDecision } from "@/tests/helpers/gateway-decisions";
 import {
   CHAT_MODE_ROUTING_QUESTION_KEY,
   createChatModeRouter,

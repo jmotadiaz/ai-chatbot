@@ -8,7 +8,7 @@
  * assistant message and confirms the entry as `persisted`. Legacy turns (no
  * or invalid `streamKey`) must still stream and persist with no registry
  * entry. Full-pipeline harness mirrors
- * `tests/integration/chat/mode-routing.test.ts`; the route handler is
+ * `tests/unit/chat/mode-routing/persistence-and-routing.test.ts`; the route handler is
  * imported and called directly (HTTP boundary, contract suite).
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
