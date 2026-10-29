@@ -105,7 +105,7 @@ const KILL_FIRST_CHAT_POST = `
   })();
 `;
 
-/** A real page cannot flip `visibilityState`: redefine it and dispatch. */
+/** Simulate a visibility event, not OS suspension or screen-off. */
 async function simulateScreenBackOn(page: Page): Promise<void> {
   await page.evaluate(() => {
     Object.defineProperty(document, "visibilityState", {
@@ -138,7 +138,7 @@ async function seedChat(db: {
 }
 
 test.describe("Chat resume", () => {
-  test("screen off mid-generation: the turn completes without further user action", async ({
+  test("simulated fetch interruption mid-generation: the turn completes without further user action", async ({
     page,
     db,
   }) => {
