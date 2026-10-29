@@ -77,3 +77,33 @@ requiera Compaction.
 - Los tests de `summary-generation` y `compaction-flow` ejercitan el Gateway solo
   mediante MSW (sin servidor real); no prueban compatibilidad con proveedores.
 - Las evaluaciones de Compaction (`tests/evals`) no se ejecutaron ni se usaron para validar.
+
+## Investigación del punto de corte con un único Message (2026-10-29)
+
+Búsqueda en spec, ADR 0013, `openspec/` y el historial de git. Resultado: **no
+existe ninguna decisión explícita** que resuelva la discrepancia; no se ha
+cambiado la garantía.
+
+- `spec.md` (nota adicional) declara la discrepancia y pide determinar el
+  comportamiento esperado antes de cambiar la garantía; no lo determina.
+- ADR 0013 no menciona el punto de corte ni Compaction.
+- `openspec/changes/context-compaction/specs/.../spec.md` (introducido en
+  `5ee5977f`, "add first version of compactation") define el punto de corte
+  como acumular tokens desde el mensaje más reciente hasta alcanzar
+  `keepRecentTokens`, con cortes entre mensajes completos. No contiene ningún
+  escenario para un único mensaje que supera el umbral.
+- El título "keeps all messages if single message exceeds threshold" y sus
+  aserciones (`cutIndex` 0, 1 resumido, 0 conservados) existen desde la
+  primera versión del test (`2dc11007`) y la implementación actual de
+  `findCutPoint` es la misma desde `5ee5977f`. La discrepancia es, por tanto,
+  original y nunca se resolvió por escrito.
+
+Conclusión: el comportamiento es una decisión de producto abierta. Se mantiene
+el comportamiento actual (resumir el mensaje oversized), el test sigue activo
+y el ticket permanece **bloqueado** hasta que el operador elija entre (a)
+conservar el mensaje completo (cambiar la implementación y el título/aserciones
+en consecuencia) o (b) resumirlo y renombrar el título para que describa lo que
+ya se verifica.
+
+Re-verificación en esta sesión (Node 24.15.0): `vitest run tests/unit/compaction`
+→ 6 archivos, 36 tests passing, exit 0.
