@@ -9,6 +9,8 @@
     "dev": "pnpm run db:dev:start && tsx scripts/next-cli.ts dev --env=dev --port=3000",
     "build": "sh -c 'tsx scripts/assert-prod-build-allowed.ts \"$@\" && tsx lib/infrastructure/db/migrate.ts --env=prod && tsx scripts/next-cli.ts build --env=prod \"$@\"' --",
     "build:verify": "tsx scripts/next-cli.ts build --env=prod --verify",
+    "inspect:bundle": "tsx scripts/verify-client-bundle.ts --mode=fast",
+    "verify:bundle": "tsx scripts/verify-client-bundle.ts --mode=full",
     "preview": "tsx scripts/next-cli.ts start --env=prod --port=8085",
     "stop:dev": "sh -c 'lsof -ti:3000 | xargs -r kill 2>/dev/null || true; echo \"chatbot dev (3000) stopped\"'",
     "stop:test": "sh -c 'lsof -ti:3001 | xargs -r kill 2>/dev/null || true; lsof -ti:4001 | xargs -r kill 2>/dev/null || true; docker compose -f ../../docker-compose.test.yml down 2>/dev/null || true; echo \"chatbot test (3001) + mock gateway (4001) stopped\"'",

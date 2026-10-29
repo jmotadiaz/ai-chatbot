@@ -43,8 +43,8 @@
     "test:infra": "pnpm -r --if-present run test:infra",
     "test:gateway": "pnpm --filter @ai-chatbot/model-gateway test",
     "test:fast": "pnpm test:unit && pnpm test:component && pnpm test:integration && pnpm test:contract",
-    "verify:fast": "pnpm lint && pnpm type:check && pnpm test:fast",
-    "verify:full": "pnpm lint && pnpm type:check && pnpm test:fast && pnpm test:infra && pnpm test:gateway && pnpm test:e2e && pnpm build:verify",
+    "verify:fast": "pnpm lint && pnpm type:check && pnpm test:fast && pnpm --filter chatbot inspect:bundle",
+    "verify:full": "pnpm lint && pnpm type:check && pnpm test:fast && pnpm test:infra && pnpm test:gateway && pnpm test:e2e && pnpm --filter coding-agent build:verify && pnpm --filter chatbot verify:bundle",
     "lint:staged": "lint-staged",
     "prepare": "husky"
   },
