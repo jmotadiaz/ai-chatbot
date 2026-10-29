@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-UNIT_PATH = Path(__file__).resolve().parents[1] / "systemd" / "model-gateway.service"
-RUN_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "run-gateway.sh"
-DEPLOY_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "deploy.sh"
+UNIT_PATH = Path(__file__).resolve().parents[2] / "systemd" / "model-gateway.service"
+RUN_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "run-gateway.sh"
+DEPLOY_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "deploy.sh"
 
 EXPECTED_CREDENTIALS = [
     "model_gateway_api_key",
@@ -131,12 +131,12 @@ def test_dependencies_are_installed_before_the_artifact_is_replaced():
 def test_package_scripts_point_at_the_deploy_script():
     import json
 
-    scripts = json.loads((Path(__file__).resolve().parents[1] / "package.json").read_text())["scripts"]
+    scripts = json.loads((Path(__file__).resolve().parents[2] / "package.json").read_text())["scripts"]
     assert scripts["deploy"] == "bash scripts/deploy.sh"
     assert scripts["systemd:install"] == "bash scripts/deploy.sh"
 
 def test_manage_creds_creates_the_creds_dir_with_sudo():
-    script = (Path(__file__).resolve().parents[1] / "scripts" / "manage-creds.sh").read_text()
+    script = (Path(__file__).resolve().parents[2] / "scripts" / "manage-creds.sh").read_text()
     assert "sudo mkdir -p" in script, (
         "/etc belongs to root: without sudo the wizard dies with Permission denied"
     )
@@ -147,7 +147,7 @@ def test_server_module_keeps_runtime_annotations():
     """With `from __future__ import annotations`, FastAPI does not resolve `Request`
     (it is imported inside create_app) and turns `request` into a mandatory
     query param: 422 on every request. It already happened to us."""
-    script = (Path(__file__).resolve().parents[1] / "server.py").read_text()
+    script = (Path(__file__).resolve().parents[2] / "server.py").read_text()
     assert not any(
         line.strip().startswith("from __future__")
         for line in script.splitlines()

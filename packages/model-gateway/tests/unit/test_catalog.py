@@ -18,8 +18,8 @@ from catalog import (
     prepare_opencode_deployment_kwargs,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.yaml"
+REPO_ROOT = Path(__file__).resolve().parents[4]
+CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.yaml"
 
 # Order served by `build_catalog`: the `is_default` entry first, the rest
 # alphabetical (case-insensitive). It is independent of the `model_list` order.
@@ -362,4 +362,3 @@ def test_prepare_opencode_deployment_kwargs_leaves_non_opencode_untouched():
     }
     res = prepare_opencode_deployment_kwargs(dict(kwargs), "sess-123")
     assert res == kwargs
-

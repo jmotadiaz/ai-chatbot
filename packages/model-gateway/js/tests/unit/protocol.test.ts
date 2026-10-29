@@ -22,7 +22,7 @@ import {
   toolResultReply,
   unauthorizedResponse,
   type SseEvent,
-} from "../src/index";
+} from "../../src/index";
 
 function sseData(events: SseEvent[]): string[] {
   return events

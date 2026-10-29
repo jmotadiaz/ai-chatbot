@@ -12,8 +12,8 @@ import {
   speechResponse,
   textReply,
   type GatewayScenario,
-} from "../src/index";
-import { startGatewayServer } from "../src/server";
+} from "../../src/index";
+import { startGatewayServer } from "../../src/server";
 
 const AUTH = { Authorization: "Bearer test-key" } as const;
 const JSON_AUTH = { ...AUTH, "Content-Type": "application/json" } as const;

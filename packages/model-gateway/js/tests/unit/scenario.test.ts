@@ -8,7 +8,7 @@ import {
   toolCallReply,
   toolResultReply,
   type GatewayResult,
-} from "../src/index";
+} from "../../src/index";
 
 const AUTH = { Authorization: "Bearer test-key" } as const;
 

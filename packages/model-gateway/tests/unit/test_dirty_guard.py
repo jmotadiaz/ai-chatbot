@@ -10,13 +10,14 @@ they need no root, no systemd, no network — only a temporary git repo.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 GUARD_PATH = PACKAGE_ROOT / "scripts" / "lib" / "dirty-guard.sh"
 DEPLOY_SCRIPT = PACKAGE_ROOT / "scripts" / "deploy.sh"
 
@@ -29,12 +30,17 @@ def guard() -> str:
     return GUARD_PATH.read_text()
 
 
+def _clean_env() -> dict[str, str]:
+    return {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+
+
 def _git(repo: Path, *args: str) -> None:
     subprocess.run(
         ["git", "-C", str(repo), *args],
         check=True,
         capture_output=True,
         text=True,
+        env=_clean_env(),
     )
 
 
@@ -64,6 +70,7 @@ def _run_guard(repo: Path, allow_dirty: int, stdin: str = "") -> subprocess.Comp
         input=stdin,
         capture_output=True,
         text=True,
+        env=_clean_env(),
     )
 
 

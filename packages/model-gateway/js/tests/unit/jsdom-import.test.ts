@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as toolkit from "../src/index";
+import * as toolkit from "../../src/index";
 
 describe("main entry under jsdom", () => {
   it("loads without Node built-ins and exposes the protocol layer", () => {
