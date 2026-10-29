@@ -61,7 +61,10 @@ Stub limits, stated where they matter: `getSessionStatus` always answers
 `getSessionModel` returns `null`; `connectToSession` replays a fixed three-event
 run regardless of `afterSeq`; tool events only exist for prompts containing
 `list files`; the catalog advertises only the two Gateway ids `basicChat` and
-`canExecuteTools`. A real chatbot↔worker connection — with its sessions,
+`canExecuteTools` (commit 7de02476 replaced the previous invented stub ids
+`opencode-go/deepseek-v4-pro` and `kimi-k2.7-code`: model identity now comes
+from the Model Gateway catalog, and the send control enables only for catalog
+ids). A real chatbot↔worker connection — with its sessions,
 attachments, skills and mid-run replay — stays outside this migration (spec
 §out of scope).
 
