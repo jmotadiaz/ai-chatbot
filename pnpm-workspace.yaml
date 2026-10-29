@@ -1,5 +1,8 @@
 packages:
   - 'packages/*'
+  # The official Model Gateway testing toolkit: a JS package nested under the
+  # independent Python service (the `packages/*` glob only matches one level).
+  - 'packages/model-gateway/js'
 
 # No engineStrict and no `engines` in package.json on purpose. The toolchain is
 # expressed as a preference — `.node-version` and `packageManager` — not as a

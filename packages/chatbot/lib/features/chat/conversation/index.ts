@@ -1,22 +1,12 @@
-import { config } from "config";
 import { makeProcessChatResponse } from "./factory";
-import { compactionAiAdapter } from "@/lib/features/compaction";
 import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
-import {
-  createChatModeRouter,
-  createDeterministicChatModeRouter,
-} from "@/lib/features/chat/mode-routing";
+import { createChatModeRouter } from "@/lib/features/chat/mode-routing";
 
-// The real classifier is Jev 1.13 through the OpenRouter Decisions API,
-// reached via the kit's generic `decide` (see `inference`). In the Test
-// Environment the deterministic router keeps Auto offline: the Environment is
-// decided by `config.environment()` (static bundle welded at compile time —
-// replacing the old `isTestMode()`/`NEXT_PUBLIC_ENV`, ADR 0011).
+// The Chat Mode Router is production code in every Environment: Jev 1.13
+// through the Decisions API (`decision-default`), reached via the kit's generic
+// `decide`. Test determinism comes from the Decisions answers the Mock Model
+// Gateway serves over HTTP (ADR 0013), never from a second routing
+// implementation selected by the Environment.
 export const processChatResponse = makeProcessChatResponse(
-  compactionAiAdapter,
-  config.environment() === "test"
-    ? createDeterministicChatModeRouter()
-    : createChatModeRouter(inferenceKit.decide),
+  createChatModeRouter(inferenceKit.decide),
 );
-
-export * from "./ports";

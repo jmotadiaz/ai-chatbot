@@ -31,7 +31,36 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
   `mkdtempSync` sandbox with `projectsRoot`, `sessionsDir`, `modelsJsonPath`, `authJsonPath`,
   `agentDir`, `piPackagesDir`, `artifactsDir`, and `cleanup()` for `afterEach`.
 - A test NEVER writes to `.pi-prod` or `.pi-dev`. Contract:
-  `tests/contract/no-process-env-mutations.test.ts`.
+  `tests/unit/architecture/no-process-env-mutations.test.ts`.
+- The Model Gateway seam is substituted with the official toolkit
+  (`@ai-chatbot/model-gateway-testing`, ADR 0013), never by stubbing
+  `globalThis.fetch`:
+  - `tests/helpers/gateway-harness.ts` (`setupWorkerGatewayHarness()`) installs
+    one scenario per test through MSW: the worker's real catalog `fetch` runs and
+    is answered in-process, so the suite needs **no listening gateway**.
+  - Catalog entries/ids stay in the Worker (`GatewayModelEntry[]` passed as
+    `catalog.public`). A test that needs the Gateway to publish, drop or lose a
+    model opens a new phase with `gateway.use({...})` — a fresh scenario whose
+    `requests` are that phase's audits. `gateway.failTransport()` expresses an
+    unreachable Gateway (fetch rejects, as with `ECONNREFUSED`).
+  - Tests whose subject IS the transport (catalog URL/origin, bearer header,
+    real `ECONNREFUSED`) use the toolkit's HTTP server
+    (`@ai-chatbot/model-gateway-testing/server`, ephemeral port, closed by the
+    test): MSW answers every origin, so only a real origin proves which URL the
+    worker targeted.
+  - Keep the doubles of genuinely different dependencies: the Pi SDK mock,
+    `tracing`, the filesystem sandbox (`createTestWorkerContext()`) and the
+    worker's own HTTP transport. The Chatbot E2E suite keeps its Worker stub and
+    does not cover the real chatbot↔Worker assembly.
+- Worker tests all belong to the **self-contained default profile**
+  (`pnpm --filter coding-agent test:unit`, part of the root `pnpm test:unit`):
+  one unit category under `tests/unit/`, no external PostgreSQL and no canonical
+  port. The toolkit servers a transport test starts listen on an ephemeral port
+  (`0`) and are closed by the test that opened them. The provisioning-based
+  profile (`pnpm test:infra`) selects only chatbot tests today; see
+  [`packages/chatbot/tests/AGENTS.md`](../chatbot/tests/AGENTS.md#execution-profiles)
+  for the profiles and [`docs/model-gateway-testing-migration.md`](../../docs/model-gateway-testing-migration.md)
+  for the accounting of the doubles replaced in ticket 10.
 
 ## Key Files
 
@@ -141,5 +170,6 @@ replaces "open it" with "here's the URL".
   too — a subagent asked to produce a report should be able to hand back a URL.
 - **Tests:** `tests/unit/artifacts.test.ts`, `tests/unit/artifacts-http.test.ts`
   (including a route round-trip over hostile file names),
-  `tests/integration/artifacts-server.test.ts` (real worker server on an ephemeral
-  port), `tests/contract/artifacts-extension.test.ts` (tool boundary + hook).
+  `tests/unit/artifacts/artifacts-server.test.ts` (real worker server on an ephemeral
+  port, test-owned socket), `tests/unit/artifacts/artifacts-extension.test.ts` (tool boundary + hook).
+  The in-process RPC parser lives in `tests/unit/rpc/http-transport-parse.test.ts`.

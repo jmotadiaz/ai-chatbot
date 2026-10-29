@@ -55,7 +55,7 @@ Read `references/coding-agent-patterns.md` for commands, reconnect invariants, h
 
 Use this route when the request mentions eval, evaluation, evalite, compaction, fact recall, scorer, judge, simulator, or model quality metrics.
 
-Trace location: `tests/evals/traces/chatbot/<datetime>_<runIdShort>/`
+Trace location: `evals/traces/chatbot/<datetime>_<runIdShort>/`
 
 Inspector: `npx tsx .agents/skills/trace-analyzer/references/inspect-evals.ts <command> [args]`
 

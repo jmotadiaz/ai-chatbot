@@ -70,23 +70,26 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (for th
   (`--env=dev`: 3000+3016, pg 5433)
 - `pnpm stop:dev` — kills `3000`+`3016` by port (`lsof -ti:PORT | xargs -r kill`); `pnpm stop:test` — kills `3001` (+ `docker compose -f docker-compose.test.yml down`). Per package: `pnpm --filter chatbot stop:dev` (3000) / `stop:test` (3001); `pnpm --filter coding-agent stop:dev` (3016)
 - `pnpm build:verify` — isolated compilation check (`.next/verify` + `dist/verify` + `.pi-verify`); **the agent's only way to check compilation without touching prod**
-- `pnpm verify:fast` — lint, type-check, and run unit/component/integration/contract tests
+- `pnpm verify:fast` — lint, type-check, `pnpm test:unit` (the self-contained default profile: MSW + PGlite, no PostgreSQL container and no provisioned server), then `pnpm --filter chatbot inspect:bundle`, which inspects the client bundle in `.next/verify/static` if it exists. If it is absent the command prints `NOT INSPECTED` and exits 0: that is not a passing inspection
+- `pnpm test:infra` — the explicit infrastructure profile: only the tests that need a provisioned resource (today the Mock Model Gateway harness test, which binds the canonical `:4001` and is selected by `INFRA_TESTS` in the chatbot's Vitest config). It is included in `verify:full`, never in the default profile
+- `pnpm verify:full` — lint, type-check, the unified unit command, the infrastructure profile, Playwright E2E, the coding-agent `build:verify`, and then `pnpm --filter chatbot verify:bundle`, which runs the chatbot `build:verify` first and requires a satisfactory inspection of the freshly generated `.next/verify/static` (fails on build failure, missing artifact, stale chunks older than the build start, or secret leaks). Test selection lives in `packages/chatbot/vitest.config.ts` (`INFRA_TESTS`) and `vitest.infra.config.ts`, never in environment variables (ADR 0011)
 - `pnpm lint:fix` — lint all packages
 - `pnpm type:check` — check TypeScript types across all packages
-- `pnpm test:unit` / `pnpm test:component` / `pnpm test:integration` / `pnpm test:contract` — fast test suites
-- `pnpm test:gateway` — Model Gateway tests (`python3 -m pytest packages/model-gateway/tests -q`)
+- `pnpm test:unit` — **the single self-contained unit command**: every workspace package's unit suite (chatbot, coding-agent, config, tracing, the Model Gateway JS testing toolkit) plus the Model Gateway Python suite (`python3 -m pytest packages/model-gateway/tests -q`). Nothing has to be provisioned first. The chain is explicit (`&&`), so a package whose `test:unit` script or suite disappears, or a failing child, makes the whole command exit non-zero instead of silently skipping it
+- Selection: `pnpm --filter <package> test:unit` for one package, `pnpm --filter chatbot test:unit tests/unit/chat/resume/registry.test.ts` for one file (arguments are appended to the package script: put them after the script name, **not** after `--`), and for one Python test `pnpm --filter @ai-chatbot/model-gateway exec python3 -m pytest tests/unit/test_catalog.py -q`. `pnpm test:gateway` runs the whole Python suite on its own
 - `pnpm test:e2e` — Playwright E2E tests (Test Environment `--env=test`: pg 5434, worker stub, Mock Gateway `:4001`)
+- Execution profiles, resources and scope: [`packages/chatbot/tests/AGENTS.md`](packages/chatbot/tests/AGENTS.md#execution-profiles) (policy in [ADR 0013](docs/adr/0013-model-gateway-testing-and-social-unit-tests.md)); substituted doubles and where their guarantees live: [`docs/model-gateway-testing-migration.md`](docs/model-gateway-testing-migration.md)
 - `pnpm db:generate` / `pnpm db:push` — Drizzle ORM schema
 - `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — DB management and seeds for the Dev (5433) and Test (5434) Environments
 
-Test ownership follows package ownership. Within each package, keep pure logic
-and social unit tests (exercising concrete feature modules with PGlite for
-persistence and MSW at the Model Gateway HTTP seam; see ADR 0013) under
-`tests/unit`, rendered UI under `tests/component`, multi-module or
-in-process infrastructure checks under `tests/integration`, and public package
-boundary checks under `tests/contract`. Repository-level Playwright scenarios
-remain under `tests/` (or package E2E suites) for guarantees that require the
-deployed application.
+Test ownership follows package ownership. Each package has two test categories
+(ADR 0013): **unit** tests under `tests/unit/`, organized by capability, and **E2E**
+tests (Playwright, `packages/chatbot/tests/e2e/`) reserved for guarantees that a real
+browser is needed to verify. Contract checks, rendered-component tests without a
+browser and multi-module tests are unit tests; the historical `component`,
+`integration` and `contract` directories and their `test:*` scripts are gone. Execution
+profiles (`test:unit`, `test:infra`) change how tests run, never what category they
+belong to. Use E2E only when a real browser is essential to the guarantee.
 
 ## Browser verification (dev)
 
@@ -183,7 +186,7 @@ TypeScript modules with compile-time validation:
   `turbopack.resolveAlias` + `webpack.resolve.alias` of `"config"` to the Environment's
   bundle. Tradeoff: it imports `next/dist/server/lib/start-server` and
   `next/dist/cli/next-build` (internal APIs) — when bumping Next's major, re-check the
-  signatures (contract in `tests/contract/next-internals.test.ts`).
+  signatures (contract in `tests/unit/config/next-internals.test.ts`).
 
 **Hard rules:**
 
@@ -195,7 +198,7 @@ TypeScript modules with compile-time validation:
   `process.env.MODEL_GATEWAY_*` is forbidden. Use `createTestWorkerContext()`
   (`packages/coding-agent/tests/helpers/test-context.ts`) and inject the sandbox (writing
   to `.pi-prod`/`.pi-dev` is forbidden); contract in
-  `tests/contract/no-process-env-mutations.test.ts`.
+  `tests/unit/architecture/no-process-env-mutations.test.ts`.
 
 ### `model-gateway` — Model Gateway (the only AI provider)
 
@@ -236,7 +239,7 @@ wrapped in a FastAPI micro-entrypoint (`server.py`), deployed as a systemd unit
   cannot import `@/lib/infrastructure/ai` (exact or any subpath), and no file outside
   `packages/chatbot/lib/infrastructure/ai/` may import `@ai-sdk/*` except `@ai-sdk/react`
   (UI). Both rules have contracts in
-  `packages/chatbot/tests/contract/eslint-boundaries.test.ts`.
+  `packages/chatbot/tests/unit/architecture/eslint-boundaries.test.ts`.
 
 ### `chatbot` — Main Application
 

@@ -10,7 +10,7 @@ import { resolveCodingAgentDir } from "../runtime/paths";
  * their `cwd` and resolve `<agent dir>/sessions/--<scopePath encoded>--`.
  * `getDefaultSessionDir` (the SDK's `core/session-manager`) is not part of the
  * package's public exports, so the encoding is mirrored here and pinned by
- * `tests/integration/session-file-lookup.test.ts`, which writes real sessions
+ * `tests/unit/sessions/session-file-lookup.test.ts`, which writes real sessions
  * through the SDK and reloads them through this module. The worker only ever
  * passes absolute, already-resolved paths, which is all `path.resolve` needs.
  */

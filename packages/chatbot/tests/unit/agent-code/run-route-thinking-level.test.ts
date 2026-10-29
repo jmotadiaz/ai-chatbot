@@ -44,7 +44,15 @@ vi.mock("@/lib/features/code/worker-client", () => ({
   },
 }));
 
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
 import { POST } from "@/app/(chat)/api/agent/code/route";
+
+/**
+ * The route reads the PUBLIC Model Gateway catalog (model validation and each
+ * model's default thinking level): a real Gateway HTTP call, answered in-process
+ * by MSW with the consumer catalog. No gateway listens on `:4001`.
+ */
+const gateway = setupGatewayHarness();
 
 function makeRequest(
   options: { modelId?: string; thinkingLevel?: string; runId?: string } = {},
@@ -69,7 +77,8 @@ function makeRequest(
   });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  await gateway.use();
   mockState.dbSession = {
     sessionId: "s1",
     project: "p",

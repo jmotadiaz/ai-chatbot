@@ -9,6 +9,8 @@
     "dev": "pnpm run db:dev:start && tsx scripts/next-cli.ts dev --env=dev --port=3000",
     "build": "sh -c 'tsx scripts/assert-prod-build-allowed.ts \"$@\" && tsx lib/infrastructure/db/migrate.ts --env=prod && tsx scripts/next-cli.ts build --env=prod \"$@\"' --",
     "build:verify": "tsx scripts/next-cli.ts build --env=prod --verify",
+    "inspect:bundle": "tsx scripts/verify-client-bundle.ts --mode=fast",
+    "verify:bundle": "tsx scripts/verify-client-bundle.ts --mode=full",
     "preview": "tsx scripts/next-cli.ts start --env=prod --port=8085",
     "stop:dev": "sh -c 'lsof -ti:3000 | xargs -r kill 2>/dev/null || true; echo \"chatbot dev (3000) stopped\"'",
     "stop:test": "sh -c 'lsof -ti:3001 | xargs -r kill 2>/dev/null || true; lsof -ti:4001 | xargs -r kill 2>/dev/null || true; docker compose -f ../../docker-compose.test.yml down 2>/dev/null || true; echo \"chatbot test (3001) + mock gateway (4001) stopped\"'",
@@ -31,18 +33,15 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "type:check": "tsc --noEmit",
-    "test": "concurrently \"pnpm run test:e2e\" \"pnpm run test:unit\"",
+    "test": "vitest run",
+    "test:infra": "vitest run --config vitest.infra.config.ts",
     "eval": "tsx scripts/eval-runner.ts --env=dev",
     "check:mobile": "npx tsx scripts/check-mobile.ts",
     "test:e2e": "pnpm run db:test:start && playwright test $PLAYWRIGHT_ARGS",
     "test:e2e:ui": "pnpm run db:test:start && playwright test --ui $PLAYWRIGHT_ARGS",
     "test:e2e:headed": "pnpm run db:test:start && playwright test --headed $PLAYWRIGHT_ARGS",
     "mcp:start": "tsx --tsconfig mcp-server/tsconfig.json mcp-server/index.ts --env=dev",
-    "test:unit": "vitest run tests/unit",
-    "test:component": "vitest run tests/component --passWithNoTests",
-    "test:integration": "vitest run tests/integration --passWithNoTests",
-    "test:contract": "vitest run tests/contract --passWithNoTests",
-    "test:all": "vitest run",
+    "test:unit": "vitest run",
     "prepare": "husky"
   },
   "dependencies": {
@@ -117,6 +116,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@ai-chatbot/model-gateway-testing": "workspace:*",
     "@earendil-works/pi-coding-agent": "^0.85.1",
     "@electric-sql/pglite": "0.4.5",
     "@eslint/compat": "^1.4.1",

@@ -1,0 +1,28 @@
+{
+  "name": "@ai-chatbot/model-gateway-testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Official Model Gateway testing toolkit: protocol fixtures, per-instance scenarios, MSW handlers and a Node HTTP server that share one dispatch and rendering implementation.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --config ../../../eslint.config.mjs",
+    "lint:fix": "eslint --fix . --config ../../../eslint.config.mjs",
+    "test:unit": "vitest run",
+    "type:check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "msw": "^2.12.10"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
+  }
+}

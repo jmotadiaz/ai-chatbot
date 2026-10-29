@@ -2,7 +2,11 @@ import { stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { URL_CONTEXT_TOOL } from "@/lib/features/web-search/constants";
 import { RAG_TOOL } from "@/lib/features/rag/constants";
-import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
+import type { ChatModelSelection } from "@/lib/features/chat/chat-modes/model";
+import {
+  createChatAgent,
+  resolveChatModel,
+} from "@/lib/features/chat/chat-modes/model";
 import { urlContextFactory } from "@/lib/features/web-search/tools";
 import { ragFactory } from "@/lib/features/rag/tool";
 import {
@@ -20,7 +24,7 @@ import {
 } from "@/lib/features/chat/chat-modes/prompts";
 
 interface CreateProjectAgentParams {
-  ai: ChatAgentAiPort;
+  selection: ChatModelSelection;
   systemPrompt?: string;
   messages: ChatbotMessage[];
   userId: string;
@@ -28,7 +32,7 @@ interface CreateProjectAgentParams {
 }
 
 export const createProjectAgent = ({
-  ai,
+  selection,
   systemPrompt = DEFAULT_PROJECT_AGENT_PROMPT,
   messages,
   userId,
@@ -47,9 +51,9 @@ export const createProjectAgent = ({
     isRagEnabled = project.tools.includes(RAG_TOOL);
   }
 
-  const modelConfiguration = ai.getModelConfiguration();
+  const modelConfiguration = resolveChatModel(selection);
 
-  return ai.createAgent({
+  return createChatAgent(selection, {
     tools: toolSet,
     overrides: {
       maxRetries: 3,

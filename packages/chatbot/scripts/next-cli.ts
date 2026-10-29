@@ -26,7 +26,7 @@
  * they are Next.js internal modules (`next/dist/bin/next` itself calls them
  * that way). When upgrading Next.js major versions both entrypoints must be
  * re-verified — covered by the contract test
- * `tests/contract/next-internals.test.ts` (signature of `StartServerOptions` and
+ * `tests/unit/config/next-internals.test.ts` (signature of `StartServerOptions` and
  * `NextBuildOptions` in the `.d.ts` files), plus `build --verify`.
  *
  * We replicate the defaults `next/dist/bin/next` applies for `build`
@@ -49,9 +49,11 @@
  * - WITH `--webpack` we guarantee `process.env.TURBOPACK` is falsy
  *   (`delete`) BEFORE `startServer`/`nextBuild`: if the shell carried an inherited
  *   `TURBOPACK`, `parseBundlerArgs` would abort with "Multiple bundler
- *   flags set" (or start Turbopack instead of Webpack). Playwright's `webServer`
- *   uses `--webpack` because Turbopack can get stuck compiling
- *   `/agent/code` under Node 24.
+ *   flags set" (or start Turbopack instead of Webpack). The flag stays
+ *   available for diagnosing bundler-specific issues; the E2E suite no longer
+ *   needs it (it runs Turbopack: Next 16.1.1 compiles `/agent/code` without
+ *   the stall that forced the old Webpack pin, and the whole suite runs on the
+ *   default worker count in under two minutes).
  * - This is the launcher's ONLY use of environment variables, and it is
  *   deliberately unrelated to the app's configuration: it selects neither
  *   Environment, ports nor secrets.

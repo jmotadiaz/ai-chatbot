@@ -42,8 +42,8 @@ dirty_guard_confirm() {
   printf 'Deploy anyway? (it will be stamped dirty=yes) [y/N] ' >&2
   read -r answer || answer=""
 
-  case "${answer,,}" in
-    y|yes|s|si|sí) return 0 ;;
+  case "$answer" in
+    [yY]|[yY][eE][sS]|[sS]|[sS][iI]|sí|Sí|sÍ|SÍ) return 0 ;;
     *) return 1 ;;
   esac
 }

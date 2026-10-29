@@ -1,7 +1,11 @@
 import { stepCountIs } from "ai";
 import { ChatbotMessage } from "@/lib/features/chat/types";
 import { WEB_SEARCH_TOOL } from "@/lib/features/web-search/constants";
-import type { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
+import type { ChatModelSelection } from "@/lib/features/chat/chat-modes/model";
+import {
+  createChatAgent,
+  resolveChatModel,
+} from "@/lib/features/chat/chat-modes/model";
 import {
   urlContextFactory,
   webSearchFactory,
@@ -14,14 +18,14 @@ import { WEB_SEARCH_AGENT_PROMPT } from "@/lib/features/chat/chat-modes/prompts"
 import { withMessageProcessing } from "@/lib/features/chat/chat-modes/utils";
 
 interface CreateWebSearchAgentParams {
-  ai: ChatAgentAiPort;
+  selection: ChatModelSelection;
   messages: ChatbotMessage[];
   webSearchNumResults: number;
   memoryContext?: string | null;
 }
 
 export const createWebSearchAgent = ({
-  ai,
+  selection,
   messages,
   webSearchNumResults,
   memoryContext,
@@ -37,9 +41,9 @@ export const createWebSearchAgent = ({
     ? `${WEB_SEARCH_AGENT_PROMPT}\n\n${memoryContext}`
     : WEB_SEARCH_AGENT_PROMPT;
 
-  const modelConfiguration = ai.getModelConfiguration();
+  const modelConfiguration = resolveChatModel(selection);
 
-  return ai.createAgent({
+  return createChatAgent(selection, {
     instructions,
     tools: toolSet,
     overrides: {

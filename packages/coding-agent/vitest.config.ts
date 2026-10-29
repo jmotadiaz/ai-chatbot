@@ -7,6 +7,11 @@ import { initConfig } from "../config/src/config";
  * (ADR 0011): initialization is explicit when this file loads, never an
  * environment variable inherited from the parent worker.
  *
+ * One test category (ADR 0013): every self-contained test is a unit test under
+ * `tests/unit/`, organized by capability. RPC contract checks and rendered
+ * tests without a real browser are unit tests; the package has no E2E suite
+ * (Playwright lives in `packages/chatbot`).
+ *
  * The `"config"` alias binds the package to the static bundle `env.test.ts`
  * (which re-exports the package's full isomorphic surface plus the facade
  * wired to the Environment), the same module the Next.js bundler would wire in
@@ -28,11 +33,7 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
     },
-    include: [
-      "tests/unit/**/*.test.ts",
-      "tests/integration/**/*.test.ts",
-      "tests/contract/**/*.test.ts",
-    ],
+    include: ["tests/unit/**/*.test.ts"],
     clearMocks: true,
     restoreMocks: true,
   },

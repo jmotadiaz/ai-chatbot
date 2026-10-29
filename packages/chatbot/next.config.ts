@@ -28,7 +28,7 @@ import { config as prodBundleConfig } from "../config/src/env.prod";
  * It is not an Environment selector (ADR 0011: that goes through argv/`initConfig`), nor a
  * path, nor a credential: it only propagates the launcher's artifact-isolation flag
  * to the workers Next spawns. Contract in
- * `tests/contract/next-config-env-alias.test.ts` (the only `process.env.*`
+ * `tests/unit/config/next-config-env-alias.test.ts` (the only `process.env.*`
  * allowed in this file).
  */
 if (process.env.NEXT_CLI_VERIFY === "1") {
@@ -92,7 +92,7 @@ function activeEnvironment(phase: string): { environment: Environment; cfg: type
  * `@/…` specifier is resolved by the `tsconfig.json` paths
  * (`"@/*": ["./*"]`) and `../` normalises to `packages/config/src/env.<environment>`:
  * the alias points DIRECTLY at the Environment's static bundle, with no shims.
- * Contract in `tests/contract/next-config-env-alias.test.ts`.
+ * Contract in `tests/unit/config/next-config-env-alias.test.ts`.
  */
 const configBundleAlias = (environment: Environment): string =>
   `@/../config/src/env.${environment}`;
@@ -124,7 +124,7 @@ const nextConfig = (phase: string): NextConfig => {
         config: configAlias,
       },
     },
-    // Webpack (the launcher's `--webpack` and Playwright's webServer):
+    // Webpack (the launcher's `--webpack`, kept as a fallback bundler):
     // keeps Next's internal aliases and adds the Environment's.
     webpack: (config, options) => {
       const existing = config.resolve?.alias;

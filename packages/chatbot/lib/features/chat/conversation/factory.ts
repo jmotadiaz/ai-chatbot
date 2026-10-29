@@ -10,8 +10,7 @@ import {
 import type { ModelMessage } from "ai";
 import { config } from "config";
 import { getModelCatalogSnapshot, warmModelCatalog } from "@/lib/infrastructure/ai/catalog";
-import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
-import { ChatAgentAiPort } from "@/lib/features/chat/conversation/ports";
+import type { ChatModelSelection } from "@/lib/features/chat/chat-modes/model";
 import type { chatModelId } from "@/lib/features/foundation-model/config";
 import type { ChatbotMessage, ChatMode } from "@/lib/features/chat/types";
 import {
@@ -36,7 +35,6 @@ import {
   getEffectiveKeepRecentTokens,
   getEffectiveReserveTokens,
 } from "@/lib/features/compaction/types";
-import type { CompactionAiPort } from "@/lib/features/compaction/ports";
 import {
   saveChat,
   updateChat,
@@ -100,53 +98,7 @@ const processMessagesToSend = async ({
   );
 };
 
-/**
- * Only the temperature/topP/topK keys the caller actually set, so folding
- * them into a Model Configuration or into `createAgent`'s overrides never
- * clobbers the resolved model's own default with `undefined` (mirrors the
- * `overrides.temperature ?? base.temperature` fallback this replaces).
- */
-const definedOverrides = (overrides: {
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-}) => ({
-  ...(overrides.temperature !== undefined && {
-    temperature: overrides.temperature,
-  }),
-  ...(overrides.topP !== undefined && { topP: overrides.topP }),
-  ...(overrides.topK !== undefined && { topK: overrides.topK }),
-});
-
-/**
- * Builds a ChatAgentAiPort where every Chat Mode builds its agent from the
- * same user-selected model plus the chat-level overrides, through the kit's
- * `createAgent`/`createAgentModel` — tracing included: no chatbot code wraps
- * the model with tracing itself anymore, that is entirely the kit's job.
- */
-const buildAgentAdapter = (
-  selectedModel: chatModelId,
-  overrides: { temperature?: number; topP?: number; topK?: number },
-): ChatAgentAiPort => {
-  const chatOverrides = definedOverrides(overrides);
-
-  return {
-    getModelConfiguration: () => ({
-      ...inferenceKit.createAgentModel(selectedModel),
-      ...chatOverrides,
-    }),
-    createAgent: (options) =>
-      inferenceKit.createAgent(selectedModel, {
-        ...options,
-        overrides: { ...chatOverrides, ...options.overrides },
-      }),
-  };
-};
-
-export const makeProcessChatResponse = (
-  compactionAi: CompactionAiPort,
-  modeRouter: ChatModeRouterPort,
-) => {
+export const makeProcessChatResponse = (modeRouter: ChatModeRouterPort) => {
   return async ({
     messages,
     selectedModel,
@@ -194,11 +146,14 @@ export const makeProcessChatResponse = (
     // already holds this exact message.
     const assistantMessageId = randomUUID();
 
-    // Warm the catalog snapshot before the (synchronous) languageModel/
-    // createAgentModel resolutions in buildAgentAdapter and every Chat Mode.
+    // Warm the catalog snapshot before the (synchronous) createAgentModel/
+    // createAgent resolutions every Chat Mode performs.
     await warmModelCatalog();
 
-    const ai = buildAgentAdapter(selectedModel, { temperature, topP, topK });
+    const selection: ChatModelSelection = {
+      selectedModel,
+      overrides: { temperature, topP, topK },
+    };
 
     const { filteredMessages, augmentedSystemPrompt } = chatId
       ? await rebuildContext(chatId, messages, systemPrompt)
@@ -281,7 +236,7 @@ export const makeProcessChatResponse = (
             : undefined;
 
         const agentInstance = await createChatModeAgent({
-          ai,
+          selection,
           projectId,
           // Auto turns are answered with the mode the router resolved to;
           // explicit modes pass through untouched.
@@ -410,7 +365,7 @@ export const makeProcessChatResponse = (
                     );
                     const contextWindow =
                       modelConfig.contextWindow ?? config.contextWindow() ?? 128000;
-                    compact(compactionAi, resolvedChatId, {
+                    compact(resolvedChatId, {
                       keepRecentTokens: getEffectiveKeepRecentTokens(contextWindow),
                       reserveTokens: getEffectiveReserveTokens(contextWindow),
                       contextWindow,

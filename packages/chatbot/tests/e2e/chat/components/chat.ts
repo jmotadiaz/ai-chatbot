@@ -85,10 +85,21 @@ export class ChatComponent {
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }
 
-  async waitForLoadingComplete(timeout = 10000) {
-    // Simply wait for loading indicator to be gone (or never appear)
-    // This avoids race conditions when responses are fast
-    await expect(this.loadingIndicator).not.toBeVisible({ timeout });
+  async waitForLoadingComplete(timeout = 15000) {
+    // Two races, both measured:
+    // - the indicator can mount AFTER a "not visible" check passes (a slow
+    //   reply that has not started yet), and
+    // - a fast mock never shows it at all, so the streamed answer may still
+    //   be arriving when the check passes.
+    // Require the indicator to stay gone during a short grace window and the
+    // last assistant message to carry text.
+    const page = this.container.page();
+    await expect(async () => {
+      await expect(this.loadingIndicator).not.toBeVisible();
+      await page.waitForTimeout(300);
+      await expect(this.loadingIndicator).not.toBeVisible();
+      await expect(this.assistantMessages.last()).not.toBeEmpty();
+    }).toPass({ timeout });
   }
 
   async waitForAssistantMessage(nth: number = 0, timeout = 30000) {

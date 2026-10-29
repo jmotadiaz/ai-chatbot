@@ -1,8 +1,8 @@
 import { clear } from "@/lib/features/chat/resume/registry";
 
 /**
- * Shared scaffolding for the chat-resume contract suites
- * (`tests/contract/chat/get-stream-route.test.ts`,
+ * Shared scaffolding for the chat-resume unit suites
+ * (`tests/unit/chat/resume/get-stream-route.test.ts`,
  * `post-route-registry-feed.test.ts`,
  * `post-route-resume-persistence.test.ts`). Deliberately small: only the
  * pieces those suites genuinely duplicate live here — everything suite
@@ -33,10 +33,18 @@ export function withAuthStub(userId: string) {
   };
 }
 
-/** Module stub for `tracing`: deterministic ids, pass-through context. */
+/**
+ * Module stub for `tracing`: deterministic ids, pass-through context and a
+ * pass-through model wrapper. The suites that use it exercise the REAL inference
+ * kit, which wraps every model with `wrapWithTracing`; stubbing it keeps trace
+ * files out of the run without faking inference.
+ */
 export const tracingStub = {
   newRequestId: () => "req-1",
   runWithTraceContext: <T>(_ctx: unknown, fn: () => Promise<T>) => fn(),
+  getTraceContext: () => undefined,
+  isTracingEnabled: () => false,
+  wrapWithTracing: <M>(model: M) => model,
 };
 
 /**

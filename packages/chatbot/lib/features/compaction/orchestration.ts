@@ -4,7 +4,6 @@ import { shouldCompact } from "./should-compact";
 import { findCutPoint } from "./cut-point";
 import { generateSummary, generateTurnPrefixSummary } from "./summary-generation";
 import type { CompactionSettings, CutPointResult } from "./types";
-import type { CompactionAiPort } from "./ports";
 import { getLatestSummary, getMessagesByChatId, saveSummary } from "./queries";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import type { InsertChatSummary } from "@/lib/infrastructure/db/schema";
@@ -48,7 +47,6 @@ export async function prepareCompaction(
 }
 
 export async function compact(
-  ai: CompactionAiPort,
   chatId: string,
   settings: CompactionSettings,
   signal?: AbortSignal,
@@ -80,12 +78,11 @@ export async function compact(
   let modelUsed: string;
 
   if (isSplitTurn) {
-    const result = await generateTurnPrefixSummary(ai, cutPoint.messagesToSummarize);
+    const result = await generateTurnPrefixSummary(cutPoint.messagesToSummarize);
     summary = result.summary;
     modelUsed = result.modelUsed;
   } else {
     const result = await generateSummary(
-      ai,
       cutPoint.messagesToSummarize,
       previousSummaryText ?? undefined,
     );

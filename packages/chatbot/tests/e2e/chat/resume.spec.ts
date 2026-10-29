@@ -7,6 +7,11 @@ import { SLOW_STREAM_TEXT } from "@/tests/mocks/gateway/server";
 /**
  * E2E acceptance for chat resume (spec acceptance criterion):
  *
+ * E2E rationale (ticket 07): these cases run in a real browser because a page
+ * reload, a client-side route change and the remount/re-attach lifecycle cannot
+ * be reproduced in jsdom. The registry and resume-route rules they depend on
+ * are covered socially under tests/unit/chat/resume/.
+ *
  * A turn's generation lives server-side (the POST tees its SSE into the resume
  * registry), so a client that loses its fetch mid-generation — the screen went
  * off, the browser was backgrounded and the OS killed the connection — can
@@ -105,7 +110,7 @@ const KILL_FIRST_CHAT_POST = `
   })();
 `;
 
-/** A real page cannot flip `visibilityState`: redefine it and dispatch. */
+/** Simulate a visibility event, not OS suspension or screen-off. */
 async function simulateScreenBackOn(page: Page): Promise<void> {
   await page.evaluate(() => {
     Object.defineProperty(document, "visibilityState", {
@@ -138,7 +143,7 @@ async function seedChat(db: {
 }
 
 test.describe("Chat resume", () => {
-  test("screen off mid-generation: the turn completes without further user action", async ({
+  test("simulated fetch interruption mid-generation: the turn completes without further user action", async ({
     page,
     db,
   }) => {

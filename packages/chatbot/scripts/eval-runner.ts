@@ -44,7 +44,7 @@ const PROJECT_ROOT = resolve(__dirname, "..");
 // The compose files live at the repo root (`packages/chatbot` is two levels down).
 const REPO_ROOT = resolve(PROJECT_ROOT, "../..");
 const TEST_COMPOSE_FILE = resolve(REPO_ROOT, "docker-compose.test.yml");
-const LOCK_PATH = resolve(PROJECT_ROOT, "tests/evals/.runner.lock");
+const LOCK_PATH = resolve(PROJECT_ROOT, "evals/.runner.lock");
 
 function parseArgs(): {
   caseName?: string;
@@ -70,7 +70,7 @@ function parseArgs(): {
 
 function prepareEvalEnv(port: number): void {
   // Only what is HARNESS for evals (not app configuration): the cases
-  // (`tests/evals/cases/*.eval.ts`) read EVAL_BASE_URL to call the server.
+  // (`evals/cases/*.eval.ts`) read EVAL_BASE_URL to call the server.
   // Everything else this runner used to inject (POSTGRES_URL,
   // AUTH_SECRET, NEXT_PUBLIC_ENV=evals, TRACE_*, DISABLE_DEV_INDICATOR, …)
   // was configuration via process.env, forbidden by ADR 0011: today all of that
@@ -266,7 +266,7 @@ function runDbCmd(args: string[]): void {
 }
 
 function resolveCasePath(caseName: string | undefined): string {
-  const evalsDir = resolve(PROJECT_ROOT, "tests/evals/cases");
+  const evalsDir = resolve(PROJECT_ROOT, "evals/cases");
   if (!caseName) return evalsDir;
   const fileName = caseName.endsWith(".eval.ts")
     ? caseName

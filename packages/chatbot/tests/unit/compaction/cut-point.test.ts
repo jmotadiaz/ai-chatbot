@@ -33,7 +33,8 @@ describe("findCutPoint", () => {
     expect(result.messagesToSummarize.concat(result.messagesToKeep)).toEqual(messages);
   });
 
-  it("keeps all messages if single message exceeds threshold", () => {
+  // Accepted behaviour for this migration (ticket 01): an oversized single Message is summarized whole and none is kept.
+  it("summarizes a single message that exceeds the threshold and keeps none", () => {
     const messages = [
       createMessage("1", "A".repeat(4000)),    // ~1000 tokens
     ];

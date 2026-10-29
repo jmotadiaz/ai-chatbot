@@ -53,38 +53,111 @@ runtime, provider credential ownership, or Environment isolation.
 
 ## Feature and test migration
 
-The target categories are social unit tests and E2E. Social unit tests may
-exercise real collaborators in-process (including PGlite for persistence and
-MSW at the Gateway HTTP seam); tests requiring external PostgreSQL or other
-provisioned infrastructure remain selectable through an explicit execution
-profile. Self-contained unit tests are the default, and full verification
-includes the infrastructure profile. Contract purpose and resource requirements
-remain identifiable.
+The target categories are **unit tests**, including social unit tests, and
+**E2E tests**. A unit test exercises a unit of behavior with its collaborators
+under controlled conditions, without a real browser. It may use PGlite, MSW,
+temporary files, local subprocesses, or a test-owned HTTP server when those
+collaborators are necessary to verify the behavior. A socket or subprocess alone
+does not make it a separate category. Contract tests and rendered-component
+tests without a real browser are unit tests; their purpose remains identifiable.
 
-### Social unit by default; E2E by exception
+The default unit profile is self-contained: it may create and clean up its own
+local resources, but does not require a provisioned PostgreSQL server or other
+pre-existing service. Tests requiring provisioned infrastructure are
+selectable through an explicit profile, included in full verification. Tests
+using shared resources must isolate their data and avoid global destructive
+cleanup.
 
-Use social unit tests unless the guarantee requires at least one of:
+The target layout uses `tests/unit` and `tests/e2e` within each package, with
+unit tests organized by feature or responsibility. The target unit command
+covers all packages, including the Model Gateway's Python tests; tests remain
+selectable by package or file. The current directories and commands remain in
+effect until the migration is implemented.
 
-1. **Real navigation or lifecycle:** actual routing, redirects, deep links,
-   history, reload, or leaving and returning to a screen. Asserting a request
-   to navigate is not itself a reason for E2E.
-2. **Real browser-application interaction:** behavior that a local test replaces
-   or cannot faithfully reproduce, such as session cookies with redirects,
-   stream disconnection/reconnection, or client recovery while server work
-   continues. UI events or streaming alone do not qualify.
-3. **Representative assembly of a critical journey:** verifying that the
-   deployed entry point, routing/middleware, server behavior, persistence, and
-   visible result are wired together. Keep a representative journey, not the
-   entire matrix of inputs or inference responses at E2E scope.
+### Social unit tests by default
 
-Every E2E must state: "This test needs the deployed application because it
-verifies ___; a social unit test would omit ___." This identifies the deployment
-risk; it does not require proving that smaller tests can cover none of the flow.
+Design unit tests around meaningful behavior rather than around individual
+functions or files. A behavior can be a user-facing use case or a technical
+capability, contract, or guardrail with an identified risk. Prefer the
+capability's stable interface closest to the guarantee being tested; entering
+through a UI or HTTP route is not required for every scenario. Test the
+connection to a more external entry point when it provides a distinct guarantee.
 
-Multiple modules, PostgreSQL, controlled HTTP, rendered UI, tool calls, streaming,
-or business importance alone do not justify E2E. Variants exercising the same
-assembly risk belong in social unit tests unless they introduce a distinct
-E2E guarantee. Apply the criteria within the test's declared system scope.
+Use real first-party collaborators by default, substituting external
+dependencies and resources that require control. An internal double is an
+exception when the real collaborator makes the test impractical or
+disproportionately costly; identify the guarantee the double leaves untested.
+Prefer observable results, persisted state, errors, and external-boundary
+contracts over assertions about internal calls or their order, unless those
+interactions themselves protect a meaningful guarantee.
+
+Prefer the complete capability's interface over a social test of an internal
+subcapability. Retain the narrower boundary when it has its own reusable
+contract or the broader test would be significantly more costly or fragile.
+Isolated tests remain appropriate for significant rules, boundaries, or
+invariants that are difficult, fragile, or disproportionately costly to verify
+socially.
+
+Consolidate by guarantee and risk, not by file or test count. Keep separate
+scenarios for distinct guarantees or failure modes; use tables for variants of
+the same rule where appropriate. Additional test boundaries must cover a
+distinct risk to justify their cost. Internal details without independent value
+may be removed; consult the operator when a functional guarantee may be lost or
+the expected behavior is unclear. Fewer tests may result, but are not a quota.
+
+### Unit by default; E2E when a browser is essential
+
+E2E is reserved for tests whose guarantee requires a real browser and cannot
+be verified faithfully by a unit or social unit test. Using Playwright, rendering
+UI, clicking an element, or opening a browser is not sufficient by itself.
+Relevant browser behavior includes:
+
+1. **Geometry and viewport:** real layout, viewport intersection, scrolling,
+   or responsive behavior when simulated DOM behavior would omit the guarantee.
+2. **Navigation and lifecycle:** actual routing, redirects, deep links, history,
+   reload, or leaving and returning to a screen, where the browser's behavior is
+   the risk being checked.
+3. **Browser-application interaction:** session cookies and redirects, stream
+   disconnection and reconnection, or client recovery while server work
+   continues. Streaming alone does not require E2E.
+4. **Representative critical journeys:** browser-side assembly of the client
+   with routing, middleware, server behavior, persistence, and a visible result,
+   when that browser assembly contributes a distinct guarantee. Keep
+   representative journeys, not a matrix of inputs or inference responses.
+
+Every E2E must state: "This test needs a real browser because it verifies ___;
+a unit test would omit ___." Keep only distinct browser risks at E2E scope;
+exercise rules and variants without a browser when they can be verified
+faithfully there. An existing guarantee stays covered while equivalence is
+being established. Multiple modules, PostgreSQL, controlled HTTP, tool calls,
+or business importance alone do not justify E2E.
+
+### Purpose, resources, and quality evaluations
+
+Test category, purpose, and execution resources are independent. An
+**Architectural Fitness Function** objectively assesses a named architectural
+characteristic with an explicit acceptance criterion. It may be a static
+check, an executable test, a metric, or another assessment; not every contract
+or static assertion qualifies. Its characteristic, criterion, and execution
+must be identifiable.
+
+An **Environment Guardrail** is narrowly scoped to isolation between
+Environments or protection of Production data and artifacts. Examples include
+explicit Environment selection, the Production build gate, and separation of
+Production and verification artifacts. Historical script names or exact
+command strings are not guardrails unless they protect such a risk.
+
+Model-quality evaluations are a separate discipline, not unit or E2E tests.
+Their harness will live outside test directories and will not be included in the
+unit command. Existing evaluation documentation and runner configuration
+disagree about whether in-process cases use a real or mocked Gateway; document
+that limitation without claiming real-model quality or changing evaluation
+execution as part of this migration.
+
+The client-bundle secrets check must report explicitly when its artifact is
+absent in fast verification. Full verification must first run the isolated
+`build:verify` and then require inspection of the resulting bundle. The
+Production build is not used for this check.
 
 ### Migration scope
 
@@ -95,9 +168,12 @@ in the Test Environment, with Decisions responses simulated over HTTP. The
 image adapter remains because it performs necessary SDK translation.
 
 Chatbot E2E keeps the Coding Agent Worker stub; the Worker is tested separately.
-E2E cases are reduced only when their guarantees are preserved elsewhere.
-Obsolete doubles and tests of removed wiring are replaced, not permanently
-layered beside equivalent new tests.
+This does not verify the real chatbot-to-Worker connection, which is outside
+this migration. Preserve functional guarantees when moving or consolidating
+tests; identify equivalent coverage before removing an active test. A skipped
+test is not coverage: investigate whether its intended behavior is still
+supported before restoring or removing it. Remove obsolete doubles and tests
+of removed wiring rather than layering equivalent strategies indefinitely.
 
 ## Trade-offs and limits
 
@@ -112,6 +188,20 @@ layered beside equivalent new tests.
   thresholds, or delivery of historical E2E parallelization are included.
 
 See the [local implementation spec](../../.scratch/model-gateway-testing/spec.md)
-for module responsibilities, execution profiles, and migration sequencing.
-This ADR records the accepted target; it does not mean the migration has been
-implemented.
+for the original feature-migration scope and sequencing, and the
+[guarantees accounting](../model-gateway-testing-migration.md) for completed
+substitutions.
+
+## Implementation status
+
+The test taxonomy, layout, commands, bundle-check ordering, evaluation location
+and historical E2E reclassification described above were implemented by the
+social-testing migration (`.scratch/social-testing-migration/`, completed
+2026-10-29). Each package keeps `tests/unit/` (organized by capability) next to
+its E2E suite; the root `pnpm test:unit` covers every package plus the Model
+Gateway Python suite, `pnpm test:infra` is the explicit provisioned-resource
+profile, and `pnpm verify:full` builds the isolated verification bundle before
+inspecting it. The commands, profiles and current selection are documented in
+[`AGENTS.md`](../../AGENTS.md) and
+[`packages/chatbot/tests/AGENTS.md`](../../packages/chatbot/tests/AGENTS.md#execution-profiles).
+The policy in this ADR remains the authority.

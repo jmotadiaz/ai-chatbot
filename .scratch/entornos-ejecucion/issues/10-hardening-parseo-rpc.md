@@ -33,7 +33,7 @@ try/catch + validación de objeto no-nulo ANTES de destructurar → `-32700`
 seguro: el `try` interno cubre throws de los handlers (`-32603`) y el
 `default` del switch devuelve `-32601` para `method` ausente/desconocido.
 
-Tests: `packages/coding-agent/tests/contract/http-transport-parse.test.ts`
+Tests: `packages/coding-agent/tests/unit/rpc/http-transport-parse.test.ts`
 (4 casos; rojo confirmó los 3 modos de crash — SyntaxError ×2, TypeError por
 destructurar `null` — y fijó la regresión de -32601). Suite worker completa:
 268 tests / 32 ficheros ✓, `tsc --noEmit` ✓, lint ✓.

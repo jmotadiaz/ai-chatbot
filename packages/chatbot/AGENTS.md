@@ -14,6 +14,7 @@
 | `lib/utils/` | Shared utilities |
 | `mcp-server/` | MCP (Model Context Protocol) server |
 | `scripts/` | Utility scripts (seed, eval runner) |
+| `evals/` | Model-quality evaluations (Evalite). Not unit or E2E tests; excluded from `pnpm test:unit`. See `evals/README.md` |
 
 ## Tech Stack
 

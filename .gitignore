@@ -69,9 +69,9 @@ postgres-data-dev/
 postgres-data-prod/
 
 # Evaluation traces (keep directory, ignore generated artifacts)
-tests/evals/traces/*.json
-tests/evals/traces/*.ndjson
-tests/evals/.runner.lock
+evals/traces/*.json
+evals/traces/*.ndjson
+evals/.runner.lock
 
 # Playwright
 node_modules/

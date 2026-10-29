@@ -1,23 +1,160 @@
 import { describe, expect, it, vi } from "vitest";
+import { HttpResponse, delay, http } from "msw";
+import { setupGatewayHarness } from "../../../helpers/gateway-harness";
+import {
+  answerDecision,
+  answerDecisionRaw,
+  answerDecisionWith,
+} from "../../../helpers/gateway-decisions";
+import { inferenceKit } from "@/lib/infrastructure/ai/inference-kit";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
 import {
   buildChatModeRouterInput,
-  createDeterministicChatModeRouter,
   FALLBACK_CHAT_MODE_DECISION,
   resolveChatMode,
 } from "@/lib/features/chat/mode-routing";
-import type {
-  ChatModeRouterPort,
-  RoutingDecision,
-} from "@/lib/features/chat/mode-routing";
+import {
+  CHAT_MODE_ROUTING_QUESTION_KEY,
+  createChatModeRouter,
+} from "@/lib/features/chat/mode-routing/router";
 
-const input = { latestMessage: "¿Cómo uso drizzle-kit?", recentContext: "" };
+/**
+ * Fallback policy of `resolveChatMode` and the pure Router Input derivation.
+ *
+ * The policy cases go through the REAL composition (`createChatModeRouter` over
+ * `inferenceKit.decide`) and the official toolkit at the MSW seam, so "the
+ * classifier failed" means a real Decisions transport condition — an HTTP
+ * error, a timeout past `DECIDE_TIMEOUT_MS`, or a payload the kit refuses —
+ * instead of a fake port handing back a fixture. Nothing here needs a gateway
+ * listening on `:4001`.
+ */
+vi.mock("server-only", () => ({}));
 
-/** Arbitrary provenance value: these tests fake the port directly, never a real Decisions call. */
-const TEST_ROUTING_MODEL_ID = "test/routing-model";
+const gateway = setupGatewayHarness();
 
-const portReturning = (decision: RoutingDecision): ChatModeRouterPort => ({
-  route: vi.fn(async () => decision),
+const router = createChatModeRouter(inferenceKit.decide);
+
+const input = { latestMessage: "How do I use drizzle-kit?", recentContext: "" };
+
+const answering = (choice: string) =>
+  answerDecision(CHAT_MODE_ROUTING_QUESTION_KEY, choice);
+
+const answeringWith = (choice: string, answer: Record<string, unknown>) =>
+  answerDecisionWith(CHAT_MODE_ROUTING_QUESTION_KEY, choice, answer);
+
+const answeringRaw = answerDecisionRaw;
+
+const resolve = () => resolveChatMode(router, input);
+
+describe("resolveChatMode over the Gateway HTTP seam", () => {
+  it("applies a well-formed decision as-is (no confidence gate)", async () => {
+    await gateway.use({
+      decisions: answeringWith("ctx7", { confidence: 0.42 }),
+    });
+
+    await expect(resolve()).resolves.toMatchObject({
+      requested: "auto",
+      mode: "context7",
+      reason: "routed",
+      confidence: 0.42,
+      modelId: "decision-default",
+    });
+  });
+
+  it("keeps an explicit neutral decision as neither", async () => {
+    await gateway.use({ decisions: answering("neither") });
+
+    await expect(resolve()).resolves.toMatchObject({
+      requested: "auto",
+      mode: "neutral",
+      reason: "neither",
+      modelId: "decision-default",
+    });
+  });
+
+  it("never throws: a Decisions transport error degrades to the neutral fallback", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    await gateway.use({
+      decisions: () => {
+        throw new Error("decisions backend down");
+      },
+    });
+
+    try {
+      await expect(resolve()).resolves.toEqual({
+        ...FALLBACK_CHAT_MODE_DECISION,
+        requested: "auto",
+      });
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  // A scenario responder is synchronous, so a response slower than the kit's
+  // `DECIDE_TIMEOUT_MS` (1500 ms) is expressed with an ad-hoc MSW handler on the
+  // harness's own server, ahead of the scenario's catch-all.
+  it("never throws: a Decisions timeout degrades to the neutral fallback", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    await gateway.use({ decisions: answering("ctx7") });
+    gateway.server.use(
+      http.post("*/v1/systemone", async () => {
+        await delay(2_000);
+        return HttpResponse.json({ answers: {} });
+      }),
+    );
+
+    try {
+      await expect(resolve()).resolves.toEqual({
+        ...FALLBACK_CHAT_MODE_DECISION,
+        requested: "auto",
+      });
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("never throws: an unknown choice degrades to the neutral fallback", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    await gateway.use({
+      decisions: answeringRaw({
+        answers: {
+          [CHAT_MODE_ROUTING_QUESTION_KEY]: {
+            type: "choice",
+            choice: "banana",
+            confidence: 1,
+          },
+        },
+        model: "decision-default",
+      }),
+    });
+
+    try {
+      await expect(resolve()).resolves.toEqual({
+        ...FALLBACK_CHAT_MODE_DECISION,
+        requested: "auto",
+      });
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("never throws: a malformed Decisions answer degrades to the neutral fallback", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    await gateway.use({ decisions: answeringRaw({ answers: {} }) });
+
+    try {
+      await expect(resolve()).resolves.toEqual({
+        ...FALLBACK_CHAT_MODE_DECISION,
+        requested: "auto",
+      });
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });
 
 const userMessage = (text: string): ChatbotMessage => ({
@@ -26,119 +163,17 @@ const userMessage = (text: string): ChatbotMessage => ({
   parts: [{ type: "text", text }],
 });
 
-describe("resolveChatMode", () => {
-  it("passes a confident tool-backed decision through unchanged", async () => {
-    const decision: RoutingDecision = {
-      mode: "web",
-      reason: "routed",
-      confidence: 0.98,
-      modelId: TEST_ROUTING_MODEL_ID,
-    };
-
-    await expect(resolveChatMode(portReturning(decision), input)).resolves.toEqual({
-      ...decision,
-      requested: "auto",
-    });
-  });
-
-  it("applies a low-confidence decision as-is (no gate)", async () => {
-    const port = portReturning({
-      mode: "context7",
-      reason: "routed",
-      confidence: 0.42,
-      modelId: TEST_ROUTING_MODEL_ID,
-    });
-
-    await expect(resolveChatMode(port, input)).resolves.toMatchObject({
-      requested: "auto",
-      mode: "context7",
-      reason: "routed",
-      confidence: 0.42,
-    });
-  });
-
-  it("keeps an explicit neutral decision as neither", async () => {
-    const port = portReturning({
-      mode: "neutral",
-      reason: "neither",
-      confidence: 0.9,
-      modelId: TEST_ROUTING_MODEL_ID,
-    });
-
-    await expect(resolveChatMode(port, input)).resolves.toMatchObject({
-      mode: "neutral",
-      reason: "neither",
-    });
-  });
-
-  it("never throws: a failing router degrades to the neutral fallback", async () => {
-    const port: ChatModeRouterPort = {
-      route: vi.fn(async () => {
-        throw new Error("router exploded");
-      }),
-    };
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    await expect(resolveChatMode(port, input)).resolves.toEqual({
-      ...FALLBACK_CHAT_MODE_DECISION,
-      requested: "auto",
-    });
-    expect(consoleError).toHaveBeenCalled();
-  });
-
-  it("never throws: an invalid answer degrades to the neutral fallback", async () => {
-    const port: ChatModeRouterPort = {
-      route: vi.fn(async () => ({ mode: "banana", modelId: "x" }) as never),
-    };
-
-    await expect(resolveChatMode(port, input)).resolves.toEqual({
-      ...FALLBACK_CHAT_MODE_DECISION,
-      requested: "auto",
-    });
-  });
-
-  it("drops provenance from an invalid answer", async () => {
-    const port: ChatModeRouterPort = {
-      route: vi.fn(
-        async () =>
-          ({ mode: "web", confidence: 0.99, probabilities: { web: 1 } }) as never,
-      ),
-    };
-
-    await expect(resolveChatMode(port, input)).resolves.toEqual({
-      ...FALLBACK_CHAT_MODE_DECISION,
-      requested: "auto",
-    });
-  });
-});
-
-describe("deterministic test router", () => {
-  it("routes marker-tagged messages and defaults to context7", async () => {
-    const router = createDeterministicChatModeRouter();
-
-    await expect(
-      router.route({ latestMessage: "[[route:web]] precio del bitcoin", recentContext: "" }),
-    ).resolves.toMatchObject({ mode: "web" });
-    await expect(
-      router.route({ latestMessage: "[[route:neutral]] hola", recentContext: "" }),
-    ).resolves.toMatchObject({ mode: "neutral", reason: "neither" });
-    await expect(
-      router.route({ latestMessage: "¿Cómo uso drizzle?", recentContext: "" }),
-    ).resolves.toMatchObject({ mode: "context7" });
-  });
-});
-
 describe("buildChatModeRouterInput", () => {
   it("uses the last user message and the previous turn as context", () => {
     const messages: ChatbotMessage[] = [
-      userMessage("primera pregunta"),
-      { id: "a-1", role: "assistant", parts: [{ type: "text", text: "primera respuesta" }] },
-      userMessage("¿y eso cómo se hace?"),
+      userMessage("first question"),
+      { id: "a-1", role: "assistant", parts: [{ type: "text", text: "first answer" }] },
+      userMessage("and how is that done?"),
     ];
 
     expect(buildChatModeRouterInput(messages)).toEqual({
-      latestMessage: "¿y eso cómo se hace?",
-      recentContext: "user: primera pregunta\nassistant: primera respuesta",
+      latestMessage: "and how is that done?",
+      recentContext: "user: first question\nassistant: first answer",
     });
   });
 
@@ -162,7 +197,7 @@ describe("buildChatModeRouterInput", () => {
     });
     expect(
       buildChatModeRouterInput([
-        { id: "a-1", role: "assistant", parts: [{ type: "text", text: "hola" }] },
+        { id: "a-1", role: "assistant", parts: [{ type: "text", text: "hello" }] },
       ]),
     ).toEqual({ latestMessage: "", recentContext: "" });
   });
@@ -170,11 +205,11 @@ describe("buildChatModeRouterInput", () => {
   it("ignores messages without text parts", () => {
     const messages: ChatbotMessage[] = [
       { id: "a-1", role: "assistant", parts: [{ type: "step-start" }] },
-      userMessage("solo texto"),
+      userMessage("text only"),
     ];
 
     expect(buildChatModeRouterInput(messages)).toEqual({
-      latestMessage: "solo texto",
+      latestMessage: "text only",
       recentContext: "assistant: ",
     });
   });

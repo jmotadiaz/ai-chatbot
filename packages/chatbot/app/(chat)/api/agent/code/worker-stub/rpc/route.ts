@@ -26,14 +26,16 @@ export async function POST(req: NextRequest) {
       result: {
         models: [
           {
-            providerId: "opencode-go",
-            modelId: "deepseek-v4-pro",
-            label: "Deepseek v4 Pro",
+            providerId: "model-gateway",
+            modelId: "basicChat",
+            label: "Basic Chat",
+            levels: [],
           },
           {
-            providerId: "opencode-go",
-            modelId: "kimi-k2.7-code",
-            label: "Kimi K2.7 Code",
+            providerId: "model-gateway",
+            modelId: "canExecuteTools",
+            label: "Can Execute Tools",
+            levels: [],
           },
         ],
       },

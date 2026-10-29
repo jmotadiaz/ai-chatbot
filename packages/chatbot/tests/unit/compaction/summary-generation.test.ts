@@ -1,10 +1,33 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import {
+  GatewayScenarioError,
+  textReply,
+} from "@ai-chatbot/model-gateway-testing";
+import type {
+  ChatRequest,
+  ChatReply,
+  GatewayScenario,
+} from "@ai-chatbot/model-gateway-testing";
+import { setupGatewayHarness } from "../../helpers/gateway-harness";
 import {
   generateSummary,
   generateTurnPrefixSummary,
 } from "@/lib/features/compaction/summary-generation";
-import type { CompactionAiPort } from "@/lib/features/compaction/ports";
+import { SUMMARIZER_SYSTEM_PROMPT } from "@/lib/features/compaction/prompts";
 import type { ChatbotMessage } from "@/lib/features/chat/types";
+
+/**
+ * Social unit tests at the Model Gateway HTTP seam (ADR 0013): the feature is
+ * exercised through its public functions with the real inference kit, the real
+ * SDK serialization and the MSW transport of the official toolkit. No AI port,
+ * fake or module mock. These tests pass with no gateway listening on `:4001`.
+ *
+ * `setupGatewayHarness()` installs one scenario per test and warms the catalog
+ * snapshot the kit resolves the `*-default` contracts from.
+ */
+const SUMMARY_TEXT = "## Goal\nTest conversation";
+
+const gateway = setupGatewayHarness();
 
 const textMessages = [
   { id: "1", role: "user", parts: [{ type: "text", text: "Hello" }] },
@@ -16,70 +39,142 @@ const multimediaMessages = [
     id: "1",
     role: "user",
     parts: [
-      { type: "file", url: "https://example.com/img.png", mediaType: "image/png" },
+      {
+        type: "file",
+        url: "https://example.com/img.png",
+        mediaType: "image/png",
+        filename: "img.png",
+      },
     ],
   },
 ] as ChatbotMessage[];
 
-function buildAiPort(): CompactionAiPort {
-  return { generateText: vi.fn().mockResolvedValue("fake summary") };
-}
+/**
+ * Installs a per-test scenario (its own recorded requests and responders) and
+ * warms the catalog snapshot the kit resolves contracts from — the same
+ * synchronous-resolution contract production honours via `warmModelCatalog`.
+ */
+const useScenario = (
+  chat: (request: ChatRequest) => ChatReply,
+): Promise<GatewayScenario> => gateway.use({ chat });
+
+/** The recorded `POST /v1/chat/completions` bodies, oldest first. */
+const chatBodies = (scenario: GatewayScenario) =>
+  scenario.requests
+    .filter((request) => request.path === "/v1/chat/completions")
+    .map((request) => request.body as ChatRequest);
+
+const systemContent = (body: ChatRequest): string => {
+  const system = body.messages?.find((message) => message.role === "system");
+  return typeof system?.content === "string" ? system.content : "";
+};
+
+const userContent = (body: ChatRequest): string =>
+  (body.messages ?? [])
+    .filter((message) => message.role === "user")
+    .map((message) => (typeof message.content === "string" ? message.content : ""))
+    .join("\n");
 
 /**
  * `modelUsed` is persisted verbatim into `ChatSummary.modelUsed`
  * (`lib/infrastructure/db/schema.ts`) as provenance: with the Model Gateway
  * (ADR 0010) the Default Model Contract IS the stable identifier, so the
- * same contract the port resolves by is what gets persisted.
+ * contract the request was sent with is what gets persisted.
  */
-describe("generateSummary / generateTurnPrefixSummary: modelUsed provenance", () => {
-  it("generateSummary passes the text contract to the port and returns it as provenance", async () => {
-    const ai = buildAiPort();
+describe("generateSummary / generateTurnPrefixSummary over the Gateway HTTP seam", () => {
+  it("summarizes text turns with reasoning-default, the initial prompt and temperature 0.1", async () => {
+    const scenario = await useScenario(() => textReply(SUMMARY_TEXT));
 
-    const { modelUsed } = await generateSummary(ai, textMessages);
+    const { summary, modelUsed } = await generateSummary(textMessages);
 
-    expect(ai.generateText).toHaveBeenCalledWith(
-      "reasoning-default",
-      expect.any(String),
-      expect.any(String),
-    );
+    expect(summary).toBe(SUMMARY_TEXT);
     expect(modelUsed).toBe("reasoning-default");
+
+    const bodies = chatBodies(scenario);
+    expect(bodies).toHaveLength(1);
+    const [body] = bodies;
+
+    // Contract selection, temperature and the non-streaming shape of the call.
+    expect(body!.model).toBe("reasoning-default");
+    expect(body!.temperature).toBe(0.1);
+    // `generateText` is non-streaming: the SDK omits the flag for JSON calls.
+    expect(body!.stream ?? false).toBe(false);
+
+    // Prompt construction: the summarizer system prompt plus the initial
+    // template wrapping the serialized conversation (no previous summary yet).
+    expect(systemContent(body!)).toBe(SUMMARIZER_SYSTEM_PROMPT);
+    const prompt = userContent(body!);
+    expect(prompt.startsWith("Extract and organize ALL information")).toBe(true);
+    expect(prompt).toContain("user: Hello");
+    expect(prompt).toContain("assistant: Hi there");
+    expect(prompt).not.toContain("Previous Summary:");
   });
 
-  it("generateSummary passes the multimedia contract to the port and returns it as provenance", async () => {
-    const ai = buildAiPort();
+  it("selects vision-default and serializes file parts when the turns carry multimedia", async () => {
+    const scenario = await useScenario(() => textReply(SUMMARY_TEXT));
 
-    const { modelUsed } = await generateSummary(ai, multimediaMessages);
+    const { summary, modelUsed } = await generateSummary(multimediaMessages);
 
-    expect(ai.generateText).toHaveBeenCalledWith(
-      "vision-default",
-      expect.any(String),
-      expect.any(String),
-    );
+    expect(summary).toBe(SUMMARY_TEXT);
     expect(modelUsed).toBe("vision-default");
+
+    const [body] = chatBodies(scenario);
+    expect(body!.model).toBe("vision-default");
+    expect(userContent(body!)).toContain("[File: img.png (image/png)]");
   });
 
-  it("generateTurnPrefixSummary returns the same contracts for the same two branches", async () => {
-    const textAi = buildAiPort();
-    const multimediaAi = buildAiPort();
+  it("merges into the previous summary with the incremental prompt", async () => {
+    const scenario = await useScenario(() => textReply(SUMMARY_TEXT));
 
-    const textResult = await generateTurnPrefixSummary(textAi, textMessages);
-    const multimediaResult = await generateTurnPrefixSummary(
-      multimediaAi,
-      multimediaMessages,
+    const { summary, modelUsed } = await generateSummary(
+      textMessages,
+      "## Goal\nEarlier goal",
     );
 
-    expect(textAi.generateText).toHaveBeenCalledWith(
-      "reasoning-default",
-      expect.any(String),
-      expect.any(String),
-    );
-    expect(textResult.modelUsed).toBe("reasoning-default");
+    expect(summary).toBe(SUMMARY_TEXT);
+    expect(modelUsed).toBe("reasoning-default");
 
-    expect(multimediaAi.generateText).toHaveBeenCalledWith(
-      "vision-default",
-      expect.any(String),
-      expect.any(String),
+    const prompt = userContent(chatBodies(scenario)[0]!);
+    expect(prompt.startsWith("You are updating an existing conversation summary")).toBe(
+      true,
     );
+    expect(prompt).toContain("## Goal\nEarlier goal");
+    expect(prompt).toContain("user: Hello");
+    expect(prompt).toContain("assistant: Hi there");
+  });
+
+  it("summarizes a turn prefix with the same contract selection", async () => {
+    const textScenario = await useScenario(() => textReply(SUMMARY_TEXT));
+    const textResult = await generateTurnPrefixSummary(textMessages);
+
+    expect(textResult).toEqual({
+      summary: SUMMARY_TEXT,
+      modelUsed: "reasoning-default",
+    });
+    const textBody = chatBodies(textScenario)[0]!;
+    expect(textBody.model).toBe("reasoning-default");
+    expect(textBody.temperature).toBe(0.1);
+    expect(systemContent(textBody)).toBe(SUMMARIZER_SYSTEM_PROMPT);
+    const textPrompt = userContent(textBody);
+    expect(textPrompt).toContain("turn prefix");
+    expect(textPrompt).toContain("user: Hello");
+
+    const multimediaScenario = await useScenario(() => textReply(SUMMARY_TEXT));
+    const multimediaResult =
+      await generateTurnPrefixSummary(multimediaMessages);
+
     expect(multimediaResult.modelUsed).toBe("vision-default");
+    expect(chatBodies(multimediaScenario)[0]!.model).toBe("vision-default");
+  });
+
+  // A 400 is not retried by the SDK (retryable statuses — 429 and 5xx — are
+  // retried with backoff, exactly as they are in production), so this asserts
+  // the feature's error behaviour without depending on retry timing.
+  it("propagates a Gateway error instead of returning a summary", async () => {
+    await useScenario(() => {
+      throw new GatewayScenarioError("summarizer rejected the request", 400);
+    });
+
+    await expect(generateSummary(textMessages)).rejects.toThrow();
   });
 });

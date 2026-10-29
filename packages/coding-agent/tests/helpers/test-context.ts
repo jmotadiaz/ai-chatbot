@@ -10,7 +10,7 @@ import type { WorkerRuntimeConfig } from "../../src/runtime/runtime-config";
  * Pi packages, artifacts, traces, project root — lives inside ONE temp sandbox
  * unique to the test (`mkdtempSync` under `os.tmpdir()`). No test may configure
  * itself through `process.env.CODING_AGENT_*` / `process.env.MODEL_GATEWAY_*`;
- * `tests/contract/no-process-env-mutations.test.ts` enforces that.
+ * `tests/unit/architecture/no-process-env-mutations.test.ts` enforces that.
  *
  * Usage:
  * ```ts
