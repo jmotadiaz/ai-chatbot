@@ -2,16 +2,16 @@
 
 Test suite to evaluate the chatbot's quality using [Evalite](https://evalite.dev).
 
-These model-quality evaluations are not unit or E2E tests. Their eventual
-location is outside the test directories; the current paths and commands below
-remain in effect until that move is implemented.
+These model-quality evaluations are not unit or E2E tests. They live in this
+directory (`packages/chatbot/evals/`), outside `tests/`, and are not part of
+`pnpm test:unit` or the other test profiles.
 
 The model-routing description below claims real-model evaluation, but
-[`eval-runner.ts`](../../scripts/eval-runner.ts) documents that in-process
+[`eval-runner.ts`](../scripts/eval-runner.ts) documents that in-process
 cases load the Test Environment bundle and use the Mock Model Gateway. The
 actual evaluation setup requires separate investigation; do not treat these
 instructions or historical scores as evidence of a current real-model run.
-This documentation update does not change or execute the evaluations.
+The relocation of this directory did not change or execute the evaluations.
 
 ## Usage
 
@@ -47,7 +47,7 @@ pnpm eval -c compaction --no-server          # assume next dev is already up
 6. It waits for HTTP `:200/3xx/4xx` (120s timeout).
 7. It starts `npx evalite run <case>` with an `[evalite]` prefix.
 8. Cleanup: it kills the children, stops the DB (unless `--keep-db`), releases the
-   `tests/evals/.runner.lock` lockfile.
+   `evals/.runner.lock` lockfile.
 
 ## Available cases
 
@@ -63,7 +63,7 @@ Evaluates the quality of conversation compaction:
 Measures the Chat Mode `auto` **router**, not a full chat turn: it calls
 `resolveChatMode()` with the real Jev 1.13 adapter (OpenRouter Decisions API via
 `@openrouter/sdk`) over a labeled dataset of 39 ES/EN messages
-(`tests/evals/scenarios/mode-routing-dataset.ts`). It does not touch `/api/chat`, the DB,
+(`evals/scenarios/mode-routing-dataset.ts`). It does not touch `/api/chat`, the DB,
 or any chat model: one classifier call per message (~$0.00002 each, **~$0.0008 the full
 run**), ~5 s of evalite.
 
@@ -98,7 +98,7 @@ context (labeled `neither`: the referent is unresolvable, so paying for a tool i
 justified).
 
 Current criteria (v2) and threshold are documented in the header of
-`tests/evals/cases/mode-routing.eval.ts`; the source of truth is
+`evals/cases/mode-routing.eval.ts`; the source of truth is
 `lib/features/chat/mode-routing/questions.ts` (`CHAT_MODE_ROUTING_QUESTION_VERSION`) and
 `CHAT_MODE_ROUTING_CONFIDENCE_THRESHOLD` in `mode-routing/constants.ts`. **Any change of
 criteria or threshold is decided with this eval's numbers** (and updates the 03/04 tests
@@ -118,7 +118,7 @@ evalite.config.ts                # Global configuration (project root)
 scripts/eval-runner.ts           # Environment runner (DB, next dev, evalite)
 lib/infrastructure/env.ts        # isTestMode/isEvalMode/resolveEnvFile helpers
 packages/tracing/                # Tracing middleware (wrap LanguageModelV3)
-tests/evals/
+evals/
 ├── lib/
 │   ├── auth.ts                  # Test user management
 │   ├── chatbot-client.ts        # HTTP client for the chatbot
@@ -145,9 +145,9 @@ tests/evals/
 
 The system writes two artifacts per run:
 
-1. **Eval traces** (`tests/evals/traces/<evalName>-<timestamp>.json`): High-level events (`simulator`, `chatbot`, `judge`) written manually by the eval case. It includes the `traceRunId` to correlate with the internal traces.
+1. **Eval traces** (`evals/traces/<evalName>-<timestamp>.json`): High-level events (`simulator`, `chatbot`, `judge`) written manually by the eval case. It includes the `traceRunId` to correlate with the internal traces.
 
-2. **Model internal traces** (`tests/evals/traces/chatbot/<timestamp>_<runId>/`): Progressive events (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) written by the tracing middleware on every `streamText`/`generateText` call in the app. It is enabled with `TRACE_ENABLED=1` (forced by the runner).
+2. **Model internal traces** (`evals/traces/chatbot/<timestamp>_<runId>/`): Progressive events (`start`, `text-delta`, `reasoning-delta`, `tool-input-*`, `tool-call`, `tool-result`, `source`, `finish`, `error`, `abort`) written by the tracing middleware on every `streamText`/`generateText` call in the app. It is enabled with `TRACE_ENABLED=1` (forced by the runner).
 
 The `/api/chat` route handler propagates `X-Trace-Run-Id` and `X-Trace-Request-Id` in the response, and the eval's `chatbot-client.ts` reads them and stores them in the chatbot trace `metadata`, making it possible to cross both files.
 
@@ -210,6 +210,6 @@ Open `http://localhost:3006` to see the results in a web interface.
 
 ## Adding new cases
 
-1. Create `tests/evals/cases/[case-name].eval.ts`
+1. Create `evals/cases/[case-name].eval.ts`
 2. Use `evalite()` with `data`, `task`, and `scorers`
 3. Run it with `pnpm eval -c [case-name]`

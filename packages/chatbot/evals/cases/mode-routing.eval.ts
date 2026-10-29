@@ -35,7 +35,7 @@ import type { ChatbotMessage } from "@/lib/features/chat/types";
  * It measures the ROUTER, not a chat round trip: `resolveChatMode()` + the real
  * Jev 1.13 adapter over the OpenRouter Decisions API (`ChatModeRouterPort`),
  * fed with `buildChatModeRouterInput()` over the labelled dataset in
- * `tests/evals/scenarios/mode-routing-dataset.ts`. No `/api/chat` request, no
+ * `evals/scenarios/mode-routing-dataset.ts`. No `/api/chat` request, no
  * DB, no model tokens beyond the classifier: one Decisions call per dataset
  * entry (~$0.00002 each, ~$0.0009 for the whole run at 42 entries).
  *

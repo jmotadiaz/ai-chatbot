@@ -5,7 +5,7 @@ import { fileURLToPath } from "url"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const tracesDir = resolve(__dirname, "../../../../tests/evals/traces")
+const tracesDir = resolve(__dirname, "../../../../packages/chatbot/evals/traces")
 
 interface TraceEvent {
   ts: string
