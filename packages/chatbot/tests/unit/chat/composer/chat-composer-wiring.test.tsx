@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
-import { setupGatewayHarness } from "../../helpers/gateway-harness";
+import { setupGatewayHarness } from "../../../helpers/gateway-harness";
 import Chat from "@/components/chat/chat";
 import { ChatProvider } from "@/components/chat/provider";
 import { ModelCatalogProvider } from "@/lib/features/foundation-model/model-catalog-context";
