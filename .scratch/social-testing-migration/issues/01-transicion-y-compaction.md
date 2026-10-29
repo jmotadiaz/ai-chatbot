@@ -7,7 +7,7 @@ silenciosamente la selección de tests.
 
 **Blocked by:** Ninguno (puede comenzar inmediatamente).
 
-**Status:** completado con cuestión de producto abierta (punto de corte con un único Message: título corregido, comportamiento sin decidir)
+**Status:** resuelto (decisión del operador: se acepta el comportamiento actual de resumir el Message oversized; sin cambios de runtime ni aserciones)
 
 - [x] Los selectores reconocen tanto la organización actual como la nueva durante la transición; los comandos y perfiles existentes siguen funcionando sin omitir ni ejecutar inadvertidamente dos veces una misma suite.
 - [x] Las garantías de Compaction se inventarían y consolidan preferentemente desde la interfaz de la capacidad, con persistencia PGlite y respuestas controladas en la frontera HTTP del Model Gateway cuando corresponda.
@@ -163,3 +163,14 @@ Verificación (Node 24.15.0, `PATH=/Users/javier.mota/.nvm/versions/node/v24.15.
 
 Limitaciones: `secrets.{dev,prod}.ts` son placeholders gitignored; no se ejecutó
 `test:e2e` ni `build:verify`; no se tocó producción; no se creó PR.
+
+## Decisión final del operador: punto de corte con un único Message (2026-10-29)
+
+Decisión: se **acepta** el comportamiento actual de `findCutPoint` para un único
+Message que supera el umbral: se resume completo y no se conserva ninguno
+(`cutIndex` 0). Queda documentado como comportamiento aceptado para esta migración.
+No hay cambios de runtime, implementación ni aserciones. El título corregido
+("summarizes a single message that exceeds the threshold and keeps none") describe
+ese comportamiento. Esta decisión sustituye el bloqueo anterior y cierra el punto
+del ticket. Cualquier cambio futuro de esta regla requiere una decisión nueva y
+explícita, no se deduce de este ticket.
