@@ -107,3 +107,30 @@ ya se verifica.
 
 Re-verificación en esta sesión (Node 24.15.0): `vitest run tests/unit/compaction`
 → 6 archivos, 36 tests passing, exit 0.
+
+## Prueba de selección en ambas organizaciones (transición)
+
+La partición de perfiles por sí sola no bastaba. Se crearon archivos sonda
+temporales en ambas organizaciones, se comprobó la selección y la ejecución y
+después se eliminaron (sin cambios de configuración: los globs ya incluyen ambas).
+
+Sondas (en `packages/chatbot/tests/`):
+- Organización actual: `integration/transition-probe/current-layout.test.ts`,
+  `component/transition-probe/current-component.test.tsx`
+- Organización por capacidad (`unit`): `unit/transition-probe/capability-unit.test.ts`
+- Infraestructura (en `integration/mocks/`): `integration/mocks/transition-probe/infra-probe.test.ts`
+
+Resultados (Node 24.15.0):
+- `vitest list --filesOnly` perfil por defecto: las 3 sondas no infra aparecen
+  una vez cada una (3 ocurrencias); perfil infra: solo la sonda infra (1 ocurrencia).
+- Ejecución completa (JSON reporter): perfil por defecto ejecuta las 3 sondas, cada
+  una con 1 aserción `passed`, exit 0; perfil infra ejecuta solo la sonda infra
+  (1 aserción `passed`), exit 0.
+- Selección por archivo: cada sonda, pasada por ruta, ejecuta 1 test `passed`
+  exit 0 en su perfil.
+- Negativos: la sonda infra con el perfil por defecto y la sonda `unit` con el
+  perfil infra no se ejecutan (exit 1, "no test files"), sin duplicados.
+
+Limitaciones: las sondas son archivos temporales; no quedan en el repositorio y
+no hay una prueba permanente de este contrato. Los `secrets.{dev,prod}.ts`
+siguen siendo placeholders locales.
