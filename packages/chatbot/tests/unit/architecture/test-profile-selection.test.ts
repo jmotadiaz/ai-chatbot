@@ -6,7 +6,7 @@ import { createVitest } from "vitest/node";
 // Contract for the execution profiles (ADR 0013, ticket 01): the files each
 // Vitest config actually selects, checked against every chatbot test file on
 // disk. Playwright suites under `tests/e2e` are outside Vitest and excluded.
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 
 function allTestFilesOnDisk(): string[] {
   return readdirSync(path.join(PACKAGE_ROOT, "tests"), { recursive: true })

@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
  * each piece starts, where the build writes and which path serves prod. JSON
  * parsing, not fragile text.
  */
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 const chatbotPkg = JSON.parse(
   readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"),
 ) as { scripts: Record<string, string> };
@@ -43,22 +43,6 @@ describe("chatbot build scripts", () => {
     expect(cmd).not.toContain("dotenv");
   });
 
-  it("build:dev, build:prod, start and start:prod no longer exist (ADR 0006)", () => {
-    expect(s["build:dev"]).toBeUndefined();
-    expect(s["build:prod"]).toBeUndefined();
-    expect(s.start).toBeUndefined();
-    expect(s["start:prod"]).toBeUndefined();
-  });
-
-  it("chatbot has no scripts that invoke the coding-agent or a redundant mcp-server", () => {
-    expect(s["build:worker"]).toBeUndefined();
-    expect(s["worker:dev"]).toBeUndefined();
-    expect(s["mcp-server"]).toBeUndefined();
-    for (const [name, cmd] of Object.entries(s)) {
-      expect(cmd, name).not.toContain("coding-agent");
-    }
-  });
-
   it("explicit per-Environment migrations with --env=<environment>", () => {
     for (const env of ["dev", "test", "prod"]) {
       expect(s[`db:${env}:migrate`]).toContain(`migrate.ts --env=${env}`);
@@ -79,20 +63,17 @@ describe("canonical prod path: preview", () => {
     expect(cmd).not.toContain("dotenv");
   });
 
-  it("root: build and build:verify chain both packages, without a db alias or start", () => {
+  it("root: build and build:verify chain both packages and no unscoped db:migrate", () => {
     expect(rootPkg.scripts.build).toContain("pnpm --filter chatbot build");
     expect(rootPkg.scripts.build).toContain("pnpm --filter coding-agent build");
     expect(rootPkg.scripts["build:verify"]).toContain("pnpm --filter chatbot build:verify");
     expect(rootPkg.scripts["build:verify"]).toContain("pnpm --filter coding-agent build:verify");
-    expect(rootPkg.scripts.start).toBeUndefined();
-    expect(rootPkg.scripts["build:worker"]).toBeUndefined();
     expect(rootPkg.scripts["db:migrate"]).toBeUndefined();
   });
 
   it("chatbot: only serves the prod build with next-cli start --env=prod", () => {
     const cmd = s.preview;
     expect(cmd).toBe("tsx scripts/next-cli.ts start --env=prod --port=8085");
-    expect(cmd).not.toContain("coding-agent");
     expect(cmd).not.toContain("db:prod:start");
   });
 

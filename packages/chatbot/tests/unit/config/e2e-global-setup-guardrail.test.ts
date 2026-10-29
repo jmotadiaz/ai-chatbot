@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { config } from "config";
-import { assertDatabaseMatchesEnvironment } from "../../../config/src/guardrails";
+import { assertDatabaseMatchesEnvironment } from "../../../../config/src/guardrails";
 
 /**
  * e2e guardrail (ticket 05, updated in ADR 0011):

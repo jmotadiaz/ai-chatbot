@@ -31,7 +31,7 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
   `mkdtempSync` sandbox with `projectsRoot`, `sessionsDir`, `modelsJsonPath`, `authJsonPath`,
   `agentDir`, `piPackagesDir`, `artifactsDir`, and `cleanup()` for `afterEach`.
 - A test NEVER writes to `.pi-prod` or `.pi-dev`. Contract:
-  `tests/contract/no-process-env-mutations.test.ts`.
+  `tests/unit/architecture/no-process-env-mutations.test.ts`.
 - The Model Gateway seam is substituted with the official toolkit
   (`@ai-chatbot/model-gateway-testing`, ADR 0013), never by stubbing
   `globalThis.fetch`:

@@ -24,7 +24,7 @@ import { describe, expect, it, vi } from "vitest";
  * In the tests the Environment is test (initConfig + alias), so the expected
  * active Environment is `"test"`.
  */
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 
 async function loadActiveNextConfig() {
   const mod = await import("@/next.config");

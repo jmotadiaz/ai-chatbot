@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
  * here.
  */
 const exec = promisify(execFile);
-const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../..");
+const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../../..");
 
 async function runGate(extra: Record<string, string | undefined>) {
   const env = { ...process.env, ALLOW_PROD_BUILD: undefined, ...extra };

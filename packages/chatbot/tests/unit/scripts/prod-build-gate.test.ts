@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
  * both through process.argv (canonical path) and through the transitional env.
  */
 const exec = promisify(execFile);
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 const GATE = "scripts/assert-prod-build-allowed.ts";
 
 async function runGate(

@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
  * the whole build pipeline and `start-server` registers signal handlers — the
  * real run is covered by `next-cli build --verify`).
  */
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 const NEXT_DIST = path.join(PACKAGE_ROOT, "node_modules", "next", "dist");
 
 const readDts = (relative: string) =>

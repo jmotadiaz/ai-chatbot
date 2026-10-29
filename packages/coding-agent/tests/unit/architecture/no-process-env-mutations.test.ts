@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import { startGatewayServer } from "@ai-chatbot/model-gateway-testing/server";
-import { createTestWorkerContext } from "../helpers/test-context";
+import { createTestWorkerContext } from "../../helpers/test-context";
 
 /**
  * DI contract of the Coding Agent Worker (ADR 0011 §6 / ticket 02):
@@ -25,7 +25,7 @@ import { createTestWorkerContext } from "../helpers/test-context";
  * value and `ensureGatewayAuthJson()` overwrote `.pi-prod/auth.json`.
  */
 
-const TESTS_ROOT = path.resolve(import.meta.dirname, "..");
+const TESTS_ROOT = path.resolve(import.meta.dirname, "../..");
 const SELF = path.basename(fileURLToPath(import.meta.url));
 
 /** Forbidden configuration mutations through environment variables. */
@@ -111,7 +111,7 @@ describe("test sandbox isolation (runtime)", () => {
   });
 
   it("syncGatewayModelsFile with the injected sandbox writes models.json/auth.json ONLY inside it", async () => {
-    const { syncGatewayModelsFile } = await import("../../src/runtime/gateway-catalog");
+    const { syncGatewayModelsFile } = await import("../../../src/runtime/gateway-catalog");
     // A REAL gateway origin on an ephemeral port (official toolkit): the
     // worker is configured with an injected URL that is not the Test bundle's,
     // and only this origin can answer the catalog request. A fetch sent to the

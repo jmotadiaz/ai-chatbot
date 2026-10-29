@@ -26,7 +26,7 @@
  * they are Next.js internal modules (`next/dist/bin/next` itself calls them
  * that way). When upgrading Next.js major versions both entrypoints must be
  * re-verified — covered by the contract test
- * `tests/contract/next-internals.test.ts` (signature of `StartServerOptions` and
+ * `tests/unit/config/next-internals.test.ts` (signature of `StartServerOptions` and
  * `NextBuildOptions` in the `.d.ts` files), plus `build --verify`.
  *
  * We replicate the defaults `next/dist/bin/next` applies for `build`

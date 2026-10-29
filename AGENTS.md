@@ -184,7 +184,7 @@ TypeScript modules with compile-time validation:
   `turbopack.resolveAlias` + `webpack.resolve.alias` of `"config"` to the Environment's
   bundle. Tradeoff: it imports `next/dist/server/lib/start-server` and
   `next/dist/cli/next-build` (internal APIs) — when bumping Next's major, re-check the
-  signatures (contract in `tests/contract/next-internals.test.ts`).
+  signatures (contract in `tests/unit/config/next-internals.test.ts`).
 
 **Hard rules:**
 
@@ -196,7 +196,7 @@ TypeScript modules with compile-time validation:
   `process.env.MODEL_GATEWAY_*` is forbidden. Use `createTestWorkerContext()`
   (`packages/coding-agent/tests/helpers/test-context.ts`) and inject the sandbox (writing
   to `.pi-prod`/`.pi-dev` is forbidden); contract in
-  `tests/contract/no-process-env-mutations.test.ts`.
+  `tests/unit/architecture/no-process-env-mutations.test.ts`.
 
 ### `model-gateway` — Model Gateway (the only AI provider)
 
@@ -237,7 +237,7 @@ wrapped in a FastAPI micro-entrypoint (`server.py`), deployed as a systemd unit
   cannot import `@/lib/infrastructure/ai` (exact or any subpath), and no file outside
   `packages/chatbot/lib/infrastructure/ai/` may import `@ai-sdk/*` except `@ai-sdk/react`
   (UI). Both rules have contracts in
-  `packages/chatbot/tests/contract/eslint-boundaries.test.ts`.
+  `packages/chatbot/tests/unit/architecture/eslint-boundaries.test.ts`.
 
 ### `chatbot` — Main Application
 

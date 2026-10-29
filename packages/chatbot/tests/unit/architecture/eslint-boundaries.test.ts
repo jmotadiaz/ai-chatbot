@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
  * renames the rules without passing through here.
  */
 
-const PACKAGE_ROOT = path.resolve(__dirname, "../..");
+const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
 
 const eslint = new ESLint({
   cwd: PACKAGE_ROOT,
