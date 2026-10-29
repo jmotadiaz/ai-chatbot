@@ -104,3 +104,17 @@ qualitative on purpose: no thresholds, no invented numbers.
   `lib/features/rag/ingestion/index.ts` — the feature reaches it through the
   `embeddingRateLimiter` singleton, so the explicit clock a test uses stays out of
   the production surface.
+
+## Model Gateway test inventory
+
+| Guarantee | Location | Decision |
+| --- | --- | --- |
+| Catalog aliases, authorization, pricing, thinking levels and schema | `tests/unit/test_catalog.py` | Kept: inclusion and exclusion, schema and types protect distinct contracts. |
+| Dirty-tree prompt, interactive answers and explicit override | `tests/unit/test_dirty_guard.py` | Kept with temporary Git repositories. Removed the duplicate `y` variant; uppercase and accented variants remain. The prompt is not a security boundary. |
+| Deploy guard wiring | `tests/unit/test_dirty_guard.py` | Static check retained; deployment itself was not executed. |
+| Service unit, credentials and deployment paths | `tests/unit/test_service_unit.py` | Retained as deployment guardrails. |
+| JS protocol, scenarios, local server lifecycle and jsdom import | `js/tests/unit/` | Moved; protocol and scenario authorization tests cover distinct boundaries. |
+
+Python tests passed in C and UTF-8 locales, and 48 JS tests passed on Node 24.
+No deployment or real provider was used. The runtime server's dependency on
+LiteLLM and end-to-end deployment were not exercised here.
