@@ -1,4 +1,15 @@
-/** @vitest-environment jsdom */
+/**
+ * Social unit tests for the Project configuration form (ticket 06).
+ *
+ * Renders the REAL `ProjectForm` (model picker, Advanced panel, Test Chat) and
+ * holds only the external boundaries: the Project server action, the RAG
+ * resource action, routing and the Model Gateway HTTP seam (MSW). They replace
+ * the two E2E cases that covered this form without a distinct browser
+ * guarantee: creating a project with advanced settings and using the Test Chat
+ * from the configuration view.
+ *
+ * @vitest-environment jsdom
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse, type PathParams } from "msw";
@@ -41,6 +52,8 @@ vi.stubGlobal(
 
 import { setupMswServer } from "../../helpers/msw-server";
 import { ProjectForm } from "@/components/project/form";
+import { updateProject } from "@/lib/features/project/actions";
+import { getProjectResourcesAction } from "@/lib/features/rag/actions";
 import { ModelCatalogProvider } from "@/lib/features/foundation-model/model-catalog-context";
 import type { GatewayModelEntry } from "@/lib/features/foundation-model/config";
 import type { Project } from "@/lib/features/project/types";
@@ -112,6 +125,12 @@ const sendFromTestChat = async () => {
 
 beforeEach(() => {
   postBodies = [];
+  vi.mocked(updateProject).mockReset();
+  vi.mocked(updateProject).mockResolvedValue(undefined as never);
+  vi.mocked(getProjectResourcesAction).mockResolvedValue({
+    items: [],
+    hasMore: false,
+  });
 });
 
 afterEach(() => {
@@ -142,5 +161,45 @@ describe("ProjectForm Test Chat", () => {
       temperature: 0.8,
       preventChatPersistence: true,
     });
+  });
+});
+
+describe("ProjectForm advanced settings", () => {
+  const save = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Save Project" }));
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    return vi.mocked(updateProject).mock.calls[0][1] as Record<string, unknown>;
+  };
+
+  it("persists the temperature raised in the Advanced panel", async () => {
+    renderForm();
+    fireEvent.click(screen.getByText("Advanced"));
+    const advancedTemperature = screen.getByTestId("input-number-temperature");
+    const increment = advancedTemperature.querySelector(
+      'button[aria-label="Increase value"]',
+    );
+    if (!increment) throw new Error("Temperature stepper is missing");
+    // Model default 0.6 + 2 x 0.1, as the removed E2E case did.
+    fireEvent.click(increment);
+    fireEvent.click(increment);
+
+    const payload = await save();
+
+    expect(payload).toMatchObject({
+      name: "Research Assistant",
+      defaultModel: "basicChat",
+      defaultTemperature: 0.8,
+      isActive: true,
+    });
+  });
+
+  it("leaves the advanced settings unset while Advanced stays closed", async () => {
+    renderForm();
+
+    const payload = await save();
+
+    expect(payload.defaultTemperature).toBeUndefined();
+    expect(payload.defaultTopP).toBeUndefined();
+    expect(payload.defaultTopK).toBeUndefined();
   });
 });

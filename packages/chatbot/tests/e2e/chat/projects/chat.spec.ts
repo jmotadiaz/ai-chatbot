@@ -12,6 +12,11 @@ test.describe("Project Chat", () => {
     await projectPage.page.goto("/");
   });
 
+  // This test needs a real browser because it verifies the project chat route
+  // and the streamed answer rendered by the real client: the sidebar action
+  // opens the project's persisted chat and the POST/stream round trip through
+  // the Mock Model Gateway reaches the transcript. A unit test would omit the
+  // routing and the browser-side stream assembly.
   test("3.1 Standard Project Chat", async ({ db, page }) => {
     const title = "Research Assistant";
     // Capability id from the Mock Model Gateway catalog (ADR 0010): the E2E
@@ -43,6 +48,11 @@ test.describe("Project Chat", () => {
     expect.soft(lastMessage).toContain(expectedResponse);
   });
 
+  // This test needs a real browser because it verifies the temporary-chat
+  // lifecycle: chatType=temporary in the URL, then navigating away and back to
+  // the project chat and finding the transcript gone. A unit test would omit
+  // the real routing and the reload-like navigation that proves the chat was
+  // never persisted.
   test("3.2 Temporary Project Chat", async ({ db, page }) => {
     const title = "Temp Project";
     await db.addProjects([{ name: title, systemPrompt: "Temp prompt" }]);
@@ -69,8 +79,18 @@ test.describe("Project Chat", () => {
     expect.soft(userMessages.length).toBe(0);
   });
 
-  // FIXME(e2e, 2026-09-02): flaky — waitFor of the tab view in parallel runs
-  // (it happened in an isolated re-run; hydration timing, not the environment).
+  // FIXME(e2e, 2026-09-02): flaky hydration — the Test Chat tab panel needs a
+  // wait for the tab view in parallel runs (it also failed in an isolated
+  // re-run; hydration timing, not the environment).
+  //
+  // The behavior is now covered socially by
+  // tests/unit/project/project-form.test.tsx ("ProjectForm Test Chat"): the
+  // real ProjectForm switches to the Test Chat panel and a submitted message
+  // reaches POST /api/chat with the draft configuration and
+  // preventChatPersistence. This E2E would add only the real browser hydration
+  // of the tab panel, which is exactly what is still flaky. Ticket 16 must
+  // re-enable it after fixing the hydration wait, or remove it if the social
+  // test is accepted as the coverage.
   test.fixme("3.3 'Test Chat' in Configuration View", async () => {
     await projectPage.gotoAdd();
     await projectPage.ensureSidebarClosed();

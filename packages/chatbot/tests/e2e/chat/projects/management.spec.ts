@@ -9,6 +9,12 @@ test.describe("Project Management", () => {
     await projectPage.page.goto("/");
   });
 
+  // This test needs a real browser because it verifies editing through
+  // Next.js routing and cache revalidation: the sidebar action opens
+  // /project/<id>/edit, the save redirects to /chat and the refreshed layout
+  // shows the new title instead of the old one. A unit test would omit the
+  // routing and the layout refresh; the field persistence itself is covered in
+  // tests/unit/project/project-actions.test.ts.
   test("2.1 Edit Existing Project", async ({ db, page }) => {
     const [project] = await db.addProjects([
       { name: "Alpha Project", systemPrompt: "Original prompt" },
@@ -40,6 +46,11 @@ test.describe("Project Management", () => {
     ).not.toBeVisible();
   });
 
+  // This test needs a real browser because it verifies the sidebar action and
+  // confirmation modal that delete a project, and the refreshed sidebar that
+  // stops rendering it. A unit test would omit the menu/modal interaction and
+  // the layout refresh; the deletion rule is covered in
+  // tests/unit/project/project-actions.test.ts.
   test("2.2 Delete Project", async ({ db, page }) => {
     const [project] = await db.addProjects([
       { name: "Delete Me", systemPrompt: "To be deleted" },
