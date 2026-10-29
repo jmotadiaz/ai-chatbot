@@ -13,3 +13,16 @@ decisiones distintas del guard de despliegue.
 - [ ] El guard de despliegue con cambios sin confirmar conserva cobertura de la interacción y del override explícito; se simplifican variantes equivalentes sin presentar el guard como frontera de seguridad.
 - [ ] La prueba del guard usa un repositorio temporal y no despliega servicios; ninguna prueba requiere proveedores reales ni modifica Production.
 - [ ] Se registran las decisiones y equivalencias en los comentarios y se ejecutan las suites afectadas, incluida la Python.
+
+## Evidencia
+
+- Suites Python y JavaScript trasladadas a `tests/unit`; el inventario de
+  garantías y decisiones está en `docs/model-gateway-testing-migration.md`.
+- El guard conserva el prompt interactivo y el override explícito. La variante
+  `y` se consolidó con el caso equivalente; se añadieron variantes en
+  mayúsculas y con acento. El repositorio usado por los tests es temporal.
+- Python: 56 tests pasan con `LC_ALL=C` y `en_US.UTF-8`; `pnpm test:gateway`
+  pasa. JavaScript: 48 tests pasan, lint y type-check limpios.
+- No se ejecutó `deploy.sh` ni se tocó Production. `litellm` no estaba
+  instalado y la comprobación de `server.py` es estática. La matriz Bash 3.2
+  de los casos nuevos no se repitió tras el último cambio.
