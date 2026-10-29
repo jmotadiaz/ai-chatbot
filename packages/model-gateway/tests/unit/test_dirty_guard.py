@@ -92,7 +92,10 @@ def test_dirty_tree_warns_and_continues_on_yes(repo: Path):
     assert "[y/N]" in res.stderr
 
 
-@pytest.mark.parametrize("answer", ["y\n", "Y\n", "yes\n", "s\n", "si\n"])
+@pytest.mark.parametrize(
+    "answer",
+    ["Y\n", "yes\n", "YES\n", "s\n", "S\n", "si\n", "SI\n", "Sí\n", "sí\n", "SÍ\n", "sÍ\n"],
+)
 def test_affirmative_answers_are_accepted(repo: Path, answer: str):
     (repo / "config.yaml").write_text("model_list: [x]\n", encoding="utf-8")
     res = _run_guard(repo, allow_dirty=0, stdin=answer)
