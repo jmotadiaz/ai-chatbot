@@ -1,12 +1,14 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent — tool call grouping", () => {
-  // FIXME(e2e, 2026-09-02): `/agent/code` landing was dropped in 549e8f5 in favor
-  // of the sidebar section; this spec still targets the dead route (404).
-  test.fixme("renders one group per tool call with a non-empty summary", async ({ page }) => {
-    await page.goto("/agent/code");
-    await page.click("text=ai-chatbot");
-    await page.click("text=+ New session");
+  // The browser checks that the stub's streamed tool events become DOM groups;
+  // a unit test covers grouping logic but not the stream-to-DOM path.
+  test("renders one group per tool call with a non-empty summary", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("[aria-label='Toggle sidebar']").first().click();
+    await expect(page.getByTestId("sidebar-container")).toHaveClass(/w-80/);
+    await page.getByTestId("agent-project-item").filter({ hasText: "ai-chatbot" }).click();
+    await page.getByTestId("agent-new-session").first().click();
     await page.waitForURL(/\/agent\/code\/ai-chatbot\/.+/, { timeout: 10000 });
     await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
 

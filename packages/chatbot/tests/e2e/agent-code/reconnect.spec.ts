@@ -1,19 +1,21 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent reconnect", () => {
-  // FIXME(e2e, 2026-09-02): `/agent/code` landing was dropped in 549e8f5 in favor
-  // of the sidebar section; this spec still targets the dead route (404).
-  test.fixme("status endpoint returns running: false for a fresh session", async ({ page }) => {
-    await page.goto("/agent/code");
-    await page.click("text=ai-chatbot");
-    await page.click("text=+ New session");
+  // Reload and cookie-backed status requests require a browser. The worker
+  // stub reports running: false, so this does not cover mid-run reconnection.
+  test("status endpoint returns running: false for a fresh session after a reload", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("[aria-label='Toggle sidebar']").first().click();
+    await expect(page.getByTestId("sidebar-container")).toHaveClass(/w-80/);
+    await page.getByTestId("agent-project-item").filter({ hasText: "ai-chatbot" }).click();
+    await page.getByTestId("agent-new-session").first().click();
     await page.waitForURL(/\/agent\/code\/ai-chatbot\/.+/, { timeout: 10000 });
-
-    const url = page.url();
-    const sessionId = url.split("/").pop() ?? "";
-
     await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
 
+    await page.reload();
+    await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
+
+    const sessionId = new URL(page.url()).pathname.split("/").pop() ?? "";
     const status = await page.request.get(
       `/api/agent/code/sessions/${sessionId}/status`,
     );

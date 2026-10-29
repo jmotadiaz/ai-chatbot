@@ -1,16 +1,20 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Coding Agent", () => {
-  // FIXME(e2e, 2026-09-02): `/agent/code` landing was dropped in 549e8f5 in favor
-  // of the sidebar section; this spec still targets the dead route (404).
-  test.fixme("user can navigate to a session and send a message", async ({ page }) => {
-    await page.goto("/agent/code");
-    await expect(page.getByRole("heading", { name: "Coding Agent" })).toBeVisible();
+  // This test needs a real browser because it verifies the sidebar-to-session
+  // journey: the project tree in the sidebar creates a session, Next.js routes to
+  // /agent/code/<project>/<sessionId>, and the composer submits through the real
+  // client assembly to the worker stub. A unit test would omit the routing and
+  // the browser-side wiring between the sidebar, the router, and the composer.
+  test("user can open a session from the sidebar and send a message", async ({ page }) => {
+    await page.goto("/");
 
-    await page.click("text=ai-chatbot");
-    await expect(page.getByText("New session")).toBeVisible();
+    await page.locator("[aria-label='Toggle sidebar']").first().click();
+    await expect(page.getByTestId("sidebar-container")).toHaveClass(/w-80/);
 
-    await page.click("text=+ New session");
+    await page.getByTestId("agent-project-item").filter({ hasText: "ai-chatbot" }).click();
+    await page.getByTestId("agent-new-session").first().click();
+
     await page.waitForURL(/\/agent\/code\/ai-chatbot\/.+/, { timeout: 10000 });
     await expect(page.locator("[data-testid='chat-container']")).toBeVisible();
 
