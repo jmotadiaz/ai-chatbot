@@ -18,7 +18,7 @@ solo por la garantía adicional que aporte el navegador.
 
 - `tests/e2e/chat/attachments.spec.ts` exercises attachment menu capability
   rules and the file input; `refine.spec.ts` exercises a Refine request and
-  Undo; `seed.spec.ts` is the candidate representative Chat journey. All are
+  Undo; `tests/e2e/seed.spec.ts` is the candidate representative Chat journey. All are
   retained: browser-level equivalence has not been demonstrated.
 - Social tests now live under `tests/unit`: `attachment/attachments-control`
   tests the real menu; `meta-prompt/prompt-refiner-hook` tests the real hook
@@ -28,6 +28,10 @@ solo por la garantía adicional que aporte el navegador.
   authentication and routing are substituted as needed.
 - The focused Vitest run passed 18 tests across five files; focused ESLint and
   chatbot type-check passed. A wider pre-move run passed 254 tests.
-- Playwright was not run for this ticket. The representative journey's
-  browser-only guarantee and execution remain to be documented. Infinite
-  scroll and camera device geometry are not covered by the social tests.
+- `tests/e2e/seed.spec.ts` selects a model, sends a message and checks the
+  streamed response in the real page. It exercises the Next server, browser
+  session cookie, HTTP streaming and rendered DOM together; the social tests
+  do not cover that browser/server assembly.
+- Playwright was not run for this ticket; the representative journey remains
+  to be executed during final verification. Infinite scroll and camera device
+  geometry are not covered by the social tests.
