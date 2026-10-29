@@ -49,9 +49,9 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
   },
 }));
 
-const { SessionRegistry } = await import("../../src/session/session-registry");
-const { TurnRunner } = await import("../../src/session/turn-runner");
-const { createTestWorkerContext } = await import("../helpers/test-context");
+const { SessionRegistry } = await import("../../../src/session/session-registry");
+const { TurnRunner } = await import("../../../src/session/turn-runner");
+const { createTestWorkerContext } = await import("../../helpers/test-context");
 
 /**
  * After b1, getOrCreateSession is pure seed (modelId for create/reload), and

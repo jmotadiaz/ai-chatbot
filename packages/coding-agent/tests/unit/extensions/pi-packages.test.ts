@@ -22,7 +22,7 @@ import {
   getPiPackageExtensionPaths,
   getPiPackagePath,
   type PiPackage,
-} from "../../src/runtime/pi-packages";
+} from "../../../src/runtime/pi-packages";
 
 describe("first-party extension and built-in skills discovery", () => {
   it("discovers first-party extension entrypoints as files", () => {

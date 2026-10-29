@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   findSessionFileName,
   resolveSessionDir,
-} from "../../src/session/session-file-lookup";
+} from "../../../src/session/session-file-lookup";
 
 describe("resolveSessionDir", () => {
   it("mirrors Pi's --<encoded cwd>-- sessions directory", () => {

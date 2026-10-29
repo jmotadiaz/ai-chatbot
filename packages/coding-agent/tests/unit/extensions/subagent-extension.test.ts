@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   setSubagentRunner,
   type SubagentRunner,
-} from "../../src/subagent/subagent-bridge";
+} from "../../../src/subagent/subagent-bridge";
 
 const RUNNER_KEY = Symbol.for("codingAgent.subagentRunner");
 
@@ -30,10 +30,10 @@ vi.mock("tracing", () => ({
 }));
 
 const { buildSubagentToolDescription } = await import(
-  "../../extensions/subagent/description"
+  "../../../extensions/subagent/description"
 );
 const registerExtension = (await import(
-  "../../extensions/subagent/index"
+  "../../../extensions/subagent/index"
 )).default;
 
 beforeEach(() => {

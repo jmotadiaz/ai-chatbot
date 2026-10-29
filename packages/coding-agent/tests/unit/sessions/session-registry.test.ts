@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SessionEventLog } from "../../src/agui/event-log";
-import { SessionRegistry } from "../../src/session/session-registry";
-import { createTestWorkerContext } from "../helpers/test-context";
+import { SessionEventLog } from "../../../src/agui/event-log";
+import { SessionRegistry } from "../../../src/session/session-registry";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -106,27 +105,5 @@ describe("SessionRegistry (deep module)", () => {
     expect(result.sessionId).toBe("s1");
     // b1: model switch is turn config, not registry
     expect(session.setModel).not.toHaveBeenCalled();
-  });
-
-  it("allows overriding the runtime factory (seam without __seed)", () => {
-    const fakeFactory = vi.fn(async () => ({
-      session: makeSession(),
-      services: { modelRuntime: { getModel: () => undefined } },
-      diagnostics: [],
-    })) as unknown as any;
-
-    // DI through the constructor: factory + path config (temporary sandbox),
-    // without process.env. setRuntimeFactory is still the public seam.
-    const ctx = createTestWorkerContext();
-    try {
-      const customRegistry = new SessionRegistry(fakeFactory, ctx.workerConfig);
-      expect(customRegistry.runtimeConfig.sessionsDir).toBe(ctx.sessionsDir);
-      expect(customRegistry.runtimeConfig.projectsRoot).toBe(ctx.projectsRoot);
-      const swapped = vi.fn(async () => ({ session: makeSession() })) as unknown as any;
-      customRegistry.setRuntimeFactory(swapped);
-      expect(customRegistry).toBeDefined();
-    } finally {
-      ctx.cleanup();
-    }
   });
 });

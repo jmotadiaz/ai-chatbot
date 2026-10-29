@@ -1,14 +1,14 @@
 import { writeFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatewayScenario } from "@ai-chatbot/model-gateway-testing";
-import { setupWorkerGatewayHarness } from "../helpers/gateway-harness";
+import { setupWorkerGatewayHarness } from "../../helpers/gateway-harness";
 import {
   buildPiModelsJson,
   resetGatewayCatalogForTests,
   type GatewayModelEntry,
-} from "../../src/runtime/gateway-catalog";
-import { resetModelRuntimeForTests } from "../../src/runtime/model-runtime";
-import { createTestWorkerContext } from "../helpers/test-context";
+} from "../../../src/runtime/gateway-catalog";
+import { resetModelRuntimeForTests } from "../../../src/runtime/model-runtime";
+import { createTestWorkerContext } from "../../helpers/test-context";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,
@@ -24,7 +24,7 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { getAvailableModels } = await import("../../src/session/session-manager");
+const { getAvailableModels } = await import("../../../src/session/session-manager");
 
 const GATEWAY_URL = "http://127.0.0.1:4099";
 const GATEWAY_KEY = "test-gateway-key";

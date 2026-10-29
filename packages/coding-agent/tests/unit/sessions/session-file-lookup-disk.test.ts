@@ -3,11 +3,11 @@ import os, { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
-import { SessionRegistry } from "../../src/session/session-registry";
+import { SessionRegistry } from "../../../src/session/session-registry";
 import {
   findSessionFile,
   resolveSessionDir,
-} from "../../src/session/session-file-lookup";
+} from "../../../src/session/session-file-lookup";
 
 vi.mock("tracing", () => ({
   isTracingEnabled: () => false,

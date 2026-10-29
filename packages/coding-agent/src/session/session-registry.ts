@@ -31,7 +31,7 @@ type MakeCreateRuntime = typeof defaultMakeCreateRuntime;
 
 export class SessionRegistry {
   private sessions = new Map<string, SessionEntry>();
-  private makeCreateRuntime: MakeCreateRuntime;
+  private readonly makeCreateRuntime: MakeCreateRuntime;
   private readonly injectedRuntimeConfig: WorkerRuntimeConfig;
 
   constructor(
@@ -50,11 +50,6 @@ export class SessionRegistry {
    */
   get runtimeConfig(): WorkerRuntimeConfig {
     return { ...getWorkerRuntimeConfig(), ...this.injectedRuntimeConfig };
-  }
-
-  /** Test seam: override the factory (replaces __seed). */
-  setRuntimeFactory(factory: MakeCreateRuntime): void {
-    this.makeCreateRuntime = factory;
   }
 
   get(sessionId: string, parentSessionId?: string): SessionEntry | undefined {

@@ -81,10 +81,10 @@ vi.mock("@earendil-works/pi-coding-agent", async (importOriginal) => ({
 
 const CATALOG_IDS = { "Kimi K3.1 Pro": true } as Record<string, boolean>;
 
-const { SessionRegistry } = await import("../../src/session/session-registry");
-const { TurnRunner } = await import("../../src/session/turn-runner");
-const { createTestWorkerContext } = await import("../helpers/test-context");
-const { setupWorkerGatewayHarness } = await import("../helpers/gateway-harness");
+const { SessionRegistry } = await import("../../../src/session/session-registry");
+const { TurnRunner } = await import("../../../src/session/turn-runner");
+const { createTestWorkerContext } = await import("../../helpers/test-context");
+const { setupWorkerGatewayHarness } = await import("../../helpers/gateway-harness");
 
 /** Catalog sync answered by the official toolkit (MSW), no gateway listening. */
 const gatewayHarness = setupWorkerGatewayHarness();

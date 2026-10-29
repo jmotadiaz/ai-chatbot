@@ -10,8 +10,8 @@ import {
   parsePorcelainStatusZ,
   statusFromXY,
   type GitFileState,
-} from "../../src/session/turn-git-state";
-import { clearInheritedGitRepositoryEnv } from "../helpers/git-env";
+} from "../../../src/session/turn-git-state";
+import { clearInheritedGitRepositoryEnv } from "../../helpers/git-env";
 
 const execFileAsync = promisify(execFile);
 
@@ -87,7 +87,7 @@ describe("diffTurnFiles", () => {
   });
 });
 
-describe("captureGitFileState (integration)", () => {
+describe("captureGitFileState (real git repository)", () => {
   let root: string;
   let repo: string;
   let restoreGitEnv: () => void;
