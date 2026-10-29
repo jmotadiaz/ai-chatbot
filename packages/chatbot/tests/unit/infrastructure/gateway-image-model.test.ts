@@ -25,7 +25,7 @@ import { setupGatewayHarness } from "@/tests/helpers/gateway-harness";
  * official toolkit's protocol fixtures, so both directions use the real wire
  * format and nothing is stubbed at the `fetch` boundary. The end-to-end path
  * (`generateImages` → AI SDK → `GeneratedFile`) lives in
- * `tests/integration/infrastructure/gateway-image-model.test.ts`.
+ * `tests/unit/image/generate-images.test.ts`.
  */
 
 const gateway = setupGatewayHarness();

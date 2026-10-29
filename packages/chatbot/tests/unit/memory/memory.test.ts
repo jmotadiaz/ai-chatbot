@@ -360,6 +360,21 @@ describe("extractMemoryFacts", () => {
     expect(requestsOn(scenario, "/v1/embeddings")).toHaveLength(0);
   });
 
+  it("calls the model for a message without text using its role prefix", async () => {
+    const scenario = await gateway.use({
+      chat: chatByPrompt({
+        extraction: () => textReply(JSON.stringify({ facts: [] })),
+      }),
+    });
+    const messageWithoutText = [{ id: "m2", role: "user", parts: [] }] as ChatbotMessage[];
+
+    await extractMemoryFacts({ messages: messageWithoutText, userId: USER_ID });
+
+    const [body] = chatBodies(scenario);
+    expect(body?.messages?.find((message) => message.role === "user")?.content).toBe("user: ");
+    expect(await db.select().from(userMemoryTable)).toHaveLength(0);
+  });
+
   it("propagates a failed extraction so the caller can report it", async () => {
     await gateway.use({
       chat: () => {
