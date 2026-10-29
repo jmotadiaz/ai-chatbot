@@ -50,9 +50,26 @@ describe("execution profile selection", () => {
   it("keeps both the current and the capability unit layouts in the default profile", async () => {
     const defaultProfile = await selectedBy("vitest.config.ts");
 
-    expect(defaultProfile.some((file) => file.startsWith("tests/integration/"))).toBe(true);
     expect(defaultProfile.some((file) => file.startsWith("tests/unit/compaction/"))).toBe(true);
     expect(defaultProfile).toContain("tests/unit/compaction/compaction-flow.test.ts");
+
+    const vitest = await createVitest(
+      "test",
+      { root: PACKAGE_ROOT, config: "vitest.config.ts", watch: false, passWithNoTests: true },
+    );
+    try {
+      const project = vitest.projects[0];
+      for (const layout of ["unit", "component", "integration", "contract"]) {
+        for (const extension of ["ts", "tsx"]) {
+          expect(project.matchesTestGlob(path.join(PACKAGE_ROOT, "tests", layout, `probe.test.${extension}`)))
+            .toBe(true);
+        }
+      }
+      expect(project.matchesTestGlob(path.join(PACKAGE_ROOT, "tests/integration/mocks/probe.test.ts")))
+        .toBe(false);
+    } finally {
+      await vitest.close();
+    }
   });
 
   it("selects only the provisioned gateway harness in the infrastructure profile", async () => {
