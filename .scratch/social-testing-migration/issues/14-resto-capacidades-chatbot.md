@@ -23,9 +23,16 @@ tests actuales son útiles ni redundantes.
 | English Helper | `tests/unit/english/`: classifier, delimiter, grammar route and workflows retained. |
 | Image Editor | Public `generateImages` test moved to `tests/unit/image/`; the adapter test stays separate because it covers a different boundary. |
 | Model Catalog | Existing configuration and selection tests retained; `tests/unit/model-catalog/catalog-client.test.ts` adds HTTP, authentication, caching and error coverage. |
-| Database infrastructure | Transaction behavior is exercised through feature tests. |
+| Database infrastructure | `tests/unit/db/chat-mode-migration.test.ts`: migration replay on PGlite checks preserved legacy modes, enum values and new default. Transaction behavior is exercised through feature tests. |
 
-Memory, image and adapter focused runs passed 26 tests; the catalog client
-passed four. The default profiles passed 772 tests with one bundle contract
-skipped because the verification build was absent. ESLint and type-check passed.
-Infrastructure, E2E and `build:verify` were not run for this ticket.
+Owned unit suites (rag, english, memory, image, model-catalog, foundation-model,
+infrastructure and db) passed 142 tests. The default profiles passed 772 tests
+with one bundle contract skipped because the verification build was absent.
+ESLint and type-check passed on the moved file. `test:infra` passed 22 tests.
+E2E and `build:verify` were not run for this ticket.
+
+Retained overlaps cover distinct risks: image public API versus adapter errors;
+Memory retrieval, extraction, deduplication, isolation and no-text behavior;
+RAG persistence and retrieval versus pure chunking and rate limits; and catalog
+selection versus client HTTP, authentication, caching and error handling.
+The inventory and omitted-case accounting still need final verification.
