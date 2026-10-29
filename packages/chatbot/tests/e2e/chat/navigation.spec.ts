@@ -123,9 +123,7 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.navigation.assertPrevButtonVisible();
     });
 
-    // FIXME(e2e, 2026-09-02): flaky — viewport assertion with variable timing
-    // (it fails in full runs and passes in subsets with a variable set).
-    test.fixme("should navigate to previous user message when clicking prev", async ({
+    test("should navigate to previous user message when clicking prev", async ({
       page,
     }) => {
       const chatPage = new ChatPage(page);
@@ -134,10 +132,8 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
-      // Scroll message 6 to the TOP of viewport.
-      // This ensures message 5 is strictly above the viewport.
-      // Scroll message 6 to the TOP of viewport.
-      // This ensures message 5 is strictly above the viewport.
+      // Real user input releases the initial scroll anchor.
+      await chatPage.chat.navigation.releaseInitialAnchorLock();
       await chatPage.chat.navigation.scrollToMessage(userMessageText(6));
 
       // Verify message 6 is visible
@@ -178,9 +174,7 @@ test.describe("Chat Navigation", () => {
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
-    // FIXME(e2e, 2026-09-02): flaky — next button visibility depending on residual
-    // scroll between parallel tests (viewport/timing, not the environment).
-    test.fixme("should show next button when last user message is below viewport", async ({
+    test("should show next button when last user message is below viewport", async ({
       page,
     }) => {
       const chatPage = new ChatPage(page);
@@ -190,6 +184,7 @@ test.describe("Chat Navigation", () => {
       await chatPage.chat.waitForLoadingComplete();
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
+      await chatPage.chat.navigation.releaseInitialAnchorLock();
       // Scroll to top and wait for scroll position to stabilize
       await chatPage.chat.navigation.scrollToTop();
       await chatPage.chat.navigation.assertScrollTopLessThan(50);
@@ -233,8 +228,7 @@ test.describe("Chat Navigation", () => {
       await expect.soft(chatPage.chat.navigation.nextButton).not.toBeVisible();
     });
 
-    // FIXME(e2e, 2026-09-02): flaky — same viewport/timing pattern as above.
-    test.fixme("should navigate to next user message when clicking next", async ({
+    test("should navigate to next user message when clicking next", async ({
       page,
     }) => {
       const chatPage = new ChatPage(page);
@@ -243,6 +237,7 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
+      await chatPage.chat.navigation.releaseInitialAnchorLock();
       // Scroll to first user message and wait for scroll position to stabilize
       await chatPage.chat.navigation.scrollToTop();
       await chatPage.chat.navigation.assertScrollTopLessThan(50);
@@ -261,8 +256,7 @@ test.describe("Chat Navigation", () => {
   });
 
   test.describe("Bottom button", () => {
-    // FIXME(e2e, 2026-09-02): flaky — same viewport/timing pattern as above.
-    test.fixme("should show bottom button when not at bottom of chat", async ({
+    test("should show bottom button when not at bottom of chat", async ({
       page,
     }) => {
       const chatPage = new ChatPage(page);
@@ -271,6 +265,7 @@ test.describe("Chat Navigation", () => {
       // Wait for messages to render
       await chatPage.chat.userMessages.first().waitFor({ state: "visible" });
 
+      await chatPage.chat.navigation.releaseInitialAnchorLock();
       // Scroll to top and wait for scroll position to stabilize
       await chatPage.chat.navigation.scrollToTop();
       await chatPage.chat.navigation.assertScrollTopLessThan(50);

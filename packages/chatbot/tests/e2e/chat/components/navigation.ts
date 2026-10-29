@@ -46,6 +46,11 @@ export class NavigationComponent {
     });
   }
 
+  async releaseInitialAnchorLock() {
+    await this.scrollContainer.hover();
+    await this.scrollContainer.page().mouse.wheel(0, 1);
+  }
+
   async scrollToMessage(
     text: string,
     options?: { block?: "start" | "center" | "end" | "nearest" },
