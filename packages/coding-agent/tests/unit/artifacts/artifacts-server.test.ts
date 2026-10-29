@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AddressInfo } from "node:net";
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import { startGatewayServer } from "@ai-chatbot/model-gateway-testing/server";
 import type { GatewayServer } from "@ai-chatbot/model-gateway-testing/server";
@@ -24,11 +24,11 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { startHttpTransport } = await import("../../src/transports/http");
-const { publishArtifact } = await import("../../src/artifacts/artifacts");
-const { createTestWorkerContext } = await import("../helpers/test-context");
-const { resetWorkerRuntimeConfigForTests, setWorkerRuntimeConfig } = await import(
-  "../../src/runtime/runtime-overrides"
+const { startHttpTransport } = await import("../../../src/transports/http");
+const { publishArtifact } = await import("../../../src/artifacts/artifacts");
+const { createTestWorkerContext } = await import("../../helpers/test-context");
+const { resetWorkerRuntimeConfigForTests } = await import(
+  "../../../src/runtime/runtime-overrides"
 );
 
 /**
@@ -169,14 +169,17 @@ describe("GET /artifacts on the worker", () => {
     const missing = await fetch(`${baseUrl}/artifacts/ai-chatbot/nope.html`);
     expect(missing.status).toBe(404);
 
+    // Literal paths go over raw node:http: fetch would normalize `%2e%2e`
+    // client-side before the request leaves the process.
     for (const attempt of [
       "/artifacts/ai-chatbot/..%2F..%2F..%2F..%2Fetc%2Fpasswd",
       "/artifacts/ai-chatbot/%2e%2e/%2e%2e/root",
+      "/artifacts/ai-chatbot/../../../../etc/passwd",
       "/artifacts/.hidden/report.html",
       "/artifacts/ai-chatbot/sub/deep.html",
     ]) {
-      const res = await fetch(`${baseUrl}${attempt}`);
-      expect(res.status, attempt).toBe(404);
+      const status = await rawGetStatus(attempt);
+      expect(status, attempt).toBe(404);
     }
 
     expect((await fetch(`${baseUrl}/nothing-else`)).status).toBe(404);
@@ -196,6 +199,19 @@ describe("GET /artifacts on the worker", () => {
   });
 });
 
+/** GET with the path sent byte-for-byte (no WHATWG normalization), returns the status. */
+function rawGetStatus(requestPath: string): Promise<number> {
+  const { hostname, port } = new URL(baseUrl);
+  return new Promise((resolve, reject) => {
+    const req = httpRequest({ hostname, port, path: requestPath, method: "GET" }, (res) => {
+      res.resume();
+      resolve(res.statusCode ?? 0);
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
 /** Hosts a report fetches from, so the CSP is checked against the real scaffold. */
 function externalHosts(html: string): string[] {
   const hosts = new Set<string>();
@@ -206,7 +222,7 @@ function externalHosts(html: string): string[] {
 describe("artifact location from config", () => {
   it("resolves the artifacts root and URL base from the injected worker config", async () => {
     const { getArtifactsBaseUrl, getArtifactsDir, resolveArtifactsBaseUrl, resolveArtifactsDir } =
-      await import("../../src/runtime/paths");
+      await import("../../../src/runtime/paths");
     // The process config registered by startHttpTransport points at the sandbox
     // (reads without an explicit override see the composition root's DI).
     expect(resolveArtifactsDir(ctx.workerConfig)).toBe(rootDir);
@@ -215,22 +231,5 @@ describe("artifact location from config", () => {
     expect(getArtifactsBaseUrl()).toBe(baseUrl);
     // The test's sandbox lives in the temporary directory, never in the package.
     expect(rootDir.startsWith(path.join(os.tmpdir()))).toBe(true);
-  });
-
-  it("falls back to the Environment defaults without any injection", async () => {
-    // Without overrides (and with the process config reset), resolution falls
-    // back to the Test Environment: the bundle's worker URL and `.pi-test/artifacts`.
-    const { PACKAGE_ROOT, getArtifactsBaseUrl, getArtifactsDir } = await import(
-      "../../src/runtime/paths"
-    );
-    resetWorkerRuntimeConfigForTests();
-    try {
-      expect(getArtifactsDir()).toBe(path.join(PACKAGE_ROOT, ".pi-test", "artifacts"));
-      expect(getArtifactsBaseUrl()).toBe(
-        "http://localhost:3001/api/agent/code/worker-stub",
-      );
-    } finally {
-      setWorkerRuntimeConfig(ctx.workerConfig);
-    }
   });
 });

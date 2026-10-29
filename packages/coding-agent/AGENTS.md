@@ -170,5 +170,6 @@ replaces "open it" with "here's the URL".
   too — a subagent asked to produce a report should be able to hand back a URL.
 - **Tests:** `tests/unit/artifacts.test.ts`, `tests/unit/artifacts-http.test.ts`
   (including a route round-trip over hostile file names),
-  `tests/integration/artifacts-server.test.ts` (real worker server on an ephemeral
-  port), `tests/contract/artifacts-extension.test.ts` (tool boundary + hook).
+  `tests/unit/artifacts/artifacts-server.test.ts` (real worker server on an ephemeral
+  port, test-owned socket), `tests/contract/artifacts-extension.test.ts` (tool boundary + hook).
+  The in-process RPC parser lives in `tests/unit/rpc/http-transport-parse.test.ts`.

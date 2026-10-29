@@ -15,18 +15,23 @@ vi.mock("tracing", () => ({
   }),
 }));
 
-const { handleRpc } = await import("../../src/transports/http");
-import { sessionRegistry } from "../../src/session/session-registry";
+const { handleRpc } = await import("../../../src/transports/http");
+import { sessionRegistry } from "../../../src/session/session-registry";
 
 beforeEach(() => {
   sessionRegistry.clear();
 });
 
 /**
- * Parsing hardening (ticket 10, 2026-09-02 incident): a POST with an
- * empty/malformed body to /rpc took down the whole process (JSON.parse outside
- * try/catch → unhandledRejection). The contract is now: NEVER throw over the
- * body; answer a JSON-RPC error. 3015 is exposed on the LAN without auth.
+ * In-process parser guarantee for `handleRpc` (2026-09-02 incident: a POST with
+ * an empty/malformed body to /rpc took down the whole process because JSON.parse
+ * ran outside try/catch). The contract is: never throw over the body; answer a
+ * JSON-RPC error.
+ *
+ * Scope: this file calls the handler directly, so it proves the parse contract,
+ * NOT that the worker survives a malformed body over real HTTP on port 3015.
+ * Process survival over the wire is not claimed here; the HTTP path is covered by
+ * tests/unit/artifacts/artifacts-server.test.ts (real isolated server, `POST /rpc`).
  */
 async function expectJsonRpcError(body: string, code: number) {
   const res = await handleRpc(body);
