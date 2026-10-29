@@ -7,12 +7,12 @@ silenciosamente la selección de tests.
 
 **Blocked by:** Ninguno (puede comenzar inmediatamente).
 
-**Status:** blocked (decisión del operador pendiente: punto de corte con un único Message)
+**Status:** completado con cuestión de producto abierta (punto de corte con un único Message: título corregido, comportamiento sin decidir)
 
 - [x] Los selectores reconocen tanto la organización actual como la nueva durante la transición; los comandos y perfiles existentes siguen funcionando sin omitir ni ejecutar inadvertidamente dos veces una misma suite.
 - [x] Las garantías de Compaction se inventarían y consolidan preferentemente desde la interfaz de la capacidad, con persistencia PGlite y respuestas controladas en la frontera HTTP del Model Gateway cuando corresponda.
 - [x] Se conservan las reglas, límites y fallos significativos con cobertura equivalente demostrada; los tests aislados o de subcapacidades se mantienen cuando su contrato o coste lo justifique.
-- [ ] Se investiga la discrepancia entre el título y las aserciones del caso de punto de corte con un único Message; se consulta al operador antes de decidir un comportamiento no aclarado.
+- [x] Se investiga la discrepancia entre el título y las aserciones del caso de punto de corte con un único Message; se consulta al operador antes de decidir un comportamiento no aclarado.
 - [x] Se registra en los comentarios del ticket qué garantías se conservan, trasladan o eliminan y qué evidencia demuestra cada equivalencia.
 - [x] Se ejecutan las selecciones afectadas y se verifican el descubrimiento y la propagación de fallos; no se usan servicios ni artefactos de Production.
 
@@ -134,3 +134,32 @@ Resultados (Node 24.15.0):
 Limitaciones: las sondas son archivos temporales; no quedan en el repositorio y
 no hay una prueba permanente de este contrato. Los `secrets.{dev,prod}.ts`
 siguen siendo placeholders locales.
+
+## Resolución conservadora del título y guarda permanente (2026-10-29, `agent/social-testing-01-final`)
+
+Decisión (del operador): el título "keeps all messages if single message exceeds
+threshold" era engañoso. Se corrige el título a "summarizes a single message that
+exceeds the threshold and keeps none" y se añade un comentario que lo marca como
+comportamiento actual, no como decisión aprobada. **No cambian** implementación ni
+aserciones. La pregunta de producto (conservar o resumir un Message oversized) sigue
+abierta; es un bloqueo de decisión, no de ejecución.
+
+Guarda permanente de selección: `packages/chatbot/tests/contract/test-profile-selection.test.ts`
+(3 tests). Usa `createVitest` y `projects[0].globTestFiles()` sobre `vitest.config.ts`
+y `vitest.infra.config.ts`:
+- todo `tests/**/*.test.ts(x)` en disco (excepto `e2e/`) lo selecciona exactamente un perfil;
+- `tests/integration/` y `tests/unit/compaction/` están en el perfil por defecto;
+- el perfil infra selecciona solo `tests/integration/mocks/` (no vacío).
+Mutación: un archivo huérfano temporal en `tests/probe-uncovered/` hizo fallar el
+primer test; al eliminarlo volvió a pasar.
+
+Verificación (Node 24.15.0, `PATH=/Users/javier.mota/.nvm/versions/node/v24.15.0/bin:$PATH`):
+- `pnpm test:unit` 54 archivos passed; `test:component` 40 passed; `test:integration` 8 passed;
+  `test:contract` 10 passed, 1 skipped; `test:infra` 1 archivo passed. Todos exit 0.
+- `vitest run tests/unit/compaction` → 6 archivos, 36 tests passed.
+- `eslint` sobre los dos archivos tocados: exit 0. `pnpm type:check` (tsc --noEmit): exit 0.
+- `pnpm test:fast` no existe en `packages/chatbot` (ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL):
+  es un script del raíz; por eso se ejecutaron las suites equivalentes por separado.
+
+Limitaciones: `secrets.{dev,prod}.ts` son placeholders gitignored; no se ejecutó
+`test:e2e` ni `build:verify`; no se tocó producción; no se creó PR.

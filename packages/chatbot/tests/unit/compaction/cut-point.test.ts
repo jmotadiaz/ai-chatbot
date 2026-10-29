@@ -33,7 +33,8 @@ describe("findCutPoint", () => {
     expect(result.messagesToSummarize.concat(result.messagesToKeep)).toEqual(messages);
   });
 
-  it("keeps all messages if single message exceeds threshold", () => {
+  // Current behaviour, not an approved product decision: see ticket 01 (open question).
+  it("summarizes a single message that exceeds the threshold and keeps none", () => {
     const messages = [
       createMessage("1", "A".repeat(4000)),    // ~1000 tokens
     ];
