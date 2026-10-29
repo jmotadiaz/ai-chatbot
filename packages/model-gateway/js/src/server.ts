@@ -70,8 +70,13 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  res.writeHead(status, JSON_HEADERS);
+function sendJson(
+  res: ServerResponse,
+  status: number,
+  body: unknown,
+  headers?: Record<string, string>,
+): void {
+  res.writeHead(status, { ...JSON_HEADERS, ...headers });
   res.end(JSON.stringify(body));
 }
 
@@ -141,7 +146,7 @@ export async function startGatewayServer(
         headers: req.headers,
       });
       if (result.kind === "json") {
-        sendJson(res, result.status, result.body);
+        sendJson(res, result.status, result.body, result.headers);
         return;
       }
       if (result.kind === "binary") {

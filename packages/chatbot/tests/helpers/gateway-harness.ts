@@ -1,4 +1,4 @@
-import { afterEach } from "vitest";
+import { afterAll, afterEach } from "vitest";
 import { setupServer, type SetupServerApi } from "msw/node";
 import { createGatewayScenario } from "@ai-chatbot/model-gateway-testing";
 import type {
@@ -28,7 +28,7 @@ import {
  * The consumer owns the MSW lifecycle: this helper only registers Vitest hooks
  * for its own server (`onUnhandledRequest: "error"`, so an unstubbed gateway call
  * fails loudly instead of reaching a real server) and drops the previous test's
- * handlers after each test.
+ * handlers after each test, then closes the server after the suite.
  */
 
 /** Default catalog for feature tests: the ids the E2E harness registers. */
@@ -65,6 +65,7 @@ export function setupGatewayHarness(): GatewayHarness {
   afterEach(() => {
     server.resetHandlers();
   });
+  afterAll(() => server.close());
 
   return {
     server,

@@ -48,6 +48,7 @@ function parityScenario(): GatewayScenario {
 interface Snapshot {
   status: number;
   contentType: string | null;
+  retryAfter: string | null;
   body: string;
 }
 
@@ -56,6 +57,7 @@ async function snapshot(response: Response): Promise<Snapshot> {
   return {
     status: response.status,
     contentType: response.headers.get("content-type"),
+    retryAfter: response.headers.get("retry-after"),
     body: bytes.toString("base64"),
   };
 }
@@ -172,6 +174,38 @@ const requests: Array<{
 ];
 
 describe("MSW / HTTP server parity", () => {
+  it("preserves custom JSON response headers on both transports", async () => {
+    const scenario = createGatewayScenario({
+      embeddings: () => ({
+        status: 429,
+        headers: {
+          "Content-Type": "application/problem+json",
+          "Retry-After": "30",
+        },
+        body: { error: { message: "rate limited" } },
+      }),
+    });
+    const init: RequestInit = {
+      method: "POST",
+      headers: JSON_AUTH,
+      body: JSON.stringify({ model: "embedding-default", input: "hello" }),
+    };
+    const path = "/v1/embeddings";
+    const server = await startGatewayServer(scenario);
+    try {
+      const overMsw = await viaMsw(scenario, path, init);
+      expect(overMsw).toMatchObject({
+        status: 429,
+        contentType: "application/problem+json",
+        retryAfter: "30",
+      });
+      const overHttp = await snapshot(await fetch(`${server.url}${path}`, init));
+      expect(overHttp).toEqual(overMsw);
+    } finally {
+      await server.close();
+    }
+  });
+
   it("serializes byte-identical responses on both transports", async () => {
     const scenario = parityScenario();
     const server = await startGatewayServer(scenario);

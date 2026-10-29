@@ -72,7 +72,9 @@ content of the non-streaming rendering; it is derived from the steps when absent
 Spread a reply to override it: `{ ...toolCallReply(...), json: "final text" }`.
 
 Non-chat operations are responders returning an `OperationReply` envelope
-(`{ status?, headers?, body }`): `embeddingsResponse` (pass the consumer's
+(`{ status?, headers?, body }`). Both transports preserve its status and headers;
+custom headers override the default JSON content type.
+Builders include `embeddingsResponse` (pass the consumer's
 `dimensions`), `rerankResponse` (empty ranking by default, explicit `results`
 allowed), `decisionsResponse` (the declared choice per question, or its first
 criterion when none is declared; probabilities stay uniform), `speechResponse`
