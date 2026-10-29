@@ -82,14 +82,12 @@ Use **Node.js 24** and **pnpm 11** (workspace mode). Common root scripts (for th
 - `pnpm db:generate` / `pnpm db:push` — Drizzle ORM schema
 - `pnpm db:dev:*` / `db:test:*` / `db:seed:*` — DB management and seeds for the Dev (5433) and Test (5434) Environments
 
-Test ownership follows package ownership. Within each package, keep pure logic
-and social unit tests (exercising concrete feature modules with PGlite for
-persistence and MSW at the Model Gateway HTTP seam; see ADR 0013) under
-`tests/unit`, rendered UI under `tests/component`, multi-module or
-in-process infrastructure checks under `tests/integration`, and public package
-boundary checks under `tests/contract`. Repository-level Playwright scenarios
-remain under `tests/` (or package E2E suites) for guarantees that require the
-deployed application.
+Test ownership follows package ownership. The current layout and commands still
+use `tests/unit`, `tests/component`, `tests/integration`, and `tests/contract`.
+[ADR 0013](docs/adr/0013-model-gateway-testing-and-social-unit-tests.md) defines
+the target two-category layout and the selection rule: use E2E only when a real
+browser is essential to the guarantee. Preserve guarantees while migrating;
+the new layout and unified commands are not implemented yet.
 
 ## Browser verification (dev)
 

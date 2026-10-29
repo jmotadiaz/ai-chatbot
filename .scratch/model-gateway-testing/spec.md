@@ -5,6 +5,12 @@ Estado: diseño aceptado; implementación pendiente.
 Decisión arquitectónica:
 [ADR 0013](../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md).
 
+Esta especificación conserva el alcance y la secuencia originales de la
+migración del Gateway. El ADR se ha actualizado posteriormente con el criterio
+vigente de clasificación de tests, la organización objetivo y los perfiles;
+esas decisiones prevalecen sobre cualquier descripción anterior de esta
+especificación. La reorganización de tests sigue pendiente.
+
 ## Objetivos
 
 - Verificar comportamiento determinista del software sin proveedores reales.

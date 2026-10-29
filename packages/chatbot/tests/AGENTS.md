@@ -4,9 +4,9 @@
 
 Which tests run where follows the policy in
 [ADR 0013](../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md)
-(social unit tests by default, E2E by exception, dependency categories). This
-section only states the commands, the resources they need and the scope they
-cover.
+(unit tests by default; E2E only when a real browser is essential). The table
+describes the current commands and layout, not the ADR's future two-category
+layout and unified unit command.
 
 | Profile | Command | Selects | Resources needed |
 | --- | --- | --- | --- |
@@ -31,9 +31,10 @@ cover.
 - `build:verify` is the **only** compilation check (`pnpm build:verify` writes
   to isolated `.next/verify`); never `pnpm build` — it overwrites the artifacts
   prod serves.
-- Out of scope for this closure: the reclassification, reduction or relocation
-  of the historical E2E suite according to the ADR 0013 heuristic. Another
-  issue owns it.
+- The historical E2E reclassification and the target bundle-check ordering
+  have not yet been implemented. `verify:full` currently runs `build:verify`
+  after the tests; it does not guarantee that the bundle check inspected the
+  freshly built artifact.
 
 Guarantees accounting (which test file replaced each removed double or port)
 lives in [`docs/model-gateway-testing-migration.md`](../../../docs/model-gateway-testing-migration.md).

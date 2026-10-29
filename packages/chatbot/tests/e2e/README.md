@@ -4,11 +4,12 @@ The repository-level E2E suite: it drives the deployed chatbot in a browser
 (Test Environment, `--env=test`) against the real application, a real test
 PostgreSQL and the Mock Model Gateway.
 
-Selection policy (social unit tests by default, E2E only for guarantees that
-need the deployed application) lives in
+Selection policy (unit tests by default; E2E only for guarantees that require
+a real browser) lives in
 [ADR 0013](../../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md).
-Every E2E must state which deployment risk it covers; the classification of the
-historical cases is tracked by another issue and is not part of this docs page.
+Every E2E must state what browser behavior it verifies and what a unit test
+would omit. The historical cases have not yet been reclassified; their current
+presence in this suite does not establish that each meets the policy.
 
 ## Layout
 

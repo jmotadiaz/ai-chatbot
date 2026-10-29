@@ -2,6 +2,17 @@
 
 Test suite to evaluate the chatbot's quality using [Evalite](https://evalite.dev).
 
+These model-quality evaluations are not unit or E2E tests. Their eventual
+location is outside the test directories; the current paths and commands below
+remain in effect until that move is implemented.
+
+The model-routing description below claims real-model evaluation, but
+[`eval-runner.ts`](../../scripts/eval-runner.ts) documents that in-process
+cases load the Test Environment bundle and use the Mock Model Gateway. The
+actual evaluation setup requires separate investigation; do not treat these
+instructions or historical scores as evidence of a current real-model run.
+This documentation update does not change or execute the evaluations.
+
 ## Usage
 
 The runner brings up the whole environment: test DB, migrations, `next dev` and evalite. All in a single command.
