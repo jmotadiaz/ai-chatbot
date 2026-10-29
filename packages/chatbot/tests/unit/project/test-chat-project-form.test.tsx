@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse, type PathParams } from "msw";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 
 vi.mock("next/navigation", () => ({
@@ -84,7 +84,7 @@ const PROJECT: Project = {
 
 let postBodies: Record<string, unknown>[];
 setupMswServer(
-  http.post("*/api/chat", async ({ request }) => {
+  http.post<PathParams, Record<string, unknown>>("*/api/chat", async ({ request }) => {
     const body: Record<string, unknown> = await request.json();
     postBodies.push(body);
     return new HttpResponse(null, { status: 500 });
