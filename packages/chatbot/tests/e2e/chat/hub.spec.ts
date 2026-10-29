@@ -8,6 +8,13 @@ const VISION_MODEL = "canSeeImages";
 const BASIC_MODEL = "basicChat";
 const BASIC_ALT_MODEL = "basicChatAlt";
 
+// This suite needs a real browser for layout and streaming assembly: the
+// responsive grid at a real viewport, parallel streamed responses rendered in
+// separate panels, picker visibility at the three-model limit, and the offline
+// error UI driven by browser network state. The instance limit, locking,
+// fan-out and persistence rules are covered socially by
+// tests/unit/chat/hub/use-chat-hub.test.tsx; these cases add the mounted,
+// geometry-dependent behaviour.
 test.describe("Chat Hub", () => {
   let hubPage: ChatHubPage;
 

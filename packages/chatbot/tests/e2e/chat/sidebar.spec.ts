@@ -4,6 +4,12 @@ import { ChatPage } from "./pages/chat";
 
 import type { Chat } from "@/lib/infrastructure/db/schema";
 
+// This suite keeps the browser-only risks of the sidebar: clicking through to a
+// chat (Next.js routing and page lifecycle), the visibility toggle's layout
+// change, the delete menu/modal interaction and the rendered pin order. The
+// ordering, pin and ownership rules are covered socially by
+// tests/unit/chat/sidebar/sidebar-chats-and-pin.test.ts; a unit test would omit
+// the routing, the layout and the menu interaction.
 test.describe("Chat Sidebar", () => {
   let createdChats: Chat[];
   // Use unique titles to prevent collisions with worker-shared user

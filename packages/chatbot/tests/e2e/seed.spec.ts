@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures";
 import { ChatPage } from "./chat/pages/chat";
 
+// This is the retained representative journey (ticket 08): the browser session
+// logs in, the picker selects a catalog model, the composer POSTs a message and
+// the streamed answer is read back from the transcript. It is the case that
+// exercises the Next.js server, the session cookie, HTTP streaming and the DOM
+// together; the social suites substitute one of those boundaries.
 test.describe("Chat functionality", () => {
   let chatPage: ChatPage;
 

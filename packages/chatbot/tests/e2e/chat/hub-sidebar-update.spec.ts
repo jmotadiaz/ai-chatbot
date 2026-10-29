@@ -4,6 +4,11 @@ import { ChatHubPage } from "./pages/hub";
 // Id of the Mock Model Gateway catalog (capability, no alias).
 const TOOLS_MODEL = "canExecuteTools";
 
+// This test needs a real browser because it verifies cross-component refresh:
+// saving a Hub chat updates the sidebar drawer without a manual reload
+// (the server action's revalidation reaching a mounted client). The
+// persistence, locking and fan-out rules are covered socially by
+// tests/unit/chat/hub/*; a unit test would omit the live drawer re-render.
 test.describe("Chat Hub - Sidebar Integration", () => {
   let hubPage: ChatHubPage;
 

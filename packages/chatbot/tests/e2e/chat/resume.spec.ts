@@ -7,6 +7,11 @@ import { SLOW_STREAM_TEXT } from "@/tests/mocks/gateway/server";
 /**
  * E2E acceptance for chat resume (spec acceptance criterion):
  *
+ * E2E rationale (ticket 07): these cases run in a real browser because a page
+ * reload, a client-side route change and the remount/re-attach lifecycle cannot
+ * be reproduced in jsdom. The registry and resume-route rules they depend on
+ * are covered socially under tests/unit/chat/resume/.
+ *
  * A turn's generation lives server-side (the POST tees its SSE into the resume
  * registry), so a client that loses its fetch mid-generation — the screen went
  * off, the browser was backgrounded and the OS killed the connection — can

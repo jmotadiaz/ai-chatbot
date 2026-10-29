@@ -38,6 +38,12 @@ const chatWithSingleMessage = {
   ],
 };
 
+// This suite needs a real browser because every case is about scroll
+// geometry: the initial anchor, whether a message is inside the viewport, the
+// wheel gesture that releases the initial anchor lock, and the prev/next/bottom
+// buttons computed from real element positions. A simulated DOM cannot produce
+// those measurements; ticket 07 re-enabled the four cases that only needed a
+// real wheel gesture.
 test.describe("Chat Navigation", () => {
   let longChat: Chat;
   let singleMessageChat: Chat;

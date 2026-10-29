@@ -3,6 +3,13 @@ import { test, expect } from "../fixtures";
 import { ChatPage } from "./pages/chat";
 import { HistoryPage } from "./pages/history";
 
+// This suite keeps the browser-only risks of History: sidebar -> /history
+// routing, the sentinel-based infinite scroll (real scroll and viewport
+// geometry) and the delete/pin confirmation flows in mounted dialogs. The data
+// rules (root-only history, ordering, search, pagination, ownership and pin
+// persistence) are covered socially by
+// tests/unit/chat/history/history-chats.test.ts; a unit test would omit the
+// routing, the geometry and the dialog interaction.
 test.describe("Chat History", () => {
   test.describe("Navigation", () => {
     test("should navigate to history page from sidebar", async ({

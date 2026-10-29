@@ -7,12 +7,20 @@ PostgreSQL and the Mock Model Gateway.
 Selection policy (unit tests by default; E2E only for guarantees that require
 a real browser) lives in
 [ADR 0013](../../../../docs/adr/0013-model-gateway-testing-and-social-unit-tests.md).
-Every E2E must state what browser behavior it verifies and what a unit test
-would omit. The historical cases were reviewed during the social-testing
-migration (tickets 06, 07, 09 and 14); retained specs carry that statement
-where the distinction matters, and their presence here does not by itself
-establish policy compliance. Everything verifiable without a real browser
-belongs under `tests/unit/`.
+Every retained spec states, in a comment next to its `test.describe` (or its
+individual case), what browser behavior it verifies and what a unit test would
+omit. The historical cases were reviewed during the social-testing migration
+(tickets 06, 07, 09 and 14); the consolidated inventory and the skip accounting
+live in `.scratch/social-testing-migration/issues/16-verificacion-final.md`.
+Everything verifiable without a real browser belongs under `tests/unit/`.
+
+The suite has one skipped case: `chat/projects/chat.spec.ts` "3.3 'Test Chat' in
+Configuration View" (`test.fixme`). Its behavior is covered socially by
+`tests/unit/project/project-form.test.tsx`; whether the browser case is kept or
+dropped after that replacement is an open operator decision (ticket 06, surfaced
+by ticket 16). The only other skip in the repository is the conditional client
+bundle contract (`tests/unit/scripts/client-bundle-no-secrets.test.ts`), which
+skips itself when `.next/verify` is absent.
 
 ## Layout
 
