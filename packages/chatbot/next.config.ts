@@ -124,7 +124,7 @@ const nextConfig = (phase: string): NextConfig => {
         config: configAlias,
       },
     },
-    // Webpack (the launcher's `--webpack` and Playwright's webServer):
+    // Webpack (the launcher's `--webpack`, kept as a fallback bundler):
     // keeps Next's internal aliases and adds the Environment's.
     webpack: (config, options) => {
       const existing = config.resolve?.alias;

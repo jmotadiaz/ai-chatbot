@@ -43,8 +43,13 @@ export default defineConfig({
   forbidOnly: CI,
   /* Retry on CI only */
   retries: CI ? 1 : 0,
-  /* Tests share one database and one lazily compiled development server. */
-  workers: 1,
+  /* No `workers` cap: Playwright defaults to 50% of CPU cores. Parallel
+   * safety comes from test isolation, not serialisation — every test gets
+   * its own user (random email in `tests/e2e/fixtures.ts`), so chats,
+   * projects and hub instances never leak across workers. The dev server and
+   * the Mock Model Gateway (`:4001`) are shared read-only infrastructure:
+   * the gateway profile is stateless (answers derive from the request alone)
+   * and the app caches the catalog per process. */
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [["html", { open: "never" }]],
   /* Shared settings for all the projects below. */
@@ -71,12 +76,25 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    // Turbopack puede atascarse compilando /agent/code bajo Node 24: el e2e
-    // usa Webpack (`--webpack`) para que el servidor sea determinista en local
-    // y en CI. El Entorno, el puerto y NODE_ENV los decide el launcher.
-    command: `npx tsx scripts/next-cli.ts dev --env=test --webpack --port=${PORT}`,
-    stdout: config.serverOutput() ? "pipe" : "ignore",
-    stderr: config.serverOutput() ? "pipe" : "ignore",
+    // Turbopack (the launcher's default): it compiles a cold route in well
+    // under a second, so parallel workers no longer queue behind `next dev`'s
+    // compile-on-demand. The previous `--webpack` pin existed because
+    // Turbopack could get stuck compiling `/agent/code` under Node 24; Next
+    // 16.1.1 no longer does (measured: the whole suite on 4 workers, 1.8 min).
+    // The Environment, the port and NODE_ENV are decided by the launcher.
+    command: `npx tsx scripts/next-cli.ts dev --env=test --port=${PORT}`,
+    // `E2E_SERVER_OUTPUT=1` pipes the dev-server output into the run: when a
+    // cascading failure smells like the server dying (ERR_CONNECTION_REFUSED
+    // from one test onwards), the cause is in its stdout. Harness-level flag
+    // (like `CI` above), not app configuration.
+    stdout:
+      process.env.E2E_SERVER_OUTPUT || config.serverOutput()
+        ? "pipe"
+        : "ignore",
+    stderr:
+      process.env.E2E_SERVER_OUTPUT || config.serverOutput()
+        ? "pipe"
+        : "ignore",
     // Sonda de readiness en /login, no en `/` (ADR 0010): la home hidrata el
     // catálogo desde el Model Gateway, y el Mock (:4001) lo arranta el
     // globalSetup de Playwright — que se ejecuta DESPUÉS de esperar esta
