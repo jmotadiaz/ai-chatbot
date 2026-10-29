@@ -36,3 +36,9 @@ Memory retrieval, extraction, deduplication, isolation and no-text behavior;
 RAG persistence and retrieval versus pure chunking and rate limits; and catalog
 selection versus client HTTP, authentication, caching and error handling.
 The inventory and omitted-case accounting still need final verification.
+
+The ticket-owned suites had no skipped, fixme or todo cases in the audit.
+The conditional bundle skip belongs to ticket 02; browser skips in navigation,
+Projects, settings and Coding Agent belong to tickets 06, 07 and 09.
+Known direct-coverage gaps include `ragFactory`, `generateSpeech`, RAG
+resource server actions and the deployment-only migration entrypoint.
