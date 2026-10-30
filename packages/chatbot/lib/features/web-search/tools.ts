@@ -12,9 +12,9 @@ import {
 } from "./prompts";
 import { defaultWebSearchNumResults } from "@/lib/features/foundation-model/config";
 
-// Lazy access to Exa client; supports both legacy EXA_API_KEY and new EXASEARCH_API_KEY
+// Lazy access to Exa client
 const getExaClient = () => {
-  const key = config.exaSearchApiKey() || config.exaApiKey();
+  const key = config.exaApiKey();
   if (!key) return null;
   try {
     return new Exa(key);
@@ -63,7 +63,7 @@ export const webSearchFactory = ({
       const exa = getExaClient();
       if (!exa) {
         console.warn(
-          "Web Search skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results.",
+          "Web Search skipped: EXA_API_KEY missing. Returning empty results.",
         );
         return [];
       }
@@ -95,7 +95,7 @@ export const urlContextFactory = () => ({
       const exa = getExaClient();
       if (!exa) {
         console.warn(
-          "URL Context skipped: EXASEARCH_API_KEY (or EXA_API_KEY) missing. Returning empty results.",
+          "URL Context skipped: EXA_API_KEY missing. Returning empty results.",
         );
         return [];
       }

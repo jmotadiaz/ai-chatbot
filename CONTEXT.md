@@ -238,7 +238,7 @@ _Avoid_: prompt template, promptie (singular)
 ### Execution Environments
 
 **Environment**:
-Isolated combination of database, Coding Agent runtime and typed configuration (`config.{prod,dev,test}.ts` + `secrets.{prod,dev,test}.ts`) that allows operating without interfering with another Environment, selected by a process argument (`--env=prod|dev|test`) or a bundler compile-time alias, with no inheritable environment variables.
+Isolated combination of database, Runtime Pi and structural configuration that allows operating without interfering with another Environment, selected explicitly per process without inheritable environment-selector variables.
 _Avoid_: env, environment, stage, target
 
 **Test Environment**:

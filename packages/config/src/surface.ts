@@ -32,6 +32,8 @@ export type {
 export {
   assertDatabaseMatchesEnvironment,
   assertGatewayMatchesEnvironment,
+  composePostgresUrl,
+  createEnvironmentBundle,
   ENVIRONMENT_DSN,
   ENVIRONMENT_GATEWAY_PORT,
   validateAppConfig,

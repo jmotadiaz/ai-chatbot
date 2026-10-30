@@ -13,6 +13,9 @@ export const configProd = {
   environment: "prod",
   port: 8085,
   modelGatewayUrl: "http://127.0.0.1:4000",
+  postgresHost: "localhost",
+  postgresPort: 5435,
+  postgresDatabase: "prod",
   codingAgentEnabled: true,
   // The live service lists the projects under the monorepo's parent directory
   // (`/home/javier/projects`), not inside it. `repoPath("..")` preserves that

@@ -37,11 +37,7 @@ yarn-error.log*
 .pnpm-debug.log*
 /.pnpm-store/
 
-# Local secrets as typed TS modules (ADR 0011): fixtures are versioned
-/packages/config/src/secrets.prod.ts
-/packages/config/src/secrets.dev.ts
-
-# env files (can opt-in for committing if needed)
+# env files (ADR 0014: root .env with in-memory parsing, fixtures/examples versioned)
 .env
 .env*.local
 .env.dev

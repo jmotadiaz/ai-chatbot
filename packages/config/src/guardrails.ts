@@ -1,15 +1,15 @@
 import { ConfigError } from "./errors";
-import type { AppConfig, Environment } from "./types";
+import type { AppConfig, Environment, SecretsConfig, StructuralConfig } from "./types";
 
 /**
  * Coherence guardrails Environment ↔ database / Model Gateway
- * (ADR 0001, ADR 0010 and ADR 0011).
+ * (ADR 0001, ADR 0010, ADR 0011 and ADR 0014).
  *
- * Each Environment declares its own isolated DB and its own Gateway port in
- * the SAME `config.<env>.ts` module as its DSN. A DSN that does not match the
- * declared Environment means someone copied another Environment's credential —
- * writing there is exactly the accident this design exists to prevent, so the
- * bundle fails before opening the first connection.
+ * Each Environment declares its own isolated DB coordinates and its own Gateway
+ * port in `config.<env>.ts`. A DSN that does not match the declared Environment
+ * means someone copied another Environment's configuration — writing there is
+ * exactly the accident this design exists to prevent, so the bundle fails
+ * before opening the first connection.
  *
  * Unlike the previous design (ADR 0005), the Environment is ALWAYS an explicit
  * parameter: this module reads neither `process.env` nor any selector
@@ -30,6 +30,19 @@ export const ENVIRONMENT_GATEWAY_PORT: Partial<Record<Environment, string>> = {
   test: "4001",
 };
 
+/** Composes the full Postgres DSN from decomposed coordinates and credentials. */
+export function composePostgresUrl(coords: {
+  user: string;
+  password: string;
+  host: string;
+  port: number;
+  database: string;
+}): string {
+  const user = encodeURIComponent(coords.user);
+  const pass = encodeURIComponent(coords.password);
+  return `postgres://${user}:${pass}@${coords.host}:${coords.port}/${coords.database}`;
+}
+
 /** Fails if the DSN does not point at the isolated DB of the declared Environment. */
 export function assertDatabaseMatchesEnvironment(
   url: string,
@@ -41,7 +54,7 @@ export function assertDatabaseMatchesEnvironment(
     throw new ConfigError(
       "postgresUrl",
       `Environment ${environment} requires the DSN of its isolated DB (${expected}); ` +
-        `got "${redactDsn(url)}". Check packages/config/src/secrets.${environment}.ts.`,
+        `got "${redactDsn(url)}". Check packages/config/src/config.${environment}.ts.`,
     );
   }
   return url;
@@ -71,12 +84,61 @@ function redactDsn(url: string): string {
 }
 
 /**
- * Validates a whole bundle and returns it unchanged. Used by the three
- * `env.<env>.ts`: if a crossed `SecretsConfig` is imported by mistake, the
- * process does not start (runtime failure, on top of the type failure in `tsc`).
+ * Validates a whole bundle and returns it unchanged.
  */
 export function validateAppConfig(candidate: AppConfig): AppConfig {
   assertDatabaseMatchesEnvironment(candidate.postgresUrl, candidate.environment);
   assertGatewayMatchesEnvironment(candidate.modelGatewayUrl, candidate.environment);
   return candidate;
+}
+
+/**
+ * Creates an immutable Environment bundle with eager structural config validation
+ * and lazy secret resolution (ADR 0014).
+ */
+export function createEnvironmentBundle(
+  structural: StructuralConfig,
+  getSecrets: () => SecretsConfig,
+): AppConfig {
+  assertGatewayMatchesEnvironment(structural.modelGatewayUrl, structural.environment);
+
+  const bundle: Record<string, unknown> = { ...structural };
+
+  const secretKeys: (keyof SecretsConfig)[] = [
+    "postgresUser",
+    "postgresPassword",
+    "modelGatewayApiKey",
+    "authSecret",
+    "exaApiKey",
+    "context7ApiKey",
+    "mcpApiKey",
+  ];
+
+  for (const key of secretKeys) {
+    Object.defineProperty(bundle, key, {
+      get() {
+        return getSecrets()[key];
+      },
+      enumerable: true,
+      configurable: false,
+    });
+  }
+
+  Object.defineProperty(bundle, "postgresUrl", {
+    get() {
+      const secrets = getSecrets();
+      const url = composePostgresUrl({
+        user: secrets.postgresUser,
+        password: secrets.postgresPassword,
+        host: structural.postgresHost,
+        port: structural.postgresPort,
+        database: structural.postgresDatabase,
+      });
+      return assertDatabaseMatchesEnvironment(url, structural.environment);
+    },
+    enumerable: true,
+    configurable: false,
+  });
+
+  return Object.freeze(bundle) as AppConfig;
 }

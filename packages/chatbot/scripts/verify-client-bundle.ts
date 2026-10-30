@@ -9,6 +9,7 @@
  * Never builds Production: only the isolated `build:verify` is spawned.
  */
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -39,7 +40,9 @@ try {
     mode: parseMode(process.argv.slice(2)),
     staticDir: path.join(packageRoot, VERIFY_STATIC_DIR),
     secretLiterals: loadSecretLiterals(
-      path.join(packageRoot, "..", "config", "src", "secrets.prod.ts"),
+      existsSync(path.join(packageRoot, "..", "..", ".env"))
+        ? path.join(packageRoot, "..", "..", ".env")
+        : path.join(packageRoot, "..", "config", "src", "secrets.prod.ts"),
     ),
     runBuild: runBuildVerify,
     log: (line) => console.log(line),

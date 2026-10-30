@@ -46,17 +46,36 @@ function collectJsFiles(dir: string): string[] {
   return files;
 }
 
+/** Generic words and non-secrets that must not be treated as leaked secret literals. */
+const IGNORED_SECRET_LITERALS = new Set(["postgres", "localhost", "127.0.0.1", "true", "false"]);
+
 /**
- * Reads the production secrets module and returns the literal values that
- * must not appear in client chunks. Missing module → only the hardcoded literals.
+ * Reads the production secrets module or root .env and returns the literal values that
+ * must not appear in client chunks. Missing file → only the hardcoded literals.
  */
-export function loadSecretLiterals(secretsProdPath: string): string[] {
+export function loadSecretLiterals(secretsPath?: string): string[] {
   const literals = [...HARDCODED_SECRET_LITERALS];
-  if (existsSync(secretsProdPath)) {
-    const source = readFileSync(secretsProdPath, "utf8");
+  const fileToRead = secretsPath ?? path.resolve(__dirname, "../../..", ".env");
+  if (existsSync(fileToRead)) {
+    const source = readFileSync(fileToRead, "utf8");
     for (const match of source.matchAll(/:\s*"([^"]+)"/g)) {
       const value = match[1];
-      if (value && value.length > 5) literals.push(value);
+      if (value && value.length > 5 && !IGNORED_SECRET_LITERALS.has(value.toLowerCase())) {
+        literals.push(value);
+      }
+    }
+    for (const match of source.matchAll(/^([A-Z0-9_]+)=\s*"?([^"\r\n]+)"?/gm)) {
+      const key = match[1];
+      const value = match[2]?.trim();
+      if (key === "POSTGRES_USER") continue;
+      if (
+        value &&
+        value.length > 5 &&
+        !value.startsWith("replace-") &&
+        !IGNORED_SECRET_LITERALS.has(value.toLowerCase())
+      ) {
+        literals.push(value);
+      }
     }
   }
   return literals;

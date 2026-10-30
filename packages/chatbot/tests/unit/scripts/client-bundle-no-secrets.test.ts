@@ -15,10 +15,12 @@ const built = existsSync(staticDir);
 // reports the same absence explicitly, and `pnpm verify:full` requires it.
 describe.skipIf(!built)("client bundle secrets firewall (requires .next/verify from build:verify)", () => {
   it("never inlines prod secrets or prod DSN into static browser chunks", () => {
+    const envPath = path.join(PACKAGE_ROOT, "..", "..", ".env");
     const secretsProdPath = path.join(PACKAGE_ROOT, "..", "config", "src", "secrets.prod.ts");
+    const secretsPath = existsSync(envPath) ? envPath : secretsProdPath;
     const result = inspectClientBundle({
       staticDir,
-      secretLiterals: loadSecretLiterals(secretsProdPath),
+      secretLiterals: loadSecretLiterals(secretsPath),
     });
     expect(result).toMatchObject({ status: "inspected" });
   });

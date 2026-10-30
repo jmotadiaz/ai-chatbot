@@ -1,7 +1,7 @@
 import { configDev } from "./config.dev";
+import { resolveDotenvSecrets } from "./dotenv";
 import { createConfigFacade } from "./facade";
-import { validateAppConfig } from "./guardrails";
-import { secretsDev } from "./secrets.dev";
+import { createEnvironmentBundle } from "./guardrails";
 import type { AppConfig } from "./types";
 
 // The bundler alias `"config"` points at THIS module: it re-exports the
@@ -9,16 +9,17 @@ import type { AppConfig } from "./types";
 export * from "./surface";
 
 /**
- * DEVELOPMENT static bundle: `config.dev` + `secrets.dev`, validated by the
- * coherence guardrails and frozen.
+ * DEVELOPMENT bundle: structural configuration validated eagerly, secrets resolved
+ * lazily from `<REPO_ROOT>/.env` via in-memory parsing (ADR 0014).
  *
  * It is the module to which the Next.js bundler redirects the `"config"` import
  * when the active Environment is dev (`next.config.ts` → `resolveAlias`), and the
  * one `config.ts` selects for the worker and the CLI scripts with
  * `--env=dev`.
  */
-export const envDev: AppConfig = Object.freeze(
-  validateAppConfig({ ...configDev, ...secretsDev }),
+export const envDev: AppConfig = createEnvironmentBundle(
+  configDev,
+  () => resolveDotenvSecrets("dev"),
 );
 
 // The bundler (Next.js) alias and the test runners resolve this module: it

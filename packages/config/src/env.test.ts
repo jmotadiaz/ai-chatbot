@@ -1,6 +1,6 @@
 import { configTest } from "./config.test";
 import { createConfigFacade } from "./facade";
-import { validateAppConfig } from "./guardrails";
+import { createEnvironmentBundle } from "./guardrails";
 import { secretsTest } from "./secrets.test";
 import type { AppConfig } from "./types";
 
@@ -17,8 +17,9 @@ export * from "./surface";
  * one the `resolve.alias` entries of `vitest.config.ts` (chatbot and coding-agent)
  * point at, and the one `config.ts` selects for the CLI scripts with `--env=test`.
  */
-export const envTest: AppConfig = Object.freeze(
-  validateAppConfig({ ...configTest, ...secretsTest }),
+export const envTest: AppConfig = createEnvironmentBundle(
+  configTest,
+  () => secretsTest,
 );
 
 // The bundler (Next.js) alias and the test runners resolve this module: it
