@@ -38,7 +38,7 @@ const EditProjectPage: React.FC<EditProjectPageProps> = async ({
         <Header.Container>
           <Header.Left>
             <Logo />
-            <NewChatHeader />
+            <NewChatHeader projectId={id} />
           </Header.Left>
           <Header.Right>
             <ThemeToggle />

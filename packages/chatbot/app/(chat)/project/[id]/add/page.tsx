@@ -33,7 +33,7 @@ const Page = async ({ params, user }: AddProjectPageProps) => {
         <Header.Container>
           <Header.Left>
             <Logo />
-            <NewChatHeader />
+            <NewChatHeader projectId={id} />
           </Header.Left>
           <Header.Right>
             <ThemeToggle />

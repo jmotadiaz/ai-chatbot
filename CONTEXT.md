@@ -10,6 +10,10 @@ Multi-model conversational assistant with projects, per-project knowledge base (
 A persisted conversation thread: the unit of interaction between the user and a model.
 _Avoid_: conversation, chat session
 
+**Temporary Chat**:
+Chat that is never persisted: it lives only while the view that started it stays open, so it never appears in the chat list or the history, whether it belongs to a Project or not.
+_Avoid_: ephemeral chat, incognito chat, sandbox chat
+
 **Message**:
 An intervention within a Chat, from the user or the model, with parts (text, reasoning, tools); the persisted unit of a Turn's history.
 _Avoid_: reply

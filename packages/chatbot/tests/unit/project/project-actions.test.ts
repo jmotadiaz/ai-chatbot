@@ -8,7 +8,11 @@
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { setupTestDb } from "../../helpers/db-setup";
-import { user as userTable, project as projectTable } from "@/lib/infrastructure/db/schema";
+import {
+  user as userTable,
+  project as projectTable,
+  chat as chatTable,
+} from "@/lib/infrastructure/db/schema";
 import type { DB } from "@/lib/infrastructure/db/db";
 
 vi.mock("server-only", () => ({}));
@@ -216,5 +220,23 @@ describe("project queries", () => {
     const listed = await getProjectsByUserId({ userId: OWNER_ID });
 
     expect(listed.map((p) => p.name).sort()).toEqual(["Second", "Visible"]);
+  });
+
+  it("getProjectsByUserId limits each project's nested chats", async () => {
+    const created = await createProject(validInput);
+    await db.insert(chatTable).values(
+      Array.from({ length: 12 }).map((_, index) => ({
+        userId: OWNER_ID,
+        projectId: created.id,
+        title: `project chat ${index}`,
+      })),
+    );
+
+    const [project] = await getProjectsByUserId({
+      userId: OWNER_ID,
+      joinChats: true,
+    });
+
+    expect(project!.chats).toHaveLength(10);
   });
 });

@@ -4,7 +4,6 @@ import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
 import { ModelPickerLoading } from "@/components/chat/model-picker";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
-import { NewChatHeader } from "@/components/chat/new";
 
 const Loading: React.FC = () => {
   return (
@@ -13,7 +12,6 @@ const Loading: React.FC = () => {
       <Header.Container>
         <Header.Left>
           <Logo />
-          <NewChatHeader />
           <ModelPickerLoading />
         </Header.Left>
         <Header.Right>

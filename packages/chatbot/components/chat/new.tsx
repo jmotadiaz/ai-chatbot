@@ -1,5 +1,5 @@
 "use client";
-import { Edit, MessageCircleDashed, LayoutGrid } from "lucide-react";
+import { Edit } from "lucide-react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import type { ClassValue } from "clsx";
@@ -7,18 +7,25 @@ import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat/link";
 import { useChatContext } from "@/components/chat/provider";
 import { useChatLifecycle } from "@/components/chat/lifecycle";
-import { Item } from "@/components/ui/item";
 
 interface NewChatProps {
   children: React.ReactNode;
   temporary?: boolean;
   projectId?: string | null;
+  /** Accessible name. Omit it when the link carries visible text of its own. */
+  label?: string;
+  /** Native tooltip; defaults to `label`. */
+  title?: string;
+  className?: ClassValue;
 }
 
 export const NewChatLink: React.FC<NewChatProps> = ({
   children,
   temporary,
   projectId,
+  label,
+  title,
+  className,
 }) => {
   const { status } = useChatContext();
   const { startNewChat } = useChatLifecycle();
@@ -47,10 +54,13 @@ export const NewChatLink: React.FC<NewChatProps> = ({
         pathname: targetPathname,
         query: temporary ? { chatType: "temporary" } : {},
       }}
+      aria-label={label}
+      title={title ?? label}
       className={cn(
         status === "streaming" || status === "submitted"
           ? "pointer-events-none opacity-50"
           : "cursor-pointer",
+        className,
       )}
       onClick={handleClick}
       onNavigate={() => {
@@ -69,44 +79,11 @@ export interface NewChatHeaderProps {
 export const NewChatHeader = ({ projectId }: NewChatHeaderProps) => {
   return (
     <Suspense fallback={null}>
-      <NewChatLink projectId={projectId}>
+      <NewChatLink projectId={projectId} label="New chat">
         <div className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition-colors">
           <Edit size={18} />
         </div>
       </NewChatLink>
-    </Suspense>
-  );
-};
-
-export interface NewChatSidebarProps {
-  className?: ClassValue;
-}
-
-export const NewChatSidebar: React.FC<NewChatSidebarProps> = ({
-  className,
-}) => {
-  return (
-    <Suspense fallback={null}>
-      <div className={cn("flex flex-col gap-1", className)}>
-        <div className="flex items-center justify-between">
-          <NewChatLink>
-            <Item>
-              <Edit size={18} /> New Chat
-            </Item>
-          </NewChatLink>
-          <NewChatLink temporary>
-            <div className="p-2">
-              <MessageCircleDashed className="h-5 w-5" />
-            </div>
-          </NewChatLink>
-        </div>
-
-        <ChatLink href="/chat/hub">
-          <Item>
-            <LayoutGrid size={18} /> Chat Hub
-          </Item>
-        </ChatLink>
-      </div>
     </Suspense>
   );
 };

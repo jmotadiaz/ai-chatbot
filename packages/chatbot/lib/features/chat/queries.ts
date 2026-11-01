@@ -142,8 +142,6 @@ export async function getChats({
   projectId?: string | null;
 }): Promise<{ chats: Array<Chat> }> {
   try {
-    const extendedLimit = limit + 1;
-
     const chats = await getDb()
       .select()
       .from(chat)
@@ -156,7 +154,7 @@ export async function getChats({
         ),
       )
       .orderBy(desc(chat.pinned), desc(chat.updatedAt))
-      .limit(extendedLimit);
+      .limit(limit);
 
     return {
       chats,

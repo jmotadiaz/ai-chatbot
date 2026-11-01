@@ -79,6 +79,29 @@ test.describe("Project Chat", () => {
     expect.soft(userMessages.length).toBe(0);
   });
 
+  // This test needs a real browser because it verifies the routing the design
+  // settled: inside a project chat the sidebar actions stay global and go to
+  // `/`, they never open a chat of the current project.
+  test("3.3 Sidebar new chat stays global inside a project chat", async ({
+    db,
+    page,
+  }) => {
+    const title = "Global Nav Project";
+    await db.addProjects([
+      { name: title, systemPrompt: "Prompt", defaultModel: "basicChat" },
+    ]);
+
+    await page.reload();
+    await projectPage.openSidebar();
+    await projectPage.sidebar.navigateProjectAction(title, "chat");
+    await chatPage.chat.waitForTitleVisible(title);
+
+    await projectPage.openSidebar();
+    await projectPage.sidebar.newChatLink.click();
+
+    await expect.soft(page).toHaveURL("/");
+  });
+
   // FIXME(e2e, 2026-09-02): flaky hydration — the Test Chat tab panel needs a
   // wait for the tab view in parallel runs (it also failed in an isolated
   // re-run; hydration timing, not the environment).

@@ -67,6 +67,21 @@ describe("getChats (sidebar list)", () => {
     ]);
   });
 
+  it("returns exactly the requested limit", async () => {
+    const userId = await createUser("sidebar-limit");
+    for (let i = 0; i < 12; i++) {
+      await insertChat(
+        userId,
+        `chat-${i}`,
+        `2024-04-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
+      );
+    }
+
+    const { chats } = await getChats({ userId, limit: 10 });
+
+    expect(chats).toHaveLength(10);
+  });
+
   it("orders differently from history for the same data", async () => {
     const userId = await createUser("sidebar-vs-history");
     await insertChat(userId, "old-pinned", "2024-01-01T00:00:00Z", true);

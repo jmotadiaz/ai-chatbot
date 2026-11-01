@@ -1,10 +1,12 @@
 import type { ClassValue } from "clsx";
-import { Search, ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle, MessageCircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils/helpers";
 import { type Chat } from "@/lib/features/chat/types";
 import { ChatListItem } from "@/components/layout/sidebar/chat-list-item";
 import { SidebarSectionTitle } from "@/components/layout/sidebar/section-title";
+import { buttonVariants } from "@/components/ui/button";
 import ChatLink from "@/components/chat/link";
+import { NewChatLink } from "@/components/chat/new";
 
 export interface ChatListProps {
   chats: Chat[];
@@ -12,7 +14,12 @@ export interface ChatListProps {
   chatId?: string | null | undefined;
 }
 
-export const ChatList: React.FC<ChatListProps> = async ({
+/**
+ * The chats of a single list. Used by the root "Chats" section and by each
+ * expanded project, so it renders no header: the section header belongs to
+ * `ChatsSection` alone.
+ */
+export const ChatList: React.FC<ChatListProps> = ({
   chats,
   className,
   chatId,
@@ -20,50 +27,90 @@ export const ChatList: React.FC<ChatListProps> = async ({
   if (!chats.length) return null;
 
   return (
-    <div className={cn("my-4", className)}>
-      <ChatLink href="/chat/history" aria-label="Open chat history">
-        <SidebarSectionTitle>
-          Chats <Search className="h-4 w-4 ml-3" />
-        </SidebarSectionTitle>
-      </ChatLink>
-      <div className="space-y-3" role="list" aria-label="Chat history">
-        {chats.map((chat) => (
-          <ChatListItem
-            key={chat.id}
-            id={chat.id}
-            title={chat.title}
-            pinned={chat.pinned}
-            active={chat.id === chatId}
-          />
-        ))}
-      </div>
-      <ChatLink
-        href="/chat/history"
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-4 ml-1 transition-colors"
-      >
-        See all
-        <ArrowRight className="w-3 h-3" />
-      </ChatLink>
+    <div
+      className={cn("space-y-3", className)}
+      role="list"
+      aria-label="Chat history"
+    >
+      {chats.map((chat) => (
+        <ChatListItem
+          key={chat.id}
+          id={chat.id}
+          title={chat.title}
+          pinned={chat.pinned}
+          active={chat.id === chatId}
+        />
+      ))}
     </div>
   );
 };
 
-export const ChatListLoading: React.FC<{ className?: ClassValue }> = ({
+export type ChatsSectionProps = ChatListProps;
+
+/**
+ * Root "Chats" section: header with the two global new-chat actions, the
+ * latest chats, and the way into the full history. The header renders even
+ * when the user has no root chats, so the actions stay reachable. The actions
+ * are always global (they never follow the current context), which is why they
+ * live here and not in the project lists.
+ */
+export const ChatsSection: React.FC<ChatsSectionProps> = ({
+  chats,
+  className,
+  chatId,
+}) => {
+  return (
+    <div className={cn("my-4", className)}>
+      <div
+        className="flex items-center justify-between pr-1"
+        data-testid="chats-section-header"
+      >
+        <NewChatLink title="New chat">
+          <SidebarSectionTitle className="mb-0 transition-colors hover:text-zinc-700 dark:hover:text-zinc-100">
+            Chats <MessageCircle className="h-4 w-4 ml-3" />
+          </SidebarSectionTitle>
+        </NewChatLink>
+        <div
+          className="flex items-center gap-1"
+          data-testid="chats-section-actions"
+        >
+          <NewChatLink
+            temporary
+            label="New temporary chat"
+            className={buttonVariants({ variant: "icon", size: "icon" })}
+          >
+            <MessageCircleDashed className="h-4 w-4" />
+          </NewChatLink>
+        </div>
+      </div>
+      {chats.length ? (
+        <>
+          <ChatList chats={chats} chatId={chatId} />
+          <ChatLink
+            href="/chat/history"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-4 ml-1 transition-colors"
+          >
+            See all
+            <ArrowRight className="w-3 h-3" />
+          </ChatLink>
+        </>
+      ) : (
+        <p className="ml-1 text-sm text-muted-foreground">No chats yet</p>
+      )}
+    </div>
+  );
+};
+
+export const ChatsSectionLoading: React.FC<{ className?: ClassValue }> = ({
   className,
 }) => {
   return (
     <div className={cn("my-4", className)}>
-      <div className="flex items-center justify-between mb-4 pr-3">
-        <h3 className="text-sm uppercase flex items-center font-medium text-zinc-500 dark:text-zinc-300 tracking-widest">
-          Chats
-        </h3>
-        <ChatLink
-          href="/chat/history"
-          aria-label="Open chat history"
-          className="w-8 h-8 -mr-2 flex items-center justify-center rounded-md text-zinc-500 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-        >
-          <Search className="w-4 h-4" />
-        </ChatLink>
+      <div className="flex items-center justify-between pr-1 mb-4">
+        <SidebarSectionTitle className="mb-0">Chats</SidebarSectionTitle>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse" />
+        </div>
       </div>
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, index) => (

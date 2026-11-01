@@ -4,7 +4,6 @@ import { RAGTabs } from "@/components/rag/tabs";
 import { Resources } from "@/app/(chat)/rag/resources";
 import { Header } from "@/components/layout/header/header";
 import { Logo } from "@/components/layout/header/logo";
-import { NewChatHeader } from "@/components/chat/new";
 import { ThemeToggle } from "@/components/layout/header/theme-toggle";
 
 export interface RAGManagerProps {
@@ -19,7 +18,6 @@ export const RAGManager: React.FC<RAGManagerProps> = async ({
       <Header.Container>
         <Header.Left>
           <Logo />
-          <NewChatHeader />
         </Header.Left>
         <Header.Right>
           <ThemeToggle />

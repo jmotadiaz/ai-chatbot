@@ -11,7 +11,7 @@ import { useCollapse } from "react-collapsed";
 import { startTransition, useState } from "react";
 import { cn } from "@/lib/utils/helpers";
 import ChatLink from "@/components/chat/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Item } from "@/components/ui/item";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { deleteProject } from "@/lib/features/project/actions";
@@ -53,15 +53,20 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
       <div {...getCollapseProps()}>
         <div className="flex flex-col ml-2 pl-4 my-2 border-l-2 border-zinc-300 dark:border-zinc-600">
           <div className="flex space-x-2">
-            <NewChatLink projectId={id}>
-              <Button variant="outline" aria-label="Chat">
-                <MessageCircle className="h-4 w-4" />
-              </Button>
+            <NewChatLink
+              projectId={id}
+              label="New chat"
+              className={buttonVariants({ variant: "outline", size: "icon" })}
+            >
+              <MessageCircle className="h-4 w-4" />
             </NewChatLink>
-            <NewChatLink projectId={id} temporary>
-              <Button variant="outline" aria-label="Temporary Chat">
-                <MessageCircleDashed className="h-4 w-4" />
-              </Button>
+            <NewChatLink
+              projectId={id}
+              temporary
+              label="New temporary chat"
+              className={buttonVariants({ variant: "outline", size: "icon" })}
+            >
+              <MessageCircleDashed className="h-4 w-4" />
             </NewChatLink>
             <ChatLink href={`/project/${id}/edit`}>
               <Button variant="outline" aria-label="Edit project">

@@ -103,7 +103,7 @@ export async function getProjectsByUserId({
         with: {
           chats: {
             orderBy: desc(chat.updatedAt),
-            limit: 20,
+            limit: 10,
           },
         },
         orderBy: desc(project.updatedAt),

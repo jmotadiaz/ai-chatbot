@@ -12,6 +12,8 @@ export class SidebarComponent {
   readonly projectList: Locator;
   readonly addProjectButton: Locator;
   readonly confirmModal: ConfirmModalComponent;
+  readonly newChatLink: Locator;
+  readonly newTemporaryChatLink: Locator;
 
   constructor(container: Locator) {
     this.container = container;
@@ -20,6 +22,18 @@ export class SidebarComponent {
     this.projectList = container.getByRole("list", { name: "Projects" });
     this.addProjectButton = container.getByRole("link", { name: "Projects" });
     this.confirmModal = new ConfirmModalComponent(container);
+    // The section header renders even when the user has no chats. The solid
+    // action is the "Chats" label itself (as the search shortcut used to be),
+    // so it is found by its visible name; the dashed one is scoped by test id
+    // because an expanded project renders the same label for its own actions.
+    const sectionHeader = container.getByTestId("chats-section-header");
+    this.newChatLink = sectionHeader.getByRole("link", {
+      name: "Chats",
+      exact: true,
+    });
+    this.newTemporaryChatLink = container
+      .getByTestId("chats-section-actions")
+      .getByLabel("New temporary chat", { exact: true });
   }
 
   /**
@@ -84,10 +98,13 @@ export class SidebarComponent {
 
     switch (action) {
       case "chat":
-        await panel.getByLabel("Chat").first().click();
+        await panel.getByLabel("New chat", { exact: true }).first().click();
         break;
       case "temporary-chat":
-        await panel.getByLabel("Temporary Chat").first().click();
+        await panel
+          .getByLabel("New temporary chat", { exact: true })
+          .first()
+          .click();
         break;
       case "edit":
         await panel.getByLabel("Edit project").first().click();

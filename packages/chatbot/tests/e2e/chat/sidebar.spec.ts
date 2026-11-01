@@ -54,8 +54,7 @@ test.describe("Chat Sidebar", () => {
       .toBeVisible();
   });
 
-  test("should toggle the sidebar visibility", async ({ page }) => {
-    const chatPage = new ChatPage(page);
+  test("should toggle the sidebar visibility", async ({ page }) => {    const chatPage = new ChatPage(page);
     await chatPage.goto();
 
     await expect.soft(chatPage.sidebar.container).not.toBeVisible();
@@ -77,6 +76,24 @@ test.describe("Chat Sidebar", () => {
     await expect
       .soft(chatPage.sidebar.getChatItemByTitle(chatTitle1))
       .not.toBeAttached();
+  });
+
+  // This test needs a real browser because it verifies the routing the design
+  // settled: the section-header actions are global (always `/`, never the
+  // current context) and the temporary one carries `chatType=temporary`.
+  test("should start a new chat and a new temporary chat regardless of the current chat", async ({
+    page,
+  }) => {
+    const chatPage = new ChatPage(page);
+    await chatPage.goto(createdChats[0]!.id);
+    await chatPage.header.toggleSidebar();
+
+    await chatPage.sidebar.newChatLink.click();
+    await expect.soft(page).toHaveURL("/");
+
+    await chatPage.header.toggleSidebar();
+    await chatPage.sidebar.newTemporaryChatLink.click();
+    await expect.soft(page).toHaveURL("/?chatType=temporary");
   });
 
   test("should sort pinned chats to top", async ({ page, db }) => {
