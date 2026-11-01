@@ -131,10 +131,10 @@ Sequence to bring up the Development Environment:
 AI commits MUST include:
 
 ```
-Co-Authored-By: (the agent model's name and attribution byline)
+Co-Authored-By: (the agent model's name)
 ```
 
-Example: `Co-Authored-By: Claude Sonnet 3.5 <noreply@example.com>`
+Example: `Co-Authored-By: Claude Sonnet 3.5`
 
 ## Monorepo Structure
 

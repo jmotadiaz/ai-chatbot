@@ -78,6 +78,7 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
 | `src/pi-packages.ts` | First-party extension discovery + Pi packages loader |
 | `src/subagent-collector.ts` | Child event collector: Pi events → AG-UI → the subagent's own event log |
 | `skills/` | Standalone built-in skills (`<skill>/SKILL.md`) without TypeScript entrypoints |
+| `extensions/commit-attribution/` | First-party extension: injects model-specific Co-Authored-By attribution into the system prompt |
 | `extensions/subagent/` | First-party `subagent` tool (thin shell over `runSubagent` in `session-manager.ts`) |
 | `extensions/artifacts/` | First-party `publish_artifact` tool + automatic publishing of temp-dir reports |
 | `scripts/install-packages.ts` | Clones/updates third-party Pi packages if defined |
@@ -173,3 +174,11 @@ replaces "open it" with "here's the URL".
   `tests/unit/artifacts/artifacts-server.test.ts` (real worker server on an ephemeral
   port, test-owned socket), `tests/unit/artifacts/artifacts-extension.test.ts` (tool boundary + hook).
   The in-process RPC parser lives in `tests/unit/rpc/http-transport-parse.test.ts`.
+
+### Commit Attribution (`extensions/commit-attribution/`)
+
+First-party Pi extension (`extensions/commit-attribution/`) that injects model-specific git commit attribution instructions into the system prompt.
+
+- **Dynamic adaptation:** hooks into `before_agent_start` on every turn, reading `ctx.model` (name or id) and appending the exact `Co-Authored-By: <model>` trailer requirement to `event.systemPrompt`. If the session switches models mid-flight (via turn configuration), the system prompt dynamically updates for the next turn.
+- **Subagents:** included for subagents as well as orchestrators, ensuring delegated tasks also commit with appropriate attribution.
+- **Tests:** `tests/unit/extensions/commit-attribution-extension.test.ts`.

@@ -40,6 +40,7 @@ describe("first-party extension and built-in skills discovery", () => {
     expect(getExtensionPaths()).toEqual(getFirstPartyExtensionPaths());
     expect(getExtensionPaths().map((p) => basename(dirname(p)))).toEqual([
       "artifacts",
+      "commit-attribution",
       "subagent",
     ]);
     expect(getExtensionPaths()).toEqual([
@@ -54,7 +55,10 @@ describe("first-party extension and built-in skills discovery", () => {
     expect(paths).toEqual(
       getFirstPartyExtensionPaths().filter((p) => !p.includes("extensions/subagent")),
     );
-    expect(paths.map((p) => basename(dirname(p)))).toEqual(["artifacts"]);
+    expect(paths.map((p) => basename(dirname(p)))).toEqual([
+      "artifacts",
+      "commit-attribution",
+    ]);
   });
 
   it("first-party extensions ship no skills dirs (built-in skills only)", () => {
