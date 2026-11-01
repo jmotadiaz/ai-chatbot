@@ -66,7 +66,7 @@ router_settings:
       hidden: true
 
 model_list:
-  # ---------- 16 user_invocable: true models (model selector) --------------
+  # ---------- 17 user_invocable: true models (model selector) --------------
 
   # Deepseek v4.1 Flash — catalog default (always first: the rest goes
   # alphabetical, see the order in `catalog.py:build_catalog`).
@@ -123,7 +123,6 @@ model_list:
       default_top_p: null
       default_top_k: null
 
-  # Gemini 4 Argon — OpenCode Go Google endpoint only (its own baseUrl).
   - model_name: Claude Haiku
     litellm_params:
       model: anthropic/claude-haiku-5-5
@@ -151,11 +150,40 @@ model_list:
       default_top_p: null
       default_top_k: null
 
+  # Gemini 3.8 Flash — Vercel AI Gateway (ZDR).
+  # Costs are a placeholder at Gemini Flash rates: confirm against the AI
+  # Gateway price sheet before trusting the picker's numbers.
+  - model_name: Gemini 3.8 Flash
+    litellm_params:
+      model: openai/google/gemini-3.8-flash
+      api_base: https://ai-gateway.vercel.sh/v1
+      api_key: os.environ/AI_GATEWAY_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: google
+      context_window: 1048576
+      max_output_tokens: 65536
+      input_cost_per_token: 5.0e-7
+      output_cost_per_token: 3.0e-6
+      cache_read_input_token_cost: 5.0e-8
+      cache_creation_input_token_cost: 0
+      reasoning: true
+      thinking_levels: ["minimal", "low", "medium", "high"]
+      default_thinking_level: "medium"
+      supported_files: [img, pdf]
+      supported_output: [text]
+      zero_data_retention: true
+      default_temperature: null
+      default_top_p: null
+      default_top_k: null
+
+  # Gemini 4 Argon — Google AI Studio (Google Generative AI key), no api_base:
+  # LiteLLM's `gemini/` provider talks to the default Generative Language API.
   - model_name: Gemini 4 Argon
     litellm_params:
-      model: gemini/gemini-4-argon-contributor
-      api_base: https://opencode.ai/inference/go/v1
-      api_key: os.environ/OPENCODE_API_KEY
+      model: gemini/gemini-4-argon
+      api_key: os.environ/GOOGLE_GENERATIVE_AI_API_KEY
     model_info:
       user_invocable: true
       is_default: false
@@ -513,19 +541,17 @@ model_list:
       supported_output: [text]
       zero_data_retention: true
 
-  # flash-default — Gemini 3.1 Flash Lite via Vercel AI Gateway, ZDR.
+  # flash-default — Gemini 3.5 Flash Lite via Google AI Studio (Google Generative AI key).
   - model_name: flash-default
     litellm_params:
-      model: openai/google/gemini-3.1-flash-lite
-      api_base: https://ai-gateway.vercel.sh/v1
-      api_key: os.environ/AI_GATEWAY_API_KEY
-      reasoning_effort: "minimal"
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GOOGLE_GENERATIVE_AI_API_KEY
     model_info:
       user_invocable: false
       company: google
       reasoning: true
       supported_output: [text]
-      zero_data_retention: true
+      zero_data_retention: false
 
   # vision-default — MiMo V2.6 Flash via OpenCode Go (img + pdf).
   - model_name: vision-default

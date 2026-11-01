@@ -27,6 +27,7 @@ INVOCABLE_IDS = [
     "Deepseek v4.1 Flash",
     "Beam Free",
     "Claude Haiku",
+    "Gemini 3.8 Flash",
     "Gemini 4 Argon",
     "GLM 5.3",
     "GLM 5.3 Flash",
@@ -98,7 +99,7 @@ def catalog(config):
 # --- server-side filtering ------------------------------------------------
 
 
-def test_catalog_returns_exactly_the_16_user_invocable_models_in_order(catalog):
+def test_catalog_returns_exactly_the_17_user_invocable_models_in_order(catalog):
     assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
 
 
@@ -235,6 +236,45 @@ def test_opencode_upstream_slugs_match_the_provider_catalog(config):
     # `responses/` prefix forces LiteLLM's bridge and avoids the
     # "Model does not support this protocol" error from chat/completions.
     assert params["Muse Spark 1.3"] == "openai/responses/muse-spark-1.3-contributor"
+
+
+def test_gemini_38_flash_is_selectable_and_keeps_the_default_contract_hidden(config):
+    catalog = build_catalog(copy.deepcopy(config))
+    flash = next(m for m in catalog["models"] if m["id"] == "Gemini 3.8 Flash")
+    assert flash["company"] == "google"
+    assert flash["isDefault"] is False
+    assert flash["reasoning"] is True
+    assert "img" in flash["supportedFiles"] and "pdf" in flash["supportedFiles"]
+    assert flash["supportedOutput"] == ["text"]
+    # Same upstream as the internal contract, but ZDR is preserved either way.
+    assert flash["zeroDataRetention"] is True
+    # The contract itself stays out of the user catalog.
+    assert "flash-default" not in {m["id"] for m in catalog["models"]}
+
+
+def test_gemini_models_route_through_the_expected_provider(config):
+    params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
+    # Gemini 4 Argon moved to Google AI Studio: the `gemini/` provider with the
+    # Google Generative AI key and no custom api_base, so `gemini-4-argon` is
+    # resolved by the Generative Language API (not OpenCode's contributor slug).
+    argon = params["Gemini 4 Argon"]
+    assert argon["model"] == "gemini/gemini-4-argon"
+    assert argon["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
+    assert "api_base" not in argon
+    # flash-default: Gemini 3.5 Flash Lite via Google Generative AI API:
+    flash = params["flash-default"]
+    assert flash["model"] == "gemini/gemini-3.5-flash-lite"
+    assert flash["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
+    assert "api_base" not in flash
+    # The picker entry Gemini 3.8 Flash uses Vercel AI Gateway:
+    picker = params["Gemini 3.8 Flash"]
+    assert picker["model"] == "openai/google/gemini-3.8-flash"
+    assert picker["api_base"] == "https://ai-gateway.vercel.sh/v1"
+    flash_entry = next(
+        m for m in build_catalog(copy.deepcopy(config), include_internal=True)["models"]
+        if m["id"] == "flash-default"
+    )
+    assert flash_entry["zeroDataRetention"] is False
 
 
 # --- stable family/tier aliases (routing only) ----------------------------

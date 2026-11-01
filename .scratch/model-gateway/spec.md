@@ -84,7 +84,7 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
 | Contrato | Uso en `ai-chatbot` (y otras apps de la máquina) | Modelo upstream elegido | Proveedor / Credencial en Gateway |
 | :--- | :--- | :--- | :--- |
 | `fast-default` | `chatTitle`, `memoryExtraction`, `memoryQueryDecomposition`, `webSearchUrlIntent` | **GPT OSS Mini** (`openai/gpt-oss-20b`, `order: ["groq"]`, ZDR) | Vercel AI Gateway (`AI_GATEWAY_API_KEY`) |
-| `flash-default` | `englishGrammarCheck`, `englishTranslate` | **Gemini 3.1 Flash Lite** (`google/gemini-3.1-flash-lite`, reasoning `minimal`, ZDR) | Vercel AI Gateway (`AI_GATEWAY_API_KEY`) |
+| `flash-default` | `englishGrammarCheck`, `englishTranslate` | **Gemini 3.5 Flash Lite** (`gemini/gemini-3.5-flash-lite`) | Google Generative AI (`GOOGLE_GENERATIVE_AI_API_KEY`) |
 | `vision-default` | `compactionMultimedia` | **MiMo V2.6 Flash** (`mimo-v2.6-flash`, soporta `img` + `pdf`) | OpenCode Go (`OPENCODE_API_KEY`) |
 | `reasoning-default` | `metaPromptRefiner`, `compactionText` | **Deepseek v4.1 Flash** (`deepseek-v4.1-flash`, reasoning `max`, ZDR) | OpenCode Go (`OPENCODE_API_KEY`) |
 | `free-default` | Suites de `evals`, pruebas de humo con LLM real | **Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b:free`) | OpenRouter (`OPENROUTER_API_KEY`) |
