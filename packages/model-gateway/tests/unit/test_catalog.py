@@ -238,6 +238,38 @@ def test_opencode_upstream_slugs_match_the_provider_catalog(config):
     assert params["Muse Spark 1.3"] == "openai/responses/muse-spark-1.3-contributor"
 
 
+def test_free_default_contract_is_beam_free_on_opencode_go(config):
+    # The free contract reuses the free picker model (zero cost) so evals and
+    # smoke runs do not depend on a second provider credential.
+    params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
+    free = params["free-default"]
+    assert free["model"] == "openai/beam-free"
+    assert free["api_base"] == "https://opencode.ai/zen/go/v1"
+    assert free["api_key"] == "os.environ/OPENCODE_API_KEY"
+    # It is the same upstream as the picker entry, so the two cannot drift.
+    picker = params["Beam Free"]
+    assert (free["model"], free["api_base"], free["api_key"]) == (
+        picker["model"],
+        picker["api_base"],
+        picker["api_key"],
+    )
+
+
+# --- default contract entry metadata --------------------------------------
+
+
+def test_free_default_entry_matches_its_upstream_metadata(config):
+    entry = build_entry(
+        next(m for m in config["model_list"] if m["model_name"] == "free-default")
+    )
+    assert entry["company"] == "reflection"
+    assert entry["reasoning"] is True
+    # Beam Free is free: the contract must not introduce a cost for evals.
+    assert entry["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+    # Same disclosure as the picker entry: the provider is NOT zero-retention.
+    assert entry["zeroDataRetention"] is False
+
+
 def test_gemini_38_flash_is_selectable_and_keeps_the_default_contract_hidden(config):
     catalog = build_catalog(copy.deepcopy(config))
     flash = next(m for m in catalog["models"] if m["id"] == "Gemini 3.8 Flash")

@@ -581,14 +581,19 @@ model_list:
       supported_output: [text]
       zero_data_retention: true
 
-  # free-default — Nemotron 3 Super for free via OpenRouter (evals / smoke).
+  # free-default — Beam Free via OpenCode Go (evals / smoke).
+  # Same upstream as the `Beam Free` picker entry (zero cost) so the free
+  # contract does not spend a second provider credential nor depend on
+  # OpenRouter availability. Like its picker twin it is NOT zero-retention:
+  # the provider declares "Not used" / 30 days.
   - model_name: free-default
     litellm_params:
-      model: openrouter/nvidia/nemotron-3-super-120b-a12b:free
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: openai/beam-free
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_API_KEY
     model_info:
       user_invocable: false
-      company: nvidia
+      company: reflection
       reasoning: true
       supported_output: [text]
       zero_data_retention: false
