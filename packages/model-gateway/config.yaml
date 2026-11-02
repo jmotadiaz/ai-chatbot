@@ -593,13 +593,11 @@ model_list:
       supported_output: [text]
       zero_data_retention: false
 
-  # image-default — Nano Banana via OpenRouter (image output only).
+  # image-default — Gemini 3.1 Flash Lite Image via Google AI Studio (Google Generative AI key).
   - model_name: image-default
     litellm_params:
-      model: openrouter/google/gemini-2.5-flash-image
-      api_key: os.environ/OPENROUTER_API_KEY
-      extra_body:
-        responseModalities: [IMAGE]
+      model: gemini/gemini-3.1-flash-lite-image
+      api_key: os.environ/GOOGLE_GENERATIVE_AI_API_KEY
     model_info:
       user_invocable: false
       company: google

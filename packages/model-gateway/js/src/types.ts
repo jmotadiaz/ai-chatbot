@@ -118,6 +118,7 @@ export interface ChatStep {
 export interface ChatReply {
   steps: ChatStep[];
   json?: unknown;
+  images?: unknown[];
   model?: string;
 }
 

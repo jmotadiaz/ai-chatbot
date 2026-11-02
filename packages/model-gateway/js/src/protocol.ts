@@ -246,6 +246,7 @@ function completionBody(reply: ChatReply, model: string | undefined): unknown {
         message: {
           role: "assistant",
           content: reply.json ?? derivedContent(reply.steps),
+          ...(reply.images !== undefined ? { images: reply.images } : {}),
         },
         finish_reason: "stop",
       },

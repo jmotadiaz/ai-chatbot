@@ -224,6 +224,32 @@ describe("gateway-image-model response interpretation (image-default)", () => {
     expect(result.content).toEqual([{ type: "text", text: "text only" }]);
   });
 
+  it("accepts images delivered in choices[0].message.images (LiteLLM/Gemini response format)", async () => {
+    await installScenario({
+      steps: [],
+      json: null,
+      images: [
+        {
+          type: "image_url",
+          index: 0,
+          image_url: {
+            url: `data:${IMAGE_MEDIA_TYPE};base64,${MOCK_IMAGE_PNG_BASE64}`,
+          },
+        },
+      ],
+    });
+
+    const result = await createGatewayImageModel().doGenerate(
+      options([{ role: "user", content: [{ type: "text", text: "Brighten it" }] }]),
+    );
+
+    expect(result.content).toEqual([
+      { type: "file", mediaType: IMAGE_MEDIA_TYPE, data: MOCK_IMAGE_PNG_BASE64 },
+    ]);
+    expect(result.finishReason).toEqual({ unified: "stop", raw: "stop" });
+    expect(result.warnings).toEqual([]);
+  });
+
   it("skips an image_url that is not a data: URL and reports it as a warning", async () => {
     await installScenario(
       scriptedReply([

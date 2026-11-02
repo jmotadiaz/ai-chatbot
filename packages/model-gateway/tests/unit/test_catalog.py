@@ -266,6 +266,11 @@ def test_gemini_models_route_through_the_expected_provider(config):
     assert flash["model"] == "gemini/gemini-3.5-flash-lite"
     assert flash["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
     assert "api_base" not in flash
+    # image-default: Gemini 3.1 Flash Lite Image via Google Generative AI API:
+    image = params["image-default"]
+    assert image["model"] == "gemini/gemini-3.1-flash-lite-image"
+    assert image["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
+    assert "api_base" not in image
     # The picker entry Gemini 3.8 Flash uses Vercel AI Gateway:
     picker = params["Gemini 3.8 Flash"]
     assert picker["model"] == "openai/google/gemini-3.8-flash"

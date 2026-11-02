@@ -96,6 +96,29 @@ describe("generateImages over the Gateway HTTP seam", () => {
     });
   });
 
+  it("turns an image part delivered under choices[0].message.images into a GeneratedFile", async () => {
+    await useScenario({
+      steps: [],
+      json: null,
+      images: [
+        {
+          type: "image_url",
+          index: 0,
+          image_url: {
+            url: `data:${IMAGE_MEDIA_TYPE};base64,${MOCK_IMAGE_PNG_BASE64}`,
+          },
+        },
+      ],
+    });
+
+    const files = await generateImages(editionMessage);
+
+    expect(files).toHaveLength(1);
+    const [file] = files;
+    expect(file!.mediaType).toBe(IMAGE_MEDIA_TYPE);
+    expect(file!.base64).toBe(MOCK_IMAGE_PNG_BASE64);
+  });
+
   it("returns no files when the reply carries no image part", async () => {
     await useScenario(textReply("I could not edit that image."));
 

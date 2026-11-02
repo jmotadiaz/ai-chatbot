@@ -48,7 +48,10 @@ interface GatewayImagePart {
 
 interface GatewayImageResponse {
   choices?: Array<{
-    message?: { content?: string | GatewayImagePart[] };
+    message?: {
+      content?: string | GatewayImagePart[] | null;
+      images?: GatewayImagePart[];
+    };
     finish_reason?: string;
   }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number };
@@ -139,12 +142,15 @@ function mapFinishReason(raw: string | undefined): { unified: "stop" | "length" 
 function mapResponse(response: GatewayImageResponse): LanguageModelV3GenerateResult {
   const choice = response.choices?.[0];
   const content = choice?.message?.content;
+  const images = choice?.message?.images;
   const parts: LanguageModelV3Content[] = [];
   const warnings: LanguageModelV3GenerateResult["warnings"] = [];
 
   const textOrParts =
     typeof content === "string" ? [{ type: "text", text: content }] : (content ?? []);
-  for (const part of textOrParts) {
+  const allParts = images && images.length > 0 ? [...textOrParts, ...images] : textOrParts;
+
+  for (const part of allParts) {
     if (part.type === "text" && part.text) {
       parts.push({ type: "text", text: part.text });
     } else if (part.type === "image_url" && part.image_url?.url) {

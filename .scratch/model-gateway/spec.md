@@ -88,7 +88,7 @@ En `config.yaml` se migran únicamente los **14 modelos `user_invocable: true` a
 | `vision-default` | `compactionMultimedia` | **MiMo V2.6 Flash** (`mimo-v2.6-flash`, soporta `img` + `pdf`) | OpenCode Go (`OPENCODE_API_KEY`) |
 | `reasoning-default` | `metaPromptRefiner`, `compactionText` | **Deepseek v4.1 Flash** (`deepseek-v4.1-flash`, reasoning `max`, ZDR) | OpenCode Go (`OPENCODE_API_KEY`) |
 | `free-default` | Suites de `evals`, pruebas de humo con LLM real | **Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b:free`) | OpenRouter (`OPENROUTER_API_KEY`) |
-| `image-default` | `imageEdit` (`responseModalities: ["IMAGE"]`) | **Nano Banana** (`google/gemini-2.5-flash-image`) | OpenRouter (`OPENROUTER_API_KEY`) |
+| `image-default` | `imageEdit` (`modalities: ["image", "text"]`) | **Gemini 3.1 Flash Lite Image** (`gemini/gemini-3.1-flash-lite-image`) | Google Generative AI (`GOOGLE_GENERATIVE_AI_API_KEY`) |
 | `embedding-default` | `embed` en RAG y memoria (768 dimensiones + `taskType`) | **Gemini Embedding 001** (`gemini-embedding-001`) | Google (`GOOGLE_GENERATIVE_AI_API_KEY`) |
 | `rerank-default` | `rerank` en Hybrid Search RAG | **Cohere Rerank v4 Pro** (`rerank-v4.0-pro`) | Cohere (`COHERE_API_KEY`) |
 | `decision-default` | `decide` en `chatModeRouter` y `englishHelper` | **Jev 1.13** (`typesafe/jev-1.13`) | OpenRouter (`OPENROUTER_API_KEY`) |
