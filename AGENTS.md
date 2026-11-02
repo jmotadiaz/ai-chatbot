@@ -191,6 +191,16 @@ chatbot ──→ coding-agent
 The Model Gateway is independent of the Node workspace at runtime; its production
 interface is HTTP. Its JS toolkit is consumed only as a test dependency.
 
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **CLI**: `codegraph explore "<symbol names or question>"` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->
+
 ## Agent skills
 
 ### Issue tracker
