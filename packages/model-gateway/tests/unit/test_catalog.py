@@ -278,8 +278,9 @@ def test_gemini_38_flash_is_selectable_and_keeps_the_default_contract_hidden(con
     assert flash["reasoning"] is True
     assert "img" in flash["supportedFiles"] and "pdf" in flash["supportedFiles"]
     assert flash["supportedOutput"] == ["text"]
-    # Same upstream as the internal contract, but ZDR is preserved either way.
-    assert flash["zeroDataRetention"] is True
+    # Google AI Studio is not zero-retention: the picker must disclose it, as
+    # it does for the other two AI Studio entries (Argon, flash-default).
+    assert flash["zeroDataRetention"] is False
     # The contract itself stays out of the user catalog.
     assert "flash-default" not in {m["id"] for m in catalog["models"]}
 
@@ -303,10 +304,11 @@ def test_gemini_models_route_through_the_expected_provider(config):
     assert image["model"] == "gemini/gemini-3.1-flash-lite-image"
     assert image["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
     assert "api_base" not in image
-    # The picker entry Gemini 3.8 Flash uses Vercel AI Gateway:
+    # The picker entry Gemini 3.8 Flash also goes to Google AI Studio:
     picker = params["Gemini 3.8 Flash"]
-    assert picker["model"] == "openai/google/gemini-3.8-flash"
-    assert picker["api_base"] == "https://ai-gateway.vercel.sh/v1"
+    assert picker["model"] == "gemini/gemini-3.8-flash"
+    assert picker["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
+    assert "api_base" not in picker
     flash_entry = next(
         m for m in build_catalog(copy.deepcopy(config), include_internal=True)["models"]
         if m["id"] == "flash-default"
