@@ -285,6 +285,38 @@ def test_gemini_38_flash_is_selectable_and_keeps_the_default_contract_hidden(con
     assert "flash-default" not in {m["id"] for m in catalog["models"]}
 
 
+def test_fast_default_routes_through_openrouter_with_zdr(config):
+    params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
+    fast = params["fast-default"]
+    assert fast["model"] == "openrouter/openai/gpt-oss-20b"
+    assert fast["api_key"] == "os.environ/OPENROUTER_API_KEY"
+    # `openrouter/` resolves the OpenRouter base URL: no api_base to drift.
+    assert "api_base" not in fast
+    # The ZDR claim is enforced in the request, not just declared in model_info.
+    assert fast["extra_body"]["provider"]["zdr"] is True
+    # The Vercel/Groq routing hint cannot survive a ZDR filter.
+    assert "order" not in fast["extra_body"]
+    assert "order" not in fast["extra_body"]["provider"]
+
+
+def test_openrouter_zdr_claims_are_enforced_in_the_request(config):
+    # Invariant: any model served by OpenRouter that declares
+    # `zero_data_retention: true` (the picker renders it as a shield) MUST send
+    # `extra_body.provider.zdr: true`, the only lever that forces routing to
+    # ZDR endpoints. A hand-written flag without the filter would be a lie.
+    openrouter = [
+        m for m in config["model_list"]
+        if str(m["litellm_params"]["model"]).startswith("openrouter/")
+    ]
+    assert openrouter, "expected at least one OpenRouter model"
+    for model in openrouter:
+        name = model["model_name"]
+        claims_zdr = bool((model.get("model_info") or {}).get("zero_data_retention"))
+        provider = ((model["litellm_params"].get("extra_body") or {}).get("provider") or {})
+        if claims_zdr:
+            assert provider.get("zdr") is True, f"{name}: ZDR claimed without provider.zdr"
+
+
 def test_gemini_models_route_through_the_expected_provider(config):
     params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
     # Gemini 4 Argon moved to Google AI Studio: the `gemini/` provider with the
@@ -294,7 +326,9 @@ def test_gemini_models_route_through_the_expected_provider(config):
     assert argon["model"] == "gemini/gemini-4-argon"
     assert argon["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
     assert "api_base" not in argon
-    # flash-default: Gemini 3.5 Flash Lite via Google Generative AI API:
+    # flash-default stays on Google AI Studio: the English flow already sends
+    # its text to `decision-default` (Jev, OpenRouter, no ZDR), so demanding ZDR
+    # on this contract would buy nothing.
     flash = params["flash-default"]
     assert flash["model"] == "gemini/gemini-3.5-flash-lite"
     assert flash["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"

@@ -528,14 +528,20 @@ model_list:
   # Stable names used by internal features (they do not come out of the user
   # catalog unless ?include_internal=true).
 
-  # fast-default — GPT OSS Mini via Vercel AI Gateway, routed to groq, ZDR.
+  # fast-default — GPT OSS Mini via OpenRouter, ZDR enforced per request.
+  # `provider.zdr: true` routes ONLY to zero-retention endpoints and fails
+  # closed if none serves the model (it can tighten, never relax, the
+  # account-wide ZDR setting). This is what justifies
+  # `zero_data_retention: true`: without the flag the claim would be a comment.
+  # The Vercel `order: [groq]` hint is gone with the provider: it cannot be
+  # combined with a ZDR filter, and latency is now whatever ZDR endpoints offer.
   - model_name: fast-default
     litellm_params:
-      model: openai/openai/gpt-oss-20b
-      api_base: https://ai-gateway.vercel.sh/v1
-      api_key: os.environ/AI_GATEWAY_API_KEY
+      model: openrouter/openai/gpt-oss-20b
+      api_key: os.environ/OPENROUTER_API_KEY
       extra_body:
-        order: [groq]
+        provider:
+          zdr: true
     model_info:
       user_invocable: false
       company: openai
