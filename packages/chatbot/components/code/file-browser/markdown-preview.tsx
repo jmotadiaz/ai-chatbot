@@ -1,15 +1,10 @@
 "use client";
 
 import {
-  Children,
-  createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
-  type ComponentPropsWithoutRef,
   type KeyboardEvent,
-  type MouseEvent,
   type ReactNode,
 } from "react";
 import { useTheme } from "next-themes";
@@ -20,6 +15,12 @@ import {
   CodingAgentMarkdownAnchor,
   NoteLinkOriginProvider,
 } from "../coding-agent-markdown-anchor";
+import {
+  CommentableListItem,
+  CommentableTableRow,
+  LineCommentsContext,
+  type MarkdownBlockKind,
+} from "../line-comments";
 import { CodeViewLine } from "./code-view-line";
 import type { LineRange } from "./types";
 import { Response } from "@/components/chat/response";
@@ -35,7 +36,7 @@ const FENCE = /^\s*(?:```|~~~)/;
 /** Shared empty map, so an unhighlighted render keeps a stable identity. */
 const NO_TOKENS: Map<number, ThemedToken[]> = new Map();
 
-export type MarkdownBlockKind = "code" | "table" | "list" | "other";
+export type { MarkdownBlockKind } from "../line-comments";
 
 interface MarkdownBlock {
   content: string;
@@ -155,159 +156,7 @@ function useCodeBlockTokens(
   return tokens;
 }
 
-interface LineComments {
-  /** Source line the surrounding block starts on. */
-  blockLine: number;
-  /** Kind of the surrounding block (lists/tables own their composer inline). */
-  blockKind: MarkdownBlockKind;
-  commentsByLine: Map<number, unknown>;
-  selectedLine: number | null;
-  onSelectLine: (line: number) => void;
-  renderComposer: (line: number) => ReactNode;
-}
 
-/**
- * Streamdown memoizes its built-in elements on className and mdast position
- * only — a comparator that ignores `children` — so an override that closed
- * over the selection would never see it change. Context crosses that memo
- * barrier; prop drilling does not.
- */
-const LineCommentsContext = createContext<LineComments | null>(null);
-
-/** Elements that own their click, so selecting a line must not steal it. */
-const INTERACTIVE = "a, button, input, textarea, select";
-
-interface MarkdownNodeProps {
-  node?: { position?: { start?: { line?: number } } | null } | null;
-}
-
-interface LineAnchor {
-  line: number;
-  className: string;
-  props: {
-    "data-line-number": number;
-    tabIndex: number;
-    "aria-label": string;
-    onClick: (event: MouseEvent<HTMLElement>) => void;
-    onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
-  };
-}
-
-/**
- * Anchors a rendered element to the source line it came from. Both GFM table
- * rows and list items start on exactly one line, so the element's offset
- * within the block is all that's needed.
- */
-function useLineAnchor(node: MarkdownNodeProps["node"]): LineAnchor | null {
-  const comments = useContext(LineCommentsContext);
-  const offset = node?.position?.start?.line;
-  if (!comments || offset === undefined) return null;
-
-  const line = comments.blockLine + offset - 1;
-  const select = () => comments.onSelectLine(line);
-
-  return {
-    line,
-    className: cn(
-      "cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
-      comments.commentsByLine.has(line) && "bg-amber-500/10",
-      comments.selectedLine === line && "bg-blue-500/10",
-    ),
-    props: {
-      "data-line-number": line,
-      tabIndex: 0,
-      "aria-label": `Comment on line ${line}`,
-      onClick: (event) => {
-        if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
-        // Without this the enclosing block would select its own first line,
-        // and a nested list item would select its parent's.
-        event.stopPropagation();
-        select();
-      },
-      onKeyDown: (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        event.stopPropagation();
-        select();
-      },
-    },
-  };
-}
-
-/**
- * The source line whose composer an `<li>`/`<tr>` owns inline, if any. Lists
- * and tables render the composer directly under the selected item/row, so a
- * mid-block selection never falls through to the end of the `<ul>`/`<table>`.
- * When the item/row sits on the first line of any other block (e.g. a quote
- * opening with a list), the block-end composer owns that line instead, so
- * this defers to it and the composer never appears twice.
- */
-function inlineComposerLine(
-  comments: LineComments | null,
-  anchor: LineAnchor | null,
-): number | null {
-  if (!comments || !anchor || comments.selectedLine !== anchor.line) {
-    return null;
-  }
-  if (comments.blockKind === "other" && anchor.line === comments.blockLine) {
-    return null;
-  }
-  return anchor.line;
-}
-
-const CommentableTableRow: React.FC<
-  ComponentPropsWithoutRef<"tr"> & MarkdownNodeProps
-> = ({ children, className, node, ...rest }) => {
-  const comments = useContext(LineCommentsContext);
-  const anchor = useLineAnchor(node);
-  const base = cn("border-border border-b", className);
-  const inlineLine = inlineComposerLine(comments, anchor);
-  const colSpan = Math.max(Children.count(children), 1);
-
-  return (
-    <>
-      <tr className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
-        {children}
-      </tr>
-      {inlineLine !== null && comments !== null && (
-        <tr
-          data-line-composer={inlineLine}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <td colSpan={colSpan} className="border-0 p-0">
-            {comments.renderComposer(inlineLine)}
-          </td>
-        </tr>
-      )}
-    </>
-  );
-};
-
-const CommentableListItem: React.FC<
-  ComponentPropsWithoutRef<"li"> & MarkdownNodeProps
-> = ({ children, className, node, ...rest }) => {
-  const comments = useContext(LineCommentsContext);
-  const anchor = useLineAnchor(node);
-  const base = cn("py-1 [&>p]:inline", className);
-  const inlineLine = inlineComposerLine(comments, anchor);
-
-  return (
-    <>
-      <li className={cn(base, anchor?.className)} {...anchor?.props} {...rest}>
-        {children}
-      </li>
-      {inlineLine !== null && comments !== null && (
-        <li
-          data-line-composer={inlineLine}
-          className="list-none p-0 [&::marker]:content-none"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {comments.renderComposer(inlineLine)}
-        </li>
-      )}
-    </>
-  );
-};
 
 const MARKDOWN_COMPONENTS = {
   a: CodingAgentMarkdownAnchor,

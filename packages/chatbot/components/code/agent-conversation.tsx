@@ -4,11 +4,16 @@ import * as React from "react";
 import { CodeXml } from "lucide-react";
 import { AgentMessage } from "./agent-message";
 import { TurnFilesChanged } from "./turn-files-changed";
+import {
+  isResponseComment,
+  type PendingComment,
+} from "./file-browser/types";
 import { ChatNavigation } from "@/components/chat/navigation";
 import type { AgentStatus } from "@/lib/features/code/hooks/use-coding-agent";
 import { DotsLoadingIcon } from "@/components/ui/icons";
 import type { AgentItem } from "@/lib/features/code/types";
 import type { TurnFilesMap } from "@/lib/features/code/turn-files";
+import { responseCommentTargets } from "@/lib/features/code/response-comments";
 import { useAgentConversationScroll } from "@/lib/features/code/hooks/use-agent-conversation-scroll";
 import {
   ConversationBody,
@@ -27,6 +32,8 @@ export interface AgentConversationProps {
    * disappears in the same tick the real user message is delivered.
    */
   steeringPending?: string | null;
+  /** Supplied by the main session composer; subagent views stay read-only. */
+  pendingComments?: PendingComment[];
 }
 
 /**
@@ -67,7 +74,19 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
   status,
   turnFiles,
   steeringPending,
+  pendingComments,
 }) => {
+  const responseTargets = React.useMemo(
+    () =>
+      pendingComments
+        ? responseCommentTargets(items, isRunning)
+        : new Map<string, { turnNumber: number }>(),
+    [items, isRunning, pendingComments],
+  );
+  const responseComments = React.useMemo(
+    () => pendingComments?.filter(isResponseComment),
+    [pendingComments],
+  );
   const {
     scrollContainerRef,
     showTop,
@@ -111,6 +130,12 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
                       message={item.message}
                       toolGroups={item.toolGroups}
                       isStreaming={isItemStreaming}
+                      responseTurnNumber={
+                        responseTargets.get(item.message.id)?.turnNumber
+                      }
+                      responseComments={responseComments?.filter(
+                        (comment) => comment.messageId === item.message.id,
+                      )}
                     />
                     {changedFiles && <TurnFilesChanged files={changedFiles} />}
                   </React.Fragment>

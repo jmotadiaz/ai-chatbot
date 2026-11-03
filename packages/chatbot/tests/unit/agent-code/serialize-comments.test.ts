@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { serializeComments } from "@/components/code/file-browser/serialize-comments";
-import type { PendingComment } from "@/components/code/file-browser/types";
+import type {
+  FilePendingComment,
+  PendingComment,
+  ResponsePendingComment,
+} from "@/components/code/file-browser/types";
 
-function comment(overrides: Partial<PendingComment>): PendingComment {
+function comment(overrides: Partial<FilePendingComment> = {}): PendingComment {
   return {
     id: "c1",
     file: "src/lib/auth.ts",
@@ -10,6 +14,23 @@ function comment(overrides: Partial<PendingComment>): PendingComment {
     endLine: 42,
     lineText: "const token = getToken();",
     text: "valida que no esté vacío",
+    createdAt: 0,
+    ...overrides,
+  };
+}
+
+function responseComment(
+  overrides: Partial<ResponsePendingComment> = {},
+): ResponsePendingComment {
+  return {
+    id: "rc1",
+    kind: "response",
+    messageId: "a-1",
+    turnNumber: 2,
+    startLine: 10,
+    endLine: 12,
+    lineText: "const a = 1;\nconst b = 2;\nconst c = 3;",
+    text: "revisa este bloque",
     createdAt: 0,
     ...overrides,
   };
@@ -57,5 +78,40 @@ describe("serializeComments", () => {
       comment({ lineText: "const s = `tpl`;" }),
     ]);
     expect(result).toContain("`const s = tpl;`");
+  });
+
+  it("serializes response comments with turn, lines, message id, and indented full source", () => {
+    const result = serializeComments("sigue con esto", [
+      responseComment({
+        turnNumber: 2,
+        messageId: "a-42",
+        startLine: 15,
+        endLine: 16,
+        lineText: "const x = 10;\nconst y = 20;",
+        text: "renombra x a count",
+      }),
+    ]);
+
+    expect(result).toBe(
+      "sigue con esto\n\n---\n" +
+        "Response comments:\n\n" +
+        "### Response 2\n" +
+        "- Lines 15-16\n" +
+        "  Message ID: a-42\n" +
+        "  Source:\n" +
+        "    const x = 10;\n" +
+        "    const y = 20;\n" +
+        "  Comment: renombra x a count",
+    );
+  });
+
+  it("combines both file review comments and response comments in separate sections", () => {
+    const result = serializeComments("", [
+      comment({ file: "src/a.ts", startLine: 5, endLine: 5, text: "revisa file" }),
+      responseComment({ turnNumber: 1, messageId: "a-1", startLine: 1, endLine: 1, text: "revisa response" }),
+    ]);
+
+    expect(result).toContain("Code review comments:\n\n### src/a.ts");
+    expect(result).toContain("Response comments:\n\n### Response 1");
   });
 });

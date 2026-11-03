@@ -100,6 +100,7 @@ export const FileBrowserView: React.FC = () => {
   const commentCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const comment of state.pendingComments) {
+      if (comment.kind === "response") continue;
       counts.set(comment.file, (counts.get(comment.file) ?? 0) + 1);
     }
     return counts;

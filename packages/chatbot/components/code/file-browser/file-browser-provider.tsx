@@ -7,7 +7,12 @@ import {
   useMemo,
   useSyncExternalStore,
 } from "react";
-import type { FileBrowserScope, FileBrowserState, PendingComment } from "./types";
+import {
+  isResponseComment,
+  type FileBrowserScope,
+  type FileBrowserState,
+  type PendingComment,
+} from "./types";
 import type { FileBrowserInitialLocation } from "@/lib/features/code/file-browser/file-links";
 
 const INITIAL_STATE: FileBrowserState = {
@@ -53,6 +58,23 @@ function loadComments(sessionId: string): PendingComment[] {
   } catch {
     return [];
   }
+}
+
+function sameAnchor(a: PendingComment, b: PendingComment): boolean {
+  if (isResponseComment(a) || isResponseComment(b)) {
+    return (
+      isResponseComment(a) &&
+      isResponseComment(b) &&
+      a.messageId === b.messageId &&
+      a.startLine === b.startLine &&
+      a.endLine === b.endLine
+    );
+  }
+  return (
+    a.file === b.file &&
+    a.startLine === b.startLine &&
+    a.endLine === b.endLine
+  );
 }
 
 function persistComments(sessionId: string, comments: PendingComment[]): void {
@@ -142,11 +164,13 @@ export function createFileBrowserStore(
       set(next);
     },
     upsertComment(comment) {
-      const existing = state.pendingComments.some((c) => c.id === comment.id);
+      const matches = (candidate: PendingComment) =>
+        candidate.id === comment.id || sameAnchor(candidate, comment);
+      const existing = state.pendingComments.some(matches);
       setComments(
         existing
-          ? state.pendingComments.map((c) =>
-              c.id === comment.id ? comment : c,
+          ? state.pendingComments.map((candidate) =>
+              matches(candidate) ? comment : candidate,
             )
           : [...state.pendingComments, comment],
       );

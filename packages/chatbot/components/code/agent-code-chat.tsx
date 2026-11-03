@@ -22,6 +22,7 @@ import { useCodingAgentPrompts } from "@/lib/features/code/hooks/use-coding-agen
 import type { PromptSummary } from "@/lib/features/code/worker-client";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
 import { prependSkillCommands } from "@/lib/features/code/skill-commands";
+import { findOrphanedResponseComment } from "@/lib/features/code/response-comments";
 import { handleLocalFileUpload } from "@/lib/features/attachment/utils";
 import type { FilePart } from "@/lib/features/attachment/types";
 import {
@@ -192,6 +193,13 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const orphanedComment = findOrphanedResponseComment(items, pendingComments);
+    if (orphanedComment) {
+      setAttachmentError(
+        `Response ${orphanedComment.turnNumber} is no longer available. Remove its orphaned comment before sending.`,
+      );
+      return;
+    }
     const message = prependSkillCommands(
       serializeComments(input, pendingComments),
       selectedSkills,
@@ -320,6 +328,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         status={status}
         turnFiles={turnFiles}
         steeringPending={steeringPending}
+        pendingComments={pendingComments}
       />
       {(error || attachmentError) && (
         <div role="alert" className="text-xs text-red-600 px-4 py-1">

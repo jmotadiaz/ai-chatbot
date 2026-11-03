@@ -215,6 +215,10 @@ _Avoid_: explorer, file explorer
 Markdown link `file:ruta` that the Coding Agent emits to point at a file in the Repository; the File Browser turns it into navigation.
 _Avoid_: file link, file reference
 
+**Response Comment**:
+A user annotation anchored to a block or line of the final assistant Message of a completed Turn, collected for a subsequent user instruction.
+_Avoid_: reply comment, message annotation
+
 **Note Link**:
 Markdown link relative to an `.md` file in the Repository (e.g. `[X](<../personas/Chus.md>)`), resolved against the directory of the file that contains it; the File Browser turns it into navigation. `[[...]]` wikilinks are not Note Links.
 _Avoid_: wikilink, relative link (bare)

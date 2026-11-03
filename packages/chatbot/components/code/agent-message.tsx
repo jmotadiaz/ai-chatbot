@@ -5,6 +5,7 @@ import { memo } from "react";
 import type { Message } from "@ag-ui/client";
 import { ToolCallGroup } from "./tool-call-group";
 import { AgentResponse } from "./agent-response";
+import type { ResponsePendingComment } from "./file-browser/types";
 import { ReasoningBlock } from "@/components/chat/reasoning";
 import { UserMessage } from "@/components/chat/user-message";
 import { contentToDisplay } from "@/lib/features/code/attachments";
@@ -15,6 +16,8 @@ export interface AgentMessageProps {
   message: Message;
   toolGroups?: Group[];
   isStreaming?: boolean;
+  responseTurnNumber?: number;
+  responseComments?: ResponsePendingComment[];
 }
 
 const ToolResultBlock: React.FC<{ content: string }> = ({ content }) => (
@@ -28,8 +31,36 @@ const ToolResultBlock: React.FC<{ content: string }> = ({ content }) => (
   </details>
 );
 
+function responseCommentsEqual(
+  previous: ResponsePendingComment[] | undefined,
+  next: ResponsePendingComment[] | undefined,
+): boolean {
+  if (previous === next) return true;
+  if (!previous || !next || previous.length !== next.length) return false;
+  return previous.every((comment, index) => {
+    const other = next[index];
+    return (
+      comment.id === other?.id &&
+      comment.messageId === other.messageId &&
+      comment.turnNumber === other.turnNumber &&
+      comment.startLine === other.startLine &&
+      comment.endLine === other.endLine &&
+      comment.lineText === other.lineText &&
+      comment.text === other.text &&
+      comment.createdAt === other.createdAt
+    );
+  });
+}
+
 const areEqual = (prevProps: AgentMessageProps, nextProps: AgentMessageProps) => {
-  if (prevProps.isStreaming !== nextProps.isStreaming) {
+  if (
+    prevProps.isStreaming !== nextProps.isStreaming ||
+    prevProps.responseTurnNumber !== nextProps.responseTurnNumber ||
+    !responseCommentsEqual(
+      prevProps.responseComments,
+      nextProps.responseComments,
+    )
+  ) {
     return false;
   }
 
@@ -80,7 +111,13 @@ const areEqual = (prevProps: AgentMessageProps, nextProps: AgentMessageProps) =>
 };
 
 export const AgentMessage: React.FC<AgentMessageProps> = memo(
-  ({ message, toolGroups, isStreaming }) => {
+  ({
+    message,
+    toolGroups,
+    isStreaming,
+    responseTurnNumber,
+    responseComments,
+  }) => {
     if (message.role === "user") {
       const { text, files } = contentToDisplay(message.content);
       const parsed = parseLeadingSkillCommands(text);
@@ -128,7 +165,15 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
             ))}
             {text && (
               <div className="max-w-full">
-                <AgentResponse>{text}</AgentResponse>
+                <AgentResponse
+                  messageId={
+                    responseTurnNumber === undefined ? undefined : message.id
+                  }
+                  turnNumber={responseTurnNumber}
+                  responseComments={responseComments}
+                >
+                  {text}
+                </AgentResponse>
               </div>
             )}
           </div>

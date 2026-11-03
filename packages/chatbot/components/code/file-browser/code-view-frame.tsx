@@ -9,7 +9,6 @@ import {
   FileQuestion,
   FileX,
   Send,
-  Trash2,
   X,
 } from "lucide-react";
 import type { ThemedToken } from "shiki";
@@ -18,7 +17,8 @@ import { CodeViewLine } from "./code-view-line";
 import { FileBrowserEmptyState } from "./empty-states";
 import { useFileBrowser } from "./file-browser-provider";
 import { MarkdownPreview } from "./markdown-preview";
-import type { DiffLineKind, PendingComment } from "./types";
+import { CommentComposer } from "./comment-composer";
+import { isResponseComment, type DiffLineKind, type PendingComment } from "./types";
 import { cn } from "@/lib/utils/helpers";
 import { Button } from "@/components/ui/button";
 
@@ -44,67 +44,6 @@ type ViewMode = "raw" | "rendered";
 function isMarkdownPath(path: string): boolean {
   return /\.(?:md|markdown)$/i.test(path);
 }
-
-interface CommentComposerProps {
-  lineNumber: number;
-  existing?: PendingComment;
-  onSave: (text: string) => void;
-  onRemove: () => void;
-  onCancel: () => void;
-}
-
-const CommentComposer: React.FC<CommentComposerProps> = ({
-  lineNumber,
-  existing,
-  onSave,
-  onRemove,
-  onCancel,
-}) => {
-  const [text, setText] = useState(existing?.text ?? "");
-  return (
-    <div
-      className="sticky left-0 w-full max-w-[100dvw] border-y border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-3"
-      onClick={(event) => event.stopPropagation()}
-      onKeyDown={(event) => event.stopPropagation()}
-    >
-      <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-        Comment on line {lineNumber}
-      </p>
-      <textarea
-        autoFocus
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Leave a comment…"
-        rows={2}
-        className="w-full resize-none rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 p-2 text-sm outline-none focus:border-zinc-500"
-      />
-      <div className="mt-2 flex items-center justify-end gap-2">
-        {existing && (
-          <Button
-            variant="icon"
-            size="icon"
-            type="button"
-            aria-label="Delete comment"
-            onClick={onRemove}
-          >
-            <Trash2 size={16} className="text-red-500" />
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" type="button" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          type="button"
-          disabled={!text.trim()}
-          onClick={() => onSave(text.trim())}
-        >
-          {existing ? "Update" : "Comment"}
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 export interface CodeViewFrameProps {
   path: string;
@@ -162,7 +101,9 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
   const commentsByLine = useMemo(() => {
     const map = new Map<number, PendingComment>();
     for (const comment of state.pendingComments) {
-      if (comment.file === path) map.set(comment.startLine, comment);
+      if (!isResponseComment(comment) && comment.file === path) {
+        map.set(comment.startLine, comment);
+      }
     }
     return map;
   }, [state.pendingComments, path]);

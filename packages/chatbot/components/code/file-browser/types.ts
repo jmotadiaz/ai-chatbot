@@ -61,12 +61,31 @@ export interface FileBrowserState {
   pendingComments: PendingComment[]; // survives closing the overlay and switching scope
 }
 
-export interface PendingComment {
+interface PendingCommentBase {
   id: string;
-  file: string; // POSIX relative path from project root
   startLine: number;
-  endLine: number; // v1: single line (startLine === endLine)
-  lineText: string; // snapshot of the commented line for context
+  endLine: number; // 1-indexed, inclusive
+  lineText: string; // Source snapshot for context
   text: string;
   createdAt: number;
+}
+
+export interface FilePendingComment extends PendingCommentBase {
+  /** Older stored comments have no kind and remain file comments. */
+  kind?: "file";
+  file: string; // POSIX relative path from project root
+}
+
+export interface ResponsePendingComment extends PendingCommentBase {
+  kind: "response";
+  messageId: string;
+  turnNumber: number;
+}
+
+export type PendingComment = FilePendingComment | ResponsePendingComment;
+
+export function isResponseComment(
+  comment: PendingComment,
+): comment is ResponsePendingComment {
+  return comment.kind === "response";
 }
