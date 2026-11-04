@@ -549,14 +549,16 @@ model_list:
       supported_output: [text]
       zero_data_retention: true
 
-  # flash-default — Gemini 3.5 Flash Lite via Google AI Studio (Google Generative AI key).
+  # flash-default — Beam Free via OpenCode Go with minimum reasoning (low).
   - model_name: flash-default
     litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GOOGLE_GENERATIVE_AI_API_KEY
+      model: openai/beam-free
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_API_KEY
+      reasoning_effort: "low"
     model_info:
       user_invocable: false
-      company: google
+      company: reflection
       reasoning: true
       supported_output: [text]
       zero_data_retention: false
@@ -640,16 +642,19 @@ model_list:
       company: cohere
       zero_data_retention: false
 
-  # decision-default — Jev 1.13 via OpenRouter; served by LiteLLM's native
-  # /v1/decisions and /v1/systemone routes (no manual passthrough).
+  # decision-default — Microsoft-Decision-1 via OpenRouter, ZDR enforced.
+  # Served by LiteLLM's native /v1/decisions and /v1/systemone routes.
   - model_name: decision-default
     litellm_params:
-      model: openrouter/typesafe/jev-1.13
+      model: openrouter/microsoft/microsoft-decision-1
       api_key: os.environ/OPENROUTER_API_KEY
+      extra_body:
+        provider:
+          zdr: true
     model_info:
       user_invocable: false
-      company: typesafe
-      zero_data_retention: false
+      company: microsoft
+      zero_data_retention: true
 
   # tts-default — GPT-4o Mini TTS via OpenAI (POST /v1/audio/speech).
   - model_name: tts-default

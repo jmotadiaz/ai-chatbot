@@ -326,13 +326,6 @@ def test_gemini_models_route_through_the_expected_provider(config):
     assert argon["model"] == "gemini/gemini-4-argon"
     assert argon["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
     assert "api_base" not in argon
-    # flash-default stays on Google AI Studio: the English flow already sends
-    # its text to `decision-default` (Jev, OpenRouter, no ZDR), so demanding ZDR
-    # on this contract would buy nothing.
-    flash = params["flash-default"]
-    assert flash["model"] == "gemini/gemini-3.5-flash-lite"
-    assert flash["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
-    assert "api_base" not in flash
     # image-default: Gemini 3.1 Flash Lite Image via Google Generative AI API:
     image = params["image-default"]
     assert image["model"] == "gemini/gemini-3.1-flash-lite-image"
@@ -343,11 +336,35 @@ def test_gemini_models_route_through_the_expected_provider(config):
     assert picker["model"] == "gemini/gemini-3.8-flash"
     assert picker["api_key"] == "os.environ/GOOGLE_GENERATIVE_AI_API_KEY"
     assert "api_base" not in picker
+
+
+def test_flash_default_routes_to_beam_free_with_minimum_reasoning(config):
+    params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
+    flash = params["flash-default"]
+    assert flash["model"] == "openai/beam-free"
+    assert flash["api_base"] == "https://opencode.ai/zen/go/v1"
+    assert flash["api_key"] == "os.environ/OPENCODE_API_KEY"
+    assert flash["reasoning_effort"] == "low"
     flash_entry = next(
         m for m in build_catalog(copy.deepcopy(config), include_internal=True)["models"]
         if m["id"] == "flash-default"
     )
     assert flash_entry["zeroDataRetention"] is False
+    assert flash_entry["company"] == "reflection"
+
+
+def test_decision_default_routes_through_openrouter_with_zdr(config):
+    params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
+    decision = params["decision-default"]
+    assert decision["model"] == "openrouter/microsoft/microsoft-decision-1"
+    assert decision["api_key"] == "os.environ/OPENROUTER_API_KEY"
+    assert decision["extra_body"]["provider"]["zdr"] is True
+    decision_entry = next(
+        m for m in build_catalog(copy.deepcopy(config), include_internal=True)["models"]
+        if m["id"] == "decision-default"
+    )
+    assert decision_entry["zeroDataRetention"] is True
+    assert decision_entry["company"] == "microsoft"
 
 
 # --- stable family/tier aliases (routing only) ----------------------------
