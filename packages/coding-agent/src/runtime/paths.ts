@@ -58,11 +58,10 @@ export function getCodingAgentDir(): string {
 }
 
 /**
- * Root of the artifacts the agent publishes for the user to read in a browser
- * (HTML reports, markdown digests, PDFs). Kept under the worker-owned `.pi/`
- * directory, which is gitignored: like the OS temp dir it was replacing, it
- * must never land in the repo, but unlike it, it has one known location the
- * `GET /artifacts` route can serve. See `src/artifacts.ts`.
+ * Root of the artifacts the agent publishes (`<root>/<project>/<name>/index.html`,
+ * see `src/artifacts/artifacts.ts`). Kept under the worker-owned `.pi/` directory,
+ * which is gitignored, so generated reports never land in the repo. The Chatbot
+ * reads this root to serve artifact views; the worker serves nothing over HTTP.
  */
 export function resolveArtifactsDir(
   cfg?: Pick<WorkerRuntimeConfig, "artifactsDir">,
@@ -104,38 +103,6 @@ export function resolveSessionsDir(
 
 export function getSessionsDir(): string {
   return resolveSessionsDir(getWorkerRuntimeConfig());
-}
-
-/**
- * Absolute base for artifact URLs. This is what the *user's browser* follows,
- * so it must be reachable from there, not from this process — hence the
- * explicit override, falling back to the worker URL the chatbot is already
- * configured with. No port guessing: the same value that makes `/rpc` work
- * makes `/artifacts` work.
- */
-export function resolveArtifactsBaseUrl(
-  cfg?: Pick<WorkerRuntimeConfig, "artifactsBaseUrl" | "workerPort">,
-): string {
-  const ambient = getWorkerRuntimeConfig();
-  const explicit = pickOverride(
-    cfg?.artifactsBaseUrl,
-    ambient.artifactsBaseUrl,
-    config.codingAgentArtifactsUrl(),
-  );
-  // `||`-style empties are handled by pickOverride: an empty value means unset.
-  if (explicit) return explicit.replace(/\/+$/, "");
-  // A DI-supplied port wins over the bundle's worker URL: a test that injects
-  // `workerPort` has no worker URL of its own and expects `localhost:<port>`.
-  const port = cfg?.workerPort ?? ambient.workerPort;
-  if (port !== undefined) return `http://localhost:${port}`;
-  const base =
-    config.codingAgentWorkerUrl() ||
-    `http://localhost:${config.codingAgentWorkerPort() ?? 3015}`;
-  return base.replace(/\/+$/, "");
-}
-
-export function getArtifactsBaseUrl(): string {
-  return resolveArtifactsBaseUrl(getWorkerRuntimeConfig());
 }
 
 /** Root of the per-project checkouts the sessions run in. */

@@ -1,74 +1,58 @@
-import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { copyFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Artifacts: reports and other generated documents the agent produces for the
- * human to read in a browser.
+ * Artifacts: standalone HTML documents the agent generates for the human to
+ * open, such as architecture reports or interactive prototypes.
  *
- * The skills that generate them (Matt Pocock's `improve-codebase-architecture`
- * and friends) were written for a laptop: they write a self-contained HTML file
- * to the OS temp directory and `xdg-open` it. The agent runs on a headless
- * host, so the file lands where nobody can see it and the open is a silent
- * no-op. Publishing moves a file from an unreachable path into one known root
- * (`getArtifactsDir()`) that the worker also serves read-only over
- * `GET /artifacts`, and hands back the URL to show the user.
+ * On-disk contract (spec `coding-agent-artifacts`, decision 2):
+ *
+ *   <artifactsDir>/<project>/<name>/index.html
+ *
+ * The agent publishes explicitly with `publish_artifact({ path, name })`.
+ * Re-publishing the same `name` overwrites the file in place, so the Chatbot
+ * URL stays stable. The Chatbot serves the file through its own authenticated
+ * route; the worker serves nothing over HTTP.
  *
  * Stateless by design: the Pi extension reaches this module through jiti, which
- * loads a second module instance (see `src/subagent-bridge.ts` for why that is
- * a hazard elsewhere in the worker). Nothing here caches anything in module
- * scope, so both copies behave identically.
+ * loads a second module instance. Nothing here caches anything in module scope,
+ * so both copies behave identically.
  */
 
-/** Types the viewer serves inline in the browser; anything else stays unpublished. */
-const CONTENT_TYPES: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".htm": "text/html; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-  ".pdf": "application/pdf",
-  ".md": "text/markdown; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-  ".log": "text/plain; charset=utf-8",
-  ".json": "application/json",
-  ".csv": "text/csv; charset=utf-8",
-};
+/** The only file a published artifact contains. */
+const INDEX_FILE = "index.html";
 
-/** A published artifact, as served and as listed in the index. */
+/** Extensions accepted as a single-file artifact source. */
+const HTML_EXTENSIONS = new Set([".html", ".htm"]);
+
+/** A published artifact, as listed and as returned to the agent. */
 export interface ArtifactRef {
-  /** Directory under the artifacts root; the project the artifact belongs to. */
+  /** Project grouping: `projectSlug(cwd)` at publish time. */
   project: string;
-  /** File name inside `project`. `project`/`name` is the artifact's URL identity. */
+  /** Artifact folder name: `project`/`name` is its identity on disk. */
   name: string;
-  /** Display label: the `<title>` of an HTML report, else the file name. */
+  /** Display label: the document's `<title>`, else the artifact name. */
   title: string;
-  url: string;
+  /** Chatbot-relative view path, see `artifactViewPath()`. */
+  path: string;
+  /** Absolute path of the published `index.html`. */
+  filePath: string;
   size: number;
-  /** File mtime in ms; what the index sorts by. */
+  /** File mtime in ms; what the listing sorts by. */
   updatedAt: number;
 }
 
 export interface PublishArtifactOptions {
-  /** File the agent just generated. Anywhere it likes — `/tmp` included. */
+  /** HTML file, or a directory containing `index.html`, that the agent generated. */
   sourcePath: string;
+  /** Artifact folder name. Must be a safe path segment (`isSafeSegment`). */
+  name: string;
   /** Artifacts root (`getArtifactsDir()`). */
   rootDir: string;
-  /** Browser-reachable base URL (`getArtifactsBaseUrl()`), no trailing slash. */
-  baseUrl: string;
+  /** Session that publishes; it becomes part of the returned view path. */
+  sessionId: string;
   /** Session working directory; decides the project grouping. */
   cwd?: string;
-  title?: string;
-}
-
-/** Content type served for an artifact name. */
-export function contentTypeFor(name: string): string | undefined {
-  return CONTENT_TYPES[path.extname(name).toLowerCase()];
 }
 
 /**
@@ -86,31 +70,19 @@ export function projectSlug(cwd: string = process.cwd()): string {
   return isSafeSegment(slug) ? slug : "default";
 }
 
-export function artifactUrl(baseUrl: string, project: string, name: string): string {
-  const base = baseUrl.replace(/\/+$/, "").replace(/^([^/]+)\/+$/, "$1");
-  return `${base}/artifacts/${encodeURIComponent(project)}/${encodeURIComponent(name)}`;
-}
-
 /**
- * File name for the published copy: the source's own base name, sanitized.
- * Timestamped names from the skills (`architecture-review-20260831-153639`)
- * survive untouched, so URLs stay recognizable. The result always satisfies
- * `isSafeSegment`, which is what keeps a published name servable.
+ * Chatbot-relative path of an artifact view:
+ * `/agent/code/<project>/<sessionId>/artifacts/<name>`. No host and no worker
+ * port: the user follows it inside the Chatbot.
  */
-export function artifactNameFor(sourcePath: string): string {
-  const rawExt = path.extname(sourcePath).toLowerCase();
-  const stem = path.basename(sourcePath, path.extname(sourcePath));
-  const clean = stem
-    .replace(/[^A-Za-z0-9._-]+/g, "-")
-    .replace(/-{2,}/g, "-")
-    // `a..b` would otherwise survive and be rejected as a path segment, which
-    // strands an artifact that was published but can never be served.
-    .replace(/\.{2,}/g, ".")
-    .replace(/^[.-]+|[-.]+$/g, "")
-    .slice(0, 120);
-  // ". HTM" (a real `path.extname` output) still means an .htm file.
-  const ext = rawExt.replace(/[^a-z0-9]/g, "");
-  return `${clean || "artifact"}.${ext || "txt"}`;
+export function artifactViewPath(project: string, sessionId: string, name: string): string {
+  return [
+    "/agent/code",
+    encodeURIComponent(project),
+    encodeURIComponent(sessionId),
+    "artifacts",
+    encodeURIComponent(name),
+  ].join("/");
 }
 
 /** `<title>` of an HTML document, if it has one (reports always do). */
@@ -125,99 +97,60 @@ export function titleFromHtml(html: string): string | undefined {
 }
 
 /**
- * Whether a file written at `filePath` is an artifact generated for reading
- * rather than source code the agent is editing: HTML/markdown inside the OS
- * temp directory. Repo-internal `.html` (app pages, templates, fixtures)
- * deliberately does not qualify. Used by the extension's automatic publish.
+ * Publish an HTML artifact to `<rootDir>/<project>/<name>/index.html` and return
+ * its reference. The source is left in place.
+ *
+ * `sourcePath` may be an `.html`/`.htm` file, copied as `index.html`, or a
+ * directory whose `index.html` is copied. Anything else throws a readable
+ * error; the extension turns it into a tool error result.
  */
-export function isTempArtifactPath(
-  filePath: string,
-  tmpRoot: string = os.tmpdir(),
-): boolean {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext !== ".html" && ext !== ".htm" && ext !== ".md") return false;
-  const resolved = path.resolve(filePath);
-  return resolved.startsWith(path.resolve(tmpRoot) + path.sep);
+export async function publishArtifact(options: PublishArtifactOptions): Promise<ArtifactRef> {
+  if (!isSafeSegment(options.name)) {
+    throw new Error(
+      `Invalid artifact name "${options.name}": use letters, digits, dots, dashes or underscores, starting with a letter or digit`,
+    );
+  }
+
+  const source = await resolveSource(options.sourcePath);
+  const project = projectSlug(options.cwd);
+  const dir = path.join(path.resolve(options.rootDir), project, options.name);
+  const target = path.join(dir, INDEX_FILE);
+
+  // Publishing the already-published file itself must not truncate it: copying
+  // a file onto itself would leave it empty.
+  if (source !== target) {
+    await mkdir(dir, { recursive: true });
+    await copyFile(source, target);
+  }
+
+  const ref = await readRef(target, project, options.name, options.sessionId);
+  if (!ref) throw new Error(`Published artifact is missing after copy: ${target}`);
+  return ref;
 }
 
 /**
- * Copy a generated file into the artifacts root and return its URL.
- *
- * Idempotent on content: publishing an unchanged file again returns the same
- * URL. A changed file whose name is already taken gets a content-hash suffix
- * instead of clobbering the previous version — reports get compared against
- * each other, so losing the last run to a re-run is the failure to avoid.
+ * All published artifacts, newest first. A missing root lists as empty.
+ * Only `<project>/<name>/index.html` counts; other files and folders are ignored.
  */
-export async function publishArtifact(
-  options: PublishArtifactOptions,
-): Promise<ArtifactRef> {
-  const source = path.resolve(options.sourcePath);
-  const sourceStat = await stat(source).catch(() => undefined);
-  if (!sourceStat?.isFile()) {
-    throw new Error(`Artifact source not found: ${options.sourcePath}`);
-  }
-
-  const project = projectSlug(options.cwd);
-  const targetDir = path.join(path.resolve(options.rootDir), project);
-  const name = artifactNameFor(source);
-  const content = await readFile(source);
-  const hash = hashOf(content);
-
-  let finalName = name;
-  const target = path.join(targetDir, name);
-  const existing = await stat(target).catch(() => undefined);
-  if (existing?.isFile() && hashOf(await readFile(target)) !== hash) {
-    const ext = path.extname(name);
-    finalName = `${path.basename(name, ext)}-${hash}${ext}`;
-  }
-
-  const finalPath = path.join(targetDir, finalName);
-  const atRest = await stat(finalPath).catch(() => undefined);
-  if (!atRest?.isFile()) {
-    await mkdir(targetDir, { recursive: true });
-    await writeFile(finalPath, content);
-  }
-  const info = await stat(finalPath);
-
-  return {
-    project,
-    name: finalName,
-    title: options.title ?? titleOf(finalName, content) ?? finalName,
-    url: artifactUrl(options.baseUrl, project, finalName),
-    size: info.size,
-    updatedAt: info.mtimeMs,
-  };
-}
-
-/** All published artifacts, newest first. A missing root lists as empty. */
 export async function listArtifacts(options: {
   rootDir: string;
-  baseUrl: string;
+  sessionId: string;
   limit?: number;
 }): Promise<ArtifactRef[]> {
   const root = path.resolve(options.rootDir);
-  if (!existsSync(root)) return [];
-
   const entries: ArtifactRef[] = [];
-  const projects = await readdir(root, { withFileTypes: true });
-  for (const project of projects) {
-    if (!project.isDirectory() || !isSafeSegment(project.name)) continue;
-    const dir = path.join(root, project.name);
-    for (const file of await readdir(dir, { withFileTypes: true })) {
-      if (!file.isFile() || !isSafeSegment(file.name) || !contentTypeFor(file.name)) {
-        continue;
-      }
-      const info = await stat(path.join(dir, file.name)).catch(() => undefined);
-      if (!info?.isFile()) continue;
-      entries.push({
-        project: project.name,
-        name: file.name,
-        title:
-          titleOf(file.name, await readFile(path.join(dir, file.name))) ?? file.name,
-        url: artifactUrl(options.baseUrl, project.name, file.name),
-        size: info.size,
-        updatedAt: info.mtimeMs,
-      });
+
+  for (const project of await readSubdirectories(root)) {
+    if (!isSafeSegment(project)) continue;
+    for (const name of await readSubdirectories(path.join(root, project))) {
+      if (!isSafeSegment(name)) continue;
+      const ref = await readRef(
+        path.join(root, project, name, INDEX_FILE),
+        project,
+        name,
+        options.sessionId,
+      );
+      if (ref) entries.push(ref);
     }
   }
 
@@ -226,29 +159,66 @@ export async function listArtifacts(options: {
 }
 
 /**
- * Resolve a `<project>/<name>` pair to a file inside the artifacts root, or
- * undefined when it is outside the root or not a regular file. The segments are
- * already validated by `matchArtifactRoute`; this is the belt.
+ * The file to copy for a publish source: the file itself when it is HTML, or the
+ * `index.html` of a directory. Throws for anything else.
  */
-export async function resolveArtifactFile(options: {
-  rootDir: string;
-  project: string;
-  name: string;
-}): Promise<string | undefined> {
-  const root = path.resolve(options.rootDir);
-  if (!isSafeSegment(options.project) || !isSafeSegment(options.name)) return undefined;
-  const target = path.resolve(root, options.project, options.name);
-  if (target === root || !target.startsWith(root + path.sep)) return undefined;
-  const info = await stat(target).catch(() => undefined);
-  return info?.isFile() ? target : undefined;
+async function resolveSource(sourcePath: string): Promise<string> {
+  const source = path.resolve(sourcePath);
+  const info = await stat(source).catch(() => undefined);
+  if (!info) {
+    throw new Error(`Artifact path not found: ${sourcePath}`);
+  }
+
+  if (info.isDirectory()) {
+    const index = path.join(source, INDEX_FILE);
+    if (!(await isRegularFile(index))) {
+      throw new Error(`Artifact directory has no ${INDEX_FILE}: ${sourcePath}`);
+    }
+    return index;
+  }
+
+  if (info.isFile() && HTML_EXTENSIONS.has(path.extname(source).toLowerCase())) {
+    return source;
+  }
+
+  throw new Error(
+    `Artifact must be an .html/.htm file or a directory containing ${INDEX_FILE}, got: ${sourcePath}`,
+  );
 }
 
-function hashOf(content: Buffer): string {
-  return createHash("sha256").update(content).digest("hex").slice(0, 8);
+/** Reference for a published `index.html`, or undefined when it does not exist. */
+async function readRef(
+  filePath: string,
+  project: string,
+  name: string,
+  sessionId: string,
+): Promise<ArtifactRef | undefined> {
+  const info = await stat(filePath).catch(() => undefined);
+  if (!info?.isFile()) return undefined;
+  const title = titleFromHtml(await readFile(filePath, "utf-8")) ?? name;
+  return {
+    project,
+    name,
+    title,
+    path: artifactViewPath(project, sessionId, name),
+    filePath,
+    size: info.size,
+    updatedAt: info.mtimeMs,
+  };
 }
 
-function titleOf(name: string, content: Buffer): string | undefined {
-  const ext = path.extname(name).toLowerCase();
-  if (ext !== ".html" && ext !== ".htm") return undefined;
-  return titleFromHtml(content.toString("utf-8"));
+async function isRegularFile(filePath: string): Promise<boolean> {
+  const info = await stat(filePath).catch(() => undefined);
+  return info?.isFile() ?? false;
+}
+
+/** Names of the subdirectories of `dir`. A missing directory has none. */
+async function readSubdirectories(dir: string): Promise<string[]> {
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
 }

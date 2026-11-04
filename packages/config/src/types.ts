@@ -34,7 +34,6 @@ export interface StructuralConfig {
   readonly codingAgentAgentDir: string;
   readonly codingAgentPiPackagesDir: string;
   readonly codingAgentArtifactsDir: string;
-  readonly codingAgentArtifactsUrl?: string;
   readonly dbProvider?: string;
   readonly dbDialect?: string;
   readonly contextWindow: number;

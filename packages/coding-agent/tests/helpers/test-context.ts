@@ -91,9 +91,6 @@ export function createTestWorkerContext(
     artifactsDir,
     ...(overrides.gatewayUrl !== undefined ? { gatewayUrl: overrides.gatewayUrl } : {}),
     ...(overrides.apiKey !== undefined ? { apiKey: overrides.apiKey } : {}),
-    ...(overrides.artifactsBaseUrl !== undefined
-      ? { artifactsBaseUrl: overrides.artifactsBaseUrl }
-      : {}),
     ...(overrides.workerPort !== undefined ? { workerPort: overrides.workerPort } : {}),
   };
 

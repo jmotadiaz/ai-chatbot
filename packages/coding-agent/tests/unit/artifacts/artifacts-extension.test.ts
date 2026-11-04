@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -19,30 +20,36 @@ vi.mock("tracing", () => ({
 }));
 
 const registerExtension = (await import("../../../extensions/artifacts/index")).default;
-const { getArtifactsDir } = await import("../../../src/runtime/paths");
 const { setWorkerRuntimeConfig, resetWorkerRuntimeConfigForTests } = await import(
   "../../../src/runtime/runtime-overrides"
 );
 
 /**
- * The artifacts extension's public boundary: the tool name and description the
- * model sees, and the automatic publish that keeps vendored skills working
- * without editing them.
+ * The artifacts extension's public boundary: the tool the model calls, the
+ * `/artifacts` command the user runs, and the absence of any implicit publish.
  *
- * ADR 0011 §6: the sandbox is injected as process config (the same one the
- * transport's composition root registers), never by mutating `process.env`.
+ * ADR 0011 §6: the artifacts root is injected as process config (the same one
+ * the transport's composition root registers), never by mutating `process.env`.
  */
 
+const SESSION_ID = "session-under-test";
+const CWD = "/home/javier/projects/ai-chatbot";
+const REPORT =
+  "<!doctype html><html><head><title>Architecture review — Coding Agent</title>" +
+  "</head><body></body></html>";
+
 let tmp: string;
+let rootDir: string;
 
 beforeAll(async () => {
   tmp = await mkdtemp(path.join(os.tmpdir(), "artifacts-extension-"));
-  await mkdir(path.join(tmp, "root"), { recursive: true });
+  rootDir = path.join(tmp, "root");
   await mkdir(path.join(tmp, "generated"), { recursive: true });
-  setWorkerRuntimeConfig({
-    artifactsDir: path.join(tmp, "root"),
-    artifactsBaseUrl: "http://artifacts.test",
-  });
+  setWorkerRuntimeConfig({ artifactsDir: rootDir });
+});
+
+beforeEach(async () => {
+  await rm(rootDir, { recursive: true, force: true });
 });
 
 afterAll(async () => {
@@ -50,16 +57,22 @@ afterAll(async () => {
   await rm(tmp, { recursive: true, force: true });
 });
 
+interface ToolContext {
+  cwd: string;
+  sessionManager: { getSessionId(): string };
+}
+
 interface RegisteredTool {
   name: string;
   description: string;
   promptGuidelines?: string[];
+  parameters: unknown;
   execute: (
     toolCallId: string,
-    params: { path: string; title?: string },
+    params: { path: string; name: string },
     signal: AbortSignal | undefined,
     onUpdate: undefined,
-    ctx: { cwd: string },
+    ctx: ToolContext,
   ) => Promise<{
     content: Array<{ type: string; text: string }>;
     details?: unknown;
@@ -67,151 +80,167 @@ interface RegisteredTool {
   }>;
 }
 
-type ToolResultHandler = (
-  event: {
-    type: "tool_result";
-    toolCallId: string;
-    toolName: string;
-    input: Record<string, unknown>;
-    content: Array<{ type: "text"; text: string }>;
-    isError: boolean;
-    details: unknown;
-  },
-  ctx: { cwd: string },
-) => Promise<{ content?: Array<{ type: string; text: string }> } | undefined>;
+interface RegisteredCommand {
+  description: string;
+  handler: (args: string, ctx: unknown) => Promise<void>;
+}
 
 function load() {
   const tools: RegisteredTool[] = [];
-  const handlers = new Map<string, ToolResultHandler[]>();
-  const commands: string[] = [];
+  const commands = new Map<string, RegisteredCommand>();
+  const hooks: string[] = [];
   registerExtension({
     registerTool: (tool: RegisteredTool) => tools.push(tool),
-    on: (event: string, handler: ToolResultHandler) => {
-      handlers.set(event, [...(handlers.get(event) ?? []), handler]);
-    },
-    registerCommand: (name: string) => commands.push(name),
+    on: (event: string) => hooks.push(event),
+    registerCommand: (name: string, command: RegisteredCommand) => commands.set(name, command),
   } as never);
-  return { tools, handlers, commands };
+  return { tools, commands, hooks };
 }
 
-async function report(name: string): Promise<string> {
+function toolContext(cwd = CWD): ToolContext {
+  return { cwd, sessionManager: { getSessionId: () => SESSION_ID } };
+}
+
+async function htmlFile(name: string, content = REPORT): Promise<string> {
   const file = path.join(tmp, "generated", name);
-  await writeFile(
-    file,
-    "<!doctype html><html><head><title>Architecture review — Coding Agent</title>" +
-      "</head><body></body></html>",
-    "utf-8",
-  );
+  await writeFile(file, content, "utf-8");
   return file;
 }
 
-describe("publish_artifact tool", () => {
-  it("registers publish_artifact and the /artifacts command", () => {
-    const { tools, commands } = load();
+async function runTool(params: { path: string; name: string }, cwd = CWD) {
+  const { tools } = load();
+  return tools[0]!.execute("call-1", params, undefined, undefined, toolContext(cwd));
+}
+
+describe("publish_artifact tool registration", () => {
+  it("registers only publish_artifact and the /artifacts command", () => {
+    const { tools, commands, hooks } = load();
     expect(tools.map((t) => t.name)).toEqual(["publish_artifact"]);
-    expect(commands).toEqual(["artifacts"]);
+    expect([...commands.keys()]).toEqual(["artifacts"]);
+    expect(hooks).toEqual([]);
+  });
+
+  it("takes exactly { path, name }, with no title parameter", () => {
+    const { tools } = load();
+    const schema = tools[0]!.parameters as { properties: Record<string, unknown> };
+    expect(Object.keys(schema.properties).sort()).toEqual(["name", "path"]);
   });
 
   it("tells the model to publish instead of opening a browser", () => {
     const { tools } = load();
     const tool = tools[0]!;
-    expect(tool.description).toContain("browser");
+    expect(tool.description).toContain("xdg-open");
     expect(tool.promptGuidelines?.join(" ")).toMatch(/xdg-open/);
-  });
-
-  it("returns the URL the user should be shown", async () => {
-    const { tools } = load();
-    const file = await report("review-1.html");
-
-    const result = await tools[0]!.execute(
-      "call-1",
-      { path: file },
-      undefined,
-      undefined,
-      { cwd: "/home/javier/projects/ai-chatbot" },
-    );
-
-    expect(result.isError).toBeUndefined();
-    expect(result.content[0]!.text).toContain(
-      "http://artifacts.test/artifacts/ai-chatbot/review-1.html",
-    );
-    expect(result.content[0]!.text).toContain("Architecture review — Coding Agent");
-    expect(getArtifactsDir()).toBe(path.join(tmp, "root"));
-  });
-
-  it("answers a missing file with a readable error instead of throwing", async () => {
-    const { tools } = load();
-    const result = await tools[0]!.execute(
-      "call-2",
-      { path: path.join(tmp, "generated", "absent.html") },
-      undefined,
-      undefined,
-      { cwd: tmp },
-    );
-    expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/Could not publish/);
+    expect(tool.promptGuidelines?.join(" ")).toMatch(/publish_artifact\(\{ path, name \}\)/);
   });
 });
 
-describe("automatic publish of temp-dir reports", () => {
-  async function runWrite(resultHandler: ToolResultHandler, filePath: string) {
-    return resultHandler(
-      {
-        type: "tool_result",
-        toolCallId: "call-3",
-        toolName: "write",
-        input: { path: filePath, content: "x" },
-        content: [{ type: "text", text: "wrote 42 bytes" }],
-        isError: false,
-        details: undefined,
-      },
-      { cwd: "/home/javier/projects/ai-chatbot" },
+describe("publish_artifact tool execution", () => {
+  it("publishes an HTML file under <project>/<name>/index.html and returns the Chatbot view path", async () => {
+    const file = await htmlFile("review-1.html");
+
+    const result = await runTool({ path: file, name: "review-1" });
+
+    expect(result.isError).toBeUndefined();
+    const expectedFile = path.join(rootDir, "ai-chatbot", "review-1", "index.html");
+    expect(await readFile(expectedFile, "utf-8")).toBe(REPORT);
+    expect(result.content[0]!.text).toContain(
+      `URL: /agent/code/ai-chatbot/${SESSION_ID}/artifacts/review-1`,
     );
-  }
+    expect(result.content[0]!.text).toContain("Architecture review — Coding Agent");
+    expect(result.content[0]!.text).not.toMatch(/https?:\/\//);
+  });
 
-  it("appends the URL to the write result of a report in the temp dir", async () => {
-    const { handlers } = load();
-    const handler = handlers.get("tool_result")![0]!;
-    const file = await report("review-2.html");
+  it("publishes a folder that contains index.html", async () => {
+    const dir = path.join(tmp, "generated", "bundle");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "index.html"), REPORT, "utf-8");
 
-    const patched = await runWrite(handler, file);
+    const result = await runTool({ path: dir, name: "bundle-view" });
 
-    expect(patched?.content?.map((c) => c.text).join("")).toContain(
-      "http://artifacts.test/artifacts/ai-chatbot/review-2.html",
+    expect(result.isError).toBeUndefined();
+    expect(existsSync(path.join(rootDir, "ai-chatbot", "bundle-view", "index.html"))).toBe(true);
+  });
+
+  it("overwrites the artifact in place when the same name is published again", async () => {
+    const file = await htmlFile("review-2.html");
+    await runTool({ path: file, name: "review-2" });
+
+    await writeFile(file, REPORT.replace("Architecture review", "Revised review"), "utf-8");
+    const second = await runTool({ path: file, name: "review-2" });
+
+    expect(second.content[0]!.text).toContain(
+      `URL: /agent/code/ai-chatbot/${SESSION_ID}/artifacts/review-2`,
     );
-    expect(patched?.content?.[0]?.text).toBe("wrote 42 bytes"); // original kept
-    expect(
-      await readFile(path.join(tmp, "root", "ai-chatbot", "review-2.html"), "utf-8"),
-    ).toContain("Architecture review");
+    expect(await readFile(path.join(rootDir, "ai-chatbot", "review-2", "index.html"), "utf-8")).toContain(
+      "Revised review",
+    );
+    expect(existsSync(path.join(rootDir, "ai-chatbot", "review-2-"))).toBe(false);
   });
 
-  it("publishes a rewritten report under a new URL instead of hiding the change", async () => {
-    const { handlers } = load();
-    const handler = handlers.get("tool_result")![0]!;
-    const file = await report("review-4.html");
-    const first = await runWrite(handler, file);
-
-    await writeFile(file, "<!doctype html><html><head><title>Revised review</title></head></html>");
-    const second = await runWrite(handler, file);
-
-    const firstUrl = first?.content?.at(-1)?.text ?? "";
-    const secondUrl = second?.content?.at(-1)?.text ?? "";
-    expect(secondUrl).not.toBe(firstUrl);
-    expect(secondUrl).toMatch(/review-4-[0-9a-f]{8}\.html/);
+  it("answers a missing path with an error result instead of throwing", async () => {
+    const result = await runTool({
+      path: path.join(tmp, "generated", "absent.html"),
+      name: "absent",
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Could not publish .* as "absent"/);
+    expect(result.content[0]!.text).toMatch(/Artifact path not found/);
   });
 
-  it("leaves repository files and non-reports alone", async () => {
-    const { handlers } = load();
-    const handler = handlers.get("tool_result")![0]!;
-
-    expect(await runWrite(handler, "/repo/packages/chatbot/app/page.html")).toBeUndefined();
-    expect(await runWrite(handler, path.join(tmp, "generated", "notes.txt"))).toBeUndefined();
+  it("rejects a non-HTML file with an error result", async () => {
+    const file = path.join(tmp, "generated", "data.csv");
+    await writeFile(file, "a,b\n", "utf-8");
+    const result = await runTool({ path: file, name: "data" });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/must be an \.html\/\.htm file/);
   });
 
-  it("stays silent when publishing fails", async () => {
-    const { handlers } = load();
-    const handler = handlers.get("tool_result")![0]!;
-    const missing = path.join(os.tmpdir(), `gone-${Date.now()}.html`);
-    expect(await runWrite(handler, missing)).toBeUndefined();
+  it("rejects an unsafe name with an error result and writes nothing", async () => {
+    const file = await htmlFile("review-3.html");
+    const result = await runTool({ path: file, name: "../escape" });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Invalid artifact name/);
+    expect(existsSync(rootDir)).toBe(false);
+  });
+});
+
+describe("no implicit publishing", () => {
+  it("registers no tool_result hook, so writes to the temp dir never publish on their own", async () => {
+    // The old hook appended a URL to any `write` under os.tmpdir(). Only the
+    // explicit publish_artifact call publishes now.
+    const { hooks } = load();
+    expect(hooks).toEqual([]);
+
+    await htmlFile("implicit.html");
+    expect(existsSync(path.join(rootDir, "ai-chatbot", "implicit"))).toBe(false);
+  });
+});
+
+describe("/artifacts command", () => {
+  it("says so when nothing has been published", async () => {
+    const { commands } = load();
+    const notes: string[] = [];
+    await commands.get("artifacts")!.handler("", {
+      sessionManager: { getSessionId: () => SESSION_ID },
+      ui: { notify: (message: string) => notes.push(message) },
+    });
+    expect(notes).toEqual(["No published artifacts yet"]);
+  });
+
+  it("lists published artifacts with Chatbot view paths for the current session", async () => {
+    await runTool({ path: await htmlFile("listed.html"), name: "listed" });
+    const { commands } = load();
+    const notes: string[] = [];
+
+    await commands.get("artifacts")!.handler("", {
+      sessionManager: { getSessionId: () => SESSION_ID },
+      ui: { notify: (message: string) => notes.push(message) },
+    });
+
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain("Architecture review — Coding Agent");
+    expect(notes[0]).toContain(`/agent/code/ai-chatbot/${SESSION_ID}/artifacts/listed`);
+    expect(notes[0]).not.toMatch(/https?:\/\//);
   });
 });

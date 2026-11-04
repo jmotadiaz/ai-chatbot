@@ -9,11 +9,6 @@ import {
   setTraceSessionId,
 } from "tracing";
 import type { ThinkingLevel } from "../runtime/gateway-catalog";
-import { handleArtifactRequest, matchArtifactRoute } from "../artifacts/artifacts-http";
-import {
-  resolveArtifactsBaseUrl,
-  resolveArtifactsDir,
-} from "../runtime/paths";
 import {
   defaultWorkerRuntimeConfig,
   resolveWorkerRuntimeConfig,
@@ -50,9 +45,9 @@ export interface HttpTransportOptions {
   /**
    * Worker config override (ADR 0011 §6). The transport is the composition
    * root: it resolves the config once — defaults from the active Environment
-   * bundle via `defaultWorkerRuntimeConfig()` — registers it process-wide for
-   * the session-manager facade and the Pi extensions, and hands it to the
-   * artifacts route. Tests inject their sandbox here.
+   * bundle via `defaultWorkerRuntimeConfig()` — and registers it process-wide
+   * for the session-manager facade and the Pi extensions. Tests inject their
+   * sandbox here.
    */
   runtimeConfig?: WorkerRuntimeConfig;
 }
@@ -75,7 +70,7 @@ export function startHttpTransport(options: HttpTransportOptions) {
   setSubagentRunner(runSubagent);
 
   const server = createServer((req, res) => {
-    handleHttpRequest(req, res, runtimeConfig).catch((err) => {
+    handleHttpRequest(req, res).catch((err) => {
       console.error("Unhandled error in handleHttpRequest:", err);
     });
   });
@@ -93,28 +88,11 @@ export function startHttpTransport(options: HttpTransportOptions) {
   return server;
 }
 
-async function handleHttpRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-  runtimeConfig: WorkerRuntimeConfig,
-) {
+async function handleHttpRequest(req: IncomingMessage, res: ServerResponse) {
   const log = getTraceLogger("worker");
   try {
-    // Artifacts are the read-only half of this server: reports the agent
-    // generated for a human to open. Everything else on this port is the RPC
-    // endpoint, which is POST-only and machine-facing.
-    const artifactRoute =
-      req.method === "GET" || req.method === "HEAD"
-        ? matchArtifactRoute(req.url)
-        : undefined;
-    if (artifactRoute) {
-      await handleArtifactRequest(req, res, artifactRoute, {
-        rootDir: resolveArtifactsDir(runtimeConfig),
-        baseUrl: resolveArtifactsBaseUrl(runtimeConfig),
-      });
-      return;
-    }
-
+    // This port is the machine-facing RPC endpoint only. Artifacts are served by
+    // the Chatbot, which reads `codingAgentArtifactsDir` directly.
     if (req.method !== "POST" || req.url !== "/rpc") {
       res.writeHead(404).end("Not found");
       return;
