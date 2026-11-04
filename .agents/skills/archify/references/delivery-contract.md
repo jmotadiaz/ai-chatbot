@@ -58,7 +58,7 @@ the failure reproduces through that seam in a capable environment.
 
 ## Optional opening and publishing
 
-Do NOT use `--open` or try to open the file yourself (`xdg-open`, `open`, `start`): in headless agent environments, openers silently fail and the artifact stays stranded on the server. Instead, call the `publish_artifact` tool with the delivered `<output.html>` path to publish it and return the URL to the user.
+Do NOT use `--open` or try to open the file yourself (`xdg-open`, `open`, `start`): in headless agent environments, openers silently fail and the artifact stays stranded on the server. Instead, call the `publish_artifact` tool with `path: "<output.html>"` and `name: "<stable-name>"` to publish it as `<artifactsDir>/<project>/<name>/index.html` and return the chatbot-relative URL `/agent/code/<project>/<sessionId>/artifacts/<name>` to the user.
 
 Add `--open` only when running locally on an interactive desktop workstation with a display. It runs after that atomic commit, uses one argument-array OS opener with a five-second bound, and records `open.status`. Keep it off for CI, unattended agents, and headless environments. Failure or unsupported opening does not invalidate delivery; its status proves only whether the local opener invocation succeeded.
 

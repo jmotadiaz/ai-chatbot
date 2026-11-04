@@ -225,10 +225,11 @@ overwrites local edits, and patches intentionally leave the computed hash stale;
 patches minimal and recorded here:
 
 - `archify` (`SKILL.md`, `references/delivery-contract.md`): writes artifacts to the OS
-  temp directory and publishes them via `publish_artifact`, returning the artifact URL.
+  temp directory and publishes them via `publish_artifact({ path, name })`, returning the
+  chatbot-relative artifact URL `/agent/code/<project>/<sessionId>/artifacts/<name>`.
 - `improve-codebase-architecture` (`SKILL.md` §2, `HTML-REPORT.md`): publishes its HTML
-  report through `publish_artifact`, pins allowed CDN hosts and points at the first-party
-  `mobile-first-artifacts` skill.
+  report through `publish_artifact({ path, name })` with a stable `name`, pins allowed CDN
+  hosts and points at the first-party `mobile-first-artifacts` skill.
 - `handoff` (`SKILL.md`): saves handoffs to the git-ignored `.handoffs/` directory with a
   `handoff-<topic>-<date>.md` name.
 - `grilling` (`SKILL.md`): caps each round at 3 questions.

@@ -63,7 +63,11 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(JSON.stringify({ seq: seq++, event }) + "\n"));
         };
 
-        if (prompt.includes("list files")) {
+        if (prompt.toLowerCase().includes("artifact")) {
+          emit({ type: EventType.RUN_STARTED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
+          emit({ type: EventType.TEXT_MESSAGE_CHUNK, messageId: "msg-1", role: "assistant", delta: `See [Diagram](/agent/code/ai-chatbot/${params.sessionId}/artifacts/e2e-artifact)` });
+          emit({ type: EventType.RUN_FINISHED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
+        } else if (prompt.includes("list files")) {
           emit({ type: EventType.RUN_STARTED, threadId: params.sessionId, runId: params._traceRunId ?? "stub-run" });
           emit({ type: EventType.TOOL_CALL_START, toolCallId: "tc-1", toolCallName: "bash" });
           emit({ type: EventType.TOOL_CALL_ARGS, toolCallId: "tc-1", delta: '{"command":"ls"}' });

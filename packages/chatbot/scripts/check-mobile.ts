@@ -1,3 +1,5 @@
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 
 /**
@@ -13,7 +15,8 @@ import { chromium } from "@playwright/test";
  * Lives here rather than in `coding-agent` because this is the package that
  * owns Playwright and its browser cache.
  *
- * Usage: pnpm --filter chatbot check:mobile <url> [url...]
+ * Usage: pnpm --filter chatbot check:mobile <url-or-path> [url-or-path...]
+ *        Accepts http://, https://, file:// URLs and local file paths (converted to file://).
  * Exit code: 1 if any artifact overflows horizontally or renders sub-12px text.
  */
 
@@ -30,6 +33,21 @@ interface Measurement {
   offenders: Array<{ tag: string; cls: string; width: number }>;
   tinyTextNodes: number;
   smallestPx: number | null;
+}
+
+
+/**
+ * Normalise a CLI argument into a URL Playwright can `page.goto`.
+ *
+ * `http://`, `https://` and `file://` inputs are passed through unchanged;
+ * anything else is treated as a path on disk and converted to a `file://` URL
+ * (so a local HTML file can be validated before it is published).
+ */
+export function toPageUrl(arg: string): string {
+  if (/^https?:\/\//i.test(arg) || /^file:\/\//i.test(arg)) {
+    return arg;
+  }
+  return pathToFileURL(path.resolve(arg)).href;
 }
 
 async function measure(url: string): Promise<Measurement[]> {
@@ -101,7 +119,10 @@ async function main(): Promise<boolean> {
     return true;
   }
   let allOk = true;
-  for (const url of urls) allOk = describe(url, await measure(url)) && allOk;
+  for (const raw of urls) {
+    const url = toPageUrl(raw);
+    allOk = describe(url, await measure(url)) && allOk;
+  }
   console.log(
     allOk
       ? "\nMobile-first OK"
@@ -110,9 +131,21 @@ async function main(): Promise<boolean> {
   return allOk;
 }
 
-main()
-  .then((ok) => process.exit(ok ? 0 : 1))
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+const isDirectInvocation = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return path.resolve(entry) === path.resolve(new URL(import.meta.url).pathname);
+  } catch {
+    return false;
+  }
+})();
+
+if (isDirectInvocation) {
+  void main()
+    .then((ok) => process.exit(ok ? 0 : 1))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}
