@@ -3,7 +3,7 @@ import path from "node:path";
 
 /**
  * Artifacts: standalone HTML documents the agent generates for the human to
- * open, such as architecture reports or interactive prototypes.
+ * open, such as architecture artifacts or interactive prototypes.
  *
  * On-disk contract (spec `coding-agent-artifacts`, decision 2):
  *
@@ -85,7 +85,7 @@ export function artifactViewPath(project: string, sessionId: string, name: strin
   ].join("/");
 }
 
-/** `<title>` of an HTML document, if it has one (reports always do). */
+/** `<title>` of an HTML document, if it has one (artifacts always do). */
 export function titleFromHtml(html: string): string | undefined {
   const match = html.match(/<title[^>]*>([\s\S]{1,300}?)<\/title>/i);
   const text = match?.[1]

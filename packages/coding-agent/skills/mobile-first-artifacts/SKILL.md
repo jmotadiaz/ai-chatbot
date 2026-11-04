@@ -9,7 +9,7 @@ description: Use when writing any HTML/markdown artifact the user reads in a bro
 
 Every artifact this harness produces is published with `publish_artifact({ path, name })`
 and opened in the Chatbot at `/agent/code/<project>/<sessionId>/artifacts/<name>` — including
-on a phone. The route is behind `withAuth`, so it cannot be fetched by `check:mobile`; Generated reports fail
+on a phone. The route is behind `withAuth`, so it cannot be fetched by `check:mobile`; Generated artifacts fail
 there quietly: Tailwind classes without a breakpoint prefix look perfect at
 1440px and break below 640px, and nothing in the source hints at it.
 
@@ -49,9 +49,9 @@ yours to control there.
    `sm:`/`lg:`. A bare `grid-cols-2|3|4` is the single most common cause of a
    sideways-scrolling report.
    ```html
-   <!-- mal: 3 columnas de ~104px en un móvil -->
+   <!-- bad: 3 columns of ~104px on a phone -->
    <div class="grid grid-cols-3 gap-4">
-   <!-- bien -->
+   <!-- good -->
    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
    ```
 3. **Before/after pairs stack.** They are the payload of every candidate card:
@@ -59,7 +59,7 @@ yours to control there.
 4. **Type floor 12px at the base size.** Keep the base at `≥`12px and only shrink
    to 11px from `sm:` upward, e.g. `text-xs sm:text-[11px]` (12px on a phone,
    11px on a desktop where it is legible). `text-[9px]`/`text-[10px]` as the base
-   is unreadable on a phone and is what the checker reports as `nodos < 12px`.
+   is unreadable on a phone and is what the checker reports as `nodes < 12px`.
 5. **Wide content scrolls itself, not the page.** Wrap tables, code blocks and
    diagrams:
    ```html
@@ -96,8 +96,8 @@ causing it, and the count of sub-12px text nodes. Exit 0 = publishable.
 `check:mobile` accepts local file paths (converted to `file://`) as well as
 `http://`/`https://`/`file://` URLs, so validate the HTML on disk **before**
 calling `publish_artifact`. The Chatbot artifact route is behind `withAuth`, so it
-cannot be fetched by `check:mobile`. The loop is: **write → comprueba (local) →
-arregla → publica → (optional) comprueba de nuevo**. Republishing the same
+cannot be fetched by `check:mobile`. The loop is: **write → check (local) →
+fix → publish → (optional) check again**. Republishing the same
 `name` overwrites `<name>/index.html` in place and the URL stays stable, so
 nothing is lost by iterating.
 

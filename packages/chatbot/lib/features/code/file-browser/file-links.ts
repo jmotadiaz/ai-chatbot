@@ -163,6 +163,11 @@ const ARTIFACT_PATH = /^\/agent\/code\/([^/]+)\/([^/]+)\/artifacts\/([^/]+)\/?$/
 // Mirrored from coding-agent/artifacts (isSafeSegment): this module is imported by client components, while coding-agent/artifacts pulls node:fs.
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
+/** One safe path segment: same rule as isSafeSegment, mirrored here. */
+function isSafeArtifactSegment(segment: string): boolean {
+  return SAFE_SEGMENT.test(segment) && !segment.includes("..");
+}
+
 /**
  * Extract the artifact name from an artifact view path (or an absolute URL
  * pointing at one). Returns null for anything that is not a safe artifact
@@ -196,13 +201,10 @@ export function parseArtifactHref(href: string | undefined): string | null {
     return null;
   }
   if (
-    !SAFE_SEGMENT.test(project) ||
-    !SAFE_SEGMENT.test(sessionId) ||
-    !SAFE_SEGMENT.test(artifact)
+    !isSafeArtifactSegment(project) ||
+    !isSafeArtifactSegment(sessionId) ||
+    !isSafeArtifactSegment(artifact)
   ) {
-    return null;
-  }
-  if (project.includes("..") || sessionId.includes("..") || artifact.includes("..")) {
     return null;
   }
   return artifact;

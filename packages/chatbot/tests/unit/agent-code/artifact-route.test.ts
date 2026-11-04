@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, symlink } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -58,6 +58,45 @@ describe("GET /api/agent/code/[project]/artifacts/[artifact]", () => {
   it("returns 404 for unsafe segments", async () => {
     const res = await GET(new Request("http://test/api/agent/code/../artifacts/a"));
     expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for percent-encoded traversal in the artifact segment", async () => {
+    const res = await GET(
+      new Request("http://test/api/agent/code/p/artifacts/%2e%2e%2fsecret"),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for dot / dotfile / parent segments", async () => {
+    for (const seg of [".", "..", ".hidden"]) {
+      const res = await GET(
+        new Request(`http://test/api/agent/code/p/artifacts/${encodeURIComponent(seg)}`),
+      );
+      expect(res.status).toBe(404);
+    }
+  });
+
+  it("returns 404 when artifact resolves outside the artifacts root via symlink", async () => {
+    const outside = await mkdtemp(path.join(tmpdir(), "outside-"));
+    try {
+      await mkdir(path.join(outside, "evil"), { recursive: true });
+      await writeFile(path.join(outside, "evil", "index.html"), "<html>evil</html>");
+      const linkPath = path.join(root, "p", "escape");
+      await mkdir(path.join(root, "p"), { recursive: true });
+      try {
+        await symlink(path.join(outside, "evil"), linkPath);
+      } catch {
+        // Platform cannot create symlinks; skip gracefully.
+        return;
+      }
+      const res = await GET(
+        new Request("http://test/api/agent/code/p/artifacts/escape"),
+      );
+      expect(res.status).toBe(404);
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+      await rm(path.join(root, "p", "escape"), { recursive: true, force: true });
+    }
   });
 
   it("returns 404 when artifact file does not exist", async () => {

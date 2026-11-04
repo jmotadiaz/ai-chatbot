@@ -35,7 +35,6 @@ interface Measurement {
   smallestPx: number | null;
 }
 
-
 /**
  * Normalise a CLI argument into a URL Playwright can `page.goto`.
  *
@@ -115,7 +114,7 @@ function describe(url: string, measurements: Measurement[]): boolean {
 async function main(): Promise<boolean> {
   const urls = process.argv.slice(2);
   if (urls.length === 0) {
-    console.error("Usage: pnpm --filter chatbot check:mobile <url> [url...]");
+    console.error("Usage: pnpm --filter chatbot check:mobile <url-or-path> [url-or-path...]");
     return true;
   }
   let allOk = true;

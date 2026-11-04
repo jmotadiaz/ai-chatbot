@@ -40,10 +40,23 @@ export const GET = withAuth(async (_user, req: Request) => {
 
   const filePath = path.resolve(root, project, artifact, "index.html");
   const resolvedRoot = path.resolve(root);
-  // Belt-and-braces containment check inside the artifacts root.
+  // Belt-and-braces containment check inside the artifacts root. Resolve
+  // symlinks so a link that points outside the root cannot escape it.
+  let realRoot = resolvedRoot;
+  let realFile = filePath;
+  try {
+    realRoot = await fs.realpath(resolvedRoot);
+  } catch {
+    // root may not exist yet; keep the lexical root
+  }
+  try {
+    realFile = await fs.realpath(filePath);
+  } catch {
+    // file may not exist yet; fall back to the lexical path
+  }
   if (
-    filePath !== resolvedRoot &&
-    !filePath.startsWith(resolvedRoot + path.sep)
+    realFile !== realRoot &&
+    !realFile.startsWith(realRoot + path.sep)
   ) {
     return new Response("Not found", { status: 404 });
   }

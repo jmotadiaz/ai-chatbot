@@ -37,10 +37,10 @@ export default function registerArtifactsExtension(pi: ExtensionAPI): void {
     name: "publish_artifact",
     label: "Publish artifact",
     description:
-      "Publish a generated HTML report or interactive artifact so the user can open it in the Chatbot, and return the view path to show them. Call this after writing any visual artifact instead of trying to open it with xdg-open, open or start: this agent runs headless, so those silently do nothing.",
+      "Publish a generated HTML artifact or interactive artifact so the user can open it in the Chatbot, and return the view path to show them. Call this after writing any visual artifact instead of trying to open it with xdg-open, open or start: this agent runs headless, so those silently do nothing.",
     promptSnippet: "Publish generated HTML artifacts and get a Chatbot view path for the user",
     promptGuidelines: [
-      "After writing any HTML report or artifact meant for the user to read, call publish_artifact({ path, name }) and put the returned path in your reply.",
+      "After writing any HTML artifact meant for the user to read, call publish_artifact({ path, name }) and put the returned path in your reply.",
       "Never try to open a file in a browser yourself (xdg-open/open/start); the host has no display. The path from publish_artifact is the way the user sees it.",
       "Publishing again with the same name replaces the artifact in place, so reuse the name when you revise an artifact.",
     ],
