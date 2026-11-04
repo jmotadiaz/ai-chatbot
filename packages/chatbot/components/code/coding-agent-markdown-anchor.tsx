@@ -11,7 +11,9 @@ import { FileText } from "lucide-react";
 import Link from "next/link";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
 import {
+  artifactViewHref,
   fileViewHref,
+  parseArtifactHref,
   parseFileReferenceHref,
   resolveNoteLink,
 } from "@/lib/features/code/file-browser/file-links";
@@ -60,6 +62,19 @@ export const CodingAgentMarkdownAnchor: React.FC<
         className="inline-flex items-baseline gap-1 rounded bg-secondary px-1 font-mono text-[0.9em] font-medium text-primary no-underline hover:underline"
       >
         <FileText className="size-3 self-center text-muted-foreground" />
+        {children}
+      </Link>
+    );
+  }
+
+  const artifactName = parseArtifactHref(href);
+  if (artifactName) {
+    return (
+      <Link
+        href={artifactViewHref(project, sessionId, artifactName)}
+        data-testid="agent-artifact-link"
+        className="wrap-anywhere font-medium text-primary underline"
+      >
         {children}
       </Link>
     );
