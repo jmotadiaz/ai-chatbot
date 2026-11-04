@@ -230,7 +230,16 @@ export async function getCodingAgentModels(): Promise<CodingAgentModel[]> {
   return withActionTrace("getCodingAgentModels", async (log) => {
     assertEnabled();
     const client = new WorkerClient();
-    const { models } = await client.getAvailableModels();
+    let models: { modelId: string; levels: ThinkingLevel[] }[] = [];
+    try {
+      const response = await client.getAvailableModels();
+      models = response.models;
+    } catch (err) {
+      log.warn("action.worker_unavailable", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return [];
+    }
     const catalog = await fetchPublicModelCatalog();
     // The Gateway catalog dictates the order: iterate the catalog and look each
     // entry up in the worker response, skipping the unavailable ones. No local
