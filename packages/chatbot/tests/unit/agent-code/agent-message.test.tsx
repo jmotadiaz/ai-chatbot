@@ -125,7 +125,7 @@ describe("AgentMessage isolation and memoization", () => {
     const blockBefore = container.querySelector(
       '[data-response-comment-block="1"]',
     );
-    expect(blockBefore?.classList.contains("border-amber-300")).toBe(false);
+    expect(blockBefore?.getAttribute("data-commented")).toBeNull();
 
     // Updating responseComments highlights the block
     rerender(
@@ -141,6 +141,6 @@ describe("AgentMessage isolation and memoization", () => {
     const blockAfter = container.querySelector(
       '[data-response-comment-block="1"]',
     );
-    expect(blockAfter?.classList.contains("border-amber-300")).toBe(true);
+    expect(blockAfter?.getAttribute("data-commented")).toBe("true");
   });
 });

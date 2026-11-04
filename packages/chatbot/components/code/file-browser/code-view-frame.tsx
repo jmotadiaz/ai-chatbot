@@ -123,19 +123,27 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
   const existingComment =
     selectedLine !== null ? commentsByLine.get(selectedLine) : undefined;
 
+  const sourceTextFor = (
+    lineNumber: number,
+    comment?: PendingComment,
+  ): string => {
+    if (comment) return comment.lineText;
+    if (load.status !== "ready") return "";
+    return (
+      load.sourceContent?.split("\n")[lineNumber - 1] ??
+      load.lines.find((line) => line.newLineNumber === lineNumber)?.content ??
+      ""
+    );
+  };
+
   const saveComment = (text: string) => {
     if (selectedLine === null || load.status !== "ready") return;
-    const sourceLine = load.sourceContent?.split("\n")[selectedLine - 1];
     actions.upsertComment({
       id: existingComment?.id ?? crypto.randomUUID(),
       file: path,
       startLine: selectedLine,
       endLine: selectedLine,
-      lineText:
-        sourceLine ??
-        load.lines.find((line) => line.newLineNumber === selectedLine)
-          ?.content ??
-        "",
+      lineText: sourceTextFor(selectedLine, existingComment),
       text,
       createdAt: existingComment?.createdAt ?? Date.now(),
     });
@@ -168,6 +176,10 @@ export const CodeViewFrame: React.FC<CodeViewFrameProps> = ({
       <CommentComposer
         lineNumber={lineNumber}
         existing={comment}
+        contextLabel={
+          viewMode === "rendered" ? "Markdown preview" : "Source view"
+        }
+        sourceText={sourceTextFor(lineNumber, comment)}
         onSave={saveComment}
         onRemove={() => {
           if (comment) actions.removeComment(comment.id);

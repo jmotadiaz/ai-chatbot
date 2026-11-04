@@ -15,7 +15,7 @@ export const PendingCommentsBar: React.FC<PendingCommentsBarProps> = ({
   return (
     <div
       data-testid="pending-comments-bar"
-      className="flex max-w-full items-center space-x-2 overflow-x-auto scrollbar-none pb-2"
+      className="flex max-w-full items-center gap-2 overflow-x-auto scrollbar-none pb-2"
     >
       {state.pendingComments.map((comment) => (
         <CommentChip

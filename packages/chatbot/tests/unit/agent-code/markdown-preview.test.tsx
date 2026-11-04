@@ -56,7 +56,7 @@ describe("markdownBlocks", () => {
 
     expect(onSelectLine).toHaveBeenCalledWith(3);
     expect(view.getByTestId("markdown-preview").className).toContain(
-      "space-y-4",
+      "space-y-3",
     );
   });
 
@@ -131,7 +131,7 @@ describe("markdownBlocks", () => {
     const row = await waitFor(() =>
       view.getByRole("row", { name: "Comment on line 3" }),
     );
-    expect(row.className).not.toContain("bg-blue-500/10");
+    expect(row.getAttribute("data-selected")).toBeNull();
 
     view.rerender(
       <MarkdownPreview
@@ -145,8 +145,10 @@ describe("markdownBlocks", () => {
 
     await waitFor(() => {
       expect(
-        view.getByRole("row", { name: "Comment on line 3" }).className,
-      ).toContain("bg-blue-500/10");
+        view
+          .getByRole("row", { name: "Comment on line 3" })
+          .getAttribute("data-selected"),
+      ).toBe("true");
     });
     expect(view.getByTestId("composer").textContent).toBe("3");
   });

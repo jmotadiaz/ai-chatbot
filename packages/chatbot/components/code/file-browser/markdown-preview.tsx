@@ -21,6 +21,10 @@ import {
   LineCommentsContext,
   type MarkdownBlockKind,
 } from "../line-comments";
+import {
+  commentMarkerClass,
+  commentableBlockClass,
+} from "../comment-styles";
 import { CodeViewLine } from "./code-view-line";
 import type { LineRange } from "./types";
 import { Response } from "@/components/chat/response";
@@ -29,7 +33,6 @@ import {
   LIGHT_THEME,
   tokenize,
 } from "@/lib/features/code/file-browser/highlight";
-import { cn } from "@/lib/utils/helpers";
 
 const FENCE = /^\s*(?:```|~~~)/;
 
@@ -215,7 +218,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
     <NoteLinkOriginProvider path={containerPath ?? ""}>
       <div
         data-testid="markdown-preview"
-        className="mx-auto w-full max-w-4xl space-y-4 px-6 py-5"
+        className="mx-auto w-full max-w-4xl space-y-3 px-6 py-5"
       >
         {blocks.map((block, index) => {
           const key = `${block.lineNumber}-${index}`;
@@ -233,7 +236,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               <div
                 key={key}
                 data-line-number={block.lineNumber}
-                className="-mx-3 overflow-x-auto rounded-md border border-zinc-200 py-1 dark:border-zinc-800"
+                className="-mx-3 overflow-x-auto rounded-[7px] border border-zinc-200 py-1 dark:border-zinc-800"
               >
                 {lineNumbers.map((line) => (
                   <div key={line} data-line-number={line}>
@@ -274,14 +277,10 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               role="button"
               tabIndex={0}
               aria-label={`Comment on Markdown block starting at line ${block.lineNumber}`}
-              className={cn(
-                "group relative -mx-3 rounded-md border border-transparent px-3 transition-colors",
-                "cursor-pointer hover:bg-zinc-100/80 focus-visible:border-zinc-400 focus-visible:outline-none dark:hover:bg-zinc-800/70",
-                hasComment &&
-                  "border-amber-300 bg-amber-50/70 dark:border-amber-700 dark:bg-amber-950/20",
-                isSelected &&
-                  "border-zinc-400 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800",
-              )}
+              data-comment-anchor="true"
+              data-commented={hasComment ? "true" : undefined}
+              data-selected={isSelected ? "true" : undefined}
+              className={commentableBlockClass(hasComment, isSelected)}
               onClick={(event) => {
                 if (
                   (event.target as HTMLElement).closest(
@@ -295,11 +294,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               onKeyDown={(event) => handleKeyDown(event, block.lineNumber)}
             >
               <span
-                className={cn(
-                  "absolute -left-2 top-2 rounded-full border bg-(--background) p-1 text-zinc-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
-                  hasComment &&
-                    "text-amber-600 opacity-100 dark:text-amber-400",
-                )}
+                className={commentMarkerClass(hasComment, isSelected)}
                 aria-hidden="true"
               >
                 <MessageSquare size={13} />

@@ -3,6 +3,10 @@
 import { memo } from "react";
 import { MessageSquare } from "lucide-react";
 import type { ThemedToken } from "shiki";
+import {
+  COMMENTED_CODE_LINE_CLASSES,
+  SELECTED_CODE_LINE_CLASSES,
+} from "../comment-styles";
 import type { DiffLineKind } from "./types";
 import { cn } from "@/lib/utils/helpers";
 
@@ -45,6 +49,8 @@ export const CodeViewLine = memo<CodeViewLineProps>(
         tabIndex={isCommentable ? 0 : undefined}
         aria-label={`Line ${lineNumber}`}
         aria-disabled={!isCommentable}
+        data-commented={hasComment ? "true" : undefined}
+        data-selected={isSelected ? "true" : undefined}
         onClick={selectLine}
         onKeyDown={(e) => {
           if (!isCommentable || (e.key !== "Enter" && e.key !== " ")) return;
@@ -52,12 +58,13 @@ export const CodeViewLine = memo<CodeViewLineProps>(
           selectLine();
         }}
         className={cn(
-          "flex w-max min-w-full items-stretch font-mono text-xs leading-6",
-          isCommentable && "cursor-pointer",
+          "flex w-max min-w-full items-stretch font-mono text-xs leading-6 transition-colors",
+          isCommentable &&
+            "cursor-pointer [&:hover:not(:has([data-comment-anchor]:hover)):not(:has([data-comment-composer]:hover))]:bg-zinc-100/70 dark:[&:hover:not(:has([data-comment-anchor]:hover)):not(:has([data-comment-composer]:hover))]:bg-zinc-900/70",
           changeKind === "added" && "bg-emerald-100 dark:bg-emerald-950",
           changeKind === "deleted" && "bg-red-100 dark:bg-red-950",
-          isSelected && "bg-blue-500/10",
-          !isSelected && hasComment && "bg-amber-500/10",
+          isSelected && SELECTED_CODE_LINE_CLASSES.join(" "),
+          hasComment && COMMENTED_CODE_LINE_CLASSES.join(" "),
         )}
       >
         {isDiffLine ? (
@@ -77,7 +84,10 @@ export const CodeViewLine = memo<CodeViewLineProps>(
               )}
             >
               {hasComment && (
-                <MessageSquare size={10} className="mr-1 text-amber-500" />
+                <MessageSquare
+                  size={10}
+                  className="mr-1 text-slate-600 dark:text-slate-300"
+                />
               )}
               {newLineNumber ?? ""}
             </span>
@@ -93,7 +103,10 @@ export const CodeViewLine = memo<CodeViewLineProps>(
             )}
           >
             {hasComment && (
-              <MessageSquare size={10} className="text-amber-500" />
+              <MessageSquare
+                size={10}
+                className="text-slate-600 dark:text-slate-300"
+              />
             )}
             {newLineNumber}
           </span>

@@ -26,12 +26,17 @@ import {
 } from "./line-comments";
 import { CommentComposer } from "./file-browser/comment-composer";
 import { useFileBrowser } from "./file-browser/file-browser-provider";
+import {
+  COMMENTED_CODE_LINE_CLASSES,
+  SELECTED_CODE_LINE_CLASSES,
+  commentMarkerClass,
+  commentableBlockClass,
+} from "./comment-styles";
 import type {
   LineRange,
   ResponsePendingComment,
 } from "./file-browser/types";
 import { Response } from "@/components/chat/response";
-import { cn } from "@/lib/utils/helpers";
 
 const FENCE = /^\s*(?:```|~~~)/;
 const CODE_LINE_SELECTOR =
@@ -188,14 +193,10 @@ const CommentableBlock: React.FC<StreamdownBlockProps> = (props) => {
       role="button"
       tabIndex={0}
       aria-label={`Comment on Markdown block starting at line ${block.lineNumber}`}
-      className={cn(
-        "group relative -mx-3 rounded-md border border-transparent px-3 transition-colors",
-        "cursor-pointer hover:bg-zinc-100/80 focus-visible:border-zinc-400 focus-visible:outline-none dark:hover:bg-zinc-800/70",
-        hasComment &&
-          "border-amber-300 bg-amber-50/70 dark:border-amber-700 dark:bg-amber-950/20",
-        isSelected &&
-          "border-zinc-400 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800",
-      )}
+      data-comment-anchor="true"
+      data-commented={hasComment ? "true" : undefined}
+      data-selected={isSelected ? "true" : undefined}
+      className={commentableBlockClass(hasComment, isSelected)}
       onClick={(event) => {
         if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
         comments.onSelectBlock({ start: block.start, end: block.end });
@@ -207,10 +208,7 @@ const CommentableBlock: React.FC<StreamdownBlockProps> = (props) => {
       }}
     >
       <span
-        className={cn(
-          "absolute -left-2 top-2 rounded-full border bg-(--background) p-1 text-zinc-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
-          hasComment && "text-amber-600 opacity-100 dark:text-amber-400",
-        )}
+        className={commentMarkerClass(hasComment, isSelected)}
         aria-hidden="true"
       >
         <MessageSquare size={13} />
@@ -283,16 +281,26 @@ export const CommentableAgentResponse: React.FC<
           line.setAttribute("role", "button");
           line.setAttribute("tabIndex", "0");
           line.setAttribute("aria-label", `Comment on line ${lineNumber}`);
+          line.dataset.commented = commentsByLine.has(lineNumber)
+            ? "true"
+            : "false";
+          line.dataset.selected =
+            selectedLine === lineNumber ? "true" : "false";
           line.classList.add(
             "cursor-pointer",
-            "hover:bg-zinc-100/80",
-            "dark:hover:bg-zinc-800/70",
+            "transition-colors",
+            "[&:hover:not(:has([data-comment-anchor]:hover)):not(:has([data-comment-composer]:hover))]:bg-zinc-100/70",
+            "dark:[&:hover:not(:has([data-comment-anchor]:hover)):not(:has([data-comment-composer]:hover))]:bg-zinc-900/70",
           );
-          line.classList.toggle(
-            "bg-amber-500/10",
-            commentsByLine.has(lineNumber),
-          );
-          line.classList.toggle("bg-blue-500/10", selectedLine === lineNumber);
+          for (const className of COMMENTED_CODE_LINE_CLASSES) {
+            line.classList.toggle(
+              className,
+              commentsByLine.has(lineNumber),
+            );
+          }
+          for (const className of SELECTED_CODE_LINE_CLASSES) {
+            line.classList.toggle(className, selectedLine === lineNumber);
+          }
         });
 
         const hostLine = String(block.lineNumber);
@@ -338,6 +346,13 @@ export const CommentableAgentResponse: React.FC<
         lineNumber={line}
         endLine={selectedAnchor?.end ?? line}
         existing={comment}
+        contextLabel={`Agent response · Turn ${turnNumber}`}
+        sourceText={
+          comment?.lineText ??
+          sourceLines
+            .slice(line - 1, selectedAnchor?.end ?? line)
+            .join("\n")
+        }
         onSave={saveComment}
         onRemove={() => {
           if (comment) actions.removeComment(comment.id);

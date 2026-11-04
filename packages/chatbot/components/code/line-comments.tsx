@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { LineRange } from "./file-browser/types";
+import { commentRowClass } from "./comment-styles";
 import { cn } from "@/lib/utils/helpers";
 
 export type MarkdownBlockKind = "code" | "table" | "list" | "other";
@@ -46,6 +47,9 @@ interface LineAnchor {
   className: string;
   props: {
     "data-line-number": number;
+    "data-comment-anchor": "true";
+    "data-commented"?: "true";
+    "data-selected"?: "true";
     tabIndex: number;
     "aria-label": string;
     onClick: (event: MouseEvent<HTMLElement>) => void;
@@ -64,13 +68,17 @@ function useLineAnchor(node: MarkdownNodeProps["node"]): LineAnchor | null {
 
   return {
     line,
-    className: cn(
-      "cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-800/70",
-      comments.commentsByLine.has(line) && "bg-amber-500/10",
-      comments.selectedLine === line && "bg-blue-500/10",
+    className: commentRowClass(
+      comments.commentsByLine.has(line),
+      comments.selectedLine === line,
     ),
     props: {
       "data-line-number": line,
+      "data-comment-anchor": "true",
+      "data-commented": comments.commentsByLine.has(line)
+        ? "true"
+        : undefined,
+      "data-selected": comments.selectedLine === line ? "true" : undefined,
       tabIndex: 0,
       "aria-label": `Comment on line ${line}`,
       onClick: (event) => {
