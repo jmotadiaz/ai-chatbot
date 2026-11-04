@@ -11,7 +11,7 @@ import { getArtifactsDir } from "../../src/runtime/paths";
  * First-party `publish_artifact` tool and `/artifacts` command. Loaded via
  * `additionalExtensionPaths` like the subagent extension.
  *
- * Why it exists: the report-generating skills were written for a laptop. They
+ * Why it exists: the artifact-generating skills were written for a laptop. They
  * write a self-contained HTML file and `xdg-open` it, which on a headless host
  * leaves the artifact at a path the user cannot see. Publishing copies it into
  * the artifacts root, `<project>/<name>/index.html`, and returns the Chatbot view
@@ -37,7 +37,7 @@ export default function registerArtifactsExtension(pi: ExtensionAPI): void {
     name: "publish_artifact",
     label: "Publish artifact",
     description:
-      "Publish a generated HTML artifact or interactive artifact so the user can open it in the Chatbot, and return the view path to show them. Call this after writing any visual artifact instead of trying to open it with xdg-open, open or start: this agent runs headless, so those silently do nothing.",
+      "Publish a generated HTML artifact so the user can open it in the Chatbot, and return the view path to show them. Call this after writing any visual artifact instead of trying to open it with xdg-open, open or start: this agent runs headless, so those silently do nothing.",
     promptSnippet: "Publish generated HTML artifacts and get a Chatbot view path for the user",
     promptGuidelines: [
       "After writing any HTML artifact meant for the user to read, call publish_artifact({ path, name }) and put the returned path in your reply.",
