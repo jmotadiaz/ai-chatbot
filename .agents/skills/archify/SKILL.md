@@ -33,7 +33,7 @@ Use this bounded path for ordinary generation. Do not read the optional Viewer R
    ```
 
    A non-zero exit can never be described as success. A failed delivery preserves any previous output, so do not run `visual-check` on that path: it would inspect the stale last-good artifact, not the failed candidate. If validation fails, change only the diagnosed `subject`, verify `evidence`, choose from `supportedFixes`, and rerun. Continue focused correction while the objective error count reaches a new minimum. If two consecutive rounds do not improve that best count, stop and report the unresolved diagnostics truthfully.
-6. Publish artifact: call the `publish_artifact` tool with the delivered `<output.html>` path and put the URL it returns in your reply. Do NOT try to open the file yourself (`--open`, `xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see. The URL is how they see it.
+6. Publish artifact: call the `publish_artifact` tool with `path: "<output.html>"` and a stable `name` (e.g. `architecture-review`), and put the URL it returns (`/agent/code/<project>/<sessionId>/artifacts/<name>`) in your reply. Do NOT try to open the file yourself (`--open`, `xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see. The URL is how they see it.
 
 ## Update awareness
 
@@ -111,9 +111,9 @@ Keep the three claims separate: `deliver` proves deterministic artifact checks, 
 ### Publishing artifact
 
 After delivery (and optional visual check), publish the HTML file with the `publish_artifact` tool:
-- Call `publish_artifact` with `path: "<output.html>"` (and optional `title`).
+- Call `publish_artifact` with `path: "<output.html>"` and `name: "<stable-name>"` (no `title`).
 - Present the returned URL prominently in your reply so the user can open and explore the diagram in their browser.
-- Do NOT try to open the file yourself (`--open`, `xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see. The URL from `publish_artifact` is how they see it.
+- Do NOT try to open the file yourself (`--open`, `xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see. The URL from `publish_artifact` is how they see it (a chatbot-relative path, not a worker URL).
 
 For an active desktop authoring loop, the optional preview command is:
 

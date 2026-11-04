@@ -7,8 +7,9 @@ description: Use when writing any HTML/markdown artifact the user reads in a bro
 
 ## Overview
 
-Every artifact this harness produces is served over `GET /artifacts/` and opened
-wherever the user happens to be — including a phone. Generated reports fail
+Every artifact this harness produces is published with `publish_artifact({ path, name })`
+and opened in the Chatbot at `/agent/code/<project>/<sessionId>/artifacts/<name>` — including
+on a phone. The route is behind `withAuth`, so it cannot be fetched by `check:mobile`; Generated reports fail
 there quietly: Tailwind classes without a breakpoint prefix look perfect at
 1440px and break below 640px, and nothing in the source hints at it.
 
@@ -86,16 +87,19 @@ yours to control there.
 The check is not optional and not a judgment call:
 
 ```bash
-pnpm --filter chatbot check:mobile "<url absoluta del artifact>"
+pnpm --filter chatbot check:mobile "/tmp/<name>.html"
 ```
 
 It opens the page at 320px and 390px, reports horizontal overflow, the elements
 causing it, and the count of sub-12px text nodes. Exit 0 = publishable.
 
-The URL has to come from `publish_artifact` first, so the loop is: **write →
-publica → comprueba → arregla → vuelve a publicar**. Republishing the same name
-with changed content yields a new hashed URL (the old version is kept, not
-clobbered), so nothing is lost by iterating.
+`check:mobile` accepts local file paths (converted to `file://`) as well as
+`http://`/`https://`/`file://` URLs, so validate the HTML on disk **before**
+calling `publish_artifact`. The Chatbot artifact route is behind `withAuth`, so it
+cannot be fetched by `check:mobile`. The loop is: **write → comprueba (local) →
+arregla → publica → (optional) comprueba de nuevo**. Republishing the same
+`name` overwrites `<name>/index.html` in place and the URL stays stable, so
+nothing is lost by iterating.
 
 If a fix genuinely cannot fit 320px (a wide dependency graph the user asked for),
 say so in the message that carries the URL rather than passing the check off as
@@ -114,5 +118,5 @@ silently dropped.
 - **Only checking 390px.** 320px is where the tightest card grids break, and it
   is still very common.
 - **Rechecking with a cached page.** The viewer sends `no-store`, but a
-  long-lived browser tab may still show an old artifact: use the new URL that
-  `publish_artifact` returns after each fix.
+  long-lived browser tab may still show an old artifact: reload the same URL;
+  it now serves the new file.
