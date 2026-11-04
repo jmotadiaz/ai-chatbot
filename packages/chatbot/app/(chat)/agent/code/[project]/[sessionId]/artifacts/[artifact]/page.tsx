@@ -37,7 +37,7 @@ async function CodingAgentArtifactPage({
             <ArrowLeft size={18} />
           </Link>
           <span className="truncate text-sm font-medium">
-            {decodeURIComponent(artifact)}
+            {artifact}
           </span>
         </Header.Left>
         <Header.Right>

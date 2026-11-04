@@ -150,7 +150,6 @@ export function parseFileReferenceHref(
   return isSafeRelativePath(path) ? path : null;
 }
 
-
 /** Deep link into the artifact view. */
 export function artifactViewHref(
   project: string,
@@ -161,6 +160,7 @@ export function artifactViewHref(
 }
 
 const ARTIFACT_PATH = /^\/agent\/code\/([^/]+)\/([^/]+)\/artifacts\/([^/]+)\/?$/;
+// Mirrored from coding-agent/artifacts (isSafeSegment): this module is imported by client components, while coding-agent/artifacts pulls node:fs.
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 /**
@@ -172,11 +172,16 @@ export function parseArtifactHref(href: string | undefined): string | null {
   if (!href) return null;
   let path = href;
   if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+    let url: URL;
     try {
-      path = new URL(href).pathname;
+      url = new URL(href);
     } catch {
       return null;
     }
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    path = url.pathname;
   }
   const match = path.match(ARTIFACT_PATH);
   if (!match) return null;

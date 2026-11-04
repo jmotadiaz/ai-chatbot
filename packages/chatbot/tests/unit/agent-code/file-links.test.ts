@@ -4,6 +4,8 @@ import {
   fileViewHref,
   initialLocationFrom,
   isSafeRelativePath,
+  artifactViewHref,
+  parseArtifactHref,
   parseFileReferenceHref,
   resolveNoteLink,
 } from "@/lib/features/code/file-browser/file-links";
@@ -178,5 +180,40 @@ describe("parseFileReferenceHref", () => {
     expect(parseFileReferenceHref("file:../outside.ts")).toBeNull();
     expect(parseFileReferenceHref("file:///etc/passwd")).toBeNull();
     expect(parseFileReferenceHref("file:src/%zz.ts")).toBeNull();
+  });
+});
+
+describe("artifactViewHref", () => {
+  it("builds artifact-view deep links", () => {
+    expect(artifactViewHref("p", "s1", "diagram")).toBe(
+      "/agent/code/p/s1/artifacts/diagram",
+    );
+  });
+});
+
+describe("parseArtifactHref", () => {
+  it("accepts a plain artifact path", () => {
+    expect(parseArtifactHref("/agent/code/proj/s1/artifacts/diagram")).toBe("diagram");
+  });
+
+  it("accepts an absolute same-origin URL", () => {
+    expect(
+      parseArtifactHref("http://localhost:3000/agent/code/proj/s1/artifacts/diagram"),
+    ).toBe("diagram");
+  });
+
+  it("rejects non-artifact paths", () => {
+    expect(parseArtifactHref("/agent/code/proj/s1/files")).toBeNull();
+    expect(parseArtifactHref("https://example.com")).toBeNull();
+    expect(parseArtifactHref(undefined)).toBeNull();
+  });
+
+  it("rejects unsafe segments", () => {
+    expect(parseArtifactHref("/agent/code/../s1/artifacts/diagram")).toBeNull();
+    expect(parseArtifactHref("/agent/code/proj/s1/artifacts/a%2fb")).toBeNull();
+  });
+
+  it("rejects unknown schemes", () => {
+    expect(parseArtifactHref("ftp://example.com/agent/code/p/s/artifacts/x")).toBeNull();
   });
 });
