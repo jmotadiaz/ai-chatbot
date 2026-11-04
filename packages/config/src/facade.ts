@@ -79,7 +79,6 @@ export function createConfigFacade(resolveBundle: () => AppConfig) {
     codingAgentAgentDir: (): string => value("codingAgentAgentDir"),
     codingAgentPiPackagesDir: (): string => value("codingAgentPiPackagesDir"),
     codingAgentArtifactsDir: (): string => value("codingAgentArtifactsDir"),
-    codingAgentArtifactsUrl: (): string | undefined => value("codingAgentArtifactsUrl"),
     dbProvider: (): string | undefined => value("dbProvider"),
     dbDialect: (): string | undefined => value("dbDialect"),
     contextWindow: (): number => value("contextWindow"),

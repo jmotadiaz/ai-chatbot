@@ -62,7 +62,6 @@ describe("bundles env.<environment>", () => {
     expect(envProd.codingAgentProjectsRoot).toBe(repoPath(".."));
     expect(envProd.codingAgentAuthJson).toBe(packagePath("coding-agent", ".pi-prod/auth.json"));
     expect(envProd.traceDir).toBe(packagePath("coding-agent", ".pi-prod/traces"));
-    expect(envProd.codingAgentArtifactsUrl).toBe("http://192.168.18.50:3015");
   });
 
   it("do not share any runtime directory between Environments", () => {

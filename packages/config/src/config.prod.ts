@@ -31,9 +31,6 @@ export const configProd = {
   codingAgentAgentDir: packagePath("coding-agent", ".pi-prod/agent"),
   codingAgentPiPackagesDir: packagePath("coding-agent", ".pi-prod/packages"),
   codingAgentArtifactsDir: packagePath("coding-agent", ".pi-prod/artifacts"),
-  // Followed by the user's BROWSER: it must be reachable on the LAN, not on
-  // loopback. Same value in force in `.env.prod`.
-  codingAgentArtifactsUrl: "http://192.168.18.50:3015",
   contextWindow: 128000,
   ragUploadLimit: "false",
   debugChunking: true,

@@ -8,7 +8,6 @@
   "exports": {
     ".": "./src/index.ts",
     "./artifacts": "./src/artifacts/artifacts.ts",
-    "./artifacts-http": "./src/artifacts/artifacts-http.ts",
     "./attached-files": "./src/runtime/attached-files.ts",
     "./event-log": "./src/agui/event-log.ts",
     "./file-reference-prompt": "./src/runtime/file-reference-prompt.ts",
@@ -40,7 +39,6 @@
     "./subagent/subagent-bridge": "./src/subagent/subagent-bridge.ts",
     "./subagent/subagent-collector": "./src/subagent/subagent-collector.ts",
     "./artifacts/artifacts": "./src/artifacts/artifacts.ts",
-    "./artifacts/artifacts-http": "./src/artifacts/artifacts-http.ts",
     "./runtime/attached-files": "./src/runtime/attached-files.ts",
     "./runtime/file-reference-prompt": "./src/runtime/file-reference-prompt.ts",
     "./runtime/models": "./src/runtime/models.ts",

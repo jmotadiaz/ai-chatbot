@@ -3,11 +3,9 @@ import os from "node:os";
 import { describe, expect, it } from "vitest";
 import {
   PACKAGE_ROOT,
-  getArtifactsBaseUrl,
   getArtifactsDir,
   getCodingAgentDir,
   getSessionsDir,
-  resolveArtifactsBaseUrl,
   resolveArtifactsDir,
   resolveCodingAgentDir,
   resolveProjectsRoot,
@@ -77,25 +75,5 @@ describe("DI: constructor overrides win and stay inside the sandbox", () => {
     } finally {
       ctx.cleanup();
     }
-  });
-});
-
-describe("resolveArtifactsBaseUrl", () => {
-  it("defaults to the worker URL of the Environment", () => {
-    // config.test.ts: codingAgentWorkerUrl = stub de test en :3001.
-    expect(getArtifactsBaseUrl()).toBe(
-      "http://localhost:3001/api/agent/code/worker-stub",
-    );
-  });
-
-  it("prefers an explicit base URL and strips trailing slashes", () => {
-    expect(resolveArtifactsBaseUrl({ artifactsBaseUrl: "http://127.0.0.1:9/" })).toBe(
-      "http://127.0.0.1:9",
-    );
-    expect(resolveArtifactsBaseUrl({ artifactsBaseUrl: "" })).toBe(getArtifactsBaseUrl());
-  });
-
-  it("derives localhost:<port> from an injected workerPort", () => {
-    expect(resolveArtifactsBaseUrl({ workerPort: 3999 })).toBe("http://localhost:3999");
   });
 });

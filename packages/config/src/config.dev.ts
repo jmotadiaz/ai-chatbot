@@ -25,8 +25,6 @@ export const configDev = {
   codingAgentAgentDir: packagePath("coding-agent", ".pi-dev/agent"),
   codingAgentPiPackagesDir: packagePath("coding-agent", ".pi-dev/packages"),
   codingAgentArtifactsDir: packagePath("coding-agent", ".pi-dev/artifacts"),
-  // Base of the links the agent publishes; the user's browser follows it.
-  codingAgentArtifactsUrl: "http://192.168.18.50:3016",
   contextWindow: 128000,
   ragUploadLimit: "false",
   debugChunking: true,

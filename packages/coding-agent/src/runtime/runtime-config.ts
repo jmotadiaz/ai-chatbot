@@ -1,7 +1,6 @@
 import { config } from "config";
 import { resolveAuthJsonPath, resolveModelsJsonPath } from "./models";
 import {
-  resolveArtifactsBaseUrl,
   resolveArtifactsDir,
   resolveCodingAgentDir,
   resolveProjectsRoot,
@@ -34,7 +33,6 @@ export interface WorkerRuntimeConfig extends GatewayRuntimeConfig {
   agentDir?: string;
   piPackagesDir?: string;
   artifactsDir?: string;
-  artifactsBaseUrl?: string;
   workerPort?: number;
 }
 
@@ -78,7 +76,6 @@ export function resolveWorkerRuntimeConfig(
     agentDir: resolveCodingAgentDir(base),
     piPackagesDir: resolvePiPackagesDir(base),
     artifactsDir: resolveArtifactsDir(base),
-    artifactsBaseUrl: resolveArtifactsBaseUrl(base),
     workerPort: resolveWorkerPort(base),
   };
 }

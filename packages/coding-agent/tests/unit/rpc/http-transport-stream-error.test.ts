@@ -54,7 +54,6 @@ beforeAll(async () => {
     gatewayUrl,
     apiKey: "test-gateway-key",
     artifactsDir: path.join(tmp, "artifacts"),
-    artifactsBaseUrl: baseUrl,
   });
   server = startHttpTransport({ port, host: "127.0.0.1", runtimeConfig: ctx.workerConfig });
   await new Promise<void>((resolve) => server.once("listening", resolve));
