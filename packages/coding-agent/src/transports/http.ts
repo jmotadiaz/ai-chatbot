@@ -74,9 +74,11 @@ export function startHttpTransport(options: HttpTransportOptions) {
   // off globalThis rather than importing it (see subagent-bridge).
   setSubagentRunner(runSubagent);
 
-  const server = createServer((req, res) =>
-    handleHttpRequest(req, res, runtimeConfig),
-  );
+  const server = createServer((req, res) => {
+    handleHttpRequest(req, res, runtimeConfig).catch((err) => {
+      console.error("Unhandled error in handleHttpRequest:", err);
+    });
+  });
   const onListening = () => {
     const host = options.host ?? "localhost";
     console.log(`Coding agent worker listening on http://${host}:${options.port}`);
@@ -96,40 +98,53 @@ async function handleHttpRequest(
   res: ServerResponse,
   runtimeConfig: WorkerRuntimeConfig,
 ) {
-  // Artifacts are the read-only half of this server: reports the agent
-  // generated for a human to open. Everything else on this port is the RPC
-  // endpoint, which is POST-only and machine-facing.
-  const artifactRoute =
-    req.method === "GET" || req.method === "HEAD"
-      ? matchArtifactRoute(req.url)
-      : undefined;
-  if (artifactRoute) {
-    await handleArtifactRequest(req, res, artifactRoute, {
-      rootDir: resolveArtifactsDir(runtimeConfig),
-      baseUrl: resolveArtifactsBaseUrl(runtimeConfig),
-    });
-    return;
-  }
-
-  if (req.method !== "POST" || req.url !== "/rpc") {
-    res.writeHead(404).end("Not found");
-    return;
-  }
-
-  const body = await readRequestBody(req);
-  const { runId, sessionId, method } = parseTraceMetadata(body);
-  // The sink is ref-counted per run, not owned by this request: work started
-  // here can outlive the response (a prompt turn keeps running after the
-  // browser disconnects) and must keep tracing until it really ends.
-  const sink = await acquireTraceSink({ runId, truncate: false });
-
+  const log = getTraceLogger("worker");
   try {
-    await runWithTraceContext({ runId, sessionId, sink }, async () => {
-      const response = await handleRpc(body);
-      await writeFetchResponseToNode(response, res, { method, sessionId });
+    // Artifacts are the read-only half of this server: reports the agent
+    // generated for a human to open. Everything else on this port is the RPC
+    // endpoint, which is POST-only and machine-facing.
+    const artifactRoute =
+      req.method === "GET" || req.method === "HEAD"
+        ? matchArtifactRoute(req.url)
+        : undefined;
+    if (artifactRoute) {
+      await handleArtifactRequest(req, res, artifactRoute, {
+        rootDir: resolveArtifactsDir(runtimeConfig),
+        baseUrl: resolveArtifactsBaseUrl(runtimeConfig),
+      });
+      return;
+    }
+
+    if (req.method !== "POST" || req.url !== "/rpc") {
+      res.writeHead(404).end("Not found");
+      return;
+    }
+
+    const body = await readRequestBody(req);
+    const { runId, sessionId, method } = parseTraceMetadata(body);
+    // The sink is ref-counted per run, not owned by this request: work started
+    // here can outlive the response (a prompt turn keeps running after the
+    // browser disconnects) and must keep tracing until it really ends.
+    const sink = await acquireTraceSink({ runId, truncate: false });
+
+    try {
+      await runWithTraceContext({ runId, sessionId, sink }, async () => {
+        const response = await handleRpc(body);
+        await writeFetchResponseToNode(response, res, { method, sessionId });
+      });
+    } finally {
+      await releaseTraceSink(runId);
+    }
+  } catch (err) {
+    log.error("worker.unhandled_request_error", {
+      error: err instanceof Error ? err.stack ?? err.message : String(err),
     });
-  } finally {
-    await releaseTraceSink(runId);
+    if (!res.headersSent) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Internal Server Error" }));
+    } else if (!res.writableEnded) {
+      res.destroy(err instanceof Error ? err : new Error(String(err)));
+    }
   }
 }
 
@@ -182,6 +197,7 @@ async function writeFetchResponseToNode(
   let chunkCount = 0;
   let byteCount = 0;
   let closedByClient = false;
+  let streamError: unknown;
   const onClose = () => {
     if (!res.writableEnded) {
       closedByClient = true;
@@ -204,6 +220,16 @@ async function writeFetchResponseToNode(
       byteCount += value.byteLength;
       res.write(value);
     }
+  } catch (err) {
+    streamError = err;
+    log.warn("worker.response_stream_error", {
+      method: metadata.method,
+      sessionId: metadata.sessionId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    if (!res.writableEnded) {
+      res.destroy(err instanceof Error ? err : new Error(String(err)));
+    }
   } finally {
     res.off("close", onClose);
     reader.releaseLock();
@@ -215,8 +241,11 @@ async function writeFetchResponseToNode(
       chunkCount,
       byteCount,
       closedByClient,
+      error: streamError ? String(streamError) : undefined,
     });
-    res.end();
+    if (!res.writableEnded) {
+      res.end();
+    }
   }
 }
 
