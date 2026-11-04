@@ -149,3 +149,61 @@ export function parseFileReferenceHref(
   path = path.replace(/:\d+(?:-\d+)?$/, "");
   return isSafeRelativePath(path) ? path : null;
 }
+
+/** Deep link into the artifact view. */
+export function artifactViewHref(
+  project: string,
+  sessionId: string,
+  artifact: string,
+): string {
+  return `/agent/code/${encodeURIComponent(project)}/${encodeURIComponent(sessionId)}/artifacts/${encodeURIComponent(artifact)}`;
+}
+
+const ARTIFACT_PATH = /^\/agent\/code\/([^/]+)\/([^/]+)\/artifacts\/([^/]+)\/?$/;
+// Mirrored from coding-agent/artifacts (isSafeSegment): this module is imported by client components, while coding-agent/artifacts pulls node:fs.
+const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+
+/**
+ * Extract the artifact name from an artifact view path (or an absolute URL
+ * pointing at one). Returns null for anything that is not a safe artifact
+ * path. Absolutise against a same-origin base first when the href is absolute.
+ */
+export function parseArtifactHref(href: string | undefined): string | null {
+  if (!href) return null;
+  let path = href;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+    let url: URL;
+    try {
+      url = new URL(href);
+    } catch {
+      return null;
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    path = url.pathname;
+  }
+  const match = path.match(ARTIFACT_PATH);
+  if (!match) return null;
+  let project: string;
+  let sessionId: string;
+  let artifact: string;
+  try {
+    project = decodeURIComponent(match[1]);
+    sessionId = decodeURIComponent(match[2]);
+    artifact = decodeURIComponent(match[3]);
+  } catch {
+    return null;
+  }
+  if (
+    !SAFE_SEGMENT.test(project) ||
+    !SAFE_SEGMENT.test(sessionId) ||
+    !SAFE_SEGMENT.test(artifact)
+  ) {
+    return null;
+  }
+  if (project.includes("..") || sessionId.includes("..") || artifact.includes("..")) {
+    return null;
+  }
+  return artifact;
+}
