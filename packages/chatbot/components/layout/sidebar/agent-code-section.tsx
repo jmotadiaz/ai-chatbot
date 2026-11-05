@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useCollapse } from "react-collapsed";
-import { ChevronDown, CodeXml, Plus } from "lucide-react";
+import { ChevronDown, CodeXml, Plus, ArrowRight } from "lucide-react";
 import type { ClassNameValue } from "tailwind-merge";
 import { cn } from "@/lib/utils/helpers";
 import { Item } from "@/components/ui/item";
@@ -13,14 +13,9 @@ import {
   createCodingAgentSession,
   getCodingAgentSessions,
 } from "@/lib/features/code/actions";
+import type { CodingAgentSessionListing } from "@/lib/features/code/types";
 
-export interface CodingAgentSession {
-  id: string;
-  sessionId: string;
-  label: string | null;
-  updatedAt: Date;
-}
-
+/** Sessions shown under an expanded Project; Session History has the rest. */
 export const SESSIONS_LIMIT = 10;
 
 const AGENT_ROUTE = /^\/agent\/code\/([^/]+)\/([^/]+)/;
@@ -44,7 +39,7 @@ export const AgentCodeSection: React.FC<AgentCodeSectionProps> = ({
   const router = useRouter();
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [sessionsMap, setSessionsMap] = useState<
-    Record<string, CodingAgentSession[]>
+    Record<string, CodingAgentSessionListing[]>
   >({});
   const [loadingProject, setLoadingProject] = useState<string | null>(null);
   const [errorProject, setErrorProject] = useState<string | null>(null);
@@ -55,7 +50,10 @@ export const AgentCodeSection: React.FC<AgentCodeSectionProps> = ({
     setLoadingProject(project);
     setErrorProject(null);
     try {
-      const sessions = await getCodingAgentSessions(project, SESSIONS_LIMIT);
+      const { sessions } = await getCodingAgentSessions({
+        project,
+        limit: SESSIONS_LIMIT,
+      });
       setSessionsMap((prev) => ({ ...prev, [project]: sessions }));
     } catch {
       setErrorProject(project);
@@ -127,7 +125,7 @@ interface ProjectRowProps {
   isOpen: boolean;
   active: boolean;
   currentSessionId?: string;
-  sessions?: CodingAgentSession[];
+  sessions?: CodingAgentSessionListing[];
   loading: boolean;
   error: boolean;
   onToggle: () => void;
@@ -194,23 +192,33 @@ const ProjectRow: React.FC<ProjectRowProps> = ({
                 No sessions yet
               </div>
             ) : (
-              sessions.map((session) => (
-                <Item
-                  key={session.id}
-                  className="py-0"
-                  active={session.sessionId === currentSessionId}
-                >
-                  <ChatLink
-                    href={`/agent/code/${encodeURIComponent(project)}/${encodeURIComponent(session.sessionId)}`}
-                    data-testid="agent-session-link"
-                    className="flex-1 py-2 overflow-hidden"
+              <>
+                {sessions.map((session) => (
+                  <Item
+                    key={session.id}
+                    className="py-0"
+                    active={session.sessionId === currentSessionId}
                   >
-                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      {session.label ?? session.sessionId}
-                    </span>
-                  </ChatLink>
-                </Item>
-              ))
+                    <ChatLink
+                      href={`/agent/code/${encodeURIComponent(project)}/${encodeURIComponent(session.sessionId)}`}
+                      data-testid="agent-session-link"
+                      className="flex-1 py-2 overflow-hidden"
+                    >
+                      <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                        {session.label ?? session.sessionId}
+                      </span>
+                    </ChatLink>
+                  </Item>
+                ))}
+                <ChatLink
+                  href={`/agent/code/${encodeURIComponent(project)}/history`}
+                  data-testid="agent-sessions-see-all"
+                  className="flex items-center gap-1 pt-2 ml-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  See all
+                  <ArrowRight className="w-3 h-3" />
+                </ChatLink>
+              </>
             )
           ) : null}
         </div>

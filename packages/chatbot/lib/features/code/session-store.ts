@@ -1,10 +1,11 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { eq, and, desc, isNotNull } from "drizzle-orm";
+import { eq, and, desc, ilike, isNotNull } from "drizzle-orm";
 import { getDb } from "@/lib/infrastructure/db/db";
 import {
   codingAgentSessions,
+  type CodingAgentSession,
   type NewCodingAgentSession,
 } from "@/lib/infrastructure/db/schema";
 
@@ -42,26 +43,40 @@ export async function getSession(input: { userId: string; sessionId: string }) {
   return row;
 }
 
+/**
+ * The one definition of what a session listing shows: the user's own sessions
+ * of one Project, most recently active first, and only those that already ran
+ * their first Turn (a session is created before its first prompt, and a row
+ * without a label has no name to show). The sidebar and Session History both
+ * read through here, so they cannot disagree.
+ */
 export async function listSessions(input: {
   userId: string;
   project: string;
-  limit?: number;
-}) {
-  const query = getDb()
+  limit: number;
+  offset?: number;
+  filter?: string;
+}): Promise<{ sessions: CodingAgentSession[]; hasMore: boolean }> {
+  const { userId, project, limit, offset = 0, filter = "" } = input;
+
+  // One row past the page: its presence is the whole `hasMore` answer.
+  const rows = await getDb()
     .select()
     .from(codingAgentSessions)
     .where(
       and(
-        eq(codingAgentSessions.userId, input.userId),
-        eq(codingAgentSessions.project, input.project),
+        eq(codingAgentSessions.userId, userId),
+        eq(codingAgentSessions.project, project),
         isNotNull(codingAgentSessions.label),
+        filter ? ilike(codingAgentSessions.label, `%${filter}%`) : undefined,
       ),
     )
-    .orderBy(desc(codingAgentSessions.updatedAt));
-  if (input.limit !== undefined) {
-    query.limit(input.limit);
-  }
-  return query;
+    .orderBy(desc(codingAgentSessions.updatedAt))
+    .limit(limit + 1)
+    .offset(offset);
+
+  const hasMore = rows.length > limit;
+  return { sessions: hasMore ? rows.slice(0, limit) : rows, hasMore };
 }
 
 export async function updateSessionLabel(input: {

@@ -3,11 +3,8 @@ import { getTraceLogger } from "tracing";
 import type { ThinkingLevel } from "@/lib/features/foundation-model/config";
 import { isKnownModelId } from "@/lib/features/foundation-model/config";
 import { fetchPublicModelCatalog } from "@/lib/infrastructure/ai/catalog";
-import {
-  getSession,
-  listSessions,
-  touchSession,
-} from "@/lib/features/code/session-store";
+import { getSession, listSessions, touchSession } from "@/lib/features/code/session-store";
+import { SESSION_PICKER_LIMIT } from "@/lib/features/code/constants";
 import {
   WorkerClient,
   type WorkerSessionSnapshot,
@@ -163,7 +160,11 @@ export async function loadCodingAgentBootstrap(params: {
     }),
     optional("prompts", sessionId, async () => {
       const { prompts } = await client.getSessionPrompts({ sessionId });
-      const sessions = await listSessions({ userId, project });
+      const { sessions } = await listSessions({
+        userId,
+        project,
+        limit: SESSION_PICKER_LIMIT,
+      });
       return {
         prompts,
         sessions: sessions.map((s) => ({

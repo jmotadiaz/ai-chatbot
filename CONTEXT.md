@@ -198,6 +198,10 @@ _Avoid_: relay, proxy
 Session managed by the Coding Agent Worker and exposed to the user through the Coding Agent Client: the sum of its Turns, with state between them.
 _Avoid_: agent session, run
 
+**Session History**:
+Full, searchable listing of the Coding Agent Sessions of one Project. A Coding Agent Session joins the session listings only once it has run its first Turn; a session created but never prompted has no name to show and stays out of them.
+_Avoid_: agent history, coding agent log, session list
+
 
 **Pending Message**:
 Text instruction queued during a Turn and visible as a chip above the textarea. Editable, removable and promotable to a Steering.

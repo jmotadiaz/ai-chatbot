@@ -26,8 +26,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/features/code/actions", () => ({
-  getCodingAgentSessions: (project: string, limit?: number) =>
-    mocks.sessions(project, limit),
+  getCodingAgentSessions: (input: { project: string; limit?: number }) =>
+    mocks.sessions(input),
   createCodingAgentSession: (project: string) => mocks.create(project),
 }));
 
@@ -36,6 +36,19 @@ const session = (i: number) => ({
   sessionId: `session-${i}`,
   label: `Label ${i}`,
   updatedAt: new Date(),
+});
+
+type SessionRow = {
+  id: string;
+  sessionId: string;
+  label: string | null;
+  updatedAt: Date;
+};
+
+/** One page of the listing, the shape `getCodingAgentSessions` now returns. */
+const pageOf = (...sessions: SessionRow[]) => ({
+  sessions,
+  hasMore: false,
 });
 
 // react-collapsed asks for aria-controls on a stable id; we pass it via data-id
@@ -58,7 +71,7 @@ describe("AgentCodeSection", () => {
   });
 
   it("lazy-loads the sessions of an expanded project with limit 10", async () => {
-    mocks.sessions.mockResolvedValue([session(1), session(2)]);
+    mocks.sessions.mockResolvedValue(pageOf(session(1), session(2)));
     mocks.pathname = "/chat/abc";
     const { getByRole } = render(
       <AgentCodeSection projects={["alpha", "beta"]} />,
@@ -66,7 +79,10 @@ describe("AgentCodeSection", () => {
 
     fireEvent.click(getByRole("button", { name: "alpha" }));
 
-    await waitFor(() => expect(mocks.sessions).toHaveBeenCalledWith("alpha", 10));
+    await waitFor(() => expect(mocks.sessions).toHaveBeenCalledWith({
+        project: "alpha",
+        limit: 10,
+      }));
     // Session links point to the project's route.
     expect(
       document.querySelector('[data-testid="agent-session-link"][href="/agent/code/alpha/session-1"]'),
@@ -74,7 +90,7 @@ describe("AgentCodeSection", () => {
   });
 
   it("keeps only one project open at a time (exclusivity)", async () => {
-    mocks.sessions.mockResolvedValue([]);
+    mocks.sessions.mockResolvedValue(pageOf());
     const { getByRole } = render(
       <AgentCodeSection projects={["alpha", "beta"]} />,
     );
@@ -90,12 +106,15 @@ describe("AgentCodeSection", () => {
   });
 
   it("highlights the project and session of the current route", async () => {
-    mocks.sessions.mockResolvedValue([session(1), session(2)]);
+    mocks.sessions.mockResolvedValue(pageOf(session(1), session(2)));
     mocks.pathname = "/agent/code/alpha/session-1";
     render(<AgentCodeSection projects={["alpha", "beta"]} />);
 
     await waitFor(() =>
-      expect(mocks.sessions).toHaveBeenCalledWith("alpha", 10),
+      expect(mocks.sessions).toHaveBeenCalledWith({
+        project: "alpha",
+        limit: 10,
+      }),
     );
     const projectRow = window.document.querySelector(
       '[data-testid="agent-project-item"][aria-label="alpha"]',
@@ -109,7 +128,7 @@ describe("AgentCodeSection", () => {
   });
 
   it("renders the label or falls back to the session id", async () => {
-    mocks.sessions.mockResolvedValue([{ ...session(1), label: null }]);
+    mocks.sessions.mockResolvedValue(pageOf({ ...session(1), label: null }));
     render(<AgentCodeSection projects={["alpha"]} />);
     fireEvent.click(document.querySelector('[aria-label="alpha"]')!);
 
@@ -137,14 +156,17 @@ describe("AgentCodeSection", () => {
   });
 
   it("auto-expands the project of the route on mount and on navigation", async () => {
-    mocks.sessions.mockResolvedValue([]);
+    mocks.sessions.mockResolvedValue(pageOf());
     mocks.pathname = "/agent/code/beta/session-9";
     const { rerender } = render(
       <AgentCodeSection projects={["alpha", "beta"]} />,
     );
 
     await waitFor(() =>
-      expect(mocks.sessions).toHaveBeenCalledWith("beta", 10),
+      expect(mocks.sessions).toHaveBeenCalledWith({
+        project: "beta",
+        limit: 10,
+      }),
     );
 
     // Navigation to another session (pathname change) → it sends the route.
@@ -153,15 +175,50 @@ describe("AgentCodeSection", () => {
     rerender(<AgentCodeSection projects={["alpha", "beta"]} />);
 
     await waitFor(() =>
-      expect(mocks.sessions).toHaveBeenCalledWith("alpha", 10),
+      expect(mocks.sessions).toHaveBeenCalledWith({
+        project: "alpha",
+        limit: 10,
+      }),
     );
+  });
+
+  it("links to the full Session History through See all", async () => {
+    mocks.sessions.mockResolvedValue(pageOf(session(1)));
+    render(<AgentCodeSection projects={["alpha"]} />);
+
+    fireEvent.click(document.querySelector('[aria-label="alpha"]')!);
+
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-testid="agent-sessions-see-all"]'),
+      ).not.toBeNull(),
+    );
+    expect(
+      document
+        .querySelector('[data-testid="agent-sessions-see-all"]')
+        ?.getAttribute("href"),
+    ).toBe("/agent/code/alpha/history");
+  });
+
+  it("hides See all when the project has no sessions", async () => {
+    mocks.sessions.mockResolvedValue(pageOf());
+    render(<AgentCodeSection projects={["alpha"]} />);
+
+    fireEvent.click(document.querySelector('[aria-label="alpha"]')!);
+
+    await waitFor(() =>
+      expect(document.body.textContent).toContain("No sessions yet"),
+    );
+    expect(
+      document.querySelector('[data-testid="agent-sessions-see-all"]'),
+    ).toBeNull();
   });
 
   it("shows the empty and loading states", async () => {
     mocks.sessions.mockImplementation(
       () =>
         new Promise((resolve) => {
-          setTimeout(() => resolve([]), 50);
+          setTimeout(() => resolve(pageOf()), 50);
         }),
     );
     render(<AgentCodeSection projects={["alpha"]} />);

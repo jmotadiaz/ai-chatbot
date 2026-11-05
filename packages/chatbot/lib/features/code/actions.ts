@@ -81,12 +81,31 @@ export async function getCodingAgentProjects() {
   });
 }
 
-export async function getCodingAgentSessions(project: string, limit?: number) {
+/**
+ * One page of a Project's session listing. `filter` matches the session label,
+ * the same way Chat History matches a chat title, and the shape mirrors
+ * `getHistoryChatsAction` so both listings paginate identically.
+ */
+export async function getCodingAgentSessions(input: {
+  project: string;
+  limit?: number;
+  offset?: number;
+  filter?: string;
+}) {
   return withActionTrace("getCodingAgentSessions", async (log) => {
     assertEnabled();
     const userId = await getUserId();
-    const result = await listSessions({ userId, project, limit });
-    log.info("action.result", { count: result.length });
+    const result = await listSessions({
+      userId,
+      project: input.project,
+      limit: input.limit ?? 20,
+      offset: input.offset ?? 0,
+      filter: input.filter ?? "",
+    });
+    log.info("action.result", {
+      count: result.sessions.length,
+      hasMore: result.hasMore,
+    });
     return result;
   });
 }

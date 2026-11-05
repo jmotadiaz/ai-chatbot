@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/features/auth/with-auth/handler";
 import { WorkerClient } from "@/lib/features/code/worker-client";
 import { getSession, listSessions } from "@/lib/features/code/session-store";
+import { SESSION_PICKER_LIMIT } from "@/lib/features/code/constants";
 
 function getSessionIdFromUrl(url: URL): string {
   const parts = url.pathname.split("/");
@@ -22,9 +23,10 @@ export const GET = withAuth(async (user, req) => {
       project: dbSession.project,
     });
     const result = await client.getSessionPrompts({ sessionId });
-    const sessions = await listSessions({
+    const { sessions } = await listSessions({
       userId: user.id,
       project: dbSession.project,
+      limit: SESSION_PICKER_LIMIT,
     });
     return Response.json({
       prompts: result.prompts,

@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { setupTestDb } from "../../helpers/db-setup";
 import {
   createSession,
-  listSessions,
   getSession,
   updateSessionLabel,
 } from "@/lib/features/code/session-store";
@@ -49,25 +48,6 @@ describe("session-store", () => {
     expect(found?.modelId).toBe("Deepseek v4 Pro");
   });
 
-  it("lists sessions by project", async () => {
-    await seedUser();
-    await createSession({
-      userId,
-      project,
-      modelId: "Deepseek v4 Pro",
-      label: "Fix login bug",
-    });
-    const sessions = await listSessions({ userId, project });
-    expect(sessions).toHaveLength(1);
-  });
-
-  it("excludes sessions without label", async () => {
-    await seedUser();
-    await createSession({ userId, project, modelId: "Deepseek v4 Pro" });
-    const sessions = await listSessions({ userId, project });
-    expect(sessions).toHaveLength(0);
-  });
-
   it("updates session label", async () => {
     await seedUser();
     const session = await createSession({ userId, project });
@@ -80,31 +60,7 @@ describe("session-store", () => {
     expect(found?.label).toBe("Refactor");
   });
 
-  it("lists at most N sessions when a limit is given", async () => {
-    await seedUser();
-    for (let i = 0; i < 12; i++) {
-      await createSession({
-        userId,
-        project,
-        modelId: "Deepseek v4 Pro",
-        label: `Session ${String(i).padStart(2, "0")}`,
-      });
-    }
-    const sessions = await listSessions({ userId, project, limit: 10 });
-    expect(sessions).toHaveLength(10);
-  });
-
-  it("returns all sessions when no limit is given", async () => {
-    await seedUser();
-    for (let i = 0; i < 12; i++) {
-      await createSession({
-        userId,
-        project,
-        modelId: "Deepseek v4 Pro",
-        label: `Session ${String(i).padStart(2, "0")}`,
-      });
-    }
-    const sessions = await listSessions({ userId, project });
-    expect(sessions).toHaveLength(12);
-  });
+  // The listing rules of `listSessions` (ownership, Project isolation,
+  // unlabeled sessions, ordering, search and pagination) live in
+  // session-history.test.ts, next to the page that consumes them.
 });

@@ -11,10 +11,12 @@ function getProjectFromUrl(url: URL): string {
   return decodeURIComponent(parts[parts.length - 2] ?? "");
 }
 
+// Internal, cookie-authenticated listing: the first page of the Project's
+// sessions, with the same pagination contract as the Session History page.
 export const GET = withAuth(async (user, req: Request) => {
   const project = getProjectFromUrl(new URL(req.url));
-  const sessions = await getCodingAgentSessions(project);
-  return NextResponse.json({ sessions });
+  const result = await getCodingAgentSessions({ project });
+  return NextResponse.json(result);
 });
 
 export const POST = withAuth(async (user, req: Request) => {

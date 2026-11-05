@@ -77,6 +77,18 @@ export interface CodingAgentBootstrap {
   promptSessions: SessionSummary[] | null;
 }
 
+/**
+ * The session fields the listings need: the sidebar rows and the Session
+ * History rows. A structural subset of the stored session, so both the
+ * server action and a test fixture can satisfy it.
+ */
+export interface CodingAgentSessionListing {
+  id: string;
+  sessionId: string;
+  label: string | null;
+  updatedAt: Date;
+}
+
 export type ToolCallStatus = "running" | "ok" | "error";
 
 export interface ToolCallGroup {

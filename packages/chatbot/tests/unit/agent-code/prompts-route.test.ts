@@ -20,7 +20,10 @@ const mockState = vi.hoisted(() => ({
 
 vi.mock("@/lib/features/code/session-store", () => ({
   getSession: vi.fn(async () => mockState.dbSession),
-  listSessions: vi.fn(async () => mockState.sessions),
+  listSessions: vi.fn(async () => ({
+    sessions: mockState.sessions,
+    hasMore: false,
+  })),
 }));
 
 vi.mock("@/lib/features/code/worker-client", () => ({
