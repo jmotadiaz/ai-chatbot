@@ -32,6 +32,7 @@ INVOCABLE_IDS = [
     "GLM 5.3",
     "GLM 5.3 Flash",
     "Hy3",
+    "Iceman Contributor Free",
     "Kimi K3.1 Pro",
     "MiMo V2.6 Flash",
     "MiMo V2.6 Pro",
@@ -99,7 +100,7 @@ def catalog(config):
 # --- server-side filtering ------------------------------------------------
 
 
-def test_catalog_returns_exactly_the_17_user_invocable_models_in_order(catalog):
+def test_catalog_returns_exactly_the_18_user_invocable_models_in_order(catalog):
     assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
 
 

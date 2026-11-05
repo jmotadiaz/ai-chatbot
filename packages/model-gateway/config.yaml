@@ -66,7 +66,7 @@ router_settings:
       hidden: true
 
 model_list:
-  # ---------- 17 user_invocable: true models (model selector) --------------
+  # ---------- 18 user_invocable: true models (model selector) --------------
 
   # Deepseek v4.1 Flash — catalog default (always first: the rest goes
   # alphabetical, see the order in `catalog.py:build_catalog`).
@@ -275,6 +275,32 @@ model_list:
       reasoning: true
       thinking_levels: ["off", "low", "high"]
       default_thinking_level: "high"
+      supported_files: []
+      supported_output: [text]
+      zero_data_retention: false
+      default_temperature: null
+      default_top_p: null
+      default_top_k: null
+
+  # Iceman Contributor Free — stealth free model on OpenCode Go.
+  - model_name: Iceman Contributor Free
+    litellm_params:
+      model: openai/iceman-contributor-free
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: opencode
+      context_window: 262144
+      max_output_tokens: 131072
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+      cache_read_input_token_cost: 0
+      cache_creation_input_token_cost: 0
+      reasoning: true
+      thinking_levels: []
+      default_thinking_level: null
       supported_files: []
       supported_output: [text]
       zero_data_retention: false
