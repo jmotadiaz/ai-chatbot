@@ -244,3 +244,67 @@ describe("AgentResponse response comments", () => {
     });
   });
 });
+
+describe("AgentResponse Markdown rhythm", () => {
+  /** The comment anchor wrapper for the block that starts at `line`. */
+  const blockAt = (
+    view: ReturnType<typeof renderResponse>,
+    line: number,
+  ): HTMLElement => {
+    const found = view.container.querySelector<HTMLElement>(
+      `[data-response-comment-block="${line}"]`,
+    );
+    if (!found) throw new Error(`No commentable block starts at line ${line}`);
+    return found;
+  };
+
+  it("flushes a leading heading with its block, so the anchor stays on the text", async () => {
+    const view = renderResponse("## Overview\n\nBody text");
+
+    const heading = await waitFor(() => {
+      const found = view.container.querySelector<HTMLElement>(
+        'h2[data-streamdown="heading-2"]',
+      );
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+
+    // Streamdown's own `mt-6 mb-2` would push the text 24px below the icon and
+    // inflate the hover box, so the commentable heading resets it.
+    expect(heading.className).toContain("my-0");
+    expect(heading.className).not.toContain("mt-6");
+
+    // A leading heading takes no extra section gap; the block padding owns it.
+    expect(blockAt(view, 1).className).not.toContain("mt-3.5");
+  });
+
+  it("gives a heading that opens a later section its own breathing room", async () => {
+    const view = renderResponse("Intro\n\n## Next section\n\nBody text");
+
+    await waitFor(() => {
+      expect(blockAt(view, 3)).toBeTruthy();
+    });
+
+    // Only the heading that separates sections carries the extra gap.
+    expect(blockAt(view, 3).className).toContain("mt-3.5");
+    expect(blockAt(view, 1).className).not.toContain("mt-3.5");
+  });
+
+  it("keeps the paragraph gap compact instead of doubling the block padding", async () => {
+    const view = renderResponse("First paragraph\n\nSecond paragraph");
+
+    const blocks = await waitFor(() => {
+      const found = view.container.querySelectorAll(
+        "[data-response-comment-block]",
+      );
+      expect(found).toHaveLength(2);
+      return found;
+    });
+
+    // Each block already pads itself, so the container only adds a hair of
+    // space; Streamdown's default `space-y-4` would double the gap to 32px.
+    const container = blocks[0]?.parentElement;
+    expect(container?.className).toContain("space-y-1");
+    expect(container?.className).not.toContain("space-y-4");
+  });
+});

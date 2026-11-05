@@ -16,9 +16,9 @@ import {
   NoteLinkOriginProvider,
 } from "../coding-agent-markdown-anchor";
 import {
-  CommentableListItem,
-  CommentableTableRow,
+  COMMENTABLE_BLOCK_COMPONENTS,
   LineCommentsContext,
+  isHeadingSource,
   type MarkdownBlockKind,
 } from "../line-comments";
 import {
@@ -27,6 +27,7 @@ import {
 } from "../comment-styles";
 import { CodeViewLine } from "./code-view-line";
 import type { LineRange } from "./types";
+import { cn } from "@/lib/utils/helpers";
 import { Response } from "@/components/chat/response";
 import {
   DARK_THEME,
@@ -162,9 +163,8 @@ function useCodeBlockTokens(
 
 
 const MARKDOWN_COMPONENTS = {
+  ...COMMENTABLE_BLOCK_COMPONENTS,
   a: CodingAgentMarkdownAnchor,
-  tr: CommentableTableRow,
-  li: CommentableListItem,
 };
 
 export interface MarkdownPreviewProps {
@@ -269,6 +269,8 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
             selectedLine === block.lineNumber
               ? selectedLine
               : null;
+          const isHeading =
+            block.kind === "other" && isHeadingSource(block.content);
 
           return (
             <div
@@ -280,7 +282,10 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               data-comment-anchor="true"
               data-commented={hasComment ? "true" : undefined}
               data-selected={isSelected ? "true" : undefined}
-              className={commentableBlockClass(hasComment, isSelected)}
+              className={cn(
+                commentableBlockClass(hasComment, isSelected),
+                isHeading && index > 0 && "mt-3.5",
+              )}
               onClick={(event) => {
                 if (
                   (event.target as HTMLElement).closest(

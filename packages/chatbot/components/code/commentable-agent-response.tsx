@@ -18,10 +18,10 @@ import { createPortal } from "react-dom";
 import { Block, parseMarkdownIntoBlocks } from "streamdown";
 import { CodingAgentMarkdownAnchor } from "./coding-agent-markdown-anchor";
 import {
-  CommentableListItem,
-  CommentableTableRow,
+  COMMENTABLE_BLOCK_COMPONENTS,
   INTERACTIVE,
   LineCommentsContext,
+  isHeadingSource,
   type MarkdownBlockKind,
 } from "./line-comments";
 import { CommentComposer } from "./file-browser/comment-composer";
@@ -36,6 +36,7 @@ import type {
   LineRange,
   ResponsePendingComment,
 } from "./file-browser/types";
+import { cn } from "@/lib/utils/helpers";
 import { Response } from "@/components/chat/response";
 
 const FENCE = /^\s*(?:```|~~~)/;
@@ -148,9 +149,8 @@ function selectCodeLine(
 }
 
 const RESPONSE_COMPONENTS = {
+  ...COMMENTABLE_BLOCK_COMPONENTS,
   a: CodingAgentMarkdownAnchor,
-  tr: CommentableTableRow,
-  li: CommentableListItem,
 };
 
 /** A Streamdown block with comment anchors; its Markdown renderer stays intact. */
@@ -161,6 +161,12 @@ const CommentableBlock: React.FC<StreamdownBlockProps> = (props) => {
   if (!comments || !block) return <Block {...props} />;
 
   const ordinaryCode = block.kind === "code" && block.lang !== "mermaid";
+  const isHeading = block.kind === "other" && isHeadingSource(block.content);
+  // Whitespace-only blocks occupy indexes too, so "first" means the first
+  // block that actually renders: the message opens flush with its heading.
+  const isLeading =
+    props.index === 0 ||
+    comments.blocks.slice(0, props.index).every((b) => b === null);
   const hasComment = comments.commentsByLine.has(block.lineNumber);
   const isSelected = comments.selectedLine === block.lineNumber;
   const lineContext = {
@@ -196,7 +202,10 @@ const CommentableBlock: React.FC<StreamdownBlockProps> = (props) => {
       data-comment-anchor="true"
       data-commented={hasComment ? "true" : undefined}
       data-selected={isSelected ? "true" : undefined}
-      className={commentableBlockClass(hasComment, isSelected)}
+      className={cn(
+        commentableBlockClass(hasComment, isSelected),
+        isHeading && !isLeading && "mt-3.5",
+      )}
       onClick={(event) => {
         if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
         comments.onSelectBlock({ start: block.start, end: block.end });
@@ -407,7 +416,7 @@ export const CommentableAgentResponse: React.FC<
         }}
       >
         <Response
-          className="h-auto"
+          className="h-auto space-y-1 [&_[data-streamdown=code-block]]:my-2.5"
           components={RESPONSE_COMPONENTS}
           BlockComponent={CommentableBlock}
           parseIncompleteMarkdown={false}

@@ -434,3 +434,49 @@ describe("markdownBlocks", () => {
     expect(view.queryByTestId("agent-note-link")).toBeNull();
   });
 });
+
+describe("MarkdownPreview heading rhythm", () => {
+  const renderPreview = (content: string) =>
+    render(
+      <MarkdownPreview
+        content={content}
+        commentsByLine={new Map()}
+        selectedLine={null}
+        onSelectLine={vi.fn()}
+        renderComposer={() => null}
+      />,
+    );
+
+  it("renders headings without Streamdown's block margins, so they hug their anchor", async () => {
+    const view = renderPreview("# Title\n\nBody");
+
+    const heading = await waitFor(() => {
+      const found = view.container.querySelector<HTMLElement>(
+        'h1[data-streamdown="heading-1"]',
+      );
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+
+    expect(heading.className).toContain("my-0");
+    expect(heading.className).not.toContain("mt-6");
+  });
+
+  it("separates a section heading from the block above it", async () => {
+    const view = renderPreview("Intro\n\n## Next section\n\nBody");
+
+    const blocks = await waitFor(() => {
+      const found = view.container.querySelectorAll<HTMLElement>(
+        "[data-comment-anchor]",
+      );
+      expect(found).toHaveLength(3);
+      return found;
+    });
+
+    // The prose block and the later section heading render differently: only
+    // the heading opens a new section and earns the extra gap.
+    expect(blocks[0]?.className).not.toContain("mt-3.5");
+    expect(blocks[1]?.className).toContain("mt-3.5");
+    expect(blocks[2]?.className).not.toContain("mt-3.5");
+  });
+});
