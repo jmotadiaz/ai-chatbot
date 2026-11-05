@@ -33,7 +33,7 @@ Use this bounded path for ordinary generation. Do not read the optional Viewer R
    ```
 
    A non-zero exit can never be described as success. A failed delivery preserves any previous output, so do not run `visual-check` on that path: it would inspect the stale last-good artifact, not the failed candidate. If validation fails, change only the diagnosed `subject`, verify `evidence`, choose from `supportedFixes`, and rerun. Continue focused correction while the objective error count reaches a new minimum. If two consecutive rounds do not improve that best count, stop and report the unresolved diagnostics truthfully.
-6. Publish artifact: call the `publish_artifact` tool with `path: "<output.html>"` and a stable `name` (e.g. `architecture-review`), and put the URL it returns (`/agent/code/<project>/<sessionId>/artifacts/<name>`) in your reply. Do NOT try to open the file yourself (`--open`, `xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see. The URL is how they see it.
+6. Publish artifact: call the `publish_artifact` tool with `path: "<output.html>"` and a stable `name` (e.g. `architecture-review`), and present the URL it returns as a Markdown link `[Diagram](/agent/code/<project>/<sessionId>/artifacts/<name>)` in your reply. Do NOT try to open the file yourself (`--open`, `xdg-open`, `open`, `start`): this agent runs headless, so those silently do nothing and the artifact stays stranded on a machine the user cannot see. The URL is how they see it.
 
 ## Update awareness
 

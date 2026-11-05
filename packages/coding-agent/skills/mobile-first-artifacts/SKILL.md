@@ -97,9 +97,11 @@ causing it, and the count of sub-12px text nodes. Exit 0 = publishable.
 `http://`/`https://`/`file://` URLs, so validate the HTML on disk **before**
 calling `publish_artifact`. The Chatbot artifact route is behind `withAuth`, so it
 cannot be fetched by `check:mobile`. The loop is: **write → check (local) →
-fix → publish → (optional) check again**. Republishing the same
-`name` overwrites `<name>/index.html` in place and the URL stays stable, so
-nothing is lost by iterating.
+fix → publish → present as Markdown link → (optional) check again**.
+Always present the returned path as a standard Markdown link `[Label](path)`
+(e.g. `[Ver informe](/agent/code/<project>/<sessionId>/artifacts/<name>)`), never as
+plain text, bold or code blocks. Republishing the same `name` overwrites
+`<name>/index.html` in place and the URL stays stable, so nothing is lost by iterating.
 
 If a fix genuinely cannot fit 320px (a wide dependency graph the user asked for),
 say so in the message that carries the URL rather than passing the check off as

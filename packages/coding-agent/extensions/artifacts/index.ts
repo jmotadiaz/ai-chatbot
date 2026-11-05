@@ -40,7 +40,8 @@ export default function registerArtifactsExtension(pi: ExtensionAPI): void {
       "Publish a generated HTML artifact so the user can open it in the Chatbot, and return the view path to show them. Call this after writing any visual artifact instead of trying to open it with xdg-open, open or start: this agent runs headless, so those silently do nothing.",
     promptSnippet: "Publish generated HTML artifacts and get a Chatbot view path for the user",
     promptGuidelines: [
-      "After writing any HTML artifact meant for the user to read, call publish_artifact({ path, name }) and put the returned path in your reply.",
+      "After writing any HTML artifact meant for the user to read, call publish_artifact({ path, name }) and present the returned path as a Markdown link [Label](path) in your reply.",
+      "Never output the path as plain text, bold text or inside a code block (`...`); the Chatbot UI only creates a clickable link when formatted as a Markdown link [Label](path).",
       "Never try to open a file in a browser yourself (xdg-open/open/start); the host has no display. The path from publish_artifact is the way the user sees it.",
       "Publishing again with the same name replaces the artifact in place, so reuse the name when you revise an artifact.",
     ],
@@ -82,7 +83,7 @@ export default function registerArtifactsExtension(pi: ExtensionAPI): void {
 }
 
 function formatArtifact(artifact: ArtifactRef): string {
-  return `Published: ${artifact.title}\nURL: ${artifact.path}`;
+  return `Published: ${artifact.title}\nURL: ${artifact.path}\nMarkdown link: [${artifact.title}](${artifact.path})`;
 }
 
 /**
