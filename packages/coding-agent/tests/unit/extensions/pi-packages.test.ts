@@ -65,10 +65,13 @@ describe("first-party extension and built-in skills discovery", () => {
     expect(getFirstPartySkillPaths()).toEqual([]);
   });
 
-  it("discovers built-in skills directory and writing-prompties skill", () => {
+  it("discovers built-in skills directory and built-in skills", () => {
     const builtinPaths = getBuiltinSkillPaths();
     expect(builtinPaths).toEqual([BUILTIN_SKILLS_DIR]);
     expect(existsSync(join(BUILTIN_SKILLS_DIR, "writing-prompties", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(BUILTIN_SKILLS_DIR, "prototype", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(BUILTIN_SKILLS_DIR, "prototype", "LOGIC.md"))).toBe(true);
+    expect(existsSync(join(BUILTIN_SKILLS_DIR, "prototype", "UI.md"))).toBe(true);
   });
 });
 
@@ -120,7 +123,11 @@ describe("subagent runtime resource loading", () => {
       .getSkills()
       .skills.map((s) => s.name)
       .sort();
-    expect(skillNames).toEqual(["mobile-first-artifacts", "writing-prompties"]);
+    expect(skillNames).toEqual([
+      "mobile-first-artifacts",
+      "prototype",
+      "writing-prompties",
+    ]);
     expect(skillPaths).toEqual([BUILTIN_SKILLS_DIR]);
     expect(extensionPaths.some((p) => p.includes("extensions/subagent"))).toBe(false);
 

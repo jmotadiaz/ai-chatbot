@@ -98,7 +98,7 @@ message.
 
 ## Built-in Skills (`skills/`)
 
-Standalone Agent Skills live under `skills/<name>/SKILL.md` (e.g. `skills/writing-prompties/`, `skills/mobile-first-artifacts/`). They require no TypeScript runtime hooks and are discovered automatically via `getBuiltinSkillPaths()` in `src/pi-packages.ts` passed to `additionalSkillPaths`.
+Standalone Agent Skills live under `skills/<name>/SKILL.md` (e.g. `skills/writing-prompties/`, `skills/mobile-first-artifacts/`, `skills/prototype/`). They require no TypeScript runtime hooks and are discovered automatically via `getBuiltinSkillPaths()` in `src/pi-packages.ts` passed to `additionalSkillPaths`.
 
 ## First-Party Extensions
 
