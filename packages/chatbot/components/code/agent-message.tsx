@@ -18,6 +18,8 @@ export interface AgentMessageProps {
   isStreaming?: boolean;
   responseTurnNumber?: number;
   responseComments?: ResponsePendingComment[];
+  /** Message Edit: present only in the editable Coding Agent transcript. */
+  onEditUserMessage?: (messageId: string) => void;
 }
 
 const ToolResultBlock: React.FC<{ content: string }> = ({ content }) => (
@@ -56,6 +58,7 @@ const areEqual = (prevProps: AgentMessageProps, nextProps: AgentMessageProps) =>
   if (
     prevProps.isStreaming !== nextProps.isStreaming ||
     prevProps.responseTurnNumber !== nextProps.responseTurnNumber ||
+    prevProps.onEditUserMessage !== nextProps.onEditUserMessage ||
     !responseCommentsEqual(
       prevProps.responseComments,
       nextProps.responseComments,
@@ -117,6 +120,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
     isStreaming,
     responseTurnNumber,
     responseComments,
+    onEditUserMessage,
   }) => {
     if (message.role === "user") {
       const { text, files } = contentToDisplay(message.content);
@@ -128,6 +132,11 @@ export const AgentMessage: React.FC<AgentMessageProps> = memo(
             skills={parsed.skills}
             files={files}
             messageId={message.id}
+            onEdit={
+              onEditUserMessage
+                ? () => onEditUserMessage(message.id)
+                : undefined
+            }
           />
         </div>
       );

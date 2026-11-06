@@ -82,24 +82,38 @@ export async function getOrCreateSession(options: GetOrCreateSessionOptions): Pr
 // sendPrompt now carries modelId/thinkingLevel as turn config (b1)
 // Keep backward compat: callers may pass runId as string, or omit model/thinking.
 // New callers pass modelId/thinkingLevel via options object or as extra args.
+// `branchFromMessageId` marks a Message Edit: the turn rewinds to that message
+// before prompting (ADR 0015).
+export interface SendPromptOptions {
+  modelId?: string;
+  thinkingLevel?: ThinkingLevel;
+  branchFromMessageId?: string;
+}
+
 export async function sendPrompt(
   sessionId: string,
   prompt: string,
   messages?: SnapshotMessage[],
   runId: string = crypto.randomUUID(),
-  modelIdOrOptions?: string | { modelId?: string; thinkingLevel?: ThinkingLevel },
+  modelIdOrOptions?: string | SendPromptOptions,
   thinkingLevel?: ThinkingLevel,
 ): Promise<ReadableStream<Uint8Array>> {
   let modelId: string | undefined;
   let level: ThinkingLevel | undefined;
+  let branchFromMessageId: string | undefined;
   if (typeof modelIdOrOptions === "string") {
     modelId = modelIdOrOptions;
     level = thinkingLevel;
   } else if (modelIdOrOptions && typeof modelIdOrOptions === "object") {
-    modelId = (modelIdOrOptions as { modelId?: string }).modelId;
-    level = (modelIdOrOptions as { thinkingLevel?: ThinkingLevel }).thinkingLevel;
+    modelId = modelIdOrOptions.modelId;
+    level = modelIdOrOptions.thinkingLevel;
+    branchFromMessageId = modelIdOrOptions.branchFromMessageId;
   }
-  return turnRunner.sendPrompt(sessionId, prompt, messages, runId, { modelId, thinkingLevel: level });
+  return turnRunner.sendPrompt(sessionId, prompt, messages, runId, {
+    modelId,
+    thinkingLevel: level,
+    branchFromMessageId,
+  });
 }
 
 export async function getSessionMessages(

@@ -86,6 +86,21 @@ export const POST = withAuth(async (user, req) => {
     ? body.messages
     : []) as RequestMessage[];
 
+  // Message Edit (ADR 0015): the client sends the AG-UI id of the user message
+  // it is rewriting; the worker resolves it to a Pi session entry and rewinds
+  // before prompting. Anything but a non-empty string is rejected as a bad
+  // request instead of being forwarded as a silent no-op.
+  const branchFromMessageId = forwardedProps.branchFromMessageId;
+  if (
+    branchFromMessageId !== undefined &&
+    (typeof branchFromMessageId !== "string" || branchFromMessageId.length === 0)
+  ) {
+    return new Response(
+      JSON.stringify({ error: "branchFromMessageId must be a non-empty string" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   const runId = (body.runId as string | undefined) ?? crypto.randomUUID();
   const sink = isTracingEnabled() ? new FileTraceSink({ runId }) : null;
   await sink?.open();
@@ -145,6 +160,7 @@ export const POST = withAuth(async (user, req) => {
         messages: stripNonTailAttachmentData(messages),
         modelId: piModelId ?? undefined,
         thinkingLevel,
+        branchFromMessageId,
         _traceRunId: runId,
       });
       sendStop();

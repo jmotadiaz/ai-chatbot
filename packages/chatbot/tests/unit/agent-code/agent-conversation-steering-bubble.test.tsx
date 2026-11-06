@@ -99,3 +99,40 @@ describe("AgentConversation steering bubble", () => {
     }
   });
 });
+describe("AgentConversation Message Edit dimming", () => {
+  const items = [
+    { kind: "user" as const, message: { id: "u1", role: "user" as const, content: "one" } },
+    {
+      kind: "assistant" as const,
+      message: { id: "a1", role: "assistant" as const, content: "answer one" },
+      toolGroups: [],
+    },
+    { kind: "user" as const, message: { id: "u2", role: "user" as const, content: "two" } },
+    {
+      kind: "assistant" as const,
+      message: { id: "a2", role: "assistant" as const, content: "answer two" },
+      toolGroups: [],
+    },
+  ];
+
+  const abandonedFlags = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll("[data-abandoned]")).map((el) =>
+      el.textContent?.includes("answer one") ? "kept" : "abandoned",
+    );
+
+  it("dims everything after the Message being edited", () => {
+    const { container } = renderConversation({ items, editingMessageId: "u2" });
+
+    // Only the Turn answering u2 is dimmed; the edited Message itself and
+    // everything before it stay at full opacity.
+    expect(abandonedFlags(container)).toEqual(["abandoned"]);
+    expect(
+      container.querySelector('[data-abandoned="true"]')?.textContent,
+    ).toContain("answer two");
+  });
+
+  it("dims nothing when no Message is being edited", () => {
+    const { container } = renderConversation({ items, editingMessageId: null });
+    expect(container.querySelectorAll("[data-abandoned]")).toHaveLength(0);
+  });
+});

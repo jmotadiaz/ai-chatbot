@@ -174,6 +174,8 @@ export class WorkerClient {
     messages?: WorkerSnapshotMessage[];
     modelId?: string;
     thinkingLevel?: ThinkingLevel;
+    /** Set by a Message Edit: the worker rewinds to that user message first. */
+    branchFromMessageId?: string;
     _traceRunId?: string;
   }): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("bridge");

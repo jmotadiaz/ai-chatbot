@@ -202,6 +202,13 @@ _Avoid_: agent session, run
 Full, searchable listing of the Coding Agent Sessions of one Project. A Coding Agent Session joins the session listings only once it has run its first Turn; a session created but never prompted has no name to show and stays out of them.
 _Avoid_: agent history, coding agent log, session list
 
+**Message Edit**:
+Action that loads an earlier user Message of a Coding Agent Session into the composer and, on submit, rewinds the Session to just before that Message and continues from there. It keeps the same Coding Agent Session; the Messages it leaves behind become an Abandoned Branch.
+_Avoid_: regenerate, rewrite, truncate, rollback
+
+**Abandoned Branch**:
+Messages of a Coding Agent Session that a Message Edit takes off the active path. Retained in the session file but outside the Session: never summarised, never rendered and not navigable from the UI.
+_Avoid_: discarded messages, deleted history, fork (Pi/SDK term)
 
 **Pending Message**:
 Text instruction queued during a Turn and visible as a chip above the textarea. Editable, removable and promotable to a Steering.

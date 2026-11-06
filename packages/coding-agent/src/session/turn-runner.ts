@@ -20,6 +20,7 @@ import {
   inlineAttachedFiles,
 } from "../runtime/attached-files";
 import { captureGitFileState, diffTurnFiles, type GitFileState } from "./turn-git-state";
+import { resolveUserMessageEntry } from "./message-edit-target";
 import type { CodingAgentEvent } from "../index";
 import {
   type SessionEntry,
@@ -527,7 +528,11 @@ export class TurnRunner {
     prompt: string,
     messages?: SnapshotMessage[],
     runId: string = crypto.randomUUID(),
-    options?: { modelId?: string; thinkingLevel?: ThinkingLevel },
+    options?: {
+      modelId?: string;
+      thinkingLevel?: ThinkingLevel;
+      branchFromMessageId?: string;
+    },
   ): Promise<ReadableStream<Uint8Array>> {
     const log = getTraceLogger("worker");
     const entry = this.registry.getRaw(sessionId);
@@ -641,6 +646,10 @@ export class TurnRunner {
       });
     }
 
+    if (options?.branchFromMessageId) {
+      await this.rewindForMessageEdit(entry, sessionId, runId, options.branchFromMessageId);
+    }
+
     const eventLog = ensureEventLog(entry);
     const afterSeq = eventLog.lastSeq;
     const turnBaseline = await captureTurnBaseline(
@@ -654,6 +663,72 @@ export class TurnRunner {
       afterSeq,
       () => ({ entry, eventLog, prelude: [], events: eventLog.readAfter(afterSeq) }),
     );
+  }
+
+  /**
+   * Move the session leaf to the parent of the user message being edited, so
+   * the prompt that follows continues from there (Message Edit, ADR 0015).
+   * The abandoned messages stay in the session file but leave the session: no
+   * summary entry, no navigation surface, and no revert of the working tree.
+   *
+   * Must run before `startPromptCollector`, which builds the run's
+   * `MESSAGES_SNAPSHOT` from `runtime.session.messages` — the list
+   * `navigateTree` rebuilds.
+   */
+  private async rewindForMessageEdit(
+    entry: SessionEntry,
+    sessionId: string,
+    runId: string,
+    messageId: string,
+  ): Promise<void> {
+    const log = getTraceLogger("worker");
+    const session = entry.runtime.session;
+
+    if (session.isStreaming || entry.activeRun) {
+      log.warn("session.message_edit_blocked_streaming", { sessionId, runId });
+      throw new Error("Cannot edit a message while the agent is running");
+    }
+    if (isQueueOccupied(readPendingQueues(session))) {
+      log.warn("session.message_edit_blocked_queue", { sessionId, runId });
+      throw new Error("Cannot edit a message while a follow-up is queued");
+    }
+
+    const manager = session.sessionManager;
+    const target = resolveUserMessageEntry(manager, messageId);
+    if (!target) {
+      // Compacted away, part of an Abandoned Branch, or not a user message at
+      // all: refuse rather than rewind to a guessed position.
+      log.warn("session.message_edit_target_not_found", { sessionId, runId });
+      throw new Error("Message not found in the active session history");
+    }
+
+    if (manager.getLeafId() === target.entryId) {
+      // `navigateTree` is a no-op when the target is already the leaf, and the
+      // prompt would then append a duplicate of the edited message instead of
+      // replacing it. This happens when a Turn failed before producing any
+      // assistant message, leaving the user message as the leaf.
+      if (target.parentId === null) {
+        manager.resetLeaf();
+      } else {
+        manager.branch(target.parentId);
+      }
+      session.agent.state.messages = manager.buildSessionContext().messages;
+    } else {
+      const result = await session.navigateTree(target.entryId, { summarize: false });
+      if (result.cancelled) {
+        log.warn("session.message_edit_cancelled", { sessionId, runId });
+        throw new Error("The message edit was cancelled by an extension");
+      }
+    }
+
+    // Park the resume cursor at the current tail so a later reconnect never
+    // replays the events of the abandoned branch.
+    entry.snapshotCursorSeq = ensureEventLog(entry).lastSeq;
+    log.info("session.message_edit", {
+      sessionId,
+      runId,
+      messageCount: session.messages.length,
+    });
   }
 
   async connectToSession(

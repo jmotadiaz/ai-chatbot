@@ -144,3 +144,29 @@ describe("AgentMessage isolation and memoization", () => {
     expect(blockAfter?.getAttribute("data-commented")).toBe("true");
   });
 });
+
+describe("AgentMessage Message Edit affordance", () => {
+  const userMsg: Message = {
+    id: "u-1",
+    role: "user",
+    content: "make the tests pass",
+  } as Message;
+
+  it("renders no pencil without a handler (normal Chat and read-only views)", () => {
+    const { queryByTestId } = render(wrap(<AgentMessage message={userMsg} />));
+    expect(queryByTestId("edit-user-message")).toBeNull();
+  });
+
+  it("hands the message id back when the pencil is clicked", () => {
+    const onEditUserMessage = vi.fn();
+    const { getByTestId } = render(
+      wrap(
+        <AgentMessage message={userMsg} onEditUserMessage={onEditUserMessage} />,
+      ),
+    );
+
+    getByTestId("edit-user-message").click();
+
+    expect(onEditUserMessage).toHaveBeenCalledWith("u-1");
+  });
+});

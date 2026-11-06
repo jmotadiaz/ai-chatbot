@@ -97,6 +97,8 @@ describe("AgentCodeChat cancel", () => {
 
     expect(mocks.hookResult.sendMessage).toHaveBeenCalledWith(
       "/skill:code-review\n\nReview this change",
+      // No Message Edit in flight: the branch field travels empty.
+      { branchFromMessageId: undefined },
     );
   });
 });

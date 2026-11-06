@@ -282,22 +282,36 @@ export async function handleRpc(requestBody: string): Promise<Response> {
         break;
       }
       case "sendPrompt": {
-        const { sessionId, prompt, messages, _traceRunId, modelId, thinkingLevel } = params as {
-          sessionId: string;
-          prompt: string;
-          messages?: Array<{
-            id?: string;
-            role: string;
-            content?: unknown;
-            toolCalls?: unknown;
-            toolCallId?: string;
-            name?: string;
-          }>;
-          _traceRunId?: string;
-          modelId?: string;
-          thinkingLevel?: ThinkingLevel;
-        };
-        const stream = await sendPrompt(sessionId, prompt, messages, _traceRunId, modelId, thinkingLevel);
+        const { sessionId, prompt, messages, _traceRunId, modelId, thinkingLevel, branchFromMessageId } =
+          params as {
+            sessionId: string;
+            prompt: string;
+            messages?: Array<{
+              id?: string;
+              role: string;
+              content?: unknown;
+              toolCalls?: unknown;
+              toolCallId?: string;
+              name?: string;
+            }>;
+            _traceRunId?: string;
+            modelId?: string;
+            thinkingLevel?: ThinkingLevel;
+            branchFromMessageId?: string;
+          };
+        if (branchFromMessageId !== undefined && typeof branchFromMessageId !== "string") {
+          result = null;
+          stop();
+          return jsonResponse(id, 0, {
+            code: -32602,
+            message: "sendPrompt branchFromMessageId must be a string",
+          });
+        }
+        const stream = await sendPrompt(sessionId, prompt, messages, _traceRunId, {
+          modelId,
+          thinkingLevel,
+          branchFromMessageId,
+        });
         stop();
         return new Response(stream, {
           headers: { "Content-Type": "application/x-ndjson" },

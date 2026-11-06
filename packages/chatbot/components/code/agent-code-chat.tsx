@@ -21,7 +21,7 @@ import { useCodingAgentSessionThinkingLevel } from "@/lib/features/code/hooks/us
 import { useCodingAgentPrompts } from "@/lib/features/code/hooks/use-coding-agent-prompts";
 import type { PromptSummary } from "@/lib/features/code/worker-client";
 import { usePromptRefiner } from "@/lib/features/meta-prompt/hooks/use-prompt-refiner";
-import { prependSkillCommands } from "@/lib/features/code/skill-commands";
+import { prependSkillCommands, parseLeadingSkillCommands } from "@/lib/features/code/skill-commands";
 import { findOrphanedResponseComment } from "@/lib/features/code/response-comments";
 import { handleLocalFileUpload } from "@/lib/features/attachment/utils";
 import type { FilePart } from "@/lib/features/attachment/types";
@@ -33,6 +33,7 @@ import {
 import {
   buildUserContent,
   CODE_AGENT_SUPPORTED_FILES,
+  contentToDisplay,
   MAX_IMAGE_BYTES,
   MAX_TEXT_FILE_BYTES,
   MAX_TOTAL_ATTACHMENT_BYTES,
@@ -65,6 +66,18 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
   const [files, setFiles] = useState<FilePart[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  /**
+   * Message Edit (ADR 0015): id of the user Message loaded into the composer.
+   * The rewind only happens on submit; cancelling restores the parked draft.
+   */
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  /** Text loaded by the edit, to tell an untouched edit from a retyped one. */
+  const [editBaseline, setEditBaseline] = useState("");
+  const [parkedDraft, setParkedDraft] = useState<{
+    input: string;
+    files: FilePart[];
+    selectedSkills: string[];
+  } | null>(null);
   const thinking = modelThinking.get(modelId);
   const { level: thinkingLevel, setLevel: setThinkingLevel } =
     useCodingAgentSessionThinkingLevel({
@@ -75,6 +88,7 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     });
 
   const {
+    messages,
     items,
     turnFiles,
     isRunning,
@@ -123,6 +137,74 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     // draft, never auto-reenqueued and never executed.
     if (draft) setInput(draft);
   };
+
+  // Message Edit (ADR 0015). The transcript is the source of the text, so a
+  // failed submit loses nothing: the Message is still there to pick up again.
+  const editedIndex = editingMessageId
+    ? items.findIndex((item) => item.message.id === editingMessageId)
+    : -1;
+  const discardedCount = editedIndex >= 0 ? items.length - editedIndex - 1 : 0;
+
+  const handleEditMessage = (messageId: string) => {
+    // Only an idle session can rewind: the composer is locked while a Turn or
+    // a queue is armed, and the worker refuses to branch mid-turn.
+    if (isRunning || hasPending || isLoading) return;
+    const target = messages.find((message) => message.id === messageId);
+    if (!target) return;
+    const { text } = contentToDisplay(target.content);
+    const parsed = parseLeadingSkillCommands(text);
+    // The current draft is parked, never discarded: cancelling the edit puts
+    // it back exactly as it was.
+    if (!editingMessageId) {
+      setParkedDraft({ input, files, selectedSkills });
+    }
+    setEditingMessageId(messageId);
+    setInput(parsed.text);
+    setEditBaseline(parsed.text);
+    setSelectedSkills(parsed.skills);
+    // Attachments are not restored: Pi's images were already consumed by the
+    // model, so a Message Edit brings back the text and the skill chips only.
+    setFiles([]);
+    setAttachmentError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    // Text typed while the edit was open wins: cancelling must never discard
+    // what the user has just written. The parked draft only comes back when
+    // the composer still holds the untouched edited text.
+    const untouched = input === editBaseline;
+    if (untouched && parkedDraft) {
+      setInput(parkedDraft.input);
+      setFiles(parkedDraft.files);
+      setSelectedSkills(parkedDraft.selectedSkills);
+    } else if (untouched) {
+      setInput("");
+      setSelectedSkills([]);
+    }
+    setParkedDraft(null);
+  };
+
+  // Escape closes the edit the same way the banner button does.
+  useEffect(() => {
+    if (!editingMessageId) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") handleCancelEdit();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  // The edited Message can vanish from the transcript when a snapshot replaces
+  // the list (a rejected rewind re-syncs it from the worker): drop the edit
+  // instead of leaving the composer bound to a message that no longer exists.
+  useEffect(() => {
+    if (!editingMessageId) return;
+    if (!messages.some((message) => message.id === editingMessageId)) {
+      setEditingMessageId(null);
+      setParkedDraft(null);
+    }
+  }, [editingMessageId, messages]);
 
   useEffect(() => {
     onTurnRunningChange?.(isRunning);
@@ -212,6 +294,11 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
       return;
     }
     setAttachmentError(null);
+    // Message Edit (ADR 0015): everything after the edited Message is the
+    // Abandoned Branch — the run's snapshot confirms it, the hook truncates
+    // optimistically first. The composer clears before the await because
+    // `sendMessage` only resolves when the Turn ends.
+    const branchFromMessageId = editingMessageId ?? undefined;
     if (isRunning) {
       // Mid-turn sends never open a run, and non-text selections never
       // travel with queue operations (plain text v1): an armed skill,
@@ -246,7 +333,9 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
     setFiles([]);
     setSelectedSkills([]);
     fileBrowserActions.clearComments();
-    await sendMessage(buildUserContent(message, files));
+    setEditingMessageId(null);
+    setParkedDraft(null);
+    await sendMessage(buildUserContent(message, files), { branchFromMessageId });
   };
 
   const handleFollowUp = async () => {
@@ -329,6 +418,10 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         turnFiles={turnFiles}
         steeringPending={steeringPending}
         pendingComments={pendingComments}
+        editingMessageId={editingMessageId}
+        onEditUserMessage={
+          isRunning || isLoading || hasPending ? undefined : handleEditMessage
+        }
       />
       {(error || attachmentError) && (
         <div role="alert" className="text-xs text-red-600 px-4 py-1">
@@ -340,6 +433,30 @@ export const AgentCodeChat: React.FC<AgentCodeChatProps> = ({
         className="bg-(--background) w-full max-w-5xl mx-auto pb-4 px-4 relative"
       >
         <PendingCommentsBar disabled={isRunning} />
+        {editingMessageId && (
+          <div
+            data-testid="edit-message-banner"
+            className="mb-2 flex w-full min-w-0 items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+          >
+            <Pencil className="h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">
+              {"Editing message · "}
+              {discardedCount > 0
+                ? `${discardedCount} later message${discardedCount === 1 ? "" : "s"} will be discarded on send`
+                : "the session continues from here"}
+              {" · file changes already applied are not reverted"}
+            </span>
+            <button
+              type="button"
+              aria-label="Cancel edit"
+              title="Cancel edit (keeps your draft)"
+              onClick={handleCancelEdit}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         {waitingMessageText && (
           <div className="mb-2 flex w-full min-w-0 items-center gap-2" data-testid="followup-chip">
             {/* The chip owns the pending follow-up actions (edit/discard/

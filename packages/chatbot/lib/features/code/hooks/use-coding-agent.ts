@@ -70,6 +70,15 @@ export interface UseCodingAgentArgs {
   initialSnapshot?: SessionSnapshot | null;
 }
 
+export interface SendMessageOptions {
+  /**
+   * Message Edit (ADR 0015): id of the user Message being rewritten. The
+   * client drops it and everything after it before sending, and the worker
+   * rewinds the Pi session to just before that Message before prompting.
+   */
+  branchFromMessageId?: string;
+}
+
 export interface UseCodingAgentResult {
   messages: Message[];
   items: AgentItem[];
@@ -84,7 +93,10 @@ export interface UseCodingAgentResult {
    * rejected with the reason already in the banner — the caller keeps its
    * draft on false instead of clearing the composer.
    */
-  sendMessage: (content: string | InputContent[]) => Promise<boolean>;
+  sendMessage: (
+    content: string | InputContent[],
+    options?: SendMessageOptions,
+  ) => Promise<boolean>;
   /**
    * The worker's two pending queues, stored raw: the queue-update event and
    * `snapshot.pending` feed this one value, and each surface derives what it
@@ -975,8 +987,19 @@ export function useCodingAgent({
   );
 
   const sendMessage = useCallback(
-    async (content: string | InputContent[]): Promise<boolean> => {
+    async (
+      content: string | InputContent[],
+      options?: SendMessageOptions,
+    ): Promise<boolean> => {
       if (state.isRunning) {
+        // Message Edit is a rewind of a finished history: it cannot run
+        // against a live turn (the worker refuses, `navigateTree` throws).
+        if (options?.branchFromMessageId) {
+          store.update(() => ({
+            error: "A message cannot be edited while a turn is running",
+          }));
+          return false;
+        }
         // Submit duality (ticket 03): with an active turn there is no new
         // turn to open — a second concurrent prompt would only earn the
         // worker's "Session is already running". Plain text goes through
@@ -1026,7 +1049,39 @@ export function useCodingAgent({
         status: { kind: "thinking" } as AgentStatus,
       }));
       shouldReconnectRef.current = true;
-      agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
+      const branchFromMessageId = options?.branchFromMessageId;
+      // Held only for a Message Edit, to put the transcript back if the run
+      // never reaches the worker (see the catch below).
+      const displaced = branchFromMessageId
+        ? { messages: [...agent.messages], turnFiles: state.turnFiles }
+        : null;
+      if (branchFromMessageId) {
+        // Message Edit (ADR 0015): the abandoned branch disappears in the same
+        // frame as the submit. The run's MESSAGES_SNAPSHOT is the authority on
+        // what actually survives; this is only what the user sees until then.
+        const editedIndex = agent.messages.findIndex(
+          (message) => message.id === branchFromMessageId,
+        );
+        if (editedIndex >= 0) {
+          agent.setMessages(agent.messages.slice(0, editedIndex));
+          // Turn-file blocks are keyed by the assistant message that closed
+          // each Turn; the abandoned ones stop rendering with their messages,
+          // so drop the stored copies instead of letting phantom Turns
+          // survive a reload.
+          const keptIds = new Set(agent.messages.map((message) => message.id));
+          const prunedTurnFiles = new Map(
+            [...state.turnFiles].filter(([messageId]) => keptIds.has(messageId)),
+          );
+          if (prunedTurnFiles.size !== state.turnFiles.size) {
+            persistTurnFiles(sessionId, prunedTurnFiles);
+            store.update(() => ({ turnFiles: prunedTurnFiles as TurnFilesMap }));
+          }
+        }
+        // The edited Message keeps its id: it is the same Message, rewritten.
+        agent.addMessage({ id: branchFromMessageId, role: "user", content });
+      } else {
+        agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
+      }
       try {
         await agent.runAgent(
           {
@@ -1039,6 +1094,7 @@ export function useCodingAgent({
                 ? [{ description: "thinkingLevel", value: thinkingLevel }]
                 : []),
             ],
+            forwardedProps: branchFromMessageId ? { branchFromMessageId } : {},
           },
           {
             onRunFailed: ({ error: err }) => {
@@ -1073,10 +1129,19 @@ export function useCodingAgent({
           level: "error",
           payload: { message: err instanceof Error ? err.message : String(err) },
         });
+        // A Message Edit is the only run whose optimistic client state diverges
+        // from the worker when the request never lands: the transcript was
+        // already truncated locally. Put it back as it was — the worker's own
+        // history is the next snapshot's business.
+        if (displaced) {
+          agent.setMessages(displaced.messages);
+          persistTurnFiles(sessionId, displaced.turnFiles);
+          store.update(() => ({ turnFiles: displaced.turnFiles }));
+        }
       }
       return true;
     },
-    [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, state.isRunning, enqueueFollowUp, store],
+    [agent, project, sessionId, modelId, thinkingLevel, state.isLoading, state.isRunning, state.turnFiles, enqueueFollowUp, store],
   );
 
   const cancel = useCallback(async (): Promise<string | null> => {

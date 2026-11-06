@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { Pencil } from "lucide-react";
 import React, { useState } from "react";
 import { useCollapse } from "react-collapsed";
 import { CopyBlock } from "@/components/ui/copy-block";
@@ -15,6 +16,12 @@ export interface UserMessageProps {
   messageId?: string;
   className?: string;
   skills?: string[];
+  /**
+   * Message Edit (ADR 0015): renders the pencil next to the copy button and
+   * hands the message back to the composer. Only the Coding Agent UI passes
+   * it, so the normal Chat keeps rendering exactly the same bubble.
+   */
+  onEdit?: () => void;
 }
 
 export const UserMessage: React.FC<UserMessageProps> = ({
@@ -23,6 +30,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
   messageId = "user-message",
   className,
   skills = [],
+  onEdit,
 }) => {
   const trimmedText = text.trim();
   const isLongMessage = text.length > 350;
@@ -61,8 +69,27 @@ export const UserMessage: React.FC<UserMessageProps> = ({
               ]
                 .filter(Boolean)
                 .join("\n\n")}
+              actions={
+                onEdit ? (
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    aria-label="Edit message"
+                    title="Edit (rewinds the session to this message)"
+                    data-testid="edit-user-message"
+                    className="cursor-pointer text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                ) : undefined
+              }
             >
-              <div className="flex flex-col max-w-full bg-secondary py-4 pl-4 pr-8 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl">
+              <div
+                className={cn(
+                  "flex flex-col max-w-full bg-secondary py-4 pl-4 rounded-tl-3xl rounded-br-3xl rounded-bl-3xl",
+                  onEdit ? "pr-14" : "pr-8",
+                )}
+              >
                 {skills.length > 0 && (
                   <div className={cn("flex flex-wrap gap-2", trimmedText && "mb-3")}>
                     {skills.map((skill) => (

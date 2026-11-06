@@ -34,6 +34,14 @@ export interface AgentConversationProps {
   steeringPending?: string | null;
   /** Supplied by the main session composer; subagent views stay read-only. */
   pendingComments?: PendingComment[];
+  /**
+   * Message Edit (ADR 0015): id of the user Message being rewritten. It stays
+   * rendered, and everything after it is dimmed — the Abandoned Branch the
+   * submit will discard. Absent in read-only views, which also get no pencil.
+   */
+  editingMessageId?: string | null;
+  /** Present only in the editable Coding Agent transcript. */
+  onEditUserMessage?: (messageId: string) => void;
 }
 
 /**
@@ -75,7 +83,16 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
   turnFiles,
   steeringPending,
   pendingComments,
+  editingMessageId,
+  onEditUserMessage,
 }) => {
+  const editedIndex = React.useMemo(
+    () =>
+      editingMessageId
+        ? items.findIndex((item) => item.message.id === editingMessageId)
+        : -1,
+    [items, editingMessageId],
+  );
   const responseTargets = React.useMemo(
     () =>
       pendingComments
@@ -121,11 +138,18 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
               const isLast = index === items.length - 1;
               const isItemStreaming =
                 isLast && isRunning && status.kind === "thinking";
+              const isAbandoned = editedIndex >= 0 && index > editedIndex;
 
               if (item.kind === "assistant") {
                 const changedFiles = turnFiles?.get(item.message.id);
                 return (
-                  <React.Fragment key={item.message.id}>
+                  <div
+                    key={item.message.id}
+                    data-abandoned={isAbandoned ? "true" : undefined}
+                    className={
+                      isAbandoned ? "opacity-40 transition-opacity" : undefined
+                    }
+                  >
                     <AgentMessage
                       message={item.message}
                       toolGroups={item.toolGroups}
@@ -136,17 +160,26 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
                       responseComments={responseComments?.filter(
                         (comment) => comment.messageId === item.message.id,
                       )}
+                      onEditUserMessage={onEditUserMessage}
                     />
                     {changedFiles && <TurnFilesChanged files={changedFiles} />}
-                  </React.Fragment>
+                  </div>
                 );
               }
               return (
-                <AgentMessage
+                <div
                   key={item.message.id}
-                  message={item.message}
-                  isStreaming={isItemStreaming}
-                />
+                  data-abandoned={isAbandoned ? "true" : undefined}
+                  className={
+                    isAbandoned ? "opacity-40 transition-opacity" : undefined
+                  }
+                >
+                  <AgentMessage
+                    message={item.message}
+                    isStreaming={isItemStreaming}
+                    onEditUserMessage={onEditUserMessage}
+                  />
+                </div>
               );
             })}
             {steeringBubble}
