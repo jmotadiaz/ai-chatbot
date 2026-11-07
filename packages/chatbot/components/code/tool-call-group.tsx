@@ -56,7 +56,7 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
           aria-controls={`tool-detail-${group.id}`}
           onClick={toggle}
           className={cn(
-            "flex items-center gap-2 py-1.5 text-sm w-fit max-w-full text-left hover:bg-muted/40 rounded-md -mx-1 px-1 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            "flex items-center gap-2 py-1.5 px-2 text-sm w-fit max-w-full text-left hover:bg-muted/40 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             rowColor
           )}
         >
@@ -64,12 +64,12 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
           {isRunning ? (
             <Shimmer as="span" className="inline-flex items-center gap-1.5 min-w-0" textLength={displayName.length + group.summary.length}>
               <span className="font-medium shrink-0">{displayName}</span>
-              <span title={group.summaryTitle ?? group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
+              <span title={group.summaryTitle ?? group.summary} className="truncate min-w-0">{group.summary}</span>
             </Shimmer>
           ) : (
             <span className="inline-flex items-center gap-1.5 min-w-0">
               <span className="font-medium shrink-0">{displayName}</span>
-              <span title={group.summaryTitle ?? group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
+              <span title={group.summaryTitle ?? group.summary} className="truncate min-w-0">{group.summary}</span>
             </span>
           )}
         </button>
