@@ -1,5 +1,5 @@
 import type { Message } from "@ag-ui/client";
-import { summarizeToolCall } from "./tool-summary";
+import { describeToolCall } from "./tool-summary";
 import type { AgentItem, ToolCallGroup } from "./types";
 import { safeStringify } from "./json";
 
@@ -32,10 +32,15 @@ function extractArgs(tc: { function?: { arguments?: string }; args?: unknown }):
   return { raw: "", parsed: undefined };
 }
 
+export interface GroupItemsOptions {
+  project?: string;
+}
+
 export function groupItems(
   messages: Message[],
   toolErrors?: ReadonlyMap<string, true>,
   toolTimings?: ReadonlyMap<string, { startedAt: number; finishedAt?: number }>,
+  options?: GroupItemsOptions,
 ): AgentItem[] {
   const out: AgentItem[] = [];
   let current: Extract<AgentItem, { kind: "assistant" }> | null = null;
@@ -56,9 +61,14 @@ export function groupItems(
         const timing = toolTimings?.get(tc.id);
         const startedAt = timing?.startedAt;
         const finishedAt = timing?.finishedAt;
+        const toolName = (tc.function?.name ?? tc.type ?? "tool") as string;
+        const desc = describeToolCall(toolName, parsed, {
+          project: options?.project,
+          rawArgs: raw,
+        });
         const group: ToolCallGroup = {
           id: tc.id,
-          name: tc.function?.name ?? tc.type ?? "tool",
+          name: toolName,
           args: raw,
           argsParsed: parsed,
           status: finishedAt
@@ -68,10 +78,8 @@ export function groupItems(
             : "running",
           startedAt,
           finishedAt,
-          summary: summarizeToolCall(
-            (tc.function?.name ?? tc.type ?? "tool") as string,
-            parsed,
-          ),
+          summary: desc.summary,
+          summaryTitle: desc.title,
         };
         toolGroupsById.set(group.id, group);
         return group;
@@ -88,6 +96,18 @@ export function groupItems(
         group.status = toolErrors?.has(id) ? "error" : "ok";
         const timing = toolTimings?.get(id);
         group.finishedAt = timing?.finishedAt;
+        const desc = describeToolCall(
+          group.name,
+          group.argsParsed,
+          {
+            project: options?.project,
+            rawArgs: group.args,
+            result: group.result,
+            status: group.status,
+          },
+        );
+        group.summary = desc.summary;
+        group.summaryTitle = desc.title;
         continue;
       }
       // Orphan tool message: drop.

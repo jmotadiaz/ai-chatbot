@@ -18,6 +18,21 @@ function bashCall(id: string, cmd: string): ToolCall {
     function: { name: "bash", arguments: JSON.stringify({ command: cmd }) },
   } as ToolCall;
 }
+function readCall(
+  id: string,
+  path: string,
+  offset?: number,
+  limit?: number,
+): ToolCall {
+  return {
+    id,
+    type: "function",
+    function: {
+      name: "read",
+      arguments: JSON.stringify({ path, offset, limit }),
+    },
+  } as ToolCall;
+}
 
 describe("groupItems", () => {
   it("returns empty for empty input", () => {
@@ -197,7 +212,60 @@ describe("groupItems", () => {
       expect(g1.startedAt).toBe(g2.startedAt);
       expect(g1.finishedAt).toBe(g2.finishedAt);
       expect(g1.summary).toBe(g2.summary);
+      expect(g1.summaryTitle).toBe(g2.summaryTitle);
       expect(g1.args).toBe(g2.args);
     });
+  });
+
+  it("relativizes tool paths against project option and sets summaryTitle", () => {
+    const rawPath =
+      "/home/user/ai-chatbot/packages/chatbot/components/code/tool-call-group.tsx";
+    const items = groupItems(
+      [assistantMsg("a1", [readCall("t1", rawPath, 35, 60)])],
+      undefined,
+      undefined,
+      { project: "ai-chatbot" },
+    );
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    const group = items[0].toolGroups[0];
+    expect(group.summary).toBe("chatbot/…/code/tool-call-group.tsx:35–95");
+    expect(group.summaryTitle).toBe(`${rawPath}:35–95`);
+  });
+
+  it("extracts summary from streaming unparsed JSON arguments", () => {
+    const streamingToolCall = {
+      id: "t1",
+      type: "function",
+      function: {
+        name: "bash",
+        arguments: '{"command":"pnpm build:verify',
+      },
+    } as ToolCall;
+    const items = groupItems([assistantMsg("a1", [streamingToolCall])]);
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    expect(items[0].toolGroups[0].summary).toBe("pnpm build:verify");
+  });
+
+  it("recomputes summary and updates summaryTitle when tool result arrives", () => {
+    const t1 = readCall(
+      "t1",
+      "packages/chatbot/components/code/tool-call-group.tsx",
+    );
+    const items = groupItems(
+      [
+        assistantMsg("a1", [t1]),
+        toolMsg("r1", "t1", "export function ToolCallGroup() {}"),
+      ],
+      undefined,
+      undefined,
+      { project: "ai-chatbot" },
+    );
+    if (items[0].kind !== "assistant") throw new Error("expected assistant");
+    const g = items[0].toolGroups[0];
+    expect(g.status).toBe("ok");
+    expect(g.summary).toBe("chatbot/…/code/tool-call-group.tsx");
+    expect(g.summaryTitle).toBe(
+      "packages/chatbot/components/code/tool-call-group.tsx",
+    );
   });
 });

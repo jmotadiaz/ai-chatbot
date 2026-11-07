@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Wrench,
   Bot,
+  Layout,
   type LucideIcon,
 } from "lucide-react";
 import { ToolCallDetail } from "./tool-call-detail";
@@ -22,12 +23,14 @@ const TOOL_ICONS: Record<string, LucideIcon> = {
   bash: Terminal, shell: Terminal,
   read: FileText, write: FilePlus, edit: Pencil,
   grep: Search, find: FolderOpen, ls: FolderOpen, subagent: Bot,
+  publish_artifact: Layout,
 };
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   bash: "Shell", shell: "Shell",
   read: "Read", write: "Write", edit: "Edit",
   grep: "Grep", find: "Find", ls: "Ls", subagent: "Subagent",
+  publish_artifact: "Artifact",
 };
 
 export interface ToolCallGroupProps { group: Group }
@@ -61,12 +64,12 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
           {isRunning ? (
             <Shimmer as="span" className="inline-flex items-center gap-1.5 min-w-0" textLength={displayName.length + group.summary.length}>
               <span className="font-medium shrink-0">{displayName}</span>
-              <span title={group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
+              <span title={group.summaryTitle ?? group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
             </Shimmer>
           ) : (
             <span className="inline-flex items-center gap-1.5 min-w-0">
               <span className="font-medium shrink-0">{displayName}</span>
-              <span title={group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
+              <span title={group.summaryTitle ?? group.summary} className="truncate max-w-96 min-w-0">{group.summary}</span>
             </span>
           )}
         </button>
@@ -83,7 +86,8 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
     return (
       p.id === n.id && p.name === n.name && p.status === n.status &&
       p.result === n.result && p.startedAt === n.startedAt &&
-      p.finishedAt === n.finishedAt && p.summary === n.summary && p.args === n.args
+      p.finishedAt === n.finishedAt && p.summary === n.summary &&
+      p.summaryTitle === n.summaryTitle && p.args === n.args
     );
   }
 );

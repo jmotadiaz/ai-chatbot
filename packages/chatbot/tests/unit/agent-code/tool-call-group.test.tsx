@@ -78,4 +78,37 @@ describe("ToolCallGroup", () => {
     fireEvent.click(btn);
     expect(btn.getAttribute("aria-expanded")).toBe("true");
   });
+
+  it("renders publish_artifact with Artifact display name", () => {
+    const { container } = render(
+      <ToolCallGroup
+        group={{
+          id: "t2",
+          name: "publish_artifact",
+          args: '{"name":"architecture"}',
+          status: "ok",
+          summary: "architecture",
+        }}
+      />,
+    );
+    expect(container.textContent).toContain("Artifact");
+    expect(container.textContent).toContain("architecture");
+  });
+
+  it("prefers summaryTitle for tooltip title when provided", () => {
+    const { container } = render(
+      <ToolCallGroup
+        group={{
+          ...base,
+          summary: "chatbot/…/tool-call-group.tsx",
+          summaryTitle:
+            "/home/user/ai-chatbot/packages/chatbot/components/code/tool-call-group.tsx",
+        }}
+      />,
+    );
+    const summaryEl = container.querySelector("[title]") as HTMLElement;
+    expect(summaryEl.getAttribute("title")).toBe(
+      "/home/user/ai-chatbot/packages/chatbot/components/code/tool-call-group.tsx",
+    );
+  });
 });

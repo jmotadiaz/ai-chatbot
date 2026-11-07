@@ -968,8 +968,8 @@ export function useCodingAgent({
   }, [sessionId, store]);
 
   const items = useMemo(
-    () => groupItems(state.messages, state.toolErrors, state.toolTimings),
-    [state.messages, state.toolErrors, state.toolTimings],
+    () => groupItems(state.messages, state.toolErrors, state.toolTimings, { project }),
+    [state.messages, state.toolErrors, state.toolTimings, project],
   );
 
   const enqueueFollowUp = useCallback(

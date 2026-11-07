@@ -30,12 +30,23 @@ describe("composePostgresUrl", () => {
 });
 
 describe("resolveDotenvSecrets", () => {
+  let origUser: string | undefined;
+  let origPassword: string | undefined;
+
   beforeEach(() => {
+    origUser = process.env.POSTGRES_USER;
+    origPassword = process.env.POSTGRES_PASSWORD;
+    delete process.env.POSTGRES_USER;
+    delete process.env.POSTGRES_PASSWORD;
     resetSecretsForTests();
     resetBuildFlagsForTests();
   });
 
   afterEach(() => {
+    if (origUser !== undefined) process.env.POSTGRES_USER = origUser;
+    else delete process.env.POSTGRES_USER;
+    if (origPassword !== undefined) process.env.POSTGRES_PASSWORD = origPassword;
+    else delete process.env.POSTGRES_PASSWORD;
     resetSecretsForTests();
     resetBuildFlagsForTests();
   });

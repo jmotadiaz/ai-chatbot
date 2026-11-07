@@ -101,6 +101,7 @@ export interface ToolCallGroup {
   startedAt?: number;
   finishedAt?: number;
   summary: string;
+  summaryTitle?: string;
 }
 
 export type AgentItem =
