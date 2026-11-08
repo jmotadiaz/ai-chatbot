@@ -45,6 +45,8 @@ Lay it out with a clean hierarchy, top to bottom:
 3. **Free-play buttons**: one button per action (`min-h-[44px]` tap targets), always visible so anyone can poke at the model in any order. Each click dispatches its action and re-renders the state.
 4. **Guided walkthroughs**: a set of **scenarios**, one per tab. Each tab holds a short plain-language description of the scenario (the situation it sets up and what to watch for) and underneath it, the ordered **buttons to press** for that scenario. Each step is a real button: clicking it performs that action and advances to the next step. Starting a walkthrough resets to a known initial state so the scenario runs deterministically every time.
 
+If the demo pins anything to the viewport (a sticky action bar, a state inspector), make it **collapsible**: one `≥44px` handle that expands on tap, collapsed by default below `sm`. Controls that do not need pinning stay in normal flow and scroll away. Use the shapes from [UI.md §4](UI.md#4-build-the-control-chrome-two-collapsible-halves) so both branches look the same. A strip that never goes away costs a third of a phone viewport and covers the state panel the reader came for.
+
 Choose scenarios that demonstrate the awkward cases that are hard to reason about on paper: the happy path, a tricky race or ordering edge case, and an attempt at an illegal transition.
 
 Keep the visual style restrained: clean typography, generous spacing, one accent colour. Nothing should compete with the state panel and the action buttons.
@@ -70,8 +72,9 @@ Once the user clicks through the walkthroughs and free-play buttons, their react
 
 - **Don't add tests.** A prototype that needs tests is no longer a prototype.
 - **Don't wire it to a database or storage APIs.** Keep state in memory (remember: `localStorage` and `sessionStorage` throw `SecurityError` inside the artifact viewer's sandboxed iframe).
-- **Don't generalise.** No "what if we wanted to support X later." The prototype answers one question.
+- **Don't pin control chrome that cannot be dismissed.** Scenario tabs, action bars and inspectors stay in page flow, or collapse to a handle on a phone. A permanent sticky header hides the state panel the demo exists to show.
 - **Don't blur the logic and the page together.** If the pure module references `document` or DOM nodes, it is no longer liftable.
+- **Don't generalise.** No "what if we wanted to support X later." The prototype answers one question.
 - **Don't reach for a framework, bundler, or generator script.** Write the single HTML file directly.
 - **Don't output raw paths or code blocks for the URL.** Always wrap the artifact path in a Markdown link `[Label](path)` so the Chatbot renders it as a clickable link.
 - **Don't ship the HTML shell into production.** The page is optimised for clicking through by hand; the pure logic module behind it is the part worth keeping.

@@ -1,6 +1,6 @@
 # UI Prototype
 
-Generate **several radically different UI variations** inside a single self-contained HTML artifact, switchable from a **floating bottom bar**. The user opens the artifact link in the Chatbot, flips between variants in the browser, picks one (or combines parts from each), and then you fold the winning design into the real components.
+Generate **several radically different UI variations** inside a single self-contained HTML artifact, switchable from a **collapsible floating control dock**. The user opens the artifact link in the Chatbot, flips between variants in the browser, picks one (or combines parts from each), and then you fold the winning design into the real components.
 
 If the question is about state transitions or business logic rather than what something should look like and how its controls feel, use [LOGIC.md](LOGIC.md).
 
@@ -20,6 +20,7 @@ Decide first whether the prototype is anchored in the current project's interfac
 When the prototype is based on the UI of the project being worked on (redesigning an existing component, adjusting an existing screen, or adding a section that lives inside one), the prototype **must emulate the context of that project**:
 - Inspect the target component, its surrounding host screen/layout, and the project's theme tokens (e.g. `globals.css` colour variables, typography, and spacing).
 - Render the surrounding interface context (layout chrome, neighbouring elements, realistic data, and real visual density) around the variants so the user judges each option butting up against a faithful emulation of the project's real UI rather than floating in a vacuum.
+- Keep prototype controls **out** of the chrome you emulate. The emulated header carries only controls the project really has; the variant switcher and the scenario / sub-variation selector live in the dock. Otherwise the emulation stops being faithful and the header grows into an always-visible bar that covers the variant on a phone.
 
 ### Sub-shape B: Prototype from scratch (rule excluded)
 
@@ -58,24 +59,59 @@ Write **one file** directly to `/tmp/prototype-<slug>.html`:
     document.querySelectorAll('[data-variant]').forEach((el) => {
       el.hidden = el.dataset.variant !== id;
     });
-    // update active pill in the floating switcher and location.hash
+    // update active pill in the dock and location.hash
     window.location.hash = `variant=${id}`;
   }
   ```
 - **Opaque-origin sandbox safety:** Because the artifact runs inside `<iframe sandbox="allow-scripts allow-downloads allow-popups">` (without `allow-same-origin`), use in-memory state and `window.location.hash` (`#variant=B`). Never call `localStorage`, `sessionStorage`, `document.cookie`, or `history.pushState`/`replaceState` (all throw `SecurityError`).
 
-### 4. Build the floating switcher
+### 4. Build the control chrome (two collapsible halves)
 
-Render a fixed-position bar at the bottom-center of the viewport (`fixed bottom-4 left-1/2 -translate-x-1/2 z-50`) with three pieces:
+Chrome splits by position, and **both halves collapse**. A prototype whose controls are always on
+screen is judged on its controls, not on the variant.
 
-- **Left arrow (`←`)**: cycles to the previous variant (wraps around).
-- **Variant selector pills / label**: shows each variant key and short name (e.g. `A · Rail`, `B · Cards`, `C · Narrative`) so the user sees where they are and can jump directly or cycle.
-- **Right arrow (`→`)**: cycles forward (wraps around).
+#### 4a. Floating dock (bottom) — variants only
 
-Behaviour and styling:
-- **Keyboard navigation**: `ArrowLeft` and `ArrowRight` cycle variants. Ignore key events when focus is inside an `<input>`, `<textarea>`, `<select>`, or `[contenteditable]` element.
-- **Touch & mobile**: keep buttons at `min-h-[44px]` and let the bar fit within 320px viewports (`max-w-[calc(100vw-1.5rem)] overflow-x-auto`). Add `pb-24` to the page body so the floating bar never obscures the bottom of a variant.
-- **Visually distinct**: style the bar as a high-contrast floating pill with shadow and backdrop blur so it is unmistakably prototype switcher chrome, not part of the UI being evaluated.
+One `fixed` dock: `fixed bottom-4 left-1/2 -translate-x-1/2 z-50`,
+`w-[calc(100vw-1.5rem)] max-w-[560px]`, holding the arrows, the variant pills and a close button.
+Nothing else — state switches belong to the panel in 4b.
+
+- **Collapsed (default below `sm`).** A single `min-h-[44px]` handle showing the active variant key
+  (`A`) plus a chevron. Tapping it expands the dock.
+- **Expanded.** `←` · one pill per variant (`A · Rail`, `B · Cards`, `C · Narrative`) · `→` · `×`.
+- **Overflow, don't wrap.** The row scrolls horizontally (`overflow-x-auto`), buttons stay
+  `whitespace-nowrap shrink-0`. Budget the expanded dock under ~15% of viewport height.
+- **No layout shift.** The dock is `fixed` and overlays; expanding it must not move the variant.
+- **Accessibility.** `aria-expanded` + `aria-controls` on the toggle, `aria-label` on icon-only
+  buttons.
+
+#### 4b. State panel (top, in flow) — sub-variations
+
+When the prototype has sub-variations (turn states, scenarios, data shapes), they belong in a panel
+**at the top of the page, in normal flow** — that is where a reader looks for them. Never make this
+panel `sticky` or `fixed`, and never pin it inside the emulated app header: an always-on state
+strip is the single most annoying element on a phone.
+
+- **Collapsed (default below `sm`).** A `min-h-[44px]` header row: icon + panel name + a **summary
+  of the current state** (`3 · Paralelo`) + chevron. The summary is what keeps the collapsed state
+  informative — never collapse it to an unnamed toggle.
+- **Expanded.** The state buttons (`whitespace-nowrap shrink-0`, one horizontally scrolling row
+  below `sm`, `sm:flex-wrap` above) and a second row with the utility toggles (open/close all,
+  theme).
+- **Toggle mechanics.** Flip the body with `style.display = 'flex' | 'none'`, rotate the chevron,
+  keep `aria-expanded` in sync.
+
+#### 4c. Keys and state
+
+- `ArrowLeft` / `ArrowRight` cycle variants in both states; the collapsed handle shows the new key.
+- `Escape` collapses whatever is open; `h` toggles the dock; `e` toggles the state panel.
+- Ignore key events from `<input>`, `<textarea>`, `<select>`, `[contenteditable]`.
+- Decide the initial state once with `matchMedia('(min-width: 640px)')` (`true` at `sm` and up) and
+  keep it in memory — never `localStorage`, which throws in the sandboxed iframe.
+- Keep body padding constant (`pb-32`) so toggling chrome never shifts the content.
+
+Keep the variant switch itself as written in §3: toggle `[data-variant]` `hidden`, update the
+active pill, and reflect the choice in `location.hash` (`#variant=B`).
 
 ### 5. Verify mobile-first and publish
 
@@ -85,7 +121,7 @@ Behaviour and styling:
    pnpm --filter chatbot check:mobile "/tmp/prototype-<slug>.html"
    ```
    Fix any reported overflow or sub-12px text nodes in `/tmp/prototype-<slug>.html` and re-run `check:mobile` until it exits 0.
-3. **Do not run browser screenshot-read loops.** Rely on `check:mobile` instead of launching `agent-browser` to screenshot and `read` PNGs into context.
+3. **Do not run browser screenshot-read loops.** Rely on `check:mobile` instead of launching `agent-browser` to screenshot and `read` PNGs into context. Because the dock defaults to collapsed below `sm`, the check exercises the mobile state a phone user actually gets; if you default it expanded you are measuring a state nobody sees.
 4. Call `publish_artifact({ path: "/tmp/prototype-<slug>.html", name: "prototype-<slug>" })` and present the returned path in your reply **strictly as a Markdown link**:
    ```markdown
    [Ver prototipo: <Título descriptivo>](/agent/code/<project>/<sessionId>/artifacts/prototype-<slug>)
@@ -99,6 +135,7 @@ The user will flip through the variants and reply with their choice — often a 
 ## Anti-patterns
 
 - **Variants that differ only in colour, border radius, or copy.** That is a tweak, not a prototype. Real variants disagree about structure and information hierarchy.
+- **Permanent chrome.** A sticky header or floating bar that cannot be dismissed, or a control strip pinned inside the emulated app header. On a phone it owns a third of the screen and the user evaluates the switcher instead of the variant. Collapse it to a handle (§4).
 - **Evaluating an in-project UI change in an empty box (or forcing project chrome onto a from-scratch prototype).** When the prototype is based on the current project's interface, emulate its surrounding UI context; when it is a prototype from scratch, skip project context emulation entirely.
 - **Writing Python/Node scripts (`build.py`) to generate HTML.** Author the single `/tmp/prototype-<slug>.html` file directly.
 - **Screenshot-and-read loops with `agent-browser`.** Reading 20+ PNGs into the LLM context destroys latency and token budgets. Use `pnpm --filter chatbot check:mobile` for layout verification.
