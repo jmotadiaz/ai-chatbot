@@ -194,9 +194,31 @@ interface is HTTP. Its JS toolkit is consumed only as a test dependency.
 <!-- CODEGRAPH_START -->
 ## CodeGraph
 
-In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+When `.codegraph/` exists at the repo root, CodeGraph is the first move for locating
+or understanding code. It is cheaper than grep for symbols; keep grep for text without
+symbols (markdown, `docs/`, `.scratch/`, traces, JSON, prose).
 
-- **CLI**: `codegraph explore "<symbol names or question>"` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source.
+Pick the smallest command that answers the question:
+
+| Need                       | Command                                       | Typical output                |
+| -------------------------- | --------------------------------------------- | ----------------------------- |
+| Where is X?                | `codegraph query -l 5 "X"`                    | ~2 KB: path:line + signature  |
+| What is in this file?      | `codegraph node -f <file> --symbols-only`     | ~2 KB: symbol map + dependents |
+| Who calls X / what breaks? | `codegraph callers X` / `codegraph impact X`  | 2–4 KB                        |
+| How does this area work?   | `codegraph explore --max-files 2 "X Y"`       | 10–25 KB: source + call paths |
+| One symbol's body          | `codegraph node X`                            | ~15 KB                        |
+
+Rules:
+
+- Locate cheaply first: `query` or `--symbols-only` before `explore`. Use `explore` only
+  when you need source bodies or call paths, and name 1–3 symbols, not a paragraph of prose.
+- Cap the blast: pass `--max-files 1|2`. Never pipe CodeGraph output through `head`:
+  the shell keeps the tail and cuts the summary.
+- Do not re-read a file `explore` already printed; ask for more with
+  `codegraph node -f <file> --offset N --limit M`.
+- If `codegraph status` reports pending changes, run `codegraph sync -q` before trusting
+  the index.
+- Not indexed: markdown, `docs/`, `.scratch/`, traces, JSON. Use `rg` there.
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
