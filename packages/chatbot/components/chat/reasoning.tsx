@@ -182,15 +182,22 @@ interface ReasoningBlockProps {
   text: string;
   isStreaming?: boolean;
   hasTextTokens?: boolean;
+  /** Spacing around the block; merged over the shared `mb-4` default. */
+  className?: string;
 }
 
 export const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   text,
   isStreaming = false,
   hasTextTokens = false,
+  className,
 }) => {
   return (
-    <Reasoning isStreaming={isStreaming} hasTextTokens={hasTextTokens}>
+    <Reasoning
+      isStreaming={isStreaming}
+      hasTextTokens={hasTextTokens}
+      className={className}
+    >
       <ReasoningTrigger />
       <ReasoningContent>{text}</ReasoningContent>
     </Reasoning>

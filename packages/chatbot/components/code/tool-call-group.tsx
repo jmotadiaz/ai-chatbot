@@ -2,36 +2,12 @@
 
 import * as React from "react";
 import { useState, useCallback } from "react";
-import {
-  Terminal,
-  FileText,
-  FilePlus,
-  Pencil,
-  Search,
-  FolderOpen,
-  Wrench,
-  Bot,
-  Layout,
-  type LucideIcon,
-} from "lucide-react";
 import { ToolCallDetail } from "./tool-call-detail";
+import { toolIcon } from "./tool-icon";
 import { Shimmer } from "@/components/ui/shimmer";
+import { toolDisplayName } from "@/lib/features/code/tool-presentation";
 import type { ToolCallGroup as Group } from "@/lib/features/code/types";
 import { cn } from "@/lib/utils/helpers";
-
-const TOOL_ICONS: Record<string, LucideIcon> = {
-  bash: Terminal, shell: Terminal,
-  read: FileText, write: FilePlus, edit: Pencil,
-  grep: Search, find: FolderOpen, ls: FolderOpen, subagent: Bot,
-  publish_artifact: Layout,
-};
-
-const TOOL_DISPLAY_NAMES: Record<string, string> = {
-  bash: "Shell", shell: "Shell",
-  read: "Read", write: "Write", edit: "Edit",
-  grep: "Grep", find: "Find", ls: "Ls", subagent: "Subagent",
-  publish_artifact: "Artifact",
-};
 
 export interface ToolCallGroupProps { group: Group }
 
@@ -39,8 +15,8 @@ export const ToolCallGroup = React.memo<ToolCallGroupProps>(
   ({ group }) => {
     const [open, setOpen] = useState(false);
     const toggle = useCallback(() => setOpen((v) => !v), []);
-    const Icon = TOOL_ICONS[group.name.toLowerCase()] ?? Wrench;
-    const displayName = TOOL_DISPLAY_NAMES[group.name.toLowerCase()] ?? group.name;
+    const Icon = toolIcon(group.name);
+    const displayName = toolDisplayName(group.name);
     const isRunning = group.status === "running";
     const isError = group.status === "error";
 

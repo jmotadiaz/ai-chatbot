@@ -198,6 +198,10 @@ _Avoid_: relay, proxy
 Session managed by the Coding Agent Worker and exposed to the user through the Coding Agent Client: the sum of its Turns, with state between them.
 _Avoid_: agent session, run
 
+**ReAct Cycle**:
+Contiguous sequence of reasoning steps and tool calls within a Turn of a Coding Agent Session that precedes an assistant response to the user (or the end of the Turn); a new cycle begins if reasoning or tool calls resume after an assistant response.
+_Avoid_: tool group, reasoning loop, agent step, react block
+
 **Session History**:
 Full, searchable listing of the Coding Agent Sessions of one Project. A Coding Agent Session joins the session listings only once it has run its first Turn; a session created but never prompted has no name to show and stays out of them.
 _Avoid_: agent history, coding agent log, session list

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { CodeXml } from "lucide-react";
 import { AgentMessage } from "./agent-message";
+import { ReActCycleView } from "./react-cycle";
 import { TurnFilesChanged } from "./turn-files-changed";
 import {
   isResponseComment,
@@ -12,6 +13,7 @@ import { ChatNavigation } from "@/components/chat/navigation";
 import type { AgentStatus } from "@/lib/features/code/hooks/use-coding-agent";
 import { DotsLoadingIcon } from "@/components/ui/icons";
 import type { AgentItem } from "@/lib/features/code/types";
+import { buildConversationBlocks } from "@/lib/features/code/react-cycles";
 import type { TurnFilesMap } from "@/lib/features/code/turn-files";
 import { responseCommentTargets } from "@/lib/features/code/response-comments";
 import { useAgentConversationScroll } from "@/lib/features/code/hooks/use-agent-conversation-scroll";
@@ -86,13 +88,33 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
   editingMessageId,
   onEditUserMessage,
 }) => {
+  const blocks = React.useMemo(() => buildConversationBlocks(items), [items]);
   const editedIndex = React.useMemo(
     () =>
       editingMessageId
-        ? items.findIndex((item) => item.message.id === editingMessageId)
+        ? blocks.findIndex(
+            (block) =>
+              block.kind === "user" && block.message.id === editingMessageId,
+          )
         : -1,
-    [items, editingMessageId],
+    [blocks, editingMessageId],
   );
+  // Turn files are anchored to the assistant Message that closed the turn: the
+  // LAST block carrying it hosts the card, so a turn that ended on tool calls
+  // still shows it at the bottom of the cycle instead of above its own rows.
+  const filesBlockIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    if (!turnFiles || turnFiles.size === 0) return ids;
+    const seen = new Set<string>();
+    for (let index = blocks.length - 1; index >= 0; index--) {
+      const block = blocks[index];
+      const messageId =
+        block.kind === "cycle" ? block.cycle.originMessageId : block.message.id;
+      if (turnFiles.has(messageId) && !seen.has(messageId)) ids.add(block.id);
+      seen.add(messageId);
+    }
+    return ids;
+  }, [blocks, turnFiles]);
   const responseTargets = React.useMemo(
     () =>
       pendingComments
@@ -115,7 +137,7 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
     scrollToPrev,
     scrollToNext,
   } = useAgentConversationScroll({ items });
-  const hasConversationContent = items.length;
+  const hasConversationContent = blocks.length;
   const steeringBubble = steeringPending?.trim() ? (
     <SteeringPendingBubble text={steeringPending} />
   ) : null;
@@ -134,51 +156,51 @@ export const AgentConversation: React.FC<AgentConversationProps> = ({
       <ConversationBody bodyRef={scrollContainerRef} className="h-full">
         {hasConversationContent ? (
           <div className="max-w-5xl mx-auto px-8 pb-15">
-            {items.map((item, index) => {
-              const isLast = index === items.length - 1;
-              const isItemStreaming =
-                isLast && isRunning && status.kind === "thinking";
+            {blocks.map((block, index) => {
+              const isLast = index === blocks.length - 1;
+              const isTailStreaming = isLast && isRunning;
               const isAbandoned = editedIndex >= 0 && index > editedIndex;
+              const changedFiles = filesBlockIds.has(block.id)
+                ? turnFiles?.get(
+                    block.kind === "cycle"
+                      ? block.cycle.originMessageId
+                      : block.message.id,
+                  )
+                : undefined;
 
-              if (item.kind === "assistant") {
-                const changedFiles = turnFiles?.get(item.message.id);
-                return (
-                  <div
-                    key={item.message.id}
-                    data-abandoned={isAbandoned ? "true" : undefined}
-                    className={
-                      isAbandoned ? "opacity-40 transition-opacity" : undefined
-                    }
-                  >
-                    <AgentMessage
-                      message={item.message}
-                      toolGroups={item.toolGroups}
-                      isStreaming={isItemStreaming}
-                      responseTurnNumber={
-                        responseTargets.get(item.message.id)?.turnNumber
-                      }
-                      responseComments={responseComments?.filter(
-                        (comment) => comment.messageId === item.message.id,
-                      )}
-                      onEditUserMessage={onEditUserMessage}
-                    />
-                    {changedFiles && <TurnFilesChanged files={changedFiles} />}
-                  </div>
-                );
-              }
               return (
                 <div
-                  key={item.message.id}
+                  key={block.id}
                   data-abandoned={isAbandoned ? "true" : undefined}
                   className={
                     isAbandoned ? "opacity-40 transition-opacity" : undefined
                   }
                 >
-                  <AgentMessage
-                    message={item.message}
-                    isStreaming={isItemStreaming}
-                    onEditUserMessage={onEditUserMessage}
-                  />
+                  {block.kind === "cycle" ? (
+                    <ReActCycleView
+                      cycle={block.cycle}
+                      active={isTailStreaming}
+                      streamingReasoning={isTailStreaming && status.kind === "thinking"}
+                    />
+                  ) : (
+                    <AgentMessage
+                      message={block.message}
+                      responseTurnNumber={
+                        block.kind === "response"
+                          ? responseTargets.get(block.message.id)?.turnNumber
+                          : undefined
+                      }
+                      responseComments={
+                        block.kind === "response"
+                          ? responseComments?.filter(
+                              (comment) => comment.messageId === block.message.id,
+                            )
+                          : undefined
+                      }
+                      onEditUserMessage={onEditUserMessage}
+                    />
+                  )}
+                  {changedFiles && <TurnFilesChanged files={changedFiles} />}
                 </div>
               );
             })}

@@ -9,6 +9,9 @@ test.describe("Coding Agent — tool call grouping", () => {
   // chunk relay into the mounted transcript, so only the browser shows one
   // visible group per streamed call with its real summary. The worker is the
   // in-app stub pinned by config.test.ts, never a real coding-agent process.
+  //
+  // Tool rows live inside the ReAct Cycle that produced them, which starts
+  // collapsed: the trigger names them, and this test opens it to reach them.
   test("renders one group per tool call with a non-empty summary", async ({ page }) => {
     await page.goto("/");
     await page.locator("[aria-label='Toggle sidebar']").first().click();
@@ -26,6 +29,23 @@ test.describe("Coding Agent — tool call grouping", () => {
     );
     await expect(sendButton).toBeVisible({ timeout: 15000 });
     await sendButton.click();
+
+    const cycles = page.locator("[data-testid='react-cycle']");
+    await expect(cycles.first()).toBeVisible({ timeout: 15000 });
+    // The trigger names the work the cycle did, without expanding it.
+    await expect(cycles.first()).toContainText(/tool/);
+
+    // Wait for the turn to end (the running indicator is unmounted), so the
+    // cycle list is final before it is expanded.
+    await expect(page.getByTestId("agent-status")).toBeHidden({ timeout: 15000 });
+
+    const triggers = cycles.locator("[data-slot='collapsible-trigger']");
+    for (let i = 0; i < (await triggers.count()); i++) {
+      const trigger = triggers.nth(i);
+      if ((await trigger.getAttribute("aria-expanded")) === "false") {
+        await trigger.click();
+      }
+    }
 
     const groups = page.locator("[data-testid='tool-call-group']");
     await expect(groups.first()).toBeVisible({ timeout: 15000 });
