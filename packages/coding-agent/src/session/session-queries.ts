@@ -2,7 +2,7 @@ import type { ThinkingLevel } from "../runtime/gateway-catalog";
 import { getTraceLogger as getWorkerLogger } from "tracing";
 import { ensureEventLog } from "./session-entry";
 import type { Cursor } from "../agui/event-log";
-import { convertPiMessagesToAgui } from "../agui/agui-messages";
+import { convertPiMessagesToAgui, getTranscriptMessages } from "../agui/agui-messages";
 import { getProjectPrompts, resolveProjectPrompt, type PromptSummary } from "../runtime/prompts";
 import { resolveProjectsRoot } from "../runtime/paths";
 import { sessionCwd } from "./session-entry";
@@ -78,7 +78,7 @@ export class SessionQueries {
       return [];
     }
 
-    return convertPiMessagesToAgui(entry.runtime.session.messages);
+    return convertPiMessagesToAgui(getTranscriptMessages(entry.runtime.session));
   }
 
   getSessionSkills(sessionId: string): CodingAgentSkill[] {
@@ -202,9 +202,9 @@ export class SessionQueries {
       return { subSessionId: registered.sessionId };
     }
 
-    const toolResult = (parent.runtime.session.messages as ReadonlyArray<any>).find(
-      (msg) => msg?.role === "toolResult" && msg.toolCallId === toolCallId,
-    );
+    const toolResult = (
+      getTranscriptMessages(parent.runtime.session) as ReadonlyArray<any>
+    ).find((msg) => msg?.role === "toolResult" && msg.toolCallId === toolCallId);
     const subSessionId = (toolResult as any)?.details?.subSessionId;
     if (typeof subSessionId !== "string" || !subSessionId) {
       log.info("subagent.lookup_not_found", { parentSessionId, toolCallId });

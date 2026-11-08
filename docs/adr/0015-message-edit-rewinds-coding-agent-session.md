@@ -43,9 +43,13 @@ error, and refuses to branch while the session is streaming.
 
 **Addressing goes client id → entry id.** The client sends the AG-UI message id it already
 renders; the worker resolves it to a Pi entry id by matching `message.clientMessageId` (stamped on
-`message_end` and round-tripped through the JSONL) and falling back to `u-<timestamp>`, searching
-only the active path (`buildContextEntries()`) so a rewind can never target an already-abandoned
-branch. No new field is added to the snapshot payload.
+`message_end` and round-tripped through the JSONL) and falling back to `u-<timestamp>`, walking the
+active path (`getBranch()`, leaf → root) — the same message sequence the transcript renders — so a
+rewind can never target an already-abandoned branch. Because `getBranch()` spans the whole path
+rather than the compaction-aware context, a Message older than the latest Compaction remains
+editable: the Compaction node and its kept-tail simply abandon with the rest of the old path, and
+Pi rebuilds the LLM context from the raw entries on the new path (re-compacting when the budget
+requires it). No new field is added to the snapshot payload.
 
 **The working tree is not reverted.** A rewind rewrites the conversation only: files written by
 the abandoned Turns stay on disk and the next Turn starts from that state. The editing banner says
@@ -77,7 +81,8 @@ start, so restoring it would discard any manual edit the user made afterwards on
   run that performed it replays only the new branch; a reconnect carrying a cursor from *before*
   the rewind hits the existing epoch/`Cursor reset` → `409` → `loadSnapshot()` path.
 - **Editing is only possible on an idle session** (the composer is already locked while a Turn
-  runs, and `navigateTree` throws while streaming), on a Message still in the active context, and
+  runs, and `navigateTree` throws while streaming), on a Message still on the active path (the
+  transcript — including pre-compaction Messages, which rewind past the Compaction node), and
   never in a read-only view (Subagents). The first user Message of a session is editable through
   `resetLeaf()`; the session's `label` does not change.
 - **`TurnFilesChanged` entries of the abandoned Turns are dropped from localStorage**, otherwise

@@ -27,6 +27,52 @@ export function extractUserMessageText(content: unknown): string {
 }
 
 /**
+ * Structural view of a Pi `AgentSession` the transcript helpers need. Kept
+ * narrow so tests can mock it without instantiating the whole runtime.
+ */
+interface TranscriptSession {
+  /** Compaction-aware context the LLM sees (what Pi keeps in agent state). */
+  messages: ReadonlyArray<any>;
+  sessionManager?: {
+    getBranch?: () => ReadonlyArray<any>;
+  };
+}
+
+/**
+ * Pi `SessionEntry`-like shape used by {@link getTranscriptMessages}.
+ */
+interface TranscriptEntry {
+  type: string;
+  message?: { role: string };
+}
+
+/**
+ * Every message of the ACTIVE branch (leaf -> root path), for the UI
+ * transcript.
+ *
+ * `session.messages` is the context Pi sends to the LLM: after a compaction
+ * it collapses everything before `firstKeptEntryId` into a single
+ * `compactionSummary` and drops the original entries, so answering the UI
+ * from it would erase the pre-compaction history from the transcript. The
+ * session file never loses those messages (compaction is append-only), so
+ * `sessionManager.getBranch()` still holds them all — and only them: it
+ * walks the parent chain of the current leaf, so Abandoned Branches created
+ * by Message Edits stay out.
+ *
+ * Only `message` entries are mapped: the converter below renders user /
+ * assistant / toolResult roles and ignores everything else (compaction
+ * summaries included). Falls back to `session.messages` when no session
+ * manager is attached (light test mocks).
+ */
+export function getTranscriptMessages(session: TranscriptSession): ReadonlyArray<any> {
+  const branch = session.sessionManager?.getBranch?.() as ReadonlyArray<TranscriptEntry> | undefined;
+  if (!branch) return session.messages;
+  return branch
+    .filter((entry) => entry.type === "message" && entry.message)
+    .map((entry) => entry.message);
+}
+
+/**
  * Convert Pi session messages to AG-UI-shaped messages.
  *
  * Ids are derived deterministically from each Pi message's own data

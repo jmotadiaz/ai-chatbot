@@ -31,7 +31,7 @@ import {
   sessionCwd,
 } from "./session-entry";
 import { resolveProjectsRoot } from "../runtime/paths";
-import { convertPiMessagesToAgui } from "../agui/agui-messages";
+import { convertPiMessagesToAgui, getTranscriptMessages } from "../agui/agui-messages";
 import { splitModelReference, unknownModelMessage } from "../runtime/runtime-factory";
 import type { SessionRegistry } from "./session-registry";
 
@@ -315,7 +315,10 @@ export class TurnRunner {
     }
 
     const translator = new PiToAguiTranslator({ threadId: sessionId, runId });
-    const preRunHistory = convertPiMessagesToAgui(runtime.session.messages);
+    // Transcript-level history, not the LLM context: after a compaction
+    // `session.messages` has already collapsed the pre-compaction turns into a
+    // summary, and a snapshot built from it would erase them from the UI.
+    const preRunHistory = convertPiMessagesToAgui(getTranscriptMessages(runtime.session));
     const clientMessages = normalizeSnapshotMessages(messages);
     const lastClientMessage = clientMessages[clientMessages.length - 1];
     const userTail =
@@ -672,8 +675,8 @@ export class TurnRunner {
    * summary entry, no navigation surface, and no revert of the working tree.
    *
    * Must run before `startPromptCollector`, which builds the run's
-   * `MESSAGES_SNAPSHOT` from `runtime.session.messages` — the list
-   * `navigateTree` rebuilds.
+   * `MESSAGES_SNAPSHOT` from the active branch (`getTranscriptMessages`) —
+   * the list `navigateTree` shortens to end at the edit point.
    */
   private async rewindForMessageEdit(
     entry: SessionEntry,
@@ -727,7 +730,7 @@ export class TurnRunner {
     log.info("session.message_edit", {
       sessionId,
       runId,
-      messageCount: session.messages.length,
+      messageCount: getTranscriptMessages(session).length,
     });
   }
 
