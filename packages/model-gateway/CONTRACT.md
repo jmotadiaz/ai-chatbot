@@ -31,7 +31,7 @@ Response:
       "id": "Kimi K3.1 Pro",
       "company": "moonshotai",
       "isDefault": false,
-      "contextWindow": 1048576,
+      "contextWindow": 200000,
       "maxTokens": 131072,
       "cost": { "input": 2, "output": 10, "cacheRead": 0.2, "cacheWrite": 0 },
       "reasoning": true,
@@ -55,8 +55,8 @@ Response:
 | `id` | `string` | Stable name; in Pi and in the consumers it is the model id 1:1. |
 | `company` | `string` | Free-form (it is no longer a typed union). |
 | `isDefault` | `boolean` | The picker uses the non-contract `isDefault` entry. |
-| `contextWindow` | `number \| null` | `null` in sparse entries (embedding/rerank/tts); consumers fall back to their default (`DEFAULT_CONTEXT_WINDOW` / 128k in Pi). |
-| `maxTokens` | `number \| null` | Same (16k fallback in Pi). |
+| `contextWindow` | `number \| null` | **Effective** context budget of our clients, not the window the provider advertises: it is `plan_input_TPM / sustained_requests_per_minute` (see the note under `model_list` in `config.yaml`). Pi compacts at `contextWindow - 16_384` and the chatbot at `contextWindow - min(16_384, 10%)`, and both use it for overflow detection, so this number decides when sessions compact. `null` in sparse entries (embedding/rerank/tts); consumers fall back to their default (`DEFAULT_CONTEXT_WINDOW` / 128k in Pi). |
+| `maxTokens` | `number \| null` | Same (16k fallback in Pi). It is the **provider's** declared output cap, not a budget derived from `contextWindow`: Pi compares it with the output of a `length`-stopped response to tell a self-inflicted cut from a provider truncation, so under-declaring it causes spurious compaction and retries. |
 | `cost` | `GatewayModelCost` | `{ input, output, cacheRead, cacheWrite }`, USD per million tokens (LiteLLM serves per token; the catalog re-expresses per million). |
 | `reasoning` | `boolean` | |
 | `thinkingLevels` | `string[]` | Supported reasoning levels (`off` is not listed: absent = no `reasoning_effort`). |

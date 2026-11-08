@@ -67,6 +67,40 @@ router_settings:
 
 model_list:
   # ---------- 18 user_invocable: true models (model selector) --------------
+  #
+  # `context_window` is the EFFECTIVE budget our clients get, not the window the
+  # provider advertises. Consumers (Pi in the coding-agent, the chatbot
+  # compaction) derive their threshold from it — Pi compacts at
+  # `context_window - 16_384`, the chatbot at `context_window - min(16_384, 10%)` —
+  # and overflow detection uses the same number. Declaring the provider's 1M
+  # makes that threshold unreachable in practice: every turn re-sends the whole
+  # context, so a tool loop of ~6 requests/minute at 350k tokens already blows a
+  # 2M input-tokens-per-minute plan long before the window fills.
+  #
+  # Rule: effective = the tighter of
+  #   - plan_input_TPM / sustained_requests_per_minute, and
+  #   - the cheapest upstream price tier we want to stay in.
+  #   100_000 — Claude Haiku: the upstream price tier steps up above 100k, so
+  #             we cap there to stay on the base rate. Compaction then fires at
+  #             83_616 (Pi) / 90_000 (chatbot), i.e. before the premium tier.
+  #   160_000 — Google AI Studio (Tier 1: 2M input TPM; both Gemini models share
+  #             the key) and the free tiers (Beam Free, Iceman Contributor Free):
+  #             2_000_000 / 12 req/min.
+  #   200_000 — the rest (OpenCode Go limits are capacity-based, not a per-minute
+  #             token quota): a wide margin over what a session actually needs,
+  #             far below the provider window, and it keeps compaction and
+  #             per-turn cost bounded.
+  #
+  # When a model's real window grows or its plan changes, adjust this number:
+  # it is the only knob that decides when sessions compact.
+  #
+  # `max_output_tokens` is NOT derived from it: it is the provider's declared
+  # output cap, and Pi uses it to decide whether a `length` stop was self-
+  # inflicted (`isRecoverableLength`: stop === length && output < maxTokens).
+  # Lowering it to the effective window would both truncate legitimate long
+  # answers and misclassify provider truncation, so leave it as the provider
+  # says. The request only has to satisfy input + max_tokens <= the REAL window,
+  # which the effective window above already keeps comfortable.
 
   # Deepseek v4.1 Flash — catalog default (always first: the rest goes
   # alphabetical, see the order in `catalog.py:build_catalog`).
@@ -79,7 +113,7 @@ model_list:
       user_invocable: true
       is_default: true
       company: deepseek
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 384000
       input_cost_per_token: 1.5e-7
       output_cost_per_token: 6.0e-7
@@ -107,7 +141,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: reflection
-      context_window: 1048576
+      context_window: 160000
       max_output_tokens: 131072
       input_cost_per_token: 0
       output_cost_per_token: 0
@@ -132,7 +166,10 @@ model_list:
       user_invocable: true
       is_default: false
       company: anthropic
-      context_window: 1000000
+      # Not the provider window: above 100k the upstream price tier steps up, so
+      # this is the ceiling that keeps the model on its base rate. The provider
+      # still accepts more; we simply never let a session grow past it.
+      context_window: 100000
       max_output_tokens: 128000
       input_cost_per_token: 1.0e-7
       output_cost_per_token: 5.0e-7
@@ -164,7 +201,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: google
-      context_window: 1048576
+      context_window: 160000
       max_output_tokens: 65536
       input_cost_per_token: 5.0e-7
       output_cost_per_token: 3.0e-6
@@ -190,7 +227,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: google
-      context_window: 1048576
+      context_window: 160000
       max_output_tokens: 65536
       input_cost_per_token: 4.0e-6
       output_cost_per_token: 2.0e-5
@@ -216,7 +253,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: zai
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 128000
       input_cost_per_token: 1.4e-6
       output_cost_per_token: 4.4e-6
@@ -241,7 +278,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: zai
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 131072
       input_cost_per_token: 7.5e-8
       output_cost_per_token: 2.5e-7
@@ -266,7 +303,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: tencent
-      context_window: 262144
+      context_window: 200000
       max_output_tokens: 128000
       input_cost_per_token: 1.4e-7
       output_cost_per_token: 5.8e-7
@@ -292,7 +329,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: opencode
-      context_window: 262144
+      context_window: 160000
       max_output_tokens: 131072
       input_cost_per_token: 0
       output_cost_per_token: 0
@@ -317,7 +354,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: moonshotai
-      context_window: 1048576
+      context_window: 200000
       max_output_tokens: 131072
       input_cost_per_token: 2.0e-6
       output_cost_per_token: 1.0e-5
@@ -344,7 +381,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: xiaomi
-      context_window: 1048576
+      context_window: 200000
       max_output_tokens: 131072
       input_cost_per_token: 1.4e-7
       output_cost_per_token: 2.8e-7
@@ -369,7 +406,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: xiaomi
-      context_window: 1048576
+      context_window: 200000
       max_output_tokens: 131072
       input_cost_per_token: 4.35e-7
       output_cost_per_token: 8.7e-7
@@ -395,7 +432,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: minimax
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 131072
       input_cost_per_token: 3.0e-7
       output_cost_per_token: 1.2e-6
@@ -425,7 +462,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: minimax
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 512000
       input_cost_per_token: 1.5e-7
       output_cost_per_token: 6.0e-7
@@ -455,7 +492,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: meta
-      context_window: 1048576
+      context_window: 200000
       max_output_tokens: 131072
       input_cost_per_token: 1.0e-7
       output_cost_per_token: 2.0e-7
@@ -480,7 +517,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: alibaba
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 65536
       input_cost_per_token: 4.0e-7
       output_cost_per_token: 1.6e-6
@@ -505,7 +542,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: alibaba
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 65536
       input_cost_per_token: 2.5e-6
       output_cost_per_token: 7.5e-6
@@ -534,7 +571,7 @@ model_list:
       user_invocable: true
       is_default: false
       company: stepfun
-      context_window: 1000000
+      context_window: 200000
       max_output_tokens: 65536
       input_cost_per_token: 1.0e-6
       output_cost_per_token: 2.7e-6
