@@ -1,5 +1,5 @@
 /**
- * Decision state, `noul` questions, batching and the two-band policy
+ * Decision state, `noul` questions, batching and the conservative drop policy
  * (spec D5 Phase 1 and the D6 defaults).
  *
  * Instead of sending the raw transcript and truncating the tool arguments
@@ -13,11 +13,10 @@
  * The questions are `noul` (calibrated probability in `[0, 1]`) and only ask
  * what the per-tool policy can act on: exploratory calls get `call_<id>` and
  * `result_<id>`, `bash` and bulky errors get a single `result_<id>`. Answers
- * are consumed asymmetrically: normal Epochs only drop below `0.25` (the whole
- * uncertain `[0.25, 0.50)` band is kept to avoid regret), and only the
- * intra-Turn emergency valve may extend `drop_result`-only into `[0.25, 0.40)`.
- * A missing or invalid answer is probability `1.0` (`keep`), the fail-open
- * default.
+ * are consumed asymmetrically: only `keepResult < 0.25` drops anything, so the
+ * whole uncertain `[0.25, 0.50)` band is kept to avoid regret, and the same
+ * conservative policy applies at every watermark step. A missing or invalid
+ * answer is probability `1.0` (`keep`), the fail-open default.
  *
  * Everything here is pure and dependency-light: Pi loads the extension through
  * jiti in its own module runtime, so this module must never import worker
@@ -59,11 +58,6 @@ export const PREVIEW_HEAD_CHARS = 200;
 export const PREVIEW_TAIL_CHARS = 200;
 /** Hard ceiling of `state + questions` for one `/v1/systemone` request. */
 export const MAX_DECISION_REQUEST_TOKENS = 28_000;
-/**
- * Context ratio above which the emergency Epoch extends into the uncertain
- * band. Below it the emergency Epoch applies only high-confidence drops.
- */
-export const EMERGENCY_EXTEND_TRIGGER_RATIO = 0.6;
 /** Anchor characters the question criteria are allowed to quote. */
 const ANCHOR_GOAL_CHARS = 200;
 const ANCHOR_DIGEST_CHARS = 160;
@@ -703,19 +697,13 @@ export function buildDecisionPlan(input: DecisionPlanInput): DecisionPlan {
 }
 
 // ---------------------------------------------------------------------------
-// Two-band policy
+// Conservative drop policy
 // ---------------------------------------------------------------------------
-
-/** Which watermark armed the Epoch, which decides the drop band. */
-export type DecisionPolicyMode = "normal" | "emergency";
 
 /** Inputs of `applyDecisionPolicy`. */
 export interface DecisionPolicyOptions {
-  mode: DecisionPolicyMode;
   /** Tokens of the masked context before the Epoch. */
   activeTokens: number;
-  /** Context window of the resolved model. */
-  contextWindow: number;
   config?: ToolPruningConfig;
 }
 
@@ -727,25 +715,19 @@ export interface DecisionPolicyResult {
   readonly kept: readonly string[];
   /** Candidates dropped by the high-confidence band (`< 0.25`). */
   readonly highConfidenceDrops: readonly string[];
-  /** Candidates the emergency valve dropped from the uncertain band. */
-  readonly emergencyDrops: readonly string[];
   /** Estimated context tokens after applying the decisions. */
   readonly projectedTokens: number;
 }
 
 /**
- * Applies the asymmetric two-band policy (spec D5 Phase 1.3).
+ * Applies the single asymmetric conservative policy (spec D5 Phase 1.3).
  *
- * Normal mode: `keepResult >= 0.25` keeps the candidate, so the whole
- * uncertain band `[0.25, 0.50)` survives and avoids regret. Below `0.25` the
- * call is dropped only when the tool allows it AND `keepCall < 0.15`;
- * otherwise the result body is stubbed if the policy allows it.
- *
- * Emergency mode first applies the same high-confidence drops, and then — only
- * when the context is still above `60 %` — extends `drop_result` (never
- * `drop_call`) over the uncertain `[0.25, 0.40)` band ordered by
- * `keepResult / log2(tokensEst)` until the context reaches
- * `emergencyTargetRatio` or the band is exhausted.
+ * `keepResult >= 0.25` keeps the candidate, so the whole uncertain band
+ * `[0.25, 0.50)` survives and avoids regret. Below `0.25` the call is dropped
+ * only when the tool allows it AND `keepCall < 0.15`; otherwise the result body
+ * is stubbed if the policy allows it. The same thresholds apply at every
+ * watermark step: a step only decides *when* the Epoch runs, never how
+ * aggressive it is.
  *
  * Missing or invalid answers are probability `1.0`: an unanswered question can
  * never cause a drop.
@@ -783,36 +765,6 @@ export function applyDecisionPolicy(
     }
   }
 
-  const emergencyDrops: string[] = [];
-  const extendTrigger = EMERGENCY_EXTEND_TRIGGER_RATIO * Math.max(0, options.contextWindow);
-  if (
-    options.mode === "emergency" &&
-    options.contextWindow > 0 &&
-    projectedTokens > extendTrigger
-  ) {
-    const target = config.emergencyTargetRatio * options.contextWindow;
-    const band = evaluated
-      .filter(
-        (item) =>
-          decisions[item.candidate.toolCallId] === undefined &&
-          item.candidate.eligibility.dropResult &&
-          item.keepResult >= config.dropResultThreshold &&
-          item.keepResult < config.emergencyUpperBand,
-      )
-      .sort(
-        (a, b) =>
-          emergencyRank(a) - emergencyRank(b) ||
-          a.candidate.resultIndex - b.candidate.resultIndex,
-      );
-
-    for (const item of band) {
-      if (projectedTokens <= target) break;
-      decisions[item.candidate.toolCallId] = "drop_result";
-      emergencyDrops.push(item.candidate.toolCallId);
-      projectedTokens = Math.max(0, projectedTokens - item.candidate.resultTokens);
-    }
-  }
-
   const kept = evaluated
     .filter((item) => decisions[item.candidate.toolCallId] === undefined)
     .map((item) => item.candidate.toolCallId);
@@ -821,18 +773,8 @@ export function applyDecisionPolicy(
     decisions,
     kept,
     highConfidenceDrops,
-    emergencyDrops,
     projectedTokens,
   };
-}
-
-/**
- * Emergency ordering key: least needed per reclaimed token first. A lower
- * `keepResult` and a larger `tokensEst` both lower the score.
- */
-function emergencyRank(item: { candidate: DecisionCandidate; keepResult: number }): number {
-  const denominator = Math.log2(Math.max(2, item.candidate.tokensEst));
-  return item.keepResult / denominator;
 }
 
 /** A `noul` answer, defaulting to `1.0` (keep) when missing or invalid. */

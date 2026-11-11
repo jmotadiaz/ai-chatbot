@@ -96,20 +96,22 @@ const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig =>
 });
 
 /**
- * Partition that protects nothing but the trailing message, so every tool call
- * in the fixture is a candidate: the Cooling Window rules have their own suite
- * and this one is about Phase 0's verdicts.
+ * Partition that protects nothing, so every tool call in the fixture is a
+ * candidate: the Cooling Window rules have their own suite and this one is
+ * about Phase 0's verdicts. The protected-Turn cap is collapsed as well,
+ * because the unified Cooling Window protects the active Turn by default.
  */
-const NO_TAIL = configWith({ coolingRecentTokens: 0, minCoolingToolCalls: 0 });
+const NO_TAIL = configWith({
+  coolingRecentTokens: 0,
+  minCoolingToolCalls: 0,
+  maxProtectedTurnTokens: 0,
+});
 
-/** Closing prose message: the only protected one under `NO_TAIL`. */
+/** Closing prose message of every fixture Turn. */
 const done = (): AgentMessage => prose("All done.");
 
 const openCandidates = (messages: readonly AgentMessage[]) =>
-  partitionCoolingWindow(messages, {
-    trigger: "intra_turn_emergency",
-    config: NO_TAIL,
-  }).candidates;
+  partitionCoolingWindow(messages, { config: NO_TAIL }).candidates;
 
 const runCase = (
   messages: readonly AgentMessage[],
@@ -339,8 +341,11 @@ describe("runSupersession — read supersession", () => {
       done(),
     ];
     const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: configWith({ coolingRecentTokens: 0, minCoolingToolCalls: 1 }),
+      config: configWith({
+        coolingRecentTokens: 0,
+        minCoolingToolCalls: 1,
+        maxProtectedTurnTokens: 0,
+      }),
     });
 
     const result = runSupersession(messages, partition.candidates, { cwd: CWD });

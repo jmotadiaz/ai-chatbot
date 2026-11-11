@@ -17,11 +17,18 @@
  *    Phase 1 (the calibrated `noul` judge) only runs when what Phase 0 left is
  *    worth a round-trip. Batches go out concurrently (at most
  *    `maxDecisionBatches`) and the merged answers feed `applyDecisionPolicy`,
- *    which owns the two-band emergency extension.
+ *    which owns the single conservative drop band.
  * 3. **Persistence (D7).** An Epoch that dropped anything appends a
- *    `ToolPruningEpochEntry` to the session tree, and the active mask map is
- *    rebuilt from `getBranch()` so a Message Edit that abandons a branch also
- *    abandons the masks decided on it.
+ *    `ToolPruningEpochEntry` (carrying the `watermark` step it consumed) to the
+ *    session tree, and the active mask map is rebuilt from `getBranch()` so a
+ *    Message Edit that abandons a branch also abandons the masks decided on it.
+ *
+ * TODO(ticket 06): the cadence above is still the pre-05b two-arm design (a
+ * soft/hard ratio pair plus a token cooldown, with the intra-Turn "emergency"
+ * arm). Spec D3 replaces it with the monotonic watermark staircase
+ * (`config.watermarks` + `highestConsumedWatermark` derived from the branch);
+ * this refactor only maps the removed knobs onto their `watermarks` equivalents
+ * so the tree keeps compiling and the existing behaviour keeps its tests.
  *
  * Everything here is pure TypeScript over the modules of tickets 02–05. The
  * runner never imports worker `src/` runtime modules, never reads global
@@ -43,7 +50,6 @@ import {
   type ToolPruningEpochEntry,
   type ToolPruningEpochStats,
   type ToolPruningMaskMap,
-  type ToolPruningTrigger,
 } from "./config";
 import {
   partitionCoolingWindow,
@@ -165,6 +171,56 @@ export function estimateActiveTokens(messages: readonly AgentMessage[]): number 
 }
 
 // ---------------------------------------------------------------------------
+// Legacy cadence (see the TODO(ticket 06) in the module doc comment)
+// ---------------------------------------------------------------------------
+
+/**
+ * Which arm of the legacy cadence armed the Epoch.
+ * TODO(ticket 06): the monotonic watermark staircase has no arms; it has a
+ * consumed `watermark` step instead.
+ */
+type EpochArm = "turn_watermark" | "intra_turn_emergency";
+
+/** Prunable tokens that arm a turn-start Epoch on a roomy window. */
+const LEGACY_TURN_DELTA_PRUNE_TOKENS = 30_000;
+
+/** Prunable growth required after a low-yield or fail-open Epoch. */
+const LEGACY_EPOCH_COOLDOWN_TOKENS = 15_000;
+
+/**
+ * Context ratio bounds of the legacy cadence: the lowest watermark arms a
+ * turn-start Epoch, the highest one arms the emergency valve.
+ * TODO(ticket 06): replace with `nextWatermark`/`highestConsumedWatermark`.
+ */
+function watermarkBounds(watermarks: readonly number[]): { soft: number; hard: number } {
+  let soft = Number.POSITIVE_INFINITY;
+  let hard = Number.NEGATIVE_INFINITY;
+  for (const watermark of watermarks) {
+    if (watermark < soft) soft = watermark;
+    if (watermark > hard) hard = watermark;
+  }
+  return { soft, hard };
+}
+
+/**
+ * Watermark step an Epoch consumes: the highest configured step the masked
+ * context already reached (spec D3), or `0` when the legacy delta arm fired
+ * below every step.
+ * TODO(ticket 06): the staircase owns this computation.
+ */
+function consumedWatermark(
+  activeTokens: number,
+  contextWindow: number,
+  watermarks: readonly number[],
+): number {
+  let consumed = 0;
+  for (const watermark of watermarks) {
+    if (activeTokens >= watermark * contextWindow) consumed = watermark;
+  }
+  return consumed;
+}
+
+// ---------------------------------------------------------------------------
 // Branch-aware mask reconstruction
 // ---------------------------------------------------------------------------
 
@@ -239,7 +295,8 @@ interface PruningCooldown {
 
 /** Inputs of one Epoch. */
 interface EpochInput {
-  trigger: ToolPruningTrigger;
+  /** Which legacy arm armed it; traces only, the policy is the same. */
+  arm: EpochArm;
   /** Masked projection the Epoch measures and decides on. */
   messages: readonly AgentMessage[];
   activeTokens: number;
@@ -312,19 +369,16 @@ export class ToolPruningEpochRunner {
       return { messages: masked, changed: differs(messages, masked) };
     }
 
-    const mode: ToolPruningTrigger = firstContextOfTurn
-      ? "turn_watermark"
-      : "intra_turn_emergency";
+    const arm: EpochArm = firstContextOfTurn ? "turn_watermark" : "intra_turn_emergency";
     const partition = partitionCoolingWindow(masked, {
-      trigger: mode,
       config: this.config,
       masks: this.masks,
     });
     const activeTokens = estimateActiveTokens(masked);
-    const trigger = this.chooseTrigger(mode, activeTokens, partition, contextWindow);
-    if (trigger === undefined) return { messages: masked, changed: differs(messages, masked) };
+    const armed = this.chooseTrigger(arm, activeTokens, partition, contextWindow);
+    if (armed === undefined) return { messages: masked, changed: differs(messages, masked) };
 
-    await this.runEpoch({ trigger, messages: masked, activeTokens, partition, contextWindow });
+    await this.runEpoch({ arm: armed, messages: masked, activeTokens, partition, contextWindow });
     const projected = applyPruningMask(messages, this.masks, this.config);
     return { messages: projected, changed: differs(messages, projected) };
   }
@@ -336,34 +390,37 @@ export class ToolPruningEpochRunner {
   /**
    * Decides whether this `context` call starts an Epoch (spec D3).
    *
-   * Turn-start Epochs need the soft watermark (or `minPrunableDeltaTokens` of
-   * old prunable payload) **and** `minWorthwhilePruneTokens`; emergency Epochs
-   * need the hard watermark and the same minimum pool. A cooldown blocks both
-   * until the pool grows by `epochCooldownTokens`, except for the first
-   * crossing of the emergency watermark in the Turn.
+   * Turn-start Epochs need the lowest watermark (or a large prunable pool)
+   * **and** `minWorthwhilePruneTokens`; emergency Epochs need the highest
+   * watermark and the same minimum pool. A cooldown blocks both until the pool
+   * grew by `LEGACY_EPOCH_COOLDOWN_TOKENS`, except for the first crossing of
+   * the emergency watermark in the Turn.
+   * TODO(ticket 06): replace with the monotonic watermark staircase.
    */
   private chooseTrigger(
-    mode: ToolPruningTrigger,
+    arm: EpochArm,
     activeTokens: number,
     partition: CoolingWindowPartition,
     contextWindow: number,
-  ): ToolPruningTrigger | undefined {
+  ): EpochArm | undefined {
     const config = this.config;
+    if (config.watermarks.length === 0) return undefined;
     const prunableTokens = partition.candidateTokens;
     if (prunableTokens < config.minWorthwhilePruneTokens) return undefined;
 
-    const emergency = activeTokens >= config.hardWatermarkRatio * contextWindow;
-    if (mode === "turn_watermark") {
-      const soft = activeTokens >= config.softWatermarkRatio * contextWindow;
-      const delta = prunableTokens >= config.minPrunableDeltaTokens;
-      if (!soft && !delta) return undefined;
+    const { soft, hard } = watermarkBounds(config.watermarks);
+    const emergency = activeTokens >= hard * contextWindow;
+    if (arm === "turn_watermark") {
+      const under = activeTokens >= soft * contextWindow;
+      const delta = prunableTokens >= LEGACY_TURN_DELTA_PRUNE_TOKENS;
+      if (!under && !delta) return undefined;
     } else if (!emergency) {
       return undefined;
     }
 
     if (this.cooldown !== undefined) {
       const grown =
-        prunableTokens >= this.cooldown.baselineTokens + config.epochCooldownTokens;
+        prunableTokens >= this.cooldown.baselineTokens + LEGACY_EPOCH_COOLDOWN_TOKENS;
       if (!grown) {
         if (!emergency || this.emergencyOverrideSpent) return undefined;
         // Safety valve: the very first crossing of the hard watermark lifts the
@@ -377,7 +434,7 @@ export class ToolPruningEpochRunner {
         });
       }
     }
-    return mode;
+    return arm;
   }
 
   // -------------------------------------------------------------------------
@@ -386,10 +443,12 @@ export class ToolPruningEpochRunner {
 
   /** Runs Phase 0 → short-circuit → Phase 1 → persistence (spec D5 + D6 + D7). */
   private async runEpoch(input: EpochInput): Promise<void> {
-    const { trigger, messages, activeTokens, partition, contextWindow } = input;
+    const { arm, messages, activeTokens, partition, contextWindow } = input;
     const startedAt = this.now();
     this.epochCounter += 1;
     const epochId = this.epochCounter;
+    // Watermark step this Epoch consumes (spec D7); the staircase is ticket 06.
+    const watermark = consumedWatermark(activeTokens, contextWindow, this.config.watermarks);
 
     // Phase 0: deterministic supersession, no network, no latency.
     const supersession = runSupersession(messages, partition.candidates, {
@@ -406,9 +465,9 @@ export class ToolPruningEpochRunner {
       config: this.config,
     });
     const plan = judgeRan ? this.planDecision(messages, partition, supersession.remaining) : undefined;
-    const decision = await this.askJudge(plan, activeAfterPhase0, contextWindow, trigger);
+    const decision = await this.askJudge(plan, activeAfterPhase0);
     if (decision === "aborted") {
-      this.trace()?.info("tool_pruning.epoch_aborted", { epochId, trigger });
+      this.trace()?.info("tool_pruning.epoch_aborted", { epochId, arm, watermark });
       return;
     }
 
@@ -440,7 +499,7 @@ export class ToolPruningEpochRunner {
       const entry: ToolPruningEpochEntry = {
         version: 1,
         epochId,
-        trigger,
+        watermark,
         timestamp: startedAt,
         tokensBefore: activeTokens,
         tokensSavedEst,
@@ -456,7 +515,8 @@ export class ToolPruningEpochRunner {
     } else {
       this.trace()?.info("tool_pruning.epoch_completed", {
         epochId,
-        trigger,
+        arm,
+        watermark,
         tokensBefore: activeTokens,
         tokensSavedEst: 0,
         decisions: 0,
@@ -466,7 +526,8 @@ export class ToolPruningEpochRunner {
     if (failedOpen) {
       this.trace()?.warn("tool_pruning.epoch_failed_open", {
         epochId,
-        trigger,
+        arm,
+        watermark,
         tokensBefore: activeTokens,
         tokensSavedEst,
         appliedDrops: decisions.length,
@@ -475,7 +536,7 @@ export class ToolPruningEpochRunner {
     }
 
     // Anti-thrashing: a failed or low-yield Epoch backs off until the pool
-    // grows by `epochCooldownTokens`.
+    // grows by `LEGACY_EPOCH_COOLDOWN_TOKENS`.
     const lowYield = tokensSavedEst < this.config.minJudgeWorthwhileTokens;
     this.cooldown =
       failedOpen || lowYield
@@ -506,8 +567,6 @@ export class ToolPruningEpochRunner {
   private async askJudge(
     plan: DecisionPlan | undefined,
     activeAfterPhase0: number,
-    contextWindow: number,
-    trigger: ToolPruningTrigger,
   ): Promise<JudgeOutcome | undefined | "aborted"> {
     if (plan === undefined) return undefined;
     // Phase 1 had nothing worth asking: not a failure, just an empty band.
@@ -561,9 +620,7 @@ export class ToolPruningEpochRunner {
     }
 
     const policy: DecisionPolicyResult = applyDecisionPolicy(plan.candidates, answers, {
-      mode: trigger === "intra_turn_emergency" ? "emergency" : "normal",
       activeTokens: activeAfterPhase0,
-      contextWindow,
       config: this.config,
     });
 
@@ -679,7 +736,7 @@ function summarizeEpoch(
 ): Record<string, unknown> {
   return {
     epochId: entry.epochId,
-    trigger: entry.trigger,
+    watermark: entry.watermark,
     tokensBefore: entry.tokensBefore,
     tokensSavedEst: entry.tokensSavedEst,
     decisions: Object.keys(entry.decisions).length,
