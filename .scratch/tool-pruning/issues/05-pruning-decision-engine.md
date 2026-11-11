@@ -12,13 +12,13 @@ Two pure/testable modules per spec D5 Phase 1 and D6:
    - Budget: `maxDecisionStateTokens` (20k, chars/4); compress old-Turn prose first, candidate args/preview last.
    - Questions: 2 `noul` (`call_cK`, `result_cK`) for successful exploratory calls; 1 (`result_cK`) for `bash` and for eligible big errors; each with concise `criteria: { true, false }` anchored in goal/digest/supersession flags.
    - Batching: ≤ 80 questions/request and ≤ 28k total tokens; split into ≤ `maxDecisionBatches` (3) concurrent requests prioritizing largest+oldest candidates; leftover small candidates stay `keep`.
-   - Apply the two-band policy to answers: normal mode (`keepResult >= 0.25` => keep; `keepResult < 0.25` => `drop_call` if tool allows and `keepCall < 0.15`, else `drop_result`); emergency mode applies high-confidence drops first, then extends `drop_result`-only over the `[0.25, 0.40)` band ordered by `keepResult / log2(tokensEst)` until `activeTokens <= emergencyTargetRatio` or band exhausted.
+   - Apply the asymmetric conservative policy to answers (single rule across all watermark steps): `keepResult >= 0.25` => keep; `keepResult < 0.25` => `drop_call` if tool allows and `keepCall < 0.15`, else `drop_result` (if eligible).
    - Missing/invalid answer key => probability `1.0` => keep.
 2. `src/pruning/systemone-client.ts`:
    - `fetch`-based client for `POST ${baseUrl}/systemone` (baseUrl already ends in `/v1`), bearer apiKey (+ extra headers from `getApiKeyAndHeaders`), `decision-default` model.
    - `AbortSignal.any([AbortSignal.timeout(decisionTimeoutMs), ...turnSignals])`; defensive JSON validation; typed result; error/timeout/invalid => typed failure (caller decides fail-open, ticket 06).
 
-Unit tests `tests/unit/pruning/decision-state.test.ts` (state budgeting order, question counts per tool type, batching split + priority, two-band policy, emergency ranking) and `tests/unit/pruning/systemone-client.test.ts` (happy path, 4s timeout, abort, invalid JSON, missing key => 1.0). Use the `@ai-chatbot/model-gateway-testing` MSW harness where an HTTP seam is needed (see [codebase-facts](../notes/codebase-facts.md)).
+Unit tests `tests/unit/pruning/decision-state.test.ts` (state budgeting order, question counts per tool type, batching split + priority, asymmetric policy `0.25`/`0.15`) and `tests/unit/pruning/systemone-client.test.ts` (happy path, 4s timeout, abort, invalid JSON, missing key => 1.0). Use the `@ai-chatbot/model-gateway-testing` MSW harness where an HTTP seam is needed (see [codebase-facts](../notes/codebase-facts.md)).
 
 ## Verify
 

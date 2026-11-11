@@ -9,11 +9,11 @@ Blocked by: 06
 
 Five scenarios per the spec Testing Decisions:
 
-1. Below watermark: a short session produces **zero** `/v1/systemone` calls and byte-identical provider `messages`.
-2. Watermark crossing in Turn T: epoch runs; assert the `messages` payload the mock `/v1/chat/completions` receives (stubbed results, dropped calls, pairing integrity) and that the transcript returned to the UI/event log remains intact.
-3. Cold reload: reopen the session from disk (`SessionManager`/`SessionRegistry`) and confirm masks reapply from persisted `tool-pruning` entries without new `/v1/systemone` calls.
-4. Message Edit: prune in a later turn, rewind to a previous message, and confirm masks from the abandoned branch no longer apply (original tool result back in the provider payload).
-5. Fail-open: `/v1/systemone` responds 500 (then timeout, if feasible) — turn completes, candidates remain eligible after the cooldown growth.
+1. Below watermark (`< 45 %`): a short session produces **zero** `/v1/systemone` calls and byte-identical provider `messages`.
+2. Monotonic watermark progression (`[0.45, 0.60, 0.75]`): crossing a watermark (e.g. starting at `60 %` and dropping to `50 %` after pruning) runs the epoch, masks the `messages` payload sent to `/v1/chat/completions` (stubbed results, dropped calls, pairing integrity) while keeping the UI/event log transcript intact, and **does not re-trigger** on the next turn at `54 %` (since both `0.45` and `0.60` are now deactivated), only triggering again once `0.75` is crossed.
+3. Cold reload: reopen the session from disk (`SessionManager`/`SessionRegistry`) and confirm both masks and consumed watermarks reapply from persisted `tool-pruning` entries without new `/v1/systemone` calls.
+4. Message Edit & Compaction rearm: prune in a later turn, rewind to a previous message, and confirm masks and consumed watermarks from the abandoned branch no longer apply; and verify that after a Pi `compaction` entry in the session branch, the `[0.45, 0.60, 0.75]` watermarks are automatically rearmed.
+5. Fail-open: `/v1/systemone` responds 500 (then timeout, if feasible) — turn completes, current watermark is consumed (no retry storm on the immediate next step), and remaining candidates stay eligible when the session reaches the next watermark step.
 
 ## Verify
 
