@@ -7,6 +7,7 @@
  * it never mutates its input and returns the same message objects for every
  * untouched message.
  */
+import { estimateTokens } from "@earendil-works/pi-coding-agent";
 import {
   MIN_TRUNCATION_CHARS,
   type AgentMessage,
@@ -16,6 +17,22 @@ import {
   type ToolPruningMaskMap,
   type ToolResultMessage,
 } from "./config";
+
+/**
+ * A masked projection plus the token accounting the Epoch runner needs.
+ *
+ * `removedTokens` is aligned with the *input* list: entry `i` is how many
+ * tokens message `i` lost to the mask (`0` when untouched). The runner needs it
+ * because the provider `usage` of the last assistant message was measured on a
+ * prefix that still carried the pruned bodies, so those bytes must be
+ * subtracted before comparing the context against a watermark (spec D3).
+ */
+export interface ToolPruningMaskProjection {
+  /** The masked `AgentMessage[]` for the provider. */
+  messages: AgentMessage[];
+  /** Tokens each input message lost, indexed like the input list. */
+  removedTokens: number[];
+}
 
 /**
  * Applies the persisted mask to a projected context.
@@ -30,8 +47,24 @@ export function applyPruningMask(
   masks: ToolPruningMaskMap,
   config: ToolPruningConfig,
 ): AgentMessage[] {
+  return projectPruningMask(messages, masks, config).messages;
+}
+
+/**
+ * `applyPruningMask` plus the per-message token reductions it caused.
+ *
+ * The projection is pure: untouched messages are returned by identity, and the
+ * accounting only measures the handful of messages the mask actually rewrote.
+ */
+export function projectPruningMask(
+  messages: readonly AgentMessage[],
+  masks: ToolPruningMaskMap,
+  config: ToolPruningConfig,
+): ToolPruningMaskProjection {
   const maskEntries = Object.entries(masks);
-  if (maskEntries.length === 0) return messages.slice();
+  if (maskEntries.length === 0) {
+    return { messages: messages.slice(), removedTokens: messages.map(() => 0) };
+  }
 
   const pairedResults = collectPairedResults(messages);
   const droppedCalls = new Set<string>();
@@ -48,10 +81,14 @@ export function applyPruningMask(
     }
   }
 
-  if (droppedCalls.size === 0 && stubbedResults.size === 0) return messages.slice();
+  if (droppedCalls.size === 0 && stubbedResults.size === 0) {
+    return { messages: messages.slice(), removedTokens: messages.map(() => 0) };
+  }
 
   const projected: AgentMessage[] = [];
-  for (const message of messages) {
+  const removedTokens = messages.map(() => 0);
+  for (let index = 0; index < messages.length; index++) {
+    const message = messages[index];
     if (message.role === "assistant") {
       const content = message.content.filter(
         (block) => !(block.type === "toolCall" && droppedCalls.has(block.id)),
@@ -62,15 +99,25 @@ export function applyPruningMask(
       }
       // Reasoning or prose may outlive its calls; a turn reduced to orphaned
       // thinking (or nothing at all) is omitted entirely.
-      if (!hasToolCall(content) && !hasVisibleText(content)) continue;
-      projected.push({ ...message, content });
+      if (!hasToolCall(content) && !hasVisibleText(content)) {
+        removedTokens[index] = estimateTokens(message);
+        continue;
+      }
+      const reduced: AssistantMessage = { ...message, content };
+      removedTokens[index] = tokenDelta(message, reduced);
+      projected.push(reduced);
       continue;
     }
 
     if (message.role === "toolResult") {
-      if (droppedCalls.has(message.toolCallId)) continue;
+      if (droppedCalls.has(message.toolCallId)) {
+        removedTokens[index] = estimateTokens(message);
+        continue;
+      }
       if (stubbedResults.has(message.toolCallId)) {
-        projected.push({ ...message, content: [buildStub(message, config)] });
+        const stubbed: ToolResultMessage = { ...message, content: [buildStub(message, config)] };
+        removedTokens[index] = tokenDelta(message, stubbed);
+        projected.push(stubbed);
         continue;
       }
       projected.push(message);
@@ -82,7 +129,12 @@ export function applyPruningMask(
     projected.push(message);
   }
 
-  return projected;
+  return { messages: projected, removedTokens };
+}
+
+/** Tokens a rewrite reclaimed; a stub is never larger than what it replaced. */
+function tokenDelta(original: AgentMessage, projected: AgentMessage): number {
+  return Math.max(0, estimateTokens(original) - estimateTokens(projected));
 }
 
 /**

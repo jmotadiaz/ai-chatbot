@@ -185,6 +185,14 @@ const EAGER: ToolPruningConfigOverrides = {
 };
 
 /**
+ * Same collapsed window, with two reachable steps: the first one is consumed by
+ * the failing Epoch of the fail-open scenario, the second one is what re-arms
+ * the judge once the session grows. `100` is an unreachable sentinel that keeps
+ * the staircase from running out early.
+ */
+const STEPPED: ToolPruningConfigOverrides = { ...EAGER, watermarks: [0.01, 0.5, 100] };
+
+/**
  * One Turn of exploration: four paired calls whose ids are the `toolCallId`s
  * Phase 0, the judge and the mask map are all keyed by. `bash` cannot receive
  * `drop_call` (spec D2), so it exercises the execution-tool branch.
@@ -302,14 +310,16 @@ const pruningEntries = (manager: SessionManager): ToolPruningEpochEntry[] =>
     )
     .map((entry) => (entry as { data?: unknown }).data as ToolPruningEpochEntry);
 
-/** Entry of the user Message that opened the most recent Turn. */
-const lastUserMessageEntry = (manager: SessionManager): SessionEntry => {
-  const branch = manager.getBranch();
-  for (let i = branch.length - 1; i >= 0; i--) {
-    const entry = branch[i]!;
-    if (entry.type === "message" && entry.message.role === "user") return entry;
-  }
-  throw new Error("The branch has no user message");
+/** Entry of the user Message that opened the first Turn. */
+const firstUserMessageEntry = (manager: SessionManager): SessionEntry => {
+  const entry = manager
+    .getBranch()
+    .find(
+      (candidate: SessionEntry) =>
+        candidate.type === "message" && candidate.message.role === "user",
+    );
+  if (entry === undefined) throw new Error("The branch has no user message");
+  return entry;
 };
 
 // ---------------------------------------------------------------------------
@@ -569,7 +579,7 @@ describe("Tool Pruning session integration", () => {
   // 2. Watermark crossing
   // -------------------------------------------------------------------------
 
-  it("prunes the stale payload once the turn-start watermark is crossed, leaving the transcript intact", async () => {
+  it("prunes the stale payload once the first watermark step is crossed, leaving the transcript intact", async () => {
     const ctx = sandbox();
     const trace = createPruningTrace();
 
@@ -588,7 +598,7 @@ describe("Tool Pruning session integration", () => {
     const session = await openSession({ ctx, config: EAGER, trace });
     await driveTurns(session, ["explore", "continue"]);
 
-    // One Epoch, armed by the turn-start watermark of the second Turn.
+    // One Epoch, armed by the first watermark step the context reached.
     const judgeCalls = systemOneRequests(scenario);
     expect(judgeCalls).toHaveLength(1);
     // Candidate ids are ranked by the batcher, so only the set is contractual.
@@ -722,7 +732,8 @@ describe("Tool Pruning session integration", () => {
         () => explorationCalls("t1"),
         () => textReply("Explored the files."),
         () => textReply("Second turn."),
-        () => textReply("Edited turn."),
+        () => explorationCalls("t3", 3),
+        () => textReply("Explored again."),
       ]),
       decisions,
     });
@@ -730,44 +741,47 @@ describe("Tool Pruning session integration", () => {
     const session = await openSession({ ctx, config: EAGER, trace });
     await driveTurns(session, ["explore", "continue"]);
 
-    // The first Epoch pruned the branch of the second Turn.
+    // The first Epoch pruned the exploration Turn and persisted its entry.
     expect(systemOneRequests(scenario)).toHaveLength(1);
     expect(providerCallIds(latestPayload(scenario))).toEqual(["t1bash"]);
     expect(pruningEntries(session.sessionManager)).toHaveLength(1);
 
-    // Message Edit: rewind to the user Message that opened the pruned Turn.
-    const target = lastUserMessageEntry(session.sessionManager);
+    // Message Edit: rewind to the user Message that opened the pruned Turn, so
+    // that Turn and its Epoch entry end up in the Abandoned Branch.
+    const target = firstUserMessageEntry(session.sessionManager);
     const rewind = await session.navigateTree(target.id, { summarize: false });
     expect(rewind.cancelled).toBe(false);
     expect(pruningEntries(session.sessionManager)).toHaveLength(0);
 
     await driveTurns(session, ["explore again"]);
 
-    // A new Epoch re-evaluated the still-unmasked pairs from scratch: the judge
-    // answered "keep", so the provider gets the ORIGINAL results back. If the
-    // abandoned Epoch's masks still applied, the payload would carry the stubs
-    // (masked calls are terminal and never re-evaluated).
+    // The new Epoch judged the new pairs from scratch and answered "keep", so
+    // the provider gets the ORIGINAL bodies. Had the abandoned Epoch's masks
+    // survived, the payload would still carry its stubs and dropped calls.
     expect(systemOneRequests(scenario)).toHaveLength(2);
     const payload = latestPayload(scenario);
     expectPairedPayload(payload);
-    expect(providerCallIds(payload)).toEqual([...FIRST_TURN_IDS]);
-    expect(providerResultText(payload, "t1grep")).toBe(bigResult("ALPHA"));
-    expect(providerResultText(payload, "t1read")).toBe(bigResult("READ"));
-    expect(providerResultText(payload, "t1bash")).toBe(bigResult("BASH"));
+    expect(providerCallIds(payload)).toEqual(["t3grep", "t3read", "t3bash", "t3grep2"]);
+    expect(providerResultText(payload, "t3read")).toBe(bigResult("READ"));
+    expect(providerResultText(payload, "t3bash")).toBe(bigResult("BASH"));
+    expect(JSON.stringify(payload.messages)).not.toContain("Tool Pruning: omitted");
 
-    // Two Epochs ran; the second one persisted nothing because `keep` is never
-    // terminal.
+    // Two Epochs ran. The second one persisted an entry with no decisions at
+    // all: `keep` is never terminal, but the entry is what consumes the step.
     expect(
       traceEventNames(trace).filter((name) => name === "tool_pruning.epoch_completed"),
     ).toHaveLength(2);
-    expect(pruningEntries(session.sessionManager)).toHaveLength(0);
+    const entries = pruningEntries(session.sessionManager);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.decisions).toEqual({});
+    expect(entries[0]!.watermark).toBe(0.01);
   });
 
   // -------------------------------------------------------------------------
   // 5. Fail-open
   // -------------------------------------------------------------------------
 
-  it("fails open on a judge error, keeps the Turn alive and re-evaluates the pool after the cooldown", async () => {
+  it("fails open on a judge error, keeps the Turn alive and re-judges only at the next watermark step", async () => {
     const ctx = sandbox();
     const trace = createPruningTrace();
 
@@ -795,33 +809,39 @@ describe("Tool Pruning session integration", () => {
 
     const session = await openSession({
       ctx,
-      config: EAGER,
+      config: STEPPED,
       trace,
     });
 
-    // Turn 1 (tools) then Turn 2: the turn-start Epoch hits a 500.
+    // Turn 1: the Epoch armed by the first step hits a 500.
     await driveTurns(session, ["explore", "continue"]);
 
     expect(systemOneRequests(scenario)).toHaveLength(1);
     expect(traceEventNames(trace)).toContain("tool_pruning.epoch_failed_open");
-    // Fail-open with nothing from Phase 0 worth persisting: the Turn completes
-    // untouched, with no masks and no session entry (spec D6).
-    expect(pruningEntries(session.sessionManager)).toHaveLength(0);
+    // Fail-open with nothing from Phase 0 to apply: the Turn completes
+    // untouched, but the entry that persists the consumed step is what keeps a
+    // degraded judge from being asked again on the same step (spec D6).
+    const failedEntries = pruningEntries(session.sessionManager);
+    expect(failedEntries).toHaveLength(1);
+    expect(failedEntries[0]!.decisions).toEqual({});
+    expect(failedEntries[0]!.stats.failedOpen).toBe(true);
+    expect(failedEntries[0]!.watermark).toBe(0.01);
     const failedPayload = latestPayload(scenario);
     expectPairedPayload(failedPayload);
     expect(providerResultText(failedPayload, "t1grep")).toBe(bigResult("ALPHA"));
     expect(providerResultText(failedPayload, "t1read")).toBe(bigResult("READ"));
 
-    // Prose-only Turn: no new prunable payload, so the cooldown still blocks
-    // the judge — a degraded service cannot turn into a retry storm.
+    // Prose-only Turn below the second step: a degraded service cannot turn
+    // into a retry storm, because the step is spent.
     await driveTurns(session, ["what does the file do?"]);
     expect(systemOneRequests(scenario)).toHaveLength(1);
 
-    // One more Turn of results grows the Living Pool, but its own turn-start
-    // check still sees the old pool size, so the cooldown keeps blocking.
+    // The next Turn of results crosses the second step, so the still-eligible
+    // pool is judged again, together with the new pairs.
     await driveTurns(session, ["explore more"]);
-    expect(systemOneRequests(scenario)).toHaveLength(1);
+    expect(systemOneRequests(scenario)).toHaveLength(2);
 
+    // Every reachable step is consumed now: another prose Turn asks nothing.
     await driveTurns(session, ["continue again"]);
     expect(systemOneRequests(scenario)).toHaveLength(2);
 
@@ -852,9 +872,10 @@ describe("Tool Pruning session integration", () => {
     expect(transcriptResultText(session, "t2read")).toBe(bigResult("READ"));
 
     const entries = pruningEntries(session.sessionManager);
-    expect(entries).toHaveLength(1);
-    expect(entries[0]!.decisions).toEqual({ t1read: "drop_call" });
-    expect(entries[0]!.stats.deterministicDrops).toBe(1);
-    expect(entries[0]!.stats.judgeDrops).toBe(0);
+    expect(entries).toHaveLength(2);
+    expect(entries[1]!.decisions).toEqual({ t1read: "drop_call" });
+    expect(entries[1]!.stats.deterministicDrops).toBe(1);
+    expect(entries[1]!.stats.judgeDrops).toBe(0);
+    expect(entries[1]!.stats.failedOpen).toBeUndefined();
   });
 });

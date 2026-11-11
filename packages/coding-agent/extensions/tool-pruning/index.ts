@@ -27,10 +27,13 @@ import { getToolPruningBridge } from "../../src/pruning/pruning-bridge";
  *   (`src/pruning/pruning-bridge.ts`) because jiti re-evaluates `tracing` into a
  *   second module instance with its own `AsyncLocalStorage`.
  *
- * No `session_compact` hook is registered: masks are keyed by `toolCallId`, so
- * the decisions of a session that Pi compacted simply stop matching the new
- * message list and disappear on their own (spec D7). The Epoch counter and the
- * mask map are rebuilt from the branch, so a Compaction needs no reset either.
+ * Only `pi.on("context")` is registered. The monotonic watermark staircase of
+ * spec D3 needs no Turn arming and no first-call-only rule: every `context`
+ * call compares the masked context against the next unconsumed step, and the
+ * consumed steps live in the session branch, so a Turn, a mid-Turn step and a
+ * Subagent all share exactly one cadence. No `session_compact` hook either:
+ * `masksFromBranch` only reads entries after the latest `compaction` entry, so
+ * a Compaction rearms every step on its own (spec D7).
  */
 export default function registerToolPruningExtension(pi: ExtensionAPI): void {
   const scopes = new Map<string, SessionScope>();
@@ -55,6 +58,7 @@ export default function registerToolPruningExtension(pi: ExtensionAPI): void {
       appendEntry: (customType, entry) => pi.appendEntry(customType, entry),
       getBranch: () => context.current.sessionManager.getBranch(),
       getLeafId: () => context.current.sessionManager.getLeafId(),
+      getSessionId: () => context.current.sessionManager.getSessionId(),
       getSignal: () => context.current.signal,
       // Resolved per event, never at load: the worker publishes the bridge at
       // startup and only its own copy of `tracing` sees the Turn's trace sink.
@@ -64,12 +68,6 @@ export default function registerToolPruningExtension(pi: ExtensionAPI): void {
     scopes.set(sessionId, scope);
     return scope;
   };
-
-  pi.on("before_agent_start", (_event, ctx) => {
-    // Arms the turn-start watermark: only the first `context` call of the Turn
-    // may pay an Epoch (spec D3.1).
-    scopeFor(ctx).instance.beginTurn();
-  });
 
   pi.on("context", async (event, ctx) => {
     const projection = await scopeFor(ctx).instance.onContext(event.messages);
