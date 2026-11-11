@@ -1,6 +1,6 @@
 ---
 name: trace-analyzer
-description: Analyze eval execution results from evalite or coding-agent traces. Use when the user asks to inspect traces, debug a run/session failure, analyze eval results, investigate coding-agent reconnect issues, or understand failures from a session id, run id, trace directory, eval score, or trace output.
+description: Analyze eval execution results from evalite, coding-agent traces, or Tool Pruning session audits. Use when the user asks to inspect traces, debug a run/session failure, review tool pruning results/regrets/missed drops/noul scores over time, analyze eval results, investigate coding-agent reconnect issues, or understand failures from a session id, run id, trace directory, eval score, or trace output.
 ---
 
 # Trace Analyzer
@@ -43,13 +43,16 @@ Keep analysis progressive: summary → details → stream only if needed. Summar
 
 ## Route A: Coding Agent
 
-Use this route when the request mentions coding agent, reconnect, session id, worker, bridge, Pi SDK, AG-UI, translator, RPC, streaming, or runtime failures in the agent UI.
+Use this route when the request mentions coding agent, reconnect, session id, worker, bridge, Pi SDK, AG-UI, translator, RPC, streaming, tool pruning, or runtime failures in the agent UI.
 
 Trace location: `packages/tracing/traces/coding-agent/<datetime>_<runIdShort>/`
 
 Inspector: `npx tsx packages/tracing/src/inspector.ts <command> [args]`
 
-Read `references/coding-agent-patterns.md` for commands, reconnect invariants, high-signal events, and failure patterns.
+Tool Pruning post-hoc analyzer (reads `.jsonl` session transcripts across `prod`/`dev`/`test`, including `noul` distributions, regret and missed drops):
+`pnpm --filter coding-agent analyze:pruning -- [--since YYYY-MM-DD] [--env prod|dev|test|all] [--session <id>] [--json]`
+
+Read `references/coding-agent-patterns.md` for commands, reconnect invariants, tool-pruning audit analysis, high-signal events, and failure patterns.
 
 ## Route B: Chatbot Evals
 

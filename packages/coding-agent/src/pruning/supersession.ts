@@ -147,26 +147,34 @@ export function runSupersession(
  * Phase 0.3).
  *
  * The Epoch runner owns the decision and the order of its checks: this is only
- * the predicate. A turn-start Epoch whose context is comfortably below the
- * `30 %` line, or whose pool shrank below `minJudgeWorthwhileTokens`, finished
- * in Phase 0 and must not pay latency nor invalidate the KV-cache prefix.
+ * the predicate. An Epoch whose Phase 0 already reclaimed a whole staircase gap
+ * (`watermark - watermarkGapRatio`, i.e. 45 % → 30 %, 60 % → 45 %, 75 % → 60 %),
+ * or whose pool shrank below `minJudgeWorthwhileTokens`, finished in Phase 0 and
+ * must not pay latency nor invalidate the KV-cache prefix.
+ *
+ * The threshold is relative to the consumed step on purpose: a fixed 30 % line
+ * is unreachable from the `60 %` and `75 %` steps, which would silently disable
+ * the short-circuit exactly where the context is tightest.
  */
 export function isJudgeWorthwhile(input: {
   /** Active context tokens after the Phase 0 drops are applied. */
   activeTokens: number;
   /** `ctx.model.contextWindow`. */
   contextWindow: number;
+  /** Step this Epoch consumes; the short-circuit line derives from it. */
+  watermark: number;
   /** `SupersessionResult.remainingTokens`. */
   remainingCandidateTokens: number;
   config?: ToolPruningConfig;
 }): boolean {
   const config = input.config ?? DEFAULT_TOOL_PRUNING_CONFIG;
+  if (input.contextWindow <= 0) return false;
   if (input.remainingCandidateTokens < config.minJudgeWorthwhileTokens) return false;
-  return input.activeTokens > JUDGE_SHORT_CIRCUIT_RATIO * input.contextWindow;
+  const shortCircuitRatio = Math.max(0, input.watermark - config.watermarkGapRatio);
+  // Small epsilon keeps IEEE-754 ratios such as `0.6 - 0.15 = 0.44999999999999996`
+  // from misclassifying an exact `45 %` landing as still above the line.
+  return input.activeTokens / input.contextWindow > shortCircuitRatio + 1e-9;
 }
-
-/** Fraction of `contextWindow` below which Phase 1 is skipped (spec D5 P0.3). */
-const JUDGE_SHORT_CIRCUIT_RATIO = 0.3;
 
 /**
  * Normalises a tool path against the agent's working directory.

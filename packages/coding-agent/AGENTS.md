@@ -172,18 +172,23 @@ through the pruning bridge. The engine lives in `src/pruning/` and never imports
 | `config.ts` | `ToolPruningConfig`, spec defaults and overrides, epoch entry and signal types |
 | `mask.ts` | Applies a decision mask to a message projection (`drop_call`, `drop_result` stubs) |
 | `messages.ts` | Shared, index-based readers over a `AgentMessage[]`: tool-call index and typed argument readers |
-| `cooling-window.ts` | Cooling Window: candidate pairs outside the union of independent protected spans (recent tail floor, capped active Turn, capped last completed tool Turn) |
-| `supersession.ts` | Phase 0: free deterministic drops (superseded reads and rerun/succeeded commands) |
+| `cooling-window.ts` | Cooling Window: candidate pairs outside the union of independent protected spans (recent tail floor, capped active Turn and capped last completed tool Turn scaled by `min(maxProtectedTurnTokens, maxProtectedTurnRatio * contextWindow)`) |
+| `supersession.ts` | Phase 0: free deterministic drops (superseded reads and rerun/succeeded commands) and relative `(watermark - watermarkGapRatio)` short-circuit |
 | `decision-state.ts` | Phase 1 state document, question building, batching, budget fitting and the single conservative drop band (`applyDecisionPolicy`) |
 | `systemone-client.ts` | `POST /v1/systemone` transport: 4 s timeout, Turn abort, typed failures |
-| `epoch-runner.ts` | Cadence (monotonic watermark staircase), Phase 0 → Phase 1 orchestration, fail-open, branch-aware persistence |
+| `epoch-runner.ts` | Cadence (watermark staircase with `watermarkGapRatio` re-arming), Phase 0 → Phase 1 orchestration, fail-open, branch-aware persistence |
 | `pruning-bridge.ts` | `Symbol.for` handoff of the trace logger factory and config overrides to the jiti copy |
 
 - **Persistence:** every completed Epoch appends a `ToolPruningEpochEntry` to the session
   branch, including short-circuited and failed-open ones, because the entry *is* the
-  consumed step. Masks and the highest consumed step are rebuilt from `getBranch()`, so a
-  Message Edit that abandons a branch abandons its masks and steps too; a `compaction`
-  entry rearms the whole staircase.
+  consumed step. Each entry also carries `audit: ToolPruningCandidateAudit[]` with the
+  per-candidate `noul` probabilities (`keepResult`, `keepCall`), decision source
+  (`"phase0" | "judge" | "leftover"`) and target for post-hoc analysis
+  (`pnpm --filter coding-agent analyze:pruning`). Masks and the watermark floor are
+  rebuilt from `getBranch()`, so a Message Edit that abandons a branch abandons its masks
+  and steps too; a `compaction` entry rearms the whole staircase while preserving masks on
+  the active branch so pruned outputs inside Pi's kept recent tail never resurrect, and a
+  deep prune re-arms any step at least `watermarkGapRatio` (`0.15`) above its landing ratio.
 - **Active tokens:** `measureProjection` corrects the provider's last `usage` with the
   reductions that landed *after* that usage boundary, never with the whole mask, so a
   saving is subtracted exactly once.

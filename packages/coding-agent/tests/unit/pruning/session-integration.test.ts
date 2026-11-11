@@ -325,8 +325,9 @@ const pruningEntries = (manager: SessionManager): ToolPruningEpochEntry[] =>
     .map((entry) => (entry as { data?: unknown }).data as ToolPruningEpochEntry);
 
 /**
- * Entries the runner still honours: everything after the latest `compaction`
- * entry (spec D7). Empty means the staircase and the masks were rearmed.
+ * Pruning entries appended after the latest `compaction` entry (spec D7).
+ * Watermark steps reset at compaction while masks across the active branch stay
+ * in force for any tool calls preserved in Pi's kept recent tail.
  */
 const pruningEntriesSinceCompaction = (
   manager: SessionManager,
@@ -744,8 +745,8 @@ describe("Tool Pruning session integration", () => {
       session.messages.filter((message) => message.role === "toolResult"),
     ).toHaveLength(FIRST_TURN_IDS.length * 2);
 
-    // Every configured step is spent now: no Turn can re-open the judge until
-    // Pi compacts the session (spec D3).
+    // After dropping all candidates down to ~1 % of the window, a short prose
+    // Turn stays below the lowest step (and has 0 prunable tokens), so no Epoch runs.
     await driveTurns(session, ["wrap up"]);
     expect(systemOneRequests(scenario)).toHaveLength(2);
     expect(pruningEntries(session.sessionManager)).toHaveLength(2);
@@ -952,7 +953,8 @@ describe("Tool Pruning session integration", () => {
     expect(session.messages.some((message) => message.role === "compactionSummary")).toBe(true);
 
     // The entry that consumed `0.35` is behind the compaction boundary, so the
-    // runner reconstructs neither its masks nor its consumed step from it.
+    // runner resets its watermark floor to `0` (while retaining masks on the
+    // active branch so any pruned call inside Pi's kept tail stays masked).
     expect(pruningEntries(session.sessionManager)).toHaveLength(1);
     expect(pruningEntriesSinceCompaction(session.sessionManager)).toHaveLength(0);
 

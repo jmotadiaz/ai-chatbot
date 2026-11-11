@@ -63,6 +63,44 @@ Worker:
 - `connect.snapshot_built`: worker-side snapshot and in-flight tool state.
 - `connect.stream_summary`: worker replay line counts, buffered lines, event counts, and close reason.
 - `worker.response_stream_summary`: HTTP response chunk/byte counts and whether the client closed the response.
+- `tool_pruning.epoch_completed`: Tool Pruning Epoch finished (carries `epochId`, `watermark`, `tokensBefore`, `tokensSavedEst`, `deterministicDrops`, `judgeDrops`, `candidatesEvaluated`, `batches`, `latencyMs`, `decisionModel`, `cost`, `failedOpen`).
+- `tool_pruning.epoch_failed_open`: `/v1/systemone` timed out, returned an error or invalid JSON; Phase 0 drops still applied and the watermark step was consumed.
+- `tool_pruning.epoch_aborted`: user aborted the Turn while a pruning Epoch was in flight; nothing persisted and watermark step stayed armed.
+
+## Tool Pruning Post-Hoc Analysis (`.jsonl` Sessions & Traces)
+
+Every pruning Epoch is persisted in the Pi session `.jsonl` transcript as a custom entry (`type: "custom", customType: "tool-pruning"`) with full per-candidate `audit` records (`toolCallId`, `toolName`, `target`, `tokensEst`, `source: "phase0"|"judge"|"leftover"`, `decision`, `keepResult`, `keepCall`, and Phase 0 structural signals).
+
+### Step-by-Step Multi-Day Review Workflow
+
+1. **Aggregate overview across recent days** (default: last 14 days, `prod` + `dev`):
+   ```bash
+   pnpm --filter coding-agent analyze:pruning -- --since YYYY-MM-DD --env prod
+   ```
+2. **Drill down into a specific session with regrets or missed drops**:
+   ```bash
+   pnpm --filter coding-agent analyze:pruning -- --session <sessionIdPrefix> --json
+   ```
+3. **Correlate with LLM calls and Epoch lifecycle events in `packages/tracing`**:
+   ```bash
+   npx tsx packages/tracing/src/inspector.ts timeline <sessionId>
+   npx tsx packages/tracing/src/inspector.ts calls <sessionId>
+   ```
+   - `timeline <sessionId>` shows `tool_pruning.epoch_completed` (with `watermark`, `tokensSavedEst`, `deterministicDrops`, `judgeDrops`, `latencyMs`) interleaved with main-agent and `decision-default` judge calls.
+   - `calls <sessionId>` + `call <runId> <seq>` inspects the exact prompt and JSON output of the SystemOne judge call when `TRACE_ENABLED=true`.
+
+### How to Interpret Metrics for Threshold & Watermark Iteration
+
+- **Regrets (False Positives — pruned target re-read/re-run later without an intervening `edit`/`write`)**:
+  - Check `source` (`phase0` vs `judge`) and the candidate's `keepResult` score in the regret list.
+  - If `judge` regrets cluster near `[0.15, 0.25)`, lower `dropResultThreshold` (e.g. `0.25 -> 0.20`) or increase `coolingRecentTokens` / `minCoolingToolCalls`.
+  - If `phase0` regrets appear, inspect `editedLater` / `sameCommandRanLater` normalization in `supersession.ts`.
+- **Missed Large Drops (False Negatives — `>= 1000` token candidates kept by judge and never referenced again)**:
+  - Check the `Judge noul distribution (keepResult)` histogram and the `keepResult` scores of the missed drops.
+  - If many unused large outputs sit in `[0.25, 0.40)`, raise `dropResultThreshold` or tighten the judge prompt rubric in `decision-state.ts`.
+- **Watermark Step & Pi Compaction Ratio**:
+  - Compare `Sessions triggered pruning` vs `Sessions reached Pi Compaction` and the `Steps` counter (`0.45`, `0.60`, `0.75`).
+  - If sessions still hit Pi Compaction right after `0.75` with low savings, either candidates are protected by the cooling window or an earlier/additional step is needed.
 
 Warnings/errors:
 

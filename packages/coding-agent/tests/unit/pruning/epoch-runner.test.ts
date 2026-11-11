@@ -456,6 +456,95 @@ describe("Tool Pruning triggers", () => {
     expect(test.appends[1].entry.watermark).toBe(0.75);
   });
 
+  it("re-arms steps at least watermarkGapRatio (15%) above where a deep prune landed", async () => {
+    let clock = 1_000;
+    const test = harness({}, () => clock);
+
+    // Epoch 1 at 0.75 (76 000 / 100 000): judge drops 4 of 6 results (40 000
+    // tokens saved), landing at 36 000 (36 %). `0.36 + 0.15 = 0.51`, so `0.45`
+    // stays retired while both `0.60` and `0.75` re-arm.
+    const dropFour = new Set(["result_c1", "result_c2", "result_c3", "result_c4"]);
+    test.judge.mockImplementationOnce(async (request: SystemOneDecisionRequest) => {
+      const answers: Record<string, number> = {};
+      for (const name of Object.keys(request.questions)) {
+        answers[name] = dropFour.has(name) ? 0.1 : 1;
+      }
+      return okJudge(answers);
+    });
+
+    await test.runner.onContext(session(76_000));
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.watermark).toBe(0.75);
+    expect(test.appends[0].entry.tokensSavedEst).toBe(40_000);
+
+    // Climbing back to 54 % (above 0.45, below 0.60) does NOT re-trigger `0.45`,
+    // because 0.45 is less than 15 % above the 36 % landing.
+    clock = 1_200;
+    test.answerWith(1);
+    await test.runner.onContext(session(54_000, 1, 1_150));
+    expect(test.judge).toHaveBeenCalledTimes(1);
+
+    // Reaching 62 % crosses the re-armed `0.60` step; saving 0 tokens there
+    // retires `0.60` while keeping `0.75` armed.
+    clock = 1_400;
+    await test.runner.onContext(session(62_000, 1, 1_350));
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.watermark).toBe(0.6);
+
+    // Reaching 76 % crosses `0.75`; saving only 10 000 tokens lands at 66 %
+    // (`0.66 + 0.15 = 0.81 > 0.75`), so `0.75` does NOT re-arm.
+    clock = 1_600;
+    test.judge.mockImplementationOnce(async (request: SystemOneDecisionRequest) => {
+      const answers: Record<string, number> = {};
+      for (const name of Object.keys(request.questions)) {
+        answers[name] = name === "result_c1" ? 0.1 : 1;
+      }
+      return okJudge(answers);
+    });
+    await test.runner.onContext(session(76_000, 1, 1_550));
+    expect(test.judge).toHaveBeenCalledTimes(3);
+    expect(test.appends[2].entry.watermark).toBe(0.75);
+
+    clock = 1_800;
+    test.answerWith(1);
+    await test.runner.onContext(session(85_000, 1, 1_750));
+    expect(test.judge).toHaveBeenCalledTimes(3);
+  });
+
+  it("scales the protected-Turn cap to maxProtectedTurnRatio * contextWindow on 100k windows", async () => {
+    // Default config (`maxProtectedTurnTokens: 40_000`, `maxProtectedTurnRatio: 0.20`,
+    // `coolingRecentTokens: 16_000`, `minCoolingToolCalls: 6`) on a 100k window:
+    // the active Turn's cap shrinks from 40k to 20k (`10k` retained tail when
+    // exceeded), so a single marathon Turn of 8 × 10k tool calls exposes its
+    // older calls even without overriding `coolingRecentTokens`.
+    const appended: ToolPruningEpochEntry[] = [];
+    const judge = vi.fn(async (request: SystemOneDecisionRequest) => {
+      const answers: Record<string, number> = {};
+      for (const name of Object.keys(request.questions)) answers[name] = 0.1;
+      return okJudge(answers);
+    });
+    const runner = new ToolPruningEpochRunner({
+      cwd: CWD,
+      getContextWindow: () => 100_000,
+      getCredentials: async () => ({ baseUrl: "http://127.0.0.1:4000/v1" }),
+      appendEntry: (_type, entry) => appended.push(entry),
+      judge,
+    });
+
+    const marathonMessages: AgentMessage[] = [
+      user("run everything in one marathon turn"),
+      ...bashTurn("m", 8),
+      prose("still working", { usage: usageWith(82_000) }),
+    ];
+
+    await runner.onContext(marathonMessages);
+    expect(judge).toHaveBeenCalledTimes(1);
+    expect(appended).toHaveLength(1);
+    // 8 calls total, recent tail floor keeps the last 6 (`m-3..m-8`), leaving
+    // `m-1` and `m-2` (~20k tokens) outside the 20k-capped active Turn.
+    expect(Object.keys(appended[0].decisions)).toEqual(["m-1", "m-2"]);
+  });
+
   it("never triggers without a resolved model", async () => {
     const judge = vi.fn();
     const runner = new ToolPruningEpochRunner({
@@ -594,6 +683,38 @@ describe("Phase 0 short-circuit", () => {
     // The duplicate read disappeared: its call block emptied the assistant
     // message (which is then omitted) and its result went with it.
     expect(projection.messages).toHaveLength(messages.length - 2);
+  });
+
+  it("short-circuits Phase 1 at watermark 0.60 when Phase 0 drops context to <= 45 %", async () => {
+    const test = harness();
+    // Consume 0.45 first without dropping anything so 0.60 is the next step.
+    test.answerWith(1);
+    await test.runner.onContext(session(50_000));
+    expect(test.judge).toHaveBeenCalledTimes(1);
+
+    // At 62 000 tokens (0.60 step), Phase 0 supersedes `r1` (25 000 tokens),
+    // bringing activeAfterPhase0 to 37 000 (37 % <= 0.60 - 0.15 = 45 %). Even
+    // though 37 % > 30 % and `b1` (10 000 tokens) remains in the pool, Phase 1
+    // is skipped relative to the 0.60 watermark.
+    const messages: AgentMessage[] = [
+      user("read it"),
+      assistantWithoutUsage([read("r1", "src/app.ts")]),
+      readResult("r1", HUGE),
+      assistantWithoutUsage([read("r2", "src/app.ts")]),
+      readResult("r2", HUGE),
+      assistantWithoutUsage([bash("b1", "pnpm test")]),
+      bashResult("b1"),
+      user("next"),
+      prose("done", { usage: usageWith(62_000), timestamp: 200 }),
+    ];
+
+    await test.runner.onContext(messages);
+
+    expect(test.judge).toHaveBeenCalledTimes(1);
+    expect(test.appends).toHaveLength(2);
+    expect(test.appends[1].entry.watermark).toBe(0.6);
+    expect(test.appends[1].entry.decisions).toEqual({ r1: "drop_call" });
+    expect(test.appends[1].entry.stats.batches).toBe(0);
   });
 
   it("skips the judge when Phase 0 left less than minJudgeWorthwhileTokens", async () => {
@@ -961,7 +1082,7 @@ describe("branch-aware state", () => {
     });
   });
 
-  it("reads only the entries after the latest compaction", () => {
+  it("retains pre-compaction masks and applications while resetting the watermark floor at compaction", () => {
     const state = masksFromBranch([
       customEntry(epochEntry(4, { a: "drop_call" }, 0.75)),
       { type: "compaction" },
@@ -969,11 +1090,15 @@ describe("branch-aware state", () => {
     ]);
 
     expect(state).toEqual({
-      masks: { b: "drop_result" },
+      masks: { a: "drop_call", b: "drop_result" },
       lastEpochId: 5,
       highestConsumedWatermark: 0.45,
-      // Only the post-Compaction entry: the abandoned cycle's masks are gone.
-      applications: [{ timestamp: 1, decisions: { b: "drop_result" } }],
+      // Pre-Compaction masks and their timestamps stay paired so tool calls in
+      // Pi's kept recent tail stay masked without double-subtracting savings.
+      applications: [
+        { timestamp: 1, decisions: { a: "drop_call" } },
+        { timestamp: 1, decisions: { b: "drop_result" } },
+      ],
     });
   });
 
@@ -1000,25 +1125,44 @@ describe("branch-aware state", () => {
     expect(test.runner.consumedWatermark).toBe(0);
   });
 
-  it("rearms every step once a compaction entry lands on the branch", async () => {
-    const test = harness();
-    test.answerWith(1);
+  it("rearms every step once a compaction entry lands while keeping masks in Pi's kept tail", async () => {
+    let clock = 100;
+    const test = harness({}, () => clock);
+    // Pre-compaction Epoch at 0.75 drops `t1-1` (`drop_result`), saving 10k
+    // out of 80k (`landingRatio = 0.70`, so `0.75` stays spent before compact).
+    test.judge.mockImplementationOnce(async (request: SystemOneDecisionRequest) => {
+      const answers: Record<string, number> = {};
+      for (const name of Object.keys(request.questions)) {
+        answers[name] = name === "result_c1" ? 0.1 : 1;
+      }
+      return okJudge(answers);
+    });
 
-    await test.runner.onContext(session(80_000));
+    await test.runner.onContext(session(80_000, 0, 50));
     expect(test.appends[0].entry.watermark).toBe(0.75);
+    expect(test.appends[0].entry.decisions).toEqual({ "t1-1": "drop_result" });
 
     // Every step spent: nothing more can fire in this window cycle.
-    await test.runner.onContext(session(99_000));
+    clock = 200;
+    test.answerWith(1);
+    await test.runner.onContext(session(99_000, 0, 150));
     expect(test.judge).toHaveBeenCalledTimes(1);
 
-    // Pi compacts and rearms the staircase; the drop of the previous cycle is
-    // gone with it.
+    // Pi compacts: the staircase rearms to 0, AND if `t1-1` survived inside
+    // Pi's ~20k kept recent tail, its mask stays active instead of resurrecting
+    // the raw 10k payload (without double-subtracting from post-compact usage).
     test.compact();
-    await test.runner.onContext(session(50_000));
+    clock = 300;
+    const postCompact = await test.runner.onContext(session(50_000, 0, 250));
 
     expect(test.judge).toHaveBeenCalledTimes(2);
     expect(test.appends[1].entry.watermark).toBe(0.45);
+    expect(test.appends[1].entry.tokensBefore).toBe(50_000);
     expect(test.runner.consumedWatermark).toBe(0.45);
+    const t1Result = postCompact.messages.find(
+      (m) => m.role === "toolResult" && m.toolCallId === "t1-1",
+    );
+    expect(JSON.stringify(t1Result)).toContain("Tool Pruning: omitted");
   });
 
   it("memoises the branch read by (sessionId, leafId) and continues the Epoch counter", async () => {
@@ -1083,5 +1227,67 @@ describe("config", () => {
 
     expect(runner.config.watermarks).toEqual([0.5, 0.9]);
     expect(DEFAULT_TOOL_PRUNING_CONFIG.watermarks).toEqual([0.45, 0.6, 0.75]);
+  });
+
+  it("persists per-candidate audit records (Phase 0 vs Judge, targets and noul scores)", async () => {
+    const appended: ToolPruningEpochEntry[] = [];
+    const runner = new ToolPruningEpochRunner({
+      cwd: CWD,
+      config: { ...BASE_CONFIG },
+      getContextWindow: () => WINDOW,
+      getCredentials: async () => ({ baseUrl: "http://127.0.0.1:4000/v1" }),
+      appendEntry: (_customType, entry) => appended.push(entry),
+      judge: async (request: SystemOneDecisionRequest) => {
+        const answers: Record<string, number> = {};
+        for (const key of Object.keys(request.questions)) {
+          answers[key] = key.startsWith("result_c1") ? 0.12 : 0.42;
+        }
+        return okJudge(answers);
+      },
+    });
+
+    const messages: AgentMessage[] = [
+      user("Inspect and run"),
+      assistantWithoutUsage([read("r-early", "src/foo.ts")]),
+      readResult("r-early"),
+      assistantWithoutUsage([read("r-late", "src/foo.ts")]),
+      readResult("r-late"),
+      assistantWithoutUsage([bash("b-keep", "pnpm test")]),
+      bashResult("b-keep"),
+      user("Continue"),
+      assistant([prose("Ready")], { usage: usageWith(50_000), timestamp: 10 }),
+    ];
+
+    await runner.onContext(messages);
+    expect(appended).toHaveLength(1);
+    const audit = appended[0].audit ?? [];
+    expect(audit).toHaveLength(3);
+
+    const earlyRead = audit.find((item) => item.toolCallId === "r-early");
+    expect(earlyRead).toMatchObject({
+      toolName: "read",
+      target: "src/foo.ts",
+      source: "phase0",
+      decision: "drop_call",
+    });
+
+    const lateRead = audit.find((item) => item.toolCallId === "r-late");
+    expect(lateRead).toMatchObject({
+      toolName: "read",
+      target: "src/foo.ts",
+      source: "judge",
+      decision: "drop_result",
+      keepResult: 0.12,
+      keepCall: 0.42,
+    });
+
+    const keptBash = audit.find((item) => item.toolCallId === "b-keep");
+    expect(keptBash).toMatchObject({
+      toolName: "bash",
+      target: "pnpm test",
+      source: "judge",
+      decision: "keep",
+      keepResult: 0.42,
+    });
   });
 });

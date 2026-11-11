@@ -12,8 +12,10 @@
  * files to form a plan stays protected across an intermediate prose-only Turn,
  * so the plan's reads are not immortalised and are not pruned while they are
  * still in use either. Both protected Turns are capped at
- * `maxProtectedTurnTokens`, so a single marathon Turn or Subagent can still
- * prune the obsolete explorations of its first half.
+ * `maxProtectedTurnTokens`, and that cap is itself bounded by
+ * `maxProtectedTurnRatio * contextWindow`: a window-relative ceiling is what
+ * stops a small context window (Haiku's 100k) from protecting 80 % of itself
+ * with two Turns and leaving nothing for an Epoch to prune.
  *
  * Everything here is pure and dependency-light, mirroring `mask.ts`: Pi loads
  * the extension through jiti in its own module runtime, so this module must
@@ -214,6 +216,11 @@ export interface CoolingWindowOptions {
   config?: ToolPruningConfig;
   /** Drops already persisted on the active branch; they are terminal there. */
   masks?: ToolPruningMaskMap;
+  /**
+   * `ctx.model.contextWindow`, which bounds the Turn cap relatively (spec D4).
+   * Absent or non-positive keeps the absolute cap only.
+   */
+  contextWindow?: number;
 }
 
 /**
@@ -234,8 +241,7 @@ export interface CoolingWindowOptions {
  * collapsing the union into "every message after the earliest start" would let
  * any earlier protected Turn protect the whole excess prefix of a marathon
  * active Turn or Subagent. A Turn above the cap keeps only its most recent
- * `maxProtectedTurnTokens / 2` tokens (20 000 by default) and the excess prefix
- * becomes evaluable.
+ * `cap / 2` tokens and the excess prefix becomes evaluable.
  *
  * Candidates are paired calls that sit outside every protected span, carry no
  * mask yet and whose eligibility allows at least one drop. An in-flight or
@@ -260,7 +266,8 @@ export function partitionCoolingWindow(
 
   const tokens = messages.map(estimateMessageTokens);
   const paired = collectPairedCalls(messages);
-  const spans = protectedRegion(messages, tokens, paired, config);
+  const turnCap = effectiveTurnCap(config, options.contextWindow);
+  const spans = protectedRegion(messages, tokens, paired, config, turnCap);
 
   let protectedTokens = 0;
   for (const span of spans) {
@@ -426,6 +433,28 @@ function findProtectedTailStart(
 }
 
 /**
+ * Effective protection cap of one Turn (spec D4).
+ *
+ * `maxProtectedTurnTokens` alone would let a 100k window protect 80 % of itself
+ * with a previous and an active Turn, starving every Epoch of candidates; the
+ * window-relative ceiling keeps the cap proportional. A zero cap stays zero, so
+ * the "no Turn protection" test configuration is preserved.
+ */
+export function effectiveTurnCap(
+  config: ToolPruningConfig,
+  contextWindow: number | undefined,
+): number {
+  const absolute = Math.max(0, Math.trunc(config.maxProtectedTurnTokens));
+  if (absolute === 0) return 0;
+  if (contextWindow === undefined || !Number.isFinite(contextWindow) || contextWindow <= 0) {
+    return absolute;
+  }
+  const relative = Math.trunc(Math.max(0, config.maxProtectedTurnRatio) * contextWindow);
+  if (relative <= 0) return 0;
+  return Math.min(absolute, relative);
+}
+
+/**
  * The protected region: the union of the recent-tail floor, the capped active
  * Turn and the capped last completed tool Turn (spec D4).
  */
@@ -434,6 +463,7 @@ function protectedRegion(
   tokens: readonly number[],
   paired: readonly PairedCall[],
   config: ToolPruningConfig,
+  turnCap: number,
 ): ProtectedSpan[] {
   const spans: ProtectedSpan[] = [];
 
@@ -445,17 +475,12 @@ function protectedRegion(
   // Rule (b): the active Turn, capped.
   const activeTurnStart = findCurrentTurnStart(messages);
   if (activeTurnStart !== undefined) {
-    const activeTurn = cappedTurnSpan(
-      activeTurnStart,
-      messages.length,
-      tokens,
-      config.maxProtectedTurnTokens,
-    );
+    const activeTurn = cappedTurnSpan(activeTurnStart, messages.length, tokens, turnCap);
     if (activeTurn !== undefined) spans.push(activeTurn);
   }
 
   // Rule (c): the last completed Turn that used tools, capped.
-  const lastToolTurn = findLastCompletedToolTurnSpan(messages, tokens, paired, config);
+  const lastToolTurn = findLastCompletedToolTurnSpan(messages, tokens, paired, turnCap);
   if (lastToolTurn !== undefined) spans.push(lastToolTurn);
 
   return mergeSpans(spans);
@@ -488,7 +513,7 @@ function findLastCompletedToolTurnSpan(
   messages: readonly AgentMessage[],
   tokens: readonly number[],
   paired: readonly PairedCall[],
-  config: ToolPruningConfig,
+  turnCap: number,
 ): ProtectedSpan | undefined {
   const turnStarts: number[] = [];
   for (let i = 0; i < messages.length; i++) {
@@ -503,17 +528,16 @@ function findLastCompletedToolTurnSpan(
       (call) => call.resultIndex >= start && call.resultIndex < end,
     );
     if (!usedTools) continue;
-    return cappedTurnSpan(start, end, tokens, config.maxProtectedTurnTokens);
+    return cappedTurnSpan(start, end, tokens, turnCap);
   }
   return undefined;
 }
 
 /**
  * Applies the protection cap to one Turn, active or completed. A Turn within the
- * cap is protected in full; a larger one keeps only its most recent half-cap
- * (`maxProtectedTurnTokens / 2`, 20 000 tokens by default) so its excess prefix
- * becomes evaluable and one giant Turn or Subagent cannot protect its obsolete
- * first half forever.
+ * cap is protected in full; a larger one keeps only its most recent half-cap so
+ * its excess prefix becomes evaluable and one giant Turn or Subagent cannot
+ * protect its obsolete first half forever.
  *
  * `undefined` means the rule protects nothing: a zero cap is an explicit "no
  * Turn protection" configuration, and protecting the whole Turn instead would

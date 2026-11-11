@@ -73,6 +73,10 @@ export default function registerToolPruningExtension(pi: ExtensionAPI): void {
     const projection = await scopeFor(ctx).instance.onContext(event.messages);
     return projection.changed ? { messages: projection.messages } : undefined;
   });
+
+  pi.on("session_shutdown", (_event, ctx) => {
+    scopes.delete(ctx.sessionManager.getSessionId());
+  });
 }
 
 /** One runner plus the mutable handle to its session's latest extension context. */

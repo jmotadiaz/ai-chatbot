@@ -7,25 +7,25 @@
  * three responsibilities and nothing else:
  *
  * 1. **Cadence (D3).** Every `context` call measures the masked projection
- *    against a staircase of monotonic watermark steps (`config.watermarks`).
- *    The next armed step is the lowest one strictly above the highest step the
- *    active branch already consumed, so an Epoch can only ever run when the
- *    context climbs higher than it ever did in this window cycle. Consuming a
- *    step (say `0.60`) also consumes every lower step, which caps a whole
- *    window cycle (`0 % → 90 %`) at three KV-cache breaks and makes
- *    thrashing structurally impossible — even for a low-yield or failed-open
- *    Epoch. A `compaction` entry on the branch rearms the whole staircase.
+ *    against a staircase of watermark steps (`config.watermarks`). Consuming a
+ *    step (say `0.60`) retires that step and every lower one unless the Epoch
+ *    reclaims enough tokens that a step sits at least `watermarkGapRatio`
+ *    (`0.15`) above where the context landed — preventing thrashing on
+ *    low-yield or failed-open prunes while letting deep cleanups re-arm upper
+ *    steps in long sessions. A `compaction` entry rearms the whole staircase.
  * 2. **Decision (D5).** Phase 0 (`runSupersession`) runs first and for free;
  *    Phase 1 (the calibrated `noul` judge) only runs when what Phase 0 left is
- *    worth a round-trip. Batches go out concurrently (at most
- *    `maxDecisionBatches`) and the merged answers feed `applyDecisionPolicy`,
- *    which owns the single conservative drop band.
+ *    worth a round-trip (`activeTokens > (watermark - watermarkGapRatio) *
+ *    contextWindow` and enough candidate tokens remain). Batches go out
+ *    concurrently (at most `maxDecisionBatches`) and the merged answers feed
+ *    `applyDecisionPolicy`, which owns the single conservative drop band.
  * 3. **Persistence (D7).** Every completed Epoch appends a
  *    `ToolPruningEpochEntry` carrying the step it consumed — including a
  *    short-circuited or failed-open one, because that entry *is* the consumed
- *    step. Both the mask map and the highest consumed step are rebuilt from
- *    `getBranch()`, so a Message Edit that abandons a branch also abandons the
- *    masks and the steps decided on it.
+ *    step. Masks are rebuilt across the whole active `getBranch()` (so pruned
+ *    payloads inside Pi's kept recent tail stay masked after Compaction),
+ *    while watermark steps reset at the latest `compaction` entry; a Message
+ *    Edit that abandons a branch abandons both its masks and its steps.
  *
  * Everything here is pure TypeScript over the modules of tickets 02–05. The
  * runner never imports worker `src/` runtime modules, never reads global
@@ -41,6 +41,7 @@ import {
   DEFAULT_TOOL_PRUNING_CONFIG,
   TOOL_PRUNING_ENTRY_TYPE,
   type AgentMessage,
+  type ToolPruningCandidateAudit,
   type ToolPruningConfig,
   type ToolPruningConfigOverrides,
   type ToolPruningDrop,
@@ -57,12 +58,14 @@ import {
 import {
   applyDecisionPolicy,
   buildDecisionPlan,
+  questionName,
   type DecisionPlan,
   type DecisionPolicyResult,
 } from "./decision-state";
 import { projectPruningMask } from "./mask";
+import { callArguments, indexToolCalls, stringArgument } from "./messages";
 import type { ToolPruningTraceLogger } from "./pruning-bridge";
-import { isJudgeWorthwhile, runSupersession } from "./supersession";
+import { isJudgeWorthwhile, normalizeCommand, runSupersession, type SupersessionResult } from "./supersession";
 import {
   requestSystemOneDecision,
   type SystemOneClientOptions,
@@ -184,9 +187,46 @@ export function consumedWatermarkStep(
   return consumed;
 }
 
-// ---------------------------------------------------------------------------
-// Token accounting
-// ---------------------------------------------------------------------------
+const WATERMARK_EPSILON = 1e-9;
+
+/**
+ * Effective retired watermark floor after an Epoch (spec D3).
+ *
+ * Steps above `watermark` were never reached and stay armed (`step > floor`).
+ * Steps at or below `watermark` stay retired unless the Epoch dropped the
+ * context far enough that the step now sits at least `watermarkGapRatio` above
+ * the post-prune landing ratio (`step >= landingRatio + watermarkGapRatio`).
+ * Because `x > min(A, B)` is identically `(x > A) || (x > B)`, a single scalar
+ * floor encodes both rules without needing the configured `steps` array.
+ *
+ * Entries without a recorded `contextWindow` (legacy or minimal synthetic
+ * fixtures) fall back to retiring up to `watermark`.
+ */
+export function effectiveWatermarkFloor(
+  entry: {
+    readonly watermark: number;
+    readonly tokensBefore?: number;
+    readonly tokensSavedEst?: number;
+    readonly contextWindow?: number;
+  },
+  watermarkGapRatio: number = DEFAULT_TOOL_PRUNING_CONFIG.watermarkGapRatio,
+): number {
+  if (
+    entry.contextWindow === undefined ||
+    !Number.isFinite(entry.contextWindow) ||
+    entry.contextWindow <= 0 ||
+    entry.tokensBefore === undefined ||
+    !Number.isFinite(entry.tokensBefore) ||
+    entry.tokensSavedEst === undefined ||
+    !Number.isFinite(entry.tokensSavedEst)
+  ) {
+    return entry.watermark;
+  }
+  const tokensAfter = Math.max(0, entry.tokensBefore - Math.max(0, entry.tokensSavedEst));
+  const landingRatio = tokensAfter / entry.contextWindow;
+  const gap = Number.isFinite(watermarkGapRatio) ? Math.max(0, watermarkGapRatio) : 0;
+  return Math.min(entry.watermark, Math.max(0, landingRatio + gap - WATERMARK_EPSILON));
+}
 
 /** Provider-measured context of one projection, plus its correction inputs. */
 export interface ToolPruningTokenMeasurement {
@@ -364,35 +404,51 @@ export interface ToolPruningBranchState {
   readonly applications: readonly ToolPruningMaskApplication[];
 }
 
+/** Options for branch reconstruction. */
+export interface MasksFromBranchOptions {
+  /** Margin above a prune's landing ratio required to re-arm a step (spec D3). */
+  readonly watermarkGapRatio?: number;
+}
+
 /**
  * Rebuilds the pruning state from a session branch (spec D7).
  *
- * Only entries **after the latest `type: "compaction"` entry** are read, which
- * is what rearms the whole watermark staircase after Pi summarises the history:
- * the steps and masks of the previous window cycle cannot constrain the new
- * one. Only `custom` entries of type `tool-pruning` participate, and only
- * entries on the *active* branch: an Epoch decided on a branch the user
- * abandoned with a Message Edit is simply not in `getBranch()`, so its masks
- * disappear and the tool results it had pruned come back for the model. Entries
- * are applied in branch order, so a later Epoch re-deciding the same call wins.
+ * Masks, mask-application timestamps and `lastEpochId` are accumulated across
+ * the **entire** active branch — including entries before a `type: "compaction"`
+ * entry — because Pi's native Compaction preserves ~`20k` recent tokens
+ * verbatim (`firstKeptEntryId`), and forgetting pre-compaction masks would
+ * resurrect already-pruned tool outputs inside that kept tail (while keeping
+ * `applications` paired prevents `measureProjection` from subtracting those
+ * pre-compaction savings a second time).
+ *
+ * By contrast, `highestConsumedWatermark` resets to `0` at every `compaction`
+ * entry so the watermark staircase is freshly armed for the new window cycle.
+ * An Epoch decided on an Abandoned Branch after a Message Edit is absent from
+ * `getBranch()`, so both its masks and its watermark state disappear.
  */
 export function masksFromBranch(
   entries: readonly ToolPruningSessionEntry[],
+  options: MasksFromBranchOptions = {},
 ): ToolPruningBranchState {
-  let start = 0;
-  for (let index = 0; index < entries.length; index++) {
-    if (entries[index].type === "compaction") start = index + 1;
-  }
-
+  const gapRatio = options.watermarkGapRatio ?? DEFAULT_TOOL_PRUNING_CONFIG.watermarkGapRatio;
   const masks: Record<string, ToolPruningDrop> = {};
   const applications: ToolPruningMaskApplication[] = [];
   let lastEpochId = 0;
   let highestConsumedWatermark = 0;
-  for (let index = start; index < entries.length; index++) {
-    const epoch = readEpochEntry(entries[index]);
+  for (let index = 0; index < entries.length; index++) {
+    const entry = entries[index];
+    if (entry.type === "compaction") {
+      highestConsumedWatermark = 0;
+      continue;
+    }
+    const epoch = readEpochEntry(entry);
     if (epoch === undefined) continue;
     lastEpochId = Math.max(lastEpochId, epoch.epochId);
-    highestConsumedWatermark = Math.max(highestConsumedWatermark, epoch.watermark);
+    if (epoch.contextWindow !== undefined) {
+      highestConsumedWatermark = effectiveWatermarkFloor(epoch, gapRatio);
+    } else {
+      highestConsumedWatermark = Math.max(highestConsumedWatermark, epoch.watermark);
+    }
     applications.push({ timestamp: epoch.timestamp, decisions: epoch.decisions });
     for (const [toolCallId, decision] of Object.entries(epoch.decisions)) {
       masks[toolCallId] = decision;
@@ -408,7 +464,10 @@ export function masksFromBranch(
  */
 function readEpochEntry(
   entry: ToolPruningSessionEntry,
-): Pick<ToolPruningEpochEntry, "epochId" | "watermark" | "timestamp" | "decisions"> | undefined {
+):
+  | (Pick<ToolPruningEpochEntry, "epochId" | "watermark" | "timestamp" | "decisions"> &
+      Partial<Pick<ToolPruningEpochEntry, "tokensBefore" | "tokensSavedEst" | "contextWindow">>)
+  | undefined {
   if (entry.type !== "custom" || entry.customType !== TOOL_PRUNING_ENTRY_TYPE) return undefined;
   const data = entry.data;
   if (typeof data !== "object" || data === null || Array.isArray(data)) return undefined;
@@ -428,6 +487,22 @@ function readEpochEntry(
     typeof record.timestamp === "number" && Number.isFinite(record.timestamp)
       ? record.timestamp
       : Number.NEGATIVE_INFINITY;
+  const tokensBefore =
+    typeof record.tokensBefore === "number" && Number.isFinite(record.tokensBefore) && record.tokensBefore >= 0
+      ? record.tokensBefore
+      : undefined;
+  const tokensSavedEst =
+    typeof record.tokensSavedEst === "number" &&
+    Number.isFinite(record.tokensSavedEst) &&
+    record.tokensSavedEst >= 0
+      ? record.tokensSavedEst
+      : undefined;
+  const contextWindow =
+    typeof record.contextWindow === "number" &&
+    Number.isFinite(record.contextWindow) &&
+    record.contextWindow > 0
+      ? record.contextWindow
+      : undefined;
   const rawDecisions = record.decisions;
   if (typeof rawDecisions !== "object" || rawDecisions === null || Array.isArray(rawDecisions)) {
     return undefined;
@@ -437,7 +512,15 @@ function readEpochEntry(
   for (const [toolCallId, decision] of Object.entries(rawDecisions)) {
     if (decision === "drop_result" || decision === "drop_call") decisions[toolCallId] = decision;
   }
-  return { epochId: record.epochId, watermark, timestamp, decisions };
+  return {
+    epochId: record.epochId,
+    watermark,
+    timestamp,
+    decisions,
+    ...(tokensBefore === undefined ? {} : { tokensBefore }),
+    ...(tokensSavedEst === undefined ? {} : { tokensSavedEst }),
+    ...(contextWindow === undefined ? {} : { contextWindow }),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -527,6 +610,7 @@ export class ToolPruningEpochRunner {
     const partition = partitionCoolingWindow(measurement.messages, {
       config: this.config,
       masks: this.masks,
+      contextWindow,
     });
     // Never pay latency (nor break the KV-cache) for a marginal saving.
     if (partition.candidateTokens < this.config.minWorthwhilePruneTokens) return unchanged();
@@ -570,6 +654,7 @@ export class ToolPruningEpochRunner {
     const judgeRan = isJudgeWorthwhile({
       activeTokens: activeAfterPhase0,
       contextWindow,
+      watermark,
       remainingCandidateTokens: supersession.remainingTokens,
       config: this.config,
     });
@@ -615,13 +700,15 @@ export class ToolPruningEpochRunner {
       timestamp: startedAt,
       tokensBefore: activeTokens,
       tokensSavedEst,
+      contextWindow,
       decisions,
       stats,
+      audit: buildCandidateAudit(messages, partition.candidates, supersession, plan, outcome),
     };
 
     this.masks = { ...this.masks, ...decisions };
     this.applications = [...this.applications, { timestamp: entry.timestamp, decisions }];
-    this.highestConsumedWatermark = Math.max(this.highestConsumedWatermark, watermark);
+    this.highestConsumedWatermark = effectiveWatermarkFloor(entry, this.config.watermarkGapRatio);
     // The appended entry moves the leaf: force the next projection to rebuild
     // from the branch instead of trusting the local state.
     this.branchKey = undefined;
@@ -659,7 +746,7 @@ export class ToolPruningEpochRunner {
     if (plan === undefined) return undefined;
     // Phase 1 had nothing worth asking: not a failure, just an empty band.
     if (plan.batches.length === 0) {
-      return { decisions: {}, batches: 0, failedOpen: false };
+      return { decisions: {}, answers: {}, batches: 0, failedOpen: false };
     }
 
     const signal = this.options.getSignal?.();
@@ -669,7 +756,7 @@ export class ToolPruningEpochRunner {
     const credentials = await this.credentials();
     if (isAborted(signal)) return "aborted";
     if (credentials === undefined) {
-      return { decisions: {}, batches: plan.batches.length, failedOpen: true };
+      return { decisions: {}, answers: {}, batches: plan.batches.length, failedOpen: true };
     }
 
     const request = (batchIndex: number): SystemOneDecisionRequest => {
@@ -720,6 +807,7 @@ export class ToolPruningEpochRunner {
 
     return {
       decisions: policy.decisions,
+      answers,
       batches: plan.batches.length,
       failedOpen: succeeded === 0,
       ...(decisionModel === undefined ? {} : { decisionModel }),
@@ -787,7 +875,9 @@ export class ToolPruningEpochRunner {
     }
     this.branchKey = key;
 
-    const state = masksFromBranch(entries);
+    const state = masksFromBranch(entries, {
+      watermarkGapRatio: this.config.watermarkGapRatio,
+    });
     this.masks = state.masks;
     this.applications = state.applications;
     this.epochCounter = Math.max(this.epochCounter, state.lastEpochId);
@@ -836,10 +926,105 @@ function isAborted(signal: AbortSignal | undefined): boolean {
 /** Phase 1 outcome handed back to the Epoch. */
 interface JudgeOutcome {
   readonly decisions: Record<string, ToolPruningDrop>;
+  readonly answers: Readonly<Record<string, number>>;
   readonly batches: number;
   readonly failedOpen: boolean;
   readonly decisionModel?: string;
   readonly cost?: number;
+}
+
+/**
+ * Per-candidate audit trail persisted with the Epoch entry so post-hoc analysis
+ * (`analyze:pruning` and `trace-analyzer`) can inspect `noul` distributions,
+ * Phase 0 vs Phase 1 yield, regret (pruned target re-read/re-run later) and
+ * missed drops without having to re-execute the decision engine.
+ */
+function buildCandidateAudit(
+  messages: readonly AgentMessage[],
+  candidates: readonly PruningCandidate[],
+  supersession: SupersessionResult,
+  plan: DecisionPlan | undefined,
+  outcome: JudgeOutcome | undefined,
+): ToolPruningCandidateAudit[] {
+  const calls = indexToolCalls(messages);
+  const signalsByCallId = new Map<string, ToolPruningSignals>();
+  for (const item of supersession.remaining) {
+    signalsByCallId.set(item.candidate.toolCallId, item.signals);
+  }
+  const decisionCandidateByCallId = new Map(
+    (plan?.candidates ?? []).map((candidate) => [candidate.toolCallId, candidate]),
+  );
+  const leftoverCallIds = new Set(
+    (plan?.leftovers ?? []).map((candidate) => candidate.toolCallId),
+  );
+  const answers = outcome?.answers ?? {};
+
+  return candidates.map((candidate) => {
+    const args = callArguments(calls.get(candidate.toolCallId));
+    const target = extractAuditTarget(candidate.toolName, args);
+    const phase0Drop = supersession.decisions[candidate.toolCallId];
+    if (phase0Drop !== undefined) {
+      return {
+        toolCallId: candidate.toolCallId,
+        toolName: candidate.toolName,
+        ...(target === undefined ? {} : { target }),
+        tokensEst: candidate.tokensEst,
+        resultTokens: candidate.resultTokens,
+        isError: candidate.isError,
+        source: "phase0",
+        decision: phase0Drop,
+      };
+    }
+
+    const signals = signalsByCallId.get(candidate.toolCallId);
+    const decisionCandidate = decisionCandidateByCallId.get(candidate.toolCallId);
+    const isLeftover =
+      plan === undefined ||
+      decisionCandidate === undefined ||
+      leftoverCallIds.has(candidate.toolCallId);
+    const judgeDrop = outcome?.decisions[candidate.toolCallId];
+    const keepResult =
+      decisionCandidate === undefined
+        ? undefined
+        : answers[questionName("result", decisionCandidate.id)];
+    const keepCall =
+      decisionCandidate === undefined
+        ? undefined
+        : answers[questionName("call", decisionCandidate.id)];
+
+    return {
+      toolCallId: candidate.toolCallId,
+      toolName: candidate.toolName,
+      ...(target === undefined ? {} : { target }),
+      tokensEst: candidate.tokensEst,
+      resultTokens: candidate.resultTokens,
+      isError: candidate.isError,
+      source: isLeftover ? "leftover" : "judge",
+      decision: judgeDrop ?? "keep",
+      ...(keepResult === undefined ? {} : { keepResult }),
+      ...(keepCall === undefined ? {} : { keepCall }),
+      ...(signals?.editedLater ? { editedLater: true } : {}),
+      ...(signals?.sameCommandRanLater ? { sameCommandRanLater: true } : {}),
+      ...(signals?.laterCommandSucceeded ? { laterCommandSucceeded: true } : {}),
+    };
+  });
+}
+
+function extractAuditTarget(
+  toolName: string,
+  args: Readonly<Record<string, unknown>> | undefined,
+): string | undefined {
+  if (args === undefined) return undefined;
+  const rawPath = stringArgument(args, "path") ?? stringArgument(args, "file_path");
+  if (rawPath !== undefined) return rawPath.slice(0, 160);
+  if (toolName === "bash") {
+    const rawCommand = stringArgument(args, "command");
+    if (rawCommand === undefined) return undefined;
+    const normalized = normalizeCommand(rawCommand);
+    return (normalized.length > 0 ? normalized : rawCommand).slice(0, 160);
+  }
+  const pattern = stringArgument(args, "pattern") ?? stringArgument(args, "glob");
+  return pattern?.slice(0, 160);
 }
 
 /** Decisions of `effective` that came from `source` (for the persisted stats). */

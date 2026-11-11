@@ -369,6 +369,9 @@ function isTimelineEvent(event: TraceRecord): boolean {
     "client.run.complete",
     "client.run_failed",
     "client.messages_snapshot_applied",
+    "tool_pruning.epoch_completed",
+    "tool_pruning.epoch_failed_open",
+    "tool_pruning.epoch_aborted",
   ].includes(event.eventName);
 }
 

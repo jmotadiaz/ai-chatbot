@@ -57,6 +57,7 @@
   "scripts": {
     "dev": "tsx scripts/install-packages.ts --env=dev && tsx watch src/transports/http.ts --env=dev",
     "analyze:codegraph": "tsx scripts/analyze-codegraph-usage.ts",
+    "analyze:pruning": "tsx scripts/analyze-tool-pruning.ts",
     "lint": "eslint src scripts extensions tests --config ../../eslint.config.mjs",
     "lint:fix": "eslint --fix src scripts extensions tests --config ../../eslint.config.mjs",
     "build": "sh -c 'tsx scripts/assert-prod-build-allowed.ts \"$@\" && tsc -p tsconfig.json --outDir dist' --",

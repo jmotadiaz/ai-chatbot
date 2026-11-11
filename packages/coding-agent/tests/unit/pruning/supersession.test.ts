@@ -584,26 +584,68 @@ describe("isJudgeWorthwhile", () => {
       isJudgeWorthwhile({
         activeTokens: 150_000,
         contextWindow: 160_000,
+        watermark: 0.75,
         remainingCandidateTokens: 3_999,
       }),
     ).toBe(false);
   });
 
-  it("skips the judge when the context is comfortably below the 30 % line", () => {
+  it("skips the judge when Phase 0 brought activeTokens to or below (watermark - gapRatio)", () => {
+    // 0.45 - 0.15 = 0.30
     expect(
       isJudgeWorthwhile({
         activeTokens: 30_000,
         contextWindow: 100_000,
+        watermark: 0.45,
+        remainingCandidateTokens: 50_000,
+      }),
+    ).toBe(false);
+
+    // 0.60 - 0.15 = 0.45 (exercises IEEE-754 0.6 - 0.15 boundary)
+    expect(
+      isJudgeWorthwhile({
+        activeTokens: 45_000,
+        contextWindow: 100_000,
+        watermark: 0.6,
+        remainingCandidateTokens: 50_000,
+      }),
+    ).toBe(false);
+
+    // 0.75 - 0.15 = 0.60
+    expect(
+      isJudgeWorthwhile({
+        activeTokens: 60_000,
+        contextWindow: 100_000,
+        watermark: 0.75,
         remainingCandidateTokens: 50_000,
       }),
     ).toBe(false);
   });
 
-  it("calls the judge above the 30 % line with a worthwhile pool", () => {
+  it("calls the judge above the (watermark - gapRatio) line with a worthwhile pool", () => {
     expect(
       isJudgeWorthwhile({
         activeTokens: 30_001,
         contextWindow: 100_000,
+        watermark: 0.45,
+        remainingCandidateTokens: 4_000,
+      }),
+    ).toBe(true);
+
+    expect(
+      isJudgeWorthwhile({
+        activeTokens: 45_001,
+        contextWindow: 100_000,
+        watermark: 0.6,
+        remainingCandidateTokens: 4_000,
+      }),
+    ).toBe(true);
+
+    expect(
+      isJudgeWorthwhile({
+        activeTokens: 60_001,
+        contextWindow: 100_000,
+        watermark: 0.75,
         remainingCandidateTokens: 4_000,
       }),
     ).toBe(true);
