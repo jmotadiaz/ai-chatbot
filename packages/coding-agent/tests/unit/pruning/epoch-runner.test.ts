@@ -11,8 +11,12 @@ import {
 } from "../../../src/pruning/config";
 import {
   ToolPruningEpochRunner,
+  consumedWatermarkStep,
   estimateActiveTokens,
   masksFromBranch,
+  measureProjection,
+  nextWatermarkStep,
+  watermarkSteps,
   type ToolPruningCredentials,
   type ToolPruningEpochRunnerOptions,
   type ToolPruningSessionEntry,
@@ -31,6 +35,7 @@ const WINDOW = 100_000;
 /** 40 000 chars is 10 000 estimated tokens: a candidate never below the pool floor. */
 const BIG_RESULT = "y".repeat(40_000);
 const CWD = "/repo";
+const SESSION_ID = "session-1";
 
 /**
  * Test config: the spec defaults except for the Cooling Window, which is
@@ -51,11 +56,7 @@ const usage = (totalTokens: number): AssistantMessage["usage"] => ({
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 });
 
-const user = (content: string, timestamp = 1): AgentMessage => ({
-  role: "user",
-  content,
-  timestamp,
-});
+const user = (content: string): AgentMessage => ({ role: "user", content, timestamp: 1 });
 
 const assistant = (
   content: AssistantMessage["content"],
@@ -109,15 +110,6 @@ const readResult = (id: string, text = BIG_RESULT): ToolResultMessage => ({
   isError: false,
   timestamp: 1,
 });
-const editResult = (id: string): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId: id,
-  toolName: "edit",
-  content: [{ type: "text", text: "ok" }],
-  isError: false,
-  timestamp: 1,
-});
-
 /** One completed tool turn: `count` bash pairs, all worth 10 000 tokens. */
 const bashTurn = (prefix: string, count: number): AgentMessage[] =>
   Array.from({ length: count }, (_, index) => {
@@ -126,8 +118,8 @@ const bashTurn = (prefix: string, count: number): AgentMessage[] =>
   }).flat();
 
 /**
- * A session shaped like the spec: an old exploration turn, an intermediate
- * tool turn and the active turn whose assistant reported `activeTokens`.
+ * A session shaped like the spec: an old exploration turn and the active turn
+ * whose assistant reported `activeTokens` (60 000 tokens of prunable pool).
  */
 const session = (activeTokens: number, middleTurns = 0): AgentMessage[] => [
   user("Implement the parser"),
@@ -152,11 +144,7 @@ const okJudge = (
 function judgeAnswering(
   probability: number,
 ): (request: SystemOneDecisionRequest) => Promise<SystemOneSuccess> {
-  return async (request) => {
-    const answers: Record<string, number> = {};
-    for (const name of Object.keys(request.questions)) answers[name] = probability;
-    return okJudge(answers);
-  };
+  return async (request) => okJudge(answersOf(request, probability));
 }
 
 interface Harness {
@@ -172,6 +160,10 @@ interface Harness {
   failJudge(): void;
   /** Moves the session leaf, as a Message Edit or a new entry does. */
   moveLeaf(leafId: string): void;
+  /** Appends a `compaction` entry to the branch, as Pi does after summarising. */
+  compact(): void;
+  /** Replaces the turn abort signal the runner observes. */
+  setSignal(signal: AbortSignal | undefined): void;
 }
 
 /**
@@ -188,6 +180,7 @@ function harness(overrides: Partial<ToolPruningConfigOverrides> = {}): Harness {
   let leafId: string | null = "leaf-0";
   let probability = 0.1;
   let failing = false;
+  let signal: AbortSignal | undefined;
 
   const trace: ToolPruningTraceLogger = {
     debug: (name, payload) => events.push({ level: "debug", name, payload }),
@@ -205,7 +198,6 @@ function harness(overrides: Partial<ToolPruningConfigOverrides> = {}): Harness {
         latencyMs: 1,
       };
     }
-    if (probability === 1) return okJudge(answersOf(request, 1));
     return judgeAnswering(probability)(request);
   });
 
@@ -228,8 +220,9 @@ function harness(overrides: Partial<ToolPruningConfigOverrides> = {}): Harness {
     },
     getBranch: () => branch,
     getLeafId: () => leafId,
+    getSessionId: () => SESSION_ID,
     getTraceLogger: () => trace,
-    getSignal: () => undefined,
+    getSignal: () => signal,
     judge,
     now: (() => {
       let clock = 1_000;
@@ -253,6 +246,14 @@ function harness(overrides: Partial<ToolPruningConfigOverrides> = {}): Harness {
     moveLeaf(next: string) {
       leafId = next;
     },
+    compact() {
+      branch.push({ type: "compaction" });
+      leafCounter += 1;
+      leafId = `leaf-compaction-${leafCounter}`;
+    },
+    setSignal(next: AbortSignal | undefined) {
+      signal = next;
+    },
   };
 }
 
@@ -270,7 +271,33 @@ const questionNames = (request: SystemOneDecisionRequest): string[] =>
   Object.keys(request.questions).sort();
 
 // ---------------------------------------------------------------------------
-// Token accounting
+// Watermark staircase (D3)
+// ---------------------------------------------------------------------------
+
+describe("watermark staircase", () => {
+  it("sorts the configured steps and de-duplicates them", () => {
+    expect(watermarkSteps([0.75, 0.45, 0.6, 0.6])).toEqual([0.45, 0.6, 0.75]);
+    expect(watermarkSteps([0, Number.NaN, 0.5])).toEqual([0.5]);
+  });
+
+  it("arms the lowest step above the highest consumed one", () => {
+    const steps = watermarkSteps(DEFAULT_TOOL_PRUNING_CONFIG.watermarks);
+    expect(nextWatermarkStep(steps, 0)).toBe(0.45);
+    expect(nextWatermarkStep(steps, 0.45)).toBe(0.6);
+    expect(nextWatermarkStep(steps, 0.6)).toBe(0.75);
+    expect(nextWatermarkStep(steps, 0.75)).toBeUndefined();
+  });
+
+  it("consumes the highest step the context already reached", () => {
+    const steps = watermarkSteps(DEFAULT_TOOL_PRUNING_CONFIG.watermarks);
+    expect(consumedWatermarkStep(steps, 50_000, WINDOW)).toBe(0.45);
+    expect(consumedWatermarkStep(steps, 62_000, WINDOW)).toBe(0.6);
+    expect(consumedWatermarkStep(steps, 80_000, WINDOW)).toBe(0.75);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Token accounting (D3)
 // ---------------------------------------------------------------------------
 
 describe("estimateActiveTokens", () => {
@@ -291,13 +318,99 @@ describe("estimateActiveTokens", () => {
 
     expect(estimateActiveTokens(messages)).toBe(1 + 100);
   });
+
+  it("skips aborted assistant messages, which carry no usable usage", () => {
+    const messages: AgentMessage[] = [
+      user("abcd"),
+      prose("aborted", { usage: usage(50_000), stopReason: "aborted" }),
+    ];
+
+    expect(estimateActiveTokens(messages)).toBe(1 + 2);
+  });
+});
+
+describe("measureProjection", () => {
+  const config = { ...DEFAULT_TOOL_PRUNING_CONFIG, ...BASE_CONFIG };
+
+  it("subtracts the reductions applied before the last usage boundary", () => {
+    const messages: AgentMessage[] = [
+      user("read it"),
+      assistant([bash("t1", "pnpm test")]),
+      bashResult("t1"),
+      prose("done", { usage: usage(50_000) }),
+    ];
+
+    const measurement = measureProjection(messages, { t1: "drop_result" }, config);
+
+    // 10 000 result tokens became a ~105-token stub: the stale usage must not
+    // keep reporting the pruned body.
+    expect(measurement.hasUsage).toBe(true);
+    expect(measurement.removedBeforeUsage).toBeGreaterThan(9_500);
+    expect(measurement.activeTokens).toBeGreaterThan(39_000);
+    expect(measurement.activeTokens).toBeLessThan(41_000);
+    // The plain estimator would still report the stale 50 000: only the runner
+    // knows how much of that prefix the mask removed.
+    expect(estimateActiveTokens(measurement.messages)).toBe(50_000);
+  });
+
+  it("does not subtract reductions that happen after the usage boundary", () => {
+    const messages: AgentMessage[] = [
+      user("go"),
+      prose("answer", { usage: usage(50_000) }),
+      assistant([bash("t1", "pnpm test")]),
+      bashResult("t1"),
+    ];
+
+    const measurement = measureProjection(messages, { t1: "drop_result" }, config);
+
+    // Everything after the boundary is estimated from scratch, so the plain
+    // estimator over the masked projection is already exact.
+    expect(measurement.removedBeforeUsage).toBe(0);
+    expect(measurement.activeTokens).toBe(estimateActiveTokens(measurement.messages));
+    expect(measurement.activeTokens).toBeGreaterThan(50_000);
+  });
+
+  it("subtracts a dropped call block from its own assistant message", () => {
+    const messages: AgentMessage[] = [
+      user("search"),
+      assistant([grep("g1", "alpha")]),
+      grepResult("g1"),
+      prose("done", { usage: usage(50_000) }),
+    ];
+
+    const measurement = measureProjection(messages, { g1: "drop_call" }, config);
+
+    expect(measurement.messages).toHaveLength(2);
+    expect(measurement.removedBeforeUsage).toBeGreaterThan(10_000);
+    expect(measurement.activeTokens).toBeLessThan(40_000);
+  });
+
+  it("falls back to a full estimate when there is no usage to correct", () => {
+    const messages: AgentMessage[] = [user("go"), assistant([bash("t1", "x")]), bashResult("t1")];
+
+    const measurement = measureProjection(messages, { t1: "drop_result" }, config);
+
+    expect(measurement.hasUsage).toBe(false);
+    expect(measurement.activeTokens).toBeLessThan(1_000);
+  });
 });
 
 // ---------------------------------------------------------------------------
-// Triggers
+// Triggers (D3)
 // ---------------------------------------------------------------------------
 
 describe("Tool Pruning triggers", () => {
+  it("does nothing below the next watermark, even with a huge pool", async () => {
+    const test = harness();
+
+    // 44 000 tokens (0.44) of a 100 000 window, 90 000 prunable tokens: the
+    // step is what gates the Epoch, not the size of the pool.
+    await test.runner.onContext(session(44_000, 3));
+
+    expect(test.judge).not.toHaveBeenCalled();
+    expect(test.appends).toHaveLength(0);
+  });
+
   it("does nothing when the pool is below minWorthwhilePruneTokens", async () => {
     const test = harness();
     const messages: AgentMessage[] = [
@@ -311,7 +424,6 @@ describe("Tool Pruning triggers", () => {
       prose("ok", { usage: usage(90_000) }),
     ];
 
-    test.runner.beginTurn();
     const projection = await test.runner.onContext(messages);
 
     expect(test.judge).not.toHaveBeenCalled();
@@ -319,112 +431,162 @@ describe("Tool Pruning triggers", () => {
     expect(projection.changed).toBe(false);
   });
 
-  it("runs a turn-start Epoch only on the first context call of the Turn", async () => {
+  it("walks the staircase monotonically: 0.45, then 0.60, then 0.75", async () => {
     const test = harness();
-    // Drop only the oldest call, leaving the pool worth a second Epoch.
-    test.judge.mockImplementation(async (request: SystemOneDecisionRequest) => {
-      const answers = answersOf(request, 1);
-      const first = questionNames(request)[0];
-      if (first !== undefined) answers[first] = 0.1;
-      return okJudge(answers);
-    });
-    const messages = session(50_000);
+    // Keep everything: the pool is unchanged, so only the staircase can fire.
+    test.answerWith(1);
 
-    test.runner.beginTurn();
-    await test.runner.onContext(messages);
+    await test.runner.onContext(session(50_000));
     expect(test.judge).toHaveBeenCalledTimes(1);
-    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.watermark).toBe(0.45);
 
-    // Same Turn, second `context` call: only the emergency valve may fire.
-    await test.runner.onContext(messages);
+    // Same context: the consumed step is spent, and 0.60 is not reached yet.
+    await test.runner.onContext(session(50_000));
     expect(test.judge).toHaveBeenCalledTimes(1);
 
-    // A new Turn arms the turn-start watermark again.
-    test.runner.beginTurn();
-    await test.runner.onContext(messages);
+    await test.runner.onContext(session(62_000));
     expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.watermark).toBe(0.6);
+
+    await test.runner.onContext(session(70_000));
+    expect(test.judge).toHaveBeenCalledTimes(2);
+
+    await test.runner.onContext(session(76_000));
+    expect(test.judge).toHaveBeenCalledTimes(3);
+    expect(test.appends[2].entry.watermark).toBe(0.75);
   });
 
-  it("triggers the emergency valve on a later context call above 75%", async () => {
+  it("firing at 0.60 retires 0.45 and 0.60, so dropping to 50% does not retrigger", async () => {
     const test = harness();
-    const messages = session(80_000);
+    test.answerWith(1);
 
-    // No `beginTurn`: every call is an intra-Turn call.
-    await test.runner.onContext(messages);
+    // Straight to 0.62: the Epoch consumes the highest satisfied step (0.60).
+    await test.runner.onContext(session(62_000));
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.watermark).toBe(0.6);
+    expect(test.runner.consumedWatermark).toBe(0.6);
 
+    // A prune that only reclaimed a little still retired 0.45 and 0.60: the
+    // next Turns at 50-58% must not run another Epoch.
+    await test.runner.onContext(session(50_000));
+    await test.runner.onContext(session(54_000));
+    await test.runner.onContext(session(58_000));
     expect(test.judge).toHaveBeenCalledTimes(1);
     expect(test.appends).toHaveLength(1);
-    expect(test.entries[0].watermark).toBe(0.75);
+
+    // Only the next, strictly higher step fires.
+    await test.runner.onContext(session(76_000));
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.watermark).toBe(0.75);
   });
 
   it("never triggers without a resolved model", async () => {
-    const test = harness();
+    const judge = vi.fn();
     const runner = new ToolPruningEpochRunner({
       cwd: CWD,
       config: { ...BASE_CONFIG },
       getContextWindow: () => undefined,
-      judge: test.judge,
+      judge,
       appendEntry: () => {
         throw new Error("must not persist without a model");
       },
     });
 
-    runner.beginTurn();
     const projection = await runner.onContext(session(90_000));
 
-    expect(test.judge).not.toHaveBeenCalled();
+    expect(judge).not.toHaveBeenCalled();
     expect(projection.changed).toBe(false);
   });
 
-  it("triggers on prunable delta even when the window is roomy", async () => {
+  it("never triggers on a zero window", async () => {
+    const judge = vi.fn();
+    const runner = new ToolPruningEpochRunner({
+      cwd: CWD,
+      config: { ...BASE_CONFIG },
+      getContextWindow: () => 0,
+      judge,
+      appendEntry: () => {
+        throw new Error("must not persist without a window");
+      },
+    });
+
+    await runner.onContext(session(90_000));
+
+    expect(judge).not.toHaveBeenCalled();
+  });
+
+  it("corrects the stale usage before choosing the step to consume", async () => {
     const test = harness();
-    // 40 000 active tokens: below the soft watermark (45 000), above the
-    // judge short-circuit line (30 000). The 60k pool is what triggers.
-    test.runner.beginTurn();
-    await test.runner.onContext(session(40_000));
+    test.answerWith(1);
+    // One already-persisted drop of a 10 000-token result.
+    test.branch.push(customEntry(epochEntry(1, { "t1-1": "drop_result" }, 0.01)));
+
+    // The provider reported 62 000 tokens, but 10 000 of them are pruned now.
+    await test.runner.onContext(session(62_000));
 
     expect(test.judge).toHaveBeenCalledTimes(1);
+    // ~52 100 corrected tokens reach 0.45 only: consuming 0.60 would burn a
+    // KV-cache break the session does not need yet.
+    expect(test.appends[0].entry.watermark).toBe(0.45);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Phase 0 short-circuit
+// Phase 0 short-circuit (D5)
 // ---------------------------------------------------------------------------
 
+const HUGE = "z".repeat(100_000); // 25 000 estimated tokens
+
 describe("Phase 0 short-circuit", () => {
-  it("skips the judge when the context stays below 30% of the window", async () => {
-    const test = harness();
-    test.runner.beginTurn();
-    const projection = await test.runner.onContext(session(20_000));
-
-    expect(test.judge).not.toHaveBeenCalled();
-    expect(test.appends).toHaveLength(0);
-    expect(projection.changed).toBe(false);
-  });
-
-  it("applies Phase 0 drops without any network call", async () => {
+  it("persists the entry without any network call when Phase 0 relieves the pressure", async () => {
     const test = harness();
     const messages: AgentMessage[] = [
       user("read it"),
       assistant([read("r1", "src/app.ts")]),
-      readResult("r1"),
+      readResult("r1", HUGE),
       assistant([read("r2", "src/app.ts")]),
-      readResult("r2"),
+      readResult("r2", HUGE),
       assistant([bash("b1", "pnpm test")]),
       bashResult("b1"),
       user("next"),
-      prose("done", { usage: usage(20_000) }),
+      prose("done", { usage: usage(50_000) }),
     ];
 
-    test.runner.beginTurn();
     const projection = await test.runner.onContext(messages);
 
     expect(test.judge).not.toHaveBeenCalled();
     expect(test.appends).toHaveLength(1);
-    expect(test.entries[0].decisions).toEqual({ r1: "drop_call" });
+    const entry = test.appends[0].entry;
+    expect(entry.watermark).toBe(0.45);
+    expect(entry.decisions).toEqual({ r1: "drop_call" });
+    expect(entry.stats.batches).toBe(0);
+    expect(entry.stats.deterministicDrops).toBe(1);
+    expect(entry.stats.judgeDrops).toBe(0);
     // The duplicate read disappeared: its call block emptied the assistant
     // message (which is then omitted) and its result went with it.
     expect(projection.messages).toHaveLength(messages.length - 2);
+  });
+
+  it("skips the judge when Phase 0 left less than minJudgeWorthwhileTokens", async () => {
+    const test = harness();
+    const messages: AgentMessage[] = [
+      user("read it"),
+      assistant([read("r1", "src/app.ts")]),
+      readResult("r1", HUGE),
+      // A cheap re-read supersedes it and leaves only ~120 tokens in the pool.
+      assistant([read("r2", "src/app.ts")]),
+      readResult("r2", "z".repeat(480)),
+      user("next"),
+      prose("done", { usage: usage(90_000) }),
+    ];
+
+    await test.runner.onContext(messages);
+
+    // 65 000 tokens after Phase 0 are still above the 30% line, so it is the
+    // shrunk pool that makes the HTTP call pointless.
+    expect(test.judge).not.toHaveBeenCalled();
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.decisions).toEqual({ r1: "drop_call" });
   });
 });
 
@@ -438,7 +600,6 @@ describe("Epoch persistence", () => {
     test.answerWith(0.1);
     const messages = session(50_000);
 
-    test.runner.beginTurn();
     const projection = await test.runner.onContext(messages);
 
     expect(test.appends).toHaveLength(1);
@@ -486,7 +647,6 @@ describe("Epoch persistence", () => {
       prose("ok", { usage: usage(50_000) }),
     ];
 
-    test.runner.beginTurn();
     const projection = await test.runner.onContext(messages);
 
     expect(test.entries[0].decisions).toEqual({ g1: "drop_call", g2: "drop_call" });
@@ -500,9 +660,23 @@ describe("Epoch persistence", () => {
     ]);
   });
 
+  it("persists the consumed step even when the judge kept everything", async () => {
+    const test = harness();
+    test.answerWith(1);
+
+    const projection = await test.runner.onContext(session(50_000));
+
+    // The entry is what consumes the step: `keep` decides nothing, but the
+    // session must not pay for the same step twice.
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.decisions).toEqual({});
+    expect(test.appends[0].entry.watermark).toBe(0.45);
+    expect(test.appends[0].entry.tokensSavedEst).toBe(0);
+    expect(projection.changed).toBe(false);
+  });
+
   it("keeps the session untouched when the feature is disabled", async () => {
     const test = harness({ enabled: false });
-    test.runner.beginTurn();
 
     const projection = await test.runner.onContext(session(90_000));
 
@@ -512,93 +686,37 @@ describe("Epoch persistence", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Cooldown (D3)
-// ---------------------------------------------------------------------------
-
-describe("Epoch cooldown", () => {
-  it("blocks new Epochs after a low-yield Epoch until the pool grows 15k", async () => {
-    const test = harness();
-    test.answerWith(1); // keep everything: zero tokens reclaimed
-
-    test.runner.beginTurn();
-    await test.runner.onContext(session(50_000));
-    expect(test.judge).toHaveBeenCalledTimes(1);
-    expect(test.appends).toHaveLength(0);
-
-    // Same pool (60k): no growth, so the next Turn is throttled.
-    test.runner.beginTurn();
-    await test.runner.onContext(session(50_000));
-    expect(test.judge).toHaveBeenCalledTimes(1);
-
-    // One extra completed tool turn brings 30k more prunable tokens in.
-    test.runner.beginTurn();
-    await test.runner.onContext(session(50_000, 1));
-    expect(test.judge).toHaveBeenCalledTimes(2);
-  });
-
-  it("lifts the cooldown on the first emergency crossing of 75%", async () => {
-    const test = harness();
-    test.answerWith(1);
-
-    test.runner.beginTurn();
-    await test.runner.onContext(session(50_000));
-    expect(test.judge).toHaveBeenCalledTimes(1);
-
-    test.runner.beginTurn();
-    await test.runner.onContext(session(50_000));
-    expect(test.judge).toHaveBeenCalledTimes(1);
-
-    // Intra-Turn emergency: the safety valve overrides the cooldown once.
-    await test.runner.onContext(session(80_000));
-    expect(test.judge).toHaveBeenCalledTimes(2);
-    expect(test.events.map((event) => event.name)).toContain(
-      "tool_pruning.cooldown_bypassed",
-    );
-
-    // The override is spent for this Turn; the cooldown is back.
-    await test.runner.onContext(session(80_000));
-    expect(test.judge).toHaveBeenCalledTimes(2);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Fail-open (D6)
+// Fail-open and abort (D6)
 // ---------------------------------------------------------------------------
 
 describe("Fail-open", () => {
-  it("mutates nothing when Phase 0 savings alone are below 4k", async () => {
+  it("persists the consumed step so a degraded judge cannot retry-loop", async () => {
     const test = harness();
     test.failJudge();
-    const messages: AgentMessage[] = [
-      user("read it"),
-      assistant([read("r1", "src/app.ts")]),
-      readResult("r1", "z".repeat(1_000)),
-      assistant([call("e1", "edit", { path: "src/app.ts" })]),
-      editResult("e1"),
-      assistant([read("r2", "src/app.ts")]),
-      readResult("r2", "z".repeat(1_000)),
-      ...bashTurn("t1", 6),
-      user("next"),
-      prose("done", { usage: usage(50_000) }),
-    ];
 
-    test.runner.beginTurn();
-    const projection = await test.runner.onContext(messages);
+    await test.runner.onContext(session(50_000));
 
     expect(test.judge).toHaveBeenCalledTimes(1);
-    expect(test.appends).toHaveLength(0);
-    expect(projection.changed).toBe(false);
+    expect(test.appends).toHaveLength(1);
+    const entry = test.appends[0].entry;
+    expect(entry.decisions).toEqual({});
+    expect(entry.watermark).toBe(0.45);
+    expect(entry.stats.failedOpen).toBe(true);
     expect(test.events.map((event) => event.name)).toContain(
       "tool_pruning.epoch_failed_open",
     );
 
-    // The cooldown keeps a degraded judge from retrying on the next Turn.
-    test.runner.beginTurn();
-    await test.runner.onContext(messages);
+    // Same step, same context: no second request. The pool stays eligible for
+    // the next step.
+    await test.runner.onContext(session(50_000));
     expect(test.judge).toHaveBeenCalledTimes(1);
+
+    await test.runner.onContext(session(62_000));
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.watermark).toBe(0.6);
   });
 
-  it("persists Phase 0 drops when they alone are worth the prefix update", async () => {
+  it("persists the Phase 0 drops of a failed Epoch", async () => {
     const test = harness();
     test.failJudge();
     const messages: AgentMessage[] = [
@@ -613,7 +731,6 @@ describe("Fail-open", () => {
       prose("done", { usage: usage(50_000) }),
     ];
 
-    test.runner.beginTurn();
     await test.runner.onContext(messages);
 
     expect(test.appends).toHaveLength(1);
@@ -624,32 +741,6 @@ describe("Fail-open", () => {
     expect(entry.stats.judgeDrops).toBe(0);
   });
 
-  it("neither persists nor mutates when the Turn was aborted", async () => {
-    const controller = new AbortController();
-    const judge = vi.fn(async (request: SystemOneDecisionRequest) => {
-      controller.abort();
-      return okJudge(answersOf(request, 0.1));
-    });
-    const runner = new ToolPruningEpochRunner({
-      cwd: CWD,
-      config: { ...BASE_CONFIG },
-      getContextWindow: () => WINDOW,
-      getCredentials: async () => ({ baseUrl: "http://127.0.0.1:4000/v1" }),
-      appendEntry: () => {
-        throw new Error("an aborted Epoch must not write to the session");
-      },
-      getSignal: () => controller.signal,
-      judge,
-    });
-
-    runner.beginTurn();
-    const projection = await runner.onContext(session(50_000));
-
-    expect(judge).toHaveBeenCalledTimes(1);
-    expect(runner.activeMasks).toEqual({});
-    expect(projection.changed).toBe(false);
-  });
-
   it("treats missing credentials as a fail-open Epoch", async () => {
     const test = harness();
     const runner = new ToolPruningEpochRunner({
@@ -657,16 +748,49 @@ describe("Fail-open", () => {
       config: { ...BASE_CONFIG },
       getContextWindow: () => WINDOW,
       getCredentials: async () => undefined,
-      appendEntry: () => {
-        throw new Error("no drops were decided");
+      appendEntry: (_customType, entry) => {
+        test.appends.push({ customType: TOOL_PRUNING_ENTRY_TYPE, entry });
       },
       judge: test.judge,
     });
 
-    runner.beginTurn();
     await runner.onContext(session(50_000));
 
     expect(test.judge).not.toHaveBeenCalled();
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.stats.failedOpen).toBe(true);
+  });
+});
+
+describe("User abort", () => {
+  it("persists nothing and does not consume the step", async () => {
+    const test = harness();
+    const controller = new AbortController();
+    test.setSignal(controller.signal);
+    test.judge.mockImplementation(async (request: SystemOneDecisionRequest) => {
+      controller.abort();
+      return okJudge(answersOf(request, 0.1));
+    });
+
+    const projection = await test.runner.onContext(session(50_000));
+
+    expect(test.judge).toHaveBeenCalledTimes(1);
+    expect(test.appends).toHaveLength(0);
+    expect(test.runner.activeMasks).toEqual({});
+    expect(test.runner.consumedWatermark).toBe(0);
+    expect(projection.changed).toBe(false);
+
+    // The cancelled Turn did not spend the step: the next attempt still runs.
+    test.setSignal(undefined);
+    test.answerWith(0.1);
+    test.judge.mockImplementation(async (request: SystemOneDecisionRequest) =>
+      okJudge(answersOf(request, 0.1)),
+    );
+    await test.runner.onContext(session(50_000));
+
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.watermark).toBe(0.45);
   });
 });
 
@@ -675,36 +799,26 @@ describe("Fail-open", () => {
 // ---------------------------------------------------------------------------
 
 describe("Conservative drop band", () => {
-  // 0.3 is inside the uncertain [0.25, 0.50) band, so every Epoch keeps it.
-  const uncertainBand = async (activeTokens: number, beginTurn: boolean) => {
+  it("keeps the uncertain [0.25, 0.50) band at every step", async () => {
     const test = harness();
     test.judge.mockImplementation(async (request: SystemOneDecisionRequest) =>
       okJudge(answersOf(request, 0.3)),
     );
-    if (beginTurn) test.runner.beginTurn();
-    await test.runner.onContext(session(activeTokens));
-    return test;
-  };
 
-  it("keeps the uncertain [0.25, 0.50) band on a turn-start Epoch", async () => {
-    const test = await uncertainBand(50_000, true);
-
+    await test.runner.onContext(session(50_000));
     expect(test.judge).toHaveBeenCalledTimes(1);
-    expect(test.appends).toHaveLength(0);
-  });
+    expect(test.appends[0].entry.decisions).toEqual({});
 
-  it("keeps the same uncertain band on a high-pressure Epoch", async () => {
-    // A watermark step only decides *when* the Epoch runs: the policy is the
-    // same conservative one, so nothing is dropped above 75% either.
-    const test = await uncertainBand(80_000, false);
-
-    expect(test.judge).toHaveBeenCalledTimes(1);
-    expect(test.appends).toHaveLength(0);
+    await test.runner.onContext(session(80_000));
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.decisions).toEqual({});
+    expect(test.appends[1].entry.watermark).toBe(0.75);
   });
 
   it("drops the high-confidence candidates of a high-pressure Epoch", async () => {
     const test = harness();
     test.answerWith(0.1);
+
     await test.runner.onContext(session(80_000));
 
     expect(test.appends).toHaveLength(1);
@@ -716,17 +830,18 @@ describe("Conservative drop band", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Branch-aware reconstruction (D7)
+// Branch-aware state reconstruction (D7)
 // ---------------------------------------------------------------------------
 
-describe("branch-aware masks", () => {
-  const epochEntry = (
-    epochId: number,
-    decisions: Record<string, "drop_result" | "drop_call">,
-  ): ToolPruningEpochEntry => ({
+function epochEntry(
+  epochId: number,
+  decisions: Record<string, "drop_result" | "drop_call">,
+  watermark = 0.45,
+): ToolPruningEpochEntry {
+  return {
     version: 1,
     epochId,
-    watermark: 0.45,
+    watermark,
     timestamp: 1,
     tokensBefore: 1,
     tokensSavedEst: 1,
@@ -738,62 +853,105 @@ describe("branch-aware masks", () => {
       batches: 1,
       latencyMs: 1,
     },
-  });
+  };
+}
 
-  const customEntry = (data: unknown): ToolPruningSessionEntry => ({
-    type: "custom",
-    customType: TOOL_PRUNING_ENTRY_TYPE,
-    data,
-  });
+const customEntry = (data: unknown): ToolPruningSessionEntry => ({
+  type: "custom",
+  customType: TOOL_PRUNING_ENTRY_TYPE,
+  data,
+});
 
+describe("branch-aware state", () => {
   it("merges every tool-pruning entry of the branch, later Epochs winning", () => {
     const state = masksFromBranch([
       customEntry(epochEntry(1, { a: "drop_result", b: "drop_result" })),
       { type: "message" },
-      customEntry(epochEntry(2, { b: "drop_call" })),
+      customEntry(epochEntry(2, { b: "drop_call" }, 0.6)),
       { type: "custom", customType: "something-else", data: epochEntry(3, { c: "drop_call" }) },
     ]);
 
-    expect(state).toEqual({ masks: { a: "drop_result", b: "drop_call" }, lastEpochId: 2 });
+    expect(state).toEqual({
+      masks: { a: "drop_result", b: "drop_call" },
+      lastEpochId: 2,
+      highestConsumedWatermark: 0.6,
+    });
   });
 
   it("ignores entries that do not match the schema", () => {
     const state = masksFromBranch([
-      customEntry({ version: 2, epochId: 1, decisions: { a: "drop_call" } }),
-      customEntry({ version: 1, epochId: 1, decisions: { a: "drop_everything" } }),
+      customEntry({ version: 2, epochId: 1, watermark: 0.75, decisions: { a: "drop_call" } }),
+      customEntry({ version: 1, epochId: 1, watermark: 0.45, decisions: { a: "drop_everything" } }),
       customEntry("not an object"),
       { type: "custom", customType: TOOL_PRUNING_ENTRY_TYPE, data: null },
     ]);
 
     // The invalid decision value is skipped; the entry still counts as an
-    // Epoch, which only keeps the id sequence of the branch monotonic.
-    expect(state).toEqual({ masks: {}, lastEpochId: 1 });
+    // Epoch, which only keeps the id sequence and the staircase monotonic.
+    expect(state).toEqual({ masks: {}, lastEpochId: 1, highestConsumedWatermark: 0.45 });
   });
 
-  it("forgets the masks of an abandoned branch after a Message Edit", async () => {
+  it("reads only the entries after the latest compaction", () => {
+    const state = masksFromBranch([
+      customEntry(epochEntry(4, { a: "drop_call" }, 0.75)),
+      { type: "compaction" },
+      customEntry(epochEntry(5, { b: "drop_result" }, 0.45)),
+    ]);
+
+    expect(state).toEqual({
+      masks: { b: "drop_result" },
+      lastEpochId: 5,
+      highestConsumedWatermark: 0.45,
+    });
+  });
+
+  it("forgets the masks and the consumed step of an abandoned branch", async () => {
     const test = harness();
+    test.answerWith(1);
     // A branch that carries one persisted Epoch for `t1-1`.
     test.branch.push(customEntry(epochEntry(7, { "t1-1": "drop_result" })));
-    const messages = session(20_000);
 
-    const masked = await test.runner.onContext(messages);
-    expect(masked.messages).not.toBe(messages);
+    const masked = await test.runner.onContext(session(20_000));
     expect(JSON.stringify(masked.messages)).toContain("Tool Pruning: omitted");
+    expect(test.runner.consumedWatermark).toBe(0.45);
 
     // Message Edit: the leaf moves back and the Epoch entry is no longer on
-    // the branch, so the original result is restored for the model.
+    // the branch, so the original result is restored for the model and the
+    // step is armed again.
     test.branch.length = 0;
     test.moveLeaf("leaf-rewound");
-    const rewritten = [...messages];
+    const rewritten = session(20_000);
     rewritten[0] = user("Implement the parser, take two");
     const restored = await test.runner.onContext(rewritten);
 
     expect(JSON.stringify(restored.messages)).not.toContain("Tool Pruning: omitted");
+    expect(test.runner.consumedWatermark).toBe(0);
   });
 
-  it("memoises the branch read by leaf id and continues the Epoch counter", async () => {
+  it("rearms every step once a compaction entry lands on the branch", async () => {
+    const test = harness();
+    test.answerWith(1);
+
+    await test.runner.onContext(session(80_000));
+    expect(test.appends[0].entry.watermark).toBe(0.75);
+
+    // Every step spent: nothing more can fire in this window cycle.
+    await test.runner.onContext(session(99_000));
+    expect(test.judge).toHaveBeenCalledTimes(1);
+
+    // Pi compacts and rearms the staircase; the drop of the previous cycle is
+    // gone with it.
+    test.compact();
+    await test.runner.onContext(session(50_000));
+
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.watermark).toBe(0.45);
+    expect(test.runner.consumedWatermark).toBe(0.45);
+  });
+
+  it("memoises the branch read by (sessionId, leafId) and continues the Epoch counter", async () => {
     const calls: number[] = [];
-    const branch: ToolPruningSessionEntry[] = [customEntry(epochEntry(7, {}))];
+    const branch: ToolPruningSessionEntry[] = [customEntry(epochEntry(7, {}, 0.01))];
     let leafId: string | null = "leaf-a";
     const appended: ToolPruningEpochEntry[] = [];
     let judgeCalls = 0;
@@ -808,6 +966,7 @@ describe("branch-aware masks", () => {
         return branch;
       },
       getLeafId: () => leafId,
+      getSessionId: () => SESSION_ID,
       appendEntry: (_customType, entry) => {
         appended.push(entry);
         branch.push(customEntry(entry));
@@ -826,15 +985,16 @@ describe("branch-aware masks", () => {
 
     // The branch left by the persisted Epoch reports id 7, so the next
     // persisted Epoch continues the sequence.
-    runner.beginTurn();
     await runner.onContext(session(50_000));
     expect(judgeCalls).toBe(1);
     expect(appended).toHaveLength(1);
     expect(appended[0].epochId).toBe(8);
 
-    // Persisting moved the leaf: the next projection rebuilds from the branch.
+    // Persisting moved the leaf: the next projection rebuilds from the branch,
+    // which now reports the consumed step, so nothing fires again.
     await runner.onContext(session(50_000));
     expect(calls).toHaveLength(2);
+    expect(judgeCalls).toBe(1);
   });
 });
 

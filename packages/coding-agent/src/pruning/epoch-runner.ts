@@ -6,29 +6,26 @@
  * moment it invalidates the provider's cached prefix, so this module owns
  * three responsibilities and nothing else:
  *
- * 1. **Cadence (D3).** Watermarks are checked against the masked projection on
- *    every `context` call, but a turn-start Epoch is only *checked* on the
- *    first call of a Turn (armed by `begin_agent_start`), so the intermediate
- *    steps of a normal Turn never break the KV-cache. The intra-Turn emergency
- *    watermark is the safety valve for marathon Turns and subagents. A
- *    low-yield or failed-open Epoch installs a cooldown measured in prunable
- *    tokens, so a degraded judge cannot turn into a retry storm.
+ * 1. **Cadence (D3).** Every `context` call measures the masked projection
+ *    against a staircase of monotonic watermark steps (`config.watermarks`).
+ *    The next armed step is the lowest one strictly above the highest step the
+ *    active branch already consumed, so an Epoch can only ever run when the
+ *    context climbs higher than it ever did in this window cycle. Consuming a
+ *    step (say `0.60`) also consumes every lower step, which caps a whole
+ *    window cycle (`0 % → 90 %`) at three KV-cache breaks and makes
+ *    thrashing structurally impossible — even for a low-yield or failed-open
+ *    Epoch. A `compaction` entry on the branch rearms the whole staircase.
  * 2. **Decision (D5).** Phase 0 (`runSupersession`) runs first and for free;
  *    Phase 1 (the calibrated `noul` judge) only runs when what Phase 0 left is
  *    worth a round-trip. Batches go out concurrently (at most
  *    `maxDecisionBatches`) and the merged answers feed `applyDecisionPolicy`,
  *    which owns the single conservative drop band.
- * 3. **Persistence (D7).** An Epoch that dropped anything appends a
- *    `ToolPruningEpochEntry` (carrying the `watermark` step it consumed) to the
- *    session tree, and the active mask map is rebuilt from `getBranch()` so a
- *    Message Edit that abandons a branch also abandons the masks decided on it.
- *
- * TODO(ticket 06): the cadence above is still the pre-05b two-arm design (a
- * soft/hard ratio pair plus a token cooldown, with the intra-Turn "emergency"
- * arm). Spec D3 replaces it with the monotonic watermark staircase
- * (`config.watermarks` + `highestConsumedWatermark` derived from the branch);
- * this refactor only maps the removed knobs onto their `watermarks` equivalents
- * so the tree keeps compiling and the existing behaviour keeps its tests.
+ * 3. **Persistence (D7).** Every completed Epoch appends a
+ *    `ToolPruningEpochEntry` carrying the step it consumed — including a
+ *    short-circuited or failed-open one, because that entry *is* the consumed
+ *    step. Both the mask map and the highest consumed step are rebuilt from
+ *    `getBranch()`, so a Message Edit that abandons a branch also abandons the
+ *    masks and the steps decided on it.
  *
  * Everything here is pure TypeScript over the modules of tickets 02–05. The
  * runner never imports worker `src/` runtime modules, never reads global
@@ -63,7 +60,7 @@ import {
   type DecisionPolicyResult,
   type Phase0Signals,
 } from "./decision-state";
-import { applyPruningMask } from "./mask";
+import { projectPruningMask } from "./mask";
 import type { ToolPruningTraceLogger } from "./pruning-bridge";
 import { isJudgeWorthwhile, runSupersession } from "./supersession";
 import {
@@ -117,10 +114,12 @@ export interface ToolPruningEpochRunnerOptions {
   getCredentials?: () => Promise<ToolPruningCredentials | undefined>;
   /** Persists the Epoch entry (`pi.appendEntry(TOOL_PRUNING_ENTRY_TYPE, entry)`). */
   appendEntry?: (customType: string, entry: ToolPruningEpochEntry) => void;
-  /** Active branch of the session tree, for branch-aware mask reconstruction. */
+  /** Active branch of the session tree, for branch-aware state reconstruction. */
   getBranch?: () => readonly ToolPruningSessionEntry[];
   /** Current leaf id (`ctx.sessionManager.getLeafId()`), memoises the rebuild. */
   getLeafId?: () => string | null;
+  /** Session id, the other half of the memoisation key (spec D7). */
+  getSessionId?: () => string | null;
   /** Real worker trace logger, resolved inside the tracing context at call time. */
   getTraceLogger?: () => ToolPruningTraceLogger | undefined;
   /** Turn abort signal (`ctx.signal`). */
@@ -135,126 +134,224 @@ export interface ToolPruningEpochRunnerOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Token accounting
+// Watermark staircase (spec D3)
 // ---------------------------------------------------------------------------
 
 /**
- * Active context tokens of a projection (spec D3): the provider's own count at
- * the last assistant usage plus an estimate of everything after it. A session
- * that has no valid usage yet (fresh, or straight after a Compaction) falls
- * back to estimating every message.
+ * Configured steps, ascending and de-duplicated.
+ *
+ * The order is contractual: `nextWatermarkStep` relies on "the first step above
+ * the consumed one" and `consumedWatermarkStep` on "the last satisfied one", so
+ * a config that lists them unordered (tests, an operator override) still
+ * behaves like a staircase.
  */
-export function estimateActiveTokens(messages: readonly AgentMessage[]): number {
-  let usageIndex = -1;
-  let usageTokens = 0;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const message = messages[i];
-    if (message.role !== "assistant") continue;
-    const usage = message.usage;
-    if (!usage) continue;
-    const tokens = calculateContextTokens(usage);
-    if (tokens <= 0) continue;
-    usageIndex = i;
-    usageTokens = tokens;
-    break;
-  }
-
-  let trailingTokens = 0;
-  if (usageIndex < 0) {
-    for (const message of messages) trailingTokens += estimateTokens(message);
-    return trailingTokens;
-  }
-  for (let i = usageIndex + 1; i < messages.length; i++) {
-    trailingTokens += estimateTokens(messages[i]);
-  }
-  return usageTokens + trailingTokens;
-}
-
-// ---------------------------------------------------------------------------
-// Legacy cadence (see the TODO(ticket 06) in the module doc comment)
-// ---------------------------------------------------------------------------
-
-/**
- * Which arm of the legacy cadence armed the Epoch.
- * TODO(ticket 06): the monotonic watermark staircase has no arms; it has a
- * consumed `watermark` step instead.
- */
-type EpochArm = "turn_watermark" | "intra_turn_emergency";
-
-/** Prunable tokens that arm a turn-start Epoch on a roomy window. */
-const LEGACY_TURN_DELTA_PRUNE_TOKENS = 30_000;
-
-/** Prunable growth required after a low-yield or fail-open Epoch. */
-const LEGACY_EPOCH_COOLDOWN_TOKENS = 15_000;
-
-/**
- * Context ratio bounds of the legacy cadence: the lowest watermark arms a
- * turn-start Epoch, the highest one arms the emergency valve.
- * TODO(ticket 06): replace with `nextWatermark`/`highestConsumedWatermark`.
- */
-function watermarkBounds(watermarks: readonly number[]): { soft: number; hard: number } {
-  let soft = Number.POSITIVE_INFINITY;
-  let hard = Number.NEGATIVE_INFINITY;
-  for (const watermark of watermarks) {
-    if (watermark < soft) soft = watermark;
-    if (watermark > hard) hard = watermark;
-  }
-  return { soft, hard };
+export function watermarkSteps(watermarks: readonly number[]): number[] {
+  const steps = watermarks
+    .filter((step) => Number.isFinite(step) && step > 0)
+    .sort((a, b) => a - b);
+  return steps.filter((step, index) => index === 0 || step !== steps[index - 1]);
 }
 
 /**
- * Watermark step an Epoch consumes: the highest configured step the masked
- * context already reached (spec D3), or `0` when the legacy delta arm fired
- * below every step.
- * TODO(ticket 06): the staircase owns this computation.
+ * Next armed step: the lowest step strictly above the highest consumed one
+ * (spec D3). `undefined` means every step is spent, so no Epoch can run until
+ * Pi compacts the session and rearms the staircase.
  */
-function consumedWatermark(
+export function nextWatermarkStep(
+  steps: readonly number[],
+  highestConsumedWatermark: number,
+): number | undefined {
+  for (const step of steps) {
+    if (step > highestConsumedWatermark) return step;
+  }
+  return undefined;
+}
+
+/**
+ * Step an Epoch consumes: the highest configured step the context already
+ * reached. Because a consumed step deactivates every lower one, triggering at
+ * `0.60` also retires `0.45` (spec D3).
+ */
+export function consumedWatermarkStep(
+  steps: readonly number[],
   activeTokens: number,
   contextWindow: number,
-  watermarks: readonly number[],
 ): number {
   let consumed = 0;
-  for (const watermark of watermarks) {
-    if (activeTokens >= watermark * contextWindow) consumed = watermark;
+  for (const step of steps) {
+    if (activeTokens >= step * contextWindow) consumed = step;
   }
   return consumed;
 }
 
 // ---------------------------------------------------------------------------
-// Branch-aware mask reconstruction
+// Token accounting
 // ---------------------------------------------------------------------------
 
-/** Masks and epoch counter recovered from one session branch. */
+/** Provider-measured context of one projection, plus its correction inputs. */
+export interface ToolPruningTokenMeasurement {
+  /** The masked `AgentMessage[]` for the provider. */
+  messages: AgentMessage[];
+  /** Context tokens of the masked projection (spec D3). */
+  activeTokens: number;
+  /** Tokens the mask removed at or before the last valid `usage`. */
+  removedBeforeUsage: number;
+  /** Whether the projection carries a usable provider `usage` at all. */
+  hasUsage: boolean;
+  /** Whether the projection differs from the input (identity comparison). */
+  changed: boolean;
+}
+
+/** Index and token count of the last assistant message with a valid `usage`. */
+interface UsageBoundary {
+  readonly index: number;
+  readonly tokens: number;
+}
+
+/**
+ * Measures the active context of a projection, applying the provider-`usage`
+ * correction of spec D3:
+ *
+ * `calculateContextTokens(usage) - removedBeforeUsage + trailing`
+ *
+ * The `usage` of the last assistant message was reported by the provider for a
+ * prefix that still carried the bodies the mask has since stubbed or dropped,
+ * so subtracting those reductions is what keeps a freshly pruned context from
+ * looking as full as it did a moment ago — and from consuming a watermark step
+ * it no longer warrants. A session with no valid `usage` yet (fresh, or just
+ * after a Compaction) falls back to estimating every message.
+ */
+export function measureProjection(
+  messages: readonly AgentMessage[],
+  masks: ToolPruningMaskMap,
+  config: ToolPruningConfig,
+): ToolPruningTokenMeasurement {
+  const projection = projectPruningMask(messages, masks, config);
+  const boundary = lastUsageBoundary(messages);
+
+  if (boundary === undefined) {
+    let estimated = 0;
+    for (const message of projection.messages) estimated += estimateTokens(message);
+    return {
+      messages: projection.messages,
+      activeTokens: estimated,
+      removedBeforeUsage: 0,
+      hasUsage: false,
+      changed: differs(messages, projection.messages),
+    };
+  }
+
+  // Reductions applied to messages at or before the usage boundary: the
+  // provider counted those bytes, the provider will not see them again.
+  let removedBeforeUsage = 0;
+  for (let index = 0; index <= boundary.index; index++) {
+    removedBeforeUsage += projection.removedTokens[index] ?? 0;
+  }
+
+  // Everything after the boundary is estimated, net of its own reductions.
+  let trailingTokens = 0;
+  for (let index = boundary.index + 1; index < messages.length; index++) {
+    const removed = projection.removedTokens[index] ?? 0;
+    trailingTokens += Math.max(0, estimateTokens(messages[index]) - removed);
+  }
+
+  return {
+    messages: projection.messages,
+    activeTokens: Math.max(0, boundary.tokens - removedBeforeUsage + trailingTokens),
+    removedBeforeUsage,
+    hasUsage: true,
+    changed: differs(messages, projection.messages),
+  };
+}
+
+/**
+ * Active context tokens of an already-masked projection: the provider's own
+ * count at the last assistant usage plus an estimate of everything after it.
+ *
+ * This is the uncorrected estimator; `measureProjection` is what the cadence
+ * uses, because only it knows how many tokens the mask removed from the prefix
+ * the `usage` was measured on.
+ */
+export function estimateActiveTokens(messages: readonly AgentMessage[]): number {
+  const boundary = lastUsageBoundary(messages);
+  if (boundary === undefined) {
+    let estimated = 0;
+    for (const message of messages) estimated += estimateTokens(message);
+    return estimated;
+  }
+  let trailingTokens = 0;
+  for (let index = boundary.index + 1; index < messages.length; index++) {
+    trailingTokens += estimateTokens(messages[index]);
+  }
+  return boundary.tokens + trailingTokens;
+}
+
+/**
+ * Last assistant message whose `usage` Pi would trust, mirroring its own
+ * `getAssistantUsage`: aborted, errored and all-zero usages are not evidence of
+ * context size.
+ */
+function lastUsageBoundary(messages: readonly AgentMessage[]): UsageBoundary | undefined {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message.role !== "assistant") continue;
+    if (message.stopReason === "aborted" || message.stopReason === "error") continue;
+    const usage = message.usage;
+    if (usage === undefined) continue;
+    const tokens = calculateContextTokens(usage);
+    if (tokens <= 0) continue;
+    return { index, tokens };
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Branch-aware state reconstruction (spec D7)
+// ---------------------------------------------------------------------------
+
+/** Masks, epoch counter and consumed step recovered from one session branch. */
 export interface ToolPruningBranchState {
   /** Terminal drops persisted on the branch, keyed by `toolCallId`. */
   readonly masks: Record<string, ToolPruningDrop>;
   /** Highest `epochId` seen on the branch (`0` when none). */
   readonly lastEpochId: number;
+  /** Highest watermark step consumed since the last Compaction (`0` when none). */
+  readonly highestConsumedWatermark: number;
 }
 
 /**
- * Rebuilds the active masks from a session branch (spec D7).
+ * Rebuilds the pruning state from a session branch (spec D7).
  *
- * Only `custom` entries of type `tool-pruning` participate, and only entries
- * on the *active* branch: an Epoch decided on a branch the user abandoned with
- * a Message Edit is simply not in `getBranch()`, so its masks disappear and
- * the tool results it had pruned come back for the model. Entries are applied
- * in branch order, so a later Epoch re-deciding the same call wins.
+ * Only entries **after the latest `type: "compaction"` entry** are read, which
+ * is what rearms the whole watermark staircase after Pi summarises the history:
+ * the steps and masks of the previous window cycle cannot constrain the new
+ * one. Only `custom` entries of type `tool-pruning` participate, and only
+ * entries on the *active* branch: an Epoch decided on a branch the user
+ * abandoned with a Message Edit is simply not in `getBranch()`, so its masks
+ * disappear and the tool results it had pruned come back for the model. Entries
+ * are applied in branch order, so a later Epoch re-deciding the same call wins.
  */
 export function masksFromBranch(
   entries: readonly ToolPruningSessionEntry[],
 ): ToolPruningBranchState {
+  let start = 0;
+  for (let index = 0; index < entries.length; index++) {
+    if (entries[index].type === "compaction") start = index + 1;
+  }
+
   const masks: Record<string, ToolPruningDrop> = {};
   let lastEpochId = 0;
-  for (const entry of entries) {
-    const epoch = readEpochEntry(entry);
+  let highestConsumedWatermark = 0;
+  for (let index = start; index < entries.length; index++) {
+    const epoch = readEpochEntry(entries[index]);
     if (epoch === undefined) continue;
     lastEpochId = Math.max(lastEpochId, epoch.epochId);
+    highestConsumedWatermark = Math.max(highestConsumedWatermark, epoch.watermark);
     for (const [toolCallId, decision] of Object.entries(epoch.decisions)) {
       masks[toolCallId] = decision;
     }
   }
-  return { masks, lastEpochId };
+  return { masks, lastEpochId, highestConsumedWatermark };
 }
 
 /**
@@ -264,13 +361,19 @@ export function masksFromBranch(
  */
 function readEpochEntry(
   entry: ToolPruningSessionEntry,
-): Pick<ToolPruningEpochEntry, "epochId" | "decisions"> | undefined {
+): Pick<ToolPruningEpochEntry, "epochId" | "watermark" | "decisions"> | undefined {
   if (entry.type !== "custom" || entry.customType !== TOOL_PRUNING_ENTRY_TYPE) return undefined;
   const data = entry.data;
   if (typeof data !== "object" || data === null || Array.isArray(data)) return undefined;
   const record = data as Record<string, unknown>;
   if (record.version !== 1) return undefined;
   if (typeof record.epochId !== "number" || !Number.isFinite(record.epochId)) return undefined;
+  // A missing or invalid step cannot consume anything, so the sanitation here
+  // is what keeps a corrupted entry from stalling the staircase forever.
+  const watermark =
+    typeof record.watermark === "number" && Number.isFinite(record.watermark) && record.watermark >= 0
+      ? record.watermark
+      : 0;
   const rawDecisions = record.decisions;
   if (typeof rawDecisions !== "object" || rawDecisions === null || Array.isArray(rawDecisions)) {
     return undefined;
@@ -280,54 +383,47 @@ function readEpochEntry(
   for (const [toolCallId, decision] of Object.entries(rawDecisions)) {
     if (decision === "drop_result" || decision === "drop_call") decisions[toolCallId] = decision;
   }
-  return { epochId: record.epochId, decisions };
+  return { epochId: record.epochId, watermark, decisions };
 }
 
 // ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
 
-/** Cooldown installed by a low-yield or failed-open Epoch (spec D3). */
-interface PruningCooldown {
-  /** Prunable tokens left when the Epoch finished; growth is measured from here. */
-  readonly baselineTokens: number;
-}
-
 /** Inputs of one Epoch. */
 interface EpochInput {
-  /** Which legacy arm armed it; traces only, the policy is the same. */
-  arm: EpochArm;
   /** Masked projection the Epoch measures and decides on. */
   messages: readonly AgentMessage[];
   activeTokens: number;
   partition: CoolingWindowPartition;
   contextWindow: number;
+  /** Step this Epoch consumes (spec D7). */
+  watermark: number;
 }
 
 /**
  * Stateful orchestrator of one Pi session's pruning Epochs.
  *
- * The host (the Tool Pruning extension) forwards its hooks here:
- * `beginTurn()` on `before_agent_start` and `onContext(event.messages)` on
+ * The host (the Tool Pruning extension) forwards `onContext(event.messages)` on
  * every `context` event. The runner keeps only per-session state — the active
- * masks, the leaf the masks were derived from, the Epoch counter and the
- * cooldown — so a relayed session can be rebuilt from the branch at any time.
+ * masks, the highest consumed watermark, the leaf they were derived from and
+ * the Epoch counter — so a relayed or rewound session is rebuilt from the
+ * branch at any time.
  */
 export class ToolPruningEpochRunner {
   readonly config: ToolPruningConfig;
+  private readonly steps: readonly number[];
   private readonly options: ToolPruningEpochRunnerOptions;
   private masks: Record<string, ToolPruningDrop> = {};
-  private lastLeafId: string | null | undefined;
+  private highestConsumedWatermark = 0;
   private epochCounter = 0;
-  private turnArmed = false;
-  private turnContextCalls = 0;
-  private cooldown: PruningCooldown | undefined;
-  /** The cooldown's single emergency override has already been spent this Turn. */
-  private emergencyOverrideSpent = false;
+  /** `(sessionId, leafId)` the current state was derived from (spec D7). */
+  private branchKey: string | undefined;
 
   constructor(options: ToolPruningEpochRunnerOptions) {
     this.options = options;
     this.config = { ...DEFAULT_TOOL_PRUNING_CONFIG, ...options.config };
+    this.steps = watermarkSteps(this.config.watermarks);
   }
 
   /** Masks currently applied on the active branch (a snapshot copy). */
@@ -335,16 +431,9 @@ export class ToolPruningEpochRunner {
     return { ...this.masks };
   }
 
-  /**
-   * Arms the turn-start watermark (spec D3.1). Called from
-   * `before_agent_start`, so only the first `context` call of a Turn can pay
-   * the Epoch; every later call in the same Turn is limited to the emergency
-   * valve.
-   */
-  beginTurn(): void {
-    this.turnArmed = true;
-    this.turnContextCalls = 0;
-    this.emergencyOverrideSpent = false;
+  /** Highest watermark step consumed since the last Compaction. */
+  get consumedWatermark(): number {
+    return this.highestConsumedWatermark;
   }
 
   /**
@@ -357,84 +446,45 @@ export class ToolPruningEpochRunner {
   async onContext(messages: readonly AgentMessage[]): Promise<ToolPruningProjection> {
     if (!this.config.enabled) return { messages: messages.slice(), changed: false };
 
-    this.syncMasksFromBranch();
-    const firstContextOfTurn = this.turnArmed && this.turnContextCalls === 0;
-    this.turnContextCalls += 1;
-    if (firstContextOfTurn) this.turnArmed = false;
+    this.syncBranchState();
+    const measurement = measureProjection(messages, this.masks, this.config);
+    /** Nothing triggered: the already-measured projection is what to return. */
+    const unchanged = (): ToolPruningProjection => ({
+      messages: measurement.messages,
+      changed: measurement.changed,
+    });
 
-    const masked = applyPruningMask(messages, this.masks, this.config);
     const contextWindow = this.options.getContextWindow?.();
     // No resolved model means no window to measure against: never trigger.
-    if (contextWindow === undefined || contextWindow <= 0) {
-      return { messages: masked, changed: differs(messages, masked) };
-    }
+    if (contextWindow === undefined || contextWindow <= 0) return unchanged();
 
-    const arm: EpochArm = firstContextOfTurn ? "turn_watermark" : "intra_turn_emergency";
-    const partition = partitionCoolingWindow(masked, {
+    const nextWatermark = nextWatermarkStep(this.steps, this.highestConsumedWatermark);
+    // Every step consumed: nothing can run until Pi compacts the session.
+    if (nextWatermark === undefined) return unchanged();
+    if (measurement.activeTokens < nextWatermark * contextWindow) return unchanged();
+
+    const partition = partitionCoolingWindow(measurement.messages, {
       config: this.config,
       masks: this.masks,
     });
-    const activeTokens = estimateActiveTokens(masked);
-    const armed = this.chooseTrigger(arm, activeTokens, partition, contextWindow);
-    if (armed === undefined) return { messages: masked, changed: differs(messages, masked) };
+    // Never pay latency (nor break the KV-cache) for a marginal saving.
+    if (partition.candidateTokens < this.config.minWorthwhilePruneTokens) return unchanged();
 
-    await this.runEpoch({ arm: armed, messages: masked, activeTokens, partition, contextWindow });
-    const projected = applyPruningMask(messages, this.masks, this.config);
+    const consumed = consumedWatermarkStep(this.steps, measurement.activeTokens, contextWindow);
+    await this.runEpoch({
+      messages: measurement.messages,
+      activeTokens: measurement.activeTokens,
+      partition,
+      contextWindow,
+      // Defensive: a trigger always satisfies `nextWatermark`, which is the
+      // lower bound of what this Epoch may consume.
+      watermark: Math.max(consumed, nextWatermark),
+    });
+
+    // The Epoch added masks: fold them into the same projection so the Turn
+    // pays at most one prefix update.
+    const projected = projectPruningMask(messages, this.masks, this.config).messages;
     return { messages: projected, changed: differs(messages, projected) };
-  }
-
-  // -------------------------------------------------------------------------
-  // Cadence
-  // -------------------------------------------------------------------------
-
-  /**
-   * Decides whether this `context` call starts an Epoch (spec D3).
-   *
-   * Turn-start Epochs need the lowest watermark (or a large prunable pool)
-   * **and** `minWorthwhilePruneTokens`; emergency Epochs need the highest
-   * watermark and the same minimum pool. A cooldown blocks both until the pool
-   * grew by `LEGACY_EPOCH_COOLDOWN_TOKENS`, except for the first crossing of
-   * the emergency watermark in the Turn.
-   * TODO(ticket 06): replace with the monotonic watermark staircase.
-   */
-  private chooseTrigger(
-    arm: EpochArm,
-    activeTokens: number,
-    partition: CoolingWindowPartition,
-    contextWindow: number,
-  ): EpochArm | undefined {
-    const config = this.config;
-    if (config.watermarks.length === 0) return undefined;
-    const prunableTokens = partition.candidateTokens;
-    if (prunableTokens < config.minWorthwhilePruneTokens) return undefined;
-
-    const { soft, hard } = watermarkBounds(config.watermarks);
-    const emergency = activeTokens >= hard * contextWindow;
-    if (arm === "turn_watermark") {
-      const under = activeTokens >= soft * contextWindow;
-      const delta = prunableTokens >= LEGACY_TURN_DELTA_PRUNE_TOKENS;
-      if (!under && !delta) return undefined;
-    } else if (!emergency) {
-      return undefined;
-    }
-
-    if (this.cooldown !== undefined) {
-      const grown =
-        prunableTokens >= this.cooldown.baselineTokens + LEGACY_EPOCH_COOLDOWN_TOKENS;
-      if (!grown) {
-        if (!emergency || this.emergencyOverrideSpent) return undefined;
-        // Safety valve: the very first crossing of the hard watermark lifts the
-        // cooldown, so a turn cannot run into Pi's compaction ceiling because a
-        // previous Epoch happened to be low-yield.
-        this.emergencyOverrideSpent = true;
-        this.trace()?.info("tool_pruning.cooldown_bypassed", {
-          activeTokens,
-          prunableTokens,
-          contextWindow,
-        });
-      }
-    }
-    return arm;
   }
 
   // -------------------------------------------------------------------------
@@ -443,12 +493,10 @@ export class ToolPruningEpochRunner {
 
   /** Runs Phase 0 → short-circuit → Phase 1 → persistence (spec D5 + D6 + D7). */
   private async runEpoch(input: EpochInput): Promise<void> {
-    const { arm, messages, activeTokens, partition, contextWindow } = input;
+    const { messages, activeTokens, partition, contextWindow, watermark } = input;
     const startedAt = this.now();
     this.epochCounter += 1;
     const epochId = this.epochCounter;
-    // Watermark step this Epoch consumes (spec D7); the staircase is ticket 06.
-    const watermark = consumedWatermark(activeTokens, contextWindow, this.config.watermarks);
 
     // Phase 0: deterministic supersession, no network, no latency.
     const supersession = runSupersession(messages, partition.candidates, {
@@ -464,84 +512,58 @@ export class ToolPruningEpochRunner {
       remainingCandidateTokens: supersession.remainingTokens,
       config: this.config,
     });
-    const plan = judgeRan ? this.planDecision(messages, partition, supersession.remaining) : undefined;
-    const decision = await this.askJudge(plan, activeAfterPhase0);
-    if (decision === "aborted") {
-      this.trace()?.info("tool_pruning.epoch_aborted", { epochId, arm, watermark });
+    const plan = judgeRan
+      ? this.planDecision(messages, partition, supersession.remaining)
+      : undefined;
+    const outcome = await this.askJudge(plan, activeAfterPhase0);
+    if (outcome === "aborted") {
+      // Spec D6: a user abort cancels the Epoch instantly. Nothing is written
+      // and the step stays armed, because the Turn was cancelled by the user.
+      this.trace()?.info("tool_pruning.epoch_aborted", { epochId, watermark, activeTokens });
       return;
     }
 
-    const failedOpen = decision !== undefined && decision.failedOpen;
-    let effective: Record<string, ToolPruningDrop> = {
+    // A failed judge still applies what Phase 0 proved (spec D6): the entry
+    // below is what consumes the step, so a degraded service can never retry on
+    // the same step.
+    const failedOpen = outcome?.failedOpen === true;
+    const decisions: Record<string, ToolPruningDrop> = {
       ...supersession.decisions,
-      ...(decision?.decisions ?? {}),
+      ...(outcome?.decisions ?? {}),
     };
-    if (failedOpen && supersession.droppedTokens < this.config.minJudgeWorthwhileTokens) {
-      // Spec D6: a failed judge only persists Phase 0 drops when they are worth
-      // a prefix update on their own; otherwise this attempt mutates nothing.
-      effective = {};
-    }
-
-    const tokensSavedEst = this.estimateSavedTokens(effective, partition.candidates);
+    const tokensSavedEst = this.estimateSavedTokens(decisions, partition.candidates);
     const stats: ToolPruningEpochStats = {
-      deterministicDrops: countDrops(effective, supersession.decisions),
-      judgeDrops: countDrops(effective, decision?.decisions ?? {}),
+      deterministicDrops: countDrops(decisions, supersession.decisions),
+      judgeDrops: countDrops(decisions, outcome?.decisions ?? {}),
       candidatesEvaluated: plan?.candidates.length ?? partition.candidates.length,
-      batches: decision?.batches ?? 0,
+      batches: outcome?.batches ?? 0,
       latencyMs: this.now() - startedAt,
-      ...(decision?.decisionModel === undefined ? {} : { decisionModel: decision.decisionModel }),
-      ...(decision?.cost === undefined ? {} : { cost: decision.cost }),
+      ...(outcome?.decisionModel === undefined ? {} : { decisionModel: outcome.decisionModel }),
+      ...(outcome?.cost === undefined ? {} : { cost: outcome.cost }),
       ...(failedOpen ? { failedOpen: true } : {}),
     };
 
-    const decisions = Object.keys(effective) as string[];
-    if (decisions.length > 0) {
-      const entry: ToolPruningEpochEntry = {
-        version: 1,
-        epochId,
-        watermark,
-        timestamp: startedAt,
-        tokensBefore: activeTokens,
-        tokensSavedEst,
-        decisions: effective,
-        stats,
-      };
-      this.masks = { ...this.masks, ...effective };
-      // The appended entry changes the leaf: force the next projection to
-      // rebuild from the branch instead of trusting the local mask map.
-      this.lastLeafId = undefined;
-      this.options.appendEntry?.(TOOL_PRUNING_ENTRY_TYPE, entry);
-      this.trace()?.info("tool_pruning.epoch_completed", summarizeEpoch(entry, stats));
-    } else {
-      this.trace()?.info("tool_pruning.epoch_completed", {
-        epochId,
-        arm,
-        watermark,
-        tokensBefore: activeTokens,
-        tokensSavedEst: 0,
-        decisions: 0,
-        ...stats,
-      });
-    }
-    if (failedOpen) {
-      this.trace()?.warn("tool_pruning.epoch_failed_open", {
-        epochId,
-        arm,
-        watermark,
-        tokensBefore: activeTokens,
-        tokensSavedEst,
-        appliedDrops: decisions.length,
-        ...stats,
-      });
-    }
+    const entry: ToolPruningEpochEntry = {
+      version: 1,
+      epochId,
+      watermark,
+      timestamp: startedAt,
+      tokensBefore: activeTokens,
+      tokensSavedEst,
+      decisions,
+      stats,
+    };
 
-    // Anti-thrashing: a failed or low-yield Epoch backs off until the pool
-    // grows by `LEGACY_EPOCH_COOLDOWN_TOKENS`.
-    const lowYield = tokensSavedEst < this.config.minJudgeWorthwhileTokens;
-    this.cooldown =
-      failedOpen || lowYield
-        ? { baselineTokens: Math.max(0, partition.candidateTokens - tokensSavedEst) }
-        : undefined;
+    this.masks = { ...this.masks, ...decisions };
+    this.highestConsumedWatermark = Math.max(this.highestConsumedWatermark, watermark);
+    // The appended entry moves the leaf: force the next projection to rebuild
+    // from the branch instead of trusting the local state.
+    this.branchKey = undefined;
+    this.options.appendEntry?.(TOOL_PRUNING_ENTRY_TYPE, entry);
+
+    const summary = summarizeEpoch(entry, stats);
+    this.trace()?.info("tool_pruning.epoch_completed", summary);
+    if (failedOpen) this.trace()?.warn("tool_pruning.epoch_failed_open", summary);
   }
 
   /** Builds the Phase 1 plan over the candidates Phase 0 left (spec D5.1). */
@@ -553,7 +575,7 @@ export class ToolPruningEpochRunner {
     const candidates = survivors.map((entry) => entry.candidate);
     const signals: Record<string, Partial<Phase0Signals>> = {};
     for (const entry of survivors) signals[entry.candidate.toolCallId] = entry.signals;
-    const remainingTokens = candidates.reduce((total, c) => total + c.tokensEst, 0);
+    const remainingTokens = candidates.reduce((total, candidate) => total + candidate.tokensEst, 0);
 
     return buildDecisionPlan({
       messages,
@@ -567,19 +589,23 @@ export class ToolPruningEpochRunner {
   private async askJudge(
     plan: DecisionPlan | undefined,
     activeAfterPhase0: number,
-  ): Promise<JudgeOutcome | undefined | "aborted"> {
+  ): Promise<JudgeOutcome | "aborted" | undefined> {
     if (plan === undefined) return undefined;
     // Phase 1 had nothing worth asking: not a failure, just an empty band.
     if (plan.batches.length === 0) {
       return { decisions: {}, batches: 0, failedOpen: false };
     }
 
+    const signal = this.options.getSignal?.();
+    // Aborted before the first request: no point in paying for the round-trip.
+    if (isAborted(signal)) return "aborted";
+
     const credentials = await this.credentials();
+    if (isAborted(signal)) return "aborted";
     if (credentials === undefined) {
       return { decisions: {}, batches: plan.batches.length, failedOpen: true };
     }
 
-    const signal = this.options.getSignal?.();
     const request = (batchIndex: number): SystemOneDecisionRequest => {
       const batch = plan.batches[batchIndex];
       return { state: plan.state, questions: batch.questions };
@@ -591,6 +617,8 @@ export class ToolPruningEpochRunner {
     };
     const judge = this.options.judge ?? requestSystemOneDecision;
 
+    // `planDecisionBatches` already caps the plan at `maxDecisionBatches`, so a
+    // single `Promise.all` is the documented concurrency limit (spec D5.2).
     const results = await Promise.all(
       plan.batches.map((_, index) =>
         judge(request(index), clientOptions).catch(
@@ -605,7 +633,7 @@ export class ToolPruningEpochRunner {
     );
 
     // A user abort cancels the decision and writes nothing to the session.
-    if (signal?.aborted === true) return "aborted";
+    if (isAborted(signal)) return "aborted";
 
     const answers: Record<string, number> = {};
     let decisionModel: string | undefined;
@@ -670,29 +698,50 @@ export class ToolPruningEpochRunner {
   // -------------------------------------------------------------------------
 
   /**
-   * Rebuilds the masks from the active branch whenever the leaf moved (spec
-   * D7). Memoised by leaf id: the rebuild is a pure walk over the branch, so it
-   * costs nothing when nothing changed, and it is exactly what makes an
-   * abandoned branch's decisions disappear after a Message Edit.
+   * Rebuilds the pruning state from the active branch whenever the leaf (or the
+   * session) moved (spec D7). Memoised by `(sessionId, leafId)`: the rebuild is
+   * a pure walk over the branch, so it costs nothing when nothing changed, and
+   * it is exactly what makes an abandoned branch's decisions — and its consumed
+   * watermark — disappear after a Message Edit, and what rearms the whole
+   * staircase after a `compaction` entry.
    */
-  private syncMasksFromBranch(): void {
+  private syncBranchState(): void {
     const getBranch = this.options.getBranch;
     if (getBranch === undefined) return;
 
-    const leafId = this.options.getLeafId?.() ?? null;
-    if (leafId !== null && leafId === this.lastLeafId) return;
-    this.lastLeafId = leafId;
+    const key = this.currentBranchKey();
+    if (key === this.branchKey) return;
 
     let entries: readonly ToolPruningSessionEntry[];
     try {
       entries = getBranch();
     } catch {
-      // A branch read must never break the projection; keep the current masks.
+      // A branch read must never break the projection; keep the current state.
       return;
     }
+    this.branchKey = key;
+
     const state = masksFromBranch(entries);
     this.masks = state.masks;
     this.epochCounter = Math.max(this.epochCounter, state.lastEpochId);
+    this.highestConsumedWatermark = state.highestConsumedWatermark;
+  }
+
+  private currentBranchKey(): string {
+    let leafId: string | null = null;
+    try {
+      leafId = this.options.getLeafId?.() ?? null;
+    } catch {
+      leafId = null;
+    }
+    let sessionId: string | null = null;
+    try {
+      sessionId = this.options.getSessionId?.() ?? null;
+    } catch {
+      sessionId = null;
+    }
+    // `\u0000` cannot appear in a Pi id, so the pair cannot collide.
+    return `${sessionId ?? ""}\u0000${leafId ?? ""}`;
   }
 
   private trace(): ToolPruningTraceLogger | undefined {
@@ -706,6 +755,15 @@ export class ToolPruningEpochRunner {
   private now(): number {
     return this.options.now?.() ?? Date.now();
   }
+}
+
+/**
+ * Abort state read through a helper: reading `signal.aborted` inline would let
+ * the compiler narrow the property after the first check, hiding the second
+ * abort (the one that matters, because it happens during the requests).
+ */
+function isAborted(signal: AbortSignal | undefined): boolean {
+  return signal?.aborted === true;
 }
 
 /** Phase 1 outcome handed back to the Epoch. */
@@ -750,8 +808,8 @@ function differs(
   projected: readonly AgentMessage[],
 ): boolean {
   if (original.length !== projected.length) return true;
-  for (let i = 0; i < original.length; i++) {
-    if (original[i] !== projected[i]) return true;
+  for (let index = 0; index < original.length; index++) {
+    if (original[index] !== projected[index]) return true;
   }
   return false;
 }

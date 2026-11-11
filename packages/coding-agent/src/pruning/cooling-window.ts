@@ -235,15 +235,15 @@ export function partitionCoolingWindow(
   let protectedStartIndex = findProtectedTailStart(messages, tokens, paired, config);
   const activeTurnStart = findCurrentTurnStart(messages);
   if (activeTurnStart !== undefined) {
-    protectedStartIndex = Math.min(
-      protectedStartIndex,
-      capProtectedTurnStart(
-        activeTurnStart,
-        messages.length,
-        tokens,
-        config.maxProtectedTurnTokens,
-      ),
+    const activeTurnProtected = capProtectedTurnStart(
+      activeTurnStart,
+      messages.length,
+      tokens,
+      config.maxProtectedTurnTokens,
     );
+    if (activeTurnProtected !== undefined) {
+      protectedStartIndex = Math.min(protectedStartIndex, activeTurnProtected);
+    }
   }
   const lastToolTurnStart = findLastCompletedToolTurnStart(messages, tokens, paired, config);
   if (lastToolTurnStart !== undefined) {
@@ -373,6 +373,10 @@ function findCurrentTurnStart(messages: readonly AgentMessage[]): number | undef
  * window must cover `coolingRecentTokens` tokens **and**
  * `minCoolingToolCalls` paired calls. When the history is shorter than either
  * minimum it protects everything.
+ *
+ * Both minimums at zero is an explicit "no recent tail" configuration (tests
+ * collapse the window to expose every pair): nothing is protected here, so the
+ * remaining rules alone decide.
  */
 function findProtectedTailStart(
   messages: readonly AgentMessage[],
@@ -382,6 +386,7 @@ function findProtectedTailStart(
 ): number {
   const minTokens = Math.max(0, Math.trunc(config.coolingRecentTokens));
   const minCalls = Math.max(0, Math.trunc(config.minCoolingToolCalls));
+  if (minTokens === 0 && minCalls === 0) return messages.length;
 
   const callsByResultIndex = new Map<number, number>();
   for (const call of paired) {
@@ -439,19 +444,24 @@ function findLastCompletedToolTurnStart(
  * (`maxProtectedTurnTokens / 2`, 20 000 tokens by default) so its excess prefix
  * becomes evaluable and one giant Turn or Subagent cannot protect its obsolete
  * first half forever.
+ *
+ * `undefined` means the rule protects nothing: a zero cap is an explicit "no
+ * Turn protection" configuration, and returning `end` instead would silently
+ * protect the whole suffix that starts there — which is exactly the region the
+ * other rules are supposed to decide on.
  */
 function capProtectedTurnStart(
   start: number,
   end: number,
   tokens: readonly number[],
   maxTurnTokens: number,
-): number {
+): number | undefined {
   let turnTokens = 0;
   for (let i = start; i < end; i++) turnTokens += tokens[i];
   if (turnTokens <= maxTurnTokens) return start;
 
   const retainedBudget = Math.trunc(Math.max(0, maxTurnTokens) / 2);
-  if (retainedBudget <= 0) return end;
+  if (retainedBudget <= 0) return undefined;
 
   let retained = 0;
   let protectedStart = end;
