@@ -16,6 +16,9 @@ export type {
   ChatRequest,
   ChatStep,
   ChatToolCallDelta,
+  DecisionAnswer,
+  DecisionChoiceAnswer,
+  DecisionNoulAnswer,
   DecisionQuestion,
   DecisionsRequest,
   EmbeddingsRequest,
@@ -34,6 +37,7 @@ export type {
 export {
   CHAT_COMPLETION_CREATED,
   CHAT_COMPLETION_ID,
+  DEFAULT_NOUL_PROBABILITY,
   HEALTH_BODY,
   HEALTH_PATH,
   JSON_HEADERS,

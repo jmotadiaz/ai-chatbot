@@ -77,13 +77,18 @@ custom headers override the default JSON content type.
 Builders include `embeddingsResponse` (pass the consumer's
 `dimensions`), `rerankResponse` (empty ranking by default, explicit `results`
 allowed), `decisionsResponse` (the declared choice per question, or its first
-criterion when none is declared; probabilities stay uniform), `speechResponse`
+criterion when none is declared; probabilities stay uniform; `noul` questions
+answered with a probability in `[0, 1]`, `0.5` by default), `speechResponse`
 (deterministic WAV). `deterministicEmbedding(text, dimensions)` and
 `deterministicWav(input)` are exported for exact fixtures.
 
 ```ts
 // The consumer owns the answer; the toolkit only renders it.
 decisionsResponse(request, { choices: { mode: "web" } });
+
+// `noul` questions answer with a calibrated probability; `nouls` declares it per
+// question (`0.5` when the consumer declares nothing).
+decisionsResponse(request, { nouls: { result_c1: 0.12, call_c1: 0.04 } });
 
 // `answerFields` overlays extra fields on ONE question's rendered answer: the
 // confidence the Gateway reports, an extra probability key — the answers the
@@ -96,7 +101,9 @@ decisionsResponse(request, {
 
 A declared choice that is not one of its question's criteria throws (invalid
 configuration) instead of answering, and so do `answerFields` naming a question
-the request does not ask as a `choice` question.
+the request does not answer as a `choice` or `noul` question. A `noul`
+probability outside `[0, 1]`, or a `nouls` key naming a question the request does
+not ask as a `noul` question, throws for the same reason.
 
 Any request without a non-empty `Authorization` header is answered `401`. A
 scenario can override that with `authorize(headers)`.

@@ -242,6 +242,28 @@ describe("operations and catalogs", () => {
       "/v1/systemone",
     ]);
   });
+
+  it("renders noul answers through both decisions routes", () => {
+    const scenario = createGatewayScenario({
+      decisions: (request) => decisionsResponse(request, { nouls: { keep: 0.2 } }),
+    });
+    for (const path of ["/v1/decisions", "/v1/systemone"]) {
+      const result = post(scenario, path, {
+        model: "decision-default",
+        questions: {
+          keep: { type: "noul", instructions: "is the result still needed?" },
+          other: { type: "noul" },
+        },
+      });
+      expect(result.status, path).toBe(200);
+      expect(result.body).toMatchObject({
+        answers: {
+          keep: { type: "noul", noul: 0.2 },
+          other: { type: "noul", noul: 0.5 },
+        },
+      });
+    }
+  });
 });
 
 describe("tool continuations", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHAT_COMPLETION_CREATED,
   CHAT_COMPLETION_ID,
+  DEFAULT_NOUL_PROBABILITY,
   SSE_DONE_FRAME,
   catalogResponse,
   decisionsResponse,
@@ -360,6 +361,114 @@ describe("operation fixtures", () => {
         { answerFields: { other: { confidence: 0.42 } } },
       ),
     ).toThrow(/does not ask as a choice question/);
+  });
+
+  it("answers noul decisions with the neutral probability by default", () => {
+    const response = decisionsResponse({
+      model: "decision-default",
+      questions: {
+        result_c1: { type: "noul", instructions: "is the tool result still needed?" },
+        call_c1: {
+          type: "noul",
+          criteria: { true: "the command is still needed", false: "it is superseded" },
+        },
+        ignored: { type: "text" },
+      },
+    });
+    expect(response.body).toEqual({
+      answers: {
+        result_c1: { type: "noul", noul: 0.5 },
+        call_c1: { type: "noul", noul: 0.5 },
+      },
+      model: "decision-default",
+      provider: "mock-model-gateway",
+      usage: { cost: 0 },
+    });
+    expect(DEFAULT_NOUL_PROBABILITY).toBe(0.5);
+  });
+
+  it("answers noul decisions with the consumer's declared probability per question", () => {
+    const response = decisionsResponse(
+      {
+        model: "decision-default",
+        questions: {
+          result_c1: { type: "noul" },
+          call_c1: { type: "noul" },
+        },
+      },
+      { nouls: { result_c1: 0.12, call_c1: 1 } },
+    );
+    expect(response.body).toMatchObject({
+      answers: {
+        result_c1: { type: "noul", noul: 0.12 },
+        call_c1: { type: "noul", noul: 1 },
+      },
+    });
+  });
+
+  it("renders choice and noul answers for the same request", () => {
+    const response = decisionsResponse(
+      {
+        model: "decision-default",
+        questions: {
+          mode: { type: "choice", criteria: { ctx7: "docs", web: "current" } },
+          result_c1: { type: "noul" },
+        },
+      },
+      { choices: { mode: "web" }, nouls: { result_c1: 0.3 } },
+    );
+    expect(response.body).toMatchObject({
+      answers: {
+        mode: {
+          type: "choice",
+          choice: "web",
+          confidence: 1,
+          probabilities: { ctx7: 0.5, web: 0.5 },
+        },
+        result_c1: { type: "noul", noul: 0.3 },
+      },
+    });
+  });
+
+  it("rejects a noul probability outside [0, 1]", () => {
+    const request = {
+      model: "decision-default",
+      questions: { result_c1: { type: "noul" } },
+    };
+    for (const probability of [-0.1, 1.5, Number.NaN]) {
+      expect(() =>
+        decisionsResponse(request, { nouls: { result_c1: probability } }),
+      ).toThrow(/outside \[0, 1\]/);
+    }
+  });
+
+  it("rejects a declared noul for a question the request does not ask as noul", () => {
+    expect(() =>
+      decisionsResponse(
+        {
+          model: "decision-default",
+          questions: { mode: { type: "choice", criteria: { ctx7: "docs" } } },
+        },
+        { nouls: { mode: 0.2 } },
+      ),
+    ).toThrow(/does not ask as a noul question/);
+
+    expect(() =>
+      decisionsResponse(
+        { model: "decision-default", questions: { result_c1: { type: "noul" } } },
+        { nouls: { other: 0.2 } },
+      ),
+    ).toThrow(/does not ask as a noul question/);
+  });
+
+  it("overlays answer fields on a noul answer", () => {
+    const response = decisionsResponse(
+      { model: "decision-default", questions: { result_c1: { type: "noul" } } },
+      { answerFields: { result_c1: { confidence: 0.8 } } },
+    );
+    expect(response.body).toMatchObject({
+      answers: { result_c1: { type: "noul", noul: 0.5, confidence: 0.8 } },
+    });
   });
 
   it("serves deterministic WAV audio with the contract media type", () => {
