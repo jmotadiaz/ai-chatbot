@@ -34,14 +34,12 @@ const CWD = "/repo";
 
 /**
  * Test config: the spec defaults except for the Cooling Window, which is
- * collapsed so a short fixture still exposes an old turn, and the delta
- * watermark, which is defused so a test can exercise the ratio rule alone.
+ * collapsed so a short fixture still exposes every Turn as evaluable.
  */
 const BASE_CONFIG: ToolPruningConfigOverrides = {
   coolingRecentTokens: 0,
   minCoolingToolCalls: 0,
   maxProtectedTurnTokens: 0,
-  minPrunableDeltaTokens: 1_000_000,
 };
 
 const usage = (totalTokens: number): AssistantMessage["usage"] => ({
@@ -356,7 +354,7 @@ describe("Tool Pruning triggers", () => {
 
     expect(test.judge).toHaveBeenCalledTimes(1);
     expect(test.appends).toHaveLength(1);
-    expect(test.entries[0].trigger).toBe("intra_turn_emergency");
+    expect(test.entries[0].watermark).toBe(0.75);
   });
 
   it("never triggers without a resolved model", async () => {
@@ -379,7 +377,7 @@ describe("Tool Pruning triggers", () => {
   });
 
   it("triggers on prunable delta even when the window is roomy", async () => {
-    const test = harness({ minPrunableDeltaTokens: 30_000 });
+    const test = harness();
     // 40 000 active tokens: below the soft watermark (45 000), above the
     // judge short-circuit line (30 000). The 60k pool is what triggers.
     test.runner.beginTurn();
@@ -395,7 +393,7 @@ describe("Tool Pruning triggers", () => {
 
 describe("Phase 0 short-circuit", () => {
   it("skips the judge when the context stays below 30% of the window", async () => {
-    const test = harness({ minPrunableDeltaTokens: 30_000 });
+    const test = harness();
     test.runner.beginTurn();
     const projection = await test.runner.onContext(session(20_000));
 
@@ -405,7 +403,7 @@ describe("Phase 0 short-circuit", () => {
   });
 
   it("applies Phase 0 drops without any network call", async () => {
-    const test = harness({ minPrunableDeltaTokens: 30_000 });
+    const test = harness();
     const messages: AgentMessage[] = [
       user("read it"),
       assistant([read("r1", "src/app.ts")]),
@@ -449,7 +447,7 @@ describe("Epoch persistence", () => {
     expect(entry).toMatchObject({
       version: 1,
       epochId: 1,
-      trigger: "turn_watermark",
+      watermark: 0.45,
       tokensBefore: 50_000,
     });
     expect(typeof entry.timestamp).toBe("number");
@@ -673,41 +671,47 @@ describe("Fail-open", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Two-band policy (D5 Phase 1.3)
+// Conservative drop band (D5 Phase 1.3)
 // ---------------------------------------------------------------------------
 
-describe("Emergency band extension", () => {
-  const uncertainBand = async (activeTokens: number) => {
+describe("Conservative drop band", () => {
+  // 0.3 is inside the uncertain [0.25, 0.50) band, so every Epoch keeps it.
+  const uncertainBand = async (activeTokens: number, beginTurn: boolean) => {
     const test = harness();
     test.judge.mockImplementation(async (request: SystemOneDecisionRequest) =>
       okJudge(answersOf(request, 0.3)),
     );
-    if (activeTokens >= 75_000) {
-      // Intra-Turn call: no `beginTurn`, so the emergency valve is in charge.
-      await test.runner.onContext(session(activeTokens));
-    } else {
-      test.runner.beginTurn();
-      await test.runner.onContext(session(activeTokens));
-    }
+    if (beginTurn) test.runner.beginTurn();
+    await test.runner.onContext(session(activeTokens));
     return test;
   };
 
-  it("keeps the uncertain [0.25, 0.40) band in a normal Epoch", async () => {
-    const test = await uncertainBand(50_000);
+  it("keeps the uncertain [0.25, 0.50) band on a turn-start Epoch", async () => {
+    const test = await uncertainBand(50_000, true);
 
     expect(test.judge).toHaveBeenCalledTimes(1);
     expect(test.appends).toHaveLength(0);
   });
 
-  it("extends `drop_result` into that band in a high-pressure emergency Epoch", async () => {
-    const test = await uncertainBand(80_000);
+  it("keeps the same uncertain band on a high-pressure Epoch", async () => {
+    // A watermark step only decides *when* the Epoch runs: the policy is the
+    // same conservative one, so nothing is dropped above 75% either.
+    const test = await uncertainBand(80_000, false);
+
+    expect(test.judge).toHaveBeenCalledTimes(1);
+    expect(test.appends).toHaveLength(0);
+  });
+
+  it("drops the high-confidence candidates of a high-pressure Epoch", async () => {
+    const test = harness();
+    test.answerWith(0.1);
+    await test.runner.onContext(session(80_000));
 
     expect(test.appends).toHaveLength(1);
-    // 80 000 → three 10 000-token results reach the 55 000 target.
     expect(Object.values(test.appends[0].entry.decisions)).toEqual(
-      Array(3).fill("drop_result"),
+      Array(6).fill("drop_result"),
     );
-    expect(test.appends[0].entry.trigger).toBe("intra_turn_emergency");
+    expect(test.appends[0].entry.watermark).toBe(0.75);
   });
 });
 
@@ -722,7 +726,7 @@ describe("branch-aware masks", () => {
   ): ToolPruningEpochEntry => ({
     version: 1,
     epochId,
-    trigger: "turn_watermark",
+    watermark: 0.45,
     timestamp: 1,
     tokensBefore: 1,
     tokensSavedEst: 1,
@@ -842,12 +846,10 @@ describe("config", () => {
   it("merges overrides over the spec defaults", () => {
     const runner = new ToolPruningEpochRunner({
       cwd: CWD,
-      config: { softWatermarkRatio: 0.5 },
+      config: { watermarks: [0.5, 0.9] },
     });
 
-    expect(runner.config.softWatermarkRatio).toBe(0.5);
-    expect(runner.config.hardWatermarkRatio).toBe(
-      DEFAULT_TOOL_PRUNING_CONFIG.hardWatermarkRatio,
-    );
+    expect(runner.config.watermarks).toEqual([0.5, 0.9]);
+    expect(DEFAULT_TOOL_PRUNING_CONFIG.watermarks).toEqual([0.45, 0.6, 0.75]);
   });
 });

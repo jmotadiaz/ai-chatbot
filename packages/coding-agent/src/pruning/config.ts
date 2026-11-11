@@ -73,23 +73,22 @@ export type ToolPruningMaskMap = Readonly<Record<string, ToolPruningDrop>>;
 export interface ToolPruningConfig {
   /** Master switch for Tool Pruning. */
   enabled: boolean;
-  /** Fraction of `contextWindow` that arms the turn-start Epoch. */
-  softWatermarkRatio: number;
-  /** Old prunable tokens that arm a turn-start Epoch on very large windows. */
-  minPrunableDeltaTokens: number;
-  /** Fraction of `contextWindow` that triggers the intra-turn emergency Epoch. */
-  hardWatermarkRatio: number;
+  /**
+   * Ascending fractions of `contextWindow` that arm Epochs (spec D3). An Epoch
+   * consumes the highest step the context already reached, which deactivates
+   * that step and every lower one until Pi compacts the session and rearms the
+   * whole staircase.
+   */
+  watermarks: readonly number[];
   /** Minimum prunable tokens outside the Cooling Window to start an Epoch. */
   minWorthwhilePruneTokens: number;
   /** Minimum tokens left after Phase 0 to justify the judge HTTP call. */
   minJudgeWorthwhileTokens: number;
-  /** Additional prunable growth required after a low-yield or fail-open Epoch. */
-  epochCooldownTokens: number;
   /** Recent tail always protected by the Cooling Window. */
   coolingRecentTokens: number;
   /** Recent paired tool calls always protected by the Cooling Window. */
   minCoolingToolCalls: number;
-  /** Cap on the protection granted to the last completed turn with tools. */
+  /** Cap on the protection granted to the active and the last tool-using Turn. */
   maxProtectedTurnTokens: number;
   /** Characters preserved at the start of a stubbed result. */
   stubHeadChars: number;
@@ -103,14 +102,10 @@ export interface ToolPruningConfig {
   maxQuestionsPerBatch: number;
   /** Maximum concurrent decision requests per Epoch. */
   maxDecisionBatches: number;
-  /** `noul` threshold below which a result is dropped in normal mode. */
+  /** `noul` threshold below which a result is dropped. */
   dropResultThreshold: number;
   /** `noul` threshold below which an exploratory call is dropped entirely. */
   dropCallThreshold: number;
-  /** Upper edge of the uncertain band the emergency Epoch may `drop_result`. */
-  emergencyUpperBand: number;
-  /** Post-prune target ratio for the emergency Epoch (`drop_result` only). */
-  emergencyTargetRatio: number;
   /** Per-request timeout against `/v1/systemone` before failing open. */
   decisionTimeoutMs: number;
 }
@@ -123,9 +118,6 @@ export const MIN_TRUNCATION_CHARS = 380;
 
 /** Session entry `customType` under which each Epoch is persisted. */
 export const TOOL_PRUNING_ENTRY_TYPE = "tool-pruning";
-
-/** What armed the Epoch. */
-export type ToolPruningTrigger = "turn_watermark" | "intra_turn_emergency";
 
 /** Per-Epoch accounting, persisted with the entry for `trace-analyzer`. */
 export interface ToolPruningEpochStats {
@@ -154,7 +146,8 @@ export interface ToolPruningEpochStats {
 export interface ToolPruningEpochEntry {
   version: 1;
   epochId: number;
-  trigger: ToolPruningTrigger;
+  /** Step of `watermarks` reached and consumed by this Epoch (e.g. 0.45, 0.60, 0.75). */
+  watermark: number;
   timestamp: number;
   tokensBefore: number;
   tokensSavedEst: number;
@@ -168,12 +161,9 @@ export type ToolPruningConfigOverrides = Partial<ToolPruningConfig>;
 /** Spec defaults, frozen so no runtime branch can mutate the shared table. */
 export const DEFAULT_TOOL_PRUNING_CONFIG: Readonly<ToolPruningConfig> = Object.freeze({
   enabled: true,
-  softWatermarkRatio: 0.45,
-  minPrunableDeltaTokens: 30_000,
-  hardWatermarkRatio: 0.75,
+  watermarks: Object.freeze([0.45, 0.6, 0.75]),
   minWorthwhilePruneTokens: 8_000,
   minJudgeWorthwhileTokens: 4_000,
-  epochCooldownTokens: 15_000,
   coolingRecentTokens: 16_000,
   minCoolingToolCalls: 6,
   maxProtectedTurnTokens: 40_000,
@@ -185,7 +175,5 @@ export const DEFAULT_TOOL_PRUNING_CONFIG: Readonly<ToolPruningConfig> = Object.f
   maxDecisionBatches: 3,
   dropResultThreshold: 0.25,
   dropCallThreshold: 0.15,
-  emergencyUpperBand: 0.4,
-  emergencyTargetRatio: 0.55,
   decisionTimeoutMs: 4_000,
 });

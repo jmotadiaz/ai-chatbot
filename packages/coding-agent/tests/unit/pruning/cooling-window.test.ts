@@ -75,8 +75,19 @@ const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig =>
   ...overrides,
 });
 
-/** Tail protection so small that only the last tool call is ever protected. */
+/**
+ * Tail protection so small that only the last tool call is ever protected. The
+ * protected-Turn cap is left at its default so rule (c) still protects the last
+ * completed Turn with tools.
+ */
 const TINY_TAIL = configWith({ coolingRecentTokens: 0, minCoolingToolCalls: 1 });
+
+/** Only the last paired call is protected: no tail budget and no protected Turn. */
+const ONLY_LAST_CALL = configWith({
+  coolingRecentTokens: 0,
+  minCoolingToolCalls: 1,
+  maxProtectedTurnTokens: 0,
+});
 
 const ids = (partition: ReturnType<typeof partitionCoolingWindow>): string[] =>
   partition.candidates.map((candidate) => candidate.toolCallId);
@@ -99,21 +110,18 @@ const exploreConverseEdit = (): AgentMessage[] => [
 ];
 
 describe("partitionCoolingWindow", () => {
-  it("protects the last completed turn with tools across an intermediate prose-only turn", () => {
+  it("protects the last completed Turn with tools across an intermediate prose-only Turn", () => {
     // Turn 3 is active, Turn 2 is prose-only and Turn 1 used tools: the plan's
-    // reads must stay protected (rule c), otherwise the prose turn would
+    // reads must stay protected (rule c), otherwise the prose Turn would
     // prematurely unprotect them (the Ratchet Bug).
-    const partition = partitionCoolingWindow(exploreConverseEdit(), {
-      trigger: "turn_watermark",
-      config: TINY_TAIL,
-    });
+    const partition = partitionCoolingWindow(exploreConverseEdit(), { config: TINY_TAIL });
 
     expect(partition.protectedStartIndex).toBe(0);
     expect(partition.candidates).toEqual([]);
     expect(partition.candidateTokens).toBe(0);
   });
 
-  it("releases those reads once a later completed turn has used tools", () => {
+  it("releases those reads once a later completed Turn has used tools", () => {
     const messages = exploreConverseEdit();
     messages.push(
       user("Verify the change", 4), // 10 — turn 4
@@ -121,12 +129,9 @@ describe("partitionCoolingWindow", () => {
       toolResult("b1", [bigText(4_000)], { toolName: "bash", timestamp: 4 }), // 12
     );
 
-    const partition = partitionCoolingWindow(messages, {
-      trigger: "turn_watermark",
-      config: TINY_TAIL,
-    });
+    const partition = partitionCoolingWindow(messages, { config: TINY_TAIL });
 
-    // Turn 3 (the last completed turn with tools) is protected in full, so the
+    // Turn 3 (the last completed Turn with tools) is protected in full, so the
     // read results of Turn 1 are now the Living Candidate Pool.
     expect(partition.protectedStartIndex).toBe(7);
     expect(ids(partition)).toEqual(["r1", "r2"]);
@@ -144,9 +149,9 @@ describe("partitionCoolingWindow", () => {
     );
   });
 
-  it("caps a single giant completed turn and makes its excess prefix evaluable", () => {
+  it("caps a single giant completed Turn and makes its excess prefix evaluable", () => {
     // 20 results of 8 000 chars = 20 000 tokens of results, plus the assistant
-    // call block: the turn exceeds the 40 000-token cap by a hair.
+    // call block: the Turn exceeds the 40 000-token cap by a hair.
     const calls = Array.from({ length: 20 }, (_, index) =>
       read(`r${index + 1}`, `src/file-${index + 1}.ts`),
     );
@@ -159,7 +164,7 @@ describe("partitionCoolingWindow", () => {
       prose("Continuing.", 2), // 24
     ];
 
-    const partition = partitionCoolingWindow(messages, { trigger: "turn_watermark" });
+    const partition = partitionCoolingWindow(messages);
 
     // Only the most recent 20 000 tokens of Turn 1 stay protected: the last ten
     // results. The first ten results (indices 2..11) become evaluable.
@@ -172,9 +177,9 @@ describe("partitionCoolingWindow", () => {
     }
   });
 
-  it("protects the whole active turn on a turn-start Epoch", () => {
-    // A single, still-active turn: rule (a) protects everything from its user
-    // message, so the turn-start Epoch never prunes inside the active turn.
+  it("protects an active Turn inside the cap in full", () => {
+    // A single, still-active Turn: it is protected as a whole, so nothing is
+    // pruned from the Turn the agent is working in.
     const messages: AgentMessage[] = [
       user("Explore everything"),
       assistant([read("r1"), read("r2")]),
@@ -182,15 +187,16 @@ describe("partitionCoolingWindow", () => {
       toolResult("r2", [bigText(8_000)]),
     ];
 
-    const partition = partitionCoolingWindow(messages, { trigger: "turn_watermark" });
+    const partition = partitionCoolingWindow(messages);
 
     expect(partition.protectedStartIndex).toBe(0);
     expect(partition.candidates).toEqual([]);
   });
 
-  it("protects only the recent tail on an intra-turn emergency Epoch", () => {
-    // Same marathon turn, but the emergency valve is allowed to release the
-    // obsolete explorations of the first half of the turn.
+  it("caps a marathon active Turn so its first half becomes evaluable", () => {
+    // 20 results of 2 000 tokens plus the call block exceed the 40 000-token
+    // cap, so the active Turn keeps only its most recent 20 000 tokens: the
+    // first half can be pruned mid-Turn, as a long Subagent needs.
     const calls = Array.from({ length: 20 }, (_, index) => read(`r${index + 1}`));
     const messages: AgentMessage[] = [
       user("Explore everything"),
@@ -198,38 +204,45 @@ describe("partitionCoolingWindow", () => {
       ...calls.map((toolCall) => toolResult(toolCall.id, [bigText(8_000)])),
     ];
 
-    const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-    });
+    const partition = partitionCoolingWindow(messages);
 
-    // Default tail: 16 000 tokens and 6 calls → the last eight results (r13..r20).
-    expect(partition.protectedStartIndex).toBe(14);
+    // The recent tail (16 000 tokens and 6 calls) and the capped Turn agreed on
+    // the last ten results (r11..r20).
+    expect(partition.protectedStartIndex).toBe(12);
     expect(ids(partition)).toEqual(
-      Array.from({ length: 12 }, (_, index) => `r${index + 1}`),
+      Array.from({ length: 10 }, (_, index) => `r${index + 1}`),
     );
   });
 
   it("never protects fewer than the minimum recent tool calls", () => {
+    // Turn 1 read five files, Turn 2 read one more and Turn 3 is prose only.
+    const reads = ["r1", "r2", "r3", "r4", "r5"];
     const messages: AgentMessage[] = [
-      user("go"),
-      assistant([read("r1"), read("r2"), read("r3")]),
-      toolResult("r1", [bigText(100)]),
-      toolResult("r2", [bigText(100)]),
-      toolResult("r3", [bigText(100)]),
+      user("go"), // 0 — turn 1
+      assistant(reads.map((id) => read(id))), // 1
+      ...reads.map((id) => toolResult(id, [bigText(100)])), // 2..6
+      user("next", 2), // 7 — turn 2
+      assistant([read("r6")], 2), // 8
+      toolResult("r6", [bigText(100)], { timestamp: 2 }), // 9
+      user("go on", 3), // 10 — turn 3
+      prose("ok", 3), // 11
     ];
 
-    const protectedByCalls = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: TINY_TAIL,
-    });
-    expect(ids(protectedByCalls)).toEqual(["r1", "r2"]);
+    // One protected call is the last result of Turn 2: Turn 1 is evaluable.
+    const oneCall = partitionCoolingWindow(messages, { config: ONLY_LAST_CALL });
+    expect(oneCall.protectedStartIndex).toBe(9);
+    expect(ids(oneCall)).toEqual(reads);
 
+    // The floor of six paired calls reaches back into Turn 1 and protects it.
     const callFloor = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: configWith({ coolingRecentTokens: 0, minCoolingToolCalls: 6 }),
+      config: configWith({
+        coolingRecentTokens: 0,
+        minCoolingToolCalls: 6,
+        maxProtectedTurnTokens: 0,
+      }),
     });
+    expect(callFloor.protectedStartIndex).toBe(2);
     expect(callFloor.candidates).toEqual([]);
-    expect(callFloor.protectedStartIndex).toBe(0);
   });
 
   it("skips calls already masked on the active branch", () => {
@@ -243,8 +256,7 @@ describe("partitionCoolingWindow", () => {
     ];
 
     const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: TINY_TAIL,
+      config: ONLY_LAST_CALL,
       masks: { r1: "drop_result", r2: "drop_call" },
     });
 
@@ -258,54 +270,57 @@ describe("partitionCoolingWindow", () => {
       toolResult("r1", [bigText(4_000)]),
     ];
 
-    const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: TINY_TAIL,
-    });
+    const partition = partitionCoolingWindow(messages, { config: ONLY_LAST_CALL });
 
     expect(partition.candidates).toEqual([]);
   });
 
   it("applies the Error Gate and the tool policy to the candidate pool", () => {
     const messages: AgentMessage[] = [
-      user("go"),
+      user("go"), // 0 — turn 1
       assistant([
         read("r1"),
         read("r2"),
         call("b1", "bash", { command: "pnpm test" }),
         call("e1", "edit", { path: "src/app.ts" }),
         read("r3"),
-      ]),
-      toolResult("r1", [bigText(8_000)], { isError: true }), // bulky error: drop_result only
-      toolResult("r2", [bigText(500)], { isError: true }), // short error: forced keep
-      toolResult("b1", [bigText(8_000)], { toolName: "bash", isError: true }),
-      toolResult("e1", [bigText(8_000)], { toolName: "edit" }), // mutation: keep
-      toolResult("r3", [bigText(8_000)]),
+      ]), // 1
+      toolResult("r1", [bigText(8_000)], { isError: true }), // 2 bulky error: drop_result only
+      toolResult("r2", [bigText(500)], { isError: true }), // 3 short error: forced keep
+      toolResult("b1", [bigText(8_000)], { toolName: "bash", isError: true }), // 4
+      toolResult("e1", [bigText(8_000)], { toolName: "edit" }), // 5 mutation: keep
+      toolResult("r3", [bigText(8_000)]), // 6
+      user("next", 2), // 7 — turn 2
+      assistant([read("r4")], 2), // 8
+      toolResult("r4", [bigText(4_000)], { timestamp: 2 }), // 9
+      user("go on", 3), // 10 — turn 3
+      prose("ok", 3), // 11
     ];
 
-    const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: TINY_TAIL,
-    });
+    const partition = partitionCoolingWindow(messages, { config: ONLY_LAST_CALL });
 
-    // The last result (r3) is the protected tail; the mutation is denied and the
-    // short error is gated. Both bulky errors survive as conditional candidates.
-    expect(ids(partition)).toEqual(["r1", "b1"]);
-    for (const candidate of partition.candidates) {
-      expect(candidate.isError).toBe(true);
+    // The last result (r4) is the protected tail; the mutation and the short
+    // error are denied. Both bulky errors survive as conditional candidates,
+    // and so does the successful read of the same Turn.
+    expect(ids(partition)).toEqual(["r1", "b1", "r3"]);
+    for (const candidate of partition.candidates.filter((entry) => entry.isError)) {
       expect(candidate.eligibility).toEqual({
         dropResult: true,
         dropCall: false,
         requiresSupersessionOrJudge: true,
       });
     }
+    expect(partition.candidates.find((entry) => entry.toolCallId === "r3")?.eligibility).toEqual({
+      dropResult: true,
+      dropCall: true,
+      requiresSupersessionOrJudge: false,
+    });
   });
 
   it("returns an empty partition for an empty context", () => {
-    const partition = partitionCoolingWindow([], { trigger: "turn_watermark" });
+    const partition = partitionCoolingWindow([]);
 
     expect(partition).toEqual({
-      trigger: "turn_watermark",
       protectedStartIndex: 0,
       protectedTokens: 0,
       candidates: [],

@@ -169,16 +169,14 @@ const SMALL_TOOLS: ToolDefinition[] = [
 const ACTIVE_TOOLS = ["grep", "read", "bash", "edit"];
 
 /**
- * Watermarks pinned for a *first* Epoch on the fixture window. The tie-breakers
- * (Cooling Window minimums and the protected-turn cap) are collapsed so the
- * scripted Turns alone decide what is prunable, and the emergency valve sits
- * far above any fixture context so the trigger under test is unambiguous. The
- * spec defaults stay untouched everywhere else.
+ * Watermarks pinned for a *first* Epoch on the fixture window: the lowest step
+ * sits just above zero and the highest far above any fixture context, so the
+ * trigger under test is unambiguous. The tie-breakers (Cooling Window minimums
+ * and the protected-Turn cap) are collapsed so the scripted Turns alone decide
+ * what is prunable. The spec defaults stay untouched everywhere else.
  */
 const EAGER: ToolPruningConfigOverrides = {
-  softWatermarkRatio: 0.01,
-  hardWatermarkRatio: 100,
-  minPrunableDeltaTokens: 1_000_000,
+  watermarks: [0.01, 100],
   minWorthwhilePruneTokens: 1,
   minJudgeWorthwhileTokens: 0,
   coolingRecentTokens: 0,
@@ -625,7 +623,7 @@ describe("Tool Pruning session integration", () => {
     // The decisions are persisted on the active branch, keyed by toolCallId.
     const entries = pruningEntries(session.sessionManager);
     expect(entries).toHaveLength(1);
-    expect(entries[0]!.trigger).toBe("turn_watermark");
+    expect(entries[0]!.watermark).toBe(0.01);
     expect(entries[0]!.decisions).toEqual({ t1grep: "drop_call", t1read: "drop_result" });
     expect(entries[0]!.stats.deterministicDrops).toBe(0);
     expect(entries[0]!.stats.judgeDrops).toBe(2);
@@ -797,7 +795,7 @@ describe("Tool Pruning session integration", () => {
 
     const session = await openSession({
       ctx,
-      config: { ...EAGER, epochCooldownTokens: 1_000 },
+      config: EAGER,
       trace,
     });
 

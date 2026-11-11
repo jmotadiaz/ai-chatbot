@@ -91,22 +91,24 @@ const turn = (prompt: string, calls: readonly CallSpec[], prose?: string): Agent
 };
 
 /**
- * A tail protection short enough that every call except the final one is a
- * Living Candidate; the final result stays protected.
+ * A protection short enough that every call except the final one is a Living
+ * Candidate: the tail keeps the last paired call and the Turn cap is collapsed
+ * so the unified Cooling Window does not protect the active Turn either.
  */
 const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig => ({
   ...DEFAULT_TOOL_PRUNING_CONFIG,
   ...overrides,
 });
 
-const TINY_TAIL = configWith({ coolingRecentTokens: 0, minCoolingToolCalls: 1 });
+const TINY_TAIL = configWith({
+  coolingRecentTokens: 0,
+  minCoolingToolCalls: 1,
+  maxProtectedTurnTokens: 0,
+});
 
 const planFor = (messages: readonly AgentMessage[], config: Partial<ToolPruningConfig> = {}) => {
   const merged = { ...TINY_TAIL, ...config };
-  const partition = partitionCoolingWindow(messages, {
-    trigger: "intra_turn_emergency",
-    config: merged,
-  });
+  const partition = partitionCoolingWindow(messages, { config: merged });
   return buildDecisionPlan({ messages, partition, config: merged });
 };
 
@@ -167,9 +169,12 @@ describe("buildDecisionState", () => {
   it("builds goal, protected digest and per-Turn timeline from the messages", () => {
     const messages = exploreThenImplement();
     const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
       // Protect the last three results so the digest sees reads and a command.
-      config: configWith({ coolingRecentTokens: 0, minCoolingToolCalls: 3 }),
+      config: configWith({
+        coolingRecentTokens: 0,
+        minCoolingToolCalls: 3,
+        maxProtectedTurnTokens: 0,
+      }),
     });
     const candidates = collectDecisionCandidates(messages, partition);
     const state = buildDecisionState({ messages, partition, candidates });
@@ -191,10 +196,7 @@ describe("buildDecisionState", () => {
 
   it("renders candidate args, flags and a head + tail preview", () => {
     const messages = exploreThenImplement();
-    const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: TINY_TAIL,
-    });
+    const partition = partitionCoolingWindow(messages, { config: TINY_TAIL });
     const first = partition.candidates[0];
     const candidates = collectDecisionCandidates(messages, partition, {
       [first.toolCallId]: { editedLater: true },
@@ -355,10 +357,7 @@ describe("buildDecisionPlan questions", () => {
       ]),
     ];
     const merged = { ...TINY_TAIL };
-    const partition = partitionCoolingWindow(messages, {
-      trigger: "intra_turn_emergency",
-      config: merged,
-    });
+    const partition = partitionCoolingWindow(messages, { config: merged });
     const plan = buildDecisionPlan({
       messages,
       partition,
@@ -451,11 +450,11 @@ describe("planDecisionBatches", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Two-band policy
+// Conservative drop policy
 // ---------------------------------------------------------------------------
 
 describe("applyDecisionPolicy", () => {
-  it("keeps the whole uncertain band and only drops below 0.25 in normal mode", () => {
+  it("keeps the whole uncertain band and only drops below 0.25", () => {
     const candidates = [
       candidate("c1"), // 0.30 >= 0.25 -> keep
       candidate("c2"), // 0.20 and call 0.10 -> drop_call
@@ -476,11 +475,7 @@ describe("applyDecisionPolicy", () => {
       "result_c7": Number.NaN,
     };
 
-    const outcome = applyDecisionPolicy(candidates, answers, {
-      mode: "normal",
-      activeTokens: 60_000,
-      contextWindow: 100_000,
-    });
+    const outcome = applyDecisionPolicy(candidates, answers, { activeTokens: 60_000 });
 
     expect(outcome.decisions).toEqual({
       "call-c2": "drop_call",
@@ -489,7 +484,6 @@ describe("applyDecisionPolicy", () => {
     });
     expect(outcome.kept).toEqual(["call-c1", "call-c5", "call-c6", "call-c7"]);
     expect(outcome.highConfidenceDrops).toEqual(["call-c2", "call-c3", "call-c4"]);
-    expect(outcome.emergencyDrops).toEqual([]);
   });
 
   it("never drops the call of bash even when only a call question were answered", () => {
@@ -497,83 +491,53 @@ describe("applyDecisionPolicy", () => {
     const outcome = applyDecisionPolicy(
       candidates,
       { "result_c1": 0.2, "call_c1": 0.05 },
-      { mode: "normal", activeTokens: 10_000, contextWindow: 100_000 },
+      { activeTokens: 10_000 },
     );
     expect(outcome.decisions).toEqual({ "call-c1": "drop_result" });
   });
 
-  it("extends drop_result-only into the [0.25, 0.40) band in emergency mode, ordered by need per token", () => {
+  it("keeps the uncertain [0.25, 0.50) band at every watermark step", () => {
     const candidates = [
-      candidate("c1", {
-        tokensEst: 16_000,
-        resultTokens: 16_000,
-        resultIndex: 1,
-      }),
+      candidate("c1", { tokensEst: 16_000, resultTokens: 16_000, resultIndex: 1 }),
       candidate("c2", { tokensEst: 2_000, resultTokens: 1_900, resultIndex: 5 }),
     ];
-    // c1 has the lower keepResult / log2(tokensEst), so it is dropped first,
-    // and dropping it is enough to reach the 55% target.
+    // A step decides *when* the Epoch runs, never how aggressive it is: even a
+    // context above the last watermark keeps the uncertain band intact.
     const outcome = applyDecisionPolicy(
       candidates,
       { "result_c1": 0.3, "call_c1": 0.05, "result_c2": 0.28 },
-      { mode: "emergency", activeTokens: 62_000, contextWindow: 100_000 },
+      { activeTokens: 90_000 },
     );
 
-    expect(outcome.decisions).toEqual({ "call-c1": "drop_result" });
-    expect(outcome.emergencyDrops).toEqual(["call-c1"]);
+    expect(outcome.decisions).toEqual({});
     expect(outcome.highConfidenceDrops).toEqual([]);
-    expect(outcome.projectedTokens).toBe(46_000);
-    expect(outcome.kept).toEqual(["call-c2"]);
+    expect(outcome.kept).toEqual(["call-c1", "call-c2"]);
+    expect(outcome.projectedTokens).toBe(90_000);
   });
 
-  it("does not extend the band below the 60% trigger or above the 0.40 ceiling", () => {
-    const candidates = [
-      candidate("c1", { tokensEst: 16_000, resultTokens: 16_000 }),
-      candidate("c2", { tokensEst: 4_000, resultTokens: 4_000 }),
-    ];
-    // 58% is above the 55% target but below the 60% extension trigger.
-    const belowTrigger = applyDecisionPolicy(
-      candidates,
-      { "result_c1": 0.3, "result_c2": 0.35 },
-      { mode: "emergency", activeTokens: 58_000, contextWindow: 100_000 },
-    );
-    expect(belowTrigger.emergencyDrops).toEqual([]);
-    expect(belowTrigger.projectedTokens).toBe(58_000);
-
-    // 0.45 is outside the uncertain band, so it is never extended.
-    const aboveBand = applyDecisionPolicy(
-      candidates,
-      { "result_c1": 0.45, "result_c2": 0.45 },
-      { mode: "emergency", activeTokens: 62_000, contextWindow: 100_000 },
-    );
-    expect(aboveBand.emergencyDrops).toEqual([]);
-    expect(aboveBand.kept).toEqual(["call-c1", "call-c2"]);
-  });
-
-  it("applies high-confidence drops before extending the band", () => {
+  it("drops every high-confidence candidate of the batch at once", () => {
     const candidates = [
       candidate("c1", { tokensEst: 3_000, resultTokens: 3_000 }),
       candidate("c2", { tokensEst: 16_000, resultTokens: 16_000 }),
     ];
     const outcome = applyDecisionPolicy(
       candidates,
-      { "result_c1": 0.1, "result_c2": 0.3 },
-      { mode: "emergency", activeTokens: 62_000, contextWindow: 100_000 },
+      { "result_c1": 0.1, "call_c1": 0.1, "result_c2": 0.2, "call_c2": 0.2 },
+      { activeTokens: 90_000 },
     );
 
-    expect(outcome.highConfidenceDrops).toEqual(["call-c1"]);
-    // 62k - 3k = 59k, below the 60k extension trigger.
-    expect(outcome.emergencyDrops).toEqual([]);
-    expect(outcome.kept).toEqual(["call-c2"]);
+    expect(outcome.highConfidenceDrops).toEqual(["call-c1", "call-c2"]);
+    expect(outcome.decisions).toEqual({
+      "call-c1": "drop_call",
+      "call-c2": "drop_result",
+    });
+    expect(outcome.kept).toEqual([]);
+    expect(outcome.projectedTokens).toBe(90_000 - 3_000 - 16_000);
   });
 
   it("keeps every candidate when the judge returns no answers at all", () => {
     const candidates = [candidate("c1"), bashCandidate("c2")];
-    const outcome = applyDecisionPolicy(candidates, {}, {
-      mode: "normal",
-      activeTokens: 50_000,
-      contextWindow: 100_000,
-    });
+    const outcome = applyDecisionPolicy(candidates, {}, { activeTokens: 50_000 });
     expect(outcome.decisions).toEqual({});
     expect(outcome.kept).toEqual(["call-c1", "call-c2"]);
   });
@@ -620,7 +584,6 @@ describe("buildDecisionPlan", () => {
       } satisfies ToolResultMessage,
     ];
     const partition = partitionCoolingWindow(messages, {
-      trigger: "turn_watermark",
       config: DEFAULT_TOOL_PRUNING_CONFIG,
     });
     expect(partition.candidates).toEqual([]);

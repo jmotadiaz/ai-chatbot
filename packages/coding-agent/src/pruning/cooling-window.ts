@@ -2,17 +2,18 @@
  * Cooling Window, Living Candidate Pool and per-tool eligibility (spec D2 + D4).
  *
  * The Cooling Window is the protected tail of an already-masked context: the
- * active turn, the recent tail (`coolingRecentTokens` tokens and at least
- * `minCoolingToolCalls` paired calls) and, for turn-start Epochs, the last
- * completed turn that used tools. Everything before it is the Living Candidate
- * Pool: paired, unmasked calls the Epoch is allowed to prune according to the
+ * union of the recent tail (`coolingRecentTokens` tokens and at least
+ * `minCoolingToolCalls` paired calls), the active Turn and the last completed
+ * Turn that used tools. Everything before it is the Living Candidate Pool:
+ * paired, unmasked calls the Epoch is allowed to prune according to the
  * per-tool policy, the Error Gate and the minimum truncation size.
  *
- * The composed rule exists to resolve the Ratchet Bug: a turn that only reads
- * files to form a plan stays protected across an intermediate prose-only turn,
+ * The composed rule exists to resolve the Ratchet Bug: a Turn that only reads
+ * files to form a plan stays protected across an intermediate prose-only Turn,
  * so the plan's reads are not immortalised and are not pruned while they are
- * still in use either. An oversized turn is capped so a single giant turn
- * cannot block the intra-turn emergency valve.
+ * still in use either. Both protected Turns are capped at
+ * `maxProtectedTurnTokens`, so a single marathon Turn or Subagent can still
+ * prune the obsolete explorations of its first half.
  *
  * Everything here is pure and dependency-light, mirroring `mask.ts`: Pi loads
  * the extension through jiti in its own module runtime, so this module must
@@ -32,7 +33,6 @@ import {
   type ToolCall,
   type ToolPruningConfig,
   type ToolPruningMaskMap,
-  type ToolPruningTrigger,
   type ToolResultMessage,
 } from "./config";
 import { toolResultText } from "./mask";
@@ -174,7 +174,6 @@ export interface PruningCandidate {
 
 /** Partition of the masked context into protected tail and candidate pool. */
 export interface CoolingWindowPartition {
-  readonly trigger: ToolPruningTrigger;
   /**
    * Index of the first protected message. Every message before it is
    * evaluable; `messages.length` means nothing is prunable.
@@ -190,7 +189,6 @@ export interface CoolingWindowPartition {
 
 /** Inputs of the partition; `messages` must already carry every active mask. */
 export interface CoolingWindowOptions {
-  trigger: ToolPruningTrigger;
   /** Defaults to the spec's parameter table. */
   config?: ToolPruningConfig;
   /** Drops already persisted on the active branch; they are terminal there. */
@@ -202,16 +200,14 @@ export interface CoolingWindowOptions {
  * Candidate Pool (spec D4).
  *
  * Protected tail, as a union:
- * 1. The active turn (from its last `UserMessage`) for turn-start Epochs. An
- *    intra-turn emergency Epoch protects only the recent tail, so a marathon
- *    turn can still release the obsolete explorations of its first half.
- * 2. The last `coolingRecentTokens` tokens **and** at least the last
+ * 1. The last `coolingRecentTokens` tokens **and** at least the last
  *    `minCoolingToolCalls` paired calls.
- * 3. For turn-start Epochs, the most recent completed turn that used at least
- *    one tool, skipping prose-only turns in between, capped at
- *    `maxProtectedTurnTokens`. A turn above the cap keeps only its most recent
- *    `maxProtectedTurnTokens / 2` tokens (20 000 by default) and the excess
- *    prefix becomes evaluable.
+ * 2. The active Turn (from its last `UserMessage`), capped at
+ *    `maxProtectedTurnTokens`.
+ * 3. The most recent completed Turn that used at least one tool, skipping
+ *    prose-only Turns in between, capped the same way. A Turn above the cap
+ *    keeps only its most recent `maxProtectedTurnTokens / 2` tokens (20 000 by
+ *    default) and the excess prefix becomes evaluable.
  *
  * Candidates are paired calls whose result sits before the protected tail,
  * that carry no mask yet and whose eligibility allows at least one drop. An
@@ -219,15 +215,13 @@ export interface CoolingWindowOptions {
  */
 export function partitionCoolingWindow(
   messages: readonly AgentMessage[],
-  options: CoolingWindowOptions,
+  options: CoolingWindowOptions = {},
 ): CoolingWindowPartition {
-  const { trigger } = options;
   const config = options.config ?? DEFAULT_TOOL_PRUNING_CONFIG;
   const masks = options.masks ?? {};
 
   if (messages.length === 0) {
     return {
-      trigger,
       protectedStartIndex: 0,
       protectedTokens: 0,
       candidates: [],
@@ -239,15 +233,21 @@ export function partitionCoolingWindow(
   const paired = collectPairedCalls(messages);
 
   let protectedStartIndex = findProtectedTailStart(messages, tokens, paired, config);
-  if (trigger === "turn_watermark") {
-    const turnStart = findCurrentTurnStart(messages);
-    if (turnStart !== undefined) {
-      protectedStartIndex = Math.min(protectedStartIndex, turnStart);
-    }
-    const lastToolTurnStart = findLastCompletedToolTurnStart(messages, tokens, paired, config);
-    if (lastToolTurnStart !== undefined) {
-      protectedStartIndex = Math.min(protectedStartIndex, lastToolTurnStart);
-    }
+  const activeTurnStart = findCurrentTurnStart(messages);
+  if (activeTurnStart !== undefined) {
+    protectedStartIndex = Math.min(
+      protectedStartIndex,
+      capProtectedTurnStart(
+        activeTurnStart,
+        messages.length,
+        tokens,
+        config.maxProtectedTurnTokens,
+      ),
+    );
+  }
+  const lastToolTurnStart = findLastCompletedToolTurnStart(messages, tokens, paired, config);
+  if (lastToolTurnStart !== undefined) {
+    protectedStartIndex = Math.min(protectedStartIndex, lastToolTurnStart);
   }
 
   let protectedTokens = 0;
@@ -296,7 +296,6 @@ export function partitionCoolingWindow(
   }
 
   return {
-    trigger,
     protectedStartIndex,
     protectedTokens,
     candidates,
@@ -402,13 +401,13 @@ function findProtectedTailStart(
 }
 
 /**
- * First protected index granted by rule (c): the most recent completed turn
- * that used at least one tool, skipping prose-only turns in between so a
- * conversational turn cannot prematurely unprotect the files of the plan it
+ * First protected index granted by rule (c): the most recent completed Turn
+ * that used at least one tool, skipping prose-only Turns in between so a
+ * conversational Turn cannot prematurely unprotect the files of the plan it
  * discusses.
  *
- * The active turn (opened by the last `UserMessage`) is handled by rule (a);
- * only turns that closed before it are considered here.
+ * The active Turn (opened by the last `UserMessage`) is handled by its own rule;
+ * only Turns that closed before it are considered here.
  */
 function findLastCompletedToolTurnStart(
   messages: readonly AgentMessage[],
@@ -429,18 +428,19 @@ function findLastCompletedToolTurnStart(
       (call) => call.resultIndex >= start && call.resultIndex < end,
     );
     if (!usedTools) continue;
-    return capCompletedTurnStart(start, end, tokens, config.maxProtectedTurnTokens);
+    return capProtectedTurnStart(start, end, tokens, config.maxProtectedTurnTokens);
   }
   return undefined;
 }
 
 /**
- * Applies the protection cap to a single completed turn. A turn within the cap
- * is protected in full; a larger one keeps only its most recent half-cap
+ * Applies the protection cap to one Turn, active or completed. A Turn within the
+ * cap is protected in full; a larger one keeps only its most recent half-cap
  * (`maxProtectedTurnTokens / 2`, 20 000 tokens by default) so its excess prefix
- * becomes evaluable and one giant turn cannot block the emergency valve.
+ * becomes evaluable and one giant Turn or Subagent cannot protect its obsolete
+ * first half forever.
  */
-function capCompletedTurnStart(
+function capProtectedTurnStart(
   start: number,
   end: number,
   tokens: readonly number[],
