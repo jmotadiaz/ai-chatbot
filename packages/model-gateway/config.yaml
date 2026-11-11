@@ -66,7 +66,7 @@ router_settings:
       hidden: true
 
 model_list:
-  # ---------- 18 user_invocable: true models (model selector) --------------
+  # ---------- 21 user_invocable: true models (model selector) --------------
   #
   # `context_window` is the EFFECTIVE budget our clients get, not the window the
   # provider advertises. Consumers (Pi in the coding-agent, the chatbot
@@ -83,9 +83,9 @@ model_list:
   #   100_000 — Claude Haiku: the upstream price tier steps up above 100k, so
   #             we cap there to stay on the base rate. Compaction then fires at
   #             83_616 (Pi) / 90_000 (chatbot), i.e. before the premium tier.
-  #   160_000 — Google AI Studio (Tier 1: 2M input TPM; both Gemini models share
-  #             the key) and the free tiers (Beam Free, Iceman Contributor Free):
-  #             2_000_000 / 12 req/min.
+  #   160_000 — Google AI Studio (Tier 1: 2M input TPM; the Gemini models share
+  #             the key) and the free tiers (Beam Free, Iceman Contributor Free,
+  #             LongCat 2.5 Free): 2_000_000 / 12 req/min.
   #   200_000 — the rest (OpenCode Go limits are capacity-based, not a per-minute
   #             token quota): a wide margin over what a session actually needs,
   #             far below the provider window, and it keeps compaction and
@@ -244,6 +244,39 @@ model_list:
       default_top_p: null
       default_top_k: null
 
+  # Gemini 4 Carbon — Google AI Studio (Google Generative AI key), no api_base:
+  # LiteLLM's `gemini/` provider talks to the default Generative Language API,
+  # like Gemini 4 Argon. Same AI Studio tier, so it inherits the 160k effective
+  # window (Tier 1: 2M input TPM shared by the Gemini models) and the img/pdf
+  # inputs; not zero-retention in this Gateway's accounting.
+  # Costs are a placeholder at Gemini Pro rates: confirm them against the AI
+  # Studio price sheet before trusting the picker's numbers.
+  - model_name: Gemini 4 Carbon
+    litellm_params:
+      model: gemini/gemini-4-carbon
+      api_key: os.environ/GOOGLE_GENERATIVE_AI_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: google
+      context_window: 160000
+      max_output_tokens: 65536
+      input_cost_per_token: 1.25e-6
+      output_cost_per_token: 1.0e-5
+      cache_read_input_token_cost: 1.25e-7
+      cache_creation_input_token_cost: 0
+      reasoning: true
+      thinking_levels: ["low", "medium", "high"]
+      default_thinking_level: "high"
+      supported_files: [img, pdf]
+      supported_output: [text]
+      zero_data_retention: false
+      # Same generation as Gemini 4 Argon: temperature is not implied, so it
+      # stays null instead of guessing a sampling default.
+      default_temperature: null
+      default_top_p: null
+      default_top_k: null
+
   - model_name: GLM 5.3
     litellm_params:
       model: openai/glm-5.3
@@ -319,6 +352,37 @@ model_list:
       default_top_p: null
       default_top_k: null
 
+  # Hy4 — Tencent's successor to Hy3 on OpenCode Go, through the
+  # OpenAI-compatible endpoint. Multimodal (text + image) with a 1M provider
+  # window, and the provider advertises exactly two reasoning efforts: "none"
+  # (our "off") and "high" — there is no minimal/low/medium rung to expose.
+  # Privacy (Go table): "Not used" / 0 days → zero-retention, like DeepSeek and
+  # MiniMax M3.1 Flash.
+  - model_name: Hy4
+    litellm_params:
+      model: openai/hy4
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: tencent
+      context_window: 200000
+      max_output_tokens: 65536
+      input_cost_per_token: 8.34e-7
+      output_cost_per_token: 2.501e-6
+      cache_read_input_token_cost: 4.2e-8
+      cache_creation_input_token_cost: 0
+      reasoning: true
+      thinking_levels: ["off", "high"]
+      default_thinking_level: "high"
+      supported_files: [img]
+      supported_output: [text]
+      zero_data_retention: true
+      default_temperature: null
+      default_top_p: null
+      default_top_k: null
+
   # Iceman Contributor Free — stealth free model on OpenCode Go.
   - model_name: Iceman Contributor Free
     litellm_params:
@@ -368,6 +432,38 @@ model_list:
       supported_files: [img]
       supported_output: [text]
       zero_data_retention: false
+      default_temperature: null
+      default_top_p: null
+      default_top_k: null
+
+  # LongCat 2.5 Free — Meituan's multimodal reasoning model, free for a limited
+  # time on OpenCode Go (1M provider window, text + image). The provider
+  # advertises a reasoning TOGGLE and no effort ladder, so there is no level to
+  # map to `reasoning_effort`: `thinking_levels` stays empty and the model runs
+  # at its provider default. Temperature is not supported by the model, so the
+  # sampling default stays null.
+  # Privacy (Go table): "Not used" / 0 days → zero-retention.
+  - model_name: LongCat 2.5 Free
+    litellm_params:
+      model: openai/longcat-2.5-free
+      api_base: https://opencode.ai/zen/go/v1
+      api_key: os.environ/OPENCODE_API_KEY
+    model_info:
+      user_invocable: true
+      is_default: false
+      company: meituan
+      context_window: 160000
+      max_output_tokens: 262144
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+      cache_read_input_token_cost: 0
+      cache_creation_input_token_cost: 0
+      reasoning: true
+      thinking_levels: []
+      default_thinking_level: null
+      supported_files: [img]
+      supported_output: [text]
+      zero_data_retention: true
       default_temperature: null
       default_top_p: null
       default_top_k: null
@@ -705,18 +801,25 @@ model_list:
       company: cohere
       zero_data_retention: false
 
-  # decision-default — Microsoft-Decision-1 via OpenRouter, ZDR enforced.
+  # decision-default — Perplexity Decider V1.2 via OpenRouter.
   # Served by LiteLLM's native /v1/decisions and /v1/systemone routes.
+  # Decider V1.2 is a decisions model (no chat completions): text + image state
+  # in, typed probabilistic answers out, 262k context at $0.019/M input tokens.
+  # ZDR: OpenRouter lists exactly two providers for it (Perplexity and Makora)
+  # and both are zero-retention (`is_zdr: true`, `retainsPrompts: false`), so a
+  # request cannot land on a retaining endpoint. LiteLLM 1.104 does not forward
+  # `extra_body` on the Decisions route: the `provider.zdr` filter below is
+  # declared for parity with the chat models, the provider list is the guarantee.
   - model_name: decision-default
     litellm_params:
-      model: openrouter/microsoft/microsoft-decision-1
+      model: openrouter/perplexity/pplx-decider-v1.2
       api_key: os.environ/OPENROUTER_API_KEY
       extra_body:
         provider:
           zdr: true
     model_info:
       user_invocable: false
-      company: microsoft
+      company: perplexity
       zero_data_retention: true
 
   # tts-default — GPT-4o Mini TTS via OpenAI (POST /v1/audio/speech).

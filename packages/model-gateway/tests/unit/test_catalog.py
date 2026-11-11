@@ -29,11 +29,14 @@ INVOCABLE_IDS = [
     "Claude Haiku",
     "Gemini 3.8 Flash",
     "Gemini 4 Argon",
+    "Gemini 4 Carbon",
     "GLM 5.3",
     "GLM 5.3 Flash",
     "Hy3",
+    "Hy4",
     "Iceman Contributor Free",
     "Kimi K3.1 Pro",
+    "LongCat 2.5 Free",
     "MiMo V2.6 Flash",
     "MiMo V2.6 Pro",
     "MiniMax M3",
@@ -100,7 +103,7 @@ def catalog(config):
 # --- server-side filtering ------------------------------------------------
 
 
-def test_catalog_returns_exactly_the_18_user_invocable_models_in_order(catalog):
+def test_catalog_returns_exactly_the_21_user_invocable_models_in_order(catalog):
     assert [m["id"] for m in catalog["models"]] == INVOCABLE_IDS
 
 
@@ -182,10 +185,69 @@ def test_beam_free_is_free(catalog):
     assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
 
 
+def test_hy4_is_multimodal_and_exposes_the_two_provider_efforts(catalog):
+    model = next(m for m in catalog["models"] if m["id"] == "Hy4")
+    assert model["company"] == "tencent"
+    assert model["reasoning"] is True
+    # The provider advertises exactly two efforts: "none" (our "off") and
+    # "high", so there is no minimal/low/medium rung to expose.
+    assert model["thinkingLevels"] == ["off", "high"]
+    assert model["defaultThinkingLevel"] == "high"
+    assert model["supportedFiles"] == ["img"]
+    # Go privacy table: "Not used" / 0 days, like DeepSeek and MiniMax M3.1 Flash.
+    assert model["zeroDataRetention"] is True
+    # OpenCode Go rates: $0.834 input / $2.501 output / $0.042 cache read.
+    assert model["cost"] == {
+        "input": 0.834,
+        "output": 2.501,
+        "cacheRead": 0.042,
+        "cacheWrite": 0,
+    }
+
+
+def test_longcat_25_free_is_multimodal_and_toggle_only(catalog):
+    model = next(m for m in catalog["models"] if m["id"] == "LongCat 2.5 Free")
+    assert model["company"] == "meituan"
+    assert model["isDefault"] is False
+    # Free tier on OpenCode Go: the same 160k effective budget as Beam Free and
+    # Iceman Contributor Free (2M input TPM / 12 req/min).
+    assert model["contextWindow"] == 160000
+    assert model["maxTokens"] == 262144
+    assert model["reasoning"] is True
+    # The provider advertises a reasoning toggle (on/off) and no effort ladder:
+    # there is no value to send as `reasoning_effort`, so no level is exposed.
+    assert model["thinkingLevels"] == []
+    assert model["defaultThinkingLevel"] is None
+    assert model["supportedFiles"] == ["img"]
+    assert model["supportedOutput"] == ["text"]
+    # Go privacy table: "Not used" / 0 days.
+    assert model["zeroDataRetention"] is True
+    # Free for a limited time, like Beam Free and Iceman Contributor Free.
+    assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+    # The model does not support temperature: no sampling default to impose.
+    assert model["temperature"] is None
+
+
 def test_step_5_preview_is_no_longer_free(catalog):
     # OpenCode Go rates: $1.00 input / $2.70 output / $0.10 cache read.
     model = next(m for m in catalog["models"] if m["id"] == "Step 5 Preview")
     assert model["cost"] == {"input": 1, "output": 2.7, "cacheRead": 0.1, "cacheWrite": 0}
+
+
+def test_gemini_4_carbon_is_a_user_invocable_ai_studio_model(catalog):
+    model = next(m for m in catalog["models"] if m["id"] == "Gemini 4 Carbon")
+    assert model["company"] == "google"
+    assert model["isDefault"] is False
+    # AI Studio tier: the same 160k effective budget as the other Gemini models.
+    assert model["contextWindow"] == 160000
+    assert model["maxTokens"] == 65536
+    assert model["reasoning"] is True
+    assert model["thinkingLevels"] == ["low", "medium", "high"]
+    assert model["defaultThinkingLevel"] == "high"
+    assert model["supportedFiles"] == ["img", "pdf"]
+    assert model["supportedOutput"] == ["text"]
+    # AI Studio is not zero-retention in this Gateway's accounting.
+    assert model["zeroDataRetention"] is False
 
 
 def test_thinking_levels_derived_and_defaults_supported(catalog):
@@ -237,6 +299,10 @@ def test_opencode_upstream_slugs_match_the_provider_catalog(config):
     # `responses/` prefix forces LiteLLM's bridge and avoids the
     # "Model does not support this protocol" error from chat/completions.
     assert params["Muse Spark 1.3"] == "openai/responses/muse-spark-1.3-contributor"
+    # Hy4 is served as a plain OpenAI-compatible chat/completions model.
+    assert params["Hy4"] == "openai/hy4"
+    # LongCat 2.5 Free keeps the OpenCode Go slug as-is.
+    assert params["LongCat 2.5 Free"] == "openai/longcat-2.5-free"
 
 
 def test_free_default_contract_is_beam_free_on_opencode_go(config):
@@ -357,15 +423,20 @@ def test_flash_default_routes_to_beam_free_with_minimum_reasoning(config):
 def test_decision_default_routes_through_openrouter_with_zdr(config):
     params = {m["model_name"]: m["litellm_params"] for m in config["model_list"]}
     decision = params["decision-default"]
-    assert decision["model"] == "openrouter/microsoft/microsoft-decision-1"
+    # Decider V1.2 is a decisions model on OpenRouter, so it is invoked through
+    # the Decisions API, not chat/completions.
+    assert decision["model"] == "openrouter/perplexity/pplx-decider-v1.2"
     assert decision["api_key"] == "os.environ/OPENROUTER_API_KEY"
+    # Both OpenRouter providers of this model are ZDR endpoints, which is where
+    # the guarantee lives (LiteLLM's Decisions route ignores `extra_body`); the
+    # filter stays declared for parity with the chat models.
     assert decision["extra_body"]["provider"]["zdr"] is True
     decision_entry = next(
         m for m in build_catalog(copy.deepcopy(config), include_internal=True)["models"]
         if m["id"] == "decision-default"
     )
     assert decision_entry["zeroDataRetention"] is True
-    assert decision_entry["company"] == "microsoft"
+    assert decision_entry["company"] == "perplexity"
 
 
 # --- stable family/tier aliases (routing only) ----------------------------
