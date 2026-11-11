@@ -47,6 +47,7 @@ import {
   type ToolPruningEpochEntry,
   type ToolPruningEpochStats,
   type ToolPruningMaskMap,
+  type ToolPruningSignals,
 } from "./config";
 import {
   partitionCoolingWindow,
@@ -58,7 +59,6 @@ import {
   buildDecisionPlan,
   type DecisionPlan,
   type DecisionPolicyResult,
-  type Phase0Signals,
 } from "./decision-state";
 import { projectPruningMask } from "./mask";
 import type { ToolPruningTraceLogger } from "./pruning-bridge";
@@ -194,37 +194,55 @@ export interface ToolPruningTokenMeasurement {
   messages: AgentMessage[];
   /** Context tokens of the masked projection (spec D3). */
   activeTokens: number;
-  /** Tokens the mask removed at or before the last valid `usage`. */
-  removedBeforeUsage: number;
+  /** Tokens the mask removed that the provider has not counted yet (see below). */
+  newlyMaskedBeforeUsage: number;
   /** Whether the projection carries a usable provider `usage` at all. */
   hasUsage: boolean;
   /** Whether the projection differs from the input (identity comparison). */
   changed: boolean;
 }
 
-/** Index and token count of the last assistant message with a valid `usage`. */
+/** Index, token count and timestamp of the last assistant message with a valid `usage`. */
 interface UsageBoundary {
   readonly index: number;
   readonly tokens: number;
+  readonly timestamp: number;
+}
+
+/**
+ * The masks one Epoch applied, as recovered from the session branch.
+ *
+ * `timestamp` is the Epoch entry's own timestamp, i.e. the moment its masks
+ * started reaching the provider.
+ */
+export interface ToolPruningMaskApplication {
+  readonly timestamp: number;
+  readonly decisions: ToolPruningMaskMap;
 }
 
 /**
  * Measures the active context of a projection, applying the provider-`usage`
  * correction of spec D3:
  *
- * `calculateContextTokens(usage) - removedBeforeUsage + trailing`
+ * `calculateContextTokens(usage) - newlyMaskedBeforeUsage + trailing`
  *
  * The `usage` of the last assistant message was reported by the provider for a
- * prefix that still carried the bodies the mask has since stubbed or dropped,
- * so subtracting those reductions is what keeps a freshly pruned context from
- * looking as full as it did a moment ago — and from consuming a watermark step
- * it no longer warrants. A session with no valid `usage` yet (fresh, or just
- * after a Compaction) falls back to estimating every message.
+ * projection that already carried every mask applied **at that point**, so only
+ * the reductions applied **since then** may be subtracted. Subtracting the whole
+ * mask's reduction would double-subtract every earlier Epoch's saving and make
+ * a pruned session look far emptier than it is, hiding the next watermark step
+ * (or, worse, spending a lower one). `applications` is the per-Epoch mask
+ * history rebuilt from the branch (`masksFromBranch`), which is what makes "as
+ * of that point" reconstructible after a reload.
+ *
+ * A session with no valid `usage` yet (fresh, or just after a Compaction) falls
+ * back to estimating every message.
  */
 export function measureProjection(
   messages: readonly AgentMessage[],
   masks: ToolPruningMaskMap,
   config: ToolPruningConfig,
+  applications: readonly ToolPruningMaskApplication[] = [],
 ): ToolPruningTokenMeasurement {
   const projection = projectPruningMask(messages, masks, config);
   const boundary = lastUsageBoundary(messages);
@@ -235,17 +253,23 @@ export function measureProjection(
     return {
       messages: projection.messages,
       activeTokens: estimated,
-      removedBeforeUsage: 0,
+      newlyMaskedBeforeUsage: 0,
       hasUsage: false,
       changed: differs(messages, projection.messages),
     };
   }
 
-  // Reductions applied to messages at or before the usage boundary: the
-  // provider counted those bytes, the provider will not see them again.
-  let removedBeforeUsage = 0;
+  // What the provider already counted as removed when it reported `usage`: the
+  // masks of every Epoch that had run before that message was produced.
+  const previouslyMasked = masksAppliedBefore(applications, boundary.timestamp);
+  const seen = projectPruningMask(messages, previouslyMasked, config);
+
+  // Only the NEW reduction of the counted prefix is subtracted.
+  let newlyMaskedBeforeUsage = 0;
   for (let index = 0; index <= boundary.index; index++) {
-    removedBeforeUsage += projection.removedTokens[index] ?? 0;
+    const removed = projection.removedTokens[index] ?? 0;
+    const alreadySeen = seen.removedTokens[index] ?? 0;
+    newlyMaskedBeforeUsage += Math.max(0, removed - alreadySeen);
   }
 
   // Everything after the boundary is estimated, net of its own reductions.
@@ -257,11 +281,30 @@ export function measureProjection(
 
   return {
     messages: projection.messages,
-    activeTokens: Math.max(0, boundary.tokens - removedBeforeUsage + trailingTokens),
-    removedBeforeUsage,
+    activeTokens: Math.max(0, boundary.tokens - newlyMaskedBeforeUsage + trailingTokens),
+    newlyMaskedBeforeUsage,
     hasUsage: true,
     changed: differs(messages, projection.messages),
   };
+}
+
+/**
+ * Masks the provider had already seen at `timestamp`: every Epoch whose entry is
+ * at or before it. An Epoch always runs at a `context` event, i.e. before the
+ * request that produces the next assistant message, so a mask applied by an
+ * Epoch that ran no later than the usage message was part of what the provider
+ * counted.
+ */
+function masksAppliedBefore(
+  applications: readonly ToolPruningMaskApplication[],
+  timestamp: number,
+): ToolPruningMaskMap {
+  const masks: Record<string, ToolPruningDrop> = {};
+  for (const application of applications) {
+    if (application.timestamp > timestamp) continue;
+    Object.assign(masks, application.decisions);
+  }
+  return masks;
 }
 
 /**
@@ -300,7 +343,7 @@ function lastUsageBoundary(messages: readonly AgentMessage[]): UsageBoundary | u
     if (usage === undefined) continue;
     const tokens = calculateContextTokens(usage);
     if (tokens <= 0) continue;
-    return { index, tokens };
+    return { index, tokens, timestamp: message.timestamp };
   }
   return undefined;
 }
@@ -309,7 +352,7 @@ function lastUsageBoundary(messages: readonly AgentMessage[]): UsageBoundary | u
 // Branch-aware state reconstruction (spec D7)
 // ---------------------------------------------------------------------------
 
-/** Masks, epoch counter and consumed step recovered from one session branch. */
+/** Masks, epoch counter, consumed step and mask history of one session branch. */
 export interface ToolPruningBranchState {
   /** Terminal drops persisted on the branch, keyed by `toolCallId`. */
   readonly masks: Record<string, ToolPruningDrop>;
@@ -317,6 +360,8 @@ export interface ToolPruningBranchState {
   readonly lastEpochId: number;
   /** Highest watermark step consumed since the last Compaction (`0` when none). */
   readonly highestConsumedWatermark: number;
+  /** Per-Epoch mask applications in branch order (spec D3 usage correction). */
+  readonly applications: readonly ToolPruningMaskApplication[];
 }
 
 /**
@@ -340,6 +385,7 @@ export function masksFromBranch(
   }
 
   const masks: Record<string, ToolPruningDrop> = {};
+  const applications: ToolPruningMaskApplication[] = [];
   let lastEpochId = 0;
   let highestConsumedWatermark = 0;
   for (let index = start; index < entries.length; index++) {
@@ -347,11 +393,12 @@ export function masksFromBranch(
     if (epoch === undefined) continue;
     lastEpochId = Math.max(lastEpochId, epoch.epochId);
     highestConsumedWatermark = Math.max(highestConsumedWatermark, epoch.watermark);
+    applications.push({ timestamp: epoch.timestamp, decisions: epoch.decisions });
     for (const [toolCallId, decision] of Object.entries(epoch.decisions)) {
       masks[toolCallId] = decision;
     }
   }
-  return { masks, lastEpochId, highestConsumedWatermark };
+  return { masks, lastEpochId, highestConsumedWatermark, applications };
 }
 
 /**
@@ -361,7 +408,7 @@ export function masksFromBranch(
  */
 function readEpochEntry(
   entry: ToolPruningSessionEntry,
-): Pick<ToolPruningEpochEntry, "epochId" | "watermark" | "decisions"> | undefined {
+): Pick<ToolPruningEpochEntry, "epochId" | "watermark" | "timestamp" | "decisions"> | undefined {
   if (entry.type !== "custom" || entry.customType !== TOOL_PRUNING_ENTRY_TYPE) return undefined;
   const data = entry.data;
   if (typeof data !== "object" || data === null || Array.isArray(data)) return undefined;
@@ -374,6 +421,13 @@ function readEpochEntry(
     typeof record.watermark === "number" && Number.isFinite(record.watermark) && record.watermark >= 0
       ? record.watermark
       : 0;
+  // Without a usable timestamp the masks cannot be placed on the provider's
+  // timeline; treating them as the oldest possible application makes them count
+  // as already seen, which can only under-estimate the correction.
+  const timestamp =
+    typeof record.timestamp === "number" && Number.isFinite(record.timestamp)
+      ? record.timestamp
+      : Number.NEGATIVE_INFINITY;
   const rawDecisions = record.decisions;
   if (typeof rawDecisions !== "object" || rawDecisions === null || Array.isArray(rawDecisions)) {
     return undefined;
@@ -383,7 +437,7 @@ function readEpochEntry(
   for (const [toolCallId, decision] of Object.entries(rawDecisions)) {
     if (decision === "drop_result" || decision === "drop_call") decisions[toolCallId] = decision;
   }
-  return { epochId: record.epochId, watermark, decisions };
+  return { epochId: record.epochId, watermark, timestamp, decisions };
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +471,8 @@ export class ToolPruningEpochRunner {
   private masks: Record<string, ToolPruningDrop> = {};
   private highestConsumedWatermark = 0;
   private epochCounter = 0;
+  /** Per-Epoch mask history of the branch (spec D3 usage correction). */
+  private applications: readonly ToolPruningMaskApplication[] = [];
   /** `(sessionId, leafId)` the current state was derived from (spec D7). */
   private branchKey: string | undefined;
 
@@ -447,7 +503,12 @@ export class ToolPruningEpochRunner {
     if (!this.config.enabled) return { messages: messages.slice(), changed: false };
 
     this.syncBranchState();
-    const measurement = measureProjection(messages, this.masks, this.config);
+    const measurement = measureProjection(
+      messages,
+      this.masks,
+      this.config,
+      this.applications,
+    );
     /** Nothing triggered: the already-measured projection is what to return. */
     const unchanged = (): ToolPruningProjection => ({
       messages: measurement.messages,
@@ -532,10 +593,14 @@ export class ToolPruningEpochRunner {
       ...(outcome?.decisions ?? {}),
     };
     const tokensSavedEst = this.estimateSavedTokens(decisions, partition.candidates);
+    // Total candidates considered by this Epoch: what Phase 0 dropped plus what
+    // Phase 1 judged. Counting only the judged ones would hide the deterministic
+    // drops from the audit trail whenever the judge also ran.
+    const survivors = plan?.candidates.length ?? supersession.remaining.length;
     const stats: ToolPruningEpochStats = {
       deterministicDrops: countDrops(decisions, supersession.decisions),
       judgeDrops: countDrops(decisions, outcome?.decisions ?? {}),
-      candidatesEvaluated: plan?.candidates.length ?? partition.candidates.length,
+      candidatesEvaluated: supersession.droppedCount + survivors,
       batches: outcome?.batches ?? 0,
       latencyMs: this.now() - startedAt,
       ...(outcome?.decisionModel === undefined ? {} : { decisionModel: outcome.decisionModel }),
@@ -555,6 +620,7 @@ export class ToolPruningEpochRunner {
     };
 
     this.masks = { ...this.masks, ...decisions };
+    this.applications = [...this.applications, { timestamp: entry.timestamp, decisions }];
     this.highestConsumedWatermark = Math.max(this.highestConsumedWatermark, watermark);
     // The appended entry moves the leaf: force the next projection to rebuild
     // from the branch instead of trusting the local state.
@@ -570,10 +636,10 @@ export class ToolPruningEpochRunner {
   private planDecision(
     messages: readonly AgentMessage[],
     partition: CoolingWindowPartition,
-    survivors: readonly { candidate: PruningCandidate; signals: Phase0Signals }[],
+    survivors: readonly { candidate: PruningCandidate; signals: ToolPruningSignals }[],
   ): DecisionPlan {
     const candidates = survivors.map((entry) => entry.candidate);
-    const signals: Record<string, Partial<Phase0Signals>> = {};
+    const signals: Record<string, Partial<ToolPruningSignals>> = {};
     for (const entry of survivors) signals[entry.candidate.toolCallId] = entry.signals;
     const remainingTokens = candidates.reduce((total, candidate) => total + candidate.tokensEst, 0);
 
@@ -723,6 +789,7 @@ export class ToolPruningEpochRunner {
 
     const state = masksFromBranch(entries);
     this.masks = state.masks;
+    this.applications = state.applications;
     this.epochCounter = Math.max(this.epochCounter, state.lastEpochId);
     this.highestConsumedWatermark = state.highestConsumedWatermark;
   }

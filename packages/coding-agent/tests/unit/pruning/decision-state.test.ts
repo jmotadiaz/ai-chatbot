@@ -1,16 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_TOOL_PRUNING_CONFIG,
+  NO_TOOL_PRUNING_SIGNALS,
   type AgentMessage,
-  type AssistantMessage,
-  type ToolCall,
   type ToolPruningConfig,
-  type ToolResultMessage,
 } from "../../../src/pruning/config";
 import { partitionCoolingWindow } from "../../../src/pruning/cooling-window";
 import {
   MAX_DECISION_REQUEST_TOKENS,
-  NO_PHASE0_SIGNALS,
   applyDecisionPolicy,
   buildDecisionPlan,
   buildDecisionState,
@@ -24,46 +21,11 @@ import {
   type DecisionCandidateEntry,
   type DecisionStateDocument,
 } from "../../../src/pruning/decision-state";
+import { assistant, call, configWith, toolResult, user } from "./fixtures";
 
 // ---------------------------------------------------------------------------
 // Message fixtures
 // ---------------------------------------------------------------------------
-
-const usage: AssistantMessage["usage"] = {
-  input: 1,
-  output: 1,
-  cacheRead: 0,
-  cacheWrite: 0,
-  totalTokens: 2,
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-};
-
-const user = (content: string, timestamp = 1): AgentMessage => ({
-  role: "user",
-  content,
-  timestamp,
-});
-
-const assistant = (
-  content: AssistantMessage["content"],
-  timestamp = 1,
-): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "test-model",
-  usage,
-  stopReason: "toolUse",
-  timestamp,
-});
-
-const call = (id: string, name: string, args: Record<string, unknown>): ToolCall => ({
-  type: "toolCall",
-  id,
-  name,
-  arguments: args,
-});
 
 interface CallSpec {
   id: string;
@@ -75,18 +37,18 @@ interface CallSpec {
 }
 
 /** One Turn: user prompt, assistant prose with every call, then its results. */
-const turn = (prompt: string, calls: readonly CallSpec[], prose?: string): AgentMessage[] => {
-  const content: AssistantMessage["content"] = [];
-  if (prose !== undefined) content.push({ type: "text", text: prose });
+const turn = (prompt: string, calls: readonly CallSpec[], proseText?: string): AgentMessage[] => {
+  const content = [];
+  if (proseText !== undefined) content.push({ type: "text" as const, text: proseText });
   for (const spec of calls) content.push(call(spec.id, spec.tool, spec.args));
-  const results: ToolResultMessage[] = calls.map((spec) => ({
-    role: "toolResult",
-    toolCallId: spec.id,
-    toolName: spec.tool,
-    content: [{ type: "text", text: `${spec.id}-HEAD-${"x".repeat((spec.chars ?? 4_000) - 20)}${spec.id}-TAIL` }],
-    isError: spec.isError ?? false,
-    timestamp: 1_700_000_000_000,
-  }));
+  const results = calls.map((spec) =>
+    toolResult(spec.id, [
+      {
+        type: "text" as const,
+        text: `${spec.id}-HEAD-${"x".repeat((spec.chars ?? 4_000) - 20)}${spec.id}-TAIL`,
+      },
+    ], { toolName: spec.tool, isError: spec.isError ?? false }),
+  );
   return [user(prompt), assistant(content), ...results];
 };
 
@@ -95,11 +57,6 @@ const turn = (prompt: string, calls: readonly CallSpec[], prose?: string): Agent
  * Candidate: the tail keeps the last paired call and the Turn cap is collapsed
  * so the unified Cooling Window does not protect the active Turn either.
  */
-const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig => ({
-  ...DEFAULT_TOOL_PRUNING_CONFIG,
-  ...overrides,
-});
-
 const TINY_TAIL = configWith({
   coolingRecentTokens: 0,
   minCoolingToolCalls: 1,
@@ -131,7 +88,7 @@ const candidate = (
     dropCall: true,
     requiresSupersessionOrJudge: false,
   },
-  signals: NO_PHASE0_SIGNALS,
+  signals: NO_TOOL_PRUNING_SIGNALS,
   resultText: "x".repeat(4_000),
   ...overrides,
 });
@@ -574,14 +531,7 @@ describe("buildDecisionPlan", () => {
     const messages = [
       user("Explore"),
       assistant([call("r1", "read", { path: "src/app.ts" })]),
-      {
-        role: "toolResult",
-        toolCallId: "r1",
-        toolName: "read",
-        content: [{ type: "text", text: "x".repeat(8_000) }],
-        isError: false,
-        timestamp: 1,
-      } satisfies ToolResultMessage,
+      toolResult("r1", [{ type: "text", text: "x".repeat(8_000) }]),
     ];
     const partition = partitionCoolingWindow(messages, {
       config: DEFAULT_TOOL_PRUNING_CONFIG,

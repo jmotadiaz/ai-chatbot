@@ -175,16 +175,37 @@ export interface PruningCandidate {
 /** Partition of the masked context into protected tail and candidate pool. */
 export interface CoolingWindowPartition {
   /**
-   * Index of the first protected message. Every message before it is
-   * evaluable; `messages.length` means nothing is prunable.
+   * Earliest protected message (`messages.length` when nothing is protected).
+   * Only a reporting value: the protected region is a union of spans, so a
+   * message at or after it is not necessarily protected.
    */
   readonly protectedStartIndex: number;
-  /** Tokens of the protected tail. */
+  /**
+   * The protected region as a union of independent `[start, end)` spans, in
+   * ascending order. Each rule keeps its own cap, so a capped Turn cannot
+   * shrink (or extend) another rule's span.
+   */
+  readonly protectedSpans: readonly ProtectedSpan[];
+  /** Tokens of the union of the protected spans. */
   readonly protectedTokens: number;
   /** The Living Candidate Pool, in chronology order. */
   readonly candidates: readonly PruningCandidate[];
   /** Sum of `PruningCandidate.tokensEst` (what an Epoch could reclaim). */
   readonly candidateTokens: number;
+}
+
+/** A half-open `[start, end)` range of protected message indices. */
+export interface ProtectedSpan {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** Whether `index` falls inside any protected span of the partition. */
+export function isProtected(
+  partition: CoolingWindowPartition,
+  index: number,
+): boolean {
+  return partition.protectedSpans.some((span) => index >= span.start && index < span.end);
 }
 
 /** Inputs of the partition; `messages` must already carry every active mask. */
@@ -199,19 +220,26 @@ export interface CoolingWindowOptions {
  * Partitions the masked context into the Cooling Window and the Living
  * Candidate Pool (spec D4).
  *
- * Protected tail, as a union:
+ * The protected region is the **union of three independent spans**, and a call
+ * is protected when its block or its result falls in any of them:
  * 1. The last `coolingRecentTokens` tokens **and** at least the last
- *    `minCoolingToolCalls` paired calls.
+ *    `minCoolingToolCalls` paired calls. This floor is non-negotiable: no other
+ *    rule can release it.
  * 2. The active Turn (from its last `UserMessage`), capped at
  *    `maxProtectedTurnTokens`.
  * 3. The most recent completed Turn that used at least one tool, skipping
- *    prose-only Turns in between, capped the same way. A Turn above the cap
- *    keeps only its most recent `maxProtectedTurnTokens / 2` tokens (20 000 by
- *    default) and the excess prefix becomes evaluable.
+ *    prose-only Turns in between, capped the same way.
  *
- * Candidates are paired calls whose result sits before the protected tail,
- * that carry no mask yet and whose eligibility allows at least one drop. An
- * in-flight or aborted call has no paired result and is therefore excluded.
+ * Keeping the spans independent is what makes the cap work on the active Turn:
+ * collapsing the union into "every message after the earliest start" would let
+ * any earlier protected Turn protect the whole excess prefix of a marathon
+ * active Turn or Subagent. A Turn above the cap keeps only its most recent
+ * `maxProtectedTurnTokens / 2` tokens (20 000 by default) and the excess prefix
+ * becomes evaluable.
+ *
+ * Candidates are paired calls that sit outside every protected span, carry no
+ * mask yet and whose eligibility allows at least one drop. An in-flight or
+ * aborted call has no paired result and is therefore excluded.
  */
 export function partitionCoolingWindow(
   messages: readonly AgentMessage[],
@@ -223,6 +251,7 @@ export function partitionCoolingWindow(
   if (messages.length === 0) {
     return {
       protectedStartIndex: 0,
+      protectedSpans: [],
       protectedTokens: 0,
       candidates: [],
       candidateTokens: 0,
@@ -231,35 +260,20 @@ export function partitionCoolingWindow(
 
   const tokens = messages.map(estimateMessageTokens);
   const paired = collectPairedCalls(messages);
-
-  let protectedStartIndex = findProtectedTailStart(messages, tokens, paired, config);
-  const activeTurnStart = findCurrentTurnStart(messages);
-  if (activeTurnStart !== undefined) {
-    const activeTurnProtected = capProtectedTurnStart(
-      activeTurnStart,
-      messages.length,
-      tokens,
-      config.maxProtectedTurnTokens,
-    );
-    if (activeTurnProtected !== undefined) {
-      protectedStartIndex = Math.min(protectedStartIndex, activeTurnProtected);
-    }
-  }
-  const lastToolTurnStart = findLastCompletedToolTurnStart(messages, tokens, paired, config);
-  if (lastToolTurnStart !== undefined) {
-    protectedStartIndex = Math.min(protectedStartIndex, lastToolTurnStart);
-  }
+  const spans = protectedRegion(messages, tokens, paired, config);
 
   let protectedTokens = 0;
-  for (let i = protectedStartIndex; i < messages.length; i++) {
-    protectedTokens += tokens[i];
+  for (const span of spans) {
+    for (let index = span.start; index < span.end; index++) protectedTokens += tokens[index];
   }
 
   const candidates: PruningCandidate[] = [];
   let candidateTokens = 0;
   for (const call of paired) {
-    if (call.assistantIndex >= protectedStartIndex) continue;
-    if (call.resultIndex >= protectedStartIndex) continue;
+    // Protected by any rule (not by "after the earliest start"): a capped Turn
+    // must not extend the span of another one (spec D4).
+    if (inSpans(spans, call.assistantIndex)) continue;
+    if (inSpans(spans, call.resultIndex)) continue;
     // `drop_result` and `drop_call` are terminal on the active branch: a masked
     // call is never re-evaluated, so a later Epoch cannot invalidate an earlier
     // cached prefix for a negligible extra saving.
@@ -296,11 +310,17 @@ export function partitionCoolingWindow(
   }
 
   return {
-    protectedStartIndex,
+    protectedStartIndex: spans.length === 0 ? messages.length : spans[0].start,
+    protectedSpans: spans,
     protectedTokens,
     candidates,
     candidateTokens,
   };
+}
+
+/** Whether `index` falls inside any of the spans. */
+function inSpans(spans: readonly ProtectedSpan[], index: number): boolean {
+  return spans.some((span) => index >= span.start && index < span.end);
 }
 
 /** Tokens of one message, using Pi's conservative chars/4 heuristic. */
@@ -406,20 +426,70 @@ function findProtectedTailStart(
 }
 
 /**
- * First protected index granted by rule (c): the most recent completed Turn
- * that used at least one tool, skipping prose-only Turns in between so a
- * conversational Turn cannot prematurely unprotect the files of the plan it
- * discusses.
- *
- * The active Turn (opened by the last `UserMessage`) is handled by its own rule;
- * only Turns that closed before it are considered here.
+ * The protected region: the union of the recent-tail floor, the capped active
+ * Turn and the capped last completed tool Turn (spec D4).
  */
-function findLastCompletedToolTurnStart(
+function protectedRegion(
   messages: readonly AgentMessage[],
   tokens: readonly number[],
   paired: readonly PairedCall[],
   config: ToolPruningConfig,
-): number | undefined {
+): ProtectedSpan[] {
+  const spans: ProtectedSpan[] = [];
+
+  // Rule (a): the recent-tail floor. It is protected unconditionally, which is
+  // what makes it the non-negotiable floor of the window.
+  const tailStart = findProtectedTailStart(messages, tokens, paired, config);
+  if (tailStart < messages.length) spans.push({ start: tailStart, end: messages.length });
+
+  // Rule (b): the active Turn, capped.
+  const activeTurnStart = findCurrentTurnStart(messages);
+  if (activeTurnStart !== undefined) {
+    const activeTurn = cappedTurnSpan(
+      activeTurnStart,
+      messages.length,
+      tokens,
+      config.maxProtectedTurnTokens,
+    );
+    if (activeTurn !== undefined) spans.push(activeTurn);
+  }
+
+  // Rule (c): the last completed Turn that used tools, capped.
+  const lastToolTurn = findLastCompletedToolTurnSpan(messages, tokens, paired, config);
+  if (lastToolTurn !== undefined) spans.push(lastToolTurn);
+
+  return mergeSpans(spans);
+}
+
+/** Sorts and coalesces overlapping or adjacent spans. */
+function mergeSpans(spans: readonly ProtectedSpan[]): ProtectedSpan[] {
+  const sorted = [...spans].sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged: ProtectedSpan[] = [];
+  for (const span of sorted) {
+    const last = merged.at(-1);
+    if (last !== undefined && span.start <= last.end) {
+      merged[merged.length - 1] = { start: last.start, end: Math.max(last.end, span.end) };
+      continue;
+    }
+    merged.push(span);
+  }
+  return merged;
+}
+
+/**
+ * Rule (c): the most recent completed Turn that used at least one tool,
+ * skipping prose-only Turns in between so a conversational Turn cannot
+ * prematurely unprotect the files of the plan it discusses.
+ *
+ * The active Turn (opened by the last `UserMessage`) is handled by its own rule;
+ * only Turns that closed before it are considered here.
+ */
+function findLastCompletedToolTurnSpan(
+  messages: readonly AgentMessage[],
+  tokens: readonly number[],
+  paired: readonly PairedCall[],
+  config: ToolPruningConfig,
+): ProtectedSpan | undefined {
   const turnStarts: number[] = [];
   for (let i = 0; i < messages.length; i++) {
     if (messages[i].role === "user") turnStarts.push(i);
@@ -433,7 +503,7 @@ function findLastCompletedToolTurnStart(
       (call) => call.resultIndex >= start && call.resultIndex < end,
     );
     if (!usedTools) continue;
-    return capProtectedTurnStart(start, end, tokens, config.maxProtectedTurnTokens);
+    return cappedTurnSpan(start, end, tokens, config.maxProtectedTurnTokens);
   }
   return undefined;
 }
@@ -446,19 +516,18 @@ function findLastCompletedToolTurnStart(
  * first half forever.
  *
  * `undefined` means the rule protects nothing: a zero cap is an explicit "no
- * Turn protection" configuration, and returning `end` instead would silently
- * protect the whole suffix that starts there — which is exactly the region the
- * other rules are supposed to decide on.
+ * Turn protection" configuration, and protecting the whole Turn instead would
+ * silently cover exactly the region the other rules are supposed to decide on.
  */
-function capProtectedTurnStart(
+function cappedTurnSpan(
   start: number,
   end: number,
   tokens: readonly number[],
   maxTurnTokens: number,
-): number | undefined {
+): ProtectedSpan | undefined {
   let turnTokens = 0;
   for (let i = start; i < end; i++) turnTokens += tokens[i];
-  if (turnTokens <= maxTurnTokens) return start;
+  if (turnTokens <= maxTurnTokens) return { start, end };
 
   const retainedBudget = Math.trunc(Math.max(0, maxTurnTokens) / 2);
   if (retainedBudget <= 0) return undefined;
@@ -470,7 +539,7 @@ function capProtectedTurnStart(
     protectedStart = i;
     if (retained >= retainedBudget) break;
   }
-  return protectedStart;
+  return { start: protectedStart, end };
 }
 
 /** Tokens a `ToolCall` block contributes, mirroring Pi's `estimateTokens`. */

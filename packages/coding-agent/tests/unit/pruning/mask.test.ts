@@ -4,52 +4,14 @@ import {
   MIN_TRUNCATION_CHARS,
   type AgentMessage,
   type AssistantMessage,
-  type ToolCall,
   type ToolResultMessage,
   type ToolPruningMaskMap,
 } from "../../../src/pruning/config";
 import { applyPruningMask, toolResultText } from "../../../src/pruning/mask";
+import { assistant, call, toolResult, user } from "./fixtures";
 
-const usage: AssistantMessage["usage"] = {
-  input: 1,
-  output: 1,
-  cacheRead: 0,
-  cacheWrite: 0,
-  totalTokens: 2,
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-};
-
-const assistant = (content: AssistantMessage["content"]): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "test-model",
-  usage,
-  stopReason: "toolUse",
-  timestamp: 1,
-});
-
-const toolCall = (id: string, name = "read"): ToolCall => ({
-  type: "toolCall",
-  id,
-  name,
-  arguments: { path: "src/app.ts" },
-});
-
-const toolResult = (
-  toolCallId: string,
-  content: ToolResultMessage["content"],
-  overrides: Partial<ToolResultMessage> = {},
-): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId,
-  toolName: "read",
-  content,
-  isError: false,
-  timestamp: 1_700_000_000_000,
-  ...overrides,
-});
+/** A `read` call block; the mask only keys on the id. */
+const toolCall = (id: string, name = "read") => call(id, name, { path: "src/app.ts" });
 
 const text = (value: string): { type: "text"; text: string } => ({ type: "text", text: value });
 const image = (): { type: "image"; data: string; mimeType: string } => ({
@@ -69,11 +31,7 @@ const STUB_MARKER = (omitted: number, toolName = "read"): string =>
 
 describe("applyPruningMask", () => {
   it("returns the input untouched when there is no mask", () => {
-    const messages: AgentMessage[] = [
-      { role: "user", content: "hello", timestamp: 1 },
-      assistant([toolCall("a")]),
-      toolResult("a", [text(LONG_TEXT)]),
-    ];
+    const messages: AgentMessage[] = [user("hello"), assistant([toolCall("a")]), toolResult("a", [text(LONG_TEXT)])];
 
     const projected = apply(messages, {});
 
@@ -197,7 +155,7 @@ describe("applyPruningMask", () => {
     const messages: AgentMessage[] = [
       assistant([{ type: "thinking", thinking: "hmm" }, toolCall("a")]),
       toolResult("a", [text("A")]),
-      { role: "user", content: "next", timestamp: 2 },
+      user("next", 2),
     ];
 
     const projected = apply(messages, { a: "drop_call" });
@@ -225,7 +183,7 @@ describe("applyPruningMask", () => {
 
   it("never prunes a result without a paired call", () => {
     const orphan = toolResult("a", [text(LONG_TEXT)]);
-    const messages: AgentMessage[] = [{ role: "user", content: "hi", timestamp: 1 }, orphan];
+    const messages: AgentMessage[] = [user("hi"), orphan];
 
     const projected = apply(messages, { a: "drop_result" });
 
@@ -234,7 +192,7 @@ describe("applyPruningMask", () => {
   });
 
   it("passes user, bash, custom and compaction messages through untouched", () => {
-    const user: AgentMessage = { role: "user", content: "hello", timestamp: 1 };
+    const prompt = user("hello");
     const bash = {
       role: "bashExecution",
       command: "pnpm test",
@@ -258,7 +216,7 @@ describe("applyPruningMask", () => {
       timestamp: 4,
     } satisfies AgentMessage;
     const messages: AgentMessage[] = [
-      user,
+      prompt,
       assistant([toolCall("a")]),
       toolResult("a", [text(LONG_TEXT)]),
       bash,
@@ -268,7 +226,7 @@ describe("applyPruningMask", () => {
 
     const projected = apply(messages, { a: "drop_call" });
 
-    expect(projected).toEqual([user, bash, custom, compaction]);
+    expect(projected).toEqual([prompt, bash, custom, compaction]);
     expect(projected[1]).toBe(bash);
     expect(projected[2]).toBe(custom);
     expect(projected[3]).toBe(compaction);

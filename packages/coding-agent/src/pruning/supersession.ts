@@ -33,38 +33,25 @@
 import path from "node:path";
 import {
   DEFAULT_TOOL_PRUNING_CONFIG,
+  NO_TOOL_PRUNING_SIGNALS,
   type AgentMessage,
-  type ToolCall,
   type ToolPruningConfig,
   type ToolPruningDrop,
   type ToolPruningMaskMap,
+  type ToolPruningSignals,
 } from "./config";
 import type { PruningCandidate } from "./cooling-window";
-
-/**
- * Deterministic facts about one paired call that Phase 1 must see (spec D5
- * Phase 0.2). Every field defaults to `false`: absence of evidence is not
- * evidence of absence, and the judge keeps its own conservative bias.
- */
-export interface SupersessionSignals {
-  /** A successful `edit` on the read path happened after this read. */
-  readonly editedLater: boolean;
-  /** The same normalised `bash` command ran again later in the session. */
-  readonly sameCommandRanLater: boolean;
-  /** At least one of those later re-runs succeeded. */
-  readonly laterCommandSucceeded: boolean;
-}
-
-const NO_SIGNALS: SupersessionSignals = Object.freeze({
-  editedLater: false,
-  sameCommandRanLater: false,
-  laterCommandSucceeded: false,
-});
+import {
+  callArguments,
+  indexToolCalls,
+  numberArgument,
+  stringArgument,
+} from "./messages";
 
 /** A candidate Phase 0 left for the judge, with its structural signals. */
 export interface SupersessionCandidate {
   readonly candidate: PruningCandidate;
-  readonly signals: SupersessionSignals;
+  readonly signals: ToolPruningSignals;
 }
 
 /** What Phase 0 decided and what it leaves to Phase 1. */
@@ -118,7 +105,7 @@ export function runSupersession(
   }
 
   const timeline = collectEvidence(messages, options.cwd);
-  const calls = collectCalls(messages);
+  const calls = indexToolCalls(messages);
 
   const decisions: Record<string, ToolPruningDrop> = {};
   const remaining: SupersessionCandidate[] = [];
@@ -133,7 +120,9 @@ export function runSupersession(
     if (drop !== undefined) {
       decisions[candidate.toolCallId] = drop;
       droppedCount += 1;
-      droppedTokens += candidate.tokensEst;
+      // `drop_result` keeps the call block and its stubbed trace: only the
+      // result body (plus whatever the stub costs) is reclaimed.
+      droppedTokens += drop === "drop_call" ? candidate.tokensEst : candidate.resultTokens;
       continue;
     }
 
@@ -222,7 +211,7 @@ export function normalizeCommand(rawCommand: string): string {
   return command;
 }
 
-/** A line range a `read` asked for; `end` is exclusive and may be infinite. */
+/** A line range a `read` asked for; both ends are inclusive, 1-indexed lines. */
 interface ReadRange {
   readonly start: number;
   readonly end: number;
@@ -334,28 +323,28 @@ function structuralSignals(
   args: Record<string, unknown> | undefined,
   timeline: EvidenceTimeline,
   cwd: string,
-): SupersessionSignals {
-  if (args === undefined) return NO_SIGNALS;
+): ToolPruningSignals {
+  if (args === undefined) return NO_TOOL_PRUNING_SIGNALS;
 
   if (candidate.toolName === "read") {
     const rawPath = stringArgument(args, "path");
-    if (rawPath === undefined) return NO_SIGNALS;
+    if (rawPath === undefined) return NO_TOOL_PRUNING_SIGNALS;
     const events = timeline.byPath.get(normalizePath(rawPath, cwd)) ?? [];
     const editedLater = events.some(
       (event) => event.ok && event.kind === "edit" && event.index > candidate.resultIndex,
     );
-    return editedLater ? { ...NO_SIGNALS, editedLater: true } : NO_SIGNALS;
+    return editedLater ? { ...NO_TOOL_PRUNING_SIGNALS, editedLater: true } : NO_TOOL_PRUNING_SIGNALS;
   }
 
   if (candidate.toolName === "bash") {
     const rawCommand = stringArgument(args, "command");
-    if (rawCommand === undefined) return NO_SIGNALS;
+    if (rawCommand === undefined) return NO_TOOL_PRUNING_SIGNALS;
     const command = normalizeCommand(rawCommand);
-    if (command.length === 0) return NO_SIGNALS;
+    if (command.length === 0) return NO_TOOL_PRUNING_SIGNALS;
     const later = (timeline.byCommand.get(command) ?? []).filter(
       (event) => event.index > candidate.resultIndex,
     );
-    if (later.length === 0) return NO_SIGNALS;
+    if (later.length === 0) return NO_TOOL_PRUNING_SIGNALS;
     return {
       editedLater: false,
       sameCommandRanLater: true,
@@ -363,7 +352,7 @@ function structuralSignals(
     };
   }
 
-  return NO_SIGNALS;
+  return NO_TOOL_PRUNING_SIGNALS;
 }
 
 /**
@@ -385,24 +374,31 @@ function resolveDrop(
   return eligibility.dropResult ? "drop_result" : undefined;
 }
 
-/** Whether `outer` covers every line `inner` asked for. */
+/** Whether `outer` covers every line `inner` asked for (both ranges inclusive). */
 function coversRange(outer: ReadRange, inner: ReadRange): boolean {
   return outer.start <= inner.start && outer.end >= inner.end;
 }
 
 /**
- * Line range a `read` asked for. Absent `offset` and `limit` mean the whole
- * file; `offset` is 1-indexed and `limit` counts lines. A read with only one of
- * them is treated as ranged, so it can never claim to cover a full read.
+ * Line range a `read` asked for, in Pi's 1-indexed, inclusive line numbering.
+ *
+ * Absent `offset` and `limit` mean the whole file. Pi's `offset` is 1-indexed
+ * and `limit` counts lines, so a read that only sets `limit` starts at line 1:
+ * defaulting a missing `offset` to 0 would shift every range by one line and
+ * make a `[1, limit]` read look like `[0, limit - 1]`, which the full read
+ * `[1, ∞)` would then only seem to cover by accident (spec D5 Phase 0.1).
+ *
+ * A read with only one of the two arguments is ranged, never a full read, so it
+ * can never claim to cover one.
  */
 function readRange(args: Record<string, unknown>): ReadRange {
   const offset = numberArgument(args, "offset");
   const limit = numberArgument(args, "limit");
   if (offset === undefined && limit === undefined) {
-    return { start: 0, end: Number.POSITIVE_INFINITY, isFull: true };
+    return { start: 1, end: Number.POSITIVE_INFINITY, isFull: true };
   }
-  const start = Math.max(0, offset ?? 0);
-  const end = limit === undefined ? Number.POSITIVE_INFINITY : start + Math.max(0, limit);
+  const start = offset ?? 1;
+  const end = limit === undefined ? Number.POSITIVE_INFINITY : start + Math.max(0, limit) - 1;
   return { start, end, isFull: false };
 }
 
@@ -414,7 +410,7 @@ function readRange(args: Record<string, unknown>): ReadRange {
  * `path` carries no identity to compare.
  */
 function collectEvidence(messages: readonly AgentMessage[], cwd: string): EvidenceTimeline {
-  const calls = collectCalls(messages);
+  const calls = indexToolCalls(messages);
   const byPath = new Map<string, PathEvent[]>();
   const byCommand = new Map<string, CommandEvent[]>();
 
@@ -458,42 +454,4 @@ function collectEvidence(messages: readonly AgentMessage[], cwd: string): Eviden
   return { byPath, byCommand };
 }
 
-/**
- * First occurrence of each call block, keyed by `toolCallId`.
- *
- * The pairing itself lives in `cooling-window.ts` (the partition owns which
- * pairs are prunable); Phase 0 only needs the call's arguments to identify its
- * target, so it maps ids to calls and then walks the results.
- */
-function collectCalls(messages: readonly AgentMessage[]): Map<string, ToolCall> {
-  const calls = new Map<string, ToolCall>();
-  for (const message of messages) {
-    if (message.role !== "assistant") continue;
-    for (const block of message.content) {
-      if (block.type !== "toolCall") continue;
-      if (!calls.has(block.id)) calls.set(block.id, block);
-    }
-  }
-  return calls;
-}
 
-function callArguments(call: ToolCall | undefined): Record<string, unknown> | undefined {
-  const args = call?.arguments;
-  if (args === null || typeof args !== "object" || Array.isArray(args)) return undefined;
-  return args as Record<string, unknown>;
-}
-
-function stringArgument(args: Record<string, unknown>, key: string): string | undefined {
-  const value = args[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function numberArgument(args: Record<string, unknown>, key: string): number | undefined {
-  const value = args[key];
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim().length > 0) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return undefined;
-}

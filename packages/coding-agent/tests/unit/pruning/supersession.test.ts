@@ -1,12 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_TOOL_PRUNING_CONFIG,
-  type AgentMessage,
-  type AssistantMessage,
-  type ToolCall,
-  type ToolPruningConfig,
-  type ToolResultMessage,
-} from "../../../src/pruning/config";
+import { describe, expect, it } from "vitest";
+import { decisionsResponse, type DecisionsRequest } from "@ai-chatbot/model-gateway-testing";
+import type { AgentMessage, ToolCall, ToolResultMessage } from "../../../src/pruning/config";
 import { partitionCoolingWindow } from "../../../src/pruning/cooling-window";
 import {
   isJudgeWorthwhile,
@@ -16,48 +10,20 @@ import {
   type SupersessionCandidate,
   type SupersessionOptions,
 } from "../../../src/pruning/supersession";
+import { setupWorkerGatewayHarness } from "../../helpers/gateway-harness";
+import {
+  assistant,
+  bigText,
+  call,
+  configWith,
+  prose,
+  toolResult,
+  user,
+} from "./fixtures";
 
 const CWD = "/repo";
 
-const usage: AssistantMessage["usage"] = {
-  input: 1,
-  output: 1,
-  cacheRead: 0,
-  cacheWrite: 0,
-  totalTokens: 2,
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-};
-
-const user = (content: string, timestamp = 1): AgentMessage => ({
-  role: "user",
-  content,
-  timestamp,
-});
-
-const assistant = (
-  content: AssistantMessage["content"],
-  timestamp = 1,
-): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "test-model",
-  usage,
-  stopReason: "toolUse",
-  timestamp,
-});
-
-const prose = (value: string, timestamp = 1): AssistantMessage =>
-  assistant([{ type: "text", text: value }], timestamp);
-
-const call = (id: string, name: string, args: Record<string, unknown>): ToolCall => ({
-  type: "toolCall",
-  id,
-  name,
-  arguments: args,
-});
-
+/** A `read` call block; the default path is the same file read twice. */
 const read = (id: string, path = "src/app.ts", extra: Record<string, unknown> = {}): ToolCall =>
   call(id, "read", { path, ...extra });
 
@@ -67,33 +33,8 @@ const edit = (id: string, path = "src/app.ts"): ToolCall => call(id, "edit", { p
 
 const bash = (id: string, command: string): ToolCall => call(id, "bash", { command });
 
-const toolResult = (
-  toolCallId: string,
-  content: ToolResultMessage["content"],
-  overrides: Partial<ToolResultMessage> = {},
-): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId,
-  toolName: "read",
-  content,
-  isError: false,
-  timestamp: 1_700_000_000_000,
-  ...overrides,
-});
-
-/** `chars` of filler text: exactly `chars / 4` estimated tokens. */
-const bigText = (chars: number): { type: "text"; text: string } => ({
-  type: "text",
-  text: "x".repeat(chars),
-});
-
 /** A stubbable body: 4 000 chars = 1 000 tokens, well above the 380 floor. */
 const BODY = (): ToolResultMessage["content"] => [bigText(4_000)];
-
-const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig => ({
-  ...DEFAULT_TOOL_PRUNING_CONFIG,
-  ...overrides,
-});
 
 /**
  * Partition that protects nothing, so every tool call in the fixture is a
@@ -120,6 +61,8 @@ const runCase = (
 
 const ids = (entries: readonly SupersessionCandidate[]): string[] =>
   entries.map((entry) => entry.candidate.toolCallId);
+
+const gateway = setupWorkerGatewayHarness();
 
 describe("runSupersession — read supersession", () => {
   it("drops a duplicated full read as drop_call", () => {
@@ -235,7 +178,7 @@ describe("runSupersession — read supersession", () => {
       user("Read a slice, then a wider slice"),
       assistant([read("r1", "src/app.ts", { offset: 10, limit: 50 })]),
       toolResult("r1", BODY()),
-      assistant([read("r2", "src/app.ts", { offset: 0, limit: 100 })]),
+      assistant([read("r2", "src/app.ts", { offset: 1, limit: 100 })]),
       toolResult("r2", BODY()),
       done(),
     ];
@@ -244,6 +187,43 @@ describe("runSupersession — read supersession", () => {
 
     expect(result.decisions).toEqual({ r1: "drop_result" });
     expect(ids(result.remaining)).toEqual(["r2"]);
+  });
+
+  it("counts `limit`-only reads from line 1, as Pi does", () => {
+    const messages: AgentMessage[] = [
+      user("Read the first lines, then the whole file"),
+      assistant([read("r1", "src/app.ts", { limit: 40 })]),
+      toolResult("r1", BODY()),
+      assistant([read("r2")]),
+      toolResult("r2", BODY()),
+      done(),
+    ];
+
+    const result = runCase(messages);
+
+    // Pi's `offset` is 1-indexed and defaults to line 1: `limit: 40` covers
+    // `[1, 40]`, which the later full read `[1, ∞)` covers entirely. Treating a
+    // missing offset as line 0 would make the range `[0, 39]` and report the
+    // full read as insufficient.
+    expect(result.decisions).toEqual({ r1: "drop_result" });
+    expect(ids(result.remaining)).toEqual(["r2"]);
+  });
+
+  it("does not treat an open-ended read as covered by a bounded one", () => {
+    const messages: AgentMessage[] = [
+      user("Read from a line onwards, then a bounded slice"),
+      assistant([read("r1", "src/app.ts", { offset: 10 })]),
+      toolResult("r1", BODY()),
+      assistant([read("r2", "src/app.ts", { offset: 10, limit: 50 })]),
+      toolResult("r2", BODY()),
+      done(),
+    ];
+
+    const result = runCase(messages);
+
+    // `[10, ∞)` is wider than `[10, 59]`: the later slice is not a superset.
+    expect(result.decisions).toEqual({});
+    expect(ids(result.remaining)).toEqual(["r1", "r2"]);
   });
 
   it("keeps a ranged read that is only partially covered", () => {
@@ -536,10 +516,33 @@ describe("runSupersession — Phase 1 handover", () => {
     const result = runSupersession(messages, candidates, { cwd: CWD });
 
     expect(result.decisions).toEqual({ r1: "drop_call" });
+    // `drop_call` removes the call block as well, so the full pair is reclaimed.
     expect(result.droppedTokens).toBe(byId.get("r1")?.tokensEst);
     expect(result.remainingTokens).toBe(
       (byId.get("r2")?.tokensEst ?? 0) + (byId.get("r3")?.tokensEst ?? 0),
     );
+  });
+
+  it("counts only the result body for drop_result, which keeps the call block", () => {
+    const messages: AgentMessage[] = [
+      user("Read and then overwrite"),
+      assistant([read("r1")]),
+      toolResult("r1", BODY()),
+      assistant([write("w1")]),
+      toolResult("w1", [bigText(500)], { toolName: "write" }),
+      done(),
+    ];
+    const candidates = openCandidates(messages);
+    const r1 = candidates.find((candidate) => candidate.toolCallId === "r1");
+    expect(r1?.tokensEst).toBe((r1?.resultTokens ?? 0) + (r1?.callTokens ?? 0));
+
+    const result = runSupersession(messages, candidates, { cwd: CWD });
+
+    // The `ToolCall` block survives `drop_result`, so the reclaimed tokens are
+    // the result body alone — not the pair's `tokensEst`.
+    expect(result.decisions).toEqual({ r1: "drop_result" });
+    expect(result.droppedTokens).toBe(r1?.resultTokens);
+    expect(result.droppedTokens).toBeLessThan(r1?.tokensEst ?? 0);
   });
 
   it("returns an empty result for an empty pool", () => {
@@ -553,6 +556,12 @@ describe("runSupersession — Phase 1 handover", () => {
   });
 
   it("never touches the network", () => {
+    // The official Gateway seam answers in-process, so a real `fetch` still runs
+    // (norm: no test substitutes `globalThis.fetch`, ADR 0013). Phase 0 is
+    // deterministic, so the scenario records no request at all.
+    const scenario = gateway.use({
+      decisions: (body) => decisionsResponse(body as DecisionsRequest),
+    });
     const messages: AgentMessage[] = [
       user("Read twice"),
       assistant([read("r1")]),
@@ -562,14 +571,10 @@ describe("runSupersession — Phase 1 handover", () => {
       done(),
     ];
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    try {
-      const result = runCase(messages);
-      expect(result.decisions).toEqual({ r1: "drop_call" });
-      expect(fetchSpy).not.toHaveBeenCalled();
-    } finally {
-      fetchSpy.mockRestore();
-    }
+    const result = runCase(messages);
+
+    expect(result.decisions).toEqual({ r1: "drop_call" });
+    expect(scenario.requests).toEqual([]);
   });
 });
 

@@ -25,16 +25,20 @@
  */
 import {
   DEFAULT_TOOL_PRUNING_CONFIG,
+  NO_TOOL_PRUNING_SIGNALS,
   type AgentMessage,
   type ToolPruningConfig,
   type ToolPruningDrop,
+  type ToolPruningSignals,
 } from "./config";
 import {
+  isProtected,
   toolPolicyFor,
   type CoolingWindowPartition,
   type PruningEligibility,
 } from "./cooling-window";
 import { toolResultText } from "./mask";
+import { callArguments, indexToolCalls, stringArgument } from "./messages";
 
 // ---------------------------------------------------------------------------
 // Budgets and limits (spec D5 Phase 1)
@@ -67,30 +71,6 @@ const COMPRESSED_TURN_DIGEST_CHARS = 120;
 const ESSENTIAL_ARG_MAX_CHARS = 200;
 
 // ---------------------------------------------------------------------------
-// Structural signals from Phase 0
-// ---------------------------------------------------------------------------
-
-/**
- * Deterministic supersession facts Phase 0 (ticket 04) annotates on surviving
- * candidates. They are shown to the judge so its `criteria` can lean on them.
- */
-export interface Phase0Signals {
-  /** The read path was modified later by a successful `edit`/`write`. */
-  editedLater: boolean;
-  /** The same normalized `bash` command ran again later in the session. */
-  sameCommandRanLater: boolean;
-  /** That later run of the same command succeeded. */
-  laterCommandSucceeded: boolean;
-}
-
-/** Signals of a candidate Phase 0 could not supersede, with nothing to report. */
-export const NO_PHASE0_SIGNALS: Readonly<Phase0Signals> = Object.freeze({
-  editedLater: false,
-  sameCommandRanLater: false,
-  laterCommandSucceeded: false,
-});
-
-// ---------------------------------------------------------------------------
 // Candidate model
 // ---------------------------------------------------------------------------
 
@@ -117,7 +97,7 @@ export interface DecisionCandidate {
   /** Index of the paired result in `messages`; also the chronology key. */
   readonly resultIndex: number;
   readonly eligibility: PruningEligibility;
-  readonly signals: Phase0Signals;
+  readonly signals: ToolPruningSignals;
   /** Raw result text the preview is built from. */
   readonly resultText: string;
 }
@@ -132,7 +112,7 @@ export interface DecisionCandidate {
 export function collectDecisionCandidates(
   messages: readonly AgentMessage[],
   partition: CoolingWindowPartition,
-  signals: Readonly<Record<string, Partial<Phase0Signals>>> = {},
+  signals: Readonly<Record<string, Partial<ToolPruningSignals>>> = {},
 ): DecisionCandidate[] {
   if (partition.candidates.length === 0) return [];
   const calls = indexToolCalls(messages);
@@ -146,7 +126,7 @@ export function collectDecisionCandidates(
       id: `c${candidates.length + 1}`,
       toolCallId: candidate.toolCallId,
       toolName: candidate.toolName,
-      arguments: block.arguments,
+      arguments: callArguments(block) ?? {},
       chars: candidate.chars,
       tokensEst: candidate.tokensEst,
       resultTokens: candidate.resultTokens,
@@ -154,26 +134,11 @@ export function collectDecisionCandidates(
       isError: candidate.isError,
       resultIndex: candidate.resultIndex,
       eligibility: candidate.eligibility,
-      signals: { ...NO_PHASE0_SIGNALS, ...signals[candidate.toolCallId] },
+      signals: { ...NO_TOOL_PRUNING_SIGNALS, ...signals[candidate.toolCallId] },
       resultText: toolResultText(result),
     });
   }
   return candidates;
-}
-
-/** Tool call blocks indexed by `toolCallId`, first occurrence wins. */
-function indexToolCalls(
-  messages: readonly AgentMessage[],
-): Map<string, { name: string; arguments: Record<string, unknown> }> {
-  const calls = new Map<string, { name: string; arguments: Record<string, unknown> }>();
-  for (const message of messages) {
-    if (message.role !== "assistant") continue;
-    for (const block of message.content) {
-      if (block.type !== "toolCall" || calls.has(block.id)) continue;
-      calls.set(block.id, { name: block.name, arguments: block.arguments });
-    }
-  }
-  return calls;
 }
 
 // ---------------------------------------------------------------------------
@@ -628,7 +593,7 @@ export interface DecisionPlanInput {
   messages: readonly AgentMessage[];
   partition: CoolingWindowPartition;
   /** Phase 0 structural signals keyed by `toolCallId`. */
-  signals?: Readonly<Record<string, Partial<Phase0Signals>>>;
+  signals?: Readonly<Record<string, Partial<ToolPruningSignals>>>;
   config?: ToolPruningConfig;
 }
 
@@ -882,7 +847,10 @@ function buildProtectedDigest(
   const seenCommands = new Set<string>();
   const calls = indexToolCalls(messages);
 
-  for (let i = Math.max(0, partition.protectedStartIndex); i < messages.length; i++) {
+  for (let i = 0; i < messages.length; i++) {
+    // The protected region is a union of spans, so the digest must skip the
+    // evaluable gaps between them instead of walking a single suffix.
+    if (!isProtected(partition, i)) continue;
     const message = messages[i];
     if (message.role === "bashExecution") {
       const command = message.command;
@@ -895,7 +863,8 @@ function buildProtectedDigest(
     if (message.role !== "toolResult") continue;
     const toolCall = calls.get(message.toolCallId);
     if (toolCall === undefined) continue;
-    const path = stringArgument(toolCall.arguments, "path");
+    const args = callArguments(toolCall);
+    const path = stringArgument(args, "path");
     if (toolPolicyFor(toolCall.name).category === "exploratory" && path !== undefined) {
       if (!seenFiles.has(path)) {
         seenFiles.add(path);
@@ -909,7 +878,7 @@ function buildProtectedDigest(
       }
     }
     if (toolCall.name === "bash") {
-      const command = stringArgument(toolCall.arguments, "command");
+      const command = stringArgument(args, "command");
       if (command !== undefined && !seenCommands.has(command)) {
         seenCommands.add(command);
         commands.push(clip(command, 120));
@@ -1063,12 +1032,6 @@ function signalHints(candidate: DecisionCandidate): string {
     );
   }
   return hints.length === 0 ? "" : ` (${hints.join("; ")})`;
-}
-
-/** String argument of a tool call, when present. */
-function stringArgument(args: Readonly<Record<string, unknown>>, key: string): string | undefined {
-  const value = args[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 /** `a, b, c` or `nothing`. */
