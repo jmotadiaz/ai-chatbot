@@ -42,6 +42,7 @@ describe("first-party extension and built-in skills discovery", () => {
       "artifacts",
       "commit-attribution",
       "subagent",
+      "tool-pruning",
     ]);
     expect(getExtensionPaths()).toEqual([
       ...getPiPackageExtensionPaths(),
@@ -55,9 +56,12 @@ describe("first-party extension and built-in skills discovery", () => {
     expect(paths).toEqual(
       getFirstPartyExtensionPaths().filter((p) => !p.includes("extensions/subagent")),
     );
+    // The filter only drops `subagent`; Tool Pruning stays active in child
+    // sessions too (it is a no-op until a watermark is crossed).
     expect(paths.map((p) => basename(dirname(p)))).toEqual([
       "artifacts",
       "commit-attribution",
+      "tool-pruning",
     ]);
   });
 

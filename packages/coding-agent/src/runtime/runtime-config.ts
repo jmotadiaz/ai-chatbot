@@ -1,4 +1,5 @@
 import { config } from "config";
+import type { ToolPruningConfigOverrides } from "../pruning/config";
 import { resolveAuthJsonPath, resolveModelsJsonPath } from "./models";
 import {
   resolveArtifactsDir,
@@ -34,6 +35,13 @@ export interface WorkerRuntimeConfig extends GatewayRuntimeConfig {
   piPackagesDir?: string;
   artifactsDir?: string;
   workerPort?: number;
+  /**
+   * Tool Pruning overrides (spec parameter table). Published to the Pi
+   * extension through the pruning bridge at startup, because the extension is
+   * loaded by jiti into a module runtime that cannot share this object. Used by
+   * tests to pin watermarks on a small fake context window.
+   */
+  toolPruning?: ToolPruningConfigOverrides;
 }
 
 /**
@@ -77,6 +85,7 @@ export function resolveWorkerRuntimeConfig(
     piPackagesDir: resolvePiPackagesDir(base),
     artifactsDir: resolveArtifactsDir(base),
     workerPort: resolveWorkerPort(base),
+    toolPruning: { ...(base.toolPruning ?? {}) },
   };
 }
 

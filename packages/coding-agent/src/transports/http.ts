@@ -37,6 +37,7 @@ import {
   resolvePrompt,
 } from "../session/session-manager";
 import { setSubagentRunner } from "../subagent/subagent-bridge";
+import { publishToolPruningBridge } from "../pruning/pruning-bridge";
 import { QueueConflictError, type PendingQueues } from "../session/pending-queues";
 
 export interface HttpTransportOptions {
@@ -68,6 +69,13 @@ export function startHttpTransport(options: HttpTransportOptions) {
   // when it builds a session runtime, and the extension resolves the runner
   // off globalThis rather than importing it (see subagent-bridge).
   setSubagentRunner(runSubagent);
+  // Same startup, same reason: the Tool Pruning extension is loaded through
+  // jiti, so it can only reach the worker's tracing sink (and the pruning
+  // overrides of the resolved config) through the global symbol bridge.
+  publishToolPruningBridge({
+    traceLogger: () => getTraceLogger("worker"),
+    config: runtimeConfig.toolPruning,
+  });
 
   const server = createServer((req, res) => {
     handleHttpRequest(req, res).catch((err) => {
