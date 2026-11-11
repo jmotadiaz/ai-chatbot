@@ -12,6 +12,7 @@ import type {
   ChatDelta,
   ChatReply,
   ChatStep,
+  DecisionAnswer,
   DecisionsRequest,
   EmbeddingsRequest,
   OperationReply,
@@ -390,19 +391,24 @@ export function rerankResponse(
   };
 }
 
-/** Rendered answer of one `choice` question, as the Decisions API returns it. */
-interface DecisionsAnswerBody {
-  type: "choice";
-  choice: string;
-  confidence: number;
-  probabilities: Record<string, number>;
-}
+/**
+ * Probability a `noul` question is answered with when the consumer declares no
+ * override. It is the neutral middle of `[0, 1]`: a deterministic fixture, not a
+ * claim about what the real decider would answer.
+ */
+export const DEFAULT_NOUL_PROBABILITY = 0.5;
 
 /**
  * Decisions (TypeSafe/SystemOne) response: for each `choice` question it answers
  * with the declared criterion (`options.choices`, keyed by question) or, when a
  * question declares none, with its first criterion (deterministic). Confidence
  * is 1 and the probabilities are uniform across the criteria.
+ *
+ * `noul` questions (a calibrated probability in `[0, 1]`) are answered with
+ * `options.nouls`, or `DEFAULT_NOUL_PROBABILITY` when the consumer declares no
+ * override. A value outside `[0, 1]`, or a `nouls` key naming a question this
+ * request does not ask as a `noul` question, is an invalid configuration, not a
+ * silent success.
  *
  * `choices` is the consumer's declaration ("routing answers with `web`"); the
  * toolkit stays free of application routing. A choice outside its question's
@@ -411,8 +417,8 @@ interface DecisionsAnswerBody {
  * `answerFields` overlays extra fields on the rendered answer of a question — the
  * confidence the Gateway reports, an extra probability key: answers the uniform
  * rendering never invents, which a consumer would otherwise have to rebuild from
- * the rendered body. A question named here that the request does not ask as a
- * `choice` question is invalid configuration too, not a silent no-op.
+ * the rendered body. A question named here that the request does not answer as a
+ * `choice` or `noul` question is invalid configuration too, not a silent no-op.
  */
 export function decisionsResponse(
   request: DecisionsRequest,
@@ -420,12 +426,36 @@ export function decisionsResponse(
     model?: string;
     provider?: string;
     choices?: Readonly<Record<string, string>>;
+    nouls?: Readonly<Record<string, number>>;
     answerFields?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
   } = {},
 ): OperationReply {
   const model = request.model ?? options.model ?? "decision-default";
-  const answers: Record<string, DecisionsAnswerBody> = {};
-  for (const [name, question] of Object.entries(request.questions ?? {})) {
+  const questions = request.questions ?? {};
+  const nouls = options.nouls ?? {};
+  const answers: Record<string, DecisionAnswer> = {};
+
+  for (const [name, probability] of Object.entries(nouls)) {
+    if (questions[name]?.type !== "noul") {
+      throw new Error(
+        `Decisions noul answer refers to question "${name}", which this request does not ask as a noul question`,
+      );
+    }
+    if (!Number.isFinite(probability) || probability < 0 || probability > 1) {
+      throw new Error(
+        `Decisions noul "${probability}" of question "${name}" is outside [0, 1]`,
+      );
+    }
+  }
+
+  for (const [name, question] of Object.entries(questions)) {
+    if (question.type === "noul") {
+      answers[name] = {
+        type: "noul",
+        noul: nouls[name] ?? DEFAULT_NOUL_PROBABILITY,
+      };
+      continue;
+    }
     const criteria = Object.keys(question.criteria ?? {});
     if (question.type !== "choice" || criteria.length === 0) continue;
     const choice = options.choices?.[name] ?? criteria[0]!;
@@ -446,8 +476,9 @@ export function decisionsResponse(
   for (const [name, fields] of Object.entries(options.answerFields ?? {})) {
     const rendered = answers[name];
     if (rendered === undefined) {
+      const kind = questions[name]?.type === "noul" ? "noul" : "choice";
       throw new Error(
-        `Decisions answer fields refer to question "${name}", which this request does not ask as a choice question`,
+        `Decisions answer fields refer to question "${name}", which this request does not ask as a ${kind} question`,
       );
     }
     answers[name] = { ...rendered, ...fields };

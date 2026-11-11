@@ -41,11 +41,39 @@ export interface RerankRequest {
 }
 
 export interface DecisionQuestion {
+  /**
+   * Question kind. The toolkit renders `choice` (answer: one of the criteria)
+   * and `noul` (answer: a calibrated probability in `[0, 1]`) questions; any
+   * other kind is left unanswered.
+   */
   type?: string;
   instructions?: string;
   criteria?: Record<string, unknown>;
   [key: string]: unknown;
 }
+
+/**
+ * Answer of one `choice` question, as the Decisions API returns it: the chosen
+ * criterion plus the distribution over every criterion.
+ */
+export interface DecisionChoiceAnswer {
+  type: "choice";
+  choice: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+}
+
+/**
+ * Answer of one `noul` question: the calibrated probability that the predicate
+ * holds, in `[0, 1]`.
+ */
+export interface DecisionNoulAnswer {
+  type: "noul";
+  noul: number;
+}
+
+/** Rendered answer of one Decisions question. */
+export type DecisionAnswer = DecisionChoiceAnswer | DecisionNoulAnswer;
 
 export interface DecisionsRequest {
   model?: string;
