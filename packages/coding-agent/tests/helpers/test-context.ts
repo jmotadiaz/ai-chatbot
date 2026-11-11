@@ -92,6 +92,7 @@ export function createTestWorkerContext(
     ...(overrides.gatewayUrl !== undefined ? { gatewayUrl: overrides.gatewayUrl } : {}),
     ...(overrides.apiKey !== undefined ? { apiKey: overrides.apiKey } : {}),
     ...(overrides.workerPort !== undefined ? { workerPort: overrides.workerPort } : {}),
+    ...(overrides.toolPruning !== undefined ? { toolPruning: overrides.toolPruning } : {}),
   };
 
   return {
