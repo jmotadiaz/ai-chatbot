@@ -1,79 +1,16 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_TOOL_PRUNING_CONFIG,
-  type AgentMessage,
-  type AssistantMessage,
-  type ToolCall,
-  type ToolPruningConfig,
-  type ToolResultMessage,
-} from "../../../src/pruning/config";
+import type { AgentMessage } from "../../../src/pruning/config";
 import { partitionCoolingWindow } from "../../../src/pruning/cooling-window";
-
-const usage: AssistantMessage["usage"] = {
-  input: 1,
-  output: 1,
-  cacheRead: 0,
-  cacheWrite: 0,
-  totalTokens: 2,
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-};
-
-const user = (content: string, timestamp = 1): AgentMessage => ({
-  role: "user",
-  content,
-  timestamp,
-});
-
-const assistant = (
-  content: AssistantMessage["content"],
-  timestamp = 1,
-): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "test-model",
-  usage,
-  stopReason: "toolUse",
-  timestamp,
-});
-
-const prose = (value: string, timestamp = 1): AssistantMessage =>
-  assistant([{ type: "text", text: value }], timestamp);
-
-const call = (id: string, name: string, args: Record<string, unknown>): ToolCall => ({
-  type: "toolCall",
-  id,
-  name,
-  arguments: args,
-});
-
-const read = (id: string, path = "src/app.ts"): ToolCall => call(id, "read", { path });
-
-const toolResult = (
-  toolCallId: string,
-  content: ToolResultMessage["content"],
-  overrides: Partial<ToolResultMessage> = {},
-): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId,
-  toolName: "read",
-  content,
-  isError: false,
-  timestamp: 1_700_000_000_000,
-  ...overrides,
-});
-
-/** `chars` of filler text: exactly `chars / 4` estimated tokens. */
-const bigText = (chars: number): { type: "text"; text: string } => ({
-  type: "text",
-  text: "x".repeat(chars),
-});
-
-const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig => ({
-  ...DEFAULT_TOOL_PRUNING_CONFIG,
-  ...overrides,
-});
+import {
+  assistant,
+  bigText,
+  call,
+  configWith,
+  prose,
+  read,
+  toolResult,
+  user,
+} from "./fixtures";
 
 /**
  * Tail protection so small that only the last tool call is ever protected. The
@@ -103,9 +40,9 @@ const exploreConverseEdit = (): AgentMessage[] => [
   toolResult("r2", [bigText(4_000)]), // 3
   prose("Plan: rewrite the parser in src/plan.ts."), // 4
   user("Let's discuss the wording of the plan first", 2), // 5 — turn 2
-  prose("Sure: here is the wording.", 2), // 6
+  prose("Sure: here is the wording.", { timestamp: 2 }), // 6
   user("Implement it now", 3), // 7 — turn 3
-  assistant([call("e1", "edit", { path: "src/plan.ts" })], 3), // 8
+  assistant([call("e1", "edit", { path: "src/plan.ts" })], { timestamp: 3 }), // 8
   toolResult("e1", [bigText(4_000)], { toolName: "edit", timestamp: 3 }), // 9
 ];
 
@@ -125,7 +62,7 @@ describe("partitionCoolingWindow", () => {
     const messages = exploreConverseEdit();
     messages.push(
       user("Verify the change", 4), // 10 — turn 4
-      assistant([call("b1", "bash", { command: "pnpm test" })], 4), // 11
+      assistant([call("b1", "bash", { command: "pnpm test" })], { timestamp: 4 }), // 11
       toolResult("b1", [bigText(4_000)], { toolName: "bash", timestamp: 4 }), // 12
     );
 
@@ -161,7 +98,7 @@ describe("partitionCoolingWindow", () => {
       ...calls.map((toolCall) => toolResult(toolCall.id, [bigText(8_000)])), // 2..21
       prose("Exploration complete."), // 22
       user("Continue", 2), // 23 — turn 2
-      prose("Continuing.", 2), // 24
+      prose("Continuing.", { timestamp: 2 }), // 24
     ];
 
     const partition = partitionCoolingWindow(messages);
@@ -214,6 +151,37 @@ describe("partitionCoolingWindow", () => {
     );
   });
 
+  it("releases the excess prefix of a marathon active Turn that follows a tool Turn", () => {
+    // Turn 1 ran one small command, so it is the last completed Turn with tools
+    // and is protected in full. Turn 2 is active and enormous (20 results of
+    // 2 000 tokens): its own 40 000-token cap must still release the first half.
+    // A protected region collapsed into "everything after the earliest start"
+    // would let Turn 1 protect Turn 2's whole prefix and make the cap dead code.
+    const calls = Array.from({ length: 20 }, (_, index) => read(`r${index + 1}`));
+    const messages: AgentMessage[] = [
+      user("Run the suite"), // 0 — turn 1
+      assistant([call("b1", "bash", { command: "pnpm test" })]), // 1
+      toolResult("b1", [bigText(400)], { toolName: "bash" }), // 2
+      user("Now explore everything", 2), // 3 — turn 2 (active)
+      assistant(calls, { timestamp: 2 }), // 4
+      ...calls.map((toolCall) => toolResult(toolCall.id, [bigText(8_000)], { timestamp: 2 })), // 5..24
+    ];
+
+    const partition = partitionCoolingWindow(messages);
+
+    // Turn 2's capped span covers the last ten results (indices 15..24) and the
+    // recent-tail floor agrees with it, while Turn 1 keeps its own span (0..3).
+    // Everything between them — the first ten results of the active Turn — is
+    // the evaluable excess prefix.
+    expect(partition.protectedSpans).toEqual([
+      { start: 0, end: 3 },
+      { start: 15, end: 25 },
+    ]);
+    expect(ids(partition)).toEqual(
+      Array.from({ length: 10 }, (_, index) => `r${index + 1}`),
+    );
+  });
+
   it("never protects fewer than the minimum recent tool calls", () => {
     // Turn 1 read five files, Turn 2 read one more and Turn 3 is prose only.
     const reads = ["r1", "r2", "r3", "r4", "r5"];
@@ -222,10 +190,10 @@ describe("partitionCoolingWindow", () => {
       assistant(reads.map((id) => read(id))), // 1
       ...reads.map((id) => toolResult(id, [bigText(100)])), // 2..6
       user("next", 2), // 7 — turn 2
-      assistant([read("r6")], 2), // 8
+      assistant([read("r6")], { timestamp: 2 }), // 8
       toolResult("r6", [bigText(100)], { timestamp: 2 }), // 9
       user("go on", 3), // 10 — turn 3
-      prose("ok", 3), // 11
+      prose("ok", { timestamp: 3 }), // 11
     ];
 
     // One protected call is the last result of Turn 2: Turn 1 is evaluable.
@@ -291,10 +259,10 @@ describe("partitionCoolingWindow", () => {
       toolResult("e1", [bigText(8_000)], { toolName: "edit" }), // 5 mutation: keep
       toolResult("r3", [bigText(8_000)]), // 6
       user("next", 2), // 7 — turn 2
-      assistant([read("r4")], 2), // 8
+      assistant([read("r4")], { timestamp: 2 }), // 8
       toolResult("r4", [bigText(4_000)], { timestamp: 2 }), // 9
       user("go on", 3), // 10 — turn 3
-      prose("ok", 3), // 11
+      prose("ok", { timestamp: 3 }), // 11
     ];
 
     const partition = partitionCoolingWindow(messages, { config: ONLY_LAST_CALL });
@@ -322,6 +290,7 @@ describe("partitionCoolingWindow", () => {
 
     expect(partition).toEqual({
       protectedStartIndex: 0,
+      protectedSpans: [],
       protectedTokens: 0,
       candidates: [],
       candidateTokens: 0,

@@ -4,7 +4,6 @@ import {
   TOOL_PRUNING_ENTRY_TYPE,
   type AgentMessage,
   type AssistantMessage,
-  type ToolCall,
   type ToolPruningConfigOverrides,
   type ToolPruningEpochEntry,
   type ToolResultMessage,
@@ -26,6 +25,16 @@ import type {
   SystemOneSuccess,
 } from "../../../src/pruning/systemone-client";
 import type { ToolPruningTraceLogger } from "../../../src/pruning/pruning-bridge";
+import {
+  assistant,
+  bash,
+  grep,
+  prose,
+  read,
+  toolResult,
+  usageWith,
+  user,
+} from "./fixtures";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -47,88 +56,49 @@ const BASE_CONFIG: ToolPruningConfigOverrides = {
   maxProtectedTurnTokens: 0,
 };
 
-const usage = (totalTokens: number): AssistantMessage["usage"] => ({
-  input: totalTokens,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-  totalTokens,
-  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-});
-
-const user = (content: string): AgentMessage => ({ role: "user", content, timestamp: 1 });
-
-const assistant = (
+/**
+ * Fixture assistant messages carry no provider measurement unless a test says
+ * so: a mid-session `usage` would become the correction boundary and hide what
+ * the Epoch actually measured.
+ */
+const assistantWithoutUsage = (
   content: AssistantMessage["content"],
   overrides: Partial<AssistantMessage> = {},
-): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "test-model",
-  usage: usage(0),
-  stopReason: content.some((block) => block.type === "toolCall") ? "toolUse" : "stop",
-  timestamp: 1,
-  ...overrides,
-});
+): AssistantMessage => assistant(content, { usage: usageWith(0), ...overrides });
 
-const prose = (text: string, overrides: Partial<AssistantMessage> = {}): AssistantMessage =>
-  assistant([{ type: "text", text }], overrides);
+const bashResult = (id: string, text = BIG_RESULT): ToolResultMessage =>
+  toolResult(id, [{ type: "text", text }], { toolName: "bash" });
 
-const call = (id: string, name: string, args: Record<string, unknown>): ToolCall => ({
-  type: "toolCall",
-  id,
-  name,
-  arguments: args,
-});
+const grepResult = (id: string, text = BIG_RESULT): ToolResultMessage =>
+  toolResult(id, [{ type: "text", text }], { toolName: "grep" });
 
-const bash = (id: string, command: string): ToolCall => call(id, "bash", { command });
-const bashResult = (id: string, text = BIG_RESULT): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId: id,
-  toolName: "bash",
-  content: [{ type: "text", text }],
-  isError: false,
-  timestamp: 1,
-});
-const grep = (id: string, pattern: string): ToolCall => call(id, "grep", { pattern });
-const grepResult = (id: string, text = BIG_RESULT): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId: id,
-  toolName: "grep",
-  content: [{ type: "text", text }],
-  isError: false,
-  timestamp: 1,
-});
-const read = (id: string, path = "src/app.ts"): ToolCall => call(id, "read", { path });
-const readResult = (id: string, text = BIG_RESULT): ToolResultMessage => ({
-  role: "toolResult",
-  toolCallId: id,
-  toolName: "read",
-  content: [{ type: "text", text }],
-  isError: false,
-  timestamp: 1,
-});
+const readResult = (id: string, text = BIG_RESULT): ToolResultMessage =>
+  toolResult(id, [{ type: "text", text }], { toolName: "read" });
+
 /** One completed tool turn: `count` bash pairs, all worth 10 000 tokens. */
 const bashTurn = (prefix: string, count: number): AgentMessage[] =>
   Array.from({ length: count }, (_, index) => {
     const id = `${prefix}-${index + 1}`;
-    return [assistant([bash(id, `pnpm task-${id}`)]), bashResult(id)];
+    return [assistantWithoutUsage([bash(id, `pnpm task-${id}`)]), bashResult(id)];
   }).flat();
 
 /**
  * A session shaped like the spec: an old exploration turn and the active turn
  * whose assistant reported `activeTokens` (60 000 tokens of prunable pool).
  */
-const session = (activeTokens: number, middleTurns = 0): AgentMessage[] => [
+const session = (
+  activeTokens: number,
+  middleTurns = 0,
+  /** Timestamp of the assistant message that reported `activeTokens`. */
+  timestamp = 1,
+): AgentMessage[] => [
   user("Implement the parser"),
   ...bashTurn("t1", 6),
   ...Array.from({ length: middleTurns }, (_, index) =>
     bashTurn(`m${index + 1}`, 3),
   ).flat(),
   user("Now wire it up"),
-  prose("Working on it", { usage: usage(activeTokens) }),
+  prose("Working on it", { usage: usageWith(activeTokens), timestamp }),
 ];
 
 const okJudge = (
@@ -171,7 +141,11 @@ interface Harness {
  * a session branch (`appendEntry` becomes a `custom` entry on the branch and
  * moves the leaf, exactly like Pi), and a trace sink that records events.
  */
-function harness(overrides: Partial<ToolPruningConfigOverrides> = {}): Harness {
+function harness(
+  overrides: Partial<ToolPruningConfigOverrides> = {},
+  /** Injected clock, so a test can place messages between two Epochs. */
+  clock?: () => number,
+): Harness {
   const entries: ToolPruningEpochEntry[] = [];
   const branch: ToolPruningSessionEntry[] = [];
   const events: Harness["events"] = [];
@@ -224,10 +198,12 @@ function harness(overrides: Partial<ToolPruningConfigOverrides> = {}): Harness {
     getTraceLogger: () => trace,
     getSignal: () => signal,
     judge,
-    now: (() => {
-      let clock = 1_000;
-      return () => (clock += 5);
-    })(),
+    now:
+      clock ??
+      (() => {
+        let tick = 1_000;
+        return () => (tick += 5);
+      })(),
   };
 
   return {
@@ -304,8 +280,8 @@ describe("estimateActiveTokens", () => {
   it("uses the provider usage and estimates only what came after it", () => {
     const messages: AgentMessage[] = [
       user("old"),
-      prose("answer", { usage: usage(10_000) }),
-      assistant([bash("b1", "pnpm test")]),
+      prose("answer", { usage: usageWith(10_000) }),
+      assistantWithoutUsage([bash("b1", "pnpm test")]),
       bashResult("b1", "z".repeat(400)),
     ];
 
@@ -322,7 +298,7 @@ describe("estimateActiveTokens", () => {
   it("skips aborted assistant messages, which carry no usable usage", () => {
     const messages: AgentMessage[] = [
       user("abcd"),
-      prose("aborted", { usage: usage(50_000), stopReason: "aborted" }),
+      prose("aborted", { usage: usageWith(50_000), stopReason: "aborted" }),
     ];
 
     expect(estimateActiveTokens(messages)).toBe(1 + 2);
@@ -332,12 +308,12 @@ describe("estimateActiveTokens", () => {
 describe("measureProjection", () => {
   const config = { ...DEFAULT_TOOL_PRUNING_CONFIG, ...BASE_CONFIG };
 
-  it("subtracts the reductions applied before the last usage boundary", () => {
+  it("subtracts a reduction the provider had not counted yet", () => {
     const messages: AgentMessage[] = [
       user("read it"),
-      assistant([bash("t1", "pnpm test")]),
+      assistantWithoutUsage([bash("t1", "pnpm test")]),
       bashResult("t1"),
-      prose("done", { usage: usage(50_000) }),
+      prose("done", { usage: usageWith(50_000) }),
     ];
 
     const measurement = measureProjection(messages, { t1: "drop_result" }, config);
@@ -345,7 +321,7 @@ describe("measureProjection", () => {
     // 10 000 result tokens became a ~105-token stub: the stale usage must not
     // keep reporting the pruned body.
     expect(measurement.hasUsage).toBe(true);
-    expect(measurement.removedBeforeUsage).toBeGreaterThan(9_500);
+    expect(measurement.newlyMaskedBeforeUsage).toBeGreaterThan(9_500);
     expect(measurement.activeTokens).toBeGreaterThan(39_000);
     expect(measurement.activeTokens).toBeLessThan(41_000);
     // The plain estimator would still report the stale 50 000: only the runner
@@ -356,8 +332,8 @@ describe("measureProjection", () => {
   it("does not subtract reductions that happen after the usage boundary", () => {
     const messages: AgentMessage[] = [
       user("go"),
-      prose("answer", { usage: usage(50_000) }),
-      assistant([bash("t1", "pnpm test")]),
+      prose("answer", { usage: usageWith(50_000) }),
+      assistantWithoutUsage([bash("t1", "pnpm test")]),
       bashResult("t1"),
     ];
 
@@ -365,7 +341,7 @@ describe("measureProjection", () => {
 
     // Everything after the boundary is estimated from scratch, so the plain
     // estimator over the masked projection is already exact.
-    expect(measurement.removedBeforeUsage).toBe(0);
+    expect(measurement.newlyMaskedBeforeUsage).toBe(0);
     expect(measurement.activeTokens).toBe(estimateActiveTokens(measurement.messages));
     expect(measurement.activeTokens).toBeGreaterThan(50_000);
   });
@@ -373,20 +349,20 @@ describe("measureProjection", () => {
   it("subtracts a dropped call block from its own assistant message", () => {
     const messages: AgentMessage[] = [
       user("search"),
-      assistant([grep("g1", "alpha")]),
+      assistantWithoutUsage([grep("g1", "alpha")]),
       grepResult("g1"),
-      prose("done", { usage: usage(50_000) }),
+      prose("done", { usage: usageWith(50_000) }),
     ];
 
     const measurement = measureProjection(messages, { g1: "drop_call" }, config);
 
     expect(measurement.messages).toHaveLength(2);
-    expect(measurement.removedBeforeUsage).toBeGreaterThan(10_000);
+    expect(measurement.newlyMaskedBeforeUsage).toBeGreaterThan(10_000);
     expect(measurement.activeTokens).toBeLessThan(40_000);
   });
 
   it("falls back to a full estimate when there is no usage to correct", () => {
-    const messages: AgentMessage[] = [user("go"), assistant([bash("t1", "x")]), bashResult("t1")];
+    const messages: AgentMessage[] = [user("go"), assistantWithoutUsage([bash("t1", "x")]), bashResult("t1")];
 
     const measurement = measureProjection(messages, { t1: "drop_result" }, config);
 
@@ -421,7 +397,7 @@ describe("Tool Pruning triggers", () => {
           : message,
       ),
       user("next"),
-      prose("ok", { usage: usage(90_000) }),
+      prose("ok", { usage: usageWith(90_000) }),
     ];
 
     const projection = await test.runner.onContext(messages);
@@ -515,11 +491,14 @@ describe("Tool Pruning triggers", () => {
     expect(judge).not.toHaveBeenCalled();
   });
 
-  it("corrects the stale usage before choosing the step to consume", async () => {
+  it("corrects a usage the mask still counted before choosing the step", async () => {
     const test = harness();
     test.answerWith(1);
-    // One already-persisted drop of a 10 000-token result.
-    test.branch.push(customEntry(epochEntry(1, { "t1-1": "drop_result" }, 0.01)));
+    // A persisted drop of a 10 000-token result whose Epoch landed AFTER the
+    // last assistant message: the provider's count still includes that body.
+    test.branch.push(
+      customEntry(epochEntry(1, { "t1-1": "drop_result" }, 0.01, 2)),
+    );
 
     // The provider reported 62 000 tokens, but 10 000 of them are pruned now.
     await test.runner.onContext(session(62_000));
@@ -528,6 +507,56 @@ describe("Tool Pruning triggers", () => {
     // ~52 100 corrected tokens reach 0.45 only: consuming 0.60 would burn a
     // KV-cache break the session does not need yet.
     expect(test.appends[0].entry.watermark).toBe(0.45);
+  });
+
+  it("does not subtract a mask the provider already counted", async () => {
+    const test = harness();
+    test.answerWith(1);
+    // An Epoch that ran before the last assistant message: its 10 000 tokens
+    // are already absent from the reported 62 000.
+    test.branch.push(
+      customEntry(epochEntry(1, { "t1-1": "drop_result" }, 0.01, 0)),
+    );
+
+    await test.runner.onContext(session(62_000));
+
+    // Nothing to correct: 0.60 is genuinely reached, and the session must not
+    // pretend it is at 0.45 and burn an extra KV-cache break later.
+    expect(test.judge).toHaveBeenCalledTimes(1);
+    expect(test.appends[0].entry.tokensBefore).toBe(62_000);
+    expect(test.appends[0].entry.watermark).toBe(0.6);
+  });
+
+  it("does not subtract the same savings twice across two Epochs", async () => {
+    let clock = 1_000;
+    const test = harness({}, () => clock);
+    // Epoch 1 drops the results of `t1-1..t1-3` (30 000 tokens) and leaves the
+    // other three in the Living Pool.
+    const firstEpochDrops = new Set(["result_c1", "result_c2", "result_c3"]);
+    test.judge.mockImplementationOnce(async (request: SystemOneDecisionRequest) => {
+      const answers: Record<string, number> = {};
+      for (const name of Object.keys(request.questions)) {
+        answers[name] = firstEpochDrops.has(name) ? 0.1 : 1;
+      }
+      return okJudge(answers);
+    });
+
+    await test.runner.onContext(session(50_000));
+    expect(test.appends).toHaveLength(1);
+    expect(test.appends[0].entry.watermark).toBe(0.45);
+    expect(Object.keys(test.appends[0].entry.decisions)).toHaveLength(3);
+
+    // The provider then reports 62 000 for a context that already carried the
+    // Epoch 1 masks (same tool results, the session grew elsewhere).
+    clock = 1_200;
+    test.answerWith(1);
+    await test.runner.onContext(session(62_000, 0, 1_150));
+
+    // Subtracting Epoch 1 again would leave 32 000 tokens, below the 45 % step,
+    // and the session would never spend the step it has actually reached.
+    expect(test.judge).toHaveBeenCalledTimes(2);
+    expect(test.appends[1].entry.tokensBefore).toBe(62_000);
+    expect(test.appends[1].entry.watermark).toBe(0.6);
   });
 });
 
@@ -542,14 +571,14 @@ describe("Phase 0 short-circuit", () => {
     const test = harness();
     const messages: AgentMessage[] = [
       user("read it"),
-      assistant([read("r1", "src/app.ts")]),
+      assistantWithoutUsage([read("r1", "src/app.ts")]),
       readResult("r1", HUGE),
-      assistant([read("r2", "src/app.ts")]),
+      assistantWithoutUsage([read("r2", "src/app.ts")]),
       readResult("r2", HUGE),
-      assistant([bash("b1", "pnpm test")]),
+      assistantWithoutUsage([bash("b1", "pnpm test")]),
       bashResult("b1"),
       user("next"),
-      prose("done", { usage: usage(50_000) }),
+      prose("done", { usage: usageWith(50_000) }),
     ];
 
     const projection = await test.runner.onContext(messages);
@@ -571,13 +600,13 @@ describe("Phase 0 short-circuit", () => {
     const test = harness();
     const messages: AgentMessage[] = [
       user("read it"),
-      assistant([read("r1", "src/app.ts")]),
+      assistantWithoutUsage([read("r1", "src/app.ts")]),
       readResult("r1", HUGE),
       // A cheap re-read supersedes it and leaves only ~120 tokens in the pool.
-      assistant([read("r2", "src/app.ts")]),
+      assistantWithoutUsage([read("r2", "src/app.ts")]),
       readResult("r2", "z".repeat(480)),
       user("next"),
-      prose("done", { usage: usage(90_000) }),
+      prose("done", { usage: usageWith(90_000) }),
     ];
 
     await test.runner.onContext(messages);
@@ -641,10 +670,10 @@ describe("Epoch persistence", () => {
       user("search"),
       ...Array.from({ length: 2 }, (_, index) => {
         const id = `g${index + 1}`;
-        return [assistant([grep(id, `pattern-${id}`)]), grepResult(id)];
+        return [assistantWithoutUsage([grep(id, `pattern-${id}`)]), grepResult(id)];
       }).flat(),
       user("next"),
-      prose("ok", { usage: usage(50_000) }),
+      prose("ok", { usage: usageWith(50_000) }),
     ];
 
     const projection = await test.runner.onContext(messages);
@@ -716,19 +745,46 @@ describe("Fail-open", () => {
     expect(test.appends[1].entry.watermark).toBe(0.6);
   });
 
+  it("counts Phase 0 drops and judged candidates together", async () => {
+    const test = harness();
+    test.answerWith(0.1);
+    const messages: AgentMessage[] = [
+      user("read it"),
+      assistantWithoutUsage([read("r1", "src/app.ts")]),
+      readResult("r1"),
+      assistantWithoutUsage([read("r2", "src/app.ts")]),
+      readResult("r2"),
+      assistantWithoutUsage([bash("b1", "pnpm test")]),
+      bashResult("b1"),
+      user("next"),
+      prose("done", { usage: usageWith(50_000) }),
+    ];
+
+    await test.runner.onContext(messages);
+
+    // `r1` is superseded deterministically and never reaches the judge; the
+    // audit trail still counts it, so `candidatesEvaluated` is the work the
+    // Epoch actually considered, not just the HTTP round-trip.
+    expect(test.judge).toHaveBeenCalledTimes(1);
+    const stats = test.appends[0].entry.stats;
+    expect(stats.deterministicDrops).toBe(1);
+    expect(stats.judgeDrops).toBe(2);
+    expect(stats.candidatesEvaluated).toBe(3);
+  });
+
   it("persists the Phase 0 drops of a failed Epoch", async () => {
     const test = harness();
     test.failJudge();
     const messages: AgentMessage[] = [
       user("read it"),
-      assistant([read("r1", "src/app.ts")]),
+      assistantWithoutUsage([read("r1", "src/app.ts")]),
       readResult("r1"),
-      assistant([read("r2", "src/app.ts")]),
+      assistantWithoutUsage([read("r2", "src/app.ts")]),
       readResult("r2"),
-      assistant([bash("b1", "pnpm test")]),
+      assistantWithoutUsage([bash("b1", "pnpm test")]),
       bashResult("b1"),
       user("next"),
-      prose("done", { usage: usage(50_000) }),
+      prose("done", { usage: usageWith(50_000) }),
     ];
 
     await test.runner.onContext(messages);
@@ -837,12 +893,15 @@ function epochEntry(
   epochId: number,
   decisions: Record<string, "drop_result" | "drop_call">,
   watermark = 0.45,
+  /** Epoch timestamp: `1` is older than every fixture message, so its masks
+   * count as already seen by the provider (`2` is after them). */
+  timestamp = 1,
 ): ToolPruningEpochEntry {
   return {
     version: 1,
     epochId,
     watermark,
-    timestamp: 1,
+    timestamp,
     tokensBefore: 1,
     tokensSavedEst: 1,
     decisions,
@@ -875,6 +934,10 @@ describe("branch-aware state", () => {
       masks: { a: "drop_result", b: "drop_call" },
       lastEpochId: 2,
       highestConsumedWatermark: 0.6,
+      applications: [
+        { timestamp: 1, decisions: { a: "drop_result", b: "drop_result" } },
+        { timestamp: 1, decisions: { b: "drop_call" } },
+      ],
     });
   });
 
@@ -888,7 +951,14 @@ describe("branch-aware state", () => {
 
     // The invalid decision value is skipped; the entry still counts as an
     // Epoch, which only keeps the id sequence and the staircase monotonic.
-    expect(state).toEqual({ masks: {}, lastEpochId: 1, highestConsumedWatermark: 0.45 });
+    expect(state).toEqual({
+      masks: {},
+      lastEpochId: 1,
+      highestConsumedWatermark: 0.45,
+      // The entry carries no usable timestamp, so its masks count as already
+      // seen: an unknown saving must never under-estimate the context.
+      applications: [{ timestamp: Number.NEGATIVE_INFINITY, decisions: {} }],
+    });
   });
 
   it("reads only the entries after the latest compaction", () => {
@@ -902,6 +972,8 @@ describe("branch-aware state", () => {
       masks: { b: "drop_result" },
       lastEpochId: 5,
       highestConsumedWatermark: 0.45,
+      // Only the post-Compaction entry: the abandoned cycle's masks are gone.
+      applications: [{ timestamp: 1, decisions: { b: "drop_result" } }],
     });
   });
 

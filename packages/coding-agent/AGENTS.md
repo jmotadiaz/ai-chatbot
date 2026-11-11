@@ -80,6 +80,8 @@ in the runners). See "config — Typed per-Environment configuration" in the roo
 | `extensions/commit-attribution/` | First-party extension: injects model-specific Co-Authored-By attribution into the system prompt |
 | `extensions/subagent/` | First-party `subagent` tool (thin shell over `runSubagent` in `session-manager.ts`) |
 | `extensions/artifacts/` | First-party `publish_artifact({ path, name })` tool + `/artifacts` command |
+| `extensions/tool-pruning/` | First-party Tool Pruning extension: thin `pi.on("context")` shell over `src/pruning/` |
+| `src/pruning/` | Tool Pruning engine: `config`, `mask`, `messages`, `cooling-window`, `supersession`, `decision-state`, `systemone-client`, `epoch-runner`, `pruning-bridge` |
 | `scripts/install-packages.ts` | Clones/updates third-party Pi packages if defined |
 
 ## Model Catalog (runtime)
@@ -149,6 +151,46 @@ view path the user follows in the browser.
   path), `tests/unit/artifacts/artifacts-extension.test.ts` (tool boundary, command,
   no hook), `tests/unit/artifacts/artifacts-server.test.ts` (the worker no longer serves
   `/artifacts`).
+
+### Tool Pruning (`extensions/tool-pruning/`)
+
+Watermark-gated Epoch masking of stale tool payloads (spec `.scratch/tool-pruning/spec.md`).
+A long session accumulates `read`, `grep` and `bash` bodies that go obsolete a few Turns
+later and push Pi into a lossy Compaction. The extension masks them in the projection the
+provider receives (`pi.on("context")`) while the session `.jsonl`, the AG-UI event log and
+the UI keep the full transcript. Until a watermark says the context is under real pressure
+an Epoch stays silent: no HTTP, no latency, KV cache intact.
+
+`extensions/tool-pruning/index.ts` is a thin shell. It resolves what the runner cannot own
+from inside jiti and nothing else: credentials from `ctx.model` / `ctx.modelRegistry`
+(never `process.env`), the active session branch, and the worker's real trace logger
+through the pruning bridge. The engine lives in `src/pruning/` and never imports worker
+`src/` runtime modules, global config or `process.env`.
+
+| Module | Responsibility |
+| --- | --- |
+| `config.ts` | `ToolPruningConfig`, spec defaults and overrides, epoch entry and signal types |
+| `mask.ts` | Applies a decision mask to a message projection (`drop_call`, `drop_result` stubs) |
+| `messages.ts` | Shared, index-based readers over a `AgentMessage[]`: tool-call index and typed argument readers |
+| `cooling-window.ts` | Cooling Window: candidate pairs outside the union of independent protected spans (recent tail floor, capped active Turn, capped last completed tool Turn) |
+| `supersession.ts` | Phase 0: free deterministic drops (superseded reads and rerun/succeeded commands) |
+| `decision-state.ts` | Phase 1 state document, question building, batching, budget fitting and the single conservative drop band (`applyDecisionPolicy`) |
+| `systemone-client.ts` | `POST /v1/systemone` transport: 4 s timeout, Turn abort, typed failures |
+| `epoch-runner.ts` | Cadence (monotonic watermark staircase), Phase 0 → Phase 1 orchestration, fail-open, branch-aware persistence |
+| `pruning-bridge.ts` | `Symbol.for` handoff of the trace logger factory and config overrides to the jiti copy |
+
+- **Persistence:** every completed Epoch appends a `ToolPruningEpochEntry` to the session
+  branch, including short-circuited and failed-open ones, because the entry *is* the
+  consumed step. Masks and the highest consumed step are rebuilt from `getBranch()`, so a
+  Message Edit that abandons a branch abandons its masks and steps too; a `compaction`
+  entry rearms the whole staircase.
+- **Active tokens:** `measureProjection` corrects the provider's last `usage` with the
+  reductions that landed *after* that usage boundary, never with the whole mask, so a
+  saving is subtracted exactly once.
+- **Tests:** `tests/unit/pruning/` (`mask`, `cooling-window`, `supersession`,
+  `decision-state`, `policy`, `systemone-client`, `epoch-runner`, `session-integration`),
+  sharing `fixtures.ts`. The Gateway is substituted through the toolkit
+  (`packages/model-gateway/js/`), never a `fetch` spy.
 
 ### Commit Attribution (`extensions/commit-attribution/`)
 

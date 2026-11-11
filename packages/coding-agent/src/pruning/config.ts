@@ -67,6 +67,35 @@ export type ToolPruningDrop = Exclude<ToolPruningDecision, "keep">;
 export type ToolPruningMaskMap = Readonly<Record<string, ToolPruningDrop>>;
 
 /**
+ * Deterministic facts about one paired call that Phase 1 must see (spec D5
+ * Phase 0.2).
+ *
+ * Phase 0 (`supersession.ts`) annotates them and Phase 1 (`decision-state.ts`)
+ * shows them to the judge, so the shape lives here — the single definition both
+ * phases share — instead of being declared twice.
+ */
+export interface ToolPruningSignals {
+  /** A successful `edit` on the read path happened after this call. */
+  readonly editedLater: boolean;
+  /** The same normalised `bash` command ran again later in the session. */
+  readonly sameCommandRanLater: boolean;
+  /** At least one of those later re-runs succeeded. */
+  readonly laterCommandSucceeded: boolean;
+}
+
+/**
+ * Signals of a call Phase 0 could not supersede, with nothing to report.
+ *
+ * Absence of evidence is not evidence of absence: the judge keeps its own
+ * conservative bias when every flag is `false`.
+ */
+export const NO_TOOL_PRUNING_SIGNALS: Readonly<ToolPruningSignals> = Object.freeze({
+  editedLater: false,
+  sameCommandRanLater: false,
+  laterCommandSucceeded: false,
+});
+
+/**
  * Knobs of the pruning engine. Defaults reproduce the spec's parameter table;
  * tests and `WorkerRuntimeConfig` may override individual values.
  */

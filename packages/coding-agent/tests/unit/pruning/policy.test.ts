@@ -2,14 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_TOOL_PRUNING_CONFIG,
   MIN_TRUNCATION_CHARS,
-  type ToolPruningConfig,
 } from "../../../src/pruning/config";
 import { pruningEligibilityFor, toolPolicyFor } from "../../../src/pruning/cooling-window";
-
-const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig => ({
-  ...DEFAULT_TOOL_PRUNING_CONFIG,
-  ...overrides,
-});
+import { configWith } from "./fixtures";
 
 const eligible = (toolName: string, chars: number, extra: Partial<{ isError: boolean; hasImages: boolean }> = {}) =>
   pruningEligibilityFor({ toolName, chars, isError: false, ...extra });

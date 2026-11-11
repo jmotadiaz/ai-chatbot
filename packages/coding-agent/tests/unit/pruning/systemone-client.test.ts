@@ -7,12 +7,8 @@ import {
   type DecisionsRequest,
   type GatewayScenarioConfig,
 } from "@ai-chatbot/model-gateway-testing";
+import { NO_TOOL_PRUNING_SIGNALS } from "../../../src/pruning/config";
 import {
-  DEFAULT_TOOL_PRUNING_CONFIG,
-  type ToolPruningConfig,
-} from "../../../src/pruning/config";
-import {
-  NO_PHASE0_SIGNALS,
   applyDecisionPolicy,
   type DecisionCandidate,
   type DecisionQuestion,
@@ -26,7 +22,16 @@ import {
 const BASE_URL = "http://127.0.0.1:4099/v1";
 const API_KEY = "test-gateway-key";
 
-/** The MSW seam: the real `fetch` runs, the toolkit answers in-process. */
+/**
+ * The MSW seam: the real `fetch` runs and the toolkit answers in-process
+ * (ADR 0013 — the client is never tested against a stubbed `globalThis.fetch`).
+ *
+ * The server stays local because three cases are about the transport itself and
+ * cannot be expressed as a toolkit scenario: a *delayed* answer (the 4 s timeout
+ * and the Turn abort need the request to be in flight when the clock runs out)
+ * and a body that is not JSON (a scenario always renders a JSON body). Every
+ * other case is a plain scenario through `useScenario`.
+ */
 const server = setupServer();
 
 beforeEach(() => {
@@ -43,10 +48,15 @@ const useScenario = (config: GatewayScenarioConfig) => {
   return scenario;
 };
 
-const configWith = (overrides: Partial<ToolPruningConfig>): ToolPruningConfig => ({
-  ...DEFAULT_TOOL_PRUNING_CONFIG,
-  ...overrides,
-});
+/** Delays the decision endpoint so the client's timeout/abort can fire. */
+const useDelayedAnswer = (delayMs: number) => {
+  server.use(
+    http.post("*/v1/systemone", async () => {
+      await sleep(delayMs);
+      return HttpResponse.json({ answers: {} });
+    }),
+  );
+};
 
 const question = (instructions: string): DecisionQuestion => ({
   type: "noul",
@@ -77,7 +87,7 @@ const candidate = (id: string): DecisionCandidate => ({
   isError: false,
   resultIndex: 0,
   eligibility: { dropResult: true, dropCall: true, requiresSupersessionOrJudge: false },
-  signals: NO_PHASE0_SIGNALS,
+  signals: NO_TOOL_PRUNING_SIGNALS,
   resultText: "x".repeat(4_000),
 });
 
@@ -127,18 +137,13 @@ describe("requestSystemOneDecision", () => {
   });
 
   it("reports a timeout as a typed failure after decisionTimeoutMs", async () => {
-    server.use(
-      http.post("*/v1/systemone", async () => {
-        await sleep(150);
-        return HttpResponse.json({ answers: {} });
-      }),
-    );
+    useDelayedAnswer(150);
 
     const startedAt = Date.now();
     const result = await requestSystemOneDecision(request, {
       baseUrl: BASE_URL,
       apiKey: API_KEY,
-      config: configWith({ decisionTimeoutMs: 20 }),
+      config: { decisionTimeoutMs: 20 },
     });
 
     expect(result.ok).toBe(false);
@@ -148,12 +153,7 @@ describe("requestSystemOneDecision", () => {
   });
 
   it("reports an aborted Turn as a typed failure and cancels the request", async () => {
-    server.use(
-      http.post("*/v1/systemone", async () => {
-        await sleep(150);
-        return HttpResponse.json({ answers: {} });
-      }),
-    );
+    useDelayedAnswer(150);
     const controller = new AbortController();
     setTimeout(() => controller.abort(), 10);
 
@@ -190,9 +190,8 @@ describe("requestSystemOneDecision", () => {
   });
 
   it("treats a body without an answers object as an invalid response", async () => {
-    server.use(
-      http.post("*/v1/systemone", () => HttpResponse.json({ model: DECISION_MODEL })),
-    );
+    // A protocol violation the toolkit never renders on its own.
+    useScenario({ decisions: () => ({ body: { model: DECISION_MODEL } }) });
 
     const result = await requestSystemOneDecision(request, {
       baseUrl: BASE_URL,
@@ -204,11 +203,9 @@ describe("requestSystemOneDecision", () => {
   });
 
   it("reports an HTTP error status as a typed failure", async () => {
-    server.use(
-      http.post("*/v1/systemone", () =>
-        HttpResponse.json({ error: "boom" }, { status: 500 }),
-      ),
-    );
+    useScenario({
+      decisions: () => ({ status: 500, body: { error: { message: "boom" } } }),
+    });
 
     const result = await requestSystemOneDecision(request, {
       baseUrl: BASE_URL,
@@ -221,15 +218,17 @@ describe("requestSystemOneDecision", () => {
   });
 
   it("defaults a missing key to probability 1.0 (keep) in the policy", async () => {
-    // The judge answered only the result question: `call_c1` is absent.
-    server.use(
-      http.post("*/v1/systemone", () =>
-        HttpResponse.json({
+    // The judge answered only the result question: `call_c1` is absent. The
+    // toolkit answers every question it is asked, so the partial body is
+    // declared here instead of hiding behind a raw MSW handler.
+    useScenario({
+      decisions: () => ({
+        body: {
           answers: { result_c1: { type: "noul", noul: 0.1 } },
           model: DECISION_MODEL,
-        }),
-      ),
-    );
+        },
+      }),
+    });
 
     const result = await requestSystemOneDecision(request, {
       baseUrl: BASE_URL,
@@ -240,26 +239,45 @@ describe("requestSystemOneDecision", () => {
     expect(result.answers).toEqual({ result_c1: 0.1 });
 
     const decisions = applyDecisionPolicy([candidate("c1")], result.answers, {
-      mode: "normal",
       activeTokens: 50_000,
-      contextWindow: 100_000,
     });
     // keepCall defaults to 1.0, so the exploratory call cannot be dropped; only
     // the result body goes.
     expect(decisions.decisions).toEqual({ "call-c1": "drop_result" });
   });
 
+  it("keeps an extra answer field the client does not need", async () => {
+    // `answerFields` is how a scenario declares fields the uniform rendering
+    // never invents; the client must keep reading `noul` and ignore the rest.
+    useScenario({
+      decisions: (body) =>
+        decisionsResponse(body as DecisionsRequest, {
+          nouls: { result_c1: 0.1, call_c1: 0.05 },
+          answerFields: { result_c1: { confidence: 0.93 } },
+        }),
+    });
+
+    const result = await requestSystemOneDecision(request, {
+      baseUrl: BASE_URL,
+      apiKey: API_KEY,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.answers).toEqual({ result_c1: 0.1, call_c1: 0.05 });
+  });
+
   it("omits out-of-range answers so the policy keeps the candidate", async () => {
-    server.use(
-      http.post("*/v1/systemone", () =>
-        HttpResponse.json({
+    useScenario({
+      decisions: () => ({
+        body: {
           answers: {
             result_c1: { type: "noul", noul: 3 },
             call_c1: { type: "noul", noul: 0.1 },
           },
-        }),
-      ),
-    );
+          model: DECISION_MODEL,
+        },
+      }),
+    });
 
     const result = await requestSystemOneDecision(request, {
       baseUrl: BASE_URL,
@@ -270,18 +288,14 @@ describe("requestSystemOneDecision", () => {
     expect(result.answers).toEqual({ call_c1: 0.1 });
 
     const decisions = applyDecisionPolicy([candidate("c1")], result.answers, {
-      mode: "normal",
       activeTokens: 50_000,
-      contextWindow: 100_000,
     });
     expect(decisions.decisions).toEqual({});
     expect(decisions.kept).toEqual(["call-c1"]);
   });
 
   it("keeps every candidate when the judge answers nothing", async () => {
-    server.use(
-      http.post("*/v1/systemone", () => HttpResponse.json({ answers: {} })),
-    );
+    useScenario({ decisions: () => decisionsResponse({ questions: {} }) });
 
     const result = await requestSystemOneDecision(request, {
       baseUrl: BASE_URL,
@@ -292,9 +306,7 @@ describe("requestSystemOneDecision", () => {
     expect(result.answers).toEqual({});
 
     const decisions = applyDecisionPolicy([candidate("c1")], result.answers, {
-      mode: "normal",
       activeTokens: 50_000,
-      contextWindow: 100_000,
     });
     expect(decisions.decisions).toEqual({});
     expect(decisions.kept).toEqual(["call-c1"]);
