@@ -191,6 +191,27 @@ chatbot ──→ coding-agent
 The Model Gateway is independent of the Node workspace at runtime; its production
 interface is HTTP. Its JS toolkit is consumed only as a test dependency.
 
+<!-- RTK_START — TEMPORARY: remove this whole block when the rtk hook ships as a first-party worker extension -->
+## RTK (Rust Token Killer) — temporary
+
+We measure token savings by running heavy commands through `rtk` (Apache-2.0 CLI
+proxy, installed globally at `~/.local/bin/rtk`). Until its hook ships as a
+first-party worker extension, prefix heavy external programs with `rtk`:
+
+- `rtk pnpm test:unit`, `rtk pnpm verify:fast`, `rtk pnpm build:verify`,
+  `rtk git status`, `rtk git diff`, `rtk git log`, `rtk git add . && rtk git commit -m "msg"`,
+  `rtk grep …`, `rtk ls …` — keep the prefix inside chains too.
+- Programs without an rtk filter run as-is, so prefixing is always safe. Leave
+  the `read` tool and shell builtins (`cd`, `export`, `test`, `eval`, `source`)
+  unprefixed.
+- Condensed output is the complete result — treat it as such, batch related
+  commands into one call, and re-run as `rtk bypass <cmd>` only when a result is
+  unusable (empty when output was clearly expected, contradictory, or garbled).
+- `rtk gain` reports savings per command; `rtk discover` lists commands that
+  missed filtering opportunities.
+
+<!-- RTK_END -->
+
 <!-- CODEGRAPH_START -->
 ## CodeGraph
 
